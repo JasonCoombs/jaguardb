@@ -1,4 +1,60 @@
 
+Jaguar 2.8.2.4 11/25/2017
+--------------------------------------------------------------
+. Added support of insert into tab1 select from tab2 ...
+
+Jaguar 2.8.2.3 11/05/2017
+--------------------------------------------------------------
+. Use different length-key
+
+Jaguar 2.8.2.2 11/05/2017
+--------------------------------------------------------------
+. fixed a bug in negative file number
+
+Jaguar 2.8.2 10/31/2017
+--------------------------------------------------------------
+. added bin/tools/convert_mysql_to_jaguar_schema.sh to convert schema
+. details printed in parser error
+. less threads in parallel parser
+. desc table showing default values
+. added default values in create table
+. fixed bug in resize local file
+. improved concurrency control
+. logging command or error by $DB.log $DB.err
+. added @file or source file in jql
+. uuid value override by user-input
+
+Jaguar 2.8.1 09/30/2017
+--------------------------------------------------------------
+. Fixed bug with database import from exported data
+. Improved order by key desc
+
+Jaguar 2.8.0 09/27/2017
+--------------------------------------------------------------
+. Added exportcsv/importcsv commands
+. Added spare_ column in creating table
+. Added "alter table TAB123 add COL TYPE;" support using spare_
+. JAGUAR_HOME now defaults to $HOME/jaguar
+. Expand $ENVVAR/dir/file in load and spool file path
+. Alias varchar type with char
+. Improved install and start/stop shell scripts
+
+
+Jaguar 2.7.9 09/15/2017
+--------------------------------------------------------------
+. Fixed bug in update
+
+Jaguar 2.7.8 09/12/2017
+--------------------------------------------------------------
+. Fixed bug in update set invalid column
+. MEMORY_MODE high and low two way automatic conversion
+
+Jaguar 2.7.7 09/08/2017
+Jaguar 2.8.2.1 11/02/2017
+--------------------------------------------------------------
+. reduced number of sleeping threads
+. fixed a bug in key collision for loss of records
+
 Jaguar 2.8.2 10/31/2017
 --------------------------------------------------------------
 . added bin/tools/convert_mysql_to_jaguar_schema.sh to convert schema
