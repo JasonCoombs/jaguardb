@@ -1,4 +1,9 @@
 
+Jaguar 2.8.3 11/28/2017
+--------------------------------------------------------------
+. Added support of default value of a string
+. Added support of enum 
+
 Jaguar 2.8.2.4 11/25/2017
 --------------------------------------------------------------
 . Added support of insert into tab1 select from tab2 ...
