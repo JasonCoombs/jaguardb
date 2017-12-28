@@ -1,4 +1,10 @@
 
+Jaguar 2.8.4 12/28/2017
+--------------------------------------------------------------
+. Enterprise and freetrial are merged into one version, requiring no license
+. Added load_file(fpath) support for binary file loading
+. Fixed bug in drop database, invalid database name
+
 Jaguar 2.8.3.1 12/01/2017
 --------------------------------------------------------------
 . Fixed bug where show empty tables in a new database
