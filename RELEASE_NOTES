@@ -1,5 +1,5 @@
 
-Jaguar 2.8.5.1 01/18/2018
+Jaguar 2.8.5.2 01/22/2018
 --------------------------------------------------------------
 . Added encryption of password during connection to server
 . Check system API commands for authentication
