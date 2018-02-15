@@ -1,4 +1,10 @@
 
+Jaguar 2.8.7 02/15/2018
+--------------------------------------------------------------
+. Supports storage of any type of documents:
+  (audio, video, image, photo, word, ppt, pdf, mp4, etc)
+. Jaguar admin package supports 2D bar chart of query result
+
 Jaguar 2.8.6 02/07/2018
 --------------------------------------------------------------
 . Adding conf/datacenter.conf to support multipe active-active support
