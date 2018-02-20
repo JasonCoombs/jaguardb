@@ -1,4 +1,8 @@
 
+Jaguar 2.8.7.2 02/20/2018
+--------------------------------------------------------------
+. Fixed bug in getfile COL into localfile from t where ...;
+
 Jaguar 2.8.7 02/15/2018
 --------------------------------------------------------------
 . Supports storage of any type of documents:
