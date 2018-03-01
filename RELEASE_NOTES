@@ -1,4 +1,10 @@
 
+Jaguar 2.8.8.4 03/02/2018
+--------------------------------------------------------------
+. Fixed getfile bug, parser no check valid path, client does
+. Cross data center insert file bug fix
+. jql goes back to no-keep new line mode
+
 Jaguar 2.8.8.3 03/01/2018
 --------------------------------------------------------------
 . Fixed bug of jql wait on ; in same line
