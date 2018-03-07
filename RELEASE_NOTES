@@ -1,4 +1,20 @@
 
+Jaguar 2.9.0 03/07/2018
+--------------------------------------------------------------
+. Use dynamic thread queue, according to # of servers
+. Dropdb [force] DB;
+. Drop table [force] tab123;
+. No backgrund threads for one-client ops
+
+Jaguar 2.8.9 03/06/2018
+--------------------------------------------------------------
+. Fixed bug when join of tables need new connections to hosts
+. Added Windows static lib library
+
+Jaguar 2.8.8.5 03/03/2018
+--------------------------------------------------------------
+. Fixed bug when there are multiple clusters, update/delete error
+
 Jaguar 2.8.8.4 03/02/2018
 --------------------------------------------------------------
 . Fixed getfile bug, parser no check valid path, client does
