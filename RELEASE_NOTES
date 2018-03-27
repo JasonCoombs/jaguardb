@@ -1,4 +1,11 @@
 
+Jaguar 2.9.0.2 03/28/2018
+--------------------------------------------------------------
+. added INIT_EXTRA_THREADS in server.conf for more initial threads
+. fixed bug of 256 buffer in client
+. displaying subcluster number in cluster.conf
+. fixed jaguarstop bug in Chinese windows
+
 Jaguar 2.9.0.1 03/12/2018
 --------------------------------------------------------------
 . Fix  thread queue bug where a small cluster had not enoough sockets
