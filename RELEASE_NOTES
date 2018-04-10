@@ -1,4 +1,8 @@
 
+Jaguar 2.9.0.5 04/10/2018
+--------------------------------------------------------------
+. fixed minus sign parser error in where clause
+
 Jaguar 2.9.0.4 04/03/2018
 --------------------------------------------------------------
 . improved multiple clients select range using thread pool
