@@ -1,4 +1,10 @@
 
+
+Jaguar 2.9.1 04/22/2018
+--------------------------------------------------------------
+. Gateway and hosts support
+. Forward data between hosts and gateway
+
 Jaguar 2.9.0.5 04/10/2018
 --------------------------------------------------------------
 . fixed minus sign parser error in where clause
