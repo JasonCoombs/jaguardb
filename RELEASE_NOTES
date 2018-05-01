@@ -3,6 +3,7 @@
 Jaguar 2.9.1.1 04/30/2018
 --------------------------------------------------------------
 . fixed bug in creaate uer
+. fixed bug in changepass
 . fixed bug in displaying double columns
 
 Jaguar 2.9.1 04/22/2018
