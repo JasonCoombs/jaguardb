@@ -1,3 +1,9 @@
+Jaguar 2.9.2 05/18/2018
+--------------------------------------------------------------
+. added support for "grant PERM1, PERM2, .. PERM on db.tab.col to user"
+. added support for "grant select on db.tab.col to user [where ...]"
+. added support for "revoke PERM1, PERM2, ... PERM on db.tab.col from user"
+
 Jaguar 2.9.1.2 05/10/2018
 --------------------------------------------------------------
 . added freetrial and enterprise versions
