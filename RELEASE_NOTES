@@ -1,3 +1,14 @@
+Jaguar 2.9.4 09/20/2018
+--------------------------------------------------------------
+. added support for geometry and geographic data storage
+. support for location relation between geometric objects
+. support for GeoJson data input and output 
+. point, line, linestring, square, circle, ellipse, rectangle
+. sphere, ellipsoid, box, cube, cone, triangle, multipoint
+. multilinestring, polygon, multipolygon
+. within(), distance(), nearby(), coveredby(), disjoint()
+
+
 Jaguar 2.9.2 05/18/2018
 --------------------------------------------------------------
 . added support for "grant PERM1, PERM2, .. PERM on db.tab.col to user"
