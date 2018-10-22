@@ -1,4 +1,11 @@
 
+Jaguar 2.9.4.2 10/22/2018
+--------------------------------------------------------------
+. fixed distance in meters
+. added distance calculation for more shapes
+. fix bug in create table    a    type
+
+
 Jaguar 2.9.4.1 10/15/2018
 --------------------------------------------------------------
 . fixed bug in getnthvalue in JaguarCPPClient
