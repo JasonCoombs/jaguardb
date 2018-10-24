@@ -1,3 +1,21 @@
+
+Jaguar 2.9.4.2 10/22/2018
+--------------------------------------------------------------
+. fixed distance in meters
+. added distance calculation for more shapes
+. fix bug in create table    a    type
+
+
+Jaguar 2.9.4.1 10/15/2018
+--------------------------------------------------------------
+. fixed bug in getnthvalue in JaguarCPPClient
+. added client jql expect number of correct/error
+. fix: select * from "table";
+. fixed bug in insert into table with uuid as first key
+. fixed create table d1 double precison
+. fixed parser to handle newlines in create table statement
+
+
 Jaguar 2.9.4 09/20/2018
 --------------------------------------------------------------
 . added support for geometry and geographic data storage
