@@ -1,1 +1,60 @@
 R JDBC programs to connect to Jaguar and read/write data
+
+RJDBC test log:
+
+Part 0: Connect using JDBC
+drv <- try(JDBC("com.jaguar.jdbc.JaguarDriver", paste0(DIR, 'jaguar-jdbc-2.0.jar')))
+#.jaddClassPath(paste(DIR, "jaguar-jdbc-2.0.jar"))
+drv <- JDBC(driverClass = "com.jaguar.jdbc.JaguarDriver")
+con <- dbConnect(drv, "jdbc:jaguar://192.168.7.120:8875/test", "admin", "jaguarjaguarjaguar")
+
+
+Part 1: CRUD
+1.1 Create Table
+dbSendQuery(con, "create table rtest (key: id char(16), value: addr char(16);")
+
+
+1.2 Select from table
+
+# Sol1: select all
+rs <- dbSendQuery(con,"select * from test;")
+summary(rs)
+dbFetch(rs)
+dbClearResult(rs)
+
+# Sol2: select all
+mydata <- dbGetQuery(con, "select * from test;")
+mydata
+mydata[1:1, 1:2]
+
+# Sol3: select by conditions
+dbGetQuery(con,"select uid, addr from test where uid = 1;")
+
+
+1.3 Insert into table
+dbSendStatement(con,"insert into test(uid, addr) values ('5','sf');")
+
+
+1.4 Update record
+dbSendStatement(con,"update test set addr = 'la' where uid = 3;")
+
+
+1.5 Delete record
+dbSendStatement(con,"delete from test where uid = 5;")
+
+
+1.6 Drop table
+dbRemoveTable(con, "rtest")
+#OR
+dbSendQuery(con, "drop table rtest;");
+
+
+
+Part 2:  Load CSV
+2.1 read csv using R
+csvfile <-read.csv('Sales.csv', header = TRUE)
+
+
+2.1 read csv from bash file: 
+exp: RJBDC.r 
+run: ./rcon.sh <csvfilename>
