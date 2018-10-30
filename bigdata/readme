@@ -1,1 +1,74 @@
-readme
+One-Key Install, Configure, Operate High Availability Hadoop Cluster
+
+1. 
+Download jaguar-bigdata-1.5.tar.gz from GitHub.com/datajaguar/jaguardb/bigdata/
+
+2.
+Prepare your hosts in Hadoop cluster for High Availability (Active and Standby namenodes). 
+Save the host names in a file: hosts
+
+3.
+$ tar zxf  jaguar-bigdata-1.5.tar.gz
+
+4. 
+$ cd jaguar-bigdata-1.5
+
+5.
+$ make sure hosts file in this directory and has the following content:
+node1
+node2
+node3
+node4
+(node1 wll be namenode1, node2 namenode2, node3 datanode, node4 datanode).
+
+6. On each host in hosts file, make sure put the following in $HOME/.bashrc file:
+$HOME/.bashrc on all hosts (assuming Hadoop to be installed in $HOME/jaguarhadoop):
+export JAVA_HOME=`java -XshowSettings:properties -version 2>&1 |grep ‘java.home’|tr -d ‘ ‘|cut -d= -f2`
+export HADOOP_PREFIX=$HOME/jaguarhadoop
+export HADOOP_HOME=$HADOOP_PREFIX
+export HADOOP_COMMON_HOME=$HADOOP_PREFIX
+export HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
+export HADOOP_HDFS_HOME=$HADOOP_PREFIX
+export HADOOP_MAPRED_HOME=$HADOOP_PREFIX
+export HADOOP_YARN_HOME=$HADOOP_PREFIX
+export YARN_HOME=$HADOOP_PREFIX
+export PATH=$PATH:$HADOOP_HOME/bin
+
+7. Download your favorite .tar.gz packages of Hadoop, Kafka, Spark and copy them into
+jaguar-bigdata-1.5/package directory.  For example:
+$ cp -f  /tmp/hadoop-2.8.5.tar.gz  jaguar-bigdata-1.5/package
+Note: you must download and copy desired packages into package directory. Otherwise they will not be installed.
+
+8. Install the packages with one installer script:
+$ cd   jaguar-bigdata-1.5
+$  ./install_jaguar_bigdata_on_all_hosts.sh -f  hosts  -hadoop
+File hosts is the file with host names of the cluster on each line.  If more packages are to be 
+installed, you can use  “-hadoop -kafka  -spark” option or “-all” option.
+
+9.  Start Zookeeper on all hosts (Zookeeper must be first started)
+$ cd $HOME/jaguarkafka/bin; ./start_zookeeper_on_all_hosts.sh
+
+10. Start JournalNode on all hosts
+$ cd $HOME/jaguarhadoop/sbin; ./start_journalnode_on_all_hosts.sh
+
+11. Format and start Hadoop on all hosts
+$ cd $HOME/jaguarhadoop/sbin; ./format_hadoop_on_all_hosts.sh
+$ cd $HOME/jaguarhadoop/sbin; ./start_hadoop_on_all_hosts.sh
+Use bin/hdfs haadmin command to check active/standby status of namenodes:
+$ hdfs haadmin -getServiceState namenode1
+$ hdfs haadmin -getServiceState namenode2
+
+12. If you have installed Kafka, Spark you can start them:
+Kafka, Spark, Zepplin can be started with (if they were installed):
+$ cd $HOME/jaguarkafka/bin; ./start_kafka_on_all_hosts.sh
+$ cd $HOME/jaguarspark/bin; ./start_spark_on_all_hosts.sh
+$ cd $HOME/jaguarzeppelin/bin; ./zeppelin-daemon.sh start
+
+13. If you want to clean up the data in Hadoop, you can execute the following command:
+$ cd $HOME/jaguarhadoop/sbin; ./format_hadoop_on_all_hosts.sh
+You must be sure you really want to delete all data in Hadoop.
+
+14.   Use $HOME/jaguarhadoop/bin/hdfs command to check hdfs:
+$ hdfs dfs -ls /
+
+
