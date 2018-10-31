@@ -2,6 +2,8 @@ var Router = window.ReactRouter.Router;
 var Route = window.ReactRouter.Route;
 var hashHistory = window.ReactRouter.hashHistory;
 var Link = window.ReactRouter.Link;
+var Leaflet = require('./Leaflet')
+// import Leaflet from './Leaflet';
 
 class Signin extends React.Component {
     constructor(props) {
@@ -21,7 +23,7 @@ class Signin extends React.Component {
         password: this.state.password
       })
       .then(function (response) {
-        console.log(response);
+        hashHistory.push( '/Home');
       })
       .catch(function (error) {
         console.log(error);
@@ -49,9 +51,15 @@ class Signin extends React.Component {
       )
     }
 }
+// class Leaflet extends React.Component {
+//     render() {
+//         return  <div> 111111111111 </div>
+//     }
+// }
 
 ReactDOM.render(
     <Router history={hashHistory}>
         <Route component={Signin} path="/"></Route>
+        <Route component={Leaflet} path="/Home"></Route>
     </Router>,
-document.getElementById('app'));
+    document.getElementById('app'));
