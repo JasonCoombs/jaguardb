@@ -11,6 +11,7 @@ import Home from './components/Home';
 import Map from './components/Map';
 import NavLeaflet from './components/NavLeaflet';
 import Circle from './components/Circle';
+import Leaflet from './components/Leaflet';
 
 export default (
     <div className="container">
@@ -21,5 +22,6 @@ export default (
         <Route path="/leaflet" component={ requireAuth(Map) } />
         <Route path="/navleaflet" component={requireAuth( NavLeaflet) } />
         <Route path="/circle" component={ requireAuth(Circle) } />
+        <Route path="/sql" component={ requireAuth(Leaflet) } />
     </div>
 )

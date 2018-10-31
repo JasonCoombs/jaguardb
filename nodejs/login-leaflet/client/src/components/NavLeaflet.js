@@ -26,6 +26,9 @@ class NavLeaflet extends Component {
                                     <Link className="nav-link" to="/polygon">Polygon</Link>
                                 </li>
 
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/sql">Sql</Link>
+                                </li>
 
                             </ul>
                         </div>

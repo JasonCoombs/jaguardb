@@ -23,7 +23,6 @@ export const userSigninRequest = (userData) => {
     return dispatch => {
         return axios.post('/api/login', userData).then(res => {
             const token = res.data.token;
-
             localStorage.setItem("jwtToken", token);
             setAuthorizationToken(token);
             // console.log();
