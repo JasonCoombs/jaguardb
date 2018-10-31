@@ -1,1 +1,13 @@
 R JDBC programs to connect to Jaguar and read/write data
+
+0. Download csv file: 
+wget <file_link> 
+
+1. Generate sql to create empty table: 
+./createTableFromCSV.sh <csvfilename>
+
+2. Run R script to create table from csv:
+./rcon.sh <csvfilename>
+
+
+example csv file: grocery.csv
