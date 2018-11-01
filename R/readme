@@ -20,9 +20,10 @@ wget <file_link>
    library(myRPackageName, lib.loc="/home/tina/jaguar/doc/rcon/rlib")
 4.3.2  #Install R package setting .Rprofile and .Renviron 
   ## Refer to following url
-  ##  https://www.r-bloggers.com/installing-r-packages/
+  ## https://www.r-bloggers.com/installing-r-packages/
   See example in lib.r
 4.4 Run lib.r to see package install 
+export LD_LIBRARY_PATH=/home/tina/jaguar/lib
 Rscript lib.r
 
 example csv file: grocery.csv

@@ -13,7 +13,7 @@ dbListTables(con)
 ##################################Part 1: CRUD ###############################
 
 ##1.1 Create Table
-dbSendQuery(con, "create table test (key: id char(16), value: addr char(16);")
+dbSendQuery(con, "create table test (key: uid char(16), value: addr char(16);")
 
 ##1.2 Select from table
 
@@ -48,7 +48,7 @@ dbSendQuery(con, "drop table test;")
 ##################################Part 2:  Load CSV  ###############################
 
 ##2.1 Read csv using R
-csvtable <-read.csv('Sales.csv', header = TRUE)
+csvtable <-read.csv('grocery.csv', header = TRUE)
 
 ##2.2 Using sendQuery() to send the generated sql
 
