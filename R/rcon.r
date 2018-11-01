@@ -92,8 +92,11 @@ tail(table)
 ##3.3 Data type conversion if necessary
 table$units_sold <- as.numeric(as.character(table$units_sold))
 table$order_date <- as.Date(table$order_date,format='%m/%d/%Y')
+table$item_type <- as.factor(table$item_type)
 table[] <- lapply(table, function(x) as.numeric(as.character(x)))
+mydata <- as.data.frame(unclass(table))
 str(table)
+str(mydata)
 
 ##3.4 R Analysis
 ### linear regression ###

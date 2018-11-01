@@ -12,7 +12,12 @@
 #remove empty line
 sed '/^\s*$/d' -i $1
 #choose the file to read
+
 fname=$1
+#save the origin file as origin_oldfilename.csv
+oldfname="origin_${fname}"
+cp $1  $oldfname
+
 if [[ "x$fname" = "x" ]]; then
     echo "Usage: $0  <inputfile.csv>"
     echo "Please provide the input csv file"
@@ -36,7 +41,8 @@ tr '\r' '\n' < $fname > $tmpfname
 
 
 ###move unique column to fist
-unfname="${fname}.11$$"
+#unfname="${fname}.11$$"
+unfname="new_${fname}"
 #/bin/rm -f $unfname
 count=1
 total=`head -1 $fname|tr -d '\r'| tr -d \"`
@@ -59,6 +65,7 @@ done
 #if all column are not unique.just use the origin csv
 if [ $count -le  ${#totalCol[@]} ]
 then
+#unfname="${fname}_new.csv"
 awk -v count=$count -F,  'function pr(str, nth, T)
   { split(str, arr);
     if ( nth > T ) { return; }
@@ -72,7 +79,6 @@ awk -v count=$count -F,  'function pr(str, nth, T)
   {pr($0,count,NF);}'  $1 > $unfname
 
 #./a.awk $1 $unfname $count
-#fname=$unfname
 /bin/mv -f $unfname  $fname
 fi
 
@@ -246,5 +252,5 @@ for ((ENTRY = 0; ENTRY < ${#array1[@]}; ENTRY++)) do
     fi
 done
 echo -e "$seperate2"
-/bin/rm -f $unfname
+#/bin/rm -f $unfname
 /bin/rm -f $tmpfname
