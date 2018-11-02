@@ -8,40 +8,49 @@ drv <- try(JDBC("com.jaguar.jdbc.JaguarDriver", paste0(DIR, 'jaguar-jdbc-2.0.jar
 #.jaddClassPath(paste(DIR, "jaguar-jdbc-2.0.jar"))
 drv <- JDBC(driverClass = "com.jaguar.jdbc.JaguarDriver")
 con <- dbConnect(drv, "jdbc:jaguar://192.168.7.120:8875/test", "admin", "jaguarjaguarjaguar")
+
+# List all tables in db
 dbListTables(con)
 
 ##################################Part 1: CRUD ###############################
 
 ##1.1 Create Table
 dbSendQuery(con, "create table test (key: uid char(16), value: addr char(16);")
-
-##1.2 Select from table
-
-#1.2.1 select all
+# select all
 rs <- dbSendQuery(con,"select * from test;")
 dbFetch(rs)
 dbClearResult(rs)
 
-#1.2.2: select all
+##1.2  Insert into table
+dbSendStatement(con,"insert into test(uid, addr) values ('1','sf');")
+dbSendStatement(con,"insert into test(uid, addr) values ('2','la');")
+dbSendStatement(con,"insert into test(uid, addr) values ('3','ny');")
+dbSendQuery(con,"insert into test(uid, addr) values ('4','boston');")
+
+##1.3 Select from table
+# select all
+#rs <- dbSendQuery(con,"select * from test;")
+#dbFetch(rs)
+#dbClearResult(rs)
+
+# select all
 mydata <- dbGetQuery(con, "select * from test;")
 mydata
 
-#1.2.3: select by conditions
+# select by conditions
 dbGetQuery(con,"select uid, addr from test where uid = 1;")
 
-##1.3 Insert into table
-dbSendStatement(con,"insert into test(uid, addr) values ('5','sf');")
 
 ##1.4 Update record
 dbSendStatement(con,"update test set addr = 'la' where uid = 3;")
 
 ##1.5 Delete record
-dbSendStatement(con,"delete from test where uid = 5;")
+dbSendStatement(con,"delete from test where uid = 4;")
 
 ##1.6 Drop table
 dbRemoveTable(con, "test")
 #OR
-dbSendQuery(con, "drop table test;")
+#dbSendQuery(con, "drop table test;")
 
 
 
@@ -49,11 +58,11 @@ dbSendQuery(con, "drop table test;")
 
 ##2.1 Read csv using R
 csvtable <-read.csv('grocery.csv', header = TRUE)
-
+csvtable
 ##2.2 Using sendQuery() to send the generated sql
 
 #2.2.1 Get the csvfile name from bash file
-rgs=commandArgs(T)
+args=commandArgs(T)
 csvfile <- args[1]
 
 #2.2.2 Write sql to create new table

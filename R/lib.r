@@ -2,20 +2,19 @@ library("RJDBC")
 library("DBI")
 library("rJava")
 DIR <- "/home/tina/jaguar/lib/"
+library(arules,lib.loc="/home/tina/jaguar/doc/rcon/rlib",warn.conflicts = FALSE)
 
+#connect jaguar
 drv <- try(JDBC("com.jaguar.jdbc.JaguarDriver", paste0(DIR, 'jaguar-jdbc-2.0.jar')))
 #.jaddClassPath(paste(DIR, "jaguar-jdbc-2.0.jar"))
 drv <- JDBC(driverClass = "com.jaguar.jdbc.JaguarDriver")
 con <- dbConnect(drv, "jdbc:jaguar://192.168.7.120:8875/test", "admin", "jaguarjaguarjaguar")
 
+#select from jaguar
 table <- dbGetQuery(con, "select * from grocery;")
-#mydata <- as.data.frame(unclass(table))
-#str(table)
 col_names <- names(table)
 table[,col_names] <- lapply(table[,col_names], factor)
 str(table)
-
-library(arules,lib.loc="/home/tina/jaguar/doc/rcon/rlib",warn.conflicts = FALSE)
 
 # Association analysis using Package arules
 apriori(table, parameter=list(support=0.01,confidence=0.2))

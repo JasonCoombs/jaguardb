@@ -1,29 +1,29 @@
 R JDBC programs to connect to Jaguar and read/write data
-
+#sample csv_file: grocery.csv
 1. Download csv file: 
 wget <file_link> 
+
 
 2. Generate sql to create empty table: 
 ./createTableFromCSV.sh <csvfilename>
 
+
 3. Run R script to create table from csv:
 ./rcon.sh <csvfilename>
 
-4. Install R package for analysis
-4.1 cd rpackge 
-4.2 wget <R_PACKAGE_URL_FROM_CRAN>
-4.3 Choose either way list below to install package
-4.3.1 Commandline Install Package
-  1. Commandline install 
-   R CMD INSTALL -l /home/tina/jaguar/doc/rcon/rlib myRPackage.tar.gz
-  2. Use library in R script 
-   library(myRPackageName, lib.loc="/home/tina/jaguar/doc/rcon/rlib")
-4.3.2  #Install R package setting .Rprofile and .Renviron 
-  ## Refer to following url
-  ## https://www.r-bloggers.com/installing-r-packages/
-  See example in lib.r
-4.4 Run lib.r to see package install 
-export LD_LIBRARY_PATH=/home/tina/jaguar/lib
-Rscript lib.r
 
-example csv file: grocery.csv
+4. Install R package for analysis
+ 1) cd rpackge 
+ 2) wget <R_PACKAGE_URL_FROM_CRAN>
+
+ 3) Choose either way list below to install package
+    1 Commandline Install Package
+         R CMD INSTALL -l /home/tina/jaguar/doc/rcon/rlib myRPackage.tar.gz
+   	 library(myRPackageName, lib.loc="/home/tina/jaguar/doc/rcon/rlib")
+    2  Setting .Rprofile and .Renviron 
+     ## Refer to following url    https://www.r-bloggers.com/installing-r-packages/
+
+ 4) Run lib.r to see package install 
+    export LD_LIBRARY_PATH=/home/tina/jaguar/lib
+    Rscript lib.r
+
