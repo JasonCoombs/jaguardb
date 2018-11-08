@@ -1,4 +1,4 @@
-var libname = "/home/ding/jaguar/lib/jaguarnode";
+var libname = process.env.HOME + "/jaguar/lib/jaguarnode";
 const Jag = require( libname );
 const path = require('path')
 var jaguar = Jag.JaguarAPI();

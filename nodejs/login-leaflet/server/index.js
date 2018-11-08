@@ -2,7 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import jwt from 'jsonwebtoken';
 import config from './config'
-var libname = "/home/ding/jaguar/lib/jaguarnode";
+var libname = process.env.HOME + "/jaguar/lib/jaguarnode";
 const Jag = require( libname );
 const path = require('path')
 var jaguar = Jag.JaguarAPI();
@@ -52,4 +52,5 @@ app.post("/api/leaflet",(req,res) =>{
     }
 })
 
-app.listen(6060, ()=>console.log('running'));
+process.env.PORT
+app.listen( process.env.PORT, ()=>console.log('running'));
