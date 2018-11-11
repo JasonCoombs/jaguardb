@@ -1,4 +1,10 @@
 
+Jaguar 2.9.4.3 11/10/2018
+--------------------------------------------------------------
+. fixed libJaguarClient.so dependency of libGeographic.so
+. added show tables like PAT;
+. added show indexes like PAT;
+
 Jaguar 2.9.4.2 10/22/2018
 --------------------------------------------------------------
 . fixed distance in meters
