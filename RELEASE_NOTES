@@ -1,4 +1,11 @@
 
+Jaguar 2.9.4.4 11/15/2018
+--------------------------------------------------------------
+. added select * from tab where col match 'regularexpression';
+. added select diff(col, 'string123') from tab where diff(col, 'string123') < 10;
+. diff(s1, s2) is Levenshtein distance (edit distance) between two strings
+. diff() can be used for fuzzy string matching
+
 Jaguar 2.9.4.3 11/10/2018
 --------------------------------------------------------------
 . fixed libJaguarClient.so dependency of libGeographic.so
