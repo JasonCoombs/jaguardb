@@ -17,13 +17,13 @@ wget <file_link>
  2) wget <R_PACKAGE_URL_FROM_CRAN>
 
  3) Choose either way list below to install package
-    1 Commandline Install Package
-         R CMD INSTALL -l /home/tina/jaguar/doc/rcon/rlib myRPackage.tar.gz
-   	 library(myRPackageName, lib.loc="/home/tina/jaguar/doc/rcon/rlib")
-    2  Setting .Rprofile and .Renviron 
+    Commandline Install Package
+     R CMD INSTALL -l /home/tina/jaguar/doc/rcon/rlib myRPackage.tar.gz
+     library(myRPackageName, lib.loc="/home/tina/jaguar/doc/rcon/rlib")
+OR
+ Setting .Rprofile and .Renviron, then add following two lines in R script
      ## Refer to following url    https://www.r-bloggers.com/installing-r-packages/
-
+     install.packages("arules", lib="//home/tina/jaguar/lib/rlib")
+     library(arules,lib.loc="//home/tina/jaguar/lib/rlib",warn.conflicts = FALSE)
  4) Run lib.r to see package install 
-    export LD_LIBRARY_PATH=/home/tina/jaguar/lib
-    Rscript lib.r
-
+  ./lib.sh

@@ -15,8 +15,8 @@ sed '/^\s*$/d' -i $1
 
 fname=$1
 #save the origin file as origin_oldfilename.csv
-oldfname="origin_${fname}"
-cp $1  $oldfname
+#oldfname="origin_${fname}"
+#cp $1  $oldfname
 
 if [[ "x$fname" = "x" ]]; then
     echo "Usage: $0  <inputfile.csv>"
@@ -79,7 +79,7 @@ awk -v count=$count -F,  'function pr(str, nth, T)
   {pr($0,count,NF);}'  $1 > $unfname
 
 #./a.awk $1 $unfname $count
-/bin/mv -f $unfname  $fname
+#/bin/mv -f $unfname  $fname
 fi
 
 #echo "[$fname] [$unfname] [$count]"

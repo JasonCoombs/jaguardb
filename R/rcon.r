@@ -74,7 +74,7 @@ dbSendQuery(con,sql)
 #2.2.3 Load csv into database
 dir <- getwd()
 tablename <- tools::file_path_sans_ext(csvfile)
-loadcsv <- paste("load ",dir,"/",csvfile," into ", tablename,";", sep ="")
+loadcsv <- paste("load ",dir,"/new_",csvfile," into ", tablename,";", sep ="")
 dbSendQuery(con,loadcsv)
 
 
@@ -109,14 +109,16 @@ str(mydata)
 
 ##3.4 R Analysis
 ### linear regression ###
+col_names <- names(table)
+table[,col_names] <- lapply(table[,col_names], factor)
 x <- c(table$unit_price)
 y <- c(table$units_sold)
 relation <- lm(y~x)
 print(summary(relation))
 
 ### multiple regression ###
-rel <- lm(table$unit_price~table$units_sold+table$unit_cost,data = table)
-print(summary(rel))
+#rel <- lm(table$unit_price~table$units_sold+table$unit_cost,data = table)
+#print(summary(rel))
 
 ###Warning: Always disconnect at the end of program
 dbDisconnect(con)
