@@ -2690,6 +2690,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    time()                 -- current time in seconds since the Epoch (1970-01-01 00:00:00)\n";
 		str += "    tosecond('PATTERN')    -- convert PATTERN to seconds. PATTERN: xM, xH, xD, xW. x is a number.\n";
 		str += "    tomicrosecond('PATTERN')  -- convert PATTERN to microseconds. PATTERN: xS, xM, xH, xD, xW. x is a number.\n";
+		str += "    miletometer(MILES)     -- convert miles to meters\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
