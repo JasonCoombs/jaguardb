@@ -64,7 +64,6 @@
 ** str_match function matches string bigstr with smallstr up to the length of 
 ** smallstr from the beginning of the two strings
 ********************************************************************************/
-//static int str_match( const char *s1, const char *s2, size_t *step);
 static int str_match_ch( const char *s1, char ch, const char *s2, size_t *step);
 
 /*******************************************************
