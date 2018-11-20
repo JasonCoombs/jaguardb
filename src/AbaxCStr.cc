@@ -82,7 +82,6 @@ AbaxCStr::~AbaxCStr()
 }
 
 // assignment operator
-// jyue jan 8
 // const AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s) 
 AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s) 
 {
@@ -95,7 +94,6 @@ AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s)
 		allocMoreMemory( s.length_ );
 	}
 
-	// jyue
 	if ( ! buf_ ) {
 		initmem( s.length_ );
 	}
@@ -124,7 +122,6 @@ AbaxCStr& AbaxCStr::operator+= ( const AbaxCStr &str )
 	return *this;
 }
 
-// jyue jan8 uncommented
 // plus operator
 AbaxCStr& AbaxCStr::operator+=( const char *s)
 {
