@@ -15793,12 +15793,13 @@ bool JagGeo::pointDistanceRectangle( int srid, double x, double y, double px0, d
 bool JagGeo::pointDistanceEllipse( int srid, double px, double py, double x, double y, double a, double b, double nx, 
 								   const AbaxDataString& arg, double &dist )
 {
+
+	// todo001
 	dist = JagGeo::distance( x, y, px, py, srid );
 	if ( arg.caseEqual("center") ) {
 		return true;
 	}
 
-	// todo
 	if ( arg.caseEqual("max") ) {
 	} else {
 	}
@@ -16011,7 +16012,6 @@ bool JagGeo::circleDistancePolygon(int srid, double px0, double py0, double pr,
 {
 	prt(("s2030 sp2:\n" ));
 	// sp2.print();
-	// todo qwer
 	// [_OJAG_=0=test.pol1.pol=PL=0 0.0:0.0:80.0:80.0 0.0:0.0 80.0:0.0 80.0:80.0 0.0:80.0 0.0:0.0
     double dx, dy;
     const char *str;
@@ -16807,7 +16807,7 @@ bool JagGeo::line3DDistanceCone(int srid,  double x10, double y10, double z10, d
 bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 										const AbaxDataString &mk2, const JagStrSplit &sp2,  const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo002
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16817,7 +16817,7 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
 bool JagGeo::lineStringDistanceTriangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo003
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16826,7 +16826,7 @@ bool JagGeo::lineStringDistanceTriangle(int srid, const AbaxDataString &mk1, con
 bool JagGeo::lineStringDistanceSquare(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo004
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16835,7 +16835,7 @@ bool JagGeo::lineStringDistanceSquare(int srid, const AbaxDataString &mk1, const
 bool JagGeo::lineStringDistanceRectangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo005
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16844,7 +16844,7 @@ bool JagGeo::lineStringDistanceRectangle(int srid, const AbaxDataString &mk1, co
 bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo006
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16853,7 +16853,7 @@ bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, cons
 bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo007
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16862,7 +16862,7 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
  	bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								     const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo008
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16873,7 +16873,7 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
 bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 										    const AbaxDataString &mk2, const JagStrSplit &sp2,  const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo009
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16882,7 +16882,7 @@ bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk
 bool JagGeo::lineString3DDistanceCube(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo010
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16893,7 +16893,7 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo011
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16902,7 +16902,7 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
 bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo012
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16912,7 +16912,7 @@ bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1,
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo013
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16922,7 +16922,7 @@ bool JagGeo::lineString3DDistanceCone(int srid,  const AbaxDataString &mk1, cons
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo014
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16934,7 +16934,7 @@ bool JagGeo::lineString3DDistanceCone(int srid,  const AbaxDataString &mk1, cons
 bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo015
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16943,7 +16943,7 @@ bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const 
 bool JagGeo::polygonDistanceSquare(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo016
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16952,7 +16952,7 @@ bool JagGeo::polygonDistanceSquare(int srid, const AbaxDataString &mk1, const Ja
 bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo017
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16961,7 +16961,7 @@ bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const
 bool JagGeo::polygonDistanceEllipse(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo018
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16975,7 +16975,7 @@ bool JagGeo::polygonDistanceEllipse(int srid, const AbaxDataString &mk1, const J
 bool JagGeo::polygonDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 									const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo019
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16986,7 +16986,7 @@ bool JagGeo::polygonDistancePolygon(int srid, const AbaxDataString &mk1, const J
 bool JagGeo::polygon3DDistanceCube(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo020
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -16997,7 +16997,7 @@ bool JagGeo::polygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const Ja
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo021
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17006,7 +17006,7 @@ bool JagGeo::polygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const Ja
 bool JagGeo::polygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo022
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17016,7 +17016,7 @@ bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, co
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo023
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17026,7 +17026,7 @@ bool JagGeo::polygon3DDistanceCone(int srid,  const AbaxDataString &mk1, const J
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo024
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17038,7 +17038,7 @@ bool JagGeo::polygon3DDistanceCone(int srid,  const AbaxDataString &mk1, const J
 bool JagGeo::multiPolygonDistanceTriangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo025
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17047,7 +17047,7 @@ bool JagGeo::multiPolygonDistanceTriangle(int srid, const AbaxDataString &mk1, c
 bool JagGeo::multiPolygonDistanceSquare(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo026
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17056,7 +17056,7 @@ bool JagGeo::multiPolygonDistanceSquare(int srid, const AbaxDataString &mk1, con
 bool JagGeo::multiPolygonDistanceRectangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo027
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17065,7 +17065,7 @@ bool JagGeo::multiPolygonDistanceRectangle(int srid, const AbaxDataString &mk1, 
 bool JagGeo::multiPolygonDistanceEllipse(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo028
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17074,7 +17074,7 @@ bool JagGeo::multiPolygonDistanceEllipse(int srid, const AbaxDataString &mk1, co
 bool JagGeo::multiPolygonDistanceCircle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo029
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17084,7 +17084,7 @@ bool JagGeo::multiPolygonDistanceCircle(int srid, const AbaxDataString &mk1, con
 bool JagGeo::multiPolygonDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 									const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo030
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17095,7 +17095,7 @@ bool JagGeo::multiPolygonDistancePolygon(int srid, const AbaxDataString &mk1, co
 bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo031
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17106,7 +17106,7 @@ bool JagGeo::multiPolygon3DDistanceBox(int srid,  const AbaxDataString &mk1, con
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo032
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17115,7 +17115,7 @@ bool JagGeo::multiPolygon3DDistanceBox(int srid,  const AbaxDataString &mk1, con
 bool JagGeo::multiPolygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo033
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17125,7 +17125,7 @@ bool JagGeo::multiPolygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo034
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17135,7 +17135,7 @@ bool JagGeo::multiPolygon3DDistanceCone(int srid,  const AbaxDataString &mk1, co
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo035
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17146,7 +17146,7 @@ bool JagGeo::multiPolygon3DDistanceCone(int srid,  const AbaxDataString &mk1, co
 
 bool JagGeo::pointDistanceNormalEllipse(int srid, double px, double py, double w, double h, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo036
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17155,7 +17155,7 @@ bool JagGeo::pointDistanceNormalEllipse(int srid, double px, double py, double w
 bool JagGeo::point3DDistanceNormalEllipsoid(int srid, double px, double py, double pz, 
 										   double w, double d, double h, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo037
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17164,7 +17164,7 @@ bool JagGeo::point3DDistanceNormalEllipsoid(int srid, double px, double py, doub
 bool JagGeo::point3DDistanceNormalCone(int srid, double px, double py, double pz, 
 									 double r, double h, const AbaxDataString& arg, double &dist )
 {
-	// todo
+	// todo038
 	// sp1.print();
 	// sp2.print();
 	dist = 0.0;
@@ -17176,7 +17176,6 @@ double JagGeo::pointToLineDistance( double lata1, double lona1, double lata2, do
 	double lat0 = (lata1 + lata2 )/2.0;
 	double lon0 = (lona1 + lona2 )/2.0;
 
-	//const GeographicLib::Geodesic geod(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
 	const Geodesic& geod = Geodesic::WGS84();
   	const GeographicLib::Gnomonic gn(geod);
 
