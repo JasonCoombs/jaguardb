@@ -2196,6 +2196,11 @@ int BinaryOperationNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSch
 		prt(("s4081 JAG_FUNC_SUBSTR str=[%s]\n", str.c_str() ));
 		return 1;
 	}
+	// MILETOMETER
+	else if ( _binaryOp == JAG_FUNC_MILETOMETER ) {
+		str = _carg1;
+		return 1;
+	}
 	// TOSECOND
 	else if ( _binaryOp == JAG_FUNC_TOSECOND ) {
 		str = _carg1;
@@ -2203,7 +2208,7 @@ int BinaryOperationNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSch
 		return 1;
 	}
 	// TOMICROSECOND
-	else if ( _binaryOp == JAG_FUNC_TOSECOND ) {
+	else if ( _binaryOp == JAG_FUNC_TOMICROSECOND ) {
 		str = _carg1;
 		return 1;
 	}
@@ -2866,7 +2871,10 @@ int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rst
 		//prt(("s4008 JAG_FUNC_TOSECOND _carg1=[%s]\n", _carg1.c_str() ));
 		lstr = _carg1;
 		return 1;
-	}
+	} else if ( _binaryOp == JAG_FUNC_MILETOMETER ) {
+		lstr = _carg1;
+		return 1;
+    }
 	// CURDATE, CURTIME, NOW with no child funcs
 	else if ( _binaryOp == JAG_FUNC_CURDATE || _binaryOp == JAG_FUNC_CURTIME || _binaryOp == JAG_FUNC_NOW ) {
 		short collen = getFuncLength( _binaryOp );
@@ -3661,7 +3669,18 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				//prt(("s6203 carg1=[%s]\n", carg1.c_str() ));
 			} else throw 4308;
 			operandStack.pop();
-		} 
+		} else if ( op == JAG_FUNC_MILETOMETER ) {
+			ExpressionElementNode *en = NULL;
+			const char *p = NULL;
+			if ( operandStack.empty() ) throw 4307;
+			else en = operandStack.top();
+			if ( en->getValue(p) ) {
+				double meter = jagatof( p ) * 1069.344;
+				carg1 = doubleToStr( meter );
+			} else throw 4309;
+			operandStack.pop();
+		}
+
 	} else if ( !funcHasZeroChildren(op) ) {
 		// if substr, pop and process first two top operands as length and offset of substr
 		//prt(("s2088 !funcHasZeroChildren(op) op=%d\n", op ));
@@ -3767,7 +3786,8 @@ bool BinaryExpressionBuilder::funcHasZeroChildren( short fop )
 
 bool BinaryExpressionBuilder::funcHasOneChildren( short fop )
 {
-	if ( fop == JAG_FUNC_TOSECOND || fop == JAG_FUNC_TOMICROSECOND ) {
+	if ( fop == JAG_FUNC_TOSECOND || fop == JAG_FUNC_TOMICROSECOND
+         || fop == JAG_FUNC_MILETOMETER ) {
 		 return true;
 	}
 	return false;
@@ -3829,6 +3849,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_ALL || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
+		fop == JAG_FUNC_MILETOMETER || 
 		fop == JAG_FUNC_TOMICROSECOND || 
 		fop == JAG_FUNC_DEGREES || fop == JAG_FUNC_RADIANS ||
 		fop == JAG_FUNC_LENGTH || fop == JAG_FUNC_COUNT ) {
@@ -4031,6 +4052,9 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_TOSECOND; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "tomicrosecond", 13 ) ) {
 		fop = JAG_FUNC_TOMICROSECOND; len = 13; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "miletometer", 11 ) ) {
+		fop = JAG_FUNC_MILETOMETER; len = 11; ctype = 2;
+		
 	} else {
 		// ...more functions to be added
 		rc = 0;

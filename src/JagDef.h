@@ -448,6 +448,7 @@
 #define JAG_FUNC_TIME			436 // "12393949499"  seconds since epoch
 #define JAG_FUNC_TOSECOND		438 
 #define JAG_FUNC_TOMICROSECOND	440 
+#define JAG_FUNC_MILETOMETER	442 
 
 
 // = != < <= > >= like calculation

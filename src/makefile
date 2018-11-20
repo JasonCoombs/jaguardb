@@ -30,8 +30,8 @@ CPP=$(GPP)  -g3 -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -g -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -DJAG_DEBUGCHECK
 CPP=$(GPP) 
-CPP=$(GPP)  -ggdb
 CPP=$(GPP)  -O3
+CPP=$(GPP)  -ggdb
 
 #### makefile.obj has $(OBJS)
 include makefile.obj
