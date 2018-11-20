@@ -26,7 +26,7 @@
 
 #include  <abax.h>
 #include  "JagStrSplit.h"
-#include  "JagLicense.h"
+//#include  "JagLicense.h"
 #include  "JagMD5lib.h"
 #include  "jagcrypt.h"
 

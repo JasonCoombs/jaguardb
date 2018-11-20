@@ -20,14 +20,12 @@
 
 #include <JagServer.h>
 #include <JagDBServer.h>
-#include <JagLicense.h>
 #include <JagUtil.h>
 #include <JagProduct.h>
 #include <JagFileMgr.h>
 #include <JagDBConnector.h>
 #include <signal.h>
 #include <JagCfg.h>
-#include <JagLicense.h>
 
 class JagSigPass
 {
@@ -64,65 +62,7 @@ int JagServer::main(int argc, char *argv[] )
 
 void JagServer::checkLicense()
 {
-	// since 2.8.3.2 everything is free
-	// since 2.9.4 all free
-	#if 1
-	return;
-	#else
-    AbaxDataString cs = _raydbServ->_cfg->getValue("IS_GATE", "no");
-    if ( cs == "yes" || cs == "YES" || cs == "Yes" || cs == "Y" || cs == "true" ) {
-		return;
-    } 
-
-    if ( 0==strcasecmp(PRODUCT_VERSION, "FREETRIAL" ) ) {
-        return;
-    }
-
-
-	int ishost0 = _raydbServ->_dbConnector->_nodeMgr->_isHost0OfCluster0;
-	if ( ! ishost0 ) {
-		return;
-	}
-
-	JagLicense::licenseFilePath = jaguarHome() + "/conf/license.txt";
-	if ( ! JagFileMgr::exist( JagLicense::licenseFilePath ) ) {
-		printf("%s does not exist, exit\n", JagLicense::licenseFilePath.c_str() ); fflush( stdout );
-		exit(33);
-	}
-
-	if ( JagFileMgr::fileSize( JagLicense::licenseFilePath ) < 3 ) {
-		printf("Too short %s, exit\n", JagLicense::licenseFilePath.c_str() ); fflush( stdout );
-		exit(34);
-	}
-
-	if ( ! JagLicense::Kjsh72Xh() ) {
-		printf("Error license [%s]\n", JagLicense::licenseFilePath.c_str() );
-   		exit(70);
-	}
-
-
-   	//abaxint allowedNodes = JagLicense::numUsers();
-   	abaxint allowedNodes = JagLicense::PjSh73Dbe();
-   	if ( allowedNodes < 0 ) {
-		printf("Error #nodes %s, exit\n", JagLicense::licenseFilePath.c_str() ); fflush( stdout );
-   		exit(71);
-   	}
-
-   	if ( _raydbServ->_numPrimaryServers > allowedNodes ) {
-		printf("Error nodes %s, exit\n", JagLicense::licenseFilePath.c_str() ); fflush( stdout );
-   		exit(72);
-   	}
-
-   	//abaxint lictime = JagLicense::licenseTime();
-   	abaxint lictime = JagLicense::GFdhd938x();
-   	time_t nowt = time(NULL);
-   	if ( lictime != 0 ) {
-   		if ( nowt  > lictime ) {
-			printf("Error time %s, exit\n", JagLicense::licenseFilePath.c_str() ); fflush( stdout );
-   			exit(73);
-   		}
-   	}
-	#endif
+    return;
 }
 
 

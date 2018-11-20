@@ -60,8 +60,6 @@ JagTable::JagTable( int replicateType, const JagDBServer *servobj, const AbaxDat
 	VALLEN = 0;
 	KEYVALLEN = 0;
 	_schemaRefreshTime = 0;
-	//_cacheSelect = NULL;
-	// _origHasSpare = false;
 	init( buildInitIndex );
 }
 
@@ -78,25 +76,9 @@ JagTable::~JagTable ()
 	}	
 
 	if ( _schAttr ) {
-		// check each col, if has enumList, delete it
-		/***
-		for ( int i = 0; i < _numCols; ++i ) {
-			if ( _schAttr[i].enumList ) {
-				delete _schAttr[i].enumList;
-				_schAttr[i].enumList = NULL;
-			}
-		}
-		***/
 		delete [] _schAttr;
 		_schAttr = NULL;
 	}
-
-	/***
-	if ( _cacheSelect ) {
-		delete _cacheSelect;
-		_cacheSelect = NULL;
-	}
-	***/
 }
 
 void JagTable::init( bool buildInitIndex ) 
@@ -136,19 +118,9 @@ void JagTable::init( bool buildInitIndex )
 	VALLEN = _tableRecord.valueLength;
 	KEYVALLEN = KEYLEN + VALLEN;
 	_numCols = _tableRecord.columnVector->size();	
-	/***
-	_origHasSpare = hasSpareColumn();
-	if ( ! _origHasSpare ) {
-		++ _numCols; //add extram empty spare_ col
-	}
-	raydebug( stdout, JAG_LOG_LOW, "%s origHasSpare=%d\n", _tableName.c_str(), _origHasSpare );
-	**/
-
 	_schAttr = new JagSchemaAttribute[_numCols];	
 	_schAttr[0].record = _tableRecord;
-	//_tablemap = new JagHashStrInt();
 	_tablemap = newObject<JagHashStrInt>();
-	//_cacheSelect = new JagHashArray<JagDBPair>(10);
 
 	_bufferRows = jagatoll((_cfg->getValue("BUFFER_LOAD_SIZE", "300")).c_str());
 	_bufferRows = ( _bufferRows * 1024 * 1024 ) / KEYVALLEN;
@@ -208,26 +180,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 {
 	int getpos = 0;
 	int rc, rc2;
-	/**
-	int tabPolyDim = 0;
-	bool tabHasPoly = _tableRecord.hasPoly( tabPolyDim );
-	if ( parseParam->polyDim > tabPolyDim ) {
-		prt(("s5051 tableobj_this=%0x Inserting with higher polydim. tabPolyDim=%d < inPolyDim=%d\n", 
-				this, tabPolyDim, parseParam->polyDim ));
-		return 0;
-	}
-	***/
 	
 	AbaxDataString dbcolumn, dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
-	// detect if no columns were given in insert statement (insert into t123 values ( k1, k2, v1, v2, ...)
-	// prt(("s4893 JagTable::parsePair _numCols=%d parseParam->otherVec.size()=%d\n", _numCols, parseParam->otherVec.size() ));
-	/***
-	if ( _numCols-1 != parseParam->otherVec.size() ) {
-		prt(("s4893 error JagTable::parsePair _numCols=%d parseParam->otherVec.size()=%d\n", _numCols, parseParam->otherVec.size() ));
-		errmsg = "E3143  _numCols-1 != parseParam->otherVec.size";
-		return 0;
-	}
-	***/
 	if ( _numCols < parseParam->otherVec.size() ) {
 		prt(("s4893 Error JagTable::parsePair _numCols=%d parseParam->otherVec.size()=%d\n", _numCols, parseParam->otherVec.size() ));
 		errmsg = "E3143  _numCols-1 != parseParam->otherVec.size";
@@ -288,7 +242,6 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			rc = JagParser::getMultiPolygon3DMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
 		}
-		//qwer
 
 		if ( rc < 0 ) {
 			char ebuf[256];
@@ -2080,7 +2033,6 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	memset(gbvbuf, 0, gbvsendlen+1);
 	JagMemDiskSortArray *gmdarr = NULL;
 	if ( gbvsendlen > 0 ) {
-		//gmdarr = new JagMemDiskSortArray();
 		gmdarr = newObject<JagMemDiskSortArray>();
 		gmdarr->init( atoi((_cfg->getValue("GROUPBY_SORT_SIZE_MB", "1024")).c_str()), gbvheader.c_str(), "GroupByValue" );
 		gmdarr->beginWrite();
@@ -2217,9 +2169,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 			// group by, no insert into ... select ... syntax allowed
 			JagMemDiskSortArray *lgmdarr[numthrds];
 			for ( abaxint i = 0; i < numthrds; ++i ) {
-				//lgmdarr[i] = new JagMemDiskSortArray();
 				lgmdarr[i] = newObject<JagMemDiskSortArray>();
-				//pparam[i] = new JagParseParam();
 				pparam[i] = newObject<JagParseParam>();
 			    pparam[i]->parent = parseParam;
 				lgmdarr[i]->init( 40, gbvheader.c_str(), "GroupByValue" );

@@ -36,7 +36,7 @@
 
 #include <JagMD5lib.h>
 #include <JagStrSplit.h>
-#include "JagLicense.h"
+//#include "JagLicense.h"
 #include "JagFileMgr.h"
 #include "JagUtil.h"
 #include "jagcrypt.h"

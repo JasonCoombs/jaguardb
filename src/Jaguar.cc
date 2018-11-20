@@ -21,12 +21,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-//typedef long long __int64;
-
 #include "com_jaguar_jdbc_internal_jaguar_Jaguar.h"
 #include "JaguarCPPClient.h"
 
- // JNIEXPORT jlong JNICALL Java_com_jaguar_jdbc_internal_jaguar_Jaguar_adbMakeObject
  JNIEXPORT void JNICALL Java_com_jaguar_jdbc_internal_jaguar_Jaguar_adbMakeObject
         (JNIEnv *env, jobject obj )
 {

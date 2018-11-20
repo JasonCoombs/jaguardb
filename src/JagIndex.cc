@@ -195,7 +195,6 @@ void JagIndex::refreshSchema()
     if ( _indexmap ) {
         delete _indexmap;
     }
-    //_indexmap = new JagHashStrInt();
     _indexmap = newObject<JagHashStrInt>();
 
 	dbtable = _dbname + "." + _tableName;
@@ -217,7 +216,6 @@ bool JagIndex::bufchange( char *indexbuf, char *tablebuf )
 			prt(("s6780 JagIndex::bufchange tablebuf has data, i=%d colname=[%s] indtotabOffset=%d len=%d\n",
 				  i, _schAttr[i].colname.c_str(), _indtotabOffset[i], _schAttr[i].length ));
 			  ***/
-
 			memcpy(indexbuf+_schAttr[i].offset, tablebuf+_indtotabOffset[i], _schAttr[i].length);		
 		}
 	} else if ( *indexbuf != '\0' && *tablebuf == '\0' ) {

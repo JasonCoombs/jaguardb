@@ -17,7 +17,6 @@
  * along with JaguarDB (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
  */
 #include <JagGlobalDef.h>
-
 #include <JagBlockLock.h>
 #include <JagUtil.h>
 
@@ -46,14 +45,12 @@ bool JagBlockLock::regionOverlaps( abaxint pos, bool isRead )
    	if ( -1 == pos ) {
 		if ( ! isRead ) {
        		if ( _readers > 0 ||  _writers > 0 ) {
-				//printf("s4802 %lld -1 write locl becoz _readers=%d _writers=%d overlap\n", pthread_self(), _readers, _writers );
        			return true;
        		} else {
     			return false;  // empty  no readers, no writers
     		}
 		} else {
 			if ( _writers > 0 ) {
-				//printf("s4803 %lld -1 read lock  becoz _writers=%d  overlap\n", pthread_self(), _writers );
 				return true;   // has writers
 			} else {
     			return false;  // no writers

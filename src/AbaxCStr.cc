@@ -68,7 +68,6 @@ AbaxCStr::AbaxCStr(const AbaxCStr& str)
 	initmem( str.length_ );
 
 	length_ = str.length_;
-	//strncpy(buf_, str.buf_, length_ );
 	memcpy(buf_, str.buf_, length_ );
 	buf_[length_] = '\0';
 }
@@ -112,13 +111,10 @@ AbaxCStr& AbaxCStr::operator+= ( const AbaxCStr &str )
 		return *this;
 	}
 
-	//printf("s6308 AbaxCStr::operator+=  old buf_=[%s] length_=%d incomingstrlenth=%d\n", buf_, length_, str.length_ );
-
 	allocMoreMemory(str.length_ );
 	memcpy(buf_+length_, str.buf_, str.length_);
 	length_ += str.length_;
 	buf_[length_] = '\0';
-	//printf("s6308 AbaxCStr::operator+=  new buf_=[%s] length_=%d\n", buf_, length_ );
 	return *this;
 }
 
@@ -491,28 +487,6 @@ AbaxCStr & AbaxCStr::pad0()
 	return *this;
 }
 
-/***
-AbaxCStr AbaxCStr::toUpper() const
-{
-	AbaxCStr cpy(buf_, length_);
-	for(int i=0; i< length_; i++) {
-		cpy.buf_[i] = toupper( buf_[i] );
-	}
-
-	return cpy;
-}
-
-AbaxCStr AbaxCStr::toLower() const
-{
-	AbaxCStr cpy(buf_, length_);
-
-	for(int i=0; i< length_; i++) {
-		cpy.buf_[i] = tolower( buf_[i] );
-	}
-
-	return cpy;
-}
-***/
 void AbaxCStr::toUpper() 
 {
 	for(int i=0; i< length_; i++) {
@@ -541,7 +515,6 @@ AbaxCStr operator+(const AbaxCStr &s1, const AbaxCStr &s2 )
 {
 	AbaxCStr res = s1;
 	res += s2;
-	//printf("s8761 AbaxCStr operator+ called s1=[%s] s2=[%s]  res=[%s]\n", s1.c_str(), s2.c_str(), res.c_str() );
 	return res;
 }
 
@@ -549,7 +522,6 @@ AbaxCStr operator+(const char *s1, const AbaxCStr &s2 )
 {
 	AbaxCStr res = s1;
 	res += s2;
-	//printf("s8762 AbaxCStr operator+ called s1char=[%s] s2=[%s]  res=[%s]\n", s1, s2.c_str(), res.c_str() );
 	return res;
 }
 
@@ -609,7 +581,7 @@ AbaxCStr&  AbaxCStr::trimEndZeros()
 
     int start=0;
     bool leadzero = false;
-	int len = 0;
+    int len = 0;
     if ( buf_[0] == '+' || buf_[0] == '-' ) {
 		buf[len++] = buf_[0];
         start = 1;
@@ -696,5 +668,4 @@ bool AbaxCStr::containsChar( char c )
 	if ( strchr( buf_, c ) ) return true;
 	return false;
 }
-
 

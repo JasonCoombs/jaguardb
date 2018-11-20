@@ -4,7 +4,7 @@ test: testjdbserv
 
 BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include \
 		  -IWeb/Tencent/rapidjson/include -IWeb/TomCrypt/include \
-		  -IWeb/Snappy  -D_REENTRANT -std=c++0x \
+		  -IWeb/Snappy -IWeb/UTF  -D_REENTRANT -std=c++0x \
 		 -DCHECK_LATENCY1 -DJAG_DEBUGCHECK1 -DDEVDEBUG1 -DTFM_DESC
 
 CCFLAGS_STATIC=$(BASICFLAGS)  -fpermissive -static-libgcc -static-libstdc++ -static  
@@ -17,7 +17,8 @@ STDLIBS_DYNAMIC =  -LWeb/GeographicLib-1.49/lib -lGeographic  -lpthread
 STDLIBS=$(STDLIBS_STATIC)
 STDLIBS=$(STDLIBS_DYNAMIC)
 
-JAVAINC=/home/jvm/jdk1.8.0_60/include
+JAVA_HOME:=$(shell jrunscript -e "java.lang.System.out.println(new java.io.File(java.lang.System.getProperty(\"java.home\")));")
+JAVAINC=$(JAVA_HOME)/../include
 DRIZZLE=Web/DrizzleJDBC
 DRIZZLEINC=$(DRIZZLE)/src/main/java
 

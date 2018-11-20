@@ -79,6 +79,3 @@ template<> AbaxPair<AbaxFixString,JagBlock<JagDBPair>*> AbaxPair<AbaxFixString,J
 template<> AbaxPair<JagDBPair,AbaxBuffer> AbaxPair<JagDBPair,AbaxBuffer>::NULLVALUE = JagDBPair::NULLVALUE;
 template<> AbaxPair<JagDBPair,AbaxPair<AbaxInt,AbaxBuffer>> AbaxPair<JagDBPair,AbaxPair<AbaxInt,AbaxBuffer>>::NULLVALUE = JagDBPair::NULLVALUE;
 
-
-
-

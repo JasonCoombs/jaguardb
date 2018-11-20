@@ -222,24 +222,10 @@ bool JagDiskArrayServer::checkInitResizeCondition( bool isLastOne )
 	jagunlink( tpath.c_str() );
 	jagunlink( tdnpath.c_str() );
 
-	// if ( !isLastOne ) {
-	if ( 0 ) {
-		// not the "current" last file
-		// need to check if needs to do reSizeCompress
-		prt(("s8850 %s begin compress for init elem=%lld arln=%lld\n", _dbobj.c_str(), (abaxint)_elements, (abaxint)_arrlen));
-		JagClock clock;
-		clock.start();
-		nrsz = reSizeCompress();
-		clock.stop();
-		prt(("s8850 %s end compress for init %d ms\n", _dbobj.c_str(), clock.elapsed()));
-		if ( nrsz ) return 2;
-	}
-
 	if ( nrsz ) {
 		prt(("s8877 %s begin resize for init elem=%lld arln=%lld\n", _dbobj.c_str(), (abaxint)_elements, (abaxint)_arrlen));
 		JagClock clock;
 		clock.start();
-		// _newarrlen = _GEO*_garrlen;
 		_newarrlen = 2*_garrlen;
 		reSizeLocal();
 		clock.stop();
@@ -400,7 +386,6 @@ int JagDiskArrayServer::_insertData( JagDBPair &pair, abaxint *retindex, int &in
 	// debug
 	// prt(("s6831 insert (%s) print blockIndex:\n", pair.key.c_str() ));
 	// _blockIndex->print();
-
 	//_insertUsers: at here, _insertUsers must be at least 1
 	// first element
 	if ( _elements < 1 ) {
@@ -567,10 +552,8 @@ void JagDiskArrayServer::reSizeLocal()
 		if ( resizeHotSpotMode == JAG_STRICT_ASCENDING_LEFT ) pos = _newarrlen-2*_elements;
 
 		// for reDist	
-		// abaxint rlimit = getBuffReaderWriterMemorySize( _arrlen*KEYVALLEN/1024/1024 );
 		abaxint rlimit = 128;
 		JagSingleBuffReader br( _fd, _arrlen, KEYLEN, VALLEN, 0, 0, rlimit );
-		// abaxint wlimit = getBuffReaderWriterMemorySize( _newarrlen*KEYVALLEN/1024/1024 );
 		abaxint wlimit = 128;
 		JagSingleBuffWriter bw( _jdfs2->getFD(), KEYVALLEN, wlimit );
 
@@ -643,9 +626,7 @@ void JagDiskArrayServer::reSizeLocal()
 	// prt(("s9999 after delete jdfs _pathname=[%s]\n", _pathname.c_str()));
 	// fsetXattr( _jdfs->getFD(), _filePath.c_str(), "user.garrlen", _garrlen );
 	_memLock->writeUnlock( -1 );
-	//buildInitIndex( true );
 	// prt(("s9999 end resize local _pathname=[%s]\n", _pathname.c_str()));
-
 	//prt(("s7124 after resizelocal printRange()...\n"));
 	//print( -1, -1, 1000 );
 	free( keyvalbuf );
@@ -660,7 +641,6 @@ bool JagDiskArrayServer::reSizeCompress()
 {
 	_reSizeLock->writeLock( -1 ); JAG_OVER;
 	// first, check and see if more compress needs to be done
-	// if ( _elements > _arrlen-JAG_BLOCK_SIZE ) {
 	if ( _elements > _arrlen*8/10 ) {
 		// already been compressed, and file is still relatively full, no more compress needed to be done
 		raydebug( stdout, JAG_LOG_LOW, "s7230 %s _elems=%l > 0.8*_arln=%l already compressed\n", 
@@ -775,7 +755,6 @@ int JagDiskArrayServer::mergeResize( int mergeMode, abaxint mergeElements, char 
 		return 0;
 	}
 
-	// _newblockIndex = new JagBlock<JagDBPair>();
 	_newblockIndex = new JagFixBlock( KEYLEN );
 	bool half = 0, even = 0;
 	JagDBPair tpair;
@@ -835,10 +814,8 @@ int JagDiskArrayServer::mergeResize( int mergeMode, abaxint mergeElements, char 
 		pos = -1;
 
 		// for reDist	
-		// abaxint rlimit = getBuffReaderWriterMemorySize( _arrlen*KEYVALLEN/1024/1024 );
 		abaxint rlimit = 128;
 		JagBuffReader br( this, _arrlen, KEYLEN, VALLEN, 0, 0, rlimit );
-		// abaxint wlimit = getBuffReaderWriterMemorySize( _newarrlen*KEYVALLEN/1024/1024 );
 		abaxint wlimit = 128;
 		JagSingleBuffWriter bw( _jdfs2->getFD(), KEYVALLEN, wlimit );
 
@@ -1018,27 +995,21 @@ int JagDiskArrayServer::buildInitIndexFromIdxFile()
 
 	if ( _newblockIndex ) {
 		raydebug( stdout, JAG_LOG_LOW, " invalid condition. Someone must doing resize. abort(%s)\n", _dbobj.c_str());
-		// abort();
-		// delete _newblockIndex;
 		return 0;
 	}
 	// _newblockIndex = new JagBlock<JagDBPair>();
 	_newblockIndex = new JagFixBlock( KEYLEN );
 
 	// read maxKey from bid file and update it
-   	// char maxKeyBuf[ KEYLEN+1];
-   	// char *maxKeyBuf = (char*) jagmalloc ( KEYLEN+1 );
    	char maxKeyBuf[ KEYLEN+1 ];
 	memset( maxKeyBuf, 0,  KEYLEN + 1 );
 	memcpy( maxKeyBuf, buf+JAG_BID_FILE_HEADER_BYTES+KEYLEN, KEYLEN ); 
 	JagDBPair maxPair;
 	_getPair( maxKeyBuf, KEYLEN, 0, maxPair, true );
-	// prt(("s5899 maxKeyBuf=[%s]\n", maxKeyBuf ));
 	_newblockIndex->updateMaxKey( maxPair, false );
 	
 	JagDBPair tpair;
    	char keybuf[ KEYLEN+2];
-   	// char *keybuf = (char*) jagmalloc ( KEYLEN+2 );
 	memset( keybuf, 0,  KEYLEN + 2 );
 	
 	abaxint rlimit = getBuffReaderWriterMemorySize( (sbuf.st_size-1-JAG_BID_FILE_HEADER_BYTES-2*KEYLEN)/1024/1024 );
@@ -1098,10 +1069,6 @@ bool JagDiskArrayServer::exist( const JagDBPair &pair, abaxint *index, JagDBPair
 		_memLock->readUnlock( -1 );
 		return false;
 	}
-	/*****
-	printf("s2403 existByIndex findPred return rc=%d newpair=[%s] newpair.size=%d index=%lld first=%d, last=%d\n", 
-		rc, newpair.key.c_str(), newpair.key.size(), *index, first, last );
-	******/
 
 	if ( ! rc ) return false;
 	return true;
@@ -1276,7 +1243,6 @@ abaxint JagDiskArrayServer::removeMatchKey( const char *kstr, int klen )
 
 	return cnt;
 }
-
 
 // remove data
 bool JagDiskArrayServer::removeData( const JagDBPair &pair, abaxint *retindex )

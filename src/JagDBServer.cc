@@ -74,11 +74,7 @@
 #include <JagLineFile.h>
 #include <jagcrypt.h>
 
-//AbaxDataString abaxJiesuoZFC( const AbaxDataString &privkey,  const AbaxDataString &str );
-//AbaxDataString JagDecryptStr( const AbaxDataString &privkey,  const AbaxDataString &str );
-
 extern int JAG_LOG_LEVEL;
-
 int JagDBServer::g_dtimeout = 0;
 int JagDBServer::g_receivedSignal = 0;
 abaxint JagDBServer::g_lastSchemaTime = 0;
@@ -105,25 +101,9 @@ pthread_mutex_t JagDBServer::g_datacentermutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_selectmutex = PTHREAD_MUTEX_INITIALIZER;
 AbaxDataString  JagDBServer::_allLockToken = "-1";
 
-/***
-class JagSigPass
-{
-    public:
-        JagDBServer   *servobj;
-		#ifndef _WINDOWS64_
-        sigset_t    sigset;
-		#endif
-};
-
-static int setupSignalHandler( JagDBServer *serv );
-static void* signalHandler( void *arg );
-***/
-
-
 // ctor
 JagDBServer::JagDBServer() 
 {
-	// rename conf/host.conf to conf/cluster.conf
 	AbaxDataString fpath = jaguarHome() + "/conf/host.conf";
 	AbaxDataString fpathnew = jaguarHome() + "/conf/cluster.conf";
 	if ( JagFileMgr::exist( fpath ) && ( ! JagFileMgr::exist( fpathnew ) )  ) {
@@ -152,12 +132,10 @@ JagDBServer::JagDBServer()
 	_msyncCount = 0;
 	
 	// in order to use JDFSMgr later in other classes, JDFSMgr must be create here	
-	//jdfsMgr = new JDFSMgr();
 	jdfsMgr = newObject<JDFSMgr>();
 	servtimediff = JagTime::getTimeZoneDiff();
 
 	// build _cfg first
-	//_cfg = new JagCfg();
 	_cfg = newObject<JagCfg>();
 	g_dtimeout = atoi(_cfg->getValue("TRANSMIT_TIMEOUT", "3").c_str());
 	_userDB = NULL;
@@ -185,9 +163,7 @@ JagDBServer::JagDBServer()
 	_recoverySpCommand = NULL;
 
 	_objectLock = new JagServerObjectLock( this );
-	//_createIndexLock = new JagHashLock();
 	_createIndexLock = newObject<JagHashLock>();
-	//_tableUsingLock = new JagHashLock();
 	_tableUsingLock = newObject<JagHashLock>();
 	_jagUUID = new JagUUID();
 	pthread_rwlock_init(&_aclrwlock, NULL);
@@ -215,7 +191,6 @@ JagDBServer::JagDBServer()
 	_newdcTrasmittingFin = 0;
 
 	init( _cfg );
-	//_dbConnector = new JagDBConnector( );
 	_dbConnector = newObject<JagDBConnector>( );
 	_clusterMode = true;
 	_faultToleranceCopy = atoi(_cfg->getValue("REPLICATION", "3").c_str());
@@ -295,12 +270,6 @@ JagDBServer::JagDBServer()
 
 	_numCPUs = _jagSystem.getNumCPUs();
 	raydebug( stdout, JAG_LOG_LOW, "Number of cores %d\n", _numCPUs );
-
-	/***
-	int selthreds = _numCPUs*atoi(_cfg->getValue("CPU_THREAD_MULTIPLIER", "4").c_str());
-	_selectPool = thpool_init( selthreds );
-	raydebug( stdout, JAG_LOG_LOW, "Number of select threads %d\n", selthreds );
-	***/
 }
 
 // dtor
@@ -312,8 +281,6 @@ JagDBServer::~JagDBServer()
 
 void JagDBServer::destroy()
 {
-	// thpool_destroy( _selectPool );
-
 	if ( _cfg ) {
 		delete _cfg;
 		_cfg = NULL;
@@ -383,13 +350,6 @@ void JagDBServer::destroy()
 		delete _dbConnector;
 		_dbConnector = NULL;
 	}
-
-	/***
-	if ( _threadMap ) {
-		delete _threadMap;
-		_threadMap = NULL;
-	}
-	***/
 
 	if ( _taskMap ) {
 		delete _taskMap;
@@ -491,7 +451,6 @@ int JagDBServer::main(int argc, char**argv)
 {
 	abaxint callCounts = -1, lastBytes = 0;
 	raydebug(stdout, JAG_LOG_LOW, "s1101 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
-	// setupSignalHandler( this );
 
 	JagNet::socketStartup();
 
@@ -538,18 +497,8 @@ int JagDBServer::main(int argc, char**argv)
 	resetRegSpLog();
 	raydebug(stdout, JAG_LOG_LOW, "s1104 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
 
-	// server can take real commands from clients
-	/***
-	createSocket( argc, argv );
-	raydebug(stdout, JAG_LOG_LOW, "Initialized listening socket\n" );
-	makeThreadGroups();
-	raydebug(stdout, JAG_LOG_LOW, "Created socket thread groups\n" );
-	raydebug(stdout, JAG_LOG_LOW, "s1105 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
-	**/
-	
 	mainInit( argc, argv );
 	raydebug(stdout, JAG_LOG_LOW, "s1106 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
-
 
 	printResources();
 	_serverReady = true;
@@ -578,8 +527,6 @@ int JagDBServer::main(int argc, char**argv)
 		}
 		jaguar_mutex_unlock ( &g_dlogmutex );
 
-		// purgeLog( seq );
-		// checkPoint( seq );
 		++seq;
 		if ( seq >= ULLONG_MAX ) { seq = 0; }
 		jagmalloc_trim(0);
@@ -610,7 +557,6 @@ void JagDBServer::addTask(  uabaxint taskID, JagSession *session, const char *me
 			ulongToString( pthread_self() ).c_str(), session->uid.c_str(), session->dbname.c_str(), time(NULL), sbuf );
 
 	session->servobj->_taskMap->addKeyValue( taskID, AbaxString(buf) );
-	//printf("s5823 add task=[%lld]\n", taskID );
 }
 
 // static
@@ -664,7 +610,6 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 		}
 		JagParseParam *pparam[len];
 		for ( int i = 0; i < len; ++i ) {
-			//pparam[i] = new JagParseParam();
 			pparam[i] = newObject<JagParseParam>();
 		}
 		// batch insert, put in server _insertBuffer, and return ED without update map
@@ -693,7 +638,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 			// if is gate, do not store data locally
 		}
 
-		// todo: sync command to other data-centers
+		// sync command to other data-centers
 		if ( req.dorep ) {
 			JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
 			for ( int i = 0; i < len; ++i ) {
