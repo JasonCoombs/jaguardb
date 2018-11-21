@@ -2736,34 +2736,6 @@ int JagParser::setInsertVector()
 				_saveptr = q+1;
 				q = _saveptr;
 				other.valueData = longToStr( time(NULL) );
-			/*****
-			} else if ( strncasecmp( p, "tosecond(", 9 )==0 ) {
-				while (*p != '(' ) ++p; // p->(
-				++p;  // (p
-				q = p;
-				while (*q != ')' && *q != '\0' ) ++q;
-				if ( *q == '\0' ) return -2379;
-				// q-> )
-				*q = '\0';
-				abaxint num = convertToMicroSecond(p);
-				*q = ')';
-				_saveptr = q+1;
-				q = _saveptr;
-				other.valueData = longToStr( num );
-			} else if ( strncasecmp( p, "tomicrosecond(", 14 )==0 ) {
-				while (*p != '(' ) ++p; // p->(
-				++p;  // (p
-				q = p;
-				while (*q != ')' && *q != '\0' ) ++q;
-				if ( *q == '\0' ) return -2379;
-				// q-> )
-				*q = '\0';
-				abaxint num = convertToMicroSecond(p);
-				*q = ')';
-				_saveptr = q+1;
-				q = _saveptr;
-				other.valueData = longToStr( num );
-			*********/
 			} else {
 				other.valueData = "";
 				other.type = "";

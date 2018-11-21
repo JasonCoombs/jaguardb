@@ -1,0 +1,23 @@
+dropped=JagZlibCompress.o
+OBJS=JagRecord.o  JagClassInit.o murmur.o JagColumn.o \
+     JagStrSplit.o JagStrSplitWithQuote.o JagMutex.o JagReplicateBackup.o JaguarCPPClient.o \
+	 JagCfg.o  JagSingleBuffReader.o JagBuffReader.o JagMergeReaderBase.o JagMergeReader.o JagMergeBackReader.o \
+	 JagFileMgr.o JagNet.o  jaghashtable.o JagMD5lib.o   \
+	 JagSchema.o JagTableSchema.o JagParseExpr.o JagParseParam.o \
+	 JagParser.o JagSchemaRecord.o JagTime.o \
+	 JagNodeMgr.o JagDBConnector.o JagIndexString.o JagFixString.o  \
+	 JagTable.o  JagIndex.o JagIndexSchema.o \
+	 JagUserID.o JagTextFileBuffReader.o JagUUID.o \
+	 JagBlockLock.o JagThreadPool.o JDFS.o JDFSMgr.o \
+	 JagSingleBuffWriter.o JagBuffWriter.o JagUtil.o JagSystem.o JagDataAggregate.o \
+	 JagNode.o JagFixKV.o JagSession.o JaguarAPI.o JagHashLock.o JagServerObjectLock.o JagDBServer.o \
+	 JagBuffBackReader.o JagParallelParse.o JagDiskArrayBase.o  JagDiskArrayClient.o JagDiskArrayServer.o \
+	 JagDiskArrayFamily.o JagMemDiskSortArray.o \
+	 JagLang.o JagBoundFile.o JagLocalDiskHash.o JagSingleMergeReader.o \
+	 JagFastCompress.o JagSQLFileBuffReader.o JagSQLMergeReader.o JagDBMap.o \
+	 JagFixKeyChecker.o JagFixHashArray.o JagFixGapVector.o JagFixBlock.o \
+	 JagIPACL.o JagDiskKeyChecker.o JagFamilyKeyChecker.o JagDBLogger.o base64.o \
+	 JagUserRole.o JagGeom.o JagHashStrInt.o JagTableOrIndexAttrs.o AbaxCStr.o \
+	 JagHashStrStr.o  JagMinMax.o JagLineFile.o JagRange.o JagServer.o jagcrypt.o
+
+
