@@ -90,51 +90,25 @@ AbaxDataString longToStr( abaxint i );
 AbaxDataString doubleToStr( double f );
 AbaxDataString doubleToStr( double f, int maxlen, int sig );
 AbaxDataString longDoubleToStr( abaxdouble f );
-
 int jagsprintfLongDouble( int mode, bool fill, char *buf, abaxdouble i, abaxint maxlen );
-// int jagfprintfLongDouble( bool fill, FILE *buf, abaxdouble i );
-//int jagfprintfLongDoubleSig( bool fill, FILE *buf, abaxdouble f, int sig );
-//int jagsprintfLongDouble2( bool fill, char *buf, abaxdouble i, int sig );
-
 abaxint getNearestBlockMultiple( abaxint value );
 abaxint getBuffReaderWriterMemorySize( abaxint value ); // max as 1024 ( MB ), value and return in MB
-
-/***
-// int convertDateTimeFormat( int tzdiff, char *outbuf, const char *inbuf, const int offset, const int length, bool isnano=false );
-int convertDateTimeFormat( const JagParseAttribute &jpa, char *outbuf, const char *inbuf, const int offset, const int length, bool isnano=false );
-int convertDateFormat( char *outbuf, const char *inbuf, const int offset, const int length );
-int convertTimeFormat( char *outbuf, const char *inbuf, const int offset, const int length, bool isnano=false );
-***/
 
 bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf, AbaxDataString &errmsg, const AbaxDataString &name, 
 	const int offset, const int length, const int sig, const AbaxDataString &type );
 
 void dbNaturalFormatExchange( char *buffer, int numKeys, const JagSchemaAttribute *attrs=NULL, 
 	int offset=0, int length=0, const AbaxDataString &type=" " );
-	/**
-void dbNaturalFormatExchange( char *buffer, int numKeys, const JagSchemaAttribute *attrs, 
-	int offset, int length, const AbaxDataString &type );
-	**/
 
 void dbNaturalFormatExchange( char *buffers[], int num, int numKeys[], const JagSchemaAttribute *attrs[] );
 void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schAttr, 
 	int offset, int length, const AbaxDataString &type );
-
-/***
-void convertDateTimeToLocalStr( const AbaxDataString& instr, AbaxDataString& outstr, bool isnano=false );
-void convertDateToStr( const AbaxDataString& instr, AbaxDataString& outstr );
-void convertTimeToStr( const AbaxDataString& instr, AbaxDataString& outstr, bool isnano=false );
-***/
 
 AbaxDataString filePathFromFD( int fd );
 AbaxDataString makeUpperString( const AbaxDataString &str );
 AbaxDataString makeLowerString( const AbaxDataString &str );
 AbaxDataString removeCharFromString( const AbaxDataString &str, char dropc );
 AbaxFixString makeUpperOrLowerFixString( const AbaxFixString &str, bool isUpper );
-/***
-AbaxFixString getValueFromTimeOrDate( const JagParseAttribute &jpa, const AbaxFixString &str, 
-							const AbaxFixString &str2, int op, const AbaxDataString &ddif );
-***/
 AbaxDataString trimChar( const AbaxDataString &str, char c );
 AbaxDataString trimHeadChar( const AbaxDataString &str, char c );
 AbaxDataString trimTailChar( const AbaxDataString &str, char c='\n' );
@@ -172,20 +146,6 @@ const char *strcasestr(const char *s1, const char *s2);
 int jagftruncate( int fd, off_t length );
 #endif
 void jagsleep( abaxint time, int mode );
-
-// get GMT time in microseconds from a string
-// str:   yyyy-mm-dd hh:mm:ss[.ffffff] if is nano, [.fffffffff]
-// abaxint getDateTimeFromStr( int tzdiffmin, const char *str, bool isnano=false );
-//abaxint getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, bool isnano=false );
-
-// get time in microseconds from a string
-// str:   hh:mm:ss[.ffffff] if isnano, [.fffffffff]
-//abaxint getTimeFromStr( const char *str, bool isnano=false );
-
-// get GMT time in microseconds from a string
-// instr:   yyyy-mm-dd yyyy-d-d   outstr: yyyymmdd
-//bool getDateFromStr( const char *instr, char *outstr );
-
 bool lastStrEqual( const char *bigstr, const char *smallstr, int lenbig, int lensmall );
 bool isInteger( const AbaxDataString &dtype );
 bool isDateTime( const AbaxDataString &dtype );
@@ -213,14 +173,11 @@ int checkColumnTypeMode( const AbaxDataString &type );
 
 AbaxDataString formOneColumnNaturalData( const char *buf, abaxint offset, abaxint length, const AbaxDataString &type );
 void printParseParam( JagParseParam *parseParam );
-//AbaxDataString printCharWithEscapeSequence( char p );
 int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], JagParseParam *parseParam,
 	const JagVector<SetHdrAttr> &spa, AbaxDataString &newhdr, AbaxDataString &gbvhdr,
 	abaxint &finalsendlen, abaxint &gbvsendlen, bool needGbvs=true );
 int checkGroupByValidation( const JagParseParam *parseParam );
 int checkAndReplaceGroupByAlias( JagParseParam *parseParam );
-// void rebuildCommandWithDBName( const char *mesg, const JagParseParam &parseParam, AbaxDataString &cmd );
-
 void convertToHashMap( const AbaxDataString &kvstr, char sep, JagHashMap<AbaxString, AbaxString> &hashmap );
 void changeHome( AbaxDataString &fpath );
 int jaguar_mutex_lock(pthread_mutex_t *mutex);

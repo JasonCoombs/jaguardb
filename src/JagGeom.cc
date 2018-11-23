@@ -23,6 +23,8 @@
 #include <GeographicLib/Gnomonic.hpp>
 #include <GeographicLib/Geodesic.hpp>
 #include <GeographicLib/Geocentric.hpp>
+#include <GeographicLib/PolygonArea.hpp>
+#include <GeographicLib/Constants.hpp>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 #include <JaguarCPPClient.h>
@@ -623,12 +625,18 @@ bool JagGeo::doPoint3DWithin( const JagStrSplit &sp1, const AbaxDataString &mk2,
 	return false;
 }
 
+double JagGeo::doCircleArea( int srid1, const JagStrSplit &sp1 )
+{
+	//double px0 = jagatof( sp1[0].c_str() ); 
+	//double py0 = jagatof( sp1[1].c_str() ); 
+	double r = jagatof( sp1[2].c_str() ); 
+	return r * r * JAG_PI;
+}
 bool JagGeo::doCircleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[0].c_str() ); 
 	double py0 = jagatof( sp1[1].c_str() ); 
-
 	double pr0 = jagatof( sp1[2].c_str() ); 
 	pr0 = meterToLon( srid2, pr0, px0, py0);
 
@@ -1817,6 +1825,67 @@ bool JagGeo::doPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStr
 	}
 	return false;
 }
+
+double JagGeo::doMultiPolygonArea( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+{
+   	int start = 0;
+   	if ( mk1 == JAG_OJAG ) { start = 1; }
+    double dx, dy;
+    const char *str;
+    char *p;
+	bool skip = false;
+	double area = 0.0;
+
+	if ( 0 == srid1 ) {
+    	JagVector<std::pair<double,double>> vec;
+    	for ( int i=start; i < sp1.length(); ++i ) {
+    		if ( sp1[i] == "|" ) {  skip = true; }
+    		else if ( sp1[i] == "!" ) { 
+    			skip = false; 
+    			// saw new start, computer current area and add to sum
+    			area += computePolygonArea( vec );
+    			vec.clean(); 
+    		} else {
+    			if ( skip ) continue;
+        		str = sp1[i].c_str();
+        		if ( strchrnum( str, ':') < 1 ) continue;
+        		get2double(str, p, ':', dx, dy );
+    			vec.append(std::make_pair(dx, dy));
+    		}
+    	}
+    
+    	if ( vec.size() > 0 ) {
+    		area += computePolygonArea( vec );
+    	}
+	} else if ( JAG_GEO_WGS84 == srid1 ) {
+		// qwer
+		const Geodesic& geod = Geodesic::WGS84();
+		PolygonArea poly(geod);
+		double perim, ar;
+    	for ( int i=start; i < sp1.length(); ++i ) {
+    		if ( sp1[i] == "|" ) {  skip = true; }
+    		else if ( sp1[i] == "!" ) { 
+    			skip = false; 
+    			// saw new start, computer current area and add to sum
+				poly.Compute( false, true, perim, ar );
+    			area += ar;
+    			poly.Clear(); 
+    		} else {
+    			if ( skip ) continue;
+        		str = sp1[i].c_str();
+        		if ( strchrnum( str, ':') < 1 ) continue;
+        		get2double(str, p, ':', dx, dy );
+				poly.AddPoint( dx, dy );
+    		}
+    	}
+    
+		poly.Compute( false, true, perim, ar );
+   		area += ar;
+	}
+
+	return area;
+}
+
 
 bool JagGeo::doMultiPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
 								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
@@ -6640,6 +6709,11 @@ bool JagGeo::doCircleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 	return false;
 }
 
+double JagGeo::doCircle3DArea( int srid1, const JagStrSplit &sp1 )
+{
+	double r = jagatof( sp1[3].c_str() ); 
+	return r * r * JAG_PI;
+}
 // circle surface with x y z and orientation
 bool JagGeo::doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
@@ -6755,6 +6829,18 @@ bool JagGeo::doSphereIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 		return ellipsoidIntersectCone( px0, py0, pz0, pr0,pr0,pr0,0.0,0.0,  x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
+}
+
+double JagGeo::doSquareArea( int srid1, const JagStrSplit &sp1 )
+{
+	double a = jagatof( sp1[2].c_str() ); 
+	return (a*a*4.0);
+}
+
+double JagGeo::doSquare3DArea( int srid1, const JagStrSplit &sp1 )
+{
+	double a = jagatof( sp1[3].c_str() ); 
+	return (a*a*4.0);
 }
 
 // 2D
@@ -9684,6 +9770,63 @@ bool JagGeo::doLineString3DIntersect( const AbaxDataString &mk1, int srid1, cons
 	return false;
 }
 
+double JagGeo::doPolygonArea( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+{
+	int start = 0;
+	if ( mk1 == JAG_OJAG ) { start = 1; }
+	double dx, dy;
+	const char *str;
+	char *p;
+	double area = 0.0;
+	if ( 0 == srid1 ) {
+    	JagVector<std::pair<double,double>> vec;
+    	for ( int i=start; i < sp1.length(); ++i ) {
+        	// line: x10, y10 --> x20, y20 
+    		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
+    		str = sp1[i].c_str();
+    		if ( strchrnum( str, ':') < 1 ) continue;
+    		get2double(str, p, ':', dx, dy );
+    		vec.append( std::make_pair(dx,dy) );
+    	}
+    	area = computePolygonArea( vec );
+	} else if ( JAG_GEO_WGS84 == srid1 ) {
+		const Geodesic& geod = Geodesic::WGS84();
+		PolygonArea poly(geod);
+		double perim, ar;
+    	for ( int i=start; i < sp1.length(); ++i ) {
+    		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
+    		str = sp1[i].c_str();
+    		if ( strchrnum( str, ':') < 1 ) continue;
+    		get2double(str, p, ':', dx, dy );
+			poly.AddPoint( dx, dy );
+    	}
+		poly.Compute( false, true, perim, ar );
+   		area += ar;
+	} 
+	return area;
+}
+
+double JagGeo::computePolygonArea( const JagVector<std::pair<double,double>> &vec )
+{
+	int n = vec.size();
+	double x[n+2];
+	double y[n+2];
+	for ( int i=0; i < n; ++i ) {
+		x[i+1] = vec[i].first;
+		y[i+1] = vec[i].second;
+	}
+
+    // e.g. n=3:
+	// y0 y1 y2 y3 y4
+	//    22 33 72 
+	y[0] = y[n];
+	y[n+1] = y[1];
+	double area = 0.0;
+	for ( int i = 1; i <= n; ++i ) {
+		area += fabs( x[i] * ( y[i+1] - y[i-1]) )/2.0;
+	}
+	return area;
+}
 
 bool JagGeo::doPolygonIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
@@ -10633,7 +10776,7 @@ void JagGeo::transform2DDirection( double nx1, double nx2, double &nx )
 
 void JagGeo::samplesOn2DCircle( double x0, double y0, double r, int num, JagVector<JagPoint2D> &samples )
 {
-	double delta = 2*PI/(double)num;
+	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0, x, y;
 	for ( int i=0; i < num; ++i ) {
 		x = r*cos(alpha) + x0;
@@ -10645,7 +10788,7 @@ void JagGeo::samplesOn2DCircle( double x0, double y0, double r, int num, JagVect
 
 void JagGeo::samplesOn3DCircle( double x0, double y0, double z0, double r, double nx, double ny, int num, JagVector<JagPoint3D> &samples )
 {
-	double delta = 2*PI/(double)num;
+	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0;
 	double x,y,z, gx, gy, gz;
 	for ( int i=0; i < num; ++i ) {
@@ -10660,7 +10803,7 @@ void JagGeo::samplesOn3DCircle( double x0, double y0, double z0, double r, doubl
 
 void JagGeo::samplesOn2DEllipse( double x0, double y0, double a, double b, double nx, int num, JagVector<JagPoint2D> &samples )
 {
-	double delta = 2*PI/(double)num;
+	double delta = 2*JAG_PI/(double)num;
 	double t = 0.0;
 	double x,y, gx, gy;
 	for ( int i=0; i < num; ++i ) {
@@ -10682,8 +10825,8 @@ void JagGeo::samplesOnEllipsoid( double x0, double y0, double z0, double a, doub
 		u: 0-2PI     v: 0-PI
 	***/
 	if ( num < 1 ) return;
-	double deltau = 2*PI/(double)num;
-	double deltav = PI/(double)num;
+	double deltau = 2*JAG_PI/(double)num;
+	double deltav = JAG_PI/(double)num;
 	double u = 0.0;
 	double v = 0.0;
 	double x,y, z, gx, gy, gz;
@@ -10704,7 +10847,7 @@ void JagGeo::samplesOnEllipsoid( double x0, double y0, double z0, double a, doub
 void JagGeo::sampleLinesOnCone( double x0, double y0, double z0, double r, double h, 
 								double nx, double ny, int num, JagVector<JagLine3D> &samples )
 {
-	double delta = 2*PI/(double)num;
+	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0;
 	double x,y,z, gx, gy, gz;
 	JagLine3D line;
@@ -10727,7 +10870,7 @@ void JagGeo::sampleLinesOnCone( double x0, double y0, double z0, double r, doubl
 void JagGeo::sampleLinesOnCylinder( double x0, double y0, double z0, double r, double h, 
 								    double nx, double ny, int num, JagVector<JagLine3D> &samples )
 {
-	double delta = 2*PI/(double)num;
+	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0;
 	double x,y,z, gx, gy, gz;
 	JagLine3D line;
@@ -14533,6 +14676,12 @@ bool JagGeo::doCircle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 	return false;
 }
 
+double JagGeo::doSphereArea( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[2].c_str() ); 
+	return r * r * 4.0 * JAG_PI;
+}
+
 bool JagGeo::doSphereDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
@@ -14702,6 +14851,12 @@ bool JagGeo::doSquare3DDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 
 }
 
+double JagGeo::doCubeArea( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[3].c_str() ); 
+	return (r*r*24.0);  // 2r*2r*6
+}
+
 bool JagGeo::doCubeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
@@ -14757,6 +14912,19 @@ bool JagGeo::doCubeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, 
 		return boxDistanceCone( srid, px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, r, h, nx,ny, arg, dist );
 	}
 	return false;
+}
+
+double JagGeo::doRectangleArea( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[2].c_str() ); 
+	double b = jagatof( sp1[3].c_str() ); 
+	return a*b* 4.0;
+}
+double JagGeo::doRectangle3DArea( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[3].c_str() ); 
+	double b = jagatof( sp1[4].c_str() ); 
+	return a*b* 4.0;
 }
 
 bool JagGeo::doRectangleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
@@ -14867,6 +15035,15 @@ bool JagGeo::doRectangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit
 	return false;
 }
 
+double JagGeo::doBoxArea( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[3].c_str() ); 
+	double b = jagatof( sp1[4].c_str() ); 
+	double c = jagatof( sp1[5].c_str() ); 
+	return  (a*b + b*c + c*a ) * 8.0;
+	// ( 2a*2b + 2b*2c + 2a*2c )*2 
+}
+
 bool JagGeo::doBoxDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
@@ -14926,6 +15103,17 @@ bool JagGeo::doBoxDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, c
 	return false;
 }
 
+double JagGeo::doTriangleArea( int srid1, const JagStrSplit& sp1 )
+{
+	double Ax = jagatof( sp1[0].c_str() );
+	double Ay = jagatof( sp1[1].c_str() );
+	double Bx = jagatof( sp1[2].c_str() );
+	double By = jagatof( sp1[3].c_str() );
+	double Cx = jagatof( sp1[4].c_str() );
+	double Cy = jagatof( sp1[5].c_str() );
+	return fabs( Ax*(By-Cy) + Bx*(Cy-Ay) + Cx*(Ay-By))/2.0;
+}
+
 bool JagGeo::doTriangleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
@@ -14976,6 +15164,20 @@ bool JagGeo::doTriangleDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 		return triangleDistancePolygon( srid, x10, y10, x20, y20, x30, y30, mk2, sp2, arg, dist );
 	}
 	return false;
+}
+
+double JagGeo::doTriangle3DArea( int srid1, const JagStrSplit& sp1 )
+{
+	double x1 = jagatof( sp1[0].c_str() );
+	double y1 = jagatof( sp1[1].c_str() );
+	double z1 = jagatof( sp1[2].c_str() );
+	double x2 = jagatof( sp1[3].c_str() );
+	double y2 = jagatof( sp1[4].c_str() );
+	double z2 = jagatof( sp1[5].c_str() );
+	double x3 = jagatof( sp1[6].c_str() );
+	double y3 = jagatof( sp1[7].c_str() );
+	double z3 = jagatof( sp1[8].c_str() );
+	return sqrt( jagsq2(x2*y3-x3*y2) + jagsq2(x3*y1-x1*y3) + jagsq2(x1*y2-x2*y1) )/2.0;
 }
 
 bool JagGeo::doTriangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
@@ -15038,6 +15240,13 @@ bool JagGeo::doTriangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit&
 	return false;
 }
 
+double JagGeo::doCylinderArea( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[3].c_str() ); 
+	double c = jagatof( sp1[4].c_str() ); 
+	return r*r*JAG_PI *c*2.0;
+}
+
 bool JagGeo::doCylinderDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
@@ -15095,6 +15304,15 @@ bool JagGeo::doCylinderDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 		return cylinderDistanceCone( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
+}
+
+double JagGeo::doConeArea( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[3].c_str() ); 
+	double c = jagatof( sp1[4].c_str() ); 
+	double R = r * 2.0;
+	double h = c * 2.0;
+	return JAG_PI * R * ( R + sqrt( h*h+ R*R) );
 }
 
 bool JagGeo::doConeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
@@ -15155,6 +15373,19 @@ bool JagGeo::doConeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, 
 	return false;
 }
 
+double JagGeo::doEllipseArea( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[2].c_str() ); 
+	double b = jagatof( sp1[3].c_str() ); 
+	return a*b*JAG_PI;
+}
+double JagGeo::doEllipse3DArea( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[3].c_str() ); 
+	double b = jagatof( sp1[4].c_str() ); 
+	return a*b*JAG_PI;
+}
+
 bool JagGeo::doEllipseDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
@@ -15204,6 +15435,21 @@ bool JagGeo::doEllipseDistance(const AbaxDataString& mk1,  const JagStrSplit& sp
 		return ellipseDistancePolygon( srid, px0, py0, a0, b0, nx0, mk2, sp2, arg, dist );
 	}
 	return false;
+}
+
+double JagGeo::doEllipsoidArea( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[3].c_str() ); 
+	double b = jagatof( sp1[4].c_str() ); 
+	double c = jagatof( sp1[5].c_str() ); 
+	double p=1.6075; // Knud Thomsen approximation formula
+	double ap = pow(a, p);
+	double bp = pow(b, p);
+	double cp = pow(b, p);
+	double f = ( ap*(bp+cp)+bp*cp)/3.0;
+	f = pow(f, 1.0/p);
+	return 4.0*JAG_PI*f ;
+
 }
 
 bool JagGeo::doEllipsoidDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,

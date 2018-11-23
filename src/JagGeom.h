@@ -22,6 +22,7 @@
 #include <JagDef.h>
 #include <JagVector.h>
 #include <JagUtil.h>
+//#include <vector>
 
 #define jagmin(a, b) ( (a) < (b) ? (a) : (b))
 #define jagmax(a, b) ( (a) > (b) ? (a) : (b))
@@ -30,7 +31,7 @@
 #define jagsq2(a) ( (a)*(a) )
 #define jagIsPosZero(a) (((a)<ZERO) ? 1 : 0)
 #define jagIsZero(a) (( fabs(a)<ZERO) ? 1 : 0)
-#define PI 3.141592653589793
+#define JAG_PI 3.141592653589793
 
 class JagNameIndex;
 
@@ -1125,6 +1126,25 @@ class JagGeo
                                     double x0, double y0, double z0,
                                     double a, double b, double c, double nx, double ny, bool strict );
 
+	// 2D area or 3D surface area
+   	static double doCircleArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doCircle3DArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doSphereArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doSquareArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doSquare3DArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doCubeArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doRectangleArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doRectangle3DArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doBoxArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doTriangleArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doTriangle3DArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doCylinderArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doConeArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doEllipseArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doEllipse3DArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doEllipsoidArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doMultiPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
 
 
 	/*****
@@ -1892,6 +1912,8 @@ class JagGeo
 
     static double meterToLon( int srid, double meter, double lon, double lat);
     static double meterToLat( int srid, double meter, double lon, double lat);
+	static double computePolygonArea( const JagVector<std::pair<double,double>> &vec );
+
 
 
 };  // end of class JagGeo

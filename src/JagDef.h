@@ -20,7 +20,7 @@
 #define _jag_def_h_
 
 // version
-#define JAG_VERSION			"2.9.4.4"
+#define JAG_VERSION			"2.9.4.5"
 #define JAG_BRAND			"jaguar"
 
 // File Defs
@@ -413,13 +413,14 @@
 #define JAG_FUNC_CONTAIN	    204  // T or F
 #define JAG_FUNC_INTERSECT	    206  // T or F
 #define JAG_FUNC_OVERLAP	    208  // T or F
-#define JAG_FUNC_BBOX	        210  // bouding box coordinates
+#define JAG_FUNC_BBOX	        210  // bounding box coordinates
 #define JAG_FUNC_KM2MILE	    220  // km2mile(km)
 #define JAG_FUNC_MILE2KM 	    222  // mile2km(miles)
 #define JAG_FUNC_COVER 	        224  // 1 or 0
 #define JAG_FUNC_COVEREDBY 	    226  // 1 or 0
 #define JAG_FUNC_DISJOINT 	    228  // 1 or 0
 #define JAG_FUNC_NEARBY 	    230  // 1 or 0
+#define JAG_FUNC_AREA 	        232  // area of 2D closed shape
 
 
 // multi-line data ( string functions )

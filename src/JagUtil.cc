@@ -3582,8 +3582,8 @@ bool jagisspace( char c)
 // output:  "34.2"  "3445"
 AbaxDataString trimEndZeros( const AbaxDataString& str )
 {
+	if ( ! strchr( str.c_str(), '.') ) return str;
 	AbaxDataString res;
-	//prt(("u2001 trimEndZeros str=[%s]\n", str.c_str() ));
 
 	// skip leading zeros
 	int len = str.size();

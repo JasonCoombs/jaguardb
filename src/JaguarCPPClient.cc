@@ -7408,61 +7408,8 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		hostkstr.point( kstr );
 	}
 
-	/////////////////////////////////////////////////////////////
-	// filevec
-	//ii = -1;
-	// for ( int i = 0; i < numCols; ++i ) 
-	#if 0
-	for ( int i = 0; i < parseParam.otherVec.size(); ++i ) {
-		colName = parseParam.otherVec[i].objName.colName;
-		if ( parseParam.inscolmap.getValue(colName.c_str(), getpos) ) {
-			prt(("s2435 got parseParam.inscolmap.getValue(%s getpos=%d)\n", colName.c_str(), getpos ));
-			colData = parseParam.otherVec[getpos].valueData;
-		} else {
-			prt(("s2436 error parseParam.inscolmap.getValue(%s getpos)\n", colName.c_str() ));
-			//continue;
-			colData = "";
-		}
-
-		if ( (*objAttr->schemaRecord.columnVector)[getpos].spare[1] == JAG_C_COL_TYPE_FILE_CHAR && filevec ) {
-				// for file object, parse and get the filename only 
-				if ( _debug ) { prt(("c7202 colData=[%s]\n", colData.c_str() )); }
-				AbaxDataString oripath = colData;
-				const char *lp = strrchr( colData.c_str(), '/' );
-				if ( lp ) { colData = lp+1; }
-				if ( _datcSrcType != JAG_DATACENTER_GATE ) {
-					// rewrite filepath if called by datacenter client in jaguarserver
-					if ( _isDataCenterSync ) {
-						AbaxDataString hdir = fileHashDir( kstr );
-						oripath = jaguarHome() + "/data/" + parseParam.objectVec[0].dbName + "/" 
-								+ parseParam.objectVec[0].tableName + "/files/" + hdir + "/" + colData;
-					}
-
-					if ( oripath.size() > 0 ) {
-						oripath = expandEnvPath( oripath );
-						filevec->append( oripath );
-					} else {
-						filevec->append( "." );
-					}
-
-					if ( oripath.size() > 0 ) {
-						if ( 0 !=  access( oripath.c_str(), R_OK ) ) {
-    						_mapLock->readUnlock( -1 );
-    						errmsg = AbaxDataString("E7102 File ") + colData + " cannot be open";
-							if ( _debug ) { prt(("c5202 errmsg=[%s]\n", errmsg.c_str() )); }
-    						return 0;
-						}
-					} 
-				}
-		}
-	}
-	////////////////////////////////////////////////////////////
-	#endif
-
-
 	//prt(("c2009 addQueryToCmdhosts parseParam.opcode=%d\n", parseParam.opcode ));
     addQueryToCmdhosts( parseParam, hostkstr, objAttr, hosts, cmdhosts, newquery );
-	//prt(("c8270 after addQueryToCmdhosts newquery=[%s]\n", newquery.c_str() ));
 
 	_mapLock->readUnlock( -1 );
 	return 1;
