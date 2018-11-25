@@ -23,7 +23,7 @@
 #include <JagTime.h>
 #include <JagStrSplit.h>
 #include <JagFastCompress.h>
-#include <jagcrypt.h>
+#include <JagCrypt.h>
 
 JagReplicateBackup::JagReplicateBackup( int timeout, int retrylimit )
 { 

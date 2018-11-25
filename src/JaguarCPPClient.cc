@@ -68,7 +68,7 @@
 #include <JagUserRole.h>
 #include <JagGeom.h>
 #include <JagLineFile.h>
-#include <jagcrypt.h>
+#include <JagCrypt.h>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"

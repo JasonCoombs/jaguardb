@@ -28,18 +28,15 @@
 #include <sys/stat.h>
 
 #include <abax.h>
-#include <jagcrypt.h>
+#include <JagCrypt.h>
 #include <JagStrSplit.h>
 #include <JagMD5lib.h>
 #include <JagNet.h>
 #include <base64.h>
-
 #include <JagMD5lib.h>
 #include <JagStrSplit.h>
-//#include "JagLicense.h"
 #include "JagFileMgr.h"
 #include "JagUtil.h"
-#include "jagcrypt.h"
 
 
 // zfc: zi fu chuan: string

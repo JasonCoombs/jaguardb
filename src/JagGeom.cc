@@ -1834,53 +1834,71 @@ double JagGeo::doMultiPolygonArea( const AbaxDataString &mk1, int srid1, const J
     const char *str;
     char *p;
 	bool skip = false;
-	double area = 0.0;
-
+	double ar, area = 0.0;
+	int ring = 0;
 	if ( 0 == srid1 ) {
     	JagVector<std::pair<double,double>> vec;
     	for ( int i=start; i < sp1.length(); ++i ) {
-    		if ( sp1[i] == "|" ) {  skip = true; }
-    		else if ( sp1[i] == "!" ) { 
-    			skip = false; 
-    			// saw new start, computer current area and add to sum
-    			area += computePolygonArea( vec );
-    			vec.clean(); 
-    		} else {
-    			if ( skip ) continue;
+    		if ( sp1[i] == "!" || sp1[i] == "|" ) { 
+    			ar = computePolygonArea( vec );
+				if ( 0 == ring ) {
+    				area += ar;
+				} else {
+    				area -= ar;
+				}
+				vec.clean();
+				if ( sp1[i] == "!" ) { ring = 0;}
+				else { ++ring; }
+			} else {
         		str = sp1[i].c_str();
         		if ( strchrnum( str, ':') < 1 ) continue;
         		get2double(str, p, ':', dx, dy );
     			vec.append(std::make_pair(dx, dy));
     		}
-    	}
+		}
     
     	if ( vec.size() > 0 ) {
-    		area += computePolygonArea( vec );
+    		ar = computePolygonArea( vec );
+			if ( 0 == ring ) {
+    			area += ar;
+			} else {
+    			area -= ar;
+			}
     	}
 	} else if ( JAG_GEO_WGS84 == srid1 ) {
-		// qwer
 		const Geodesic& geod = Geodesic::WGS84();
 		PolygonArea poly(geod);
-		double perim, ar;
+		double perim;
+		int numPoints = 0;
     	for ( int i=start; i < sp1.length(); ++i ) {
-    		if ( sp1[i] == "|" ) {  skip = true; }
-    		else if ( sp1[i] == "!" ) { 
-    			skip = false; 
-    			// saw new start, computer current area and add to sum
+    		if ( sp1[i] == "!" || sp1[i] == "|" ) { 
 				poly.Compute( false, true, perim, ar );
-    			area += ar;
+				if ( 0 == ring ) {
+    				area += ar;
+				} else {
+    				area -= ar;  // hole
+				}
     			poly.Clear(); 
-    		} else {
-    			if ( skip ) continue;
+				numPoints = 0;
+				if ( sp1[i] == "!" ) { ring = 0;}
+				else { ++ring; }
+			} else {
         		str = sp1[i].c_str();
         		if ( strchrnum( str, ':') < 1 ) continue;
         		get2double(str, p, ':', dx, dy );
 				poly.AddPoint( dx, dy );
+				++numPoints;
     		}
-    	}
+		}
     
-		poly.Compute( false, true, perim, ar );
-   		area += ar;
+    	if ( numPoints > 0 ) {
+			poly.Compute( false, true, perim, ar );
+			if ( 0 == ring ) {
+    			area += ar;
+			} else {
+    			area -= ar;
+			}
+    	}
 	}
 
 	return area;
@@ -9777,31 +9795,68 @@ double JagGeo::doPolygonArea( const AbaxDataString &mk1, int srid1, const JagStr
 	double dx, dy;
 	const char *str;
 	char *p;
-	double area = 0.0;
+	double ar, area = 0.0;
+	int ring = 0; // n-th ring in polygon
 	if ( 0 == srid1 ) {
     	JagVector<std::pair<double,double>> vec;
     	for ( int i=start; i < sp1.length(); ++i ) {
-        	// line: x10, y10 --> x20, y20 
-    		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
+    		if ( sp1[i] == "!" ) break; // should not happen
+    		if ( sp1[i] == "|" ) {
+    			ar = computePolygonArea( vec );
+				if ( 0 == ring ) {
+    				area = ar;
+				} else {
+    				area -= ar;
+				}
+				vec.clean();
+				++ring;
+			}
     		str = sp1[i].c_str();
     		if ( strchrnum( str, ':') < 1 ) continue;
     		get2double(str, p, ':', dx, dy );
     		vec.append( std::make_pair(dx,dy) );
     	}
-    	area = computePolygonArea( vec );
+
+		if ( vec.size() > 0 ) {
+    		ar = computePolygonArea( vec );
+			if ( 0 == ring ) {
+    			area = ar;
+			} else {
+    			area -= ar;
+			}
+		}
 	} else if ( JAG_GEO_WGS84 == srid1 ) {
 		const Geodesic& geod = Geodesic::WGS84();
 		PolygonArea poly(geod);
-		double perim, ar;
+		int numPoints = 0;
+		double perim;
     	for ( int i=start; i < sp1.length(); ++i ) {
-    		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
+    		if ( sp1[i] == "!" ) break;
+    		if ( sp1[i] == "|" ) {
+				poly.Compute( false, true, perim, ar );
+				if ( 0 == ring ) {
+    				area = ar;
+				} else {
+    				area -= ar;
+				}
+				poly.Clear();
+				numPoints = 0;
+			} 
     		str = sp1[i].c_str();
     		if ( strchrnum( str, ':') < 1 ) continue;
     		get2double(str, p, ':', dx, dy );
 			poly.AddPoint( dx, dy );
+			++numPoints;
     	}
-		poly.Compute( false, true, perim, ar );
-   		area += ar;
+
+		if ( numPoints > 0 ) {
+			poly.Compute( false, true, perim, ar );
+			if ( 0 == ring ) {
+    			area = ar;
+			} else {
+    			area -= ar;
+			}
+		}
 	} 
 	return area;
 }

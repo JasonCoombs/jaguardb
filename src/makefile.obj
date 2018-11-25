@@ -18,6 +18,6 @@ OBJS=JagRecord.o  JagClassInit.o murmur.o JagColumn.o \
 	 JagFixKeyChecker.o JagFixHashArray.o JagFixGapVector.o JagFixBlock.o \
 	 JagIPACL.o JagDiskKeyChecker.o JagFamilyKeyChecker.o JagDBLogger.o base64.o \
 	 JagUserRole.o JagGeom.o JagHashStrInt.o JagTableOrIndexAttrs.o AbaxCStr.o \
-	 JagHashStrStr.o  JagMinMax.o JagLineFile.o JagRange.o JagServer.o jagcrypt.o
+	 JagHashStrStr.o  JagMinMax.o JagLineFile.o JagRange.o JagServer.o JagCrypt.o
 
 

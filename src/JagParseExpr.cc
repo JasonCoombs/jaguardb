@@ -755,6 +755,11 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 	int numAdded[numCols];
 	for ( int k = 0; k < numCols; ++k ) { numAdded[k] = 0; }
 
+	int mgroup = 0;
+	// 4:9:7|9:12:23|8:12:21:234
+	// polygon1: ring1 has 4 points, ring2 has 9 points, ring3 has 7 points 
+	// polygon2: ring1 has 9 points, ring2 has 12 points, ring3 has 23 points 
+	// polygon3: ring1 has 8 points, ring2 has 12 points, ring3 has 21 points, ring4 has 234 points 
 	while ( ntr->getNext(kvbuf) ) {
 		//prt(("s2023 getNext kvbuf=:\n" ));
 		//dumpmem( kvbuf, ntr->KEYVALLEN );
@@ -773,12 +778,13 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 				lastcol = newcol;
 				lastm = newm;
 				lastn = -1;
-				sep = '!';
+				sep = '!';  // new polygon or new multistring
+				++ mgroup;
 			} else if ( lastn >=0 && newn != lastn ) {
 				lastcol = newcol;
 				lastm = newm;
 				lastn = newn;
-				sep = '|';
+				sep = '|';  // new ring or new linestring
 			} else {
 				lastcol = newcol;
 				lastm = newm;

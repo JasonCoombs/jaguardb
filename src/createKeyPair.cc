@@ -26,9 +26,8 @@
 
 #include  <abax.h>
 #include  "JagStrSplit.h"
-//#include  "JagLicense.h"
 #include  "JagMD5lib.h"
-#include  "jagcrypt.h"
+#include  "JagCrypt.h"
 
 void usage();
 int  parseArgs( int argc, char *argv[], AbaxDataString &publickeyfile, AbaxDataString &privatekeyfile );

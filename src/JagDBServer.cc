@@ -72,7 +72,7 @@
 #include <JaguarAPI.h>
 #include <JagParser.h>
 #include <JagLineFile.h>
-#include <jagcrypt.h>
+#include <JagCrypt.h>
 
 extern int JAG_LOG_LEVEL;
 int JagDBServer::g_dtimeout = 0;
@@ -2691,6 +2691,16 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    tosecond('PATTERN')    -- convert PATTERN to seconds. PATTERN: xM, xH, xD, xW. x is a number.\n";
 		str += "    tomicrosecond('PATTERN')  -- convert PATTERN to microseconds. PATTERN: xS, xM, xH, xD, xW. x is a number.\n";
 		str += "    miletometer(MILES)     -- convert miles to meters\n";
+		str += "    within(col1, col2)           -- check if shape col1 is within another shape col2\n";
+		str += "    nearby(col1, col2, radius)   -- check if shape col1 is close to another shape col2 by distance radius\n";
+		str += "    intersect(col1, col2 )       -- check if shape col1 intersects another shape col2\n";
+		str += "    coveredby(col1, col2 )       -- check if shape col1 is covered by another shape col2\n";
+		str += "    cover(col1, col2 )           -- check if shape col1 covers another shape col2\n";
+		str += "    contain(col1, col2 )         -- check if shape col1 contains another shape col2\n";
+		str += "    disjoint(col1, col2 )        -- check if shape col1 and col2 are disjoint\n";
+		str += "    distance(col1, col2 )        -- compute distance between shape col1 and col2\n";
+		str += "    area(col)                    -- compute area or surface area of 2D or 3D objects\n";
+		str += "    all(col)                     -- get GeoJSON data of 2D or 3D objects\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
