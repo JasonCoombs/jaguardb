@@ -1122,3 +1122,14 @@ int JagParseParam::addRangeColumns( int colLen, const CreateAttribute &pointcatt
 
 	return 2;
 }
+
+void JagParseParam::clearRowHash()
+{
+    if ( ! hasWhere ) return;
+    ExpressionElementNode *root = whereVec[0].tree->getRoot();
+    if ( root && root->_builder && root->_builder->_pparam->_rowHash ) {
+        delete root->_builder->_pparam->_rowHash;
+        root->_builder->_pparam->_rowHash = NULL;
+	}
+}
+

@@ -57,12 +57,15 @@ bool JagLineFile::print() const
 
 void JagLineFile::append( const AbaxDataString &line )
 {
+	if ( _hash.keyExist( line ) ) return;
 	//jaguar_mutex_lock ( &_mutex );
+	//prt(("s3890 JagLineFile::append(%s)\n", line.c_str() ));
 	if ( _bufLen < _bufMax ) {
 		_buf[ _bufLen ] = line;
 		++ _bufLen;
 		//prt(("s3710 JagLineFile::append() _bufLen=%d\n", _bufLen ));
 		//jaguar_mutex_unlock ( &_mutex );
+		_hash.addKeyValue( line, "1");
 		return;
 	}
 
@@ -77,6 +80,7 @@ void JagLineFile::append( const AbaxDataString &line )
 
 	fprintf(_fp, "%s\n", line.c_str() );
 	++ _fileLen;
+	_hash.addKeyValue( line, "1");
 	//jaguar_mutex_unlock ( &_mutex );
 	return;
 }
@@ -102,6 +106,7 @@ void JagLineFile::startRead()
 bool JagLineFile::getLine( AbaxDataString &line )
 {
 	//jaguar_mutex_lock ( &_mutex );
+	//prt(("s3820 getLine _bufLen=%d _i=%d\n", _bufLen, _i ));
 	if ( _i <= _bufLen-1 ) {
 		line = _buf[_i];
 		++ _i;
@@ -125,6 +130,7 @@ bool JagLineFile::getLine( AbaxDataString &line )
 	stripStrEnd( cmdline, sz );
 	line = cmdline;
 	free( cmdline );
+	//prt(("s5581 line=[%s]\n", line.c_str() ));
 	//jaguar_mutex_unlock ( &_mutex );
 	return true;
 }
@@ -132,6 +138,7 @@ bool JagLineFile::getLine( AbaxDataString &line )
 bool JagLineFile::hasData()
 {
 	//jaguar_mutex_lock ( &_mutex );
+	//prt(("s3388 JagLineFile::hasData() _i=%d _bufLen-1=%d\n", _i, _bufLen-1 ));
 	if ( _i <= _bufLen-1 ) {
 		//jaguar_mutex_unlock ( &_mutex );
 		return true;

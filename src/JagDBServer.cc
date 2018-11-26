@@ -957,14 +957,6 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			//raydebug( stdout, JAG_LOG_LOW, "s2239 cnt=%d req.session->sessionBroken=%d\n", cnt, (int)req.session->sessionBroken );
 			//prt(("s3744 parseParam->opcode=%d\n", parseParam.opcode ));
 			// prt(("s3744 parseParam->hasCountAll=%d cnt=%d\n", parseParam.hasCountAll, cnt ));
-
-			/***
-			if ( !req.session->sessionBroken && parseParam._lineFile && parseParam._lineFile->size() > 0 ) {
-				prt(("s8283 send linefile string ...\n" ));
-				sendValueData( parseParam, req  );
-			} 
-			***/
-
 			if (  cnt > 0 && !req.session->sessionBroken ) {
 				if ( jda ) {
 					// in processcmd send data back to client
@@ -972,14 +964,6 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 					jda->sendDataToClient( cnt, req );
 				}
 			}	
-
-			//prt(("s2220 parseparam=%0x parseParam._lineFile=%0x \n", &parseParam, parseParam._lineFile ));
-			//prt(("s2221 parseparam->parent=%0x\n", parseParam.parent ));
-			/**
-			if ( parseParam._lineFile )  {
-				prt(("s2238  parseParam._lineFile->size=%d\n", parseParam._lineFile->size() ));
-			}
-			**/
 
 			if ( !req.session->sessionBroken && parseParam._lineFile && parseParam._lineFile->size() > 0 ) {
 				prt(("s8283 send linefile string ...\n" ));
@@ -1046,10 +1030,10 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			if ( !ptab ) {
 				reterr = "E0238 Delete can only be applied to tables";
 			} else {
-				AbaxDataString dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
-				servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
-				cnt = ptab->remove( req, &parseParam, errmsg );
-				servobj->_objectLock->readUnlockTable( parseParam.opcode, dbname, 
+                AbaxDataString dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
+                servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
+                cnt = ptab->remove( req, &parseParam, errmsg );
+                servobj->_objectLock->readUnlockTable( parseParam.opcode, dbname, 
 					parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
 				servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
 			}
@@ -1320,6 +1304,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 	}
 
 	// printf("s3930 return cnt=%d in processCmd\n", cnt );
+	parseParam.clearRowHash();
 	return cnt;
 }
 
@@ -3306,42 +3291,6 @@ int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagD
 	return 1;
 }
 
-#if 0
-//qwer
-void JagDBServer::sendValueData( const JagParseParam &pparm, const JagRequest &req )
-{
-	if ( ! pparm._rowHash ) {
-		prt(("s7308 sendValueData pparm._rowHash is NULL, no data to be sent\n" ));
-		return;
-	}
-	// get colnames
-	AbaxDataString dbtabname, value, res, json, colobj;
-	for ( int i = 0; i < pparm.selAllColVec.size(); ++i ) {
-		dbtabname = pparm.selAllColVec[i];
-		if ( pparm._rowHash->getValue( dbtabname, value ) ) {
-			prt(("s3807 dbtabname=[%s] value=[%s]\n", dbtabname.c_str(), value.c_str() ));
-			if ( res.size() < 1 ) {
-				res = dbtabname + "=" + value;
-			} else {
-				//res += AbaxDataString("!") + dbtabname + "=" + value;
-				res += AbaxDataString("#") + dbtabname + "=" + value;
-			}
-		}
-	}
-	prt(("s8510 res=[%s] selvecsize=%d\n", res.c_str(), pparm.selAllColVec.size() ));
-
-	if ( res.size() > 0 ) {
-		int len = 1;
-		char buf5[ 5+len];
-		memcpy( buf5, "n   |", 5 ); // meta data
-		memcpy( buf5+5, "v", 1 );
-		prt(("s8283 sendMessageLength FH res=[%s] \n", res.c_str() ));
-		JagTable::sendMessageLength( req, buf5, 5+len, "FH" );
-		JagTable::sendMessageLength( req, res.c_str(), res.size(), "JS" );
-	}
-}
-#endif
-
 void JagDBServer::sendValueData( const JagParseParam &pparm, const JagRequest &req )
 {
 	if ( ! pparm._lineFile ) {
@@ -3354,49 +3303,11 @@ void JagDBServer::sendValueData( const JagParseParam &pparm, const JagRequest &r
 	AbaxDataString line;
 	pparm._lineFile->startRead();
 
-	/**
-	int len = 1;
-	char buf5[ 5+len];
-	memcpy( buf5, "n   |", 5 ); // meta data
-	memcpy( buf5+5, "v", 1 );
-	**/
-	//JagTable::sendMessageLength( req, buf5, 5+len, "FH" );
-	//JagTable::sendMessageLength( req, buf5, 5+len, "MH" );
-	//prt(("s2939 send buf5=[%s] FH\n", buf5 ));
-
 	while ( pparm._lineFile->getLine( line ) ) {
 		prt(("s7230 sendMessageLength line=%s ...\n", line.c_str() ));
 		JagTable::sendMessageLength( req, line.c_str(), line.size(), "JS" );
 	}
 }
-
-
-#if 0
-void JagDBServer::sendNameValueData( const JagRequest &req, const AbaxDataString &name, const AbaxDataString &value )
-{
-	JagRecord rec;
-	rec.addNameValue( name.c_str(), intToStr(value.size()).c_str() );  // name and length of value
-	int len = rec.getLength();
-	char buf5[ 5+len];
-	memcpy( buf5, "n   |", 5 ); // meta data
-	memcpy( buf5+5, rec.getSource(), rec.getLength() );
-	prt(("s8283 sendMessageLength FH... \n" ));
-	JagTable::sendMessageLength( req, buf5, 5+len, "FH" );
-
-	Json::Value root;
-	root[ std::string(name.c_str()) ] = value.c_str();
-	std::stringstream ss; 
-	ss << root;
-	prt(("s8284 sendMessageLength JV... \n" ));
-	JagTable::sendMessageLength( req, ss.str().c_str(), ss.str().size(), "JV" );
-
-	/**
-	JagRecord drec;
-	drec.addNameValue( name.c_str(), value.c_str() );  // name and value
-	JagTable::sendMessageLength( req, drec.getSource(), drec.getLength(), "JV" );
-	**/
-}
-#endif
 
 void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const JagDBServer *servobj, 
 								  const AbaxDataString &dbtable, int keyOnly )

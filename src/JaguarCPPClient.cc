@@ -2518,17 +2518,19 @@ int JaguarCPPClient::reply( bool headerOnly )
 		}
 	}
 
+	_debug && prt(("s2030 prcli=%0x headerOnly=%d\n", prcli, headerOnly ));
 	if ( prcli && ! headerOnly ) {
 		if ( 0 == rc ) {
 			jaguar_mutex_lock ( &_lineFileMutex );
 			if ( prcli && prcli->_lineFile && prcli->_lineFile->hasData() ) {
+				prt(("c3939 _lineFile->hasData() true\n" ));
 				rc = 1;
 			}
 			jaguar_mutex_unlock ( &_lineFileMutex );
 		}
 	}
 
-	// prt(("c4082 end reply rc=%d\n", rc ));
+	_debug && prt(("c4082 end reply rc=%d\n", rc ));
 	return rc;
 }
 
@@ -2765,7 +2767,7 @@ int JaguarCPPClient::doreply( bool headerOnly )
 			_debug && prt(("c3430 this=%0x _parentCli=%0x buf=[%s]\n", this, _parentCli, buf ));
 			_debug && prt(("c3430 got JS data=[%s] parentCli->appendJSData()...\n", buf ));
 			AbaxDataString jsData = convertToJson(buf);
-			_debug && prt(("c7203 jsData=[%s] to be appended to parent\n", jsData.c_str() ));
+			_debug && prt(("c7203 jsData=[%s] to be appended to parent ...\n", jsData.c_str() ));
 			_parentCli->appendJSData( jsData );
 
 			break;
@@ -10304,6 +10306,7 @@ void JaguarCPPClient::appendJSData( const AbaxDataString &line )
 		_debug && prt(("c9301 appendJSData new JagLineFile() line=[%s]\n", line.c_str() ));
 	}
 
+	_debug && prt(("c9304 appendJSData line=[%s]\n", line.c_str() ));
 	_lineFile->append( line );
 	_debug && prt(("c2331 this=%0x parent=%0x doappendJSData line=[%s] _lineFile=%0x\n", this, _parentCli, line.c_str(), _lineFile ));
 	_debug && _lineFile->print();

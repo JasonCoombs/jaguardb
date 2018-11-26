@@ -368,7 +368,7 @@ class JagParseParam
 	void fillStringSubData( CreateAttribute &cattr, int &offset, int isKey, int len, int isMute, int isSub = true );
 	void fillRangeSubData( int colLen, CreateAttribute &cattr, int &offset, int isKey, int isSub = true );
 	void init( const JagParseAttribute *ijpa=NULL, bool needClean=true );
-
+	void clearRowHash();
 
 	
 	// data memebers
@@ -461,6 +461,7 @@ class JagParseParam
 	//AbaxDataString   allString;
 	JagParseParam    *parent;
 	JagHashStrStr    *_rowHash;
+	AbaxDataString   _rowUUID;
 	JagLineFile	     *_lineFile;
 	//AbaxDataString    _lastLine;
 	AbaxDataString    like;

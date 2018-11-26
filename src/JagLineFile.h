@@ -21,6 +21,7 @@
 
 #include <abax.h>
 #include <stdio.h>
+#include <JagHashStrStr.h>
 
 class JagLineFile
 {
@@ -30,7 +31,6 @@ class JagLineFile
 	void append( const AbaxDataString &line );
 	abaxint size() const;
 	JagLineFile& operator+= ( JagLineFile &f2 );
-
 
 	void startRead();
 	bool getLine( AbaxDataString &line );
@@ -46,6 +46,7 @@ class JagLineFile
 	abaxint _fileLen;
 	AbaxDataString _fname;
 	abaxint  _i;
+	JagHashStrStr _hash;
 
 	//pthread_mutex_t _mutex; 
 	

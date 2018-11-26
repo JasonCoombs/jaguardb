@@ -94,24 +94,18 @@ class ExpressionElementNode
 								int &length, bool &first, bool useZero, bool setGlobal ) = 0;
 	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length ) = 0;
 
-	JagParseAttribute   _jpa;
-	//JagHashStrStr   *_rowHash;
-	BinaryExpressionBuilder* _builder;
-	bool            _isElement;
-	AbaxDataString		_name;
-	unsigned int	_srid;
-	AbaxDataString	_type;
+	JagParseAttribute   		_jpa;
+	BinaryExpressionBuilder* 	_builder;
+	bool            			_isElement;
+	AbaxDataString				_name;
+	unsigned int				_srid;
+	AbaxDataString				_type;
 };
 
 class StringElementNode: public ExpressionElementNode
 {
   public:
 	StringElementNode();
-	/**
-	StringElementNode(const StringElementNode& n);
-	StringElementNode&operator=(const StringElementNode& n);
-	***/
-
 	StringElementNode( BinaryExpressionBuilder* builder,  const AbaxDataString &name, const AbaxFixString &value, 
 					   const AbaxDataString &columns, const JagParseAttribute &jpa, int tabnum, int typeMode=0 ) ;
 	virtual ~StringElementNode();
@@ -151,12 +145,6 @@ class StringElementNode: public ExpressionElementNode
 	                         const char *buffers[], const AbaxDataString &uuid, const AbaxDataString &db, const AbaxDataString &tab, 
 							 const AbaxDataString &col, bool isBoundBox3D, bool is3D=false );
 
-	
-	// data members
-	//AbaxDataString		_name;
-	//unsigned int	_srid;
-	//AbaxDataString	_type;
-
 	AbaxDataString		_columns;
 	AbaxFixString		_value;
 	unsigned int		_tabnum;
@@ -165,12 +153,11 @@ class StringElementNode: public ExpressionElementNode
 
 	unsigned int    _begincol;
 	unsigned int    _endcol;
-	
 	unsigned int	_offset;
 	unsigned int	_length;
 	unsigned int	_sig;
 
-	AbaxDataString  _rowUUID;
+	// AbaxDataString  _rowUUID;
 
 };  // end StringElementNode
 

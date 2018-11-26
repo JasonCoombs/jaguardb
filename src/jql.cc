@@ -562,7 +562,6 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
 			lastCmdIsExpect = false;
 			expectCorrectRows = -1;
 			expectErrorRows = -1;
-
 			continue;
         }
 		
@@ -571,14 +570,12 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
         while ( jcli.reply() ) {
 			jcli.printRow();
 			if ( ! jcli.hasError() ) {
-				++numOK;
-				++cnt;
+				++numOK; ++cnt;
 			} else {
 				++numError;
 			}
+
 			jcli.printAll();
-			//printf("c2393 p1=[%s]\n", jcli.getAllByName("p1") );
-			//prt(("json=[%s]\n", jcli.jsonString() ));
         } 
 
 		while ( jcli.printAll() ) { ++numOK; }

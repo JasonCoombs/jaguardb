@@ -2115,19 +2115,6 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 						// raydebug( stdout, JAG_LOG_HIGH, "s5541 opcode=%d\n", parseParam->opcode  );
 					}
 				}
-				// inside checkfuncvalid is true
-				/***
-				if ( root->_builder->_pparam->_rowHash ) {
-					prt(("s3022 root->_builder->_pparam->_rowHash=%0x\n", root->_builder->_pparam->_rowHash ));
-					AbaxDataString str =  root->_builder->_pparam->_rowHash->getKVStrings("#");
-					if ( ! parseParam->parent->_lineFile ) {
-						parseParam->parent->_lineFile = new JagLineFile();
-					} 
-					parseParam->parent->_lineFile->append( str );
-					delete root->_builder->_pparam->_rowHash;
-					root->_builder->_pparam->_rowHash = NULL;
-				}
-				***/
 			} else {
 				// raydebug( stdout, JAG_LOG_HIGH, "s0341 uniqueAndHasValueCol=%d\n", uniqueAndHasValueCol  );
 				if ( parseParam->getfileActualData ) {
@@ -2530,10 +2517,6 @@ void *JagTable::parallelSelectStatic( void * ptr )
     						} 
     						//prt(("s2138 _lineFile->append(%s) _lineFile=%x\n", str.c_str(), pass->parseParam->parent->_lineFile ));
     						pass->parseParam->parent->_lineFile->append( str );
-    
-    						//prt(("s5328 delete _rowHash=%0x\n", root->_builder->_pparam->_rowHash ));
-    						delete root->_builder->_pparam->_rowHash;
-    						root->_builder->_pparam->_rowHash = NULL;
     					} 
 					}
 
@@ -2551,18 +2534,11 @@ void *JagTable::parallelSelectStatic( void * ptr )
 						if ( rc ) {
 							AbaxDataString str =  root->_builder->_pparam->_rowHash->getKVStrings("#");
 							if ( ! pass->parseParam->parent->_lineFile ) {
-								//pass->parseParam->parent->_lineFile = new JagLineFile();
 								pass->parseParam->parent->_lineFile = newObject<JagLineFile>();
 							} 
 							//prt(("s2038 _lineFile->append(%s) _lineFile=%x\n", str.c_str(), pass->parseParam->parent->_lineFile ));
 							pass->parseParam->parent->_lineFile->append( str );
-
-							//prt(("s5028 delete _rowHash=%0x\n", root->_builder->_pparam->_rowHash ));
-							//delete root->_builder->_pparam->_rowHash;
-							//root->_builder->_pparam->_rowHash = NULL;
 						}
-						delete root->_builder->_pparam->_rowHash;
-						root->_builder->_pparam->_rowHash = NULL;
 					} else {
 						//prt(("s2023 root->_builder->_pparam->_rowHash=NULL root=%0x\n", root ));
 					}
@@ -2999,7 +2975,7 @@ abaxint JagTable::sendMessageLength2( JagSession *session, const char *mesg, aba
 		isHB = true;
 	}
 
-	#if 0
+	#if 1
     if ( !isHB ) { 
 		prt(("s2800 THREADID=%ld sock=%d SENDMEGLEN [%s], len=%lld\n", THREADID, session->sock, mesg, len));
 	}
@@ -3583,3 +3559,4 @@ void JagTable::getColumnIndex( const AbaxDataString &dbtab, const AbaxDataString
 		if ( _tablemap->getValue(dbcolumn, getpos) ) { getz = getpos; }
 	}
 }
+

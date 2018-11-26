@@ -45,7 +45,6 @@
 #include <JagGeom.h>
 #include <JagRange.h>
 #include <JagHashStrStr.h>
-#include <JagLineFile.h>
 #include <JagTime.h>
 #include <JagUtil.h>
 
@@ -267,7 +266,7 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 		// get str
 		//prt(("s7012 _type=[%s]\n", _type.c_str() ));
 		if ( JagParser::isPolyType( _type ) ) {
-			prt(("s3770 isPolyType getPolyDataString ...\n" ));
+			//prt(("s3770 isPolyType getPolyDataString  ...\n" ));
 			getPolyDataString( ntr, _type, maps, attrs, buffers, str );
 		} else if ( JagParser::isGeoType( _type ) ) {
 			colobjstr += "=0";
@@ -452,6 +451,7 @@ void StringElementNode::getPolyData( const AbaxDataString &polyType, JagMergeRea
 					polyColumns += AbaxDataString("|") + sp[i];
 				}
 				hash.addKeyValue( sp[i], 1 );
+				//prt(("s2098 hash.addKeyValue(%s)\n", sp[i].c_str() ));
 			}
 		} else {
 			//prt(("s6732 no acqpos for sp[i]=[%s]\n", sp[i].c_str() ));
@@ -472,29 +472,30 @@ void StringElementNode::getPolyData( const AbaxDataString &polyType, JagMergeRea
 			break;
 		} 
 	}
-	// int colobjsize = colobjstr.size();
 
 	// read buffers[_tabnum] and get the uuid of this row
 	// The uuid may represent multiple linestrings or polygons, find the one that matches _name
 	AbaxDataString uuid(buffers[_tabnum]+offsetuuid, collenuuid );
 	bool rc;
-	//prt(("s2391 uuid=[%s] _rowUUID=[%s]\n", uuid.c_str(), _rowUUID.c_str() ));
-	if ( uuid != _rowUUID ) {
-		if ( _builder->_pparam->_rowHash ) {
-			//prt(("s1029 uuid != _rowUUID delete _builder->_pparam->_rowHash \n" ));
-			delete _builder->_pparam->_rowHash;
-			_builder->_pparam->_rowHash = NULL;
-		}
-		//_builder->_pparam->_rowHash = new JagHashStrStr();
+	//prt(("s2391 uuid=[%s] _rowUUID=[%s] this=%0x\n", uuid.c_str(), _builder->_pparam->_rowUUID.c_str(), this ));
+	//prt(("s2391 _builder=%0x _builder->_pparam=%0x\n", _builder, _builder->_pparam ));
+	//prt(("s2391 _builder->_pparam->_rowHash=%0x\n", _builder->_pparam->_rowHash ));
+	if ( NULL == _builder->_pparam->_rowHash ) {
 		_builder->_pparam->_rowHash = newObject<JagHashStrStr>();
+		savePolyData( polyType, ntr, maps, attrs, buffers, uuid, db, tab, polyColumns, isBoundBox3D, is3D );
+	} else if ( _builder->_pparam->_rowUUID.size() > 0 && uuid != _builder->_pparam->_rowUUID ) {
+		//prt(("s1029 uuid != _rowUUID  delete _builder->_pparam->_rowHash \n" ));
+		delete _builder->_pparam->_rowHash;
+		//prt(("s6682 _builder->_pparam->_rowHash create new JagHashStrStr(); savePolyData... \n" ));
+		_builder->_pparam->_rowHash = newObject<JagHashStrStr>();
+		//prt(("s2392 _builder->_pparam->_rowHash=%0x\n", _builder->_pparam->_rowHash ));
 		// build the hash map for _columns, check uniqueness
-		//prt(("s6682 _builder->_pparam->_rowHash new JagHashStrStr(); savePolyData... \n" ));
 		savePolyData( polyType, ntr, maps, attrs, buffers, uuid, db, tab, polyColumns, isBoundBox3D, is3D );
 	} 
 	
 	//prt(("s7409 _builder->_pparam=%0x _rowHash=%0x\n", _builder->_pparam, _builder->_pparam->_rowHash ));
 	//prt(("s1028 _builder->_pparam->parent=%0x\n", _builder->_pparam->parent ));
-	//prt(("s1028 _builder->_pparam->parent->_lineFile=%0x\n", _builder->_pparam->parent->_lineFile ));
+	//prt(("s2342 _builder->_pparam->_rowHash=%0x\n", _builder->_pparam->_rowHash ));
 	if ( _builder->_pparam->_rowHash ) {
 		AbaxDataString val = _builder->_pparam->_rowHash->getValue( _name, rc );
 		if ( rc ) {
@@ -558,7 +559,7 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 									const AbaxDataString &db, const AbaxDataString &tab, const AbaxDataString &polyColumns,
 									bool isBoundBox3D, bool is3D )
 {
-	prt(("s8410 savePolyData polyColumns=[%s] uuid=[%s] is3D=%d\n", polyColumns.c_str(), uuid.c_str(), is3D ));
+	//prt(("s8410 savePolyData polyColumns=[%s] uuid=[%s] is3D=%d\n", polyColumns.c_str(), uuid.c_str(), is3D ));
 
 	JagStrSplit psp(polyColumns, '|', true);
 	int numCols = psp.length();
@@ -669,7 +670,7 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 		//prt(("s70035 xval=[%s] yval=[%s] xval.size=%d yval.size=%d\n", xval.c_str(),  yval.c_str(), xval.size(),  yval.size() ));
     	xval.trimEndZeros();
     	yval.trimEndZeros();
-		prt(("s70036 xval=[%s] yval=[%s] xval.size=%d yval.size=%d\n", xval.c_str(),  yval.c_str(), xval.size(),  yval.size() ));
+		//prt(("s70036 xval=[%s] yval=[%s] xval.size=%d yval.size=%d\n", xval.c_str(),  yval.c_str(), xval.size(),  yval.size() ));
     	if ( xval.isNotNull() && yval.isNotNull() ) {
 			/***
 			prt(("s70035 xval=[%s] yval=[%s] xval.size=%d yval.size=%d buf=[%s] len=%d\n", 
@@ -703,15 +704,15 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
     	str[k] = AbaxDataString(buf);  // "_OJAG_=srid=tab=type bbox x:y:z
     	//str[k] = AbaxDataString(buf );  // "_OJAG_=srid=tab=type bbox x:y:z
 		//prt(("s3408 len=%d strlen=%d\n", len, strlen( buf ) ));
-		prt(("s3921 buf=[%s] len=%d strlen=%d\n", buf, len, strlen(buf) ));
+		//prt(("s3921 buf=[%s] len=%d strlen=%d\n", buf, len, strlen(buf) ));
 		free( buf );
     
     	if ( ! ntr ) {
 			if ( hasValue ) {
     			_builder->_pparam->_rowHash->addKeyValue( fullname[k], str[k] );
 			}
-    		_rowUUID = uuid;
-			prt(("s9393 return here\n" ));
+    		_builder->_pparam->_rowUUID = uuid;
+			//prt(("s9393 return here\n" ));
     		return;
     	}
 	} // end of numCols loop
@@ -792,8 +793,8 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 				sep = 0;
 			}
 
-			prt(("s8540 newcol=%d newm=%d newn=%d lastcol=%d lastm=%d lastn=%d\n", newcol, newm, newn, lastcol, lastm, lastn ));
-			prt(("s8543 numCols=%d\n", numCols ));
+			//prt(("s8540 newcol=%d newm=%d newn=%d lastcol=%d lastm=%d lastn=%d\n", newcol, newm, newn, lastcol, lastm, lastn ));
+			//prt(("s8543 numCols=%d\n", numCols ));
 
    			for ( int k=0; k < numCols; ++k ) {
     			// each column  col1 col2
@@ -809,25 +810,25 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 						sprintf(zbuf, ":%s", v3.c_str() );
 						strcat(xyzbuf, zbuf );
 					}
-					prt(("s8203 xyzbuf=[%s] v1=[%s] v1size=%d v2=[%s] v2size=%d\n", xyzbuf, v1.c_str(), v1.size(), v2.c_str(), v2.size() ));
+					//prt(("s8203 xyzbuf=[%s] v1=[%s] v1size=%d v2=[%s] v2size=%d\n", xyzbuf, v1.c_str(), v1.size(), v2.c_str(), v2.size() ));
 
 					if (  v1.isNotNull() && v2.isNotNull() ) {
-						prt(("s2209 sep=%c\n", sep ));
+						//prt(("s2209 sep=%c\n", sep ));
 						if ( sep ) { 
 							str[k] += ' ';
 							str[k] += sep; 
 						}
     					str[k] += AbaxDataString(xyzbuf); // xyzbuf has ' ' in front
-						prt(("s2270 k=%d str[k]=[%s]\n", k, str[k].c_str() ));
+						//prt(("s2270 k=%d str[k]=[%s]\n", k, str[k].c_str() ));
 						++ numAdded[k];
 					} else {
-						prt(("s7304 v1 v2 either is NULL\n"));
+						//prt(("s7304 v1 v2 either is NULL\n"));
 					}
     			}
    			}
 		} else {
 			ntr->putBack( kvbuf );
-			prt(("s2040 putback kvbuf\n" ));
+			//prt(("s2040 putback kvbuf\n" ));
 			break;
 		}
 	}  // end of getNext()
@@ -835,12 +836,13 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 	for ( int k=0; k < numCols; ++k ) {
 		if ( str[k].size() > 0 && numAdded[k] > 0 ) {
 			rc = _builder->_pparam->_rowHash->addKeyValue( fullname[k], str[k] );
-			prt(("s6713 add k=%d name=[%s] str=[%s] rc=%d _rHash=%0x\n", k, fullname[k].c_str(), str[k].c_str(), rc, _builder->_pparam->_rowHash ));
+			//prt(("s6713 add k=%d name=[%s] str=[%s] rc=%d _rHash=%0x\n", k, fullname[k].c_str(), str[k].c_str(), rc, _builder->_pparam->_rowHash ));
 		} else {
-			prt(("s4691 str[%d].size() < 1 no _rowHash->addKeyValue\n", k ));
+			//prt(("s4691 str[%d].size() < 1 no _rowHash->addKeyValue\n", k ));
 		}
 	}
-	_rowUUID = uuid;
+	_builder->_pparam->_rowUUID = uuid;
+	//prt(("s4809 _rowUUID=[%s]\n", _builder->_pparam->_rowUUID.c_str() ));
 	/**
 	a=[2] geo:xmin=[2.9] geo:ymin=[2] geo:xmax=[77] geo:ymax=[88] 
 	geo:id=[492a...E7] geo:col=[13] geo:i=[3] ls1:x=[] ls1:y=[] b=[210] ls2:x=[8.9] ls2:y=[9]
@@ -906,10 +908,14 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
     if ( leftVal < 0 || rightVal < 0 ) {
 		//prt(("s2730 leftVal=%d rightVal=%d -1\n", leftVal, rightVal ));
 		result = -1;
-	} else if ( isAggregateOp(_binaryOp) ) {
+	//} else if ( isAggregateOp(_binaryOp) ) {
+	} else if ( isAggregateOp(_binaryOp) &&  _binaryOp != JAG_FUNC_GEOTYPE ) {
 		//prt(("s2730 isAggregateOp(_binaryOp=%d) -2\n", _binaryOp ));
+		result = -2; // no aggregation allowed in where tree
+		/***
 		if ( _binaryOp == JAG_FUNC_GEOTYPE ) result = 0;
 		else result = -2; // no aggregation allowed in where tree
+		***/
 	} else {
 		result = _doWhereCalc( maps, attrs, keylen, numKeys, numTabs, ltmode, rtmode, ltabnum, rtabnum,
 							  minmax, leftbuf, rightbuf, str, lstr, rstr );
@@ -921,7 +927,6 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 			else if ( leftVal != rightVal && JAG_LOGIC_AND == _binaryOp ) result = 1;
 			// OK
 			else result = 0;  // no range, want all data
-
 			// result 1: has range; 0: has no range
 			//prt(("s8804 adjusted result=%d\n", result ));
 		} else {
@@ -1080,7 +1085,8 @@ int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const Ja
 		// one child
 		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
 		if ( 0 == ltmode && 
-			((isStringOp(_binaryOp) || isSpecialOp(_binaryOp) || isTimedateOp(_binaryOp) || _binaryOp == JAG_FUNC_GEOTYPE ) && _binaryOp != JAG_FUNC_LENGTH) ) {
+			(( isStringOp(_binaryOp) || isSpecialOp(_binaryOp) || isTimedateOp(_binaryOp) || _binaryOp == JAG_FUNC_GEOTYPE ) 
+			   && _binaryOp != JAG_FUNC_LENGTH ) ) {
 			if ( isTimedateOp(_binaryOp) ) {
 				ltmode = 0;
 				type = JAG_C_COL_TYPE_STR;
@@ -1275,7 +1281,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 			// prt(("s2335 weird  result=%d\n", result ));
 		} else {
 			// prt(("s2039 in BinaryOperationNode::checkFuncValid() \n" ));
-			prt(("s2039 before _doCalculation lstr=[%s] ltmode=%d ltype=%s \n", lstr.c_str(), ltmode, ltype.c_str() ));
+			prt(("s2039 before _doCalculation _binaryOp=%d lstr=[%s] ltmode=%d ltype=%s \n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
 			// prt(("s2039 before _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
 			result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
 			if ( result < 0 && setGlobal ) {

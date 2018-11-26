@@ -92,10 +92,11 @@ class JagTable
 	abaxint remove( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg );	
 	abaxint count( const char *cmd, const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, abaxint &keyCheckerCnt );
 	abaxint select( JagDataAggregate *&jda, const char *cmd, const JagRequest &req, JagParseParam *parseParam, 
-		AbaxDataString &errmsg, bool nowherecnt=true, bool isInsertSelect=false );
+					AbaxDataString &errmsg, bool nowherecnt=true, bool isInsertSelect=false );
 	
 	static void *parallelSelectStatic( void * ptr );
-	static int buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], const JagRequest &req, const char *buffers[], 
+	static int buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
+										 const JagRequest &req, const char *buffers[], 
 										JagParseParam *parseParam, JagMemDiskSortArray *gmdarr, char *gbvbuf );
 	static void groupByFinalCalculation( char *gbvbuf, bool nowherecnt, abaxint finalsendlen, std::atomic<abaxint> &cnt, abaxint actlimit, 
 										const JagRequest &req, const AbaxDataString &writeName, JagParseParam *parseParam, 
@@ -144,7 +145,6 @@ class JagTable
 	void setupSchemaMapAttr( int numCols );
 	bool hasSpareColumn();
 
-
 	static const abaxint keySchemaLen = JAG_SCHEMA_KEYLEN;
     static const abaxint valSchemaLen = JAG_SCHEMA_VALLEN;
   	static const int _THREAD_NUM = 4;
@@ -156,7 +156,6 @@ class JagTable
 	abaxint 								KEYVALLEN;
 	int									_replicateType;
 	JagSchemaRecord 					_tableRecord;
-	//const JagSchemaRecord 					*_tableRecord;
 	JagDiskArrayFamily						*_darrFamily;
 
 	int	    							_numCols;
