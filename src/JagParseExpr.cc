@@ -904,9 +904,12 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 	//prt(("s6638 in BinaryOperationNode::setWhereRange leftVal=%d rightVal=%d\n", leftVal, rightVal ));
 
     if ( leftVal < 0 || rightVal < 0 ) {
+		//prt(("s2730 leftVal=%d rightVal=%d -1\n", leftVal, rightVal ));
 		result = -1;
 	} else if ( isAggregateOp(_binaryOp) ) {
-		result = -2; // no aggregation allowed in where tree
+		//prt(("s2730 isAggregateOp(_binaryOp=%d) -2\n", _binaryOp ));
+		if ( _binaryOp == JAG_FUNC_GEOTYPE ) result = 0;
+		else result = -2; // no aggregation allowed in where tree
 	} else {
 		result = _doWhereCalc( maps, attrs, keylen, numKeys, numTabs, ltmode, rtmode, ltabnum, rtabnum,
 							  minmax, leftbuf, rightbuf, str, lstr, rstr );
@@ -921,6 +924,8 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 
 			// result 1: has range; 0: has no range
 			//prt(("s8804 adjusted result=%d\n", result ));
+		} else {
+			//prt(("s2283 result=%d\n", result ));
 		}
 	}
 	
@@ -1075,7 +1080,7 @@ int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const Ja
 		// one child
 		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
 		if ( 0 == ltmode && 
-			((isStringOp(_binaryOp) || isSpecialOp(_binaryOp) || isTimedateOp(_binaryOp)) && _binaryOp != JAG_FUNC_LENGTH) ) {
+			((isStringOp(_binaryOp) || isSpecialOp(_binaryOp) || isTimedateOp(_binaryOp) || _binaryOp == JAG_FUNC_GEOTYPE ) && _binaryOp != JAG_FUNC_LENGTH) ) {
 			if ( isTimedateOp(_binaryOp) ) {
 				ltmode = 0;
 				type = JAG_C_COL_TYPE_STR;
@@ -1085,6 +1090,12 @@ int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const Ja
 				type = ltype;
 				collen = lcollen;
 				siglen = lsiglen;
+				if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
+					ltmode = 0;
+					type = JAG_C_COL_TYPE_STR;
+					collen = 16;
+					siglen = 0;
+				}
 				//prt(("s8120 type=[%s] lcollen=%d \n", type.c_str(), lcollen ));
 			}
 		} else {
@@ -1163,6 +1174,9 @@ int BinaryOperationNode::getFuncAggregate( JagVector<AbaxDataString> &selectPart
 		}
 		else if ( _binaryOp == JAG_FUNC_LAST ) {
 			parts = AbaxDataString("last(") + parts + ")";
+		}
+		else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
+			parts = AbaxDataString("geotype(") + parts + ")";
 		}
 		
 		if ( parts2.length() > 0 ) {
@@ -3069,6 +3083,8 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 				}
 			}
 		}
+	} else if (  0 == strncasecmp(str, "geotype(", 8 ) ) {
+		type = 0;
 	}
 	//prt(("s2822 parse columns=[%s]\n", columns.c_str() ));
 
@@ -3198,7 +3214,8 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 				// other function op and = != > >= etc.
 				if ( _isNot ) throw 2223;
 				// "where/join" tree and "update" tree not accept aggregate funcs
-				if ( isAggregateOp( fop ) && type != 0 ) throw 2124;
+				//prt(("s3381 fop=%d type=%d\n", fop, type ));
+				if ( isAggregateOp( fop ) && type != 0 ) throw 2224;
 				operatorStack.push(fop);
 				_lastOp = fop;
 			}

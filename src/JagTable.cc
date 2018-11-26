@@ -2999,7 +2999,7 @@ abaxint JagTable::sendMessageLength2( JagSession *session, const char *mesg, aba
 		isHB = true;
 	}
 
-	#if 1
+	#if 0
     if ( !isHB ) { 
 		prt(("s2800 THREADID=%ld sock=%d SENDMEGLEN [%s], len=%lld\n", THREADID, session->sock, mesg, len));
 	}

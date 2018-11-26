@@ -2026,6 +2026,40 @@ const char *strcasestrskipquote( const char *str, const char *token )
     return NULL;
 }
 
+// find macting string not inside '...' "..."
+// str should be moving pointer
+const char *strcasestrskipspacequote( const char *str, const char *token )
+{
+	prt(("s0928 strcasestrskipspacequote str=[%s] token=[%s]\n", str, token ));
+	while ( isspace(*str) ) ++str;
+    int toklen = strlen( token );
+    while ( *str != '\0' ) {
+        if ( *str == '\'' || *str == '\"' ) {
+            str = jumptoEndQuote( str );
+			prt(("s0938 str=[%s]\n", str ));
+            if ( ! str ) return NULL;
+            ++str;
+			prt(("s0934 str=[%s]\n", str ));
+			while ( isspace(*str) ) ++str;
+			prt(("s0932 str=[%s]\n", str ));
+            if ( *str == '\0' ) break;
+        }
+
+		prt(("s3932 str=[%s]\n", str ));
+		while ( isspace(*str) ) ++str;
+		prt(("s3912 str=[%s]\n", str ));
+        if ( 0 == strncasecmp( str, token, toklen) ) {
+            // str += toklen;
+            // return str-toklen;
+            return str;
+        }
+        ++str;
+		prt(("s8912 str=[%s]\n", str ));
+    }
+
+    return NULL;
+}
+
 int jagsync( )
 {
 	#ifndef _WINDOWS64_
@@ -2859,7 +2893,8 @@ bool isStringOp( short op )
 bool isAggregateOp( short op )
 {
 	if (op == JAG_FUNC_MIN || op == JAG_FUNC_MAX || op == JAG_FUNC_AVG || op == JAG_FUNC_COUNT ||
-		op == JAG_FUNC_SUM || op == JAG_FUNC_STDDEV || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST) {
+		op == JAG_FUNC_SUM || op == JAG_FUNC_STDDEV || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST || 
+		op == JAG_FUNC_GEOTYPE ) {
 		return true;
 	}
 	return false;

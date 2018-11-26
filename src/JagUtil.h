@@ -190,6 +190,7 @@ int jaguar_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const st
 int getPassword( AbaxDataString &outPassword );
 void getWinPass( char *pass );
 const char *strcasestrskipquote( const char *str, const char *token );
+const char *strcasestrskipspacequote( const char *str, const char *token );
 void trimLenEndColonWhite( char *str, int len );
 void trimEndColonWhite( char *str, int len );
 void escapeNewline( const AbaxDataString &instr, AbaxDataString &outstr );

@@ -1668,7 +1668,7 @@ int JagParser::setSelectColumn()
 		_ptrParam->selColVec.append(selColTemp);
 		_ptrParam->selColVec[i].tree->init( _ptrParam->jpa, _ptrParam );
 		r = (char*)_splitwq[i].c_str();
-		//prt(("s5012 r=[%s]\n", r ));
+		// prt(("s5012 r=[%s]\n", r ));
 		if ( (p = (char*)strcasestrskipquote(r, " as ")) ) {
 			*p = '\0';
 			p += 4;
@@ -4592,55 +4592,6 @@ bool JagParser::hasPolyGeoType( const char *createSQL, int &dim )
 	return false;
 }
 
-#if 0
-// createSQL: "create table t ( ....)"  -- assumes ( exists
-// createSQL has linestring, polygon, etc non-fixed number of points
-bool JagParser::hasPolyGeoType( const char *createSQL, int &dim )
-{
-	dim = 0;
-	const char *p = strchr(createSQL, '(');
-	if ( ! p ) return false;
-	++p; if ( *p == '\0' ) return false;
-
-	JagStrSplitWithQuote sp(p, ',');
-	if ( sp.length() < 1 ) return false;
-	for ( int i=0; i < sp.length(); ++i ) {
-		if ( sp[i].size() < 1 ) continue;
-		// sp[i]: "key: a int" "value: b int"   "c linestring(43)" "e enum('a', 'b', 'c')"  "f point3d"
-		p = strchr( sp[i].c_str(), ':' );
-		if ( p ) { ++p; }
-		//prt(("s5041 i=%d p=[%s]\n", i, p ));
-		JagStrSplit nt(p, ' ', true);
-		if ( nt.length() < 2 ) continue;
-
-		if ( 0==strncasecmp(nt[1].c_str(), "linestring3d", 12) ) {
-			if ( dim < 3 ) dim = 3;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "multipoint3d", 12) ) {
-			if ( dim < 3 ) dim = 3;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "polygon3d", 9) ) {
-			if ( dim < 3 ) dim = 3;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "multipolygon3d", 14) ) {
-			if ( dim < 3 ) dim = 3;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "multilinestring3d", 17) ) {
-			if ( dim < 3 ) dim = 3;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "linestring", 10) ) {
-			if ( dim < 2 ) dim = 2;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "multipoint", 10) ) {
-			if ( dim < 2 ) dim = 2;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "polygon", 7) ) {
-			if ( dim < 2 ) dim = 2;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "multipolygon", 12) ) {
-			if ( dim < 2 ) dim = 2;
-		} else if ( 0==strncasecmp(nt[1].c_str(), "multilinestring", 15) ) {
-			if ( dim < 2 ) dim = 2;
-		}
-	}
-
-	if ( dim >=2 ) return true;
-	return false;
-}
-#endif
-
 void JagParser::addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool lead, int &offset )
 {
 	// add bbox, id, col, row key columns
@@ -5799,9 +5750,7 @@ int JagParser::convertJsonToLineString( const rapidjson::Document &dom, OtherAtt
 		//prt(("s7421 cd.Size()=%d\n",  cd.Size() ));
 		if ( cd.Size() < 2 ) return -3233;
 		if ( cd.Size() > 2 ) { is3D = true; }
-		//qwer
 		//prt(("s7421 cd.Size()=%d is3D=%d\n",  cd.Size(), is3D ));
-
     	if ( cd[0].IsString() ) {
     		if ( cd[0].GetStringLength() > JAG_POINT_LEN ) return -3236;
 			vs = AbaxDataString(cd[0].GetString());
