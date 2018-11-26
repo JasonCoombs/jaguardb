@@ -1026,6 +1026,8 @@ AbaxDataString BinaryOperationNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
 	else if ( binaryOp == JAG_FUNC_WITHIN ) str = "within";
 	else if ( binaryOp == JAG_FUNC_AREA ) str = "area";
+	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
+	else if ( binaryOp == JAG_FUNC_GEOTYPE ) str = "geotype";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
@@ -1259,7 +1261,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 			// prt(("s2335 weird  result=%d\n", result ));
 		} else {
 			// prt(("s2039 in BinaryOperationNode::checkFuncValid() \n" ));
-			// prt(("s2039 before _doCalculation lstr=[%s] \n", lstr.c_str() ));
+			prt(("s2039 before _doCalculation lstr=[%s] ltmode=%d ltype=%s \n", lstr.c_str(), ltmode, ltype.c_str() ));
 			// prt(("s2039 before _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
 			result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
 			if ( result < 0 && setGlobal ) {
@@ -1288,6 +1290,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 	}
 	
 	//prt(("s0939 end  BinaryOperationNode::checkFuncValid tmp9999 result=%d\n", result ));
+	prt(("s3008 str=[%s] setGlobal=%d typeMode=%d\n", str.c_str(), setGlobal, typeMode ));
 	return result;
 }
 
@@ -1696,6 +1699,10 @@ int BinaryOperationNode::formatAggregateParts( AbaxDataString &parts, AbaxDataSt
 		parts = AbaxDataString("nearby(") + lparts + "," + rparts + ", " + _carg1 + ")";
 	} else if ( _binaryOp == JAG_FUNC_AREA ) {
 		parts = AbaxDataString("area(") + lparts + ")";
+	} else if ( _binaryOp == JAG_FUNC_DIMENSION ) {
+		parts = AbaxDataString("dimension(") + lparts + ")";
+	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
+		parts = AbaxDataString("geotype(") + lparts + ")";
 	}
 	// ... more calcuations ...
 	return 1;
@@ -2924,7 +2931,7 @@ int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rst
 		ltmode = 2;
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_AREA ) {
-		ltmode = 1; // int
+		ltmode = 2; // int
 		bool brc = false;
 		double val = 0.0;
 		try {
@@ -2942,6 +2949,24 @@ int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rst
 			lstr = "0";
 			return 0;
 		}
+	} else if ( _binaryOp == JAG_FUNC_DIMENSION ) {
+		ltmode = 1; // int
+		if (  _left && _left->_isElement ) {
+			// prt(("s0292 left->_srid=%d left->_name=%s left->_type=[%s]\n", _left->_srid, _left->_name.c_str(), _left->_type.c_str() ));
+			lstr = intToStr(JagGeo::getPolyDimension( _left->_type ) );
+		} else {
+			lstr = "0";
+		}
+		return 1;
+	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
+		ltmode = 0; // string
+		prt(("s3309 cmode=%d\n", cmode ));
+		if (  _left && _left->_isElement ) {
+			lstr = JagGeo::getTypeStr( _left->_type );
+		} else {
+			lstr = "Unknown";
+		}
+		return 1;
 	} else if ( _binaryOp == JAG_FUNC_WITHIN || _binaryOp == JAG_FUNC_COVEREDBY
 	            || _binaryOp == JAG_FUNC_CONTAIN || _binaryOp == JAG_FUNC_COVER 
 	            || _binaryOp == JAG_FUNC_NEARBY
@@ -3876,6 +3901,8 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NEARBY || 
 		fop == JAG_FUNC_ALL || 
 		fop == JAG_FUNC_AREA || 
+		fop == JAG_FUNC_DIMENSION || 
+		fop == JAG_FUNC_GEOTYPE || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4085,6 +4112,10 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_MILETOMETER; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "area", 4 ) ) {
 		fop = JAG_FUNC_AREA; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "dimension", 9 ) ) {
+		fop = JAG_FUNC_DIMENSION; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "geotype", 7 ) ) {
+		fop = JAG_FUNC_GEOTYPE; len = 7; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;

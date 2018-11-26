@@ -413,7 +413,7 @@
 #define JAG_FUNC_CONTAIN	    204  // T or F
 #define JAG_FUNC_INTERSECT	    206  // T or F
 #define JAG_FUNC_OVERLAP	    208  // T or F
-#define JAG_FUNC_BBOX	        210  // bounding box coordinates
+#define JAG_FUNC_BBOX 	        210  // bbox of shape  xmin ymin zmin xmax ymax zmax
 #define JAG_FUNC_KM2MILE	    220  // km2mile(km)
 #define JAG_FUNC_MILE2KM 	    222  // mile2km(miles)
 #define JAG_FUNC_COVER 	        224  // 1 or 0
@@ -421,6 +421,25 @@
 #define JAG_FUNC_DISJOINT 	    228  // 1 or 0
 #define JAG_FUNC_NEARBY 	    230  // 1 or 0
 #define JAG_FUNC_AREA 	        232  // area of 2D closed shape
+#define JAG_FUNC_DIMENSION 	    233  // dimension of column 2 or 3
+#define JAG_FUNC_GEOTYPE 	    234  // geotype  CIRCLE SQUARE LINE LINEPOINT POLYGON etc
+#define JAG_FUNC_POINTN 	    235  // n-th point of linestring/polygon  x y z
+#define JAG_FUNC_STARTPOINT 	237  // first point of line/linestring
+#define JAG_FUNC_ENDPOINT 	    238  // end point of line/linestring
+#define JAG_FUNC_CONVEXHULL     239  // convex hull of linestring/polygon
+#define JAG_FUNC_ISCLOSED       240  // if linestring/polygon is closed shape
+#define JAG_FUNC_NUMPOINTS      241  // total number of points of line/linestring/multilinestring/polygon/mpolygon
+#define JAG_FUNC_SRID           242  // srid of a column
+#define JAG_FUNC_SUMMARY        243  // summary of a column: type, dim, srid, size, 
+#define JAG_FUNC_X              244  // x coord
+#define JAG_FUNC_Y              245  // Y coord
+#define JAG_FUNC_Z              246  // Z coord
+#define JAG_FUNC_XMIN           247  // XMIN of bbox
+#define JAG_FUNC_YMIN           248  // YMIN of bbox
+#define JAG_FUNC_ZMIN           249  // YMIN of bbox
+#define JAG_FUNC_XMAX           250  // XMAX of bbox
+#define JAG_FUNC_YMAX           251  // YMAX of bbox
+#define JAG_FUNC_ZMAX           252  // ZMAX of bbox
 
 
 // multi-line data ( string functions )

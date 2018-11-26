@@ -12695,6 +12695,75 @@ bool JagGeo::doAllNearby( const AbaxDataString& mark1, const AbaxDataString &col
 	return false;
 }
 
+AbaxDataString JagGeo::getTypeStr( const AbaxDataString& colType )
+{
+	AbaxDataString t;
+	if ( colType == JAG_C_COL_TYPE_POINT ) {
+		t = "Point";
+	} else if ( colType == JAG_C_COL_TYPE_LINE ) {
+		t = "Line";
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+		t = "LineString";
+	} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		t = "MultiLineString";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		t = "MultiPolygon";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		t = "MultiPoint";
+	} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		t = "Polygon";
+	} else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+		t = "Circle";
+	} else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+		t = "Square";
+	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
+		t = "Rectangle";
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		t = "Triangle";
+	} else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+		t = "Ellipse";
+	} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
+		t = "Point3D";
+	} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+		t = "Line3D";
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+		t = "LineString3D";
+	} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		t = "MultiLineString3D";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		t = "MultiPoint3D";
+	} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		t = "Polygon3D";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		t = "MultiPolygon3D";
+	} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
+		t = "Circle3D";
+	} else if ( colType == JAG_C_COL_TYPE_SPHERE ) {
+		t = "Sphere";
+	} else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
+		t = "Square3D";
+	} else if ( colType == JAG_C_COL_TYPE_CUBE ) {
+		t = "Cube";
+	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		t = "Rectangle3D";
+	} else if ( colType == JAG_C_COL_TYPE_BOX  ) {
+		t = "Box";
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D  ) {
+		t = "Triangle3D";
+	} else if ( colType == JAG_C_COL_TYPE_CYLINDER  ) {
+		t = "Cylinder";
+	} else if ( colType == JAG_C_COL_TYPE_CONE   ) {
+		t = "Cone";
+	} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D   ) {
+		t = "Ellipse3D";
+	} else if ( colType == JAG_C_COL_TYPE_ELLIPSOID ) {
+		t = "Ellipsoid";
+	} else {
+		t = "Unknown";
+	}
+	return t;
+}
+
 int JagGeo::getDimension( const AbaxDataString& colType )
 {
 	if ( colType == JAG_C_COL_TYPE_POINT 

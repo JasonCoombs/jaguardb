@@ -1246,6 +1246,7 @@ class JagGeo
 							 const AbaxDataString &carg );
 
     static int getDimension( const AbaxDataString& colType );
+    static AbaxDataString getTypeStr( const AbaxDataString& colType );
     static int getPolyDimension( const AbaxDataString& colType );
 	template <class POINT> static int sortLinePoints( POINT arr[], int elements );
 	static bool above(double x, double y, double x2, double y2, double x3, double y3 );

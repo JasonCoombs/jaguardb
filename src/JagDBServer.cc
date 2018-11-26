@@ -6430,69 +6430,6 @@ int JagDBServer::processSignal( int sig )
 #endif
 
 
-#if 0
-int setupSignalHandler( JagDBServer *serv )
-{
-	#ifndef _WINDOWS64_
-    sigset_t set;
-    int s;
-	
-    pthread_t thread;
-    sigfillset(&set);
-    s = pthread_sigmask(SIG_BLOCK, &set, NULL);  // all signals passthrough
-	JagSigPass *sigpass = new JagSigPass;
-	sigpass->servobj = serv;
-	sigpass->sigset = set;
-    s = jagpthread_create(&thread, NULL, &signalHandler, (void *)sigpass);
-    if (s != 0) {
-		raydebug( stdout, JAG_LOG_LOW, "Error creating blocking all signals, exit\n" );
-		exit(1);
-	} 
-
-    sigemptyset(&set);  // no signals can passthrough to all new threads
-    s = pthread_sigmask(SIG_BLOCK, &set, NULL);
-    if ( s != 0 ) {
-		raydebug( stdout, JAG_LOG_LOW, "Error setting up signal mask, exit\n" );
-		exit(1);
-	}
-	#endif
-
-	return 1;
-}
-
-// static
-// handler for signals
-void* signalHandler( void *arg )
-{
-	#ifndef _WINDOWS64_
-	JagSigPass *p = (JagSigPass*)arg;
-	sigset_t set = p->sigset;
-	int s, sig;
-	JagDBServer *servobj = p->servobj;
-
-    sigfillset(&set); // all signal pass through
-    s = pthread_sigmask(SIG_BLOCK, &set, NULL);
-	while ( true ) {
-		s = sigwait( &set,  &sig);
-		if ( s != 0 ) {
-			prt(("s6381 sigwait error\n"));
-			continue;
-		} 
-
-		if ( servobj ) {
-			servobj->processSignal( sig );
-		}
-	}
-
-	#endif
-	return NULL;
-
-	// prt(("signalHandler done \n"));
-
-}
-#endif
-
-
 bool JagDBServer::isInteralIP( const AbaxDataString &ip )
 {
 	bool rc = false;
