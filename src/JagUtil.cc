@@ -2890,15 +2890,17 @@ bool isStringOp( short op )
 	return false;
 }
 
+/***
 bool isAggregateOp( short op )
 {
 	if (op == JAG_FUNC_MIN || op == JAG_FUNC_MAX || op == JAG_FUNC_AVG || op == JAG_FUNC_COUNT ||
 		op == JAG_FUNC_SUM || op == JAG_FUNC_STDDEV || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST || 
-		op == JAG_FUNC_GEOTYPE ) {
+		op == JAG_FUNC_GEOTYPE || op == JAG_FUNC_POINTN ) {
 		return true;
 	}
 	return false;
 }
+***/
 
 bool isSpecialOp( short op )
 {

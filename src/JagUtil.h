@@ -240,19 +240,8 @@ abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size );
 #endif
 
 int jagmalloc_trim( abaxint n );
-
 AbaxDataString psystem( const char *cmd );
-
-bool isMathOp( short op );
-bool isCompareOp( short op ); 
-bool isStringOp( short op );
-bool isAggregateOp( short op );
-bool isSpecialOp( short op );
-bool isTimedateOp( short op );
-short getFuncLength( short op ); 
-
 bool checkCmdTimeout( abaxint startTime, abaxint timeoutLimit );
-
 char *getNameValueFromStr( const char *content, const char *name );
 ssize_t jaggetline(char **lineptr, size_t *n, FILE *stream);
 

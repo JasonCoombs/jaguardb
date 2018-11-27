@@ -191,6 +191,13 @@ class BinaryOperationNode: public ExpressionElementNode
 								int &length, bool &first, bool useZero, bool setGlobal );
 	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length );
 	static AbaxDataString getBinaryOpType( short binaryOp );
+	static bool isAggregateOp( short op );
+	static bool isMathOp( short op );
+	static bool isCompareOp( short op );
+	static bool isStringOp( short op );
+	static bool isSpecialOp( short op );
+	static bool isTimedateOp( short op );
+	static short getFuncLength( short op );
 
 	// data members
 	short					_binaryOp;
@@ -219,12 +226,15 @@ class BinaryOperationNode: public ExpressionElementNode
 						int llength, int rlength, bool &first );	
 
 	bool processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &carg );
-	bool processSingleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &val );
+	bool processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &val );
+	bool processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &val );
 	bool doBooleanOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, 
 							 const JagStrSplit &sp2, const AbaxDataString &carg );
-	bool doSingleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+	bool doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString &carg, double &val );
+	bool doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+							 const AbaxDataString &carg, AbaxDataString &val );
 
 	bool doAllWithin( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
@@ -235,7 +245,10 @@ class BinaryOperationNode: public ExpressionElementNode
 	bool doAllNearby( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 const AbaxDataString &carg );
-	bool doAllArea( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
+	bool doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
+	bool doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, 
+					  const AbaxDataString &carg, AbaxDataString &val );
+
 
 
 	// data members

@@ -909,7 +909,9 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 		//prt(("s2730 leftVal=%d rightVal=%d -1\n", leftVal, rightVal ));
 		result = -1;
 	//} else if ( isAggregateOp(_binaryOp) ) {
-	} else if ( isAggregateOp(_binaryOp) &&  _binaryOp != JAG_FUNC_GEOTYPE ) {
+	} else if ( isAggregateOp(_binaryOp) 
+	            && (  _binaryOp != JAG_FUNC_GEOTYPE ) 
+			  ) {
 		//prt(("s2730 isAggregateOp(_binaryOp=%d) -2\n", _binaryOp ));
 		result = -2; // no aggregation allowed in where tree
 		/***
@@ -919,7 +921,7 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 	} else {
 		result = _doWhereCalc( maps, attrs, keylen, numKeys, numTabs, ltmode, rtmode, ltabnum, rtabnum,
 							  minmax, leftbuf, rightbuf, str, lstr, rstr );
-		//prt(("s7293 in BinaryOperationNode::setWhereRange _doWhereCalc() result=%d\n", result ));
+		prt(("s7293 in BinaryOperationNode::setWhereRange _doWhereCalc() result=%d\n", result ));
 		if ( result > 0 ) {
 			if ( leftVal == 0 && rightVal == 0 ) result = 0;
 			else if ( leftVal == 1 && rightVal == 1 ) result = 1;
@@ -928,16 +930,16 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 			// OK
 			else result = 0;  // no range, want all data
 			// result 1: has range; 0: has no range
-			//prt(("s8804 adjusted result=%d\n", result ));
+			prt(("s8804 adjusted result=%d\n", result ));
 		} else {
-			//prt(("s2283 result=%d\n", result ));
+			prt(("s2283 result=%d\n", result ));
 		}
 	}
 	
 	if ( ltmode > rtmode ) typeMode = ltmode;
 	else typeMode = rtmode;
 	tabnum = -1;
-	//prt(("s7370 BinaryOperationNode::setWhereRange result=%d\n", result ));
+	prt(("s7370 BinaryOperationNode::setWhereRange result=%d\n", result ));
 	
     return result;
 }
@@ -1038,6 +1040,7 @@ AbaxDataString BinaryOperationNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_AREA ) str = "area";
 	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
 	else if ( binaryOp == JAG_FUNC_GEOTYPE ) str = "geotype";
+	else if ( binaryOp == JAG_FUNC_POINTN ) str = "pointn";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
@@ -1081,11 +1084,17 @@ int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const Ja
 		return 0;
 	}
 		
-	if ( !_right ) {
+	prt(("s2238 _right=%0x\n", _right ));
+	if ( _binaryOp == JAG_FUNC_POINTN ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = 3*JAG_POINT_LEN + 2;
+		siglen = 0;
+	} else if ( !_right ) {
 		// one child
 		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
 		if ( 0 == ltmode && 
-			(( isStringOp(_binaryOp) || isSpecialOp(_binaryOp) || isTimedateOp(_binaryOp) || _binaryOp == JAG_FUNC_GEOTYPE ) 
+			(( isStringOp(_binaryOp) || isSpecialOp(_binaryOp) || isTimedateOp(_binaryOp) ) 
 			   && _binaryOp != JAG_FUNC_LENGTH ) ) {
 			if ( isTimedateOp(_binaryOp) ) {
 				ltmode = 0;
@@ -1096,14 +1105,13 @@ int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const Ja
 				type = ltype;
 				collen = lcollen;
 				siglen = lsiglen;
-				if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
-					ltmode = 0;
-					type = JAG_C_COL_TYPE_STR;
-					collen = 16;
-					siglen = 0;
-				}
 				//prt(("s8120 type=[%s] lcollen=%d \n", type.c_str(), lcollen ));
 			}
+		} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
+			ltmode = 0;
+			type = JAG_C_COL_TYPE_STR;
+			collen = 16;
+			siglen = 0;
 		} else {
 			//prt(("s2035 JAG_C_COL_TYPE_FLOAT JAG_MAX_INT_LEN JAG_MAX_SIG_LEN\n" ));
 			ltmode = 2;
@@ -1157,31 +1165,23 @@ int BinaryOperationNode::getFuncAggregate( JagVector<AbaxDataString> &selectPart
 		_nodenum = nodenum++;		
 		if ( _binaryOp == JAG_FUNC_MIN ) {
 			parts = AbaxDataString("min(") + parts + ")";
-		}
-		else if ( _binaryOp == JAG_FUNC_MAX ) {
+		} else if ( _binaryOp == JAG_FUNC_MAX ) {
 			parts = AbaxDataString("max(") + parts + ")";
-		}
-		else if ( _binaryOp == JAG_FUNC_AVG ) {
+		} else if ( _binaryOp == JAG_FUNC_AVG ) {
 			parts = AbaxDataString("avg(") + parts + ")";
-		}
-		else if ( _binaryOp == JAG_FUNC_SUM ) {
+		} else if ( _binaryOp == JAG_FUNC_SUM ) {
 			parts = AbaxDataString("sum(") + parts + ")";
-		}
-		else if ( _binaryOp == JAG_FUNC_COUNT ) {
+		} else if ( _binaryOp == JAG_FUNC_COUNT ) {
 			parts = AbaxDataString("count(") + parts + ")";
 			//prt(("s8131 JAG_FUNC_COUNT parts=[%s]\n", parts.c_str() ));
-		}
-		else if ( _binaryOp == JAG_FUNC_STDDEV ) {
+		} else if ( _binaryOp == JAG_FUNC_STDDEV ) {
 			parts2 = AbaxDataString("avg(") + parts + ")";
 			parts = AbaxDataString("stddev(") + parts + ")";
-		}
-		else if ( _binaryOp == JAG_FUNC_FIRST ) {
+		} else if ( _binaryOp == JAG_FUNC_FIRST ) {
 			parts = AbaxDataString("first(") + parts + ")";
-		}
-		else if ( _binaryOp == JAG_FUNC_LAST ) {
+		} else if ( _binaryOp == JAG_FUNC_LAST ) {
 			parts = AbaxDataString("last(") + parts + ")";
-		}
-		else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
+		} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
 			parts = AbaxDataString("geotype(") + parts + ")";
 		}
 		
@@ -1281,7 +1281,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 			// prt(("s2335 weird  result=%d\n", result ));
 		} else {
 			// prt(("s2039 in BinaryOperationNode::checkFuncValid() \n" ));
-			prt(("s2039 before _doCalculation _binaryOp=%d lstr=[%s] ltmode=%d ltype=%s \n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
+			//prt(("s2039 before _doCalculation _binaryOp=%d lstr=[%s] ltmode=%d ltype=%s \n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
 			// prt(("s2039 before _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
 			result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
 			if ( result < 0 && setGlobal ) {
@@ -1310,7 +1310,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 	}
 	
 	//prt(("s0939 end  BinaryOperationNode::checkFuncValid tmp9999 result=%d\n", result ));
-	prt(("s3008 str=[%s] setGlobal=%d typeMode=%d\n", str.c_str(), setGlobal, typeMode ));
+	//prt(("s3008 str=[%s] setGlobal=%d typeMode=%d\n", str.c_str(), setGlobal, typeMode ));
 	return result;
 }
 
@@ -1688,7 +1688,7 @@ int BinaryOperationNode::formatAggregateParts( AbaxDataString &parts, AbaxDataSt
 			parts += AbaxDataString(",") + _carg1;
 		}
 		parts += ")";
-		prt(("s2883 JAG_FUNC_SUBSTR parts=[%s]\n", parts.c_str() ));
+		//prt(("s2883 JAG_FUNC_SUBSTR parts=[%s]\n", parts.c_str() ));
 	}
 	// CURDATE, CURTIME, NOW with no child funcs
 	else if ( _binaryOp == JAG_FUNC_CURDATE ) {
@@ -2955,7 +2955,7 @@ int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rst
 		bool brc = false;
 		double val = 0.0;
 		try {
-			brc = processSingleOp( _binaryOp, lstr, _carg1, val );
+			brc = processSingleDoubleOp( _binaryOp, lstr, _carg1, val );
 		} catch ( int e ) {
 			brc = false;
 		} catch ( ... ) {
@@ -2969,6 +2969,26 @@ int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rst
 			lstr = "0";
 			return 0;
 		}
+	} else if ( _binaryOp == JAG_FUNC_POINTN ) {
+		ltmode = 0; // string
+		bool brc = false;
+		AbaxDataString val;
+		try {
+			brc = processSingleStrOp( _binaryOp, lstr, _carg1, val );
+		} catch ( int e ) {
+			brc = false;
+		} catch ( ... ) {
+			brc = false;
+		}
+
+		if ( brc ) {
+			//prt(("s7720 JAG_FUNC_POINTN val=[%s]\n", val.c_str() ));
+			lstr = val;
+			return 1;
+		} else {
+			lstr = "";
+			return 0;
+		}
 	} else if ( _binaryOp == JAG_FUNC_DIMENSION ) {
 		ltmode = 1; // int
 		if (  _left && _left->_isElement ) {
@@ -2980,7 +3000,7 @@ int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rst
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
 		ltmode = 0; // string
-		prt(("s3309 cmode=%d\n", cmode ));
+		// prt(("s3309 cmode=%d\n", cmode ));
 		if (  _left && _left->_isElement ) {
 			lstr = JagGeo::getTypeStr( _left->_type );
 		} else {
@@ -3090,6 +3110,10 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 			}
 		}
 	} else if (  0 == strncasecmp(str, "geotype(", 8 ) ) {
+		// _GEOTYPE
+		type = 0;
+	} else if (  0 == strncasecmp(str, "pointn(", 7 ) ) {
+		// _POINTN
 		type = 0;
 	}
 	//prt(("s2822 parse columns=[%s]\n", columns.c_str() ));
@@ -3195,7 +3219,7 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 			_lastIsOperand = 1;
 			isandor = 0; 
 		} else if ( getCalculationType( p, fop, len, ctype ) ) {
-			// prt(("s9203 p=[%s] ctype=%d\n", p, ctype ));
+			prt(("s9203 p=[%s] ctype=%d\n", p, ctype ));
 			if ( 0 == ctype ) {
 				if ( !_lastIsOperand ) {
 					// special case, if last is not operand, check to make sure if current is negative value or invalid
@@ -3220,8 +3244,11 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 				// other function op and = != > >= etc.
 				if ( _isNot ) throw 2223;
 				// "where/join" tree and "update" tree not accept aggregate funcs
-				//prt(("s3381 fop=%d type=%d\n", fop, type ));
-				if ( isAggregateOp( fop ) && type != 0 ) throw 2224;
+				prt(("s3381 fop=%d type=%d\n", fop, type ));
+				if ( BinaryOperationNode::isAggregateOp( fop ) && type != 0 ) {
+					prt(("s8811 throw 2224\n" ));
+					throw 2224;
+				}
 				operatorStack.push(fop);
 				_lastOp = fop;
 			}
@@ -3651,7 +3678,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			//operandStack.pop();
 			ExpressionElementNode *tdiff = NULL;
 			const char *p = NULL;
-			if ( operandStack.empty() ) throw 336;
+			if ( operandStack.empty() ) throw 1336;
 			else tdiff = operandStack.top();
 
 			//prt(("s3434 tdiff.print():\n" ));
@@ -3659,7 +3686,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 			if ( tdiff->getValue(p) ) {
 				carg1 = p; 
-			} else throw 318;
+			} else throw 1318;
 		}
 
 		operandStack.pop();  // popped the third element
@@ -3667,14 +3694,14 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		// right child
 		if ( operandStack.empty() ) {
 			// printf("s5301 throw here\n");
-			throw 334;
+			throw 1334;
 		} else right = operandStack.top();
 
 		operandStack.pop();
 		// left child
 		if ( operandStack.empty() ) {
 			// printf("s5302 throw here\n");
-			throw 335;
+			throw 1335;
 		} else left = operandStack.top();
 		operandStack.pop();
 
@@ -3682,14 +3709,14 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		// right child
 		if ( operandStack.empty() ) {
 			// printf("s5301 throw here\n");
-			throw 434;
+			throw 1434;
 		} else right = operandStack.top();
 
 		operandStack.pop();
 		// left child
 		if ( operandStack.empty() ) {
 			// printf("s5302 throw here\n");
-			throw 435;
+			throw 1435;
 		} else left = operandStack.top();
 		operandStack.pop();
 
@@ -3710,10 +3737,18 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				else throw 437;				
 			} else throw 438;
 			operandStack.pop();
-		} 
+		}  else if ( op == JAG_FUNC_POINTN ) {
+			// qwer
+			const char *p = NULL;
+			if ( right->getValue(p) ) {
+				carg1 = p;
+				prt(("s3388 JAG_FUNC_POINTN p=[%s]\n", p ));
+			} else throw 1448;
+			operandStack.pop();
+		}
 
 		// for compare op, and each child is different table column, setup joinmap
-		if ( isCompareOp( op ) ) {
+		if ( BinaryOperationNode::isCompareOp( op ) ) {
 			const char *p, *q;
 			abaxint lrc, rrc;
 			lrc = left->getName(p);
@@ -3873,7 +3908,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 {
 	if ( fop == JAG_FUNC_MOD || fop == JAG_FUNC_POW 
 		 || fop == JAG_FUNC_DATEDIFF 
-		 || fop == JAG_LOGIC_AND || fop == JAG_LOGIC_OR || isMathOp(fop) 
+		 || fop == JAG_LOGIC_AND || fop == JAG_LOGIC_OR || BinaryOperationNode::isMathOp(fop) 
 		 || fop == JAG_FUNC_DISTANCE 
 		 || fop == JAG_FUNC_WITHIN 
 		 || fop == JAG_FUNC_COVEREDBY 
@@ -3883,7 +3918,8 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_INTERSECT 
 		 || fop == JAG_FUNC_DISJOINT 
 		 || fop == JAG_FUNC_NEARBY 
-		 || isCompareOp(fop) ) {
+		 || fop == JAG_FUNC_POINTN 
+		 || BinaryOperationNode::isCompareOp(fop) ) {
 		 	return true;
 	}
 	return false;
@@ -3926,6 +3962,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_AREA || 
 		fop == JAG_FUNC_DIMENSION || 
 		fop == JAG_FUNC_GEOTYPE || 
+		fop == JAG_FUNC_POINTN || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4139,6 +4176,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_DIMENSION; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "geotype", 7 ) ) {
 		fop = JAG_FUNC_GEOTYPE; len = 7; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "pointn", 6 ) ) {
+		fop = JAG_FUNC_POINTN; len = 6; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -4233,7 +4272,7 @@ bool BinaryExpressionBuilder::nameAndOpGood( const JagParser *jpsr, const AbaxDa
 	}
 
 	// prt(("s3388 _lastOp=[%d] \n", _lastOp ));
-	if ( colType.size() > 0 && lastNode._name.size() > 0 && isCompareOp(_lastOp) ) {
+	if ( colType.size() > 0 && lastNode._name.size() > 0 && BinaryOperationNode::isCompareOp(_lastOp) ) {
 		JagStrSplit sp1( lastNode._name, '.' );
 		if ( sp1.length() == 3 ) {
 			const JagColumn* prevJcol = jpsr->getColumn( sp1[0], sp1[1], sp1[2] );
@@ -4350,14 +4389,13 @@ bool BinaryOperationNode::processBooleanOp( int op, const AbaxFixString &lstr, c
 	return rc;
 }
 
-
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
 // op can be AEA
-bool BinaryOperationNode::processSingleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &value )
+bool BinaryOperationNode::processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &value )
 {
-	prt(("s5481 do processBooleanOp lstr=[%s]\n", lstr.c_str() ));
-	prt(("s5481 do processBooleanOp carg=[%s]\n", carg.c_str() ));
+	//prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
+	//prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
@@ -4377,17 +4415,60 @@ bool BinaryOperationNode::processSingleOp( int op, const AbaxFixString &lstr, co
 	JagStrSplit sp1( lstr.c_str(), ' ', true );
 	sp1.shift();	
 
-	bool rc = doSingleOp( op, mark1, colType1, srid1, sp1, carg, value );
+	bool rc = doSingleStrOp( op, mark1, colType1, srid1, sp1, carg, value );
 	//prt(("s4480 doBooleanOp rc=%d\n", rc ));
 	return rc;
 }
 
-bool BinaryOperationNode::doSingleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+
+// return 0 for OK;  < 0 for error or false
+// lstr must be table/index column with its all internal data
+// op can be AEA
+bool BinaryOperationNode::processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &value )
+{
+	//prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", lstr.c_str() ));
+	//prt(("s5481 do processSingleDoubleOp carg=[%s]\n", carg.c_str() ));
+	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
+
+	AbaxDataString colobjstr1 = lstr.firstToken(' ');
+	// colobjstr1: "_OJAG_=srid=db.obj.col=type"
+	AbaxDataString colType1;
+	JagStrSplit spcol1(colobjstr1, '=');  // _OJAG_=srid=name=type
+	int srid1 = 0;
+	AbaxDataString mark1, colName1;  // colname: "db.tab.col"
+
+	if ( spcol1.length() >= 4 ) {
+		mark1 = spcol1[0];
+		srid1 = jagatoi( spcol1[1].c_str() );
+		colName1 = spcol1[2];
+		colType1 = spcol1[3];
+	}
+
+	JagStrSplit sp1( lstr.c_str(), ' ', true );
+	sp1.shift();	
+
+	bool rc = doSingleDoubleOp( op, mark1, colType1, srid1, sp1, carg, value );
+	//prt(("s4480 doBooleanOp rc=%d\n", rc ));
+	return rc;
+}
+
+bool BinaryOperationNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, double &value )
 {
 	bool rc = false;
 	if ( op == JAG_FUNC_AREA ) {
 		rc = doAllArea( mark1, colType1, srid1, sp1, value );
+	} else {
+	}
+	return rc;
+}
+
+bool BinaryOperationNode::doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+										const JagStrSplit &sp1, const AbaxDataString &carg, AbaxDataString &value )
+{
+	bool rc = false;
+	if ( op == JAG_FUNC_POINTN ) {
+		rc = doAllPointN( mark1, colType1, srid1, sp1, carg, value );
 	} else {
 	}
 	return rc;
@@ -4513,6 +4594,68 @@ bool BinaryOperationNode::doAllWithin( const AbaxDataString& mark1, const AbaxDa
 
 	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
 	return false;
+}
+
+bool BinaryOperationNode::doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
+									 const JagStrSplit &sp1, const  AbaxDataString &carg, AbaxDataString &value )
+{
+	//prt(("s3920 doAllPointN() colType1=[%s] carg=[%s]\n", colType1.c_str(), carg.c_str() ));
+	//sp1.print();
+	int narg = jagatoi( carg.c_str());
+	int i = narg - 1;
+	bool rc = false;
+	value = "";
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		//prt(("s2031 narg=%d sp1.length()=%d\n", narg, sp1.length() ));
+		if ( narg == 1 && sp1.length() >= 2 ) {
+			value = trimEndZeros(sp1[0]) + " " + trimEndZeros(sp1[1]);
+			rc =  true;
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		if ( narg == 1 && sp1.length() >= 3 ) {
+			value = trimEndZeros(sp1[0]) + " " + trimEndZeros(sp1[1]) + " " + trimEndZeros(sp1[2]);
+			rc  = true;
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE ) {
+		if (  narg >= 1 && narg <= 3 && sp1.length() >= 6 ) {
+			value = trimEndZeros(sp1[2*i]) + " " + trimEndZeros(sp1[2*i+1]);
+			// x0 y0 x1 y1 x2 y2
+			rc = true;
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		if (  narg >= 1 && narg <= 3 && sp1.length() >= 9 ) {
+			value = trimEndZeros(sp1[3*i]) + " " + trimEndZeros(sp1[3*i+1]) + " " + trimEndZeros(sp1[3*i+2]);
+			// x0 y0 z0 x1 y1 z1 x2 y2 z2
+			rc = true;
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
+		if (  narg >= 1 && narg <= 2 && sp1.length() >= 4 ) {
+			value = trimEndZeros(sp1[2*i]) + " " + trimEndZeros(sp1[2*i+1]);
+			// x0 y0 x1 y1
+			rc = true;
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		if (  narg >= 1 && narg <= 2 && sp1.length() >= 6 ) {
+			value = trimEndZeros(sp1[3*i]) + " " + trimEndZeros(sp1[3*i+1]) + " " + trimEndZeros(sp1[3*i+2]);
+			// x0 y0 z0 x1 y1 z1
+			rc = true;
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING || colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
+		if (  narg >= 1 && narg <= sp1.length()/2 ) {
+			value = trimEndZeros(sp1[2*i]) + " " + trimEndZeros(sp1[2*i+1]);
+			// x0 y0 x1 y1
+			rc = true;
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D || colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		if (  narg >= 1 && narg <= sp1.length()/3 ) {
+			value = trimEndZeros(sp1[3*i]) + " " + trimEndZeros(sp1[3*i+1]) + " " + trimEndZeros(sp1[3*i+2]);
+			// x0 y0 z0  x1 y1 z1  x2 y2 z2
+			rc = true;
+		} 
+	} 
+
+	//prt(("s2411 colType1=[%s] value=[%s]\n",  colType1.c_str(), value.c_str() ));
+	return rc;
 }
 
 bool BinaryOperationNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
@@ -4695,3 +4838,75 @@ bool BinaryOperationNode::doAllNearby( const AbaxDataString& mark1, const AbaxDa
 	return JagGeo::doAllNearby( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg );
 }
 
+
+bool BinaryOperationNode::isAggregateOp( short op )
+{
+    if (op == JAG_FUNC_MIN || op == JAG_FUNC_MAX || op == JAG_FUNC_AVG || op == JAG_FUNC_COUNT ||
+        op == JAG_FUNC_SUM || op == JAG_FUNC_STDDEV || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST ||
+        op == JAG_FUNC_GEOTYPE ) {
+        return true;
+    }
+    return false;
+}
+
+
+bool BinaryOperationNode::isMathOp( short op ) 
+{
+	if (JAG_NUM_ADD == op || JAG_NUM_SUB == op || JAG_NUM_MULT == op || 
+		JAG_NUM_DIV == op || JAG_NUM_REM == op || JAG_NUM_POW == op) {
+		return true;
+	}
+	return false;
+}
+
+bool BinaryOperationNode::isCompareOp( short op ) 
+{
+	if (JAG_FUNC_EQUAL == op || JAG_FUNC_NOTEQUAL == op || JAG_FUNC_LESSTHAN == op || JAG_FUNC_LESSEQUAL == op || 
+		JAG_FUNC_GREATERTHAN == op || JAG_FUNC_GREATEREQUAL == op || JAG_FUNC_LIKE == op || JAG_FUNC_MATCH == op) {
+		return true;
+	}
+	return false;
+}	
+
+bool BinaryOperationNode::isStringOp( short op )
+{
+	if (op == JAG_FUNC_SUBSTR || op == JAG_FUNC_UPPER || op == JAG_FUNC_LOWER || 
+		op == JAG_FUNC_LTRIM || op == JAG_FUNC_RTRIM || op == JAG_FUNC_TRIM) {
+		return true;
+	}
+	return false;
+}
+
+bool BinaryOperationNode::isSpecialOp( short op )
+{
+	if (op == JAG_FUNC_MIN || op == JAG_FUNC_MAX || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST || op == JAG_FUNC_LENGTH) {
+		return true;
+	}
+	return false;
+}
+
+bool BinaryOperationNode::isTimedateOp( short op )
+{
+	if (op == JAG_FUNC_SECOND || op == JAG_FUNC_MINUTE || op == JAG_FUNC_HOUR || op == JAG_FUNC_DATE || 
+		op == JAG_FUNC_MONTH || op == JAG_FUNC_YEAR || 
+		op == JAG_FUNC_DATEDIFF || op == JAG_FUNC_DAYOFMONTH || op == JAG_FUNC_DAYOFWEEK || op == JAG_FUNC_DAYOFYEAR) {
+		return true;
+	}
+	
+	return false;
+}
+
+short BinaryOperationNode::getFuncLength( short op ) 
+{
+	if ( JAG_FUNC_CURDATE == op ) {
+		return JAG_FUNC_CURDATE_LEN;
+	} else if ( JAG_FUNC_CURTIME == op ) {
+		return JAG_FUNC_CURTIME_LEN;
+	} else if ( JAG_FUNC_NOW == op ) {
+		return JAG_FUNC_NOW_LEN;
+	} else if ( JAG_FUNC_TIME == op ) {
+		return JAG_FUNC_NOW_LEN;
+	} else {
+		return JAG_FUNC_EMPTYARG_LEN;
+	}
+}

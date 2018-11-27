@@ -1678,7 +1678,7 @@ int JagParser::setSelectColumn()
 			if ( (p = (char*)strrchrWithQuote(r, ' ')) ) {
 				q = p++;
 				while ( *q == ' ' && q - r > 0 ) --q;
-				if ( q - r == 0 || isMathOp(*q) || *q == '=' || *q == '<' || *q == '>' ||
+				if ( q - r == 0 || BinaryOperationNode::isMathOp(*q) || *q == '=' || *q == '<' || *q == '>' ||
 					( q - 4 > r && strncasecmp(q-4, " like", 5) == 0 ) ) { 
 					p = r;
 				} else {

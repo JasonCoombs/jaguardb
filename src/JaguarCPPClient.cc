@@ -8872,7 +8872,7 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 	rc = parser.parseCommand( jpa, checkquery.c_str(), &parseParam2, errmsg2 );
 	if ( !rc ) {
 		errmsg = "E5230 Error select column [";
-		errmsg += parseParam2.origCmd + "]";
+		errmsg += parseParam2.origCmd + "] " + errmsg2;
 		return 0;
 	}
 		
