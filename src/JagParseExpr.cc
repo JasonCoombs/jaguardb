@@ -4599,8 +4599,9 @@ bool BinaryOperationNode::doAllWithin( const AbaxDataString& mark1, const AbaxDa
 bool BinaryOperationNode::doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
 									 const JagStrSplit &sp1, const  AbaxDataString &carg, AbaxDataString &value )
 {
-	//prt(("s3920 doAllPointN() colType1=[%s] carg=[%s]\n", colType1.c_str(), carg.c_str() ));
-	//sp1.print();
+	//prt(("s3920 doAllPointN() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	sp1.print();
+	//prt(("s3039 sp1.length()=%d\n", sp1.length() ));
 	int narg = jagatoi( carg.c_str());
 	int i = narg - 1;
 	bool rc = false;
@@ -4641,14 +4642,16 @@ bool BinaryOperationNode::doAllPointN( const AbaxDataString& mk1, const AbaxData
 			rc = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING || colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
-		if (  narg >= 1 && narg <= sp1.length()/2 ) {
-			value = trimEndZeros(sp1[2*i]) + " " + trimEndZeros(sp1[2*i+1]);
+		if (  narg >= 1 && narg <= sp1.length() ) {
+			value = sp1[i+1];
+			value.replace( ':', ' ');
 			// x0 y0 x1 y1
 			rc = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D || colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-		if (  narg >= 1 && narg <= sp1.length()/3 ) {
-			value = trimEndZeros(sp1[3*i]) + " " + trimEndZeros(sp1[3*i+1]) + " " + trimEndZeros(sp1[3*i+2]);
+		if (  narg >= 1 && narg <= sp1.length() ) {
+			value = sp1[i+1];
+			value.replace( ':', ' ');
 			// x0 y0 z0  x1 y1 z1  x2 y2 z2
 			rc = true;
 		} 
