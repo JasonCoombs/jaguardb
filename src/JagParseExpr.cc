@@ -908,16 +908,9 @@ int BinaryOpNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAtt
     if ( leftVal < 0 || rightVal < 0 ) {
 		//prt(("s2730 leftVal=%d rightVal=%d -1\n", leftVal, rightVal ));
 		result = -1;
-	//} else if ( isAggregateOp(_binaryOp) ) {
-	} else if ( isAggregateOp(_binaryOp) 
-	            && (  _binaryOp != JAG_FUNC_GEOTYPE ) 
-			  ) {
+	} else if ( isAggregateOp(_binaryOp) ) {
 		//prt(("s2730 isAggregateOp(_binaryOp=%d) -2\n", _binaryOp ));
 		result = -2; // no aggregation allowed in where tree
-		/***
-		if ( _binaryOp == JAG_FUNC_GEOTYPE ) result = 0;
-		else result = -2; // no aggregation allowed in where tree
-		***/
 	} else {
 		result = _doWhereCalc( maps, attrs, keylen, numKeys, numTabs, ltmode, rtmode, ltabnum, rtabnum,
 							  minmax, leftbuf, rightbuf, str, lstr, rstr );
@@ -1040,6 +1033,7 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_AREA ) str = "area";
 	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
 	else if ( binaryOp == JAG_FUNC_GEOTYPE ) str = "geotype";
+	else if ( binaryOp == JAG_FUNC_ISCLOSED ) str = "isclosed";
 	else if ( binaryOp == JAG_FUNC_POINTN ) str = "pointn";
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
@@ -1098,6 +1092,16 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		type = JAG_C_COL_TYPE_STR;
 		collen = 6*JAG_POINT_LEN + 5;
 		siglen = 0;
+	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = 32;
+		siglen = 0;
+	} else if ( _binaryOp == JAG_FUNC_ISCLOSED ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = 2;
+		siglen = 0;
 	} else if ( !_right ) {
 		// one child
 		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
@@ -1115,11 +1119,6 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 				siglen = lsiglen;
 				//prt(("s8120 type=[%s] lcollen=%d \n", type.c_str(), lcollen ));
 			}
-		} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
-			ltmode = 0;
-			type = JAG_C_COL_TYPE_STR;
-			collen = 16;
-			siglen = 0;
 		} else {
 			//prt(("s2035 JAG_C_COL_TYPE_FLOAT JAG_MAX_INT_LEN JAG_MAX_SIG_LEN\n" ));
 			ltmode = 2;
@@ -1189,8 +1188,6 @@ int BinaryOpNode::getFuncAggregate( JagVector<AbaxDataString> &selectParts, JagV
 			parts = AbaxDataString("first(") + parts + ")";
 		} else if ( _binaryOp == JAG_FUNC_LAST ) {
 			parts = AbaxDataString("last(") + parts + ")";
-		} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
-			parts = AbaxDataString("geotype(") + parts + ")";
 		}
 		
 		if ( parts2.length() > 0 ) {
@@ -1731,10 +1728,14 @@ int BinaryOpNode::formatAggregateParts( AbaxDataString &parts, AbaxDataString &l
 		parts = AbaxDataString("dimension(") + lparts + ")";
 	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
 		parts = AbaxDataString("geotype(") + lparts + ")";
+		/***
+	} else if ( _binaryOp == JAG_FUNC_ISCLOSED ) {
+		parts = AbaxDataString("isclosed(") + lparts + ")";
+		***/
 	}
 	// ... more calcuations ...
 	return 1;
-}
+}  // end of formatAggregateParts()
 
 int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, int ltmode, int rtmode, 
@@ -2978,7 +2979,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			return 0;
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
-	             || _binaryOp == JAG_FUNC_ENDPOINT ) {
+	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED ) {
 		ltmode = 0; // string
 		bool brc = false;
 		AbaxDataString val;
@@ -3009,11 +3010,10 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
 		ltmode = 0; // string
-		// prt(("s3309 cmode=%d\n", cmode ));
 		if (  _left && _left->_isElement ) {
 			lstr = JagGeo::getTypeStr( _left->_type );
 		} else {
-			lstr = "Unknown";
+			lstr = "Primitive";
 		}
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_WITHIN || _binaryOp == JAG_FUNC_COVEREDBY
@@ -3983,6 +3983,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_BBOX || 
 		fop == JAG_FUNC_STARTPOINT || 
 		fop == JAG_FUNC_ENDPOINT || 
+		fop == JAG_FUNC_ISCLOSED || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4204,6 +4205,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "bbox", 4 ) ) {
 		fop = JAG_FUNC_BBOX; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "isclosed", 8 ) ) {
+		fop = JAG_FUNC_ISCLOSED; len = 8; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -4501,6 +4504,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllStartPoint( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_ENDPOINT ) {
 		rc = doAllEndPoint( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_ISCLOSED ) {
+		rc = doAllIsClosed( mark1, colType1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -4785,6 +4790,53 @@ bool BinaryOpNode::doAllEndPoint( const AbaxDataString& mk, const AbaxDataString
 	return true;
 }
 
+bool BinaryOpNode::doAllIsClosed( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	value = "0";
+	if ( colType == JAG_C_COL_TYPE_LINE || colType == JAG_C_COL_TYPE_LINE3D ) {
+		return false;
+	}
+
+	if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		value = "1";
+		return true;
+	}
+
+	if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		value = "1";
+		return true;
+	}
+
+	if ( JagParser::isVectorGeoType( colType ) ) {
+		value = "1";
+		return true;
+	}
+
+	if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+		// get first point, last point
+		AbaxDataString first, last;
+    	JagStrSplit s( sp[0], ':' );
+    	if ( s.length() < 4 ) {
+    		first = sp[0]; 
+    	} else {
+    		first = JagGeo::safeGetStr(sp, 1);
+    	}
+		int len = sp.length();
+		last = sp[len-1];
+		if ( first == last ) {
+			value = "1";
+			return true;
+		} else {
+			value = "0";
+			return false;
+		}
+	}
+
+	value = "0";
+	return false;
+}
+
 bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
 									 const JagStrSplit &sp1, double &value )
 {
@@ -4969,8 +5021,7 @@ bool BinaryOpNode::doAllNearby( const AbaxDataString& mark1, const AbaxDataStrin
 bool BinaryOpNode::isAggregateOp( short op )
 {
     if (op == JAG_FUNC_MIN || op == JAG_FUNC_MAX || op == JAG_FUNC_AVG || op == JAG_FUNC_COUNT ||
-        op == JAG_FUNC_SUM || op == JAG_FUNC_STDDEV || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST ||
-        op == JAG_FUNC_GEOTYPE ) {
+        op == JAG_FUNC_SUM || op == JAG_FUNC_STDDEV || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST ) {
         return true;
     }
     return false;
