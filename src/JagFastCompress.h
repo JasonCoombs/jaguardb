@@ -21,20 +21,11 @@
 
 #include <string>
 #include <abax.h>
-
 class JagFastCompress
 {
   public:
-  	/***
-	static  std::string compress(const std::string& str );
-	static  std::string uncompress(const std::string& str);
-	***/
-
-	//static  void compress(const std::string& instr, std::string& outstr );
-	//static  void uncompress(const std::string& instr, std::string& outstr );
 	static  void compress(const AbaxDataString & instr, AbaxDataString & outstr );
 	static  void uncompress(const AbaxDataString &instr, AbaxDataString & outstr );
-
 	static  void compress( const char *instr, abaxint inlen, AbaxDataString & outstr );
 	static  void uncompress( const char *instr, abaxint inlen, AbaxDataString & outstr );
 };

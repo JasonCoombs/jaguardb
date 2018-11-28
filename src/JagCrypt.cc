@@ -38,9 +38,6 @@
 #include "JagFileMgr.h"
 #include "JagUtil.h"
 
-
-// zfc: zi fu chuan: string
-//AbaxDataString abaxJiesuoZFC( const AbaxDataString &privkey, const AbaxDataString &src64 )
 AbaxDataString JagDecryptStr( const AbaxDataString &privkey, const AbaxDataString &src64 )
 {
 	unsigned char 	plainmsg[512];
@@ -78,7 +75,6 @@ AbaxDataString JagDecryptStr( const AbaxDataString &privkey, const AbaxDataStrin
 
 // ptr: OK
 // NULL: bad
-//ecc_key *makeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString &privkey )
 ecc_key *JagMakeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString &privkey )
 {
 	int wprng;
@@ -168,7 +164,6 @@ AbaxDataString JagEncryptZFC( ecc_key *pecckey, const AbaxDataString &src )
           return "";
     }
 
-    // rc = ecc_encrypt_key( msg, msglen, ciphermsg, &outlen1, &prng,  wprng, hash, &ecckey );
 	outlen = 512;
     rc = ecc_encrypt_key( (unsigned char*)src.c_str(), src.size(), ciphermsg, &outlen, &prng,  wprng, hash, pecckey );
 	if (rc != CRYPT_OK) {

@@ -18,23 +18,11 @@
  */
 #ifndef _abax_crypt_h_
 #define _abax_crypt_h_
-
 #include <abax.h>
 #include <tomcrypt.h>
-
 AbaxDataString 		JagDecryptStr( const AbaxDataString &privkey,  const AbaxDataString &str );
-
-//AbaxDataString 		abaxSuosiZFC(const AbaxDataString &pubkey, const AbaxDataString &str );
-// AbaxDataString 		Nx02osd0Oxo(const AbaxDataString &pubkey, const AbaxDataString &str );
 AbaxDataString 		JagEncryptStr(const AbaxDataString &pubkey, const AbaxDataString &str );
-
-//AbaxDataString 		abaxSuosiZFC(ecc_key *pecckey, const AbaxDataString &str );
-//AbaxDataString 		Mdj0vx0s7o(ecc_key *pecckey, const AbaxDataString &str );
 AbaxDataString 		JagEncryptZFC(ecc_key *pecckey, const AbaxDataString &str );
-
-//ecc_key *			makeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString &privkey );
-//ecc_key *			Mx06do230( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString &privkey );
 ecc_key *			JagMakeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString &privkey );
-
 #endif
 
