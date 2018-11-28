@@ -17288,8 +17288,8 @@ bool JagGeo::lineStringDistanceTriangle(int srid, const AbaxDataString &mk1, con
 		d1 = JagGeo::distance( x1, y1, dx, dy, srid );
 		d2 = JagGeo::distance( x2, y2, dx, dy, srid );
 		d3 = JagGeo::distance( x3, y3, dx, dy, srid );
-		min = jagmin(d1,d2,d3);
-		max = jagmax(d1,d2,d3);
+		min = jagmin3(d1,d2,d3);
+		max = jagmax3(d1,d2,d3);
 		if ( min < mind ) mind = min;
 		if ( max > maxd ) maxd = max;
 	}
@@ -17311,6 +17311,7 @@ bool JagGeo::lineStringDistanceSquare(int srid, const AbaxDataString &mk1, const
 	// todo004
 	// sp1.print();
 	// sp2.print();
+	    int start = 0;
 		if ( mk1 == JAG_OJAG ) {
     		start = 1;
     	}
@@ -17347,6 +17348,7 @@ bool JagGeo::lineStringDistanceRectangle(int srid, const AbaxDataString &mk1, co
 	// sp1.print();
 	// sp2.print();
 
+	int start = 0;
     if ( mk1 == JAG_OJAG ) {
         start = 1;
     }
