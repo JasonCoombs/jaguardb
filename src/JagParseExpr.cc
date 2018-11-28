@@ -914,7 +914,7 @@ int BinaryOpNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAtt
 	} else {
 		result = _doWhereCalc( maps, attrs, keylen, numKeys, numTabs, ltmode, rtmode, ltabnum, rtabnum,
 							  minmax, leftbuf, rightbuf, str, lstr, rstr );
-		prt(("s7293 in BinaryOpNode::setWhereRange _doWhereCalc() result=%d\n", result ));
+		//prt(("s7293 in BinaryOpNode::setWhereRange _doWhereCalc() result=%d\n", result ));
 		if ( result > 0 ) {
 			if ( leftVal == 0 && rightVal == 0 ) result = 0;
 			else if ( leftVal == 1 && rightVal == 1 ) result = 1;
@@ -923,16 +923,16 @@ int BinaryOpNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAtt
 			// OK
 			else result = 0;  // no range, want all data
 			// result 1: has range; 0: has no range
-			prt(("s8804 adjusted result=%d\n", result ));
+			//prt(("s8804 adjusted result=%d\n", result ));
 		} else {
-			prt(("s2283 result=%d\n", result ));
+			//prt(("s2283 result=%d\n", result ));
 		}
 	}
 	
 	if ( ltmode > rtmode ) typeMode = ltmode;
 	else typeMode = rtmode;
 	tabnum = -1;
-	prt(("s7370 BinaryOpNode::setWhereRange result=%d\n", result ));
+	//prt(("s7370 BinaryOpNode::setWhereRange result=%d\n", result ));
 	
     return result;
 }
@@ -1038,6 +1038,8 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
+	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
+	else if ( binaryOp == JAG_FUNC_NUMRINGS ) str = "numrings";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
@@ -1102,6 +1104,13 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		type = JAG_C_COL_TYPE_STR;
 		collen = 2;
 		siglen = 0;
+		/***
+	} else if ( _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
+		ltmode = 1;
+		type = JAG_C_COL_TYPE_DINT;
+		collen = JAG_DINT_FIELD_LEN;
+		siglen = 0;
+		***/
 	} else if ( !_right ) {
 		// one child
 		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
@@ -2979,7 +2988,8 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			return 0;
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
-	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED ) {
+	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
+				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		ltmode = 0; // string
 		bool brc = false;
 		AbaxDataString val;
@@ -2992,7 +3002,6 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		}
 
 		if ( brc ) {
-			//prt(("s7720 JAG_FUNC_POINTN val=[%s]\n", val.c_str() ));
 			lstr = val;
 			return 1;
 		} else {
@@ -3130,8 +3139,9 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 	} else if (  0 == strncasecmp(str, "startpoint(", 11 ) ) {
 		// _STARTPOINT 
 		type = 0;
-	} else if (  0 == strncasecmp(str, "endpoint(", 9 ) ) {
-		// _ENDPOINT 
+	} else if (  0 == strncasecmp(str, "endpoint(", 9 )
+			  ) {
+		// _ENDPOINT  
 		type = 0;
 	}
 	//prt(("s2822 parse columns=[%s]\n", columns.c_str() ));
@@ -3984,6 +3994,8 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_STARTPOINT || 
 		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_ISCLOSED || 
+		fop == JAG_FUNC_NUMPOINTS || 
+		fop == JAG_FUNC_NUMRINGS || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4207,6 +4219,10 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_BBOX; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "isclosed", 8 ) ) {
 		fop = JAG_FUNC_ISCLOSED; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "numpoints", 9 ) ) {
+		fop = JAG_FUNC_NUMPOINTS; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "numrings", 8 ) ) {
+		fop = JAG_FUNC_NUMRINGS; len = 8; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -4506,6 +4522,10 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllEndPoint( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_ISCLOSED ) {
 		rc = doAllIsClosed( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_NUMPOINTS ) {
+		rc = doAllNumPoints( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_NUMRINGS ) {
+		rc = doAllNumRings( mark1, colType1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -4813,7 +4833,8 @@ bool BinaryOpNode::doAllIsClosed( const AbaxDataString& mk, const AbaxDataString
 		return true;
 	}
 
-	if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+	if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D 
+	     ||  colType == JAG_C_COL_TYPE_MULTIPOINT || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		// get first point, last point
 		AbaxDataString first, last;
     	JagStrSplit s( sp[0], ':' );
@@ -4833,6 +4854,48 @@ bool BinaryOpNode::doAllIsClosed( const AbaxDataString& mk, const AbaxDataString
 		}
 	}
 
+	value = "0";
+	return false;
+}
+
+bool BinaryOpNode::doAllNumPoints( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	prt(("s3420 doAllNumPoints() colType=[%s] sp.print(): \n", colType.c_str() ));
+	sp.print();
+	value = "0";
+	if ( colType == JAG_C_COL_TYPE_LINE || colType == JAG_C_COL_TYPE_LINE3D ) {
+		value = "2";
+		return true;
+	}
+
+	if ( colType == JAG_C_COL_TYPE_TRIANGLE || colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		value = "3";
+		return true;
+	}
+
+	if ( JagParser::isVectorGeoType( colType ) ) {
+		value = "0";
+		return false;
+	}
+
+	value = intToStr( sp.length() - 1 );
+	prt(("s5029 value=[%s]\n", value.c_str() ));
+	return true;
+}
+
+bool BinaryOpNode::doAllNumRings( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	value = "0";
+	if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		int cnt = 1;
+		for ( int i =0; i < sp.length(); ++i ) {
+			if ( sp[i] == "|" || sp[i] == "!" ) ++cnt;
+		}
+		value = intToStr(cnt);
+		return true;
+	}
+	 
 	value = "0";
 	return false;
 }

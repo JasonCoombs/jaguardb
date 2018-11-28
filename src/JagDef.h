@@ -440,6 +440,7 @@
 #define JAG_FUNC_XMAX           250  // XMAX of bbox
 #define JAG_FUNC_YMAX           251  // YMAX of bbox
 #define JAG_FUNC_ZMAX           252  // ZMAX of bbox
+#define JAG_FUNC_NUMRINGS       253  // total number of rings in polygon/multipolygon
 
 
 // multi-line data ( string functions )
