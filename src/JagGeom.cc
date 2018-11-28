@@ -11016,13 +11016,22 @@ AbaxDataString JagGeo::convertType2Short( const AbaxDataString &geotypeLong )
 	}
 }
 
-
 // sp was shifted
 double JagGeo::safeget( const JagStrSplit &sp, int arg )
 {
 	double res = 0.0;
 	if ( sp.slength() >= arg+1 ) {
 		res = jagatof( sp[arg].c_str() );
+	}
+	return res;
+}
+
+// sp was shifted
+AbaxDataString JagGeo::safeGetStr( const JagStrSplit &sp, int arg )
+{
+	AbaxDataString res;
+	if ( sp.slength() >= arg+1 ) {
+		res = sp[arg];
 	}
 	return res;
 }

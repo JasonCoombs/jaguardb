@@ -47,7 +47,7 @@
 					|	  			     |
 					|				     |
 					|	             -------------------------
-					|	             |  BinaryOperationNode  |
+					|	             |  BinaryOpNode  |
 					|	             -------------------------
 		-------------------------
 	   |   StringElementNode     |
@@ -161,13 +161,13 @@ class StringElementNode: public ExpressionElementNode
 
 };  // end StringElementNode
 
-class BinaryOperationNode: public ExpressionElementNode
+class BinaryOpNode: public ExpressionElementNode
 {
   public:
-	BinaryOperationNode( BinaryExpressionBuilder* builder, short op, ExpressionElementNode *l, ExpressionElementNode *r, 
+	BinaryOpNode( BinaryExpressionBuilder* builder, short op, ExpressionElementNode *l, ExpressionElementNode *r, 
 					    const JagParseAttribute &jpa, int arg1=0, int arg2=0, AbaxDataString carg1="" );
-	virtual ~BinaryOperationNode() {}
-	BinaryOperationNode &operator=(const BinaryOperationNode& n) {}
+	virtual ~BinaryOpNode() {}
+	BinaryOpNode &operator=(const BinaryOpNode& n) {}
 	virtual int getBinaryOp() { return _binaryOp; }
 	virtual int getName( const char *&p ) { return -1; }
 	virtual bool getValue( const char *&p ) { return 0; }
@@ -248,7 +248,9 @@ class BinaryOperationNode: public ExpressionElementNode
 	bool doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
 	bool doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, 
 					  const AbaxDataString &carg, AbaxDataString &val );
-
+	bool doAllBBox( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
+	bool doAllStartPoint( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
+	bool doAllEndPoint( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 
 
 	// data members
@@ -269,7 +271,7 @@ class BinaryExpressionBuilder
 	void init( const JagParseAttribute &jpa, JagParseParam *pparam );
 	void clean();
 
-	BinaryOperationNode *parse( const JagParser *jagParser, const char* str, int type,
+	BinaryOpNode *parse( const JagParser *jagParser, const char* str, int type,
 								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
 								AbaxDataString &colList ) throw (int);
 	ExpressionElementNode *getRoot() const;
@@ -281,7 +283,7 @@ class BinaryExpressionBuilder
 	// holds either (, +, -, *, /, %, ^ or any other function type  
 	JagStack<int> operatorStack;	
 
-	// operandStack is made up of BinaryOperationNodes and StringElementNode
+	// operandStack is made up of BinaryOpNodes and StringElementNode
 	JagStack<ExpressionElementNode*> operandStack; 
 	int 		_datediffClause;
 	int			_substrClause;

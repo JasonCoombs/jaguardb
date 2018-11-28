@@ -1731,6 +1731,8 @@ class JagGeo
 										 double r, double h, const AbaxDataString& arg, double &dist );
 
 	static double pointToLineDistance( double lata1, double lona1, double lata2, double lona2, double latb1, double lonb1 );
+	static double safeget( const JagStrSplit &sp, int arg );
+	static AbaxDataString safeGetStr( const JagStrSplit &sp, int arg );
 
 
   protected:
@@ -1741,7 +1743,6 @@ class JagGeo
 										const JagPoint2D &p1, const JagPoint2D &p2 );
 	static bool locIn3DCenterBox( double x, double y, double z, double a, double b, double c, bool strict ); 
 	static bool locIn2DCenterBox( double x, double y, double a, double b, bool strict ); 
-	static double safeget( const JagStrSplit &sp, int arg );
 	static bool validDirection( double nx );
 	static bool validDirection( double nx, double ny );
 

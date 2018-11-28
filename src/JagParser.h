@@ -52,6 +52,7 @@ class JagParser
 	const JagColumn* getColumn( const AbaxDataString &db, const AbaxDataString &obj, const AbaxDataString &colName ) const;
 	static bool  isComplexType( const AbaxDataString &rcs );
 	static bool  isGeoType( const AbaxDataString &rcs );
+	static bool  isVectorGeoType( const AbaxDataString &rcs );
 	static bool  isPolyType( const AbaxDataString &rcs );
 	bool isIndexCol( const AbaxDataString &db, const AbaxDataString &colName ) const;
 	static AbaxDataString getColumns( const char *str );

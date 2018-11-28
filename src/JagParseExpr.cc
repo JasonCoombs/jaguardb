@@ -855,9 +855,9 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 
 
 
-////////////////////////////////////////////// BinaryOperationNode ////////////////////////////////////
+////////////////////////////////////////////// BinaryOpNode ////////////////////////////////////
 // ctor
-BinaryOperationNode::BinaryOperationNode( BinaryExpressionBuilder* builder, short op, ExpressionElementNode *l, ExpressionElementNode *r,
+BinaryOpNode::BinaryOpNode( BinaryExpressionBuilder* builder, short op, ExpressionElementNode *l, ExpressionElementNode *r,
     				const JagParseAttribute &jpa, int arg1, int arg2, AbaxDataString carg1 )
 {
 	_binaryOp = op; _left = l; _right = r; _jpa = jpa; _arg1 = arg1; _arg2 = arg2; _carg1 = carg1;
@@ -867,7 +867,7 @@ BinaryOperationNode::BinaryOperationNode( BinaryExpressionBuilder* builder, shor
 	_reg = NULL;
 }
 
-void BinaryOperationNode::clear()
+void BinaryOpNode::clear()
 {
 	if ( _left ) { _left->clear(); if ( _left ) delete _left; _left = NULL; }
 	if ( _right ) { _right->clear(); if ( _right ) delete _right; _right = NULL; }
@@ -877,11 +877,11 @@ void BinaryOperationNode::clear()
 // return -1: error; 
 // 0: OK with all range; 
 // 1 OK with limited range
-int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
+int BinaryOpNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
 						JagMinMax *minmax, AbaxFixString &str, int &typeMode, int &tabnum ) 
 {
-	//prt(("s0448 BinaryOperationNode::setWhereRange numTabs=%d ...\n", numTabs ));
+	//prt(("s0448 BinaryOpNode::setWhereRange numTabs=%d ...\n", numTabs ));
 
 	str = "";
 	JagMinMax leftbuf[numTabs];
@@ -903,7 +903,7 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 									rhasVal, rightbuf, rstr, rtmode, rtabnum );
 	hasValue = lhasVal || rhasVal;
 
-	//prt(("s6638 in BinaryOperationNode::setWhereRange leftVal=%d rightVal=%d\n", leftVal, rightVal ));
+	//prt(("s6638 in BinaryOpNode::setWhereRange leftVal=%d rightVal=%d\n", leftVal, rightVal ));
 
     if ( leftVal < 0 || rightVal < 0 ) {
 		//prt(("s2730 leftVal=%d rightVal=%d -1\n", leftVal, rightVal ));
@@ -921,7 +921,7 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 	} else {
 		result = _doWhereCalc( maps, attrs, keylen, numKeys, numTabs, ltmode, rtmode, ltabnum, rtabnum,
 							  minmax, leftbuf, rightbuf, str, lstr, rstr );
-		prt(("s7293 in BinaryOperationNode::setWhereRange _doWhereCalc() result=%d\n", result ));
+		prt(("s7293 in BinaryOpNode::setWhereRange _doWhereCalc() result=%d\n", result ));
 		if ( result > 0 ) {
 			if ( leftVal == 0 && rightVal == 0 ) result = 0;
 			else if ( leftVal == 1 && rightVal == 1 ) result = 1;
@@ -939,13 +939,13 @@ int BinaryOperationNode::setWhereRange( const JagHashStrInt *maps[], const JagSc
 	if ( ltmode > rtmode ) typeMode = ltmode;
 	else typeMode = rtmode;
 	tabnum = -1;
-	prt(("s7370 BinaryOperationNode::setWhereRange result=%d\n", result ));
+	prt(("s7370 BinaryOpNode::setWhereRange result=%d\n", result ));
 	
     return result;
 }
 
 
-void BinaryOperationNode::print( int mode ) {
+void BinaryOpNode::print( int mode ) {
 	if ( 0 == mode ) {
 		if ( _left && _right) {
 			prt(("L(")); _left->print( mode ); prt((")"));
@@ -975,7 +975,7 @@ void BinaryOperationNode::print( int mode ) {
 	}
 }
 
-AbaxDataString BinaryOperationNode::getBinaryOpType( short binaryOp )
+AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 {
 	AbaxDataString str;
 	if ( binaryOp == JAG_FUNC_EQUAL ) str = "=";
@@ -1041,6 +1041,9 @@ AbaxDataString BinaryOperationNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
 	else if ( binaryOp == JAG_FUNC_GEOTYPE ) str = "geotype";
 	else if ( binaryOp == JAG_FUNC_POINTN ) str = "pointn";
+	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
+	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
+	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
@@ -1053,7 +1056,7 @@ AbaxDataString BinaryOperationNode::getBinaryOpType( short binaryOp )
 
 
 // return 0: error, invalid aggregation; return 1: OK
-int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
+int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 	int &constMode, int &typeMode, bool &isAggregate, AbaxDataString &type, int &collen, int &siglen )
 {
 	if ( !_left && !_right ) {
@@ -1084,11 +1087,16 @@ int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const Ja
 		return 0;
 	}
 		
-	prt(("s2238 _right=%0x\n", _right ));
-	if ( _binaryOp == JAG_FUNC_POINTN ) {
+	//prt(("s2238 _right=%0x\n", _right ));
+	if ( _binaryOp == JAG_FUNC_POINTN ||  _binaryOp == JAG_FUNC_STARTPOINT || _binaryOp == JAG_FUNC_ENDPOINT ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
 		collen = 3*JAG_POINT_LEN + 2;
+		siglen = 0;
+	} else if ( _binaryOp == JAG_FUNC_BBOX ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = 6*JAG_POINT_LEN + 5;
 		siglen = 0;
 	} else if ( !_right ) {
 		// one child
@@ -1153,10 +1161,10 @@ int BinaryOperationNode::setFuncAttribute( const JagHashStrInt *maps[], const Ja
 
 
 
-int BinaryOperationNode::getFuncAggregate( JagVector<AbaxDataString> &selectParts, JagVector<int> &selectPartsOpcode, 
+int BinaryOpNode::getFuncAggregate( JagVector<AbaxDataString> &selectParts, JagVector<int> &selectPartsOpcode, 
 	JagVector<int> &selColSetAggParts, JagHashMap<AbaxInt, AbaxInt> &selColToselParts, int &nodenum, int treenum )
 {	
-	//prt(("s0392 tmp9999 BinaryOperationNode::getFuncAggregate() ...\n" ));
+	//prt(("s0392 tmp9999 BinaryOpNode::getFuncAggregate() ...\n" ));
 	// check if operator is aggregation, and format possible funcs if yes
 	if ( isAggregateOp( _binaryOp ) ) {
 		// get aggregate parts, only left child exists
@@ -1207,7 +1215,7 @@ int BinaryOperationNode::getFuncAggregate( JagVector<AbaxDataString> &selectPart
 }
 
 
-int BinaryOperationNode::getAggregateParts( AbaxDataString &parts, int &nodenum )
+int BinaryOpNode::getAggregateParts( AbaxDataString &parts, int &nodenum )
 {
 	AbaxDataString lparts, rparts;
 	if ( _left ) _left->getAggregateParts( lparts, nodenum );
@@ -1218,7 +1226,7 @@ int BinaryOperationNode::getAggregateParts( AbaxDataString &parts, int &nodenum 
 }
 
 
-int BinaryOperationNode::setAggregateValue( int nodenum, const char *buf, int length )
+int BinaryOpNode::setAggregateValue( int nodenum, const char *buf, int length )
 {
 	if ( _left ) _left->setAggregateValue( nodenum, buf, length );
 	if ( _right ) _right->setAggregateValue( nodenum, buf, length );
@@ -1239,11 +1247,11 @@ int BinaryOperationNode::setAggregateValue( int nodenum, const char *buf, int le
 // return -1: error and false; 
 // 0: OK and false ( e.g. 1 == 0 ) ;
 // 1 and 2 OK and true ( e.g. 1 == 1 )  2: if no data avaialble
-int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
+int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
 								         const char *buffers[], AbaxFixString &str, int &typeMode, AbaxDataString &type, 
 										 int &length, bool &first, bool useZero, bool setGlobal )
 {
-	//prt(("s2301 tmp9999 BinaryOperationNode::checkFuncValid _left=%0x _right=%0x ...\n", _left, _right ));
+	//prt(("s2301 tmp9999 BinaryOpNode::checkFuncValid _left=%0x _right=%0x ...\n", _left, _right ));
 
 	AbaxFixString lstr, rstr;
 	AbaxDataString ltype, rtype;
@@ -1280,7 +1288,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 			else result = 2;
 			// prt(("s2335 weird  result=%d\n", result ));
 		} else {
-			// prt(("s2039 in BinaryOperationNode::checkFuncValid() \n" ));
+			// prt(("s2039 in BinaryOpNode::checkFuncValid() \n" ));
 			//prt(("s2039 before _doCalculation _binaryOp=%d lstr=[%s] ltmode=%d ltype=%s \n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
 			// prt(("s2039 before _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
 			result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
@@ -1309,7 +1317,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 		}
 	}
 	
-	//prt(("s0939 end  BinaryOperationNode::checkFuncValid tmp9999 result=%d\n", result ));
+	//prt(("s0939 end  BinaryOpNode::checkFuncValid tmp9999 result=%d\n", result ));
 	//prt(("s3008 str=[%s] setGlobal=%d typeMode=%d\n", str.c_str(), setGlobal, typeMode ));
 	return result;
 }
@@ -1319,7 +1327,7 @@ int BinaryOperationNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashS
 // return -1: error; 
 // 0: OK and false ( e.g. 1 == 0 ) ; 
 // 1 OK and true ( e.g. 1 == 1 )
-int BinaryOperationNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length )
+int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length )
 {
 	bool first = 0;
 	AbaxFixString lstr, rstr;
@@ -1337,7 +1345,7 @@ int BinaryOperationNode::checkFuncValidConstantOnly( AbaxFixString &str, int &ty
 			} else if ( JAG_LOGIC_AND == _binaryOp ) {
 				result = leftVal && rightVal;
 			} else {
-				//prt(("s2810 in BinaryOperationNode::checkFuncValidConstantOnly before _doCalculation \n" ));
+				//prt(("s2810 in BinaryOpNode::checkFuncValidConstantOnly before _doCalculation \n" ));
 				//prt(("s2810 lstr=[%s]\n", lstr.c_str() ));
 				//prt(("s2810 rstr=[%s]\n", rstr.c_str() ));
 				result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
@@ -1370,7 +1378,7 @@ int BinaryOperationNode::checkFuncValidConstantOnly( AbaxFixString &str, int &ty
 	return result;
 }
 
-void BinaryOperationNode::findOrBuffer( JagMinMax *minmax, JagMinMax *leftbuf, JagMinMax *rightbuf, 
+void BinaryOpNode::findOrBuffer( JagMinMax *minmax, JagMinMax *leftbuf, JagMinMax *rightbuf, 
 	const int keylen[], const int numTabs )
 {
 	for ( int i = 0; i < numTabs; ++i ) {
@@ -1389,7 +1397,7 @@ void BinaryOperationNode::findOrBuffer( JagMinMax *minmax, JagMinMax *leftbuf, J
 	}
 }
 
-void BinaryOperationNode::findAndBuffer( JagMinMax *minmax, JagMinMax *leftbuf, JagMinMax *rightbuf, 
+void BinaryOpNode::findAndBuffer( JagMinMax *minmax, JagMinMax *leftbuf, JagMinMax *rightbuf, 
 	const JagSchemaAttribute *attrs[], const int numTabs, const int numKeys[] )
 {
 	abaxint offset;
@@ -1416,7 +1424,7 @@ void BinaryOperationNode::findAndBuffer( JagMinMax *minmax, JagMinMax *leftbuf, 
 // minOrMax 0: both min max
 // minOrMax 1: min only
 // minOrMax 2: max only
-bool BinaryOperationNode::formatColumnData( JagMinMax *minmax, JagMinMax *iminmax, 
+bool BinaryOpNode::formatColumnData( JagMinMax *minmax, JagMinMax *iminmax, 
 										    const AbaxFixString &value, int tabnum, int minOrMax )
 {	
 	// if is value, not set column data
@@ -1473,7 +1481,7 @@ bool BinaryOperationNode::formatColumnData( JagMinMax *minmax, JagMinMax *iminma
 	return true;
 }
 
-bool BinaryOperationNode::checkAggregateValid( int lcmode, int rcmode, bool laggr, bool raggr )
+bool BinaryOpNode::checkAggregateValid( int lcmode, int rcmode, bool laggr, bool raggr )
 {
 
 	if ( _right ) { // mathOp, mod, pow, datediff -- two children op
@@ -1485,7 +1493,7 @@ bool BinaryOperationNode::checkAggregateValid( int lcmode, int rcmode, bool lagg
 }
 
 // method to format aggregate parts
-int BinaryOperationNode::formatAggregateParts( AbaxDataString &parts, AbaxDataString &lparts, AbaxDataString &rparts )
+int BinaryOpNode::formatAggregateParts( AbaxDataString &parts, AbaxDataString &lparts, AbaxDataString &rparts )
 {
 	// no aggregate funcs process in this method
 	// = ==
@@ -1728,7 +1736,7 @@ int BinaryOperationNode::formatAggregateParts( AbaxDataString &parts, AbaxDataSt
 	return 1;
 }
 
-int BinaryOperationNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
+int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, int ltmode, int rtmode, 
 						int ltabnum, int rtabnum,
 						JagMinMax *minmax, JagMinMax *lminmax, JagMinMax *rminmax, 
@@ -1738,10 +1746,10 @@ int BinaryOperationNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSch
 	int coltype, cmode;
 
 	/***
-	prt(("s3302  enter BinaryOperationNode::doWhereCalc _binaryOpStr=[%s] _binaryOp=%d ltabnum=%d rtabnum=%d ...\n", 
+	prt(("s3302  enter BinaryOpNode::doWhereCalc _binaryOpStr=[%s] _binaryOp=%d ltabnum=%d rtabnum=%d ...\n", 
 			getBinaryOpType( _binaryOp ).c_str(), _binaryOp, ltabnum, rtabnum ));
-	prt(("s3303 BinaryOperationNode::doWhereCalc  lstr=[%s] lstr.size=%d\n", lstr.c_str(), lstr.length() ));
-	prt(("s3303 BinaryOperationNode::doWhereCalc  rstr=[%s] rstr.size=%d\n", rstr.c_str(),  rstr.length() ));
+	prt(("s3303 BinaryOpNode::doWhereCalc  lstr=[%s] lstr.size=%d\n", lstr.c_str(), lstr.length() ));
+	prt(("s3303 BinaryOpNode::doWhereCalc  rstr=[%s] rstr.size=%d\n", rstr.c_str(),  rstr.length() ));
 	***/
 
 	if ( lstr.length() < 1 && rstr.length() < 1 ) {
@@ -2281,7 +2289,7 @@ int BinaryOperationNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSch
 	else if ( _binaryOp == JAG_FUNC_DISTANCE ) {
 		// never reached???
 		str = "1010.23";
-		//prt(("s3312 never ??? BinaryOperationNode::doWhereCalc lstr=[%s] rstr=[%s]\n", lstr.c_str(), rstr.c_str() ));
+		//prt(("s3312 never ??? BinaryOpNode::doWhereCalc lstr=[%s] rstr=[%s]\n", lstr.c_str(), rstr.c_str() ));
 		return 1;
 	}
 	// ... more calcuations ...
@@ -2292,12 +2300,12 @@ int BinaryOperationNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSch
 
 // cmode 0: regard as string; cmode 1: regard as int; cmode 2: regard as double/float
 // return -1: error; 0, 1 OK
-int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr, 
+int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr, 
 	int &ltmode, int &rtmode,  const AbaxDataString& ltype,  const AbaxDataString& rtype, 
 	int llength, int rlength, bool &first )
 {
-	//prt(("s0398 enter BinaryOperationNode::_doCalculation lstr=[%s] rstr=[%s] first=%d\n", lstr.c_str(), rstr.c_str(), first ));
-	//prt(("s0398 enter BinaryOperationNode::_doCalculation ltype=[%s] rtype=[%s]\n", ltype.c_str(), rtype.c_str() ));
+	//prt(("s0398 enter BinaryOpNode::_doCalculation lstr=[%s] rstr=[%s] first=%d\n", lstr.c_str(), rstr.c_str(), first ));
+	//prt(("s0398 enter BinaryOpNode::_doCalculation ltype=[%s] rtype=[%s]\n", ltype.c_str(), rtype.c_str() ));
 
 	int cmode;
 	if ( ltmode > rtmode ) cmode = ltmode;
@@ -2969,7 +2977,8 @@ int BinaryOperationNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rst
 			lstr = "0";
 			return 0;
 		}
-	} else if ( _binaryOp == JAG_FUNC_POINTN ) {
+	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
+	             || _binaryOp == JAG_FUNC_ENDPOINT ) {
 		ltmode = 0; // string
 		bool brc = false;
 		AbaxDataString val;
@@ -3077,16 +3086,16 @@ ExpressionElementNode* BinaryExpressionBuilder::getRoot() const
 	}
 
     ExpressionElementNode *topp = operandStack.top();
-    // return static_cast<BinaryOperationNode *> (topp);
+    // return static_cast<BinaryOpNode *> (topp);
     return topp;
 }
 
 // Input: +, -, *, /, %, ^, =, !=, >, < and other functions
-// creates BinaryOperationNode's from al preceding
+// creates BinaryOpNode's from al preceding
 // type 0: default accept all
 // type 1: "where/join-on" tree, not accept stand-alone ',' and aggregate funcs
 // type 2: "update" tree, not accept aggregate funcs
-BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const char* str, int type,
+BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const char* str, int type,
 		const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
 		AbaxDataString &colList ) throw (int)
 {
@@ -3114,6 +3123,15 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 		type = 0;
 	} else if (  0 == strncasecmp(str, "pointn(", 7 ) ) {
 		// _POINTN
+		type = 0;
+	} else if (  0 == strncasecmp(str, "bbox(", 5 ) ) {
+		// _BBOX
+		type = 0;
+	} else if (  0 == strncasecmp(str, "startpoint(", 11 ) ) {
+		// _STARTPOINT 
+		type = 0;
+	} else if (  0 == strncasecmp(str, "endpoint(", 9 ) ) {
+		// _ENDPOINT 
 		type = 0;
 	}
 	//prt(("s2822 parse columns=[%s]\n", columns.c_str() ));
@@ -3219,7 +3237,7 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 			_lastIsOperand = 1;
 			isandor = 0; 
 		} else if ( getCalculationType( p, fop, len, ctype ) ) {
-			prt(("s9203 p=[%s] ctype=%d\n", p, ctype ));
+			//prt(("s9203 p=[%s] ctype=%d\n", p, ctype ));
 			if ( 0 == ctype ) {
 				if ( !_lastIsOperand ) {
 					// special case, if last is not operand, check to make sure if current is negative value or invalid
@@ -3244,9 +3262,9 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
 				// other function op and = != > >= etc.
 				if ( _isNot ) throw 2223;
 				// "where/join" tree and "update" tree not accept aggregate funcs
-				prt(("s3381 fop=%d type=%d\n", fop, type ));
-				if ( BinaryOperationNode::isAggregateOp( fop ) && type != 0 ) {
-					prt(("s8811 throw 2224\n" ));
+				//prt(("s3381 fop=%d type=%d\n", fop, type ));
+				if ( BinaryOpNode::isAggregateOp( fop ) && type != 0 ) {
+					//prt(("s8811 throw 2224\n" ));
 					throw 2224;
 				}
 				operatorStack.push(fop);
@@ -3278,7 +3296,7 @@ BinaryOperationNode* BinaryExpressionBuilder::parse( const JagParser *jagParser,
     }
 
     ExpressionElementNode *topp = operandStack.top();
-    return static_cast<BinaryOperationNode *> (topp);
+    return static_cast<BinaryOpNode *> (topp);
 }
 
 // p begin with "between "
@@ -3624,7 +3642,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 // process +-*/%^ and or
 void BinaryExpressionBuilder::processOperator( short op, JagHashStrInt &jmap )
 {
-    // pop operators with higher precedence and create their BinaryOperationNode
+    // pop operators with higher precedence and create their BinaryOpNode
     short opPrecedence = precedence( op );
     while ((!operatorStack.empty()) && (opPrecedence <= precedence( operatorStack.top() ))) {
         doBinary( operatorStack.top(), jmap );
@@ -3663,7 +3681,7 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 	}
 }
 
-// Creates a BinaryOperationNode from the top two operands on operandStack
+// Creates a BinaryOpNode from the top two operands on operandStack
 // These top two operands are removed (poped), and the new BinaryOperation
 // takes their place on the top of the stack.
 void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
@@ -3738,17 +3756,16 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			} else throw 438;
 			operandStack.pop();
 		}  else if ( op == JAG_FUNC_POINTN ) {
-			// qwer
 			const char *p = NULL;
 			if ( right->getValue(p) ) {
 				carg1 = p;
-				prt(("s3388 JAG_FUNC_POINTN p=[%s]\n", p ));
+				// prt(("s3388 JAG_FUNC_POINTN p=[%s]\n", p ));
 			} else throw 1448;
 			operandStack.pop();
 		}
 
 		// for compare op, and each child is different table column, setup joinmap
-		if ( BinaryOperationNode::isCompareOp( op ) ) {
+		if ( BinaryOpNode::isCompareOp( op ) ) {
 			const char *p, *q;
 			abaxint lrc, rrc;
 			lrc = left->getName(p);
@@ -3843,7 +3860,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		operandStack.pop();
 	}
 
-	BinaryOperationNode *p = new BinaryOperationNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
+	BinaryOpNode *p = new BinaryOpNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	operandStack.push(p);	
 }
 
@@ -3908,7 +3925,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 {
 	if ( fop == JAG_FUNC_MOD || fop == JAG_FUNC_POW 
 		 || fop == JAG_FUNC_DATEDIFF 
-		 || fop == JAG_LOGIC_AND || fop == JAG_LOGIC_OR || BinaryOperationNode::isMathOp(fop) 
+		 || fop == JAG_LOGIC_AND || fop == JAG_LOGIC_OR || BinaryOpNode::isMathOp(fop) 
 		 || fop == JAG_FUNC_DISTANCE 
 		 || fop == JAG_FUNC_WITHIN 
 		 || fop == JAG_FUNC_COVEREDBY 
@@ -3919,7 +3936,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_DISJOINT 
 		 || fop == JAG_FUNC_NEARBY 
 		 || fop == JAG_FUNC_POINTN 
-		 || BinaryOperationNode::isCompareOp(fop) ) {
+		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
 	}
 	return false;
@@ -3963,6 +3980,9 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_DIMENSION || 
 		fop == JAG_FUNC_GEOTYPE || 
 		fop == JAG_FUNC_POINTN || 
+		fop == JAG_FUNC_BBOX || 
+		fop == JAG_FUNC_STARTPOINT || 
+		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4178,12 +4198,18 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_GEOTYPE; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "pointn", 6 ) ) {
 		fop = JAG_FUNC_POINTN; len = 6; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "startpoint", 10 ) ) {
+		fop = JAG_FUNC_STARTPOINT; len = 10; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "endpoint", 8 ) ) {
+		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "bbox", 4 ) ) {
+		fop = JAG_FUNC_BBOX; len = 4; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
 	}
 
-	//prt(("s3403 fop=%d fopstr=[%s]\n", fop,  BinaryOperationNode::getBinaryOpType(fop).c_str() ));
+	//prt(("s3403 fop=%d fopstr=[%s]\n", fop,  BinaryOpNode::getBinaryOpType(fop).c_str() ));
 	
 	// for funcs, need to check if those are colname or func name 
 	// ( e.g. find '(' after name and possible spaces )
@@ -4272,7 +4298,7 @@ bool BinaryExpressionBuilder::nameAndOpGood( const JagParser *jpsr, const AbaxDa
 	}
 
 	// prt(("s3388 _lastOp=[%d] \n", _lastOp ));
-	if ( colType.size() > 0 && lastNode._name.size() > 0 && BinaryOperationNode::isCompareOp(_lastOp) ) {
+	if ( colType.size() > 0 && lastNode._name.size() > 0 && BinaryOpNode::isCompareOp(_lastOp) ) {
 		JagStrSplit sp1( lastNode._name, '.' );
 		if ( sp1.length() == 3 ) {
 			const JagColumn* prevJcol = jpsr->getColumn( sp1[0], sp1[1], sp1[2] );
@@ -4294,7 +4320,7 @@ bool BinaryExpressionBuilder::nameAndOpGood( const JagParser *jpsr, const AbaxDa
 // op can be WITHIN, CONTAIN, COVER, COVERED, OVERLAP, INTERSECT
 // within: point-> line, linestring, triangle, square, cube, ...
 // within:  triangle -> triangle, square, cube, ...
-bool BinaryOperationNode::processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, 
+bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, 
 											const AbaxDataString &carg )
 {
 	//prt(("s5481 do processBooleanOp lstr=[%s]\n", lstr.c_str() ));
@@ -4392,7 +4418,7 @@ bool BinaryOperationNode::processBooleanOp( int op, const AbaxFixString &lstr, c
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
 // op can be AEA
-bool BinaryOperationNode::processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &value )
+bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &value )
 {
 	//prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
@@ -4424,7 +4450,7 @@ bool BinaryOperationNode::processSingleStrOp( int op, const AbaxFixString &lstr,
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
 // op can be AEA
-bool BinaryOperationNode::processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &value )
+bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &value )
 {
 	//prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleDoubleOp carg=[%s]\n", carg.c_str() ));
@@ -4452,7 +4478,7 @@ bool BinaryOperationNode::processSingleDoubleOp( int op, const AbaxFixString &ls
 	return rc;
 }
 
-bool BinaryOperationNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, double &value )
 {
 	bool rc = false;
@@ -4463,19 +4489,25 @@ bool BinaryOperationNode::doSingleDoubleOp( int op, const AbaxDataString& mark1,
 	return rc;
 }
 
-bool BinaryOperationNode::doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, AbaxDataString &value )
 {
 	bool rc = false;
 	if ( op == JAG_FUNC_POINTN ) {
 		rc = doAllPointN( mark1, colType1, srid1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_BBOX ) {
+		rc = doAllBBox( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_STARTPOINT ) {
+		rc = doAllStartPoint( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_ENDPOINT ) {
+		rc = doAllEndPoint( mark1, colType1, sp1, value );
 	} else {
 	}
 	return rc;
 }
 
 
-bool BinaryOperationNode::doBooleanOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+bool BinaryOpNode::doBooleanOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString& mark2, 
 										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 										const AbaxDataString &carg )
@@ -4513,7 +4545,7 @@ bool BinaryOperationNode::doBooleanOp( int op, const AbaxDataString& mark1, cons
 	return rc;
 }
 
-bool BinaryOperationNode::doAllWithin( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+bool BinaryOpNode::doAllWithin( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString& mark2, 
 										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
@@ -4596,13 +4628,14 @@ bool BinaryOperationNode::doAllWithin( const AbaxDataString& mark1, const AbaxDa
 	return false;
 }
 
-bool BinaryOperationNode::doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
+bool BinaryOpNode::doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
 									 const JagStrSplit &sp1, const  AbaxDataString &carg, AbaxDataString &value )
 {
 	//prt(("s3920 doAllPointN() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
-	sp1.print();
+	// sp1.print();
 	//prt(("s3039 sp1.length()=%d\n", sp1.length() ));
 	int narg = jagatoi( carg.c_str());
+	if ( narg < 1 ) return false;
 	int i = narg - 1;
 	bool rc = false;
 	value = "";
@@ -4661,10 +4694,101 @@ bool BinaryOperationNode::doAllPointN( const AbaxDataString& mk1, const AbaxData
 	return rc;
 }
 
-bool BinaryOperationNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
+bool BinaryOpNode::doAllBBox( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllBBox() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	// sp.print();
+	//prt(("s3539 sp1.length()=%d\n", sp1.length() ));
+	bool rc = false;
+	value = "";
+	if ( strchr( sp[0].c_str(), ':' ) ) {
+		value = sp[0];
+		value.replace(':', ' ' );
+		rc = true;
+	} 
+
+	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
+	//prt(("s2039 sp[1]=[%s]\n", sp[1].c_str() ));
+	//prt(("s2411 colType1=[%s] value=[%s]\n",  colType1.c_str(), value.c_str() ));
+	return rc;
+}
+
+bool BinaryOpNode::doAllStartPoint( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllBBox() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	value = "";
+	if ( JagParser::isVectorGeoType( colType ) 
+	     && colType != JAG_C_COL_TYPE_TRIANGLE 
+	     && colType != JAG_C_COL_TYPE_TRIANGLE3D 
+	   ) {
+		 return false;
+	 }
+
+	//sp.print();
+	//prt(("s3553 sp.length()=%d\n", sp.length() ));
+
+	if ( colType == JAG_C_COL_TYPE_LINE ) {
+    	value = trimEndZeros(sp[0]) + " " + trimEndZeros(sp[1]);
+	} else if ( colType == JAG_C_COL_TYPE_LINE3D  ) {
+    	value = trimEndZeros(sp[0]) + " " + trimEndZeros(sp[1]) + " " + trimEndZeros(sp[2]);
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		value = trimEndZeros(sp[0]) + " " + trimEndZeros(sp[1]);
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		value = trimEndZeros(sp[0]) + " " + trimEndZeros(sp[1]) + " " + trimEndZeros(sp[2]);
+	} else {
+    	JagStrSplit s( sp[0], ':' );
+    	if ( s.length() < 4 ) {
+    		value = sp[0]; 
+    	} else {
+    		value = JagGeo::safeGetStr(sp, 1);
+    	}
+    	value.replace(':', ' ' );
+	}
+
+	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
+	//prt(("s2039 sp[1]=[%s]\n", sp[1].c_str() ));
+	// prt(("s2411 colType=[%s] value=[%s]\n",  colType.c_str(), value.c_str() ));
+	return true;
+}
+
+bool BinaryOpNode::doAllEndPoint( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllBBox() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	value = "";
+	if ( JagParser::isVectorGeoType( colType ) 
+	     && colType != JAG_C_COL_TYPE_TRIANGLE 
+	     && colType != JAG_C_COL_TYPE_TRIANGLE3D 
+	   ) {
+		 return false;
+	 }
+
+	//sp.print();
+	//prt(("s3653 sp.length()=%d\n", sp.length() ));
+
+	if ( colType == JAG_C_COL_TYPE_LINE ) {
+    	value = trimEndZeros(sp[2]) + " " + trimEndZeros(sp[3]);
+	} else if ( colType == JAG_C_COL_TYPE_LINE3D  ) {
+    	value = trimEndZeros(sp[3]) + " " + trimEndZeros(sp[4]) + " " + trimEndZeros(sp[5]);
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		value = trimEndZeros(sp[4]) + " " + trimEndZeros(sp[5]);
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		value = trimEndZeros(sp[6]) + " " + trimEndZeros(sp[7]) + " " + trimEndZeros(sp[8]);
+	} else {
+		int len = sp.length();
+		value = sp[len-1];
+		value.replace(':', ' ' );
+	}
+
+	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
+	//prt(("s2039 sp[1]=[%s]\n", sp[1].c_str() ));
+	//prt(("s2411 colType=[%s] value=[%s]\n",  colType.c_str(), value.c_str() ));
+	return true;
+}
+
+bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
 									 const JagStrSplit &sp1, double &value )
 {
-	prt(("s2315 colType1=[%s] \n", colType1.c_str() ));
+	//prt(("s2315 colType1=[%s] \n", colType1.c_str() ));
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return false;
@@ -4750,7 +4874,7 @@ bool BinaryOperationNode::doAllArea( const AbaxDataString& mk1, const AbaxDataSt
 }
 
 
-bool BinaryOperationNode::doAllIntersect( const AbaxDataString& mark1, const AbaxDataString &colType1, 
+bool BinaryOpNode::doAllIntersect( const AbaxDataString& mark1, const AbaxDataString &colType1, 
 										int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2, 
 										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
@@ -4832,7 +4956,7 @@ bool BinaryOperationNode::doAllIntersect( const AbaxDataString& mark1, const Aba
 }
 
 
-bool BinaryOperationNode::doAllNearby( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+bool BinaryOpNode::doAllNearby( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
      								   const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2,
 									   const AbaxDataString &carg )
 {
@@ -4842,7 +4966,7 @@ bool BinaryOperationNode::doAllNearby( const AbaxDataString& mark1, const AbaxDa
 }
 
 
-bool BinaryOperationNode::isAggregateOp( short op )
+bool BinaryOpNode::isAggregateOp( short op )
 {
     if (op == JAG_FUNC_MIN || op == JAG_FUNC_MAX || op == JAG_FUNC_AVG || op == JAG_FUNC_COUNT ||
         op == JAG_FUNC_SUM || op == JAG_FUNC_STDDEV || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST ||
@@ -4853,7 +4977,7 @@ bool BinaryOperationNode::isAggregateOp( short op )
 }
 
 
-bool BinaryOperationNode::isMathOp( short op ) 
+bool BinaryOpNode::isMathOp( short op ) 
 {
 	if (JAG_NUM_ADD == op || JAG_NUM_SUB == op || JAG_NUM_MULT == op || 
 		JAG_NUM_DIV == op || JAG_NUM_REM == op || JAG_NUM_POW == op) {
@@ -4862,7 +4986,7 @@ bool BinaryOperationNode::isMathOp( short op )
 	return false;
 }
 
-bool BinaryOperationNode::isCompareOp( short op ) 
+bool BinaryOpNode::isCompareOp( short op ) 
 {
 	if (JAG_FUNC_EQUAL == op || JAG_FUNC_NOTEQUAL == op || JAG_FUNC_LESSTHAN == op || JAG_FUNC_LESSEQUAL == op || 
 		JAG_FUNC_GREATERTHAN == op || JAG_FUNC_GREATEREQUAL == op || JAG_FUNC_LIKE == op || JAG_FUNC_MATCH == op) {
@@ -4871,7 +4995,7 @@ bool BinaryOperationNode::isCompareOp( short op )
 	return false;
 }	
 
-bool BinaryOperationNode::isStringOp( short op )
+bool BinaryOpNode::isStringOp( short op )
 {
 	if (op == JAG_FUNC_SUBSTR || op == JAG_FUNC_UPPER || op == JAG_FUNC_LOWER || 
 		op == JAG_FUNC_LTRIM || op == JAG_FUNC_RTRIM || op == JAG_FUNC_TRIM) {
@@ -4880,7 +5004,7 @@ bool BinaryOperationNode::isStringOp( short op )
 	return false;
 }
 
-bool BinaryOperationNode::isSpecialOp( short op )
+bool BinaryOpNode::isSpecialOp( short op )
 {
 	if (op == JAG_FUNC_MIN || op == JAG_FUNC_MAX || op == JAG_FUNC_FIRST || op == JAG_FUNC_LAST || op == JAG_FUNC_LENGTH) {
 		return true;
@@ -4888,7 +5012,7 @@ bool BinaryOperationNode::isSpecialOp( short op )
 	return false;
 }
 
-bool BinaryOperationNode::isTimedateOp( short op )
+bool BinaryOpNode::isTimedateOp( short op )
 {
 	if (op == JAG_FUNC_SECOND || op == JAG_FUNC_MINUTE || op == JAG_FUNC_HOUR || op == JAG_FUNC_DATE || 
 		op == JAG_FUNC_MONTH || op == JAG_FUNC_YEAR || 
@@ -4899,7 +5023,7 @@ bool BinaryOperationNode::isTimedateOp( short op )
 	return false;
 }
 
-short BinaryOperationNode::getFuncLength( short op ) 
+short BinaryOpNode::getFuncLength( short op ) 
 {
 	if ( JAG_FUNC_CURDATE == op ) {
 		return JAG_FUNC_CURDATE_LEN;

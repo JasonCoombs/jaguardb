@@ -403,7 +403,7 @@ void testrayrecord()
 void testwheretree()
 {
 	/**
-    BinaryOperationNode *root;
+    BinaryOpNode *root;
     BinaryExpressionBuilder b;
     AbaxDataString expression = "1=1 and f=2 or ( 2=2 and f=3) or ( b in ( 1,2) )";
 	cout << expression << endl;

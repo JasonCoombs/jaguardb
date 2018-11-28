@@ -1678,7 +1678,7 @@ int JagParser::setSelectColumn()
 			if ( (p = (char*)strrchrWithQuote(r, ' ')) ) {
 				q = p++;
 				while ( *q == ' ' && q - r > 0 ) --q;
-				if ( q - r == 0 || BinaryOperationNode::isMathOp(*q) || *q == '=' || *q == '<' || *q == '>' ||
+				if ( q - r == 0 || BinaryOpNode::isMathOp(*q) || *q == '=' || *q == '<' || *q == '>' ||
 					( q - 4 > r && strncasecmp(q-4, " like", 5) == 0 ) ) { 
 					p = r;
 				} else {
@@ -2881,7 +2881,7 @@ int JagParser::setUpdateVector()
 		else if ( (*q == '=' && reachEqual) || (*q != '=' && !reachEqual) ) return -2920;
 		// setupCheckMap();
 		_ptrParam->setupCheckMap();
-		BinaryOperationNode *rt = 
+		BinaryOpNode *rt = 
 			_ptrParam->updSetVec[i].tree->parse( this, q, 2, _ptrParam->treecheckmap, _ptrParam->joincolmap,
 												_ptrParam->updSetVec[i].colList ); 
 		// prt(("s2036 colList=[%s]\n", _ptrParam->updSetVec[i].colList.c_str() ));
@@ -3805,6 +3805,31 @@ bool JagParser::isPolyType( const AbaxDataString &rcs )
 		 return true;
 	}
 	return false;
+}
+
+bool JagParser::isVectorGeoType( const AbaxDataString &rcs )
+{
+	if ( rcs.size() < 1 ) return false;
+
+	if ( 
+		    rcs == JAG_C_COL_TYPE_CIRCLE || rcs == JAG_C_COL_TYPE_SPHERE 
+		 || rcs == JAG_C_COL_TYPE_SQUARE || rcs == JAG_C_COL_TYPE_CUBE 
+		 || rcs == JAG_C_COL_TYPE_SQUARE3D 
+		 || rcs == JAG_C_COL_TYPE_CIRCLE3D 
+		 || rcs == JAG_C_COL_TYPE_TRIANGLE 
+		 || rcs == JAG_C_COL_TYPE_TRIANGLE3D 
+		 || rcs == JAG_C_COL_TYPE_CYLINDER 
+		 || rcs == JAG_C_COL_TYPE_CONE 
+		 || rcs == JAG_C_COL_TYPE_ELLIPSE
+		 || rcs == JAG_C_COL_TYPE_ELLIPSE3D
+		 || rcs == JAG_C_COL_TYPE_ELLIPSOID
+		 || rcs == JAG_C_COL_TYPE_RECTANGLE3D
+		 || rcs == JAG_C_COL_TYPE_RECTANGLE || rcs == JAG_C_COL_TYPE_BOX
+	   ) 
+	 {
+		 return true;
+	 } 
+ 	 return false;
 }
 
 
