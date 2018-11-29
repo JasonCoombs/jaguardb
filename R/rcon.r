@@ -120,5 +120,10 @@ print(summary(relation))
 #rel <- lm(table$unit_price~table$units_sold+table$unit_cost,data = table)
 #print(summary(rel))
 
+# Association analysis using Package arules
+library(arules,lib.loc="/home/tina/jaguar/lib/rlib",warn.conflicts = FALSE)
+apriori(table, parameter=list(support=0.01,confidence=0.2))
+eclat(table, parameter = list(support = 0.05),control = list(verbose=FALSE))
+
 ###Warning: Always disconnect at the end of program
 dbDisconnect(con)
