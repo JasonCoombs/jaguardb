@@ -20,7 +20,7 @@
 #define _jag_def_h_
 
 // version
-#define JAG_VERSION			"2.9.4.5"
+#define JAG_VERSION			"2.9.5"
 #define JAG_BRAND			"jaguar"
 
 // File Defs
