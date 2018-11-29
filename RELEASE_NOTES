@@ -1,4 +1,25 @@
 
+Jaguar 2.9.5 11/30/2018
+--------------------------------------------------------------
+. added dimension(col)         -- get dimension as integer of a shape column
+. added geotype(col)           -- get type as string of a shape column
+. added pointn(col,n)          -- get n-th point (1-based) of a shape column. (x y [z])
+. added bbox(col)              -- get bounding box of a shape column. (xmin ymin [zmin] xmax ymax [zmax])
+. added startpoint(col)        -- get start point of a line string column. (x y [z])
+. added endtpoint(col)         -- get end point of a line string column. (x y [z])
+. added isclosed(col)          -- check if points of a line string column is closed. (0 or 1)
+. added numpoints(col)         -- get total number of points of a line string or polygon
+. added numrings(col)          -- get total number of rings of a polygon or multipolygon
+. added srid(col)              -- get SRID of a shape column
+. added summary(col)           -- get a text summary of a shape column
+. added xmin(col)              -- get the minimum x-coordinate of a shape with raster data
+. added ymin(col)              -- get the minimum y-coordinate of a shape with raster data
+. added zmin(col)              -- get the minimum z-coordinate of a shape with raster data
+. added xmax(col)              -- get the maximum x-coordinate of a shape with raster data
+. added ymax(col)              -- get the maximum y-coordinate of a shape with raster data
+. added zmax(col)              -- get the maximum z-coordinate of a shape with raster data
+
+
 Jaguar 2.9.4.5 11/23/2018
 --------------------------------------------------------------
 . added area(geocolumn) area( geocolconstant() ) function
