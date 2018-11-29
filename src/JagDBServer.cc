@@ -3304,7 +3304,7 @@ void JagDBServer::sendValueData( const JagParseParam &pparm, const JagRequest &r
 	pparm._lineFile->startRead();
 
 	while ( pparm._lineFile->getLine( line ) ) {
-		prt(("s7230 sendMessageLength line=%s ...\n", line.c_str() ));
+		//prt(("s7230 sendMessageLength line=%s ...\n", line.c_str() ));
 		JagTable::sendMessageLength( req, line.c_str(), line.size(), "JS" );
 	}
 }

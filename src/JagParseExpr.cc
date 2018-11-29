@@ -1040,6 +1040,7 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
 	else if ( binaryOp == JAG_FUNC_NUMRINGS ) str = "numrings";
+	else if ( binaryOp == JAG_FUNC_SRID ) str = "srid";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
@@ -1104,13 +1105,14 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		type = JAG_C_COL_TYPE_STR;
 		collen = 2;
 		siglen = 0;
-		/***
-	} else if ( _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
+	} else if ( _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_NUMPOINTS 
+				 || _binaryOp == JAG_FUNC_DIMENSION
+	             || _binaryOp == JAG_FUNC_NUMRINGS ) {
+		// important for integer
 		ltmode = 1;
 		type = JAG_C_COL_TYPE_DINT;
 		collen = JAG_DINT_FIELD_LEN;
 		siglen = 0;
-		***/
 	} else if ( !_right ) {
 		// one child
 		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
@@ -2989,6 +2991,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
+				 || _binaryOp == JAG_FUNC_SRID 
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		ltmode = 0; // string
 		bool brc = false;
@@ -3996,6 +3999,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_ISCLOSED || 
 		fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMRINGS || 
+		fop == JAG_FUNC_SRID || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4223,6 +4227,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_NUMPOINTS; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numrings", 8 ) ) {
 		fop = JAG_FUNC_NUMRINGS; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "srid", 4 ) ) {
+		fop = JAG_FUNC_SRID; len = 4; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -4526,6 +4532,10 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllNumPoints( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_NUMRINGS ) {
 		rc = doAllNumRings( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_SRID ) {
+		value = intToStr(srid1);
+		// prt(("s0293 JAG_FUNC_SRID value=[%s]\n", value.c_str() ));
+		rc = true;
 	} else {
 	}
 	return rc;
