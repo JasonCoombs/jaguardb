@@ -1042,6 +1042,12 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_NUMRINGS ) str = "numrings";
 	else if ( binaryOp == JAG_FUNC_SRID ) str = "srid";
 	else if ( binaryOp == JAG_FUNC_SUMMARY ) str = "summary";
+	else if ( binaryOp == JAG_FUNC_XMIN ) str = "xmin";
+	else if ( binaryOp == JAG_FUNC_YMIN ) str = "ymin";
+	else if ( binaryOp == JAG_FUNC_ZMIN ) str = "zmin";
+	else if ( binaryOp == JAG_FUNC_XMAX ) str = "xmax";
+	else if ( binaryOp == JAG_FUNC_YMAX ) str = "ymax";
+	else if ( binaryOp == JAG_FUNC_ZMAX ) str = "zmax";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
@@ -1117,8 +1123,14 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	} else if ( _binaryOp == JAG_FUNC_SUMMARY ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
-		collen = 128; // "srid=0 dimension=3 geotype=Circle isclosed=0 numpoints=23200 numrings=0 isclosed=0"
+		collen = 128; 
 		siglen = 0;
+	} else if ( _binaryOp == JAG_FUNC_XMIN || _binaryOp == JAG_FUNC_YMIN || _binaryOp == JAG_FUNC_ZMIN
+	            || _binaryOp == JAG_FUNC_XMAX || _binaryOp == JAG_FUNC_YMAX || _binaryOp == JAG_FUNC_ZMAX ) {
+		ltmode = 2;
+		type = JAG_C_COL_TYPE_DOUBLE;
+		collen = JAG_DOUBLE_FIELD_LEN; 
+		siglen = JAG_DOUBLE_SIG_LEN;
 	} else if ( !_right ) {
 		// one child
 		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
@@ -2972,8 +2984,10 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		lstr = doubleToStr( dist );
 		ltmode = 2;
 		return 1;
-	} else if ( _binaryOp == JAG_FUNC_AREA ) {
-		ltmode = 2; // int
+	} else if ( _binaryOp == JAG_FUNC_AREA 
+			    || _binaryOp == JAG_FUNC_XMIN || _binaryOp == JAG_FUNC_YMIN || _binaryOp == JAG_FUNC_ZMIN
+	            || _binaryOp == JAG_FUNC_XMAX || _binaryOp == JAG_FUNC_YMAX || _binaryOp == JAG_FUNC_ZMAX ) {
+		ltmode = 2; // double
 		bool brc = false;
 		double val = 0.0;
 		try {
@@ -4003,6 +4017,12 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NUMRINGS || 
 		fop == JAG_FUNC_SRID || 
 		fop == JAG_FUNC_SUMMARY || 
+		fop == JAG_FUNC_XMIN || 
+		fop == JAG_FUNC_YMIN || 
+		fop == JAG_FUNC_ZMIN || 
+		fop == JAG_FUNC_XMAX || 
+		fop == JAG_FUNC_YMAX || 
+		fop == JAG_FUNC_ZMAX || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4234,18 +4254,30 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_NUMRINGS; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "srid", 4 ) ) {
 		fop = JAG_FUNC_SRID; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "xmin", 4 ) ) {
+		fop = JAG_FUNC_XMIN; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "ymin", 4 ) ) {
+		fop = JAG_FUNC_YMIN; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "zmin", 4 ) ) {
+		fop = JAG_FUNC_ZMIN; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "xmax", 4 ) ) {
+		fop = JAG_FUNC_XMAX; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "ymax", 4 ) ) {
+		fop = JAG_FUNC_YMAX; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "zmax", 4 ) ) {
+		fop = JAG_FUNC_ZMAX; len = 4; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
 	}
 
-	//prt(("s3403 fop=%d fopstr=[%s]\n", fop,  BinaryOpNode::getBinaryOpType(fop).c_str() ));
+	// prt(("s3403 fop=%d fopstr=[%s]\n", fop,  BinaryOpNode::getBinaryOpType(fop).c_str() ));
 	
 	// for funcs, need to check if those are colname or func name 
 	// ( e.g. find '(' after name and possible spaces )
 	if ( 2 == ctype ) {
 		q = p+len;
-		while ( *q == ' ' ) ++q;
+		while ( isspace(*q) ) ++q;
 		if ( *q != '(' ) {
 			rc = 0;
 			if ( JAG_FUNC_SUBSTR == fop ) _substrClause = -1;
@@ -4261,7 +4293,7 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		// for datediff, first column must be type of: year, month, day, hour, minute, second
 		if ( JAG_FUNC_YEAR != fop && JAG_FUNC_MONTH != fop && JAG_FUNC_HOUR != fop &&
 			JAG_FUNC_MINUTE != fop && JAG_FUNC_SECOND != fop && 0 != strncasecmp(p, "day", 3 ) ) {
-			throw 93;
+			throw 3293;
 		}
 	}
 
@@ -4450,7 +4482,7 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 // op can be AEA
 bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &value )
 {
-	prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
+	// prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
 
@@ -4482,7 +4514,7 @@ bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const 
 // op can be AEA
 bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &value )
 {
-	//prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", lstr.c_str() ));
+	prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleDoubleOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
 
@@ -4511,9 +4543,15 @@ bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &lstr, con
 bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, double &value )
 {
+	//prt(("s2059 doSingleDoubleOp sp1:\n" ));
+	//sp1.print();
+
 	bool rc = false;
 	if ( op == JAG_FUNC_AREA ) {
 		rc = doAllArea( mark1, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_XMIN || op == JAG_FUNC_XMIN || op == JAG_FUNC_XMIN
+	            || op == JAG_FUNC_XMAX || op == JAG_FUNC_YMAX || op == JAG_FUNC_ZMAX ) {
+		rc = doAllMinMax( op, mark1, colType1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -4877,8 +4915,8 @@ bool BinaryOpNode::doAllIsClosed( const AbaxDataString& mk, const AbaxDataString
 
 bool BinaryOpNode::doAllNumPoints( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
 {
-	prt(("s3420 doAllNumPoints() colType=[%s] sp.print(): \n", colType.c_str() ));
-	sp.print();
+	//prt(("s3420 doAllNumPoints() colType=[%s] sp.print(): \n", colType.c_str() ));
+	//sp.print();
 	value = "0";
 	if ( colType == JAG_C_COL_TYPE_LINE || colType == JAG_C_COL_TYPE_LINE3D ) {
 		value = "2";
@@ -5019,6 +5057,57 @@ bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &c
 
 	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
 	return false;
+}
+
+
+bool BinaryOpNode::doAllMinMax( int op, const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, double &value )
+{
+	//prt(("s2815 colType=[%s] sp.print(): \n", colType.c_str() ));
+	//sp.print();
+
+	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
+	value = 0.0;
+	bool rc = false;
+	if ( JagParser::isVectorGeoType( colType ) ) {
+		// todo for vector shapes, you can get min max coordinates by calculation
+		return rc;
+	}
+
+	int len;
+	for ( int i=0; i < sp.length(); ++i ) {
+		JagStrSplit ss(sp[i], ':');
+		len = ss.length();
+		if ( len < 4 ) continue;
+		if ( len == 4 ) {
+			// xmin:ymin:xmax:ymax
+			if (  op == JAG_FUNC_XMIN ) {
+				value = jagatof( ss[0].c_str() );
+			} else if ( op == JAG_FUNC_YMIN ) {
+				value = jagatof( ss[1].c_str() );
+			} else if ( op == JAG_FUNC_XMAX ) {
+				value = jagatof( ss[2].c_str() );
+			} else if ( op == JAG_FUNC_YMAX ) {
+				value = jagatof( ss[3].c_str() );
+			} 
+		} else if ( len == 6 ) {
+			if (  op == JAG_FUNC_XMIN ) {
+				value = jagatof( ss[0].c_str() );
+			} else if ( op == JAG_FUNC_YMIN ) {
+				value = jagatof( ss[1].c_str() );
+			} else if ( op == JAG_FUNC_ZMIN ) {
+				value = jagatof( ss[2].c_str() );
+			} else if ( op == JAG_FUNC_XMAX ) {
+				value = jagatof( ss[3].c_str() );
+			} else if ( op == JAG_FUNC_YMAX ) {
+				value = jagatof( ss[4].c_str() );
+			} else if ( op == JAG_FUNC_ZMAX ) {
+				value = jagatof( ss[5].c_str() );
+			} 
+		}
+		rc = true;
+		break;
+	}
+	return rc;
 }
 
 
