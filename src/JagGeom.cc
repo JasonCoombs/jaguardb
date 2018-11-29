@@ -17205,12 +17205,12 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
         char *p;
         char *p2;
 
-    	for ( int i=start; i < sp1.length(); ++i ) {
+    	for ( int i=0; i < sp1.length(); ++i ) {
     		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') < 1 ) continue;
+    		if ( strchrnum( str, ':') < 1 || strchrnum( str, ':') > 2 ) continue;
     		get2double(str, p, ':', dx, dy );
 
-    		for ( int i=start2; i < sp2.length(); ++i ) {
+    		for ( int i=0; i < sp2.length(); ++i ) {
             		str2 = sp2[i].c_str();
             		if ( strchrnum( str2, ':') < 1 ) continue;
             		get2double(str2, p2, ':', dx2, dy2 );
