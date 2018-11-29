@@ -1041,6 +1041,7 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
 	else if ( binaryOp == JAG_FUNC_NUMRINGS ) str = "numrings";
 	else if ( binaryOp == JAG_FUNC_SRID ) str = "srid";
+	else if ( binaryOp == JAG_FUNC_SUMMARY ) str = "summary";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
@@ -1112,6 +1113,11 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		ltmode = 1;
 		type = JAG_C_COL_TYPE_DINT;
 		collen = JAG_DINT_FIELD_LEN;
+		siglen = 0;
+	} else if ( _binaryOp == JAG_FUNC_SUMMARY ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = 128; // "srid=0 dimension=3 geotype=Circle isclosed=0 numpoints=23200 numrings=0 isclosed=0"
 		siglen = 0;
 	} else if ( !_right ) {
 		// one child
@@ -1739,10 +1745,6 @@ int BinaryOpNode::formatAggregateParts( AbaxDataString &parts, AbaxDataString &l
 		parts = AbaxDataString("dimension(") + lparts + ")";
 	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
 		parts = AbaxDataString("geotype(") + lparts + ")";
-		/***
-	} else if ( _binaryOp == JAG_FUNC_ISCLOSED ) {
-		parts = AbaxDataString("isclosed(") + lparts + ")";
-		***/
 	}
 	// ... more calcuations ...
 	return 1;
@@ -2991,7 +2993,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
-				 || _binaryOp == JAG_FUNC_SRID 
+				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		ltmode = 0; // string
 		bool brc = false;
@@ -4000,6 +4002,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMRINGS || 
 		fop == JAG_FUNC_SRID || 
+		fop == JAG_FUNC_SUMMARY || 
 		fop == JAG_FUNC_DIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4079,6 +4082,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_MAX; len = 3; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "avg", 3 ) ) {
 		fop = JAG_FUNC_AVG; len = 3; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "summary", 7 ) ) {
+		fop = JAG_FUNC_SUMMARY; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "sum", 3 ) ) {
 		fop = JAG_FUNC_SUM; len = 3; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "count", 5 ) ) {
@@ -4445,7 +4450,7 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 // op can be AEA
 bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &value )
 {
-	//prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
+	prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
 
@@ -4536,6 +4541,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		value = intToStr(srid1);
 		// prt(("s0293 JAG_FUNC_SRID value=[%s]\n", value.c_str() ));
 		rc = true;
+	} else if ( op == JAG_FUNC_SUMMARY ) {
+		rc = doAllSummary( mark1, colType1, srid1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -4908,6 +4915,22 @@ bool BinaryOpNode::doAllNumRings( const AbaxDataString& mk, const AbaxDataString
 	 
 	value = "0";
 	return false;
+}
+
+bool BinaryOpNode::doAllSummary( const AbaxDataString& mk, const AbaxDataString &colType, int srid, const JagStrSplit &sp, AbaxDataString &value )
+{
+	AbaxDataString npoints, nrings, isclosed;
+	doAllNumPoints( mk, colType, sp, npoints );
+	doAllNumRings( mk, colType, sp, nrings );
+	doAllIsClosed( mk, colType, sp, isclosed );
+
+	value = AbaxDataString("geotype:") + JagGeo::getTypeStr(colType);
+	value += AbaxDataString(" srid:") + intToStr(srid);
+	value += AbaxDataString(" dimension:") +  intToStr(JagGeo::getPolyDimension( colType ) );
+	value += AbaxDataString(" numpoints:") + npoints;
+	value += AbaxDataString(" numrings:") + nrings;
+	value += AbaxDataString(" isclosed:") + isclosed;
+	return true;
 }
 
 bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
