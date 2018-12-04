@@ -17494,9 +17494,8 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
             start = 1;
         }
 
-
-
-        double dx, dy, dz, d, d3, d2, d1;
+        double dx, dy, dz, d, d1;
+        double xsum = 0, ysum = 0, zsum = 0, counter;
         double mind = LONG_MAX;
         double maxd = LONG_MIN;
         const char *str;
@@ -17509,21 +17508,28 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
             if ( strchrnum( str, ':') < 1 ) continue;
             get3double(str, p, ':', dx, dy, dz );
             d1 = JagGeo::distance( dx, dy, dz, x, y, z, srid );
-            mind = d - r;
-            maxd = d + r;
+            if ( d < mind ) mind = d;
+            if ( d > maxd ) maxd = d;
+            xsum = xsum + dx;
+            ysum = ysum + dy;
+            zsum = zsum + dz;
+            counter ++;
         }
+        d1 = JagGeo::distance( xsum / counter, ysum / counter, zsum / counter, x, y, z, srid );
         if ( arg.caseEqual( "max" ) ) {
-            dist = maxd;
-        } else {
-            dist = mind;
+            dist = maxd + r;
+        } else if (arg.caseEqual("min" )){
+            dist = mind - r;
+        }else if  (arg.caseEqual("center" )){
+            dist = d1;
         }
 
     return true;
 	// todo012
 	// sp1.print();
 	// sp2.print();
-	dist = 0.0;
-    return true;
+//	dist = 0.0;
+//    return true;
 }
 bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
