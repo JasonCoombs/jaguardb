@@ -17188,12 +17188,12 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
 {
     {
     	int start = 0;
-    	if ( mk2 == JAG_OJAG ) {
+    	if ( mk1 == JAG_OJAG ) {
     		start = 1;
     	}
 
         int start2 = 0;
-        if ( mk1 == JAG_OJAG ) {
+        if ( mk2 == JAG_OJAG ) {
             start2 = 1;
         }
 
@@ -17386,6 +17386,7 @@ bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, cons
 	if ( mk1 == JAG_OJAG ) {
         start = 1;
     }
+
 	double dx, dy, d;
 	double mind = LONG_MAX;
     double maxd = LONG_MIN;
@@ -17393,6 +17394,7 @@ bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, cons
     char *p;
 	for (int i = start; i<sp1.length(); ++i){
 		str = sp1[i].c_str();
+		//printf("%s\n",str.c_str());
 		if(strchrnum(str, ':') < 1) continue;
 		get2double(str,p,':',dx,dy);
 		d = JagGeo::distance( x0, y0, dx, dy, srid ); //calculate each point on linestring to center of ellipse
@@ -17410,7 +17412,7 @@ bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, cons
 bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
-	// todo007
+	// todo007--finish so far
 	// sp1.print();
 	// sp2.print();
        //dist = 0.0;
@@ -17442,21 +17444,21 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
  	bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								     const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
 {
-	// todo008
-	// sp1.print();
-	// sp2.print();
+	// todo008 -error
+	sp1.print();
+	sp2.print();
         //	dist = 0.0;
         int start = 0;
-    	if ( mk2 == JAG_OJAG ) {
+    	if ( mk1 == JAG_OJAG ) {
     		start = 1;
     	}
 
         int start2 = 0;
-        if ( mk1 == JAG_OJAG ) {
+        if ( mk2 == JAG_OJAG ) {
             start2 = 1;
         }
 
-        double dx, dy, d, dx2, dy2, d2;
+        double dx, dy, d, dx2, dy2;
     	double mind = LONG_MAX;
     	double maxd = LONG_MIN;
         const char *str;
@@ -17473,8 +17475,11 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
             		str2 = sp2[i].c_str();
             		if ( strchrnum( str2, ':') < 1 ) continue;
             		get2double(str2, p2, ':', dx2, dy2 );
+            		//printf("%.7lf\n",dx2);
+            		//printf("%.7lf\n",dy2);
 
                     d = JagGeo::distance( dx, dy, dx2, dy2, srid );
+                    //cout << " By default:   " << d << endl;
                     if ( d < mind ) mind = d;
                     if ( d > maxd ) maxd = d;
     	            }
@@ -17495,7 +17500,47 @@ bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk
 	// todo009
 	// sp1.print();
 	// sp2.print();
-	dist = 0.0;
+	//dist = 0.0;
+	int start = 0;
+        	if ( mk1 == JAG_OJAG ) {
+        		start = 1;
+        	}
+
+            int start2 = 0;
+            if ( mk2 == JAG_OJAG ) {
+                start2 = 1;
+            }
+
+            double dx, dy, dz, d, dx2, dy2, dz2, d2;
+        	double mind = LONG_MAX;
+        	double maxd = LONG_MIN;
+            const char *str;
+            const char *str2;
+            char *p;
+            char *p2;
+
+        	for ( int i=0; i < sp1.length(); ++i ) {
+        		str = sp1[i].c_str();
+        		if ( strchrnum( str, ':') < 2  ) continue;
+        		get3double(str, p, ':', dx, dy, dz );
+
+        		for ( int i=0; i < sp2.length(); ++i ) {
+                		str2 = sp2[i].c_str();
+                		if ( strchrnum( str2, ':') < 2 ) continue;
+                		get3double(str2, p2, ':', dx2, dy2, dz2 );
+
+                        d = JagGeo::distance( dx, dy, dz, dx2, dy2, dz2, srid );
+                        if ( d < mind ) mind = d;
+                        if ( d > maxd ) maxd = d;
+        	            }
+            }
+        	if ( arg.caseEqual( "max" ) ) {
+        		dist = maxd;
+        	} else {
+        		dist = mind;
+        	}
+
+        	return true;
     return true;
 }
 bool JagGeo::lineString3DDistanceCube(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
