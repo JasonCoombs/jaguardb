@@ -1670,7 +1670,10 @@ int JagParser::setSelectColumn()
 		r = (char*)_splitwq[i].c_str();
 		// prt(("s5012 r=[%s]\n", r ));
 		if ( (p = (char*)strcasestrskipquote(r, " as ")) ) {
-			*p = '\0';
+			// remove unnecessary spaces at the end of select tree
+			q = p;
+			while ( isspace(*p) ) --p; ++p; *p = '\0';
+			p = q;
 			p += 4;
 			while ( isspace(*p) ) ++p;
 			if ( *p == '\0' ) return -2450;
@@ -1693,8 +1696,11 @@ int JagParser::setSelectColumn()
 		//prt(("s5013 p=[%s] r=[%s]\n", p, r ));
 		if ( p - r != 0 ) { // has separate as name
 			_ptrParam->selColVec[i].name =  makeLowerString(r);
-			*(p-1) = '\0';
+			// *(p-1) = '\0';
+			// remove unnecessary spaces at the end of select tree
 			q = p;
+			--p; while ( isspace(*p) ) --p; ++p; *p = '\0';
+			p = q;
 			if ( *p == '\'' || *p == '"' ) {
 				if ( (q = (char*)jumptoEndQuote(q)) && *q == '\0' ) return -2470;
 				++p;
