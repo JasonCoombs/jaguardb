@@ -3259,7 +3259,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 			processBetween(jagParser, p, q, lastNode, cmap, jmap, colList );
 			_lastIsOperand = 1;
 			isandor = 0; // fixed bug
-		} else if ( 0 == strncasecmp( p, "in", 2 ) && (*(p+2) == ' ' || *(p+2) == '(') ) {
+		} else if ( 0 == strncasecmp( p, "in", 2 ) && ( isspace(*(p+2)) || *(p+2) == '(') ) {
 			if ( _datediffClause >= 0 || _substrClause >= 0 ) throw 2120;
 			if ( !_lastIsOperand ) throw 2185;
 			processIn( jagParser, p, q, lastNode, cmap, jmap, colList );
@@ -3370,11 +3370,11 @@ void BinaryExpressionBuilder::processIn( const JagParser *jpsr, const char *&p, 
 	StringElementNode lnode( this, lastNode._name, lastNode._value, "", _jpa, lastNode._tabnum, lastNode._typeMode );
 	bool first = 1, hasSep = 0;
 	p += 2;
-	while ( *p == ' ' ) ++p;
+	while ( isspace(*p) ) ++p;
 	if ( *p != '(' ) throw 28;
 	++p;
 	while ( 1 ) {
-		while ( *p == ' ' ) ++p;
+		while ( isspace(*p) ) ++p;
 		if ( *p == ')' || *p == '\0' ) break;
 		else if ( *p == ',' ) {
 			if ( first ) throw 29;

@@ -211,7 +211,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						_ptrParam->optype = 'C';
 						rc = 1;
 					} else {
-						while ( *_saveptr == ' ' ) ++_saveptr;
+						while ( isspace(*_saveptr) ) ++_saveptr;
 						if ( *_saveptr == '\0' ) {
 							_ptrParam->opcode = JAG_TRUNCATE_OP; 
 							_ptrParam->optype = 'C';
@@ -1095,7 +1095,7 @@ int JagParser::setTableIndexList( short setType )
 			
 			// get to know what type of join ( innerjoin, leftjoin, rightjoin, fulljoin )
 			p = q;
-			while ( *p == ' ' ) ++p;
+			while ( isspace(*p) ) ++p;
 			str = AbaxDataString( p, pjoin+5-p );
 			_split.init( str.c_str(), ' ', true );
 			// split should be [LEFT/RIGHT/FULL] [INNER/OUTER] JOIN
@@ -1140,7 +1140,7 @@ int JagParser::setTableIndexList( short setType )
 			
 			// set second to be joined table/index
 			p = pjoin + 5;
-			while ( *p == ' ' ) ++p;
+			while ( isspace(*p) ) ++p;
 			q = p;
 			while ( isValidNameChar(*q) || *q == ':' || *q == '.' ) ++q;
 			str = AbaxDataString( p, q-p );
@@ -1176,17 +1176,17 @@ int JagParser::setTableIndexList( short setType )
 			} else return -2170;
 
 			// rebuild query with dbname 
-			while ( *p == ' ' ) ++p;
+			while ( isspace(*p) ) ++p;
 			_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 				+ " " + ttlist + " " + p + " " + (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 
 			// prt(("s5120 dbNameCmd=[%s] ttlist=[%s] p=[%s] q=[%s] \n", _ptrParam->dbNameCmd.c_str(), ttlist.c_str(), p, q ));
 			// set ON tree
 			p = q;
-			while ( *p == ' ' ) ++p;
+			while ( isspace(*p) ) ++p;
 			if ( p != pon+1 ) return -2180;
 			p += 2;
-			while ( *p == ' ' ) ++p;
+			while ( isspace(*p) ) ++p;
 			OnlyTreeAttribute ota;
 			ota.init( _ptrParam->jpa, _ptrParam );
 			_ptrParam->joinOnVec.append( ota );
@@ -1443,7 +1443,7 @@ int JagParser::getAllClauses( short setType )
 			plist += 5;
 			_ptrParam->tabidxpos = plist; // command position before table/index name
 			while ( isspace(*plist) ) ++plist;
-		} else return -2210;
+		} else return -2310;
 		if ( pwhere ) {
 			*pwhere = '\0'; 
 			pwhere += 6;
@@ -1670,14 +1670,17 @@ int JagParser::setSelectColumn()
 		r = (char*)_splitwq[i].c_str();
 		// prt(("s5012 r=[%s]\n", r ));
 		if ( (p = (char*)strcasestrskipquote(r, " as ")) ) {
-			*p = '\0';
+			// remove unnecessary spaces at the end of select tree
+			q = p;
+			while ( isspace(*p) ) --p; ++p; *p = '\0';
+			p = q;
 			p += 4;
 			while ( isspace(*p) ) ++p;
 			if ( *p == '\0' ) return -2450;
 		} else {
 			if ( (p = (char*)strrchrWithQuote(r, ' ')) ) {
 				q = p++;
-				while ( *q == ' ' && q - r > 0 ) --q;
+				while ( isspace(*q) && q - r > 0 ) --q;
 				if ( q - r == 0 || BinaryOpNode::isMathOp(*q) || *q == '=' || *q == '<' || *q == '>' ||
 					( q - 4 > r && strncasecmp(q-4, " like", 5) == 0 ) ) { 
 					p = r;
@@ -1693,8 +1696,11 @@ int JagParser::setSelectColumn()
 		//prt(("s5013 p=[%s] r=[%s]\n", p, r ));
 		if ( p - r != 0 ) { // has separate as name
 			_ptrParam->selColVec[i].name =  makeLowerString(r);
-			*(p-1) = '\0';
+			// *(p-1) = '\0';
+			// remove unnecessary spaces at the end of select tree
 			q = p;
+			--p; while ( isspace(*p) ) --p; ++p; *p = '\0';
+			p = q;
 			if ( *p == '\'' || *p == '"' ) {
 				if ( (q = (char*)jumptoEndQuote(q)) && *q == '\0' ) return -2470;
 				++p;
@@ -1866,7 +1872,7 @@ int JagParser::setSelectOrderBy()
 {
 	if ( _ptrParam->selectOrderClause.length() < 1 ) return -2530;
 	const char *p = _ptrParam->selectOrderClause.c_str();
-	while ( isspace(*p) == ' ' ) ++p;
+	while ( isspace(*p) ) ++p;
 	_splitwq.init( p, ',' );
 	AbaxDataString upper;
 	GroupOrderVecAttribute gov;
@@ -2838,13 +2844,13 @@ int JagParser::setUpdateVector()
 	char *p, *q, *r;
 	bool reachEqual;
 	p = _saveptr;
-	while ( *p == ' ' ) ++p;
+	while ( isspace(*p) ) ++p;
 	if ( *p == '\0' ) return -2870;
 	if ( !(q = (char*)strcasestrskipquote(p, " where ")) ) {
 		return -2880;
 	}
 	
-	while ( *q == ' ' ) --q;
+	while ( isspace(*q) ) --q;
 	++q;
 	p[q-p] = '\0';
 	_splitwq.init(p, ',');
@@ -2861,13 +2867,13 @@ int JagParser::setUpdateVector()
 	for ( int i = 0; i < _splitwq.length(); ++i ) {
 		reachEqual = 0;
 		p = (char*)_splitwq[i].c_str();
-		while ( *p == ' ' ) ++p;
+		while ( isspace(*p) ) ++p;
 		q = p;
 		if ( *q == '\'' || *q == '"' ) {
 			++p;
 			if ( (q = (char*)jumptoEndQuote(q)) && *q == '\0' ) return -2890;
 		} else {
-			while ( *q != ' ' && *q != '\0' && *q != '=' ) ++q;
+			while ( !isspace(*q) && *q != '\0' && *q != '=' ) ++q;
 			if ( *q == '\0' ) return -2900;
 			else if ( *q == '=' ) reachEqual = 1;
 		}
@@ -2876,7 +2882,7 @@ int JagParser::setUpdateVector()
 		if ( strchr(p, '.') ) return -2910;
 		_ptrParam->updSetVec[i].colName = makeLowerString(p);
 		
-		while ( *q == ' ' ) ++q;
+		while ( isspace(*q) ) ++q;
 		if ( *q == '=' && !reachEqual ) ++q;
 		else if ( (*q == '=' && reachEqual) || (*q != '=' && !reachEqual) ) return -2920;
 		// setupCheckMap();

@@ -451,7 +451,7 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
     			sqlcmd = "changepass " + username + ":" + pass1;
     			pcmd = (char*) sqlcmd.c_str();
 			} else {
-				while ( *passtr == ' ' ) ++passtr;
+				while ( isspace(*passtr) ) ++passtr;
 				if ( strchr(passtr, ':') ) {
 					sqlcmd = AbaxDataString("changepass ") + passtr;
 				} else {
@@ -496,7 +496,7 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
 			continue;
 		} else if ( strncasecmp( pcmd, "!", 1 ) == 0 ) {
 			++pcmd;
-			while ( *pcmd == ' ' ) ++pcmd;
+			while ( isspace(*pcmd) ) ++pcmd;
 			if ( *pcmd == '\r' || *pcmd == '\n' || *pcmd == ';' || *pcmd == '\0' ) continue;
 			AbaxDataString outs = psystem(pcmd);
 			printit( jcli._outf, "%s\n", outs.c_str() );
