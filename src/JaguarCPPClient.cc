@@ -4995,7 +4995,7 @@ bool JaguarCPPClient::processSpool( char *querys )
 {
 	bool rc = 1;
 	querys += 6;
-	while ( *querys == ' ' ) ++querys;
+	while ( isspace(*querys) ) ++querys;
 	if ( *querys == ';' || *querys == '\0' || *querys == '\n' || *querys == '\r' ) {
 		rc = 0;
 	} else {
