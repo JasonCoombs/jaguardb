@@ -17499,17 +17499,16 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
         double mind = LONG_MAX;
         double maxd = LONG_MIN;
         const char *str;
-        const char *str2;
         char *p;
-        char *p2;
 
         for ( int i=start; i < sp1.length(); ++i ) {
             str = sp1[i].c_str();
             if ( strchrnum( str, ':') < 1 ) continue;
             get3double(str, p, ':', dx, dy, dz );
-            d1 = JagGeo::distance( dx, dy, dz, x, y, z, srid );
+            d = JagGeo::distance( dx, dy, dz, x, y, z, srid );
             if ( d < mind ) mind = d;
             if ( d > maxd ) maxd = d;
+            printf("%f\n",maxd);
             xsum = xsum + dx;
             ysum = ysum + dy;
             zsum = zsum + dz;
