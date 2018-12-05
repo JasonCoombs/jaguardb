@@ -17382,7 +17382,7 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
 	// sp1.print();
 	// sp2.print();
        //dist = 0.0;
-       int start = 0;
+    int start = 0;
 	if ( mk1 == JAG_OJAG ) {
         start = 1;
     }
@@ -17508,27 +17508,28 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
             d = JagGeo::distance( dx, dy, dz, x, y, z, srid );
             if ( d < mind ) mind = d;
             if ( d > maxd ) maxd = d;
-            printf("%f\n",maxd);
-            xsum = xsum + dx;
-            ysum = ysum + dy;
-            zsum = zsum + dz;
-            counter ++;
+            // printf("%f\n",maxd);
+        	if  (arg.caseEqual("center" )) {
+            	xsum = xsum + dx;
+            	ysum = ysum + dy;
+            	zsum = zsum + dz;
+            	counter ++;
+			}
         }
-        d1 = JagGeo::distance( xsum / counter, ysum / counter, zsum / counter, x, y, z, srid );
+
         if ( arg.caseEqual( "max" ) ) {
             dist = maxd + r;
         } else if (arg.caseEqual("min" )){
             dist = mind - r;
-        }else if  (arg.caseEqual("center" )){
-            dist = d1;
+        } else if  (arg.caseEqual("center" )){
+			if ( 0 == counter ) dist = 0.0;
+			else dist = JagGeo::distance( xsum / counter, ysum / counter, zsum / counter, x, y, z, srid );
         }
 
     return true;
 	// todo012
 	// sp1.print();
 	// sp2.print();
-//	dist = 0.0;
-//    return true;
 }
 bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
