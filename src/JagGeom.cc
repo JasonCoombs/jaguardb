@@ -17557,39 +17557,6 @@ bool JagGeo::lineString3DDistanceCone(int srid,  const AbaxDataString &mk1, cons
 bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
 {
-        int start = 0;
-        if ( mk1 == JAG_OJAG ) {
-            start = 1;
-        }
-
-
-
-        double dx, dy, d,d3, d2, d1;
-        double mind = LONG_MAX;
-        double maxd = LONG_MIN;
-        const char *str;
-        const char *str2;
-        char *p;
-        char *p2;
-
-        for ( int i=start; i < sp1.length(); ++i ) {
-            str = sp1[i].c_str();
-            if ( strchrnum( str, ':') < 1 ) continue;
-            get2double(str, p, ':', dx, dy );
-            d1 = JagGeo::distance( dx, dy, x1, y1, srid );
-            d2 = JagGeo::distance( dx, dy, x2, y2, srid );
-            d3 = JagGeo::distance( dx, dy, x3, y3, srid );
-            d = jagmin3(d1,d2,d3);
-            if ( d < mind ) mind = d;
-            if ( d > maxd ) maxd = d;
-        }
-        if ( arg.caseEqual( "max" ) ) {
-            dist = maxd;
-        } else {
-            dist = mind;
-        }
-
-    return true;
 	// todo015
 	// sp1.print();
 	// sp2.print();
