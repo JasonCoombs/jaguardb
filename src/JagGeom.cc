@@ -16090,6 +16090,17 @@ bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const AbaxD
 		start = 1;
 	}
 
+	if ( arg.caseEqual( "center" ) ) {
+		double avgx, avgy;
+		bool rc = lineStringAverage( mk2, sp2, avgx, avgy );
+		if ( ! rc ) { 
+			dist = 0.0;
+			return false;
+		}
+		dist = JagGeo::distance( x, y, avgx, avgy, srid );
+		return true;
+	}
+
     double dx, dy, d;
 	double mind = LONG_MAX;
 	double maxd = LONG_MIN;
@@ -16106,8 +16117,10 @@ bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const AbaxD
 
 	if ( arg.caseEqual( "max" ) ) {
 		dist = maxd;
-	} else {
+	} else if ( arg.caseEqual( "min" ) ) {
 		dist = mind;
+	} else {
+		return false;
 	}
 
 	return true;
