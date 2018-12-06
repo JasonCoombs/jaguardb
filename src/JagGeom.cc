@@ -17214,9 +17214,7 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
     	double mind = LONG_MAX;
     	double maxd = LONG_MIN;
         const char *str;
-        const char *str2;
         char *p;
-        char *p2;
 
     	for ( int i=0; i < sp1.length(); ++i ) {
     		str = sp1[i].c_str();
@@ -17224,9 +17222,9 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
     		get2double(str, p, ':', dx, dy );
 
     		for ( int i=0; i < sp2.length(); ++i ) {
-            		str2 = sp2[i].c_str();
-            		if ( strchrnum( str2, ':') < 1 ) continue;
-            		get2double(str2, p2, ':', dx2, dy2 );
+            		str = sp2[i].c_str();
+            		if ( strchrnum( str, ':') < 1 ) continue;
+            		get2double(str, p, ':', dx2, dy2 );
 
                     d = JagGeo::distance( dx, dy, dx2, dy2, srid );
                     if ( d < mind ) mind = d;
@@ -17645,7 +17643,8 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
         }
 
         double dx, dy, dz, d, d1;
-        double xsum = 0, ysum = 0, zsum = 0, counter;
+        double xsum = 0, ysum = 0, zsum = 0;
+        long counter = 0;
         double mind = LONG_MAX;
         double maxd = LONG_MIN;
         const char *str;
