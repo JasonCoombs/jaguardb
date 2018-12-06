@@ -17990,3 +17990,65 @@ double JagGeo::meterToLat( int srid, double meter, double lon, double lat)
 	return meter/s12;
 }
 
+bool JagGeo::lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y )
+{
+	int start = 0;
+	if ( mk == JAG_OJAG ) { start = 1; }
+
+	double dx, dy;
+    double xsum = 0.0, ysum = 0.0;
+	long  counter = 0;
+	const char *str;
+    char *p;
+	for (int i = start; i<sp.length(); ++i){
+		str = sp[i].c_str();
+		if(strchrnum(str, ':') < 1) continue;
+		get2double(str,p,':',dx,dy);
+        xsum = xsum + dx;
+        ysum = ysum + dy;
+        counter ++;
+	}
+
+    if ( 0 == counter ) { 
+		x = y = 0.0;
+		return false; 
+	} else {
+		x = xsum/(double)counter;
+		y = ysum/(double)counter;
+	}
+
+	return true;
+}
+
+
+bool JagGeo::lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z )
+{
+	int start = 0;
+	if ( mk == JAG_OJAG ) { start = 1; }
+
+	double dx, dy, dz;
+    double xsum = 0.0, ysum = 0.0, zsum = 0.0;
+	long  counter = 0;
+	const char *str;
+    char *p;
+	for (int i = start; i<sp.length(); ++i){
+		str = sp[i].c_str();
+		if(strchrnum(str, ':') < 2) continue;
+		get3double(str,p,':', dx,dy,dz);
+        xsum = xsum + dx;
+        ysum = ysum + dy;
+        zsum = zsum + dz;
+        counter ++;
+	}
+
+    if ( 0 == counter ) { 
+		x = y = z = 0.0;
+		return false; 
+	} else {
+		x = xsum/(double)counter;
+		y = ysum/(double)counter;
+		z = zsum/(double)counter;
+	}
+
+	return true;
+}
