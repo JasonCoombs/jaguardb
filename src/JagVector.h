@@ -58,7 +58,7 @@ class JagVector
 
 		void print() const {
 			for ( abaxint i = 0; i < _elements; ++i ) {
-				printf("i=%d ", i );
+				printf("i=%d: ", i );
 				_arr[i].print();
 			}	
 			printf("\n" );
