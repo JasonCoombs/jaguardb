@@ -5177,13 +5177,15 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 		++p;
 		if ( *p == '\0' ) break;
 		// ( (p ...), ( ... )
+		while ( isspace(*p) ) ++p;
+		//prt(("s3093 p=[%s]\n", p ));
 		q = p;
 		while ( *q != ')' && *q != '\0' ) ++q; 
 		if ( *q == '\0' ) break;
 		//  // (  (p...q), (...) )
 		while ( *p == '(' ) ++p;
 		AbaxDataString polygon(p, q-p);
-		//prt(("s7252 one polygon=[%s]\n", polygon.c_str() ));
+		//prt(("s7252 one polygon=[%s] q=[%s] p=[%s]\n", polygon.c_str(), q, p ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
 		JagLineString3D linestr3d;
@@ -5194,8 +5196,8 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 			if ( ss.length() < 2 ) continue;
 			if ( ss[0].length() >= JAG_POINT_LEN ) { return -4526; }
 			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4527; }
-			JagPoint2D p( ss[0].c_str(), ss[1].c_str() );
-			linestr3d.add(p);
+			JagPoint2D p2d( ss[0].c_str(), ss[1].c_str() );
+			linestr3d.add(p2d);
 			if ( mustClose ) {
     			if ( 0==i) {
     				x1 = jagatof(ss[0].c_str() );
@@ -5244,6 +5246,7 @@ int JagParser::checkPolygon3DData( const char *p, bool mustClose )
 		while ( isspace(*p) ) ++p;
 		while ( *p == '(' ) ++p;
 		if ( *p == '\0' ) break;
+		while ( isspace(*p) ) ++p;
 		// ( (p ...), ( ... )
 		q = p;
 		while ( *q != ')' && *q != '\0' ) ++q; 
@@ -5318,6 +5321,7 @@ int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, d
 		++p;
 		if ( *p == '\0' ) break;
 		// ( (p ...), ( ... )
+		while ( isspace(*p) ) ++p;
 		q = p;
 		while ( *q != ')' && *q != '\0' ) ++q; 
 		if ( *q == '\0' ) break;
@@ -5381,6 +5385,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 		//prt(("s3245 p=[%s]\n", p ));
 		if ( *p == '\0' ) break;
 		// ( (p ...), ( ... )
+		while ( isspace(*p) ) ++p;
 		q = p;
 		while ( *q != ')' && *q != '\0' ) ++q; 
 		if ( *q == '\0' ) break;
@@ -5397,8 +5402,8 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 			if ( ss[0].length() >= JAG_POINT_LEN ) { return -4536; }
 			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4537; }
 			if ( ss[2].length() >= JAG_POINT_LEN ) { return -4538; }
-			JagPoint3D p( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
-			linestr3d.add(p);
+			JagPoint3D p3d( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
+			linestr3d.add(p3d);
 			if ( mustClose ) {
     			if ( 0==i) {
     				x1 = jagatof(ss[0].c_str() );

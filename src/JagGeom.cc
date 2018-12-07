@@ -2268,30 +2268,32 @@ bool JagGeo::pointWithinPolygon( double x, double y,
 	JagPolygon pgon;
 	int rc;
 	if ( mk2 == JAG_OJAG ) {
-		prt(("s8123 JAG_OJAG sp2: prnt\n" ));
+		//prt(("s8123 JAG_OJAG sp2: prnt\n" ));
 		//sp2.print();
 		rc = JagParser::addPolygonData( pgon, sp2, false );
 	} else {
 		// form linesrting3d  from pdata
 		p = secondTokenStart( sp2.c_str() );
-		prt(("s8110 p=[%s]\n", p ));
+		//prt(("s8110 p=[%s]\n", p ));
 		rc = JagParser::addPolygonData( pgon, p, false, false );
+		//prt(("s8390 pointWithinPolygon pgon.print():\n" ));
+		//pgon.print();
 	}
 
 	if ( rc < 0 ) {
-		prt(("s8112 rc=%d false\n", rc ));
+		//prt(("s8112 rc=%d false\n", rc ));
 		return false;
 	}
 
    	if ( ! pointWithinPolygon( x, y, pgon.linestr[0] ) ) {
-		prt(("s8113 outer polygon false\n" ));
+		//prt(("s8113 outer polygon false\n" ));
 		return false;
 	}
 
 	for ( int i=1; i < pgon.size(); ++i ) {
 		// pgon.linestr[i] is JagLineString3D
 		if ( pointWithinPolygon(x, y, pgon.linestr[i] ) ) {
-			prt(("s8114 i=%d witin hole false\n", i ));
+			//prt(("s8114 i=%d witin hole false\n", i ));
 			return false;
 		}
 	}
@@ -16091,6 +16093,17 @@ bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const AbaxD
 		start = 1;
 	}
 
+	if ( arg.caseEqual( "center" ) ) {
+		double avgx, avgy;
+		bool rc = lineStringAverage( mk2, sp2, avgx, avgy );
+		if ( ! rc ) { 
+			dist = 0.0;
+			return false;
+		}
+		dist = JagGeo::distance( x, y, avgx, avgy, srid );
+		return true;
+	}
+
     double dx, dy, d;
 	double mind = LONG_MAX;
 	double maxd = LONG_MIN;
@@ -16107,8 +16120,10 @@ bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const AbaxD
 
 	if ( arg.caseEqual( "max" ) ) {
 		dist = maxd;
-	} else {
+	} else if ( arg.caseEqual( "min" ) ) {
 		dist = mind;
+	} else {
+		return false;
 	}
 
 	return true;
@@ -17202,9 +17217,7 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
     	double mind = LONG_MAX;
     	double maxd = LONG_MIN;
         const char *str;
-        const char *str2;
         char *p;
-        char *p2;
 
     	for ( int i=0; i < sp1.length(); ++i ) {
     		str = sp1[i].c_str();
@@ -17212,9 +17225,9 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
     		get2double(str, p, ':', dx, dy );
 
     		for ( int i=0; i < sp2.length(); ++i ) {
-            		str2 = sp2[i].c_str();
-            		if ( strchrnum( str2, ':') < 1 ) continue;
-            		get2double(str2, p2, ':', dx2, dy2 );
+            		str = sp2[i].c_str();
+            		if ( strchrnum( str, ':') < 1 ) continue;
+            		get2double(str, p, ':', dx2, dy2 );
 
                     d = JagGeo::distance( dx, dy, dx2, dy2, srid );
                     if ( d < mind ) mind = d;
@@ -17645,7 +17658,8 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
         }
 
         double dx, dy, dz, d, d1;
-        double xsum = 0, ysum = 0, zsum = 0, counter;
+        double xsum = 0, ysum = 0, zsum = 0;
+        long counter = 0;
         double mind = LONG_MAX;
         double maxd = LONG_MIN;
         const char *str;
@@ -18052,3 +18066,65 @@ double JagGeo::meterToLat( int srid, double meter, double lon, double lat)
 	return meter/s12;
 }
 
+bool JagGeo::lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y )
+{
+	int start = 0;
+	if ( mk == JAG_OJAG ) { start = 1; }
+
+	double dx, dy;
+    double xsum = 0.0, ysum = 0.0;
+	long  counter = 0;
+	const char *str;
+    char *p;
+	for (int i = start; i<sp.length(); ++i){
+		str = sp[i].c_str();
+		if(strchrnum(str, ':') < 1) continue;
+		get2double(str,p,':',dx,dy);
+        xsum = xsum + dx;
+        ysum = ysum + dy;
+        counter ++;
+	}
+
+    if ( 0 == counter ) { 
+		x = y = 0.0;
+		return false; 
+	} else {
+		x = xsum/(double)counter;
+		y = ysum/(double)counter;
+	}
+
+	return true;
+}
+
+
+bool JagGeo::lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z )
+{
+	int start = 0;
+	if ( mk == JAG_OJAG ) { start = 1; }
+
+	double dx, dy, dz;
+    double xsum = 0.0, ysum = 0.0, zsum = 0.0;
+	long  counter = 0;
+	const char *str;
+    char *p;
+	for (int i = start; i<sp.length(); ++i){
+		str = sp[i].c_str();
+		if(strchrnum(str, ':') < 2) continue;
+		get3double(str,p,':', dx,dy,dz);
+        xsum = xsum + dx;
+        ysum = ysum + dy;
+        zsum = zsum + dz;
+        counter ++;
+	}
+
+    if ( 0 == counter ) { 
+		x = y = z = 0.0;
+		return false; 
+	} else {
+		x = xsum/(double)counter;
+		y = ysum/(double)counter;
+		z = zsum/(double)counter;
+	}
+
+	return true;
+}

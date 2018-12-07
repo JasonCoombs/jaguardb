@@ -1915,6 +1915,9 @@ class JagGeo
     static double meterToLon( int srid, double meter, double lon, double lat);
     static double meterToLat( int srid, double meter, double lon, double lat);
 	static double computePolygonArea( const JagVector<std::pair<double,double>> &vec );
+	static bool lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y );
+	static bool lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z );
+
 
 
 
