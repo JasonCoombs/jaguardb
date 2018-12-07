@@ -17646,10 +17646,11 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
             transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, px, py, pz );
             if (fabs(px) <= d && fabs(py) <= w){
                 //point to up and down sides
-                mind1 = fabs(pz) - h;
-                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
-                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, w, -h, srid ));
-                maxd1 = jagmax(maxd2, maxd3);
+                mind1 = fabs(fabs(pz) - h);
+//                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
+//                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, w, -h, srid ));
+//                maxd1 = jagmax(maxd2, maxd3);
+                maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
                 if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
                 prt(("1 min---%f\n", mind1));
@@ -17657,10 +17658,11 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
                 continue;
             }else if(fabs(py) <= w && fabs(pz) < h){
                 //point to front and back sides
-                mind1 = fabs(px) - d;
-                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
-                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ));
-                maxd1 = jagmax(maxd2, maxd3);
+                mind1 = fabs(fabs(px) - d);
+//                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+//                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ));
+//                maxd1 = jagmax(maxd2, maxd3);
+                maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
                 if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
                 prt(("2 min---%f\n", mind1));
@@ -17668,10 +17670,11 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
                 continue;
             }else if(fabs(px) <= d && fabs(pz) < h){
                 //point to left and right sides
-                mind1 = fabs(py) - w;
-                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
-                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, h, srid ));
-                maxd1 = jagmax(maxd2, maxd3);
+                mind1 = fabs(fabs(py) - w);
+//                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
+//                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, h, srid ));
+//                maxd1 = jagmax(maxd2, maxd3);
+                maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
                 if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
                 prt(("3 min---%f\n", mind1));
@@ -17680,7 +17683,8 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
             }else if(fabs(px) <= d){
                 //point to 4 depth lines
                 mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, -d, w, h);
-                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+//                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+                maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
                 if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
                 prt(("4 min---%f\n", mind1));
@@ -17689,7 +17693,8 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
             }else if(fabs(py) <= w){
                 //point to 4 width lines
                 mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, d, -w, h);
-                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+//                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+                maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
                 if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
                 prt(("5 min---%f\n", mind1));
@@ -17698,7 +17703,8 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
             }else if(fabs(pz) <= h){
                 //point to 4 height lines
                 mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, d, w, -h);
-                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+//                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+                maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
                 if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
                 prt(("6 min---%f\n", mind1));
