@@ -2268,30 +2268,32 @@ bool JagGeo::pointWithinPolygon( double x, double y,
 	JagPolygon pgon;
 	int rc;
 	if ( mk2 == JAG_OJAG ) {
-		prt(("s8123 JAG_OJAG sp2: prnt\n" ));
+		//prt(("s8123 JAG_OJAG sp2: prnt\n" ));
 		//sp2.print();
 		rc = JagParser::addPolygonData( pgon, sp2, false );
 	} else {
 		// form linesrting3d  from pdata
 		p = secondTokenStart( sp2.c_str() );
-		prt(("s8110 p=[%s]\n", p ));
+		//prt(("s8110 p=[%s]\n", p ));
 		rc = JagParser::addPolygonData( pgon, p, false, false );
+		//prt(("s8390 pointWithinPolygon pgon.print():\n" ));
+		//pgon.print();
 	}
 
 	if ( rc < 0 ) {
-		prt(("s8112 rc=%d false\n", rc ));
+		//prt(("s8112 rc=%d false\n", rc ));
 		return false;
 	}
 
    	if ( ! pointWithinPolygon( x, y, pgon.linestr[0] ) ) {
-		prt(("s8113 outer polygon false\n" ));
+		//prt(("s8113 outer polygon false\n" ));
 		return false;
 	}
 
 	for ( int i=1; i < pgon.size(); ++i ) {
 		// pgon.linestr[i] is JagLineString3D
 		if ( pointWithinPolygon(x, y, pgon.linestr[i] ) ) {
-			prt(("s8114 i=%d witin hole false\n", i ));
+			//prt(("s8114 i=%d witin hole false\n", i ));
 			return false;
 		}
 	}
