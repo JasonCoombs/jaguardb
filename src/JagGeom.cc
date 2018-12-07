@@ -16342,8 +16342,10 @@ bool JagGeo::point3DDistanceCone(int srid, double px, double py, double pz,
 								double x, double y, double z,
 								 double r, double h,  double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	dist = JagGeo::distance( px, py, pz, x, y, z, srid );
-    return true;
+	// transform px py pz to local normal cone
+	double lx, ly, lz; // x y z is coord of cone's center
+	transform3DCoordGlobal2Local( x,y,z, px,py,pz, nx, ny, lx, ly, lz );
+	return point3DDistanceNormalCone(srid, lx, ly, lz, r, h, arg, dist ); 
 }
 bool JagGeo::point3DDistanceSquare3D(int srid, double px, double py, double pz, 
 								double x, double y, double z,
