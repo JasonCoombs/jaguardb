@@ -17947,7 +17947,39 @@ bool JagGeo::point3DDistanceNormalCone(int srid, double px, double py, double pz
 	// todo038
 	// sp1.print();
 	// sp2.print();
-	dist = 0.0;
+	if ( arg.caseEqual( "center" ) ) {
+		dist = distance( px, py, pz, 0.0, 0.0, 0.0, srid );
+		return true;
+	}
+
+	// z-p plane (p=sqrt(x^2+y^2))
+	double  pr2 = px*px + py*py;
+	double  pr = sqrt( pr2 );
+	if ( arg.caseEqual( "min" ) ) {
+		if ( pz >= h ) {
+			dist = distance(px, py, pz, 0.0, 0.0, h, srid );
+		} else if ( pz <= -h ) {
+			double  dx = pr - 2.0*r;
+			double  dy = pz + h;
+			dist = sqrt( dx*dx + dy*dy );
+		} else {
+			double d = r*( 1.0 - pz/h );
+			dist = fabs(d - pr) * h*h/(h*h+r*r);
+		}
+	} else if ( arg.caseEqual( "max" ) ) {
+		if ( pz >= h ) {
+			double  pr2 = px*px + py*py;
+			double  pr = sqrt( pr2 );
+			dist = distance(0.0, pr, pz,  0.0, -2.0*r, -h, srid );
+		} else if ( pz <= -h ) {
+			double  dx = pr + 2.0*r;
+			double  dy = pz + h;
+			dist = sqrt( dx*dx + dy*dy );
+		} else {
+			double d = r*( 1.0 - pz/h );
+			dist = fabs(d + pr) * h*h/(h*h+r*r);
+		}
+	}
     return true;
 }
 
