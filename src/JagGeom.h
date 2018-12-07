@@ -1185,6 +1185,9 @@ class JagGeo
 	static double squaredDistance( double fx, double fy, double gx, double gy, int srid );
 	static double squaredDistance( double fx, double fy, double fz, double gx, double gy, double gz, int srid );
 
+    static double DistanceOfPointToLine(double x0 ,double y0 ,double z0 ,double x1 ,double y1 ,double z1 ,double x2 ,double y2 ,double z2);
+
+
     static bool twoLinesIntersection( double slope1, double c1, double slope2, double c2,
 									  double &outx, double &outy );
 	static void orginBoundingBoxOfRotatedEllipse( double a, double b, double nx, 
