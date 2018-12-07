@@ -17624,14 +17624,109 @@ bool JagGeo::lineString3DDistanceCube(int srid, const AbaxDataString &mk1, const
     return true;
 }
 
+double JagGeo::DistanceOfPointToLine(double x0 ,double y0 ,double z0 ,double x1 ,double y1 ,double z1 ,double x2 ,double y2 ,double z2)
+{
+    double ab = sqrt(pow((x1 - x2), 2.0) + pow((y1 - y2), 2.0) + pow((z1 - z2), 2.0));
+    double as = sqrt(pow((x1 - x0), 2.0) + pow((y1 - y0), 2.0) + pow((z1 - z0), 2.0));
+    double bs = sqrt(pow((x0 - x2), 2.0) + pow((y0 - y2), 2.0) + pow((z0 - z2), 2.0));
+    double cos_A = (pow(as, 2.0) + pow(ab, 2.0) - pow(bs, 2.0)) / (2 * ab*as);
+    double sin_A = sqrt(1 - pow(cos_A, 2.0));
+    return as*sin_A;
+}
+
 bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
+        int start = 0;
+        if ( mk1 == JAG_OJAG ) {
+            start = 1;
+        }
+
+        double dx, dy, dz, pd, d1, px, py, pz, maxd1, maxd2, maxd3, mind1;
+        double xsum = 0, ysum = 0, zsum = 0;
+        long counter = 0;
+        double mind = LONG_MAX;
+        double maxd = LONG_MIN;
+        const char *str;
+        char *p;
+
+
+
+        for ( int i=start; i < sp1.length(); ++i ) {
+            str = sp1[i].c_str();
+            if ( strchrnum( str, ':') < 1 ) continue;
+            get3double(str, p, ':', dx, dy, dz );
+            transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, px, py, pz );
+            if (fabs(px) <= d && fabs(py) <= w){
+                //point to up and down sides
+                mind1 = fabs(pz) - h;
+                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
+                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, w, -h, srid ));
+                maxd1 = jagmax(maxd2, maxd3);
+                if ( maxd1 < mind ) mind = mind1;
+                if ( maxd1 > maxd ) maxd = maxd1;
+            }else if(fabs(py) <= w && fabs(pz) < h){
+                //point to front and back sides
+                mind1 = fabs(px) - d;
+                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ));
+                maxd1 = jagmax(maxd2, maxd3);
+                if ( maxd1 < mind ) mind = mind1;
+                if ( maxd1 > maxd ) maxd = maxd1;
+            }else if(fabs(px) <= d && fabs(pz) < h){
+                //point to left and right sides
+                mind1 = fabs(py) - w;
+                maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
+                maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, h, srid ));
+                maxd1 = jagmax(maxd2, maxd3);
+                if ( maxd1 < mind ) mind = mind1;
+                if ( maxd1 > maxd ) maxd = maxd1;
+            }else if(fabs(px) <= d){
+                //point to 4 depth lines
+                mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, -d, w, h);
+                maxd1 = jagmax(distance( fabs(px), w, h, d, -w, -h, srid ), distance( fabs(px), w, h, -d, -w, -h, srid ));
+                if ( maxd1 < mind ) mind = mind1;
+                if ( maxd1 > maxd ) maxd = maxd1;
+            }else if(fabs(py) <= w){
+                //point to 4 width lines
+                mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, d, -w, h);
+                maxd1 = jagmax(distance( d, fabs(py), h, -d, w, -h, srid ), distance( d, fabs(py), h, -d, -w, -h, srid ));
+                if ( maxd1 < mind ) mind = mind1;
+                if ( maxd1 > maxd ) maxd = maxd1;
+            }else if(fabs(pz) <= h){
+                //point to 4 height lines
+                mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, d, w, -h);
+                maxd1 = jagmax(distance( d, w, fabs(pz), -d, -w, h, srid ), distance( d, w, fabs(pz), -d, -w, -h, srid ));
+                if ( maxd1 < mind ) mind = mind1;
+                if ( maxd1 > maxd ) maxd = maxd1;
+            }else{
+                //point to 8 points
+                mind1 = distance( fabs(px), fabs(py), fabs(pz), d, w, h, srid );
+                maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
+                if ( maxd1 < mind ) mind = mind1;
+                if ( maxd1 > maxd ) maxd = maxd1;
+            }
+            if  (arg.caseEqual("center" )) {
+                xsum = xsum + px;
+                ysum = ysum + py;
+                zsum = zsum + pz;
+                counter ++;
+            }
+        }
+        if ( arg.caseEqual( "max" ) ) {
+            dist = maxd;
+        } else if (arg.caseEqual("min" )){
+            dist = mind;
+        } else if  (arg.caseEqual("center" )){
+			if ( 0 == counter ) dist = 0.0;
+			else dist = JagGeo::distance( xsum / counter, ysum / counter, zsum / counter, 0, 0, 0, srid );
+        }
+
 	// todo011
 	// sp1.print();
 	// sp2.print();
-	dist = 0.0;
+//	dist = 0.0;
     return true;
 }
 bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
