@@ -17606,45 +17606,7 @@ bool JagGeo::lineString3DDistanceCube(int srid, const AbaxDataString &mk1, const
     // todo010  -- finish vague distance, similar to sphere
     // sp1.print(); //sp1: lineString3D
     // sp2.print(); //sp2: Cube
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-          start = 1;
-    }
-
-    double dx, dy, dz, d;
-    double mind = LONG_MAX;
-    double maxd = LONG_MIN;
-    double xsum = 0, ysum = 0, zsum = 0;
-    long counter = 0;
-    const char *str;
-    char *p;
-
-    for ( int i=start; i < sp1.length(); ++i ) {
-        str = sp1[i].c_str();
-        if ( strchrnum( str, ':') < 1 ) continue;
-        get3double(str, p, ':', dx, dy, dz );
-        d = JagGeo::distance( dx, dy, dz, x0, y0, z0, srid );
-        if ( d < mind ) mind = d;
-        if ( d > maxd ) maxd = d;
-        if  (arg.caseEqual("center" )) {
-            xsum = xsum + dx;
-            ysum = ysum + dy;
-            zsum = zsum + dz;
-            counter ++;
-        }
-    }
-
-    if ( arg.caseEqual( "max" ) ) {
-        dist = maxd;
-    } else if (arg.caseEqual("min" )){
-        dist = mind;
-    } else if  (arg.caseEqual("center" )){
-        if ( 0 == counter ) dist = 0.0;
-        else dist = JagGeo::distance( xsum / counter, ysum / counter, zsum / counter, x0, y0, z0, srid );
-    }
-
-
-
+    lineString3DDistanceBox(srid, mk1, sp1, x0, y0, z0, r, r, r, nx, ny, arg, dist);
     return true;
 }
 
@@ -17688,48 +17650,69 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
                 maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
                 maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, w, -h, srid ));
                 maxd1 = jagmax(maxd2, maxd3);
-                if ( maxd1 < mind ) mind = mind1;
+                if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
+                prt(("1 min---%f\n", mind1));
+                prt(("1 max---%f\n", maxd1));
+                continue;
             }else if(fabs(py) <= w && fabs(pz) < h){
                 //point to front and back sides
                 mind1 = fabs(px) - d;
                 maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
                 maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ));
                 maxd1 = jagmax(maxd2, maxd3);
-                if ( maxd1 < mind ) mind = mind1;
+                if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
+                prt(("2 min---%f\n", mind1));
+                prt(("2 max---%f\n", maxd1));
+                continue;
             }else if(fabs(px) <= d && fabs(pz) < h){
                 //point to left and right sides
                 mind1 = fabs(py) - w;
                 maxd2 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ));
                 maxd3 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), d, -w, h, srid ));
                 maxd1 = jagmax(maxd2, maxd3);
-                if ( maxd1 < mind ) mind = mind1;
+                if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
+                prt(("3 min---%f\n", mind1));
+                prt(("3 max---%f\n", maxd1));
+                continue;
             }else if(fabs(px) <= d){
                 //point to 4 depth lines
                 mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, -d, w, h);
-                maxd1 = jagmax(distance( fabs(px), w, h, d, -w, -h, srid ), distance( fabs(px), w, h, -d, -w, -h, srid ));
-                if ( maxd1 < mind ) mind = mind1;
+                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), d, -w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+                if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
+                prt(("4 min---%f\n", mind1));
+                prt(("4 max---%f\n", maxd1));
+                continue;
             }else if(fabs(py) <= w){
                 //point to 4 width lines
                 mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, d, -w, h);
-                maxd1 = jagmax(distance( d, fabs(py), h, -d, w, -h, srid ), distance( d, fabs(py), h, -d, -w, -h, srid ));
-                if ( maxd1 < mind ) mind = mind1;
+                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, w, -h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+                if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
+                prt(("5 min---%f\n", mind1));
+                prt(("5 max---%f\n", maxd1));
+                continue;
             }else if(fabs(pz) <= h){
                 //point to 4 height lines
                 mind1 = DistanceOfPointToLine(fabs(px), fabs(py), fabs(pz), d, w, h, d, w, -h);
-                maxd1 = jagmax(distance( d, w, fabs(pz), -d, -w, h, srid ), distance( d, w, fabs(pz), -d, -w, -h, srid ));
-                if ( maxd1 < mind ) mind = mind1;
+                maxd1 = jagmax(distance( fabs(px), fabs(py), fabs(pz), -d, -w, h, srid ), distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid ));
+                if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
+                prt(("6 min---%f\n", mind1));
+                prt(("6 max---%f\n", maxd1));
+                continue;
             }else{
                 //point to 8 points
                 mind1 = distance( fabs(px), fabs(py), fabs(pz), d, w, h, srid );
                 maxd1 = distance( fabs(px), fabs(py), fabs(pz), -d, -w, -h, srid );
-                if ( maxd1 < mind ) mind = mind1;
+                if ( mind1 < mind ) mind = mind1;
                 if ( maxd1 > maxd ) maxd = maxd1;
+                prt(("7 min---%f\n", mind1));
+                prt(("7 max---%f\n", maxd1));
+                continue;
             }
             if  (arg.caseEqual("center" )) {
                 xsum = xsum + px;
