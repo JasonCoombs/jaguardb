@@ -1037,6 +1037,7 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_POINTN ) str = "pointn";
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
+	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
 	else if ( binaryOp == JAG_FUNC_NUMRINGS ) str = "numrings";
@@ -1092,7 +1093,13 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	}
 		
 	//prt(("s2238 _right=%0x\n", _right ));
-	if ( _binaryOp == JAG_FUNC_POINTN ||  _binaryOp == JAG_FUNC_STARTPOINT || _binaryOp == JAG_FUNC_ENDPOINT ) {
+	if ( _binaryOp == JAG_FUNC_CONVEXHULL ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = 100*JAG_POINT_LEN + 2;
+		siglen = 0;
+		// todo qwer can we get number of points of lstr?
+	} else if ( _binaryOp == JAG_FUNC_POINTN ||  _binaryOp == JAG_FUNC_STARTPOINT || _binaryOp == JAG_FUNC_ENDPOINT ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
 		collen = 3*JAG_POINT_LEN + 2;
@@ -3006,6 +3013,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			return 0;
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
+				 || _binaryOp == JAG_FUNC_CONVEXHULL
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
@@ -3184,6 +3192,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		} else if ( *p == '(' ) {
 			if ( _isNot ) throw 2100;
 			if ( _datediffClause >= 0 || _substrClause >= 0 ) throw 2184;
+			prt(("s9011 operatorStack.push (\n" ));
             operatorStack.push('(');
 			_lastOp ='(';
             ++p;
@@ -3195,6 +3204,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 				// no right parenthesis or "and/or" followed just after and/or
 				throw 2136;
 			}
+			prt(("s9012 processRightParenthesis \n" ));
             processRightParenthesis( jmap );
             ++p;
 			isandor = 0;
@@ -3296,6 +3306,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 					//prt(("s8811 throw 2224\n" ));
 					throw 2224;
 				}
+				prt(("s2039 operatorStack.push(%d)\n", fop ));
 				operatorStack.push(fop);
 				_lastOp = fop;
 			}
@@ -3305,13 +3316,14 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		} else {
 			if ( _isNot ) throw 2225;
 			// prt(("s3063 processOperand p=[%s] q=[%s]\n", p, q ));
-			// prt(("s3063 processOperand p=[%s]\n", p ));
+			prt(("s3063 processOperand p=[%s]\n", p ));
 			processOperand(jagParser, p, q, lastNode, cmap, colList );
 			_lastIsOperand = 1;
 		}
 	}
 
     while (!operatorStack.empty()) {
+		prt(("s2030 doBinary( operator.top )\n" ));
         doBinary( operatorStack.top(), jmap );
         operatorStack.pop();
     }
@@ -3354,6 +3366,8 @@ void BinaryExpressionBuilder::processBetween( const JagParser *jpsr, const char 
 	// push lnode to operand stack again, and get second operand
 	StringElementNode *newNode = new StringElementNode( this, lastNode._name, lastNode._value, lastNode._columns,
 														_jpa, lastNode._tabnum, lastNode._typeMode );
+
+    prt(("s4440 new element, operandStack.push( newelement node )\n"));
 	operandStack.push(newNode);
 	// and process operator <=, if "isNot", process operator >
 	if ( !_isNot ) processOperator( JAG_FUNC_LESSEQUAL, jmap );
@@ -3415,8 +3429,8 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 	const char *r;
 	q = p;
 
-	/**
 	prt(("\ns3830 enter processOperand p=[%s]\n", p ));
+	/**
 	// debug only
 	StringElementNode *topp = (StringElementNode*)getRoot();
 	prt(("s0299 root tree: %0x\n", topp ));
@@ -3446,6 +3460,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		r = p+1;
 		value = AbaxDataString(r, q-r);
 		StringElementNode *newNode = new StringElementNode( this, name, value, "", _jpa, 0, typeMode );
+		prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		// prt(("s0393  new StringElementNode name=[%s] value=[%s] typeMode=%d\n", name.c_str(), value.c_str(), typeMode ));
 		if ( _substrClause >= 0 ) ++_substrClause;
@@ -3584,7 +3599,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
 		StringElementNode *newNode = new StringElementNode( this, name, value, "", _jpa, 0, typeMode );
-		//prt(("s4502 processOperand new StringElementNode name=[%s] value=[%s]\n", name.c_str(), value.c_str() ));
+		prt(("s4502 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		++q; p = q;
 	} else {
@@ -3609,6 +3624,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			// for no quote operand, if all digits, regard as constant
 			value = AbaxDataString(p, q-p);
 			StringElementNode *newNode = new StringElementNode( this, name, value, "", _jpa, 0, typeMode );
+		    prt(("s4503 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 			operandStack.push(newNode);
 			//operandStack.print();
 			if ( _substrClause >= 0 ) ++_substrClause;
@@ -3640,7 +3656,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 				}
 
 				StringElementNode *newNode = new StringElementNode( this, name, value, lastNode._columns, _jpa, tabnum, typeMode );
-				// prt(("s5504 processOperand new StringElementNode name=[%s] value=[%s]\n", name.c_str(), value.c_str() ));
+				prt(("s5505 processOperand new StringElementNode name=[%s] value=[%s] operandStack.push()\n", name.c_str(), value.c_str() ));
 				// name="test.el1.c1:y"
 
 				lastNode._name = newNode->_name;
@@ -3673,12 +3689,15 @@ void BinaryExpressionBuilder::processOperator( short op, JagHashStrInt &jmap )
 {
     // pop operators with higher precedence and create their BinaryOpNode
     short opPrecedence = precedence( op );
+	prt(("s3084 enter processOperator op=%d opPrecedence=%d\n", op, opPrecedence ));
     while ((!operatorStack.empty()) && (opPrecedence <= precedence( operatorStack.top() ))) {
+		prt(("s2094 doBinary(%c) ...\n", operatorStack.top() ));
         doBinary( operatorStack.top(), jmap );
         operatorStack.pop();
     }
 
     // lastly push the operator passed onto the operatorStack
+	prt(("s0931 operatorStack.push(%c)\n", op ));
     operatorStack.push(op);
 	_lastOp = op;
 	// prt(("s2930 processOperator _lastOp=[%d]\n", _lastOp ));
@@ -3697,13 +3716,16 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 	while ( 1 ) {
 		int fop = operatorStack.top();
 		if ( fop == '(' ) {
+			prt(("s8733 in processRightParenthesis see (, pop it and break\n" ));
 			operatorStack.pop(); // remove '('
 			break;
 		} else if ( checkFuncType( fop ) ) {
+			prt(("s4093 in processRightParenthesis see fop=%d doBinary, operatorStack.pop(); break\n"));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 			break;
 		} else {
+			prt(("s4094 in processRightParenthesis see fop=%d doBinary, operatorStack.pop(); loop\n"));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 		}
@@ -3758,14 +3780,16 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			// printf("s5301 throw here\n");
 			throw 1434;
 		} else right = operandStack.top();
-
 		operandStack.pop();
+		prt(("s3308 operandStack.pop()\n"));
+
 		// left child
 		if ( operandStack.empty() ) {
 			// printf("s5302 throw here\n");
 			throw 1435;
 		} else left = operandStack.top();
 		operandStack.pop();
+		prt(("s3309 operandStack.pop()\n"));
 
 		// if datediff, pop and process third top operand as diff type
 		if ( op == JAG_FUNC_DATEDIFF ) {
@@ -3889,6 +3913,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		operandStack.pop();
 	}
 
+	prt(("s4084 new BinaryOpNode with left, right, and push to operandStack\n" ));
 	BinaryOpNode *p = new BinaryOpNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	operandStack.push(p);	
 }
@@ -4012,6 +4037,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_BBOX || 
 		fop == JAG_FUNC_STARTPOINT || 
 		fop == JAG_FUNC_ENDPOINT || 
+		fop == JAG_FUNC_CONVEXHULL || 
 		fop == JAG_FUNC_ISCLOSED || 
 		fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMRINGS || 
@@ -4244,6 +4270,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_STARTPOINT; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "endpoint", 8 ) ) {
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "convexhull", 10 ) ) {
+		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "bbox", 4 ) ) {
 		fop = JAG_FUNC_BBOX; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "isclosed", 8 ) ) {
@@ -4581,6 +4609,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = true;
 	} else if ( op == JAG_FUNC_SUMMARY ) {
 		rc = doAllSummary( mark1, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_CONVEXHULL ) {
+		rc = doAllConvexHull( mark1, colType1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -4828,6 +4858,74 @@ bool BinaryOpNode::doAllStartPoint( const AbaxDataString& mk, const AbaxDataStri
 	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
 	//prt(("s2039 sp[1]=[%s]\n", sp[1].c_str() ));
 	// prt(("s2411 colType=[%s] value=[%s]\n",  colType.c_str(), value.c_str() ));
+	return true;
+}
+
+bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	prt(("s3420 doAllConvexHull() colType=[%s] sp1.print(): \n", colType.c_str() ));
+	value = "";
+	bool rc;
+	if ( mk == JAG_OJAG ) {
+		prt(("s8830 JAG_OJAG\n" ));
+		sp.print();
+		JagLineString line;
+		JagPolygon pgon;
+        if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+			JagParser::addLineStringData( line, sp );
+			line.print();
+        } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D )  {
+			JagLineString3D line3d;
+            JagParser::addLineString3DData(line3d, sp );
+			line3d.print();
+        } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		    JagParser::addPolygonData( pgon, sp, true );
+			pgon.print();
+        } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		    JagParser::addPolygon3DData( pgon, sp, true );
+			pgon.print();
+        } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+			JagVector<JagPolygon> pgvec;
+			rc = JagParser::addMultiPolygonData( pgvec, sp, true, false );
+			if ( ! rc ) return rc;
+			pgvec.print();
+        } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+			JagVector<JagPolygon> pgvec;
+			rc = JagParser::addMultiPolygonData( pgvec, sp, true, true );
+			if ( ! rc ) return rc;
+			pgvec.print();
+		} else  {
+		}
+	} else {
+		prt(("s8830 JAG_CJAG c_str=[%s]\n", sp.c_str() ));
+		JagLineString line;
+		JagPolygon pgon;
+        if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+            JagParser::addLineStringData(line, sp.c_str() );
+			line.print();
+        } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D )  {
+            JagParser::addLineString3DData(line, sp.c_str() );
+			line.print();
+        } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+			JagParser::addPolygonData( pgon, sp.c_str(), true, false );
+			pgon.print();
+        } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+			JagParser::addPolygon3DData( pgon, sp.c_str(), true, false );
+			pgon.print();
+        } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+			JagVector<JagPolygon> pgvec;
+			rc = JagParser::addMultiPolygonData( pgvec, sp.c_str(), true, false, false );
+			if ( ! rc ) return rc;
+			pgvec.print();
+        } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+			JagVector<JagPolygon> pgvec;
+			rc = JagParser::addMultiPolygonData( pgvec, sp.c_str(), true, false, true );
+			if ( ! rc ) return rc;
+			pgvec.print();
+		} else  {
+		}
+	}
+
 	return true;
 }
 
