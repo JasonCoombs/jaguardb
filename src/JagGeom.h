@@ -314,6 +314,7 @@ class JagLineString3D
 		abaxint size() const { return point.size(); }
 		void add( const JagPoint2D &p );
 		void add( const JagPoint3D &p );
+		void add( double x, double y, double z );
 		void print() const { point.print(); }
 
 		JagVector<JagPoint3D> point;

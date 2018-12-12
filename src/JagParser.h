@@ -66,6 +66,8 @@ class JagParser
 	static int  addLineString3DData( JagLineString &linestr, const char *p );
 	static int  getLineString3DMinMax( const char *p, double &xmin, double &ymin, double &zmin, 
 										double &xmax, double &ymax, double &zmax );
+	static void addLineStringData( JagLineString &linestr, const JagStrSplit &sp );
+	static void addLineString3DData( JagLineString3D &linestr, const JagStrSplit &sp );
 	static int  addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose );
 	static int  getPolygonMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax );
 	static int  addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose );
@@ -73,7 +75,6 @@ class JagParser
 								    double &xmax, double &ymax, double &zmax );
 	static int  addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly );
 	static int  addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly );
-	static void  addLineStringData( JagLineString &linestr, const JagStrSplit &sp );
 
 	static int  addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p, bool firstOnly, bool mustClose, bool is3D );
 	static int  addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSplit &sp, bool firstOnly, bool is3D );

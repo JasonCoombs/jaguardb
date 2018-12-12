@@ -414,6 +414,13 @@ void JagLineString3D::add( const JagPoint3D &p )
 	point.append(pp);
 }
 
+void JagLineString3D::add( double x, double y, double z )
+{
+	JagPoint3D pp;
+	pp.x = x; pp.y = y; pp.z = z;
+	point.append(pp);
+}
+
 
 ///////////////////////////// Within methods ////////////////////////////////////////
 bool JagGeo::pointInTriangle( double px, double py, double x1, double y1,

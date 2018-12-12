@@ -5568,6 +5568,21 @@ void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp
 	}
 }
 
+// from _OJAG_ type
+void JagParser::addLineString3DData( JagLineString3D &linestr, const JagStrSplit &sp )
+{
+	const char *str;
+	char *p;
+	double dx,dy, dz;
+	for ( int i=0; i < sp.length(); ++i ) {
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':') < 2 ) continue;
+		get3double(str, p, ':', dx, dy, dz );
+		linestr.add( dx, dy, dz );
+		prt(("s4048 addLineStringData add(%.2f %.2f %.2f)\n", dx, dy, dz ));
+	}
+}
+
 // return 0: OK,  < 0 error
 // p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
 int JagParser::getMultiPolygonMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax )
