@@ -402,6 +402,34 @@ void JagLineString::add( double x, double y )
 	point.append(pp);
 }
 
+void JagLineString::center2D( double &cx, double &cy ) const
+{
+	cx = cy = 0.0;
+	if ( point.size() < 1 ) return;
+	int len = point.size();
+	for ( int i=0; i < len; ++i ) {
+		cx += jagatof(point[i].x);
+		cy += jagatof(point[i].y);
+	}
+	cx = cx/len;
+	cy = cy/len;
+}
+void JagLineString::center3D( double &cx, double &cy, double &cz ) const
+{
+	cx = cy = cz = 0.0;
+	if ( point.size() < 1 ) return;
+	int len = point.size();
+	for ( int i=0; i < len; ++i ) {
+		cx += jagatof(point[i].x);
+		cy += jagatof(point[i].y);
+		cz += jagatof(point[i].z);
+	}
+	cx = cx/len;
+	cy = cy/len;
+	cz = cz/len;
+}
+
+
 void JagLineString3D::add( const JagPoint2D &p )
 {
 	JagPoint3D pp( doubleToStr(p.x).c_str(),  doubleToStr(p.y).c_str(), "0.0" );
@@ -419,6 +447,34 @@ void JagLineString3D::add( double x, double y, double z )
 	JagPoint3D pp;
 	pp.x = x; pp.y = y; pp.z = z;
 	point.append(pp);
+}
+
+void JagLineString3D::center3D( double &cx, double &cy, double &cz ) const
+{
+	cx = cy = cz = 0.0;
+	if ( point.size() < 1 ) return;
+	int len = point.size();
+	for ( int i=0; i < len; ++i ) {
+		cx += point[i].x;
+		cy += point[i].y;
+		cz += point[i].z;
+	}
+	cx = cx/len;
+	cy = cy/len;
+	cz = cz/len; 
+}
+
+void JagLineString3D::center2D( double &cx, double &cy ) const
+{
+	cx = cy = 0.0;
+	if ( point.size() < 1 ) return;
+	int len = point.size();
+	for ( int i=0; i < len; ++i ) {
+		cx += point[i].x;
+		cy += point[i].y;
+	}
+	cx = cx/len;
+	cy = cy/len;
 }
 
 
@@ -18489,3 +18545,73 @@ bool JagGeo::lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &s
 
 	return true;
 }
+
+void JagPolygon::center2D(  double &cx, double &cy ) const
+{
+	cx = cy = 0.0;
+	// JagVector<JagLineString3D> linestr;
+	int len = linestr.size();
+	if ( len < 1 ) return;
+	double x, y;
+	for ( int i=0; i < len; ++i ) {
+		linestr[i].center2D(x, y);
+		cx += x;
+		cy += y;
+	}
+
+	cx = cx / len;
+	cy = cy / len;
+}
+
+void JagPolygon::center3D(  double &cx, double &cy, double &cz ) const
+{
+	cx = cy = cz = 0.0;
+	int len = linestr.size();
+	if ( len < 1 ) return;
+	double x, y, z;
+	for ( int i=0; i < len; ++i ) {
+		linestr[i].center3D(x, y, z);
+		cx += x;
+		cy += y;
+		cz += z;
+	}
+
+	cx = cx / len;
+	cy = cy / len;
+	cz = cz / len;
+}
+
+void JagGeo::center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy )
+{
+	cx = cy = 0.0;
+	int len = pgvec.size();
+	if ( len < 1 ) return;
+	double x, y;
+	for ( int i=0; i < len; ++i ) {
+		pgvec[i].center2D(x, y);
+		cx += x;
+		cy += y;
+	}
+
+	cx = cx / len;
+	cy = cy / len;
+}
+
+void JagGeo::center3DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy, double &cz )
+{
+	cx = cy = cz = 0.0;
+	int len = pgvec.size();
+	if ( len < 1 ) return;
+	double x, y, z;
+	for ( int i=0; i < len; ++i ) {
+		pgvec[i].center3D(x, y, z);
+		cx += x;
+		cy += y;
+		cz += z;
+	}
+
+	cx = cx / len;
+	cy = cy / len;
+	cz = cz / len;
+}
+

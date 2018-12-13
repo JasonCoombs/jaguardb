@@ -4865,7 +4865,6 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 {
 	prt(("s3420 doAllConvexHull() colType=[%s] sp1.print(): \n", colType.c_str() ));
 	value = "";
-	bool rc;
 	if ( mk == JAG_OJAG ) {
 		prt(("s8830 JAG_OJAG\n" ));
 		sp.print();
@@ -4886,13 +4885,13 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 			pgon.print();
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
-			rc = JagParser::addMultiPolygonData( pgvec, sp, true, false );
-			if ( ! rc ) return rc;
+			JagParser::addMultiPolygonData( pgvec, sp, true, false );
+			prt(("s5022 JAG_C_COL_TYPE_MULTIPOLYGON pgvec.size=%d pgvec.print()\n", pgvec.size() ));
 			pgvec.print();
+			prt(("s2835 pgvec.print() done\n" ));
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			JagVector<JagPolygon> pgvec;
-			rc = JagParser::addMultiPolygonData( pgvec, sp, true, true );
-			if ( ! rc ) return rc;
+			JagParser::addMultiPolygonData( pgvec, sp, true, true );
 			pgvec.print();
 		} else  {
 		}
@@ -4900,27 +4899,28 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 		prt(("s8830 JAG_CJAG c_str=[%s]\n", sp.c_str() ));
 		JagLineString line;
 		JagPolygon pgon;
+		const char *p = secondTokenStart( sp.c_str() );
+
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
-            JagParser::addLineStringData(line, sp.c_str() );
+            JagParser::addLineStringData(line, p);
 			line.print();
         } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D )  {
-            JagParser::addLineString3DData(line, sp.c_str() );
+            JagParser::addLineString3DData(line, p );
 			line.print();
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
-			JagParser::addPolygonData( pgon, sp.c_str(), true, false );
+			JagParser::addPolygonData( pgon, p, true, false );
 			pgon.print();
         } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
-			JagParser::addPolygon3DData( pgon, sp.c_str(), true, false );
+			JagParser::addPolygon3DData( pgon, p, true, false );
 			pgon.print();
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
-			rc = JagParser::addMultiPolygonData( pgvec, sp.c_str(), true, false, false );
-			if ( ! rc ) return rc;
+			JagParser::addMultiPolygonData( pgvec, p, true, false, false );
 			pgvec.print();
+			prt(("s2830 pgvec.print() done\n" ));
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			JagVector<JagPolygon> pgvec;
-			rc = JagParser::addMultiPolygonData( pgvec, sp.c_str(), true, false, true );
-			if ( ! rc ) return rc;
+			JagParser::addMultiPolygonData( pgvec, p, true, false, true );
 			pgvec.print();
 		} else  {
 		}

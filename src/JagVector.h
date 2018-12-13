@@ -57,11 +57,13 @@ class JagVector
 		abaxint bytes() const { return _bytes; }
 
 		void print() const {
+			printf("JagVector::print() _elements=%d :\n", _elements );
 			for ( abaxint i = 0; i < _elements; ++i ) {
 				printf("i=%d: ", i );
 				_arr[i].print();
 			}	
 			printf("\n" );
+			fflush(stdout);
 		}
 
 		void printString() const {
