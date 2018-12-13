@@ -402,11 +402,13 @@ void JagLineString::add( double x, double y )
 	point.append(pp);
 }
 
-void JagLineString::center2D( double &cx, double &cy ) const
+void JagLineString::center2D( double &cx, double &cy, bool dropLast ) const
 {
 	cx = cy = 0.0;
-	if ( point.size() < 1 ) return;
+
 	int len = point.size();
+	if ( dropLast) --len;
+	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += jagatof(point[i].x);
 		cy += jagatof(point[i].y);
@@ -414,11 +416,12 @@ void JagLineString::center2D( double &cx, double &cy ) const
 	cx = cx/len;
 	cy = cy/len;
 }
-void JagLineString::center3D( double &cx, double &cy, double &cz ) const
+void JagLineString::center3D( double &cx, double &cy, double &cz, bool dropLast ) const
 {
 	cx = cy = cz = 0.0;
-	if ( point.size() < 1 ) return;
 	int len = point.size();
+	if ( dropLast) --len;
+	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += jagatof(point[i].x);
 		cy += jagatof(point[i].y);
@@ -449,11 +452,12 @@ void JagLineString3D::add( double x, double y, double z )
 	point.append(pp);
 }
 
-void JagLineString3D::center3D( double &cx, double &cy, double &cz ) const
+void JagLineString3D::center3D( double &cx, double &cy, double &cz, bool dropLast ) const
 {
 	cx = cy = cz = 0.0;
-	if ( point.size() < 1 ) return;
 	int len = point.size();
+	if ( dropLast ) --len;
+	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += point[i].x;
 		cy += point[i].y;
@@ -464,11 +468,12 @@ void JagLineString3D::center3D( double &cx, double &cy, double &cz ) const
 	cz = cz/len; 
 }
 
-void JagLineString3D::center2D( double &cx, double &cy ) const
+void JagLineString3D::center2D( double &cx, double &cy, bool dropLast ) const
 {
 	cx = cy = 0.0;
-	if ( point.size() < 1 ) return;
 	int len = point.size();
+    if ( dropLast ) --len;
+   	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += point[i].x;
 		cy += point[i].y;
@@ -17584,8 +17589,8 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    double xsum = 0, ysum = 0, xsum2 = 0, ysum2 = 0;
-
+    //double xsum = 0, ysum = 0, xsum2 = 0, ysum2 = 0;
+    //long counter = 0;
     const char *str;
     //const char *str2;
     char *p;
@@ -17611,32 +17616,25 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
             return false;
     }
     pgon.print();
-    long counter = 0;
+
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
         if ( strchrnum( str, ':') < 1 ) continue;
         get2double(str, p, ':', dx, dy );
         const JagLineString3D &linestr = pgon.linestr[0];
-
-
         for ( int i=0; i < linestr.size()-1; ++i ) {//first point = last point,so pass
             d = JagGeo::distance( dx, dy, linestr.point[i].x, linestr.point[i].y, srid );
            // prt(("s10003 d=[%f]\n",d));
             if ( d > maxd ) maxd = d;
             if ( d < mind ) mind = d;
-            if  (arg.caseEqual("center" )) {
-
-
-                   xsum = xsum + dx;
-                   ysum = ysum + dy;
-                   xsum2 = xsum2 + linestr.point[i].x;
-                   ysum2 = ysum2 + linestr.point[i].y;
-                   counter++;
+//            if  (arg.caseEqual("center" )) {
+//                   xsum = xsum + dx;
+//                   ysum = ysum + dy;
+//                   counter++;
                    //prt(("s10004 linex=[%f] liney =[%f]\n", linestr.point[i].x, linestr.point[i].y ));
                    //prt(("s10004 dx=[%f] dy=[%f]\n", dx,dy));
                    //prt(("s10004 xsum=[%f] ysum=[%f] xsum2=[%f] ysum2=[%f]\n",  xsum, ysum, xsum2, ysum2 ));
-
-            }
+//            }
 
         }
     }
@@ -17649,9 +17647,14 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
     } else if (arg.caseEqual( "center" )) {
         double px, py;
         lineStringAverage(mk1, sp1, px, py);
-        prt(("s10006 counter=[%d]\n  xsum=[%f] ysum=[%f] px=[%f] py=[%f] xsum2=[%f] ysum2=[%f]\n",counter,  xsum, ysum, px, py, xsum2, ysum2 ));
-        if ( 0 == counter ) dist = 0.0;
-        else dist = JagGeo::distance( px, py, xsum2 / counter, ysum2 / counter, srid );
+        double cx, cy;
+        pgon.center2D(cx, cy);
+        prt(("s10006 px=[%f] py=[%f] cx=[%f] cy=[%f]", px, py, cx, cy));
+        dist = JagGeo::distance( px, py, cx, cy, srid );
+        //prt(("s10006 counter=[%d]\n  xsum=[%f] ysum=[%f] px=[%f] py=[%f] xsum2=[%f] ysum2=[%f]\n",counter,  xsum, ysum, px, py, xsum2, ysum2 ));
+        //if ( 0 == counter ) dist = 0.0;
+        //else dist = JagGeo::distance( px, py, cx, cy, srid );
+
     }
 
     return true;
@@ -18551,10 +18554,11 @@ void JagPolygon::center2D(  double &cx, double &cy ) const
 	cx = cy = 0.0;
 	// JagVector<JagLineString3D> linestr;
 	int len = linestr.size();
+	prt(("s10007 len=[%d]\n", len ));
 	if ( len < 1 ) return;
 	double x, y;
 	for ( int i=0; i < len; ++i ) {
-		linestr[i].center2D(x, y);
+		linestr[i].center2D(x, y, true);
 		cx += x;
 		cy += y;
 	}
@@ -18570,7 +18574,8 @@ void JagPolygon::center3D(  double &cx, double &cy, double &cz ) const
 	if ( len < 1 ) return;
 	double x, y, z;
 	for ( int i=0; i < len; ++i ) {
-		linestr[i].center3D(x, y, z);
+		linestr[i].center3D(x, y, z, true);
+
 		cx += x;
 		cy += y;
 		cz += z;
