@@ -338,7 +338,8 @@ class JagLineString
 		void add( const JagPoint3D &p );
 		void add( double x, double y );
 		void print() const { point.print(); }
-		void center( double &cx, double &cy ) const;
+		void center2D( double &cx, double &cy ) const;
+		void center3D( double &cx, double &cy, double &cz ) const;
 
 		JagVector<JagPoint> point;
 };

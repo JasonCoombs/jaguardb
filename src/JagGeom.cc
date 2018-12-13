@@ -402,7 +402,7 @@ void JagLineString::add( double x, double y )
 	point.append(pp);
 }
 
-void JagLineString::center( double &cx, double &cy ) const
+void JagLineString::center2D( double &cx, double &cy ) const
 {
 	cx = cy = 0.0;
 	if ( point.size() < 1 ) return;
@@ -413,6 +413,20 @@ void JagLineString::center( double &cx, double &cy ) const
 	}
 	cx = cx/len;
 	cy = cy/len;
+}
+void JagLineString::center3D( double &cx, double &cy, double &cz ) const
+{
+	cx = cy = cz = 0.0;
+	if ( point.size() < 1 ) return;
+	int len = point.size();
+	for ( int i=0; i < len; ++i ) {
+		cx += jagatof(point[i].x);
+		cy += jagatof(point[i].y);
+		cz += jagatof(point[i].z);
+	}
+	cx = cx/len;
+	cy = cy/len;
+	cz = cz/len;
 }
 
 
