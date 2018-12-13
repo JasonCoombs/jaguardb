@@ -5010,7 +5010,7 @@ int JagParser::checkMultiPolygonData( const char *p, bool mustClose, bool is3D )
 int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p, 
 								    bool eachFirstOnly, bool mustClose, bool is3D )
 {
-	//prt(("s3524 multipolygon( p=[%s]\n", p ));
+	prt(("s3524 multipolygon( p=[%s]\n", p ));
 	int rc;
 	const char *q;
 	if ( *p == 0 ) return 0;
@@ -5059,9 +5059,12 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p,
 	return 1;
 }
 
-// return 0: OK,  < 0 error
+// return 1: OK,  < 0 error  0: no data
 int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSplit &sp, bool firstOnly, bool is3D )
 {
+	prt(("s5608 addMultiPolygonData firstOnly=%d is3D=%d sp.print():\n", firstOnly, is3D ));
+	sp.print();
+
 	const char *str;
 	char *p;
 	JagLineString3D linestr;
@@ -5070,7 +5073,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 	dz = 0.0;
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-
+		prt(("s4089 sp[i=%d]=[%s]\n", i, str ));
 		if ( is3D ) {
 			if ( strchrnum( str, ':') < 2 ) continue;
 			get3double(str, p, ':', dx, dy, dz );
@@ -5097,7 +5100,14 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 
 	pgon.add( linestr );
 	pgvec.append( pgon );
-	return 0;
+	prt(("s8874 pgvec.size=%d\n", pgvec.size() ));
+	prt(("s3348 linestr.print():\n" ));
+	linestr.print();
+	prt(("s3348 pgon.print():\n" ));
+	pgon.print();
+	prt(("s3348 pgvec.print():\n" ));
+	pgvec.print();
+	return 1;
 }
 
 
@@ -5501,6 +5511,7 @@ void JagParser::removeEndUnevenBracketAll( char *str )
 
 
 // from _OJAG_ type
+// 1: OK  < 0 error
 int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
 	const char *str;
@@ -5523,10 +5534,11 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	}
 
 	pgon.add( linestr );
-	return 0;
+	return 1;
 }
 
 // from _OJAG_ type
+// 1: OK  < 0 error
 int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
 	const char *str;
@@ -5549,7 +5561,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 	}
 
 	pgon.add( linestr );
-	return 0;
+	return 1;
 }
 
 

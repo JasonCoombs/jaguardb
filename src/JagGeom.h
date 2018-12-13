@@ -97,6 +97,7 @@ class JagLine2D
   	 JagLine2D( double ix1, double iy1, double ix2, double iy2 )
 	 { x1 = ix1; y1 = iy1; x2 = ix2; y2 = iy2; }
 	 void transform( double x0, double y0, double nx0 );
+	 void center(double &cx, double &cy ) const { cx=(x1+x2)/2.0; cy=(y1+y2)/2.0; }
      double x1;
 	 double y1;
      double x2;
@@ -116,6 +117,8 @@ class JagLine3D
 	 double y2;
 	 double z2;
 	 void transform( double x0, double y0, double z0, double nx0, double ny0 );
+	 void center( double &cx, double &cy, double &cz ) const { cx=(x1+x2)/2.0; cy=(y1+y2)/2.0; cz=(z1+z2)/2.0; }
+
 };
 
 class JagLineSeg2D
@@ -316,6 +319,8 @@ class JagLineString3D
 		void add( const JagPoint3D &p );
 		void add( double x, double y, double z );
 		void print() const { point.print(); }
+		void center2D( double &cx, double &cy, bool dropLast=false ) const;
+		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
 
 		JagVector<JagPoint3D> point;
 };
@@ -333,6 +338,8 @@ class JagLineString
 		void add( const JagPoint3D &p );
 		void add( double x, double y );
 		void print() const { point.print(); }
+		void center2D( double &cx, double &cy, bool dropLast=false ) const;
+		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
 
 		JagVector<JagPoint> point;
 };
@@ -347,6 +354,8 @@ class JagPolygon
 		void init() { linestr.clean(); }
 		abaxint size() const { return linestr.size(); }
 		void add( const JagLineString3D &linestr3d ) { linestr.append(linestr3d); }
+		void center2D( double &cx, double &cy ) const;
+		void center3D( double &cx, double &cy, double &cz ) const;
 		JagVector<JagLineString3D> linestr;
 		void print() const { linestr.print(); }
 		
@@ -1737,6 +1746,9 @@ class JagGeo
 	static double pointToLineDistance( double lata1, double lona1, double lata2, double lona2, double latb1, double lonb1 );
 	static double safeget( const JagStrSplit &sp, int arg );
 	static AbaxDataString safeGetStr( const JagStrSplit &sp, int arg );
+	static void center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy );
+	static void center3DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy, double &cz );
+
 
 
   protected:
