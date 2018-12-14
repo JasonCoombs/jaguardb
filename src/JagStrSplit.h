@@ -44,6 +44,7 @@ class JagStrSplit
 		void	print() const;
 		void	printStr() const;
 		void  shift();
+		void  back();
 		const char *c_str() const;
 		void  pointTo( const char* str );
 

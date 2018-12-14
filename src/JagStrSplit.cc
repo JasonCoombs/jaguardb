@@ -214,6 +214,7 @@ void JagStrSplit::print() const
 		printf("i=%d [%s]\n", i, list_[i].c_str() );
 	}
 	printf("\n"); 
+	fflush(stdout);
 }
 
 void JagStrSplit::printStr() const
@@ -230,6 +231,13 @@ void JagStrSplit::shift()
 {
 	if ( start_ <= length_-2 ) {
 		++ start_;
+	}
+}
+
+void JagStrSplit::back()
+{
+	if ( start_ <= 1 ) {
+		-- start_;
 	}
 }
 
