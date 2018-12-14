@@ -5060,6 +5060,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p,
 }
 
 // return 1: OK,  < 0 error  0: no data
+// // firstOnly: takes first ring of each polygon
 int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSplit &sp, bool firstOnly, bool is3D )
 {
 	prt(("s5608 addMultiPolygonData firstOnly=%d is3D=%d sp.print():\n", firstOnly, is3D ));
@@ -5071,6 +5072,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 	double dx,dy,dz;
 	JagPolygon pgon;
 	dz = 0.0;
+	/***
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		prt(("s4089 sp[i=%d]=[%s]\n", i, str ));
@@ -5100,6 +5102,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 
 	pgon.add( linestr );
 	pgvec.append( pgon );
+
 	prt(("s8874 pgvec.size=%d\n", pgvec.size() ));
 	prt(("s3348 linestr.print():\n" ));
 	linestr.print();
@@ -5107,6 +5110,50 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 	pgon.print();
 	prt(("s3348 pgvec.print():\n" ));
 	pgvec.print();
+	return 1;
+	***/
+	// "x:y x:y x:y x:y x:y"
+	// "x:y x:y ! x:y x:y x:y"
+	// "x:y x:y | x:y x:y x:y ! x:y x:y x:y"
+	// "x:y x:y | x:y x:y x:y ! x:y x:y x:y | x:y x:y x:y"
+
+	bool skip = false;
+	for ( int i=1; i < sp.length(); ++i ) {
+		str = sp[i].c_str();
+		prt(("s4089 sp[i=%d]=[%s]\n", i, str ));
+
+		JagPoint3D pt(dx,dy,dz);
+		if ( sp[i] == "!" ) {
+			skip = false;
+			// start a new polygon
+			// if ( firstOnly ) break; 
+			pgvec.append(pgon);
+			pgon.init();
+		} else if ( sp[i] == "|" ) {
+			if ( firstOnly ) {
+				skip = true;
+			} else {
+				pgon.add( linestr );
+				linestr.init();
+			}
+		} else {
+			// coordinates
+			if ( ! skip) {
+        		if ( is3D ) {
+        			if ( strchrnum( str, ':') < 2 ) continue;
+        			get3double(str, p, ':', dx, dy, dz );
+        		} else {
+        			if ( strchrnum( str, ':') < 1 ) continue;
+        			get2double(str, p, ':', dx, dy );
+        		}
+    			JagPoint3D pt(dx,dy,dz);
+    			linestr.add( pt );
+			}
+		}
+	}
+
+	pgon.add( linestr );
+	pgvec.append( pgon );
 	return 1;
 }
 

@@ -3720,12 +3720,12 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 			operatorStack.pop(); // remove '('
 			break;
 		} else if ( checkFuncType( fop ) ) {
-			prt(("s4093 in processRightParenthesis see fop=%d doBinary, operatorStack.pop(); break\n"));
+			prt(("s4093 in processRightParenthesis see fop=%d(%s) doBinary, operatorStack.pop(); break\n", fop, BinaryOpNode::getBinaryOpType(fop).c_str() ));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 			break;
 		} else {
-			prt(("s4094 in processRightParenthesis see fop=%d doBinary, operatorStack.pop(); loop\n"));
+			prt(("s4094 in processRightParenthesis see fop=%d doBinary, operatorStack.pop(); loop\n", fop));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 		}
@@ -3737,6 +3737,9 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 // takes their place on the top of the stack.
 void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 {
+	AbaxDataString opstr = BinaryOpNode::getBinaryOpType(op).c_str();
+	prt(("s3376 doBinary op=[%s]\n", opstr.c_str() ));
+
 	ExpressionElementNode *right = NULL;
 	ExpressionElementNode *left = NULL;
 	int arg1 = 0, arg2 = 0;
@@ -3864,7 +3867,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 	} else if ( !funcHasZeroChildren(op) ) {
 		// if substr, pop and process first two top operands as length and offset of substr
-		//prt(("s2088 !funcHasZeroChildren(op) op=%d\n", op ));
+		prt(("s2088 !funcHasZeroChildren(op) op=%d\n", op ));
 		if ( op == JAG_FUNC_SUBSTR ) {
 			ExpressionElementNode *targ = NULL;
 			const char *p = NULL;
@@ -3897,7 +3900,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
     			operandStack.pop();
     			if ( operandStack.empty() ) throw 444;
-
     			targ = operandStack.top();
     			if ( targ->getValue(p) ) {
     				if ( isdigit(*p) ) arg1 = jagatoi(p);
@@ -3909,11 +3911,16 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 		// left child
 		if ( operandStack.empty() ) throw 446;
-		else left = operandStack.top();
+
+		left = operandStack.top();
 		operandStack.pop();
 	}
 
-	prt(("s4084 new BinaryOpNode with left, right, and push to operandStack\n" ));
+	// debug
+	prt(("s4084 new BinaryOpNode with left, right, and push to operandStack op=[%s]\n", opstr.c_str() ));
+    opstr = BinaryOpNode::getBinaryOpType(operatorStack.top()).c_str();
+	prt(("s4094 operatorStack.top()=[%d] [%s]\n", operatorStack.top(),  opstr.c_str() ));
+
 	BinaryOpNode *p = new BinaryOpNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	operandStack.push(p);	
 }
@@ -4529,9 +4536,10 @@ bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const 
 	}
 
 	JagStrSplit sp1( lstr.c_str(), ' ', true );
+	AbaxDataString hdr = sp1[0];
 	sp1.shift();	
 
-	bool rc = doSingleStrOp( op, mark1, colType1, srid1, sp1, carg, value );
+	bool rc = doSingleStrOp( op, mark1, hdr, colType1, srid1, sp1, carg, value );
 	//prt(("s4480 doBooleanOp rc=%d\n", rc ));
 	return rc;
 }
@@ -4585,7 +4593,7 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const 
 	return rc;
 }
 
-bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString& hdr, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, AbaxDataString &value )
 {
 	bool rc = false;
@@ -4610,7 +4618,7 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 	} else if ( op == JAG_FUNC_SUMMARY ) {
 		rc = doAllSummary( mark1, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_CONVEXHULL ) {
-		rc = doAllConvexHull( mark1, colType1, sp1, value );
+		rc = doAllConvexHull( mark1, hdr, colType1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -4861,9 +4869,10 @@ bool BinaryOpNode::doAllStartPoint( const AbaxDataString& mk, const AbaxDataStri
 	return true;
 }
 
-bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    const JagStrSplit &sp, AbaxDataString &value )
 {
-	prt(("s3420 doAllConvexHull() colType=[%s] sp1.print(): \n", colType.c_str() ));
+	prt(("s3420 doAllConvexHull() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
 	value = "";
 	if ( mk == JAG_OJAG ) {
 		prt(("s8830 JAG_OJAG\n" ));
@@ -4873,26 +4882,37 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 			JagParser::addLineStringData( line, sp );
 			line.print();
+		/***
         } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D )  {
 			JagLineString3D line3d;
             JagParser::addLineString3DData(line3d, sp );
 			line3d.print();
+		***/
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 		    JagParser::addPolygonData( pgon, sp, true );
 			pgon.print();
+		/***
         } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
 		    JagParser::addPolygon3DData( pgon, sp, true );
 			pgon.print();
+		***/
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, sp, true, false );
 			prt(("s5022 JAG_C_COL_TYPE_MULTIPOLYGON pgvec.size=%d pgvec.print()\n", pgvec.size() ));
 			pgvec.print();
 			prt(("s2835 pgvec.print() done\n" ));
+			prt((" hdr=[%s]\n", hdr.c_str() ));  // bbox
+			prt((" sp[0]=[%s]\n", sp[0].c_str() ));  // bbox
+			prt((" sp[1]=[%s]\n", sp[1].c_str() ));  // coord
+			//value = "fjdkfjd 93933 2:3 4:2 ";
+			value = hdr + " " + sp[0] +  " 299:3928 400:2282 22:33 43:101 993:331";
+		/***
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, sp, true, true );
 			pgvec.print();
+		***/
 		} else  {
 		}
 	} else {
@@ -4904,24 +4924,30 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
             JagParser::addLineStringData(line, p);
 			line.print();
+		/***
         } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D )  {
             JagParser::addLineString3DData(line, p );
 			line.print();
+		***/
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 			JagParser::addPolygonData( pgon, p, true, false );
 			pgon.print();
+		/***
         } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
 			JagParser::addPolygon3DData( pgon, p, true, false );
 			pgon.print();
+		***/
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, p, true, false, false );
 			pgvec.print();
 			prt(("s2830 pgvec.print() done\n" ));
+		/***
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, p, true, false, true );
 			pgvec.print();
+		***/
 		} else  {
 		}
 	}
@@ -5160,8 +5186,8 @@ bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &c
 
 bool BinaryOpNode::doAllMinMax( int op, const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, double &value )
 {
-	//prt(("s2815 colType=[%s] sp.print(): \n", colType.c_str() ));
-	//sp.print();
+	prt(("s2815 colType=[%s] sp.print(): \n", colType.c_str() ));
+	sp.print();
 
 	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
 	value = 0.0;

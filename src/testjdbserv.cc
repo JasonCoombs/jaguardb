@@ -30,6 +30,8 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
+#include <fcntl.h>
+
 //#include <boost/array.hpp>
 
 //#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -79,6 +81,7 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/error/en.h"
 #include <JagLineFile.h>
+#include <JagParser.h>
 
 
 using namespace std;
@@ -230,7 +233,7 @@ int main(int argc, char *argv[] )
 	// test_compress();
 	// test_hashlock();
 	// test_size();
-	// test_parse();
+	test_parse();
 	// test_boundfile();
 	// test_localdiskhash( N );
 	// test_diskkeychecker( N );
@@ -1084,7 +1087,7 @@ void *lockFD( void *ptr )
 	fl.l_whence = SEEK_SET;
 	fl.l_len = 5;
 	fl.l_pid = 0;
-	rc = fcntl(fd, F_OFD_SETLKW, &fl);
+	//rc = fcntl(fd, F_OFD_SETLKW, &fl);
 	printf("thread=%lld fcntl F_OFD_SETLKW rc=%d errno=%d  err=[%s]\n", pthread_self(), rc, errno, strerror( errno ) );
 
 	rc = write( fd, "11", 2 );
@@ -1557,6 +1560,11 @@ void test_parse()
        	gettok = jag_strtok_r_bracket(NULL, ",", &saveptr );
 		printf("tok=[%s] saveptr=[%s]\n", gettok, saveptr );
     }
+
+	JagVector<JagPolygon> pgvec;
+	const char *p = "( ( (0 0, 3 3, 2 2, 9 8, 0 0)), ( (10 0, 38 39, 22 2, 91 87, 10 0)) ) "; 
+	JagParser::addMultiPolygonData( pgvec, p, true, false, false );
+	pgvec.print();
 
 }
    

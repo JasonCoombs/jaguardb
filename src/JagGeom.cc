@@ -1891,6 +1891,9 @@ bool JagGeo::doPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStr
 
 double JagGeo::doMultiPolygonArea( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
 {
+	prt(("s7739 doMultiPolygonArea sp1.print():\n" ));
+	sp1.print();
+
    	int start = 0;
    	if ( mk1 == JAG_OJAG ) { start = 1; }
     double dx, dy;
