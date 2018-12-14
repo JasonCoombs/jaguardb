@@ -402,11 +402,13 @@ void JagLineString::add( double x, double y )
 	point.append(pp);
 }
 
-void JagLineString::center2D( double &cx, double &cy ) const
+void JagLineString::center2D( double &cx, double &cy, bool dropLast ) const
 {
 	cx = cy = 0.0;
-	if ( point.size() < 1 ) return;
+
 	int len = point.size();
+	if ( dropLast) --len;
+	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += jagatof(point[i].x);
 		cy += jagatof(point[i].y);
@@ -414,11 +416,12 @@ void JagLineString::center2D( double &cx, double &cy ) const
 	cx = cx/len;
 	cy = cy/len;
 }
-void JagLineString::center3D( double &cx, double &cy, double &cz ) const
+void JagLineString::center3D( double &cx, double &cy, double &cz, bool dropLast ) const
 {
 	cx = cy = cz = 0.0;
-	if ( point.size() < 1 ) return;
 	int len = point.size();
+	if ( dropLast) --len;
+	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += jagatof(point[i].x);
 		cy += jagatof(point[i].y);
@@ -449,11 +452,12 @@ void JagLineString3D::add( double x, double y, double z )
 	point.append(pp);
 }
 
-void JagLineString3D::center3D( double &cx, double &cy, double &cz ) const
+void JagLineString3D::center3D( double &cx, double &cy, double &cz, bool dropLast ) const
 {
 	cx = cy = cz = 0.0;
-	if ( point.size() < 1 ) return;
 	int len = point.size();
+	if ( dropLast ) --len;
+	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += point[i].x;
 		cy += point[i].y;
@@ -464,11 +468,12 @@ void JagLineString3D::center3D( double &cx, double &cy, double &cz ) const
 	cz = cz/len; 
 }
 
-void JagLineString3D::center2D( double &cx, double &cy ) const
+void JagLineString3D::center2D( double &cx, double &cy, bool dropLast ) const
 {
 	cx = cy = 0.0;
-	if ( point.size() < 1 ) return;
 	int len = point.size();
+    if ( dropLast ) --len;
+   	if ( len < 1 ) return;
 	for ( int i=0; i < len; ++i ) {
 		cx += point[i].x;
 		cy += point[i].y;
@@ -16383,6 +16388,8 @@ bool JagGeo::point3DDistanceLineString3D(int srid,  double x, double y, double z
 
     return true;
 }
+//dx dy dz are the point3d's coordinate;
+//d == a; w == b; h == c;
 bool JagGeo::point3DDistanceBox(int srid, double dx, double dy, double dz,
 								  double x0, double y0, double z0, double d, double w, double h, double nx, double ny,
 								  const AbaxDataString& arg, double &dist )
@@ -16444,6 +16451,8 @@ bool JagGeo::point3DDistanceBox(int srid, double dx, double dy, double dz,
         dist = maxd;
     } else if (arg.caseEqual("min" )){
         dist = mind;
+    }else {
+        dist = distance( dx, dy, dz, x0, y0, z0, srid );
     }
     return true;
 }
@@ -17587,8 +17596,8 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    double xsum = 0, ysum = 0, xsum2 = 0, ysum2 = 0;
-
+    //double xsum = 0, ysum = 0, xsum2 = 0, ysum2 = 0;
+    //long counter = 0;
     const char *str;
     //const char *str2;
     char *p;
@@ -17614,32 +17623,25 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
             return false;
     }
     pgon.print();
-    long counter = 0;
+
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
         if ( strchrnum( str, ':') < 1 ) continue;
         get2double(str, p, ':', dx, dy );
         const JagLineString3D &linestr = pgon.linestr[0];
-
-
         for ( int i=0; i < linestr.size()-1; ++i ) {//first point = last point,so pass
             d = JagGeo::distance( dx, dy, linestr.point[i].x, linestr.point[i].y, srid );
            // prt(("s10003 d=[%f]\n",d));
             if ( d > maxd ) maxd = d;
             if ( d < mind ) mind = d;
-            if  (arg.caseEqual("center" )) {
-
-
-                   xsum = xsum + dx;
-                   ysum = ysum + dy;
-                   xsum2 = xsum2 + linestr.point[i].x;
-                   ysum2 = ysum2 + linestr.point[i].y;
-                   counter++;
+//            if  (arg.caseEqual("center" )) {
+//                   xsum = xsum + dx;
+//                   ysum = ysum + dy;
+//                   counter++;
                    //prt(("s10004 linex=[%f] liney =[%f]\n", linestr.point[i].x, linestr.point[i].y ));
                    //prt(("s10004 dx=[%f] dy=[%f]\n", dx,dy));
                    //prt(("s10004 xsum=[%f] ysum=[%f] xsum2=[%f] ysum2=[%f]\n",  xsum, ysum, xsum2, ysum2 ));
-
-            }
+//            }
 
         }
     }
@@ -17652,9 +17654,14 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
     } else if (arg.caseEqual( "center" )) {
         double px, py;
         lineStringAverage(mk1, sp1, px, py);
-        prt(("s10006 counter=[%d]\n  xsum=[%f] ysum=[%f] px=[%f] py=[%f] xsum2=[%f] ysum2=[%f]\n",counter,  xsum, ysum, px, py, xsum2, ysum2 ));
-        if ( 0 == counter ) dist = 0.0;
-        else dist = JagGeo::distance( px, py, xsum2 / counter, ysum2 / counter, srid );
+        double cx, cy;
+        pgon.center2D(cx, cy);
+        prt(("s10006 px=[%f] py=[%f] cx=[%f] cy=[%f]", px, py, cx, cy));
+        dist = JagGeo::distance( px, py, cx, cy, srid );
+        //prt(("s10006 counter=[%d]\n  xsum=[%f] ysum=[%f] px=[%f] py=[%f] xsum2=[%f] ysum2=[%f]\n",counter,  xsum, ysum, px, py, xsum2, ysum2 ));
+        //if ( 0 == counter ) dist = 0.0;
+        //else dist = JagGeo::distance( px, py, cx, cy, srid );
+
     }
 
     return true;
@@ -17944,7 +17951,9 @@ bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const 
     char *p1;
     int rc;
     int start = 0;
-    double d, d1, d2, d3, min, max;
+    double d, d1, d2, d3, mind, maxd;
+    double min = LONG_MAX;
+    double max = LONG_MIN;
     double xsum = 0, ysum = 0;
     long counter = 0;
 
@@ -17964,9 +17973,17 @@ bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const 
         d1 = JagGeo::distance( x1, y1, linestr.point[i].x, linestr.point[i].y, srid );
         d2 = JagGeo::distance( x2, y2, linestr.point[i].x, linestr.point[i].y, srid );
         d3 = JagGeo::distance( x3, y3, linestr.point[i].x, linestr.point[i].y, srid );
-		min = jagmin3(d1,d2,d3);
-		max = jagmax3(d1,d2,d3);
-        if  (arg.caseEqual("center" )) {
+        if ( arg.caseEqual( "max" ) ) {
+            mind = jagmin3(d1,d2,d3);
+            if (mind < min){
+                min = mind;
+            }
+        }else if (arg.caseEqual( "min" )) {
+            maxd = jagmax3(d1,d2,d3);
+            if (maxd > max){
+                max = maxd;
+            }
+        }else if (arg.caseEqual("center" )) {
             xsum = xsum + linestr.point[i].x;
             ysum = ysum + linestr.point[i].y;
             counter++;
@@ -17995,12 +18012,8 @@ bool JagGeo::polygonDistanceSquare(int srid, const AbaxDataString &mk1, const Ja
 	// todo016
 	// sp1.print();
 	// sp2.print();
-
-
-
-
-
-	dist = 0.0;
+    polygonDistanceRectangle(srid, mk1, sp1, x0, y0, r, r, nx, arg, dist);
+	//dist = 0.0;
     return true;
 }
 bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
@@ -18041,8 +18054,8 @@ bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const
         if ( d > maxd ) maxd = d;
         if ( d < mind ) mind = d;
         if  (arg.caseEqual("center" )) {
-               xsum = xsum + dx;
-               ysum = ysum + dy;
+               xsum = xsum + linestr.point[i].y;
+               ysum = ysum + linestr.point[i].y;
                counter++;
         }
     }
@@ -18074,6 +18087,56 @@ bool JagGeo::polygonDistanceEllipse(int srid, const AbaxDataString &mk1, const J
  	bool JagGeo::polygonDistanceCircle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
+    JagPolygon pgon;
+    int rc;
+    int start = 0;
+    //int start2 = 0;
+    double dx, dy, d;
+    double mind = LONG_MAX;
+    double maxd = LONG_MIN;
+    double xsum = 0, ysum = 0;
+    long counter = 0;
+    const char *str;
+    //const char *str2;
+    char *p;
+    char *p2;
+    if ( mk1 == JAG_OJAG ) {
+            start = 1;
+            rc = JagParser::addPolygonData( pgon, sp1, true );
+    }
+    else{
+        p = secondTokenStart( sp1.c_str() );
+        rc = JagParser::addPolygonData( pgon, p, true, false );
+    }
+    if ( rc < 0 ) {
+            return false;
+        }
+
+    pgon.print();
+    const JagLineString3D &linestr = pgon.linestr[0];
+    for ( int i=0; i < linestr.size()-1; ++i ) {//first point = last point,so pass
+        pointDistanceCircle(srid,linestr.point[i].x, linestr.point[i].y, x0, y0, r, arg, d);
+        if ( d > maxd ) maxd = d;
+        if ( d < mind ) mind = d;
+        if  (arg.caseEqual("center" )) {
+               xsum = xsum + linestr.point[i].x;
+               ysum = ysum + linestr.point[i].y;
+               counter++;
+        }
+    }
+
+    if ( arg.caseEqual( "max" ) ) {
+            dist = maxd;
+        } else if (arg.caseEqual( "min" )) {
+            dist = mind;
+        } else if (arg.caseEqual( "center" )) {
+            if ( 0 == counter ) dist = 0.0;
+            else dist = JagGeo::distance( xsum / counter, ysum / counter, x0, y0, srid );
+        }
+        printf("%d\f",dist);
+
+//	dist = 0.0;
+
     return true;
 }
 bool JagGeo::polygonDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
@@ -18182,9 +18245,62 @@ bool JagGeo::polygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const Ja
                                 double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
 	// todo021
-	// sp1.print();
+    //	sp1.print();
 	// sp2.print();
 	// dist = 0.0;
+    JagPolygon pgon;
+    const char *str;
+    char *p1;
+    int rc;
+    int start = 0;
+    double d1, d2, d3, min, max;
+    double xsum = 0, ysum = 0, zsum = 0;
+    long counter = 0;
+    double dist1;
+    double mind = LONG_MAX;
+    double maxd = LONG_MIN;
+
+    if ( mk1 == JAG_OJAG ) {
+        start = 1;
+        rc = JagParser::addPolygon3DData( pgon, sp1, true );
+    } else {
+        p1 = secondTokenStart( sp1.c_str() );
+        rc = JagParser::addPolygon3DData( pgon, p1, true, false );
+    }
+    if ( rc < 0 ) {
+            return false;
+    }
+
+    const JagLineString3D &linestr1 = pgon.linestr[0];
+
+    for ( int i=0; i < linestr1.size()-1; ++i ) {//first point = last point,so pass
+        if ( arg.caseEqual( "max" ) ) {
+            point3DDistanceBox( srid, linestr1.point[i].x, linestr1.point[i].y, linestr1.point[i].z, x0, y0, z0, w, d, h, nx, ny, arg, dist1 );
+            if (dist1 > maxd){
+                maxd = dist1;
+         }
+        }else if ( arg.caseEqual( "min" ) ) {
+            point3DDistanceBox( srid, linestr1.point[i].x, linestr1.point[i].y, linestr1.point[i].z, x0, y0, z0, w, d, h, nx, ny, arg, dist1 );
+            if (dist1 < mind){
+                mind = dist1;
+            }
+        }else if ( arg.caseEqual("center" ) ) {
+            xsum = xsum + linestr1.point[i].x;
+            ysum = ysum + linestr1.point[i].y;
+            zsum = zsum + linestr1.point[i].z;
+            counter++;
+        }
+    }
+
+    if ( arg.caseEqual( "max" ) ) {
+        dist = maxd;
+    } else if (arg.caseEqual( "min" )) {
+        dist = mind;
+    } else if (arg.caseEqual( "center" )) {
+        if ( 0 == counter ) dist = 0.0;
+        else dist = JagGeo::distance( x0, y0, z0, xsum / counter, ysum / counter, zsum / counter, srid );
+    }
+
     return true;
 }
 bool JagGeo::polygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
@@ -18193,7 +18309,59 @@ bool JagGeo::polygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const
 	// todo022
 	// sp1.print();
 	// sp2.print();
-	dist = 0.0;
+	// dist = 0.0;
+	JagPolygon pgon;
+    const char *str;
+    char *p1;
+    int rc;
+    int start = 0;
+    double d1, d2, d3, min, max;
+    double xsum = 0, ysum = 0, zsum = 0;
+    long counter = 0;
+    double dist1;
+    double mind = LONG_MAX;
+    double maxd = LONG_MIN;
+
+    if ( mk1 == JAG_OJAG ) {
+        start = 1;
+        rc = JagParser::addPolygon3DData( pgon, sp1, true );
+    } else {
+        p1 = secondTokenStart( sp1.c_str() );
+        rc = JagParser::addPolygon3DData( pgon, p1, true, false );
+    }
+    if ( rc < 0 ) {
+            return false;
+    }
+
+    const JagLineString3D &linestr1 = pgon.linestr[0];
+
+    for ( int i=0; i < linestr1.size()-1; ++i ) {//first point = last point,so pass
+        dist1 = JagGeo::distance( linestr1.point[i].x, linestr1.point[i].y, linestr1.point[i].z, x, y, z, srid );
+        if ( arg.caseEqual( "max" ) ) {
+            if (dist1 > maxd){
+                maxd = dist1;
+         }
+        }else if ( arg.caseEqual( "min" ) ) {
+            if (dist1 < mind){
+                mind = dist1;
+            }
+        }else if ( arg.caseEqual("center" ) ) {
+            xsum = xsum + linestr1.point[i].x;
+            ysum = ysum + linestr1.point[i].y;
+            zsum = zsum + linestr1.point[i].z;
+            counter++;
+        }
+    }
+
+    if ( arg.caseEqual( "max" ) ) {
+        dist = maxd + r;
+    } else if (arg.caseEqual( "min" )) {
+        dist = mind - r;
+    } else if (arg.caseEqual( "center" )) {
+        if ( 0 == counter ) dist = 0.0;
+        else dist = JagGeo::distance( x, y, z, xsum / counter, ysum / counter, zsum / counter, srid );
+    }
+
     return true;
 }
 bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
@@ -18213,7 +18381,60 @@ bool JagGeo::polygon3DDistanceCone(int srid,  const AbaxDataString &mk1, const J
 	// todo024
 	// sp1.print();
 	// sp2.print();
-	dist = 0.0;
+    // dist = 0.0;
+    JagPolygon pgon;
+    const char *str;
+    char *p1;
+    int rc;
+    int start = 0;
+    double d1, d2, d3, min, max;
+    double xsum = 0, ysum = 0, zsum = 0;
+    long counter = 0;
+    double dist1;
+    double mind = LONG_MAX;
+    double maxd = LONG_MIN;
+
+    if ( mk1 == JAG_OJAG ) {
+        start = 1;
+        rc = JagParser::addPolygon3DData( pgon, sp1, true );
+    } else {
+        p1 = secondTokenStart( sp1.c_str() );
+        rc = JagParser::addPolygon3DData( pgon, p1, true, false );
+    }
+    if ( rc < 0 ) {
+            return false;
+    }
+
+    const JagLineString3D &linestr1 = pgon.linestr[0];
+
+    for ( int i=0; i < linestr1.size()-1; ++i ) {//first point = last point,so pass
+        if ( arg.caseEqual( "max" ) ) {
+            point3DDistanceCone( srid, linestr1.point[i].x, linestr1.point[i].y, linestr1.point[i].z, x0, y0, z0, r, h, nx, ny, arg, dist1 );
+            if (dist1 > maxd){
+                maxd = dist1;
+         }
+        }else if ( arg.caseEqual( "min" ) ) {
+            point3DDistanceCone( srid, linestr1.point[i].x, linestr1.point[i].y, linestr1.point[i].z, x0, y0, z0, r, h, nx, ny, arg, dist1 );
+            if (dist1 < mind){
+                mind = dist1;
+            }
+        }else if ( arg.caseEqual("center" ) ) {
+            xsum = xsum + linestr1.point[i].x;
+            ysum = ysum + linestr1.point[i].y;
+            zsum = zsum + linestr1.point[i].z;
+            counter++;
+        }
+    }
+
+    if ( arg.caseEqual( "max" ) ) {
+        dist = maxd;
+    } else if (arg.caseEqual( "min" )) {
+        dist = mind;
+    } else if (arg.caseEqual( "center" )) {
+        if ( 0 == counter ) dist = 0.0;
+        else dist = JagGeo::distance( x0, y0, z0, xsum / counter, ysum / counter, zsum / counter, srid );
+    }
+
     return true;
 }
 
@@ -18225,9 +18446,10 @@ bool JagGeo::multiPolygonDistanceTriangle(int srid, const AbaxDataString &mk1, c
 	// todo025
 	// sp1.print();
 	// sp2.print();
-	dist = 0.0;
+    //	dist = 0.0;
     return true;
 }
+
 bool JagGeo::multiPolygonDistanceSquare(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
@@ -18280,9 +18502,38 @@ bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, con
 								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
 	// todo031
-	// sp1.print();
+	printf("----------------");
+	sp1.print();
+	printf("----------------");
 	// sp2.print();
-	dist = 0.0;
+    // dist = 0.0;
+    int rc;
+    int start = 0;
+    int rc1;
+    int start1 = 0;
+    char *p1;
+    JagVector<JagPolygon> pgvec;
+    if ( mk1 == JAG_OJAG ) {
+       start = 1;
+       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, true , true );
+    } else {
+       p1 = secondTokenStart( sp1.c_str() );
+       rc1 = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
+    }
+
+    int len = pgvec.size();
+    if ( len < 1 ) return false;
+    double x, y, z;
+    printf("-------11111111111---------\n");
+    prt(("len:%d\n",len));
+    printf("-------11111111111---------");
+    for ( int i=0; i < len; ++i ) {
+    	printf("-------^^^^^^^^^^---------");
+        pgvec[i].print();
+        printf("-------^^^^^^^^^^---------");
+    }
+
+
     return true;
 }
 
@@ -18508,10 +18759,11 @@ void JagPolygon::center2D(  double &cx, double &cy ) const
 	cx = cy = 0.0;
 	// JagVector<JagLineString3D> linestr;
 	int len = linestr.size();
+	prt(("s10007 len=[%d]\n", len ));
 	if ( len < 1 ) return;
 	double x, y;
 	for ( int i=0; i < len; ++i ) {
-		linestr[i].center2D(x, y);
+		linestr[i].center2D(x, y, true);
 		cx += x;
 		cy += y;
 	}
@@ -18527,7 +18779,8 @@ void JagPolygon::center3D(  double &cx, double &cy, double &cz ) const
 	if ( len < 1 ) return;
 	double x, y, z;
 	for ( int i=0; i < len; ++i ) {
-		linestr[i].center3D(x, y, z);
+		linestr[i].center3D(x, y, z, true);
+
 		cx += x;
 		cy += y;
 		cz += z;
