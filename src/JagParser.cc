@@ -5146,9 +5146,11 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 		if ( sp[i] == "!" ) {
 			skip = false;
 			// start a new polygon
-			// if ( firstOnly ) break; 
+			// if ( firstOnly ) break;
+			pgon.add(linestr);
 			pgvec.append(pgon);
 			pgon.init();
+            linestr.init();
 		} else if ( sp[i] == "|" ) {
 			if ( firstOnly ) {
 				skip = true;
