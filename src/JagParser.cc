@@ -4687,12 +4687,14 @@ AbaxDataString JagParser::getColumns( const char *str )
 	//prt(("s2728 JagParser::getColumns str=[%s]\n", str ));
 	AbaxDataString s, res;
 	JagStrSplitWithQuote spq(str, ' ' );
-	char *p;
+	char *p, *q;
 	for ( int i=0; i < spq.length(); ++i ) {
 		// intersect( ls1, linestring(1 2 , 3 4 ))
 		// "&&"  "and"
 		// intersect( ls2, linestring(1 2 , 3 4 ))
+		//prt(("s6727 spq=[%s]\n", spq[i].c_str() ));
 		p = (char*)strchr( spq[i].c_str(), '(' );
+		//prt(("s67277 p=[%s]\n", p ));
 		if ( ! p ) continue;
 		++p;
 		if ( *p == '\0' ) continue;
@@ -4702,7 +4704,25 @@ AbaxDataString JagParser::getColumns( const char *str )
 		for ( int j=0; j < sp.length() && j < 2; ++j ) {
 			//prt(("s6632 sp[%d]=[%s]\n", j, sp[j].c_str() ));
 			p = (char*)strchr( sp[j].c_str(), '(' );
-			if ( p ) continue;
+			// if ( p ) continue;
+			if ( p ) {
+				p = (char*)strrchr( sp[j].c_str(), '(' );  // convexhull(ss(col))
+				++p; if ( *p == 0 ) continue;
+				while ( isspace(*p) ) ++p; if ( *p == 0 ) continue;
+				q = strchr(p, ')');
+				if ( q ) {
+					--q; while ( isspace(*q) ) --q;
+					if ( p == q) continue;
+					s = AbaxDataString(p, q-p+1);  // (p)col1(q) 
+					if ( res.size() < 1 ) {
+						res = s;
+					} else {
+						res += AbaxDataString("|") + s;
+					}
+					//prt(("s2094 res=[%s]\n", res.c_str() ));
+				} 
+				continue;
+			}
 			p = (char*)strchr( sp[j].c_str(), ')' );
 			if ( p ) { 
 				*p = '\0'; 
