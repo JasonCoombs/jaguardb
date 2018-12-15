@@ -47,6 +47,7 @@
 #include <JagHashStrStr.h>
 #include <JagTime.h>
 #include <JagUtil.h>
+#include <JagCGAL.h>
 
 /*****************************************************************************************
 ** _opString: used in where for final result
@@ -4887,9 +4888,12 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 			JagParser::addLineStringData( line, sp );
 			line.print();
+			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 		    JagParser::addPolygonData( pgon, sp, true );
 			pgon.print();
+			line.copyFrom( pgon.linestr[0], true );
+			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, sp, true, false );
@@ -4900,7 +4904,9 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 			prt((" sp[0]=[%s]\n", sp[0].c_str() ));  // bbox
 			prt((" sp[1]=[%s]\n", sp[1].c_str() ));  // coord
 			//value = "fjdkfjd 93933 2:3 4:2 ";
-			value = hdr + " " + sp[0] +  " 299:3928 400:2282 22:33 43:101 993:331";
+			// value = hdr + " " + sp[0] +  " 299:3928 400:2282 22:33 43:101 993:331";
+			line.copyFrom( pgvec[0].linestr[0], true );
+			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
 		} else  {
 		}
 	} else {
@@ -4912,14 +4918,19 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
             JagParser::addLineStringData(line, p);
 			line.print();
+			JagCGAL::getConvexHull2DStr( line, hdr, "0:0:0:0", value );
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 			JagParser::addPolygonData( pgon, p, true, false );
 			pgon.print();
+			line.copyFrom( pgon.linestr[0], true );
+			JagCGAL::getConvexHull2DStr( line, hdr, "0:0:0:0", value );
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, p, true, false, false );
 			pgvec.print();
 			prt(("s2830 pgvec.print() done\n" ));
+			line.copyFrom( pgvec[0].linestr[0], true );
+			JagCGAL::getConvexHull2DStr( line, hdr, "0:0:0:0", value );
 		} else  {
 		}
 	}

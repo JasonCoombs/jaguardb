@@ -5,6 +5,7 @@ test: testjdbserv
 BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include \
 		  -IWeb/Tencent/rapidjson/include -IWeb/TomCrypt/include \
 		  -IWeb/Snappy -IWeb/UTF -IWeb/Boost/boost_1_68_0 \
+		  -IWeb/CGAL/CGAL-4.13/include \
 		  -D_REENTRANT -std=c++0x \
 		 -DCHECK_LATENCY1 -DJAG_DEBUGCHECK1 -DDEVDEBUG1 -DTFM_DESC
 
@@ -14,7 +15,7 @@ CCFLAGS=$(CCFLAGS_STATIC)
 CCFLAGS=$(CCFLAGS_DYNAMIC)
 
 STDLIBS_STATIC =   Web/GeographicLib-1.49/lib/libGeographic.a /usr/lib64/libpthread.a
-STDLIBS_DYNAMIC =  -LWeb/GeographicLib-1.49/lib -lGeographic  -lpthread
+STDLIBS_DYNAMIC =  -LWeb/GeographicLib-1.49/lib -lGeographic -LWeb/GMP/GMP-6.1.2/lib -lgmp -lpthread
 STDLIBS=$(STDLIBS_STATIC)
 STDLIBS=$(STDLIBS_DYNAMIC)
 
@@ -61,13 +62,13 @@ glibcversion: glibcversion.o
 	$(CPP) -o glibcversion glibcversion.o
 
 lib:  $(OBJS) jagserv.o jql.o javahdr javalib
-	$(CPP) -o jaguar.bin jagserv.o -L. -LWeb/GeographicLib-1.49/lib  -lJaguarClient -lGeographic -lpthread
-	$(CPP) -o jql.bin jql.o -L. -LWeb/GeographicLib-1.49/lib -lJaguarClient -lGeographic  -lpthread
+	$(CPP) -o jaguar.bin jagserv.o -L. -lJaguarClient $(STDLIBS)
+	$(CPP) -o jql.bin jql.o -L. -lJaguarClient $(STDLIBS)
 
 
 createKeyPair: createKeyPair.o
-	$(CPP) -o createKeyPair.bin  createKeyPair.o libJaguarClient.so $(STDLIBS_DYNAMIC)
+	$(CPP) -o createKeyPair.bin  createKeyPair.o libJaguarClient.so $(STDLIBS)
 
 testjdbserv: testjdbserv.o $(OBJS) 
-	$(GPP) $(CCFLAGS_DYNAMIC) -o testjdbserv testjdbserv.o libJaguarClient.so $(STDLIBS_DYNAMIC)
+	$(GPP) $(CCFLAGS_DYNAMIC) -o testjdbserv testjdbserv.o libJaguarClient.so $(STDLIBS)
 

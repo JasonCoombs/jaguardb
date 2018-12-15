@@ -383,6 +383,18 @@ JagLineString& JagLineString::operator=( const JagLineString3D& L2 )
 	return *this;
 }
 
+JagLineString& JagLineString::copyFrom( const JagLineString3D& L2, bool removeLast )
+{
+	init();
+	int len =  L2.size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len; ++i ) {
+		add( L2.point[i] );
+	}
+	return *this;
+}
+
+
 
 void JagLineString::add( const JagPoint2D &p )
 {
@@ -399,6 +411,12 @@ void JagLineString::add( const JagPoint3D &p )
 void JagLineString::add( double x, double y )
 {
 	JagPoint pp( doubleToStr(x).c_str(),  doubleToStr(y).c_str() );
+	point.append(pp);
+}
+
+void JagLineString::add( double x, double y, double z )
+{
+	JagPoint pp( doubleToStr(x).c_str(),  doubleToStr(y).c_str(), doubleToStr(z).c_str() );
 	point.append(pp);
 }
 
