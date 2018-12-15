@@ -15,10 +15,24 @@
 void JagCGAL::getConvexHull2DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value )
 {
 	JagLineString hull;
-	value = hdr + " " + bbox;
 	getConvexHull2D( line, hull );
 	const JagVector<JagPoint> &point = hull.point;
 	AbaxDataString sx, sy;
+
+	if ( bbox.size() < 1 ) {
+		double xmin, ymin, xmax, ymax;
+		AbaxDataString s1, s2, s3, s4;
+		hull.bbox2D( xmin, ymin, xmax, ymax );
+		AbaxDataString newbbox;
+		s1 = doubleToStr( xmin ).trimEndZeros();
+		s2 = doubleToStr( ymin ).trimEndZeros();
+		s3 = doubleToStr( xmax ).trimEndZeros();
+		s4 = doubleToStr( ymax ).trimEndZeros();
+		newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4;
+		value = hdr + " " + newbbox;
+	} else {
+		value = hdr + " " + bbox;
+	}
 
 	for ( int i = 0; i <  point.size(); ++i ) {
 		sx = point[i].x; sx.trimEndZeros();

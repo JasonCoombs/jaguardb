@@ -5579,7 +5579,7 @@ void JagParser::removeEndUnevenBracketAll( char *str )
 }
 
 
-// from _OJAG_ type
+// from OJAG type
 // 1: OK  < 0 error
 int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
@@ -5606,7 +5606,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	return 1;
 }
 
-// from _OJAG_ type
+// from OJAG type
 // 1: OK  < 0 error
 int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
@@ -5634,7 +5634,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 }
 
 
-// from _OJAG_ type
+// from OJAG type
 void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp )
 {
 	const char *str;
@@ -5649,7 +5649,7 @@ void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp
 	}
 }
 
-// from _OJAG_ type
+// from OJAG type
 void JagParser::addLineString3DData( JagLineString3D &linestr, const JagStrSplit &sp )
 {
 	const char *str;

@@ -262,7 +262,7 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 		}
 
 		// _srid=_name=_type
-		AbaxDataString colobjstr = AbaxDataString("_OJAG_=") + intToStr( _srid ) + "=" + _name + "=" + _type;
+		AbaxDataString colobjstr = AbaxDataString("OJAG=") + intToStr( _srid ) + "=" + _name + "=" + _type;
 		//prt(("s0393 tmp9999 colobjstr=[%s]\n", colobjstr.c_str() ));
 		// get str
 		//prt(("s7012 _type=[%s]\n", _type.c_str() ));
@@ -312,8 +312,8 @@ int StringElementNode::checkFuncValidConstantOnly( AbaxFixString &str, int &type
 	return 1;
 }
 
-// return str:  "_OJAG_=srid=tab=TYPE  x y z"  3D
-// return str:  "_OJAG_=srid=tab=TYPE  x y"  2D
+// return str:  "OJAG=srid=tab=TYPE  x y z"  3D
+// return str:  "OJAG=srid=tab=TYPE  x y"  2D
 void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
 										const AbaxDataString &colobjstr, AbaxFixString &str )
 {
@@ -351,8 +351,8 @@ void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const
 	//prt(("s0883 makeDataString str=[%s]\n", str.c_str() ));
 }
 
-// return str:  "_OJAG_=srid=tab=TYPE=subtype  x y z"  3D
-// return str:  "_OJAG_=srid=tab=TYPE=subtype  x y"  2D
+// return str:  "OJAG=srid=tab=TYPE=subtype  x y z"  3D
+// return str:  "OJAG=srid=tab=TYPE=subtype  x y"  2D
 void StringElementNode::makeRangeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
 										const AbaxDataString &incolobjstr, AbaxFixString &str )
 {
@@ -418,12 +418,12 @@ void StringElementNode::getPolyDataString( JagMergeReaderBase *ntr, const AbaxDa
 	}
 }
 
-// return str "_OJAG_=srid=tab=TYPE  bbox[4]  x:y  x:y x:y ..."  linestring
-// return str "_OJAG_=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z ..."  linestring3d
-// return str "_OJAG_=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ..."  polygon or multilinestring
-// return str "_OJAG_=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z | ..."  polygon3d or multilinestring3d
-// return str "_OJAG_=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ... ! ...|...|...!...|...|..."  multipolygon
-// return str "_OJAG_=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z ... ! ...|...|...!...|...|..."  multipolygon3d
+// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y ..."  linestring
+// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z ..."  linestring3d
+// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ..."  polygon or multilinestring
+// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z | ..."  polygon3d or multilinestring3d
+// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ... ! ...|...|...!...|...|..."  multipolygon
+// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z ... ! ...|...|...!...|...|..."  multipolygon3d
 void StringElementNode::getPolyData( const AbaxDataString &polyType, JagMergeReaderBase *ntr, 
 									const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 									const char *buffers[], AbaxFixString &str, bool is3D )
@@ -548,12 +548,12 @@ a=[2] geo:xmin=[0.0] geo:ymin=[0.0] geo:zmin=[1.0] id=[UvO0wdS3] geo:col=[21] ge
 a=[2] geo:xmin=[0.0] geo:ymin=[0.0] geo:zmin=[1.0] id=[UvO0wdS3] geo:col=[21] geo:m=[1] geo:n=[1] geo:i=[2] po2:x=[] po3:x=[] ls:x=[400.0] ls:y=[500.0]
 a=[2] geo:xmin=[0.0] geo:ymin=[0.0] geo:zmin=[1.0] id=[UvO0wdS3] geo:col=[21] geo:m=[1] geo:n=[1] geo:i=[3] po2:x=[] po3:x=[] ls:x=[500.0] ls:y=[600.0]
 ****************************************************************************************************************************/
-// return str "_OJAG_=srid=tab=TYPE  bbox[4]  x:y  x:y x:y ..."  linestring
-// return str "_OJAG_=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z ..."  linestring3d
-// return str "_OJAG_=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ..."  polygon or multilinestring
-// return str "_OJAG_=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z | ..."  polygon3d or multilinestring3d
-// return str "_OJAG_=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ... ! ...|...|...!...|...|..."  multipolygon
-// return str "_OJAG_=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z ... ! ...|...|...!...|...|..."  multipolygon3d
+// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y ..."  linestring
+// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z ..."  linestring3d
+// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ..."  polygon or multilinestring
+// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z | ..."  polygon3d or multilinestring3d
+// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ... ! ...|...|...!...|...|..."  multipolygon
+// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z ... ! ...|...|...!...|...|..."  multipolygon3d
 void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
 									const JagSchemaAttribute *attrs[], 
 									const char *buffers[],  const AbaxDataString &uuid,
@@ -701,9 +701,9 @@ void StringElementNode::savePolyData( const AbaxDataString &polyType, JagMergeRe
 		}
 
     	buf[len] = 0;
-    	// str[k] = AbaxDataString(buf, len );  // "_OJAG_=srid=tab=type bbox x:y:z
-    	str[k] = AbaxDataString(buf);  // "_OJAG_=srid=tab=type bbox x:y:z
-    	//str[k] = AbaxDataString(buf );  // "_OJAG_=srid=tab=type bbox x:y:z
+    	// str[k] = AbaxDataString(buf, len );  // "OJAG=srid=tab=type bbox x:y:z
+    	str[k] = AbaxDataString(buf);  // "OJAG=srid=tab=type bbox x:y:z
+    	//str[k] = AbaxDataString(buf );  // "OJAG=srid=tab=type bbox x:y:z
 		//prt(("s3408 len=%d strlen=%d\n", len, strlen( buf ) ));
 		//prt(("s3921 buf=[%s] len=%d strlen=%d\n", buf, len, strlen(buf) ));
 		free( buf );
@@ -2347,7 +2347,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 
 	AbaxDataString errmsg;
 	// first, check if need to change datetime format
-	if ( _right && rstr.size()>0 && 0!=strncmp(rstr.c_str(), "_CJAG_", 6) ) {
+	if ( _right && rstr.size()>0 && 0!=strncmp(rstr.c_str(), "CJAG", 6) ) {
 		if ( isDateTime(ltype) && 0 == rtype.size() ) {
 			// left is date time column and right is constant, covert right
 			char buf[llength+1];
@@ -3597,7 +3597,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			sp[1].replace(' ', '_');
 			val = sp[0] + "|" + sp[1];
 		}
-		value = AbaxDataString("_CJAG_=0=0=") + geotype + "=0 " + val;
+		value = AbaxDataString("CJAG=0=0=") + geotype + "=0 " + val;
 		typeMode = 2;
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
@@ -4428,18 +4428,18 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 	//prt(("s5481 do processBooleanOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processBooleanOp rstr=[%s]\n", rstr.c_str() ));
 	//prt(("s5481 do processBooleanOp carg=[%s]\n", carg.c_str() ));
-	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
-	//  rstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
-	//  rstr : _CJAG_=0=0=type=subtype  data1 data2 data3 ...
+	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
+	//  rstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
+	//  rstr : CJAG=0=0=type=subtype  data1 data2 data3 ...
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
 	AbaxDataString colobjstr2 = rstr.firstToken(' ');
 	JagStrSplit spcol2(colobjstr2, '=');  
 	AbaxDataString colType2;
 
-	// colobjstr1: "_OJAG_=srid=db.obj.col=type"
+	// colobjstr1: "OJAG=srid=db.obj.col=type"
 	AbaxDataString colType1;
-	JagStrSplit spcol1(colobjstr1, '=');  // _OJAG_=srid=name=type
+	JagStrSplit spcol1(colobjstr1, '=');  // OJAG=srid=name=type
 	int srid1 = 0;
 	AbaxDataString mark1, colName1;  // colname: "db.tab.col"
 	if ( spcol1.length() < 4 ) {
@@ -4447,14 +4447,14 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 			colType2 = spcol2[3];
 			if ( colType2 == JAG_C_COL_TYPE_RANGE ) {
 				if (  _left && _left->_isElement ) {
-					mark1 = "_OJAG_";
+					mark1 = "OJAG";
 					srid1 = _left->_srid;
 					colName1 = _left->_name;
 					colType1 = _left->_type;
 					//prt(("s8273 left is element node. srid1=%d name=[%s] type=[%s]\n", srid1, colName1.c_str(), colType1.c_str() ));
 				} else {
 					//prt(("s7283 left is not element, use dummy" ));
-					mark1 = "_OJAG_";
+					mark1 = "OJAG";
 					srid1 = 0;
 					colName1 = "dummy";
 					colType1 = "dummy";
@@ -4466,7 +4466,7 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 		} else {
 			//prt(("E4406 not enough header [%s] op=%d\n", lstr.c_str(), op ));
 			//return false;
-			mark1 = "_OJAG_";
+			mark1 = "OJAG";
 			srid1 = 0;
 			colName1 = "dummy";
 			colType1 = "dummy";
@@ -4480,8 +4480,8 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 		colType1 = spcol1[3];
 	}
 
-	// colobjstr2: "_OJAG_=srid=db.obj.col=type=subtype 33 44"
-	// colobjstr2: "_CJAG_=0=0=type=subtype 3 4"
+	// colobjstr2: "OJAG=srid=db.obj.col=type=subtype 33 44"
+	// colobjstr2: "CJAG=0=0=type=subtype 3 4"
 	int srid2 = 0;
 	AbaxDataString mark2, colName2;  // colname: "db.tab.col"
 
@@ -4495,7 +4495,7 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 	colName2 = spcol2[2];
 	colType2 = spcol2[3];
 
-	if ( mark2 == "_OJAG_" && mark1  == "_OJAG_" && srid1 != srid2 ) {
+	if ( mark2 == "OJAG" && mark1  == "OJAG" && srid1 != srid2 ) {
 		prt(("E4418 two columns but sriddiff hdr1=[%s] hdr2=[%s]\n", colobjstr1.c_str(), colobjstr2.c_str() ));
 		return false;
 	}
@@ -4524,12 +4524,12 @@ bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const 
 {
 	// prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
-	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
+	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
-	// colobjstr1: "_OJAG_=srid=db.obj.col=type"
+	// colobjstr1: "OJAG=srid=db.obj.col=type"
 	AbaxDataString colType1;
-	JagStrSplit spcol1(colobjstr1, '=');  // _OJAG_=srid=name=type
+	JagStrSplit spcol1(colobjstr1, '=');  // OJAG=srid=name=type
 	int srid1 = 0;
 	AbaxDataString mark1, colName1;  // colname: "db.tab.col"
 
@@ -4557,12 +4557,12 @@ bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &lstr, con
 {
 	prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleDoubleOp carg=[%s]\n", carg.c_str() ));
-	//  lstr : _OJAG_=srid=name=type=subtype  data1 data2 data3 ...
+	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
-	// colobjstr1: "_OJAG_=srid=db.obj.col=type"
+	// colobjstr1: "OJAG=srid=db.obj.col=type"
 	AbaxDataString colType1;
-	JagStrSplit spcol1(colobjstr1, '=');  // _OJAG_=srid=name=type
+	JagStrSplit spcol1(colobjstr1, '=');  // OJAG=srid=name=type
 	int srid1 = 0;
 	AbaxDataString mark1, colName1;  // colname: "db.tab.col"
 
@@ -4623,7 +4623,7 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 	} else if ( op == JAG_FUNC_SUMMARY ) {
 		rc = doAllSummary( mark1, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_CONVEXHULL ) {
-		rc = doAllConvexHull( mark1, hdr, colType1, sp1, value );
+		rc = doAllConvexHull( mark1, hdr, colType1, srid1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -4875,7 +4875,7 @@ bool BinaryOpNode::doAllStartPoint( const AbaxDataString& mk, const AbaxDataStri
 }
 
 bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
-								    const JagStrSplit &sp, AbaxDataString &value )
+								    int srid, const JagStrSplit &sp, AbaxDataString &value )
 {
 	prt(("s3420 doAllConvexHull() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
 	sp.print();
@@ -4913,24 +4913,30 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 		prt(("s8830 JAG_CJAG c_str=[%s]\n", sp.c_str() ));
 		JagLineString line;
 		JagPolygon pgon;
-		const char *p = secondTokenStart( sp.c_str() );
+		//const char *p = secondTokenStart( sp.c_str() );
+		const char *p = sp.c_str();
+		AbaxDataString objHdr;
+		objHdr = "OJAG=" + intToStr(srid) + "=dummy.dummy.dummy=LS=0";
 
-        if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
-            JagParser::addLineStringData(line, p);
+		if ( 0==strncasecmp( sp.c_str(), "linestring(", 11) || 0==strncasecmp( sp.c_str(), "multipoint(", 11) ) {
+            JagParser::addLineStringData(line, p+10 );
 			line.print();
-			JagCGAL::getConvexHull2DStr( line, hdr, "0:0:0:0", value );
-        } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
-			JagParser::addPolygonData( pgon, p, true, false );
+			JagCGAL::getConvexHull2DStr( line, objHdr, "", value );
+			value += ")";
+        } else if ( 0==strncasecmp( sp.c_str(), "polygon(", 8) ) {
+			JagParser::addPolygonData( pgon, p+7, true, false );
 			pgon.print();
 			line.copyFrom( pgon.linestr[0], true );
-			JagCGAL::getConvexHull2DStr( line, hdr, "0:0:0:0", value );
-        } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+			JagCGAL::getConvexHull2DStr( line, objHdr, "", value );
+			value += ")";
+        } else if ( 0==strncasecmp( sp.c_str(), "multipolygon(", 13) ) {
 			JagVector<JagPolygon> pgvec;
-			JagParser::addMultiPolygonData( pgvec, p, true, false, false );
+			JagParser::addMultiPolygonData( pgvec, p+12, true, false, false );
 			pgvec.print();
 			prt(("s2830 pgvec.print() done\n" ));
 			line.copyFrom( pgvec[0].linestr[0], true );
-			JagCGAL::getConvexHull2DStr( line, hdr, "0:0:0:0", value );
+			JagCGAL::getConvexHull2DStr( line, objHdr, "", value );
+			value += ")";
 		} else  {
 		}
 	}

@@ -342,6 +342,8 @@ class JagLineString
 		void print() const { point.print(); }
 		void center2D( double &cx, double &cy, bool dropLast=false ) const;
 		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
+		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax );
+		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 
 		JagVector<JagPoint> point;
 };

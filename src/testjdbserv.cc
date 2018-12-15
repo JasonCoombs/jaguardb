@@ -2645,7 +2645,7 @@ void test_str( int N )
 	}
 
 	AbaxDataString s3[3];
-	s3[0] = "_OJAG_=0=test.pol2.ls=LS 0.0:0.0:500.0:600.0 ";
+	s3[0] = "OJAG=0=test.pol2.ls=LS 0.0:0.0:500.0:600.0 ";
 	prt(("before s3=[%s]\n", s3[0].c_str() ));
 	char bf[234];
 	sprintf(bf, " 500.0:600.0" );
@@ -3064,7 +3064,7 @@ void test_json( int N )
 		prt(("LEN123 is null\n" ));
 	}
 
-	AbaxDataString obj="_OJAG_=0=test.pol2.po2";
+	AbaxDataString obj="OJAG=0=test.pol2.po2";
 	JagStrSplit sp(obj, '=');
 
 	//const char *sstr = "0.0:0.0:500.0:600.0 0.0:0.0 20.0:0.0 8.0:9.0 0.0:0.0| 1.0:2.0 2.0:3.0 1.0:2.0";

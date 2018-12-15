@@ -394,6 +394,42 @@ JagLineString& JagLineString::copyFrom( const JagLineString3D& L2, bool removeLa
 	return *this;
 }
 
+void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax )
+{
+	xmin = ymin = LONG_MAX;
+	xmax = ymax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = jagatof(point[i].x);
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = jagatof(point[i].y);
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+	}
+}
+
+void JagLineString::bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax )
+{
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = jagatof(point[i].x);
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = jagatof(point[i].y);
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+
+		f = jagatof(point[i].z);
+		if ( f < zmin ) zmin = f;
+		if ( f > zmax ) zmax = f;
+	}
+}
+
 
 
 void JagLineString::add( const JagPoint2D &p )
@@ -1849,7 +1885,7 @@ bool JagGeo::doPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStr
 
 	/***
 	//sp1.print();
-	i=0 [_OJAG_=0=test.pol2.po2=PL]
+	i=0 [OJAG=0=test.pol2.po2=PL]
 	i=1 [0.0:0.0:500.0:600.0] // bbox
 	i=2 [0.0:0.0]
 	i=3 [20.0:0.0]
@@ -3399,7 +3435,7 @@ bool JagGeo::polygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit 
 	return true;
 }
 
-// first polygon is column, second is _CJAG_ 
+// first polygon is column, second is CJAG 
 // O - O  O - C   C - O   no C-C
 bool JagGeo::polygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
 								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
@@ -3707,7 +3743,7 @@ bool JagGeo::multiPolygonWithinEllipse( const AbaxDataString &mk1, const JagStrS
 	return true;
 }
 
-// first polygon is column, second is _CJAG_ 
+// first polygon is column, second is CJAG 
 // O - O  O - C   C - O   no C-C
 bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
 								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
@@ -13576,7 +13612,7 @@ bool JagGeo::isNull( double x1, double y1, double z1, double x2, double y2, doub
 	return false;
 }
 
-// sp: _OJAG_=0=test.lstr.ls=LS guarantee 3 '=' signs
+// sp: OJAG=0=test.lstr.ls=LS guarantee 3 '=' signs
 // str: "x:y x:y x:y ..." or "x:y:z x:y:z x:y:z ..."
 AbaxDataString JagGeo::makeGeoJson( const JagStrSplit &sp, const char *str )
 {
@@ -13617,7 +13653,7 @@ AbaxDataString JagGeo::makeGeoJson( const JagStrSplit &sp, const char *str )
 ** https://tools.ietf.org/html/rfc7946
 *******************************************************************/
 
-// sp: _OJAG_=0=test.lstr.ls=LS guarantee 3 '=' signs
+// sp: OJAG=0=test.lstr.ls=LS guarantee 3 '=' signs
 // str: "xmin:ymin:xmax:ymax x:y x:y x:y ..." 
 /*********************
     {
@@ -16381,7 +16417,7 @@ bool JagGeo::point3DDistanceLineString3D(int srid,  double x, double y, double z
 	prt(("s2038 srid=%d x y z = %f %f %f\n", srid, x, y, z ));
 	//prt(("s5780 sp2:\n" ));
 	//sp2.print(); 
-	// _OJAG_=0=test.linestr3d.l3=LS3=0 1.0:2.0:3.0:5.0:6.0:7.0 1.0:2.0:3.0 2.0:3.0:4.0 5.0:6.0:7.0
+	// OJAG=0=test.linestr3d.l3=LS3=0 1.0:2.0:3.0:5.0:6.0:7.0 1.0:2.0:3.0 2.0:3.0:4.0 5.0:6.0:7.0
     double dx, dy, dz;
     const char *str;
     char *p;
@@ -16559,7 +16595,7 @@ bool JagGeo::circleDistancePolygon(int srid, double px0, double py0, double pr,
 {
 	prt(("s2030 sp2:\n" ));
 	// sp2.print();
-	// [_OJAG_=0=test.pol1.pol=PL=0 0.0:0.0:80.0:80.0 0.0:0.0 80.0:0.0 80.0:80.0 0.0:80.0 0.0:0.0
+	// [OJAG=0=test.pol1.pol=PL=0 0.0:0.0:80.0:80.0 0.0:0.0 80.0:0.0 80.0:80.0 0.0:80.0 0.0:0.0
     double dx, dy;
     const char *str;
     char *p;
