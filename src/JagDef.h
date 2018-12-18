@@ -20,7 +20,7 @@
 #define _jag_def_h_
 
 // version
-#define JAG_VERSION			"2.9.5"
+#define JAG_VERSION			"2.9.6"
 #define JAG_BRAND			"jaguar"
 
 // File Defs
@@ -660,8 +660,8 @@
 #define JAG_TABLE   1
 #define JAG_INDEX   2
 
-#define JAG_OJAG  "_OJAG_"
-#define JAG_CJAG  "_CJAG_"
+#define JAG_OJAG  "OJAG"
+#define JAG_CJAG  "CJAG"
 
 #define JAG_RED    0
 #define JAG_BLUE   1

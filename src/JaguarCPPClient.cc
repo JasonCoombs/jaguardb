@@ -10153,7 +10153,7 @@ AbaxDataString JaguarCPPClient::convertToJson(const char *buf)
 		p = q;  // jsondata.....!jsondata..
 		//while ( *q != '!' && *q != '\0' ) ++q;
 		while ( *q != '#' && *q != '\0' ) ++q;
-		// p-q is "_OJAG_=srid=db.tab.col=LS x:y x:y ...."
+		// p-q is "OJAG=srid=db.tab.col=LS x:y x:y ...."
 		AbaxDataString value(p, q-p);
 		//prt(("c8282 value=[%s]\n", value.c_str() ));
 		colobj = value.firstToken(' ');

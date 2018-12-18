@@ -4687,12 +4687,14 @@ AbaxDataString JagParser::getColumns( const char *str )
 	//prt(("s2728 JagParser::getColumns str=[%s]\n", str ));
 	AbaxDataString s, res;
 	JagStrSplitWithQuote spq(str, ' ' );
-	char *p;
+	char *p, *q;
 	for ( int i=0; i < spq.length(); ++i ) {
 		// intersect( ls1, linestring(1 2 , 3 4 ))
 		// "&&"  "and"
 		// intersect( ls2, linestring(1 2 , 3 4 ))
+		//prt(("s6727 spq=[%s]\n", spq[i].c_str() ));
 		p = (char*)strchr( spq[i].c_str(), '(' );
+		//prt(("s67277 p=[%s]\n", p ));
 		if ( ! p ) continue;
 		++p;
 		if ( *p == '\0' ) continue;
@@ -4702,7 +4704,25 @@ AbaxDataString JagParser::getColumns( const char *str )
 		for ( int j=0; j < sp.length() && j < 2; ++j ) {
 			//prt(("s6632 sp[%d]=[%s]\n", j, sp[j].c_str() ));
 			p = (char*)strchr( sp[j].c_str(), '(' );
-			if ( p ) continue;
+			// if ( p ) continue;
+			if ( p ) {
+				p = (char*)strrchr( sp[j].c_str(), '(' );  // convexhull(ss(col))
+				++p; if ( *p == 0 ) continue;
+				while ( isspace(*p) ) ++p; if ( *p == 0 ) continue;
+				q = strchr(p, ')');
+				if ( q ) {
+					--q; while ( isspace(*q) ) --q;
+					if ( p == q) continue;
+					s = AbaxDataString(p, q-p+1);  // (p)col1(q) 
+					if ( res.size() < 1 ) {
+						res = s;
+					} else {
+						res += AbaxDataString("|") + s;
+					}
+					//prt(("s2094 res=[%s]\n", res.c_str() ));
+				} 
+				continue;
+			}
 			p = (char*)strchr( sp[j].c_str(), ')' );
 			if ( p ) { 
 				*p = '\0'; 
@@ -5126,9 +5146,11 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 		if ( sp[i] == "!" ) {
 			skip = false;
 			// start a new polygon
-			// if ( firstOnly ) break; 
+			// if ( firstOnly ) break;
+			pgon.add(linestr);
 			pgvec.append(pgon);
 			pgon.init();
+            linestr.init();
 		} else if ( sp[i] == "|" ) {
 			if ( firstOnly ) {
 				skip = true;
@@ -5557,7 +5579,7 @@ void JagParser::removeEndUnevenBracketAll( char *str )
 }
 
 
-// from _OJAG_ type
+// from OJAG type
 // 1: OK  < 0 error
 int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
@@ -5584,7 +5606,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	return 1;
 }
 
-// from _OJAG_ type
+// from OJAG type
 // 1: OK  < 0 error
 int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
@@ -5612,7 +5634,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 }
 
 
-// from _OJAG_ type
+// from OJAG type
 void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp )
 {
 	const char *str;
@@ -5627,7 +5649,7 @@ void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp
 	}
 }
 
-// from _OJAG_ type
+// from OJAG type
 void JagParser::addLineString3DData( JagLineString3D &linestr, const JagStrSplit &sp )
 {
 	const char *str;
