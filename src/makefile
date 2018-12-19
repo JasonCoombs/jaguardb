@@ -7,7 +7,8 @@ BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include \
 		  -IWeb/Snappy -IWeb/UTF -IWeb/Boost/boost_1_68_0/include \
 		  -IWeb/CGAL/CGAL-4.13/include \
 	      -D_REENTRANT -std=c++11 -Wno-register \
-		 -DCHECK_LATENCY1 -DJAG_DEBUGCHECK1 -DDEVDEBUG1 -DTFM_DESC
+		  -DCHECK_LATENCY1 -DJAG_DEBUGCHECK1 -DDEVDEBUG1 -DTFM_DESC $(USER_DEFINE)
+         
 
 CCFLAGS_STATIC=$(BASICFLAGS)  -fpermissive -static-libgcc -static-libstdc++ -static  
 CCFLAGS_DYNAMIC=$(BASICFLAGS) -fPIC

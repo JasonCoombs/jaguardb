@@ -4887,53 +4887,65 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 		JagPolygon pgon;
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 			JagParser::addLineStringData( line, sp );
-			//line.print();
 			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
+        } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+			JagLineString3D line3D;
+			JagParser::addLineString3DData( line3D, sp );
+			line = line3D;
+			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 		    JagParser::addPolygonData( pgon, sp, true );
-			//pgon.print();
 			line.copyFrom( pgon.linestr[0], true );
 			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
+        } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		    JagParser::addPolygon3DData( pgon, sp, true );
+			line.copyFrom( pgon.linestr[0], true );
+			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, sp, true, false );
 			prt(("s5022 JAG_C_COL_TYPE_MULTIPOLYGON pgvec.size=%d pgvec.print()\n", pgvec.size() ));
-			//pgvec.print();
-			prt(("s2835 pgvec.print() done\n" ));
-			prt((" hdr=[%s]\n", hdr.c_str() ));  // bbox
-			prt((" sp[0]=[%s]\n", sp[0].c_str() ));  // bbox
-			prt((" sp[1]=[%s]\n", sp[1].c_str() ));  // coord
-			//value = "fjdkfjd 93933 2:3 4:2 ";
-			// value = hdr + " " + sp[0] +  " 299:3928 400:2282 22:33 43:101 993:331";
 			line.copyFrom( pgvec[0].linestr[0], true );
 			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
+        } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+			JagVector<JagPolygon> pgvec;
+			JagParser::addMultiPolygonData( pgvec, sp, true, true );
+			line.copyFrom( pgvec[0].linestr[0], true );
+			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
 		} else  {
 		}
 	} else {
 		prt(("s8830 JAG_CJAG c_str=[%s]\n", sp.c_str() ));
 		JagLineString line;
 		JagPolygon pgon;
-		//const char *p = secondTokenStart( sp.c_str() );
 		const char *p = sp.c_str();
 		AbaxDataString objHdr;
 		objHdr = "OJAG=" + intToStr(srid) + "=dummy.dummy.dummy=LS=d";
 
 		if ( 0==strncasecmp( sp.c_str(), "linestring(", 11) || 0==strncasecmp( sp.c_str(), "multipoint(", 11) ) {
             JagParser::addLineStringData(line, p+10 );
-			//line.print();
 			JagCGAL::getConvexHull2DStr( line, objHdr, "", value );
+		} else if ( 0==strncasecmp( sp.c_str(), "linestring3d(", 13) || 0==strncasecmp( sp.c_str(), "multipoint3d(", 13) ) {
+            JagParser::addLineString3DData(line, p+12 );
+			JagCGAL::getConvexHull3DStr( line, objHdr, "", value );
         } else if ( 0==strncasecmp( sp.c_str(), "polygon(", 8) ) {
 			JagParser::addPolygonData( pgon, p+7, true, false );
-			//pgon.print();
+			line.copyFrom( pgon.linestr[0], true );
+			JagCGAL::getConvexHull2DStr( line, objHdr, "", value );
+        } else if ( 0==strncasecmp( sp.c_str(), "polygon3d(", 10) ) {
+			JagParser::addPolygon3DData( pgon, p+9, true, false );
 			line.copyFrom( pgon.linestr[0], true );
 			JagCGAL::getConvexHull2DStr( line, objHdr, "", value );
         } else if ( 0==strncasecmp( sp.c_str(), "multipolygon(", 13) ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, p+12, true, false, false );
-			//pgvec.print();
-			prt(("s2830 pgvec.print() done\n" ));
 			line.copyFrom( pgvec[0].linestr[0], true );
 			JagCGAL::getConvexHull2DStr( line, objHdr, "", value );
+        } else if ( 0==strncasecmp( sp.c_str(), "multipolygon3d(", 15) ) {
+			JagVector<JagPolygon> pgvec;
+			JagParser::addMultiPolygonData( pgvec, p+14, true, false, true );
+			line.copyFrom( pgvec[0].linestr[0], true );
+			JagCGAL::getConvexHull3DStr( line, objHdr, "", value );
 		} else  {
 		}
 	}

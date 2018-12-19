@@ -30,8 +30,11 @@
 #include <time.h>
 
 
+#ifdef JAGPRT
 #define prt(x) printf x; fflush(stdout)
-//#define prt(x) 1  
+#else
+#define prt(x) 1  
+#endif
 
 
 #ifdef _WINDOWS64_
