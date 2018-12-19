@@ -57,7 +57,7 @@ void JagCGAL::getConvexHull2D( const JagLineString &line, JagLineString &hull )
 
 void JagCGAL::getConvexHull3D( const JagLineString &line, JagLineString &hull )
 {
-	prt(("s3382 getConvexHull3D line.size=%d\n", line.size() ));
+	//prt(("s3382 getConvexHull3D line.size=%d\n", line.size() ));
 	CGALKernelPoints3D vpoints;
 	const JagVector<JagPoint> &point = line.point;
 	for ( int i = 0; i <  point.size(); ++i ) {
