@@ -253,7 +253,7 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllStartPoint( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllEndPoint( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllConvexHull( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  const JagStrSplit &sp1, AbaxDataString &val );
+						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllIsClosed( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllNumPoints( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllNumRings( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
@@ -280,7 +280,7 @@ class BinaryExpressionBuilder
 
 	BinaryOpNode *parse( const JagParser *jagParser, const char* str, int type,
 								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
-								AbaxDataString &colList ) throw (int);
+								AbaxDataString &colList );
 	ExpressionElementNode *getRoot() const;
 	
 	JagParseAttribute _jpa;

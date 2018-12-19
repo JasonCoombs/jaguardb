@@ -331,15 +331,19 @@ class JagLineString
 		JagLineString() {};
 		JagLineString& operator=( const JagLineString& L2 ) { point = L2.point; return *this; }
 		JagLineString& operator=( const JagLineString3D& L2 );
+		JagLineString& copyFrom( const JagLineString3D& L2, bool removeLast = false );
 		JagLineString( const JagLineString& L2 ) { point = L2.point; }
 		void init() { point.clean(); };
 		abaxint size() const { return point.size(); }
 		void add( const JagPoint2D &p );
 		void add( const JagPoint3D &p );
 		void add( double x, double y );
+		void add( double x, double y, double z );
 		void print() const { point.print(); }
 		void center2D( double &cx, double &cy, bool dropLast=false ) const;
 		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
+		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax );
+		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 
 		JagVector<JagPoint> point;
 };

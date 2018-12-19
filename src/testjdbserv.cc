@@ -32,10 +32,28 @@
 #include <unordered_map>
 #include <fcntl.h>
 
-//#include <boost/array.hpp>
+#include <JagCGAL.h>
 
+/**
+#include <boost/array.hpp>
+#include <boost/iterator.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/iterator/iterator_adaptor.hpp>
+***/
+
+
+//#define CGAL_HEADER_ONLY 1
+//#define BOOST_NO_RESULT_OF 1
+//#define CGAL_GMPQ_TYPE_H 1
+// OK here
+/**
+#include <CGAL/Simple_cartesian.h>
 //#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-//#include <CGAL/convex_hull_2.h>
+#include <CGAL/Polyhedron_3.h>
+#include <CGAL/Surface_mesh.h>
+#include <CGAL/convex_hull_3.h>
+**/
+
 
 #include <abax.h>
 #include <JagCfg.h>
@@ -82,6 +100,13 @@
 #include "rapidjson/error/en.h"
 #include <JagLineFile.h>
 #include <JagParser.h>
+/**
+#include <JagCGAL.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/convex_hull_2.h>
+#include <CGAL/convex_hull_3.h>
+**/
+//#include <CGAL/Simple_cartesian.h>
 
 
 using namespace std;
@@ -233,7 +258,7 @@ int main(int argc, char *argv[] )
 	// test_compress();
 	// test_hashlock();
 	// test_size();
-	test_parse();
+	//test_parse();
 	// test_boundfile();
 	// test_localdiskhash( N );
 	// test_diskkeychecker( N );
@@ -269,9 +294,9 @@ int main(int argc, char *argv[] )
 	//test_btree( N );
 	//test_linefile( N );
 	//test_json( N );
-	test_distance();
-	//test_cgal();
-	test_new( N );
+	//test_distance();
+	test_cgal();
+	//test_new( N );
 }
 
 
@@ -2642,7 +2667,7 @@ void test_str( int N )
 	}
 
 	AbaxDataString s3[3];
-	s3[0] = "_OJAG_=0=test.pol2.ls=LS 0.0:0.0:500.0:600.0 ";
+	s3[0] = "OJAG=0=test.pol2.ls=LS 0.0:0.0:500.0:600.0 ";
 	prt(("before s3=[%s]\n", s3[0].c_str() ));
 	char bf[234];
 	sprintf(bf, " 500.0:600.0" );
@@ -3061,7 +3086,7 @@ void test_json( int N )
 		prt(("LEN123 is null\n" ));
 	}
 
-	AbaxDataString obj="_OJAG_=0=test.pol2.po2";
+	AbaxDataString obj="OJAG=0=test.pol2.po2";
 	JagStrSplit sp(obj, '=');
 
 	//const char *sstr = "0.0:0.0:500.0:600.0 0.0:0.0 20.0:0.0 8.0:9.0 0.0:0.0| 1.0:2.0 2.0:3.0 1.0:2.0";
@@ -3162,14 +3187,26 @@ void test_distance()
 }
 
 
-#if 0
-typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-typedef K::Point_2 Point_2;
+//#include <CGAL/Simple_cartesian.h>
+#if 1
+typedef CGAL::Exact_predicates_inexact_constructions_kernel CGALKernel;
+typedef CGALKernel::Point_2 Point_2;
 typedef std::vector<Point_2> Points;
 
-typedef CGAL::Simple_cartesian<double> Kernel;
-typedef Kernel::Point_2 Point2;
-typedef Kernel::Segment_2 Segment_2;
+typedef CGAL::Simple_cartesian<double> CartKernel;
+typedef CartKernel::Point_2 Point2;
+typedef CartKernel::Segment_2 Segment2;
+
+
+/**
+typedef CGAL::Exact_predicates_inexact_constructions_kernel  K;
+typedef CGAL::Polyhedron_3<K>                     Polyhedron_3;
+typedef K::Point_3                                Point_3;
+typedef CGAL::Surface_mesh<Point_3>               Surface_mesh;
+**/
+
+
+
 void test_cgal()
 {
     // convex_hull_2
@@ -3188,27 +3225,48 @@ void test_cgal()
     vpoints.push_back(Point_2(10,0));
     vpoints.push_back(Point_2(10,10));
     vpoints.push_back(Point_2(6,5));
-    vpoints.push_back(Point_2(4,1));
+    vpoints.push_back(Point_2(2,1));
+    vpoints.push_back(Point_2(4,8));
     CGAL::convex_hull_2( vpoints.begin(), vpoints.end(), std::back_inserter(vresult) );
-    std::cout << vresult.size() << " points on the convex hull" << std::endl;
+    std::cout << vresult.size() << " points on the 2D convex hull:" << std::endl;
     for(int i = 0; i < vresult.size(); i++){
       std::cout << vresult[i] << std::endl;
-      std::cout << vresult[i].x() << std::endl;
-      std::cout << vresult[i].y() << std::endl;
+      //std::cout << "x: " << vresult[i].x() << std::endl;
+      //std::cout << "y: " << vresult[i].y() << std::endl;
     }
+
+	prt(("3D connvex hull:\n" ));
+	JagLineString lines, hull;
+	lines.add( 1.1, 2.3, 3.2);
+	lines.add( 1.9, 2.3, 4.9);
+	lines.add( 2.2, 2.2, 4.4);
+	lines.add( 4.1, 3.3, 2.2);
+	lines.add( 9.1, 8.3, 1.2);
+	lines.add( 9.0, 8.2, 1.1);
+	lines.add( 2.1, 4.3, 1.2);
+	lines.add( 5.1, 1.3, 5.2);
+	lines.add( 5.4, 1.2, 6.2);
+	lines.add( 5.3, 1.1, 6.1);
+	lines.add( 4.0, 3.0, 2.1);
+
+	prt(("t3031 JagCGAL::getConvexHull3D( input lines=%d, hull ); ...\n", lines.size() ));
+	JagCGAL::getConvexHull3D( lines, hull );
+    prt(("result hull=%d:\n", hull.size() ));
+	hull.print();
 
 
 
     /////// orientation ///////////////
+	/***
     Point2 p(1,1), q(10,10);
     std::cout << "p = " << p << std::endl;
     std::cout << "q = " << q.x() << " " << q.y() << std::endl;
     std::cout << "sqdist(p,q) = " << CGAL::squared_distance(p,q) << std::endl;
 
-    Segment_2 s(p,q);
+    Segment2 s(p,q);
     Point2 m(5, 9);
     std::cout << "m = " << m << std::endl;
-    std::cout << "sqdist(Segment_2(p,q), m) = " << CGAL::squared_distance(s,m) << std::endl;
+    std::cout << "sqdist(Segment2(p,q), m) = " << CGAL::squared_distance(s,m) << std::endl;
 
     std::cout << "p, q, and m ";
     switch (CGAL::orientation(p,q,m))
@@ -3223,6 +3281,28 @@ void test_cgal()
           std::cout << "make a right turn\n";
           break;
     }
+	***/
+
+	/***
+  std::vector<Point_3> points;
+  Point_3 p;
+    points.push_back(p);
+
+  // define polyhedron to hold convex hull
+  Polyhedron_3 poly;
+  
+  // compute convex hull of non-collinear points
+  CGAL::convex_hull_3(points.begin(), points.end(), poly);
+
+  std::cout << "The convex hull contains " << poly.size_of_vertices() << " vertices" << std::endl;
+  
+  Surface_mesh sm;
+  CGAL::convex_hull_3(points.begin(), points.end(), sm);
+
+  std::cout << "The convex hull contains " << num_vertices(sm) << " vertices" << std::endl;
+***/
+
+
 }
 #endif
 
