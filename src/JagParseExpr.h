@@ -280,7 +280,7 @@ class BinaryExpressionBuilder
 
 	BinaryOpNode *parse( const JagParser *jagParser, const char* str, int type,
 								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
-								AbaxDataString &colList ) throw (int);
+								AbaxDataString &colList );
 	ExpressionElementNode *getRoot() const;
 	
 	JagParseAttribute _jpa;

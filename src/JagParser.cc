@@ -546,7 +546,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 					_ptrParam->endtabidxpos = _saveptr; // command position after table/index name
 					rc = setTableIndexList( 0 );
 					if ( rc > 0 ) {
-						if ( !_saveptr || _saveptr == '\0' ) {
+						if ( !_saveptr || *_saveptr == '\0' ) {
 							rc = 1;
 						} else {
 							--_saveptr;
