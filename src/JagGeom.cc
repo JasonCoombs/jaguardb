@@ -18506,7 +18506,7 @@ bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, con
 	sp1.print();
 	printf("----------------");
 	// sp2.print();
-    // dist = 0.0;
+     dist = 0.0;
     int rc;
     int start = 0;
     int rc1;
@@ -18515,7 +18515,7 @@ bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, con
     JagVector<JagPolygon> pgvec;
     if ( mk1 == JAG_OJAG ) {
        start = 1;
-       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, true , true );
+       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
     } else {
        p1 = secondTokenStart( sp1.c_str() );
        rc1 = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
@@ -18524,13 +18524,11 @@ bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, con
     int len = pgvec.size();
     if ( len < 1 ) return false;
     double x, y, z;
-    printf("-------11111111111---------\n");
     prt(("len:%d\n",len));
-    printf("-------11111111111---------");
     for ( int i=0; i < len; ++i ) {
-    	printf("-------^^^^^^^^^^---------");
-        pgvec[i].print();
-        printf("-------^^^^^^^^^^---------");
+        polygon3DDistanceBox(srid, mk1, pgvec[i], x0, y0, z0, r, r, r, nx, ny, arg, dist);
+//        pgvec[i].print();
+        printf("\n");
     }
 
 
