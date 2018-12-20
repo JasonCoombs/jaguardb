@@ -441,6 +441,8 @@
 #define JAG_FUNC_YMAX           251  // YMAX of bbox
 #define JAG_FUNC_ZMAX           252  // ZMAX of bbox
 #define JAG_FUNC_NUMRINGS       253  // total number of rings in polygon/multipolygon
+#define JAG_FUNC_CENTROID       254  // center of mass of a shape
+#define JAG_FUNC_VOLUME         255  // center of mass of a shape
 
 
 // multi-line data ( string functions )

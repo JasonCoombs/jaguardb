@@ -2406,9 +2406,9 @@ void *JagTable::parallelSelectStatic( void * ptr )
 			isAggregate = false;
 			root = pass->parseParam->selColVec[i].tree->getRoot();
 			rc = root->setFuncAttribute( maps, attrs, constMode, typeMode, isAggregate, treetype, collen, siglen );
-			//prt(("s2390 setFuncAttribute rc=%d\n", rc ));
+			prt(("s2390 setFuncAttribute rc=%d collen=%d\n", rc, collen ));
 			if ( 0 == rc ) {
-				prt(("s3006 invalid\n"));
+				prt(("s3006 error setFuncAttribute()\n"));
 				return NULL;
 			}
 			pass->parseParam->selColVec[i].offset = offset;

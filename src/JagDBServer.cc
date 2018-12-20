@@ -2703,6 +2703,9 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    xmax(col)              -- get the maximum x-coordinate of a shape with raster data\n";
 		str += "    ymax(col)              -- get the maximum y-coordinate of a shape with raster data\n";
 		str += "    zmax(col)              -- get the maximum z-coordinate of a shape with raster data\n";
+		str += "    convexhull(col)        -- get the convex hull of a shape with raster data\n";
+		str += "    centroid(col)          -- get the centroid coordinates of a vector or raster shape\n";
+		str += "    volume(col)            -- get the volume of a 3D shape\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
