@@ -1032,6 +1032,7 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
 	else if ( binaryOp == JAG_FUNC_WITHIN ) str = "within";
 	else if ( binaryOp == JAG_FUNC_AREA ) str = "area";
+	else if ( binaryOp == JAG_FUNC_VOLUME ) str = "volume";
 	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
 	else if ( binaryOp == JAG_FUNC_GEOTYPE ) str = "geotype";
 	else if ( binaryOp == JAG_FUNC_ISCLOSED ) str = "isclosed";
@@ -2996,7 +2997,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		lstr = doubleToStr( dist );
 		ltmode = 2;
 		return 1;
-	} else if ( _binaryOp == JAG_FUNC_AREA 
+	} else if ( _binaryOp == JAG_FUNC_AREA  ||  _binaryOp == JAG_FUNC_VOLUME
 			    || _binaryOp == JAG_FUNC_XMIN || _binaryOp == JAG_FUNC_YMIN || _binaryOp == JAG_FUNC_ZMIN
 	            || _binaryOp == JAG_FUNC_XMAX || _binaryOp == JAG_FUNC_YMAX || _binaryOp == JAG_FUNC_ZMAX ) {
 		ltmode = 2; // double
@@ -4048,6 +4049,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NEARBY || 
 		fop == JAG_FUNC_ALL || 
 		fop == JAG_FUNC_AREA || 
+		fop == JAG_FUNC_VOLUME || 
 		fop == JAG_FUNC_DIMENSION || 
 		fop == JAG_FUNC_GEOTYPE || 
 		fop == JAG_FUNC_POINTN || 
@@ -4278,6 +4280,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_MILETOMETER; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "area", 4 ) ) {
 		fop = JAG_FUNC_AREA; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "volume", 6 ) ) {
+		fop = JAG_FUNC_VOLUME; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "dimension", 9 ) ) {
 		fop = JAG_FUNC_DIMENSION; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "geotype", 7 ) ) {
@@ -4601,6 +4605,8 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const 
 	} else if ( op == JAG_FUNC_XMIN || op == JAG_FUNC_XMIN || op == JAG_FUNC_XMIN
 	            || op == JAG_FUNC_XMAX || op == JAG_FUNC_YMAX || op == JAG_FUNC_ZMAX ) {
 		rc = doAllMinMax( op, mark1, colType1, sp1, value );
+	} else if (  op == JAG_FUNC_VOLUME ) {
+		rc = doAllVolume( mark1, colType1, srid1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -5289,6 +5295,83 @@ bool BinaryOpNode::doAllSummary( const AbaxDataString& mk, const AbaxDataString 
 	value += AbaxDataString(" numrings:") + nrings;
 	value += AbaxDataString(" isclosed:") + isclosed;
 	return true;
+}
+
+bool BinaryOpNode::doAllVolume( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
+									 const JagStrSplit &sp1, double &value )
+{
+	//prt(("s2315 colType1=[%s] \n", colType1.c_str() ));
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_SPHERE ) {
+		value = JagGeo::doSphereVolume(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_CUBE ) {
+		value = JagGeo::doCubeVolume(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_BOX ) {
+		value = JagGeo::doBoxVolume(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_CYLINDER ) {
+		value = JagGeo::doCylinderVolume(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_CONE ) {
+		value = JagGeo::doConeVolume(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSOID ) {
+		value = JagGeo::doEllipsoidVolume(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		return false;
+	} else { 
+		return false;
+	} 
+
+	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
+	return false;
 }
 
 bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 

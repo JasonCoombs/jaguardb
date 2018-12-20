@@ -14942,6 +14942,12 @@ double JagGeo::doSphereArea( int srid1, const JagStrSplit& sp1 )
 	return r * r * 4.0 * JAG_PI;
 }
 
+double JagGeo::doSphereVolume( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[2].c_str() ); 
+	return r * r * r * 4.0 * JAG_PI/3.0;
+}
+
 bool JagGeo::doSphereDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
@@ -15115,6 +15121,12 @@ double JagGeo::doCubeArea( int srid1, const JagStrSplit& sp1 )
 {
 	double r = jagatof( sp1[3].c_str() ); 
 	return (r*r*24.0);  // 2r*2r*6
+}
+
+double JagGeo::doCubeVolume( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[3].c_str() ); 
+	return (r*r*r*8.0);  // 2r*2r*2r
 }
 
 bool JagGeo::doCubeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
@@ -15302,6 +15314,15 @@ double JagGeo::doBoxArea( int srid1, const JagStrSplit& sp1 )
 	double c = jagatof( sp1[5].c_str() ); 
 	return  (a*b + b*c + c*a ) * 8.0;
 	// ( 2a*2b + 2b*2c + 2a*2c )*2 
+}
+
+double JagGeo::doBoxVolume( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[3].c_str() ); 
+	double b = jagatof( sp1[4].c_str() ); 
+	double c = jagatof( sp1[5].c_str() ); 
+	return  a*b*c* 8.0;
+	// ( 2a*2b*2c )
 }
 
 bool JagGeo::doBoxDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
@@ -15504,6 +15525,13 @@ double JagGeo::doCylinderArea( int srid1, const JagStrSplit& sp1 )
 {
 	double r = jagatof( sp1[3].c_str() ); 
 	double c = jagatof( sp1[4].c_str() ); 
+	return 2.0*JAG_PI*r*(c*2.0 + r);  // 2πrH+2πr^2 = 2*PI*r ( H + r) 
+}
+
+double JagGeo::doCylinderVolume( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[3].c_str() ); 
+	double c = jagatof( sp1[4].c_str() ); 
 	return r*r*JAG_PI *c*2.0;
 }
 
@@ -15573,6 +15601,15 @@ double JagGeo::doConeArea( int srid1, const JagStrSplit& sp1 )
 	double R = r * 2.0;
 	double h = c * 2.0;
 	return JAG_PI * R * ( R + sqrt( h*h+ R*R) );
+}
+
+double JagGeo::doConeVolume( int srid1, const JagStrSplit& sp1 )
+{
+	double r = jagatof( sp1[3].c_str() ); 
+	double c = jagatof( sp1[4].c_str() ); 
+	double R = r * 2.0;
+	double h = c * 2.0;
+	return JAG_PI*R*R*h/3.0; 
 }
 
 bool JagGeo::doConeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
@@ -15709,7 +15746,14 @@ double JagGeo::doEllipsoidArea( int srid1, const JagStrSplit& sp1 )
 	double f = ( ap*(bp+cp)+bp*cp)/3.0;
 	f = pow(f, 1.0/p);
 	return 4.0*JAG_PI*f ;
+}
 
+double JagGeo::doEllipsoidVolume( int srid1, const JagStrSplit& sp1 )
+{
+	double a = jagatof( sp1[3].c_str() ); 
+	double b = jagatof( sp1[4].c_str() ); 
+	double c = jagatof( sp1[5].c_str() ); 
+	return 4.0*JAG_PI*a*b*c/3.0;
 }
 
 bool JagGeo::doEllipsoidDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,

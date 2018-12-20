@@ -246,6 +246,7 @@ class BinaryOpNode: public ExpressionElementNode
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 const AbaxDataString &carg );
 	bool doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
+	bool doAllVolume( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
 	bool doAllMinMax( int op, const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, double &val );
 	bool doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, 
 					  const AbaxDataString &carg, AbaxDataString &val );

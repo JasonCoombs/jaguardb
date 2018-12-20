@@ -1144,19 +1144,25 @@ class JagGeo
    	static double doCircleArea(  int srid1, const JagStrSplit &sp1 );
    	static double doCircle3DArea(  int srid1, const JagStrSplit &sp1 );
    	static double doSphereArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doSphereVolume(  int srid1, const JagStrSplit &sp1 );
    	static double doSquareArea(  int srid1, const JagStrSplit &sp1 );
    	static double doSquare3DArea(  int srid1, const JagStrSplit &sp1 );
    	static double doCubeArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doCubeVolume(  int srid1, const JagStrSplit &sp1 );
    	static double doRectangleArea(  int srid1, const JagStrSplit &sp1 );
    	static double doRectangle3DArea(  int srid1, const JagStrSplit &sp1 );
    	static double doBoxArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doBoxVolume(  int srid1, const JagStrSplit &sp1 );
    	static double doTriangleArea(  int srid1, const JagStrSplit &sp1 );
    	static double doTriangle3DArea(  int srid1, const JagStrSplit &sp1 );
    	static double doCylinderArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doCylinderVolume(  int srid1, const JagStrSplit &sp1 );
    	static double doConeArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doConeVolume(  int srid1, const JagStrSplit &sp1 );
    	static double doEllipseArea(  int srid1, const JagStrSplit &sp1 );
    	static double doEllipse3DArea(  int srid1, const JagStrSplit &sp1 );
    	static double doEllipsoidArea(  int srid1, const JagStrSplit &sp1 );
+   	static double doEllipsoidVolume(  int srid1, const JagStrSplit &sp1 );
    	static double doPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
    	static double doMultiPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
 
