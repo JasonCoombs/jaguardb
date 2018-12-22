@@ -16344,7 +16344,7 @@ bool JagGeo::pointDistanceRectangle( int srid, double x, double y, double px0, d
 		d = JagGeo::distance( x, y, sqx[i], sqy[i], srid );
 		if ( d < mind ) mind = d;
 		if ( d > maxd ) maxd = d;
-		prt(("pointtoRec=[%f]", d));
+		//prt(("pointtoRec=[%f]", d));
 	}
 
 	if ( arg.caseEqual("max") ) {
@@ -16384,9 +16384,9 @@ double JagGeo::pointDistanceToEllipse( int srid, double px, double py, double x0
 	transform2DCoordGlobal2Local( x0,y0, px, py, nx, locx, locy );
 	double mx, my, dist;
 	if ( isMin ) {
-		minPointOnNormalEllipse( srid, a, b, px, py, mx, my, dist );
+		minMaxPointOnNormalEllipse( srid, a, b, px, py, true, mx, my, dist );
 	} else {
-		maxPointOnNormalEllipse( srid, a, b, px, py, mx, my, dist );
+		minMaxPointOnNormalEllipse( srid, a, b, px, py, false, mx, my, dist );
 	}
 	return dist;
 }
@@ -16720,7 +16720,17 @@ bool JagGeo::circle3DDistanceCone(int srid, double px0, double py0, double pz0, 
 									  double x0, double y0, double z0, 
 								 	   double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
+	if ( arg.caseEqual("center") ) {
+		dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
+		return true;
+	}
+	
+	point3DDistanceCone(srid, px0, py0, pz0, x0, y0, z0, r, h, nx, ny,  arg, dist );
+	if ( arg.caseEqual("min") ) {
+		dist -= pr0;
+	} else {
+		dist += pr0;
+	}
     return true;
 }
 
@@ -16729,6 +16739,11 @@ bool JagGeo::sphereDistanceCube(int srid,  double px0, double py0, double pz0, d
 	                               double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
+	if ( arg.caseEqual("min") ) {
+		dist -= pr0+r;
+	} else if ( arg.caseEqual("max") ) {
+		dist += pr0+r;
+	}
     return true;
 }
 
@@ -16737,6 +16752,11 @@ bool JagGeo::sphereDistanceBox(int srid,  double px0, double py0, double pz0, do
 									double nx, double ny, const AbaxDataString& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
+	if ( arg.caseEqual("min") ) {
+		dist -= r;
+	} else if ( arg.caseEqual("max") ) {
+		dist += r;
+	}
     return true;
 }
 
@@ -16744,20 +16764,37 @@ bool JagGeo::sphereDistanceSphere(int srid,  double px0, double py0, double pz0,
 									double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x, y, z, srid );
+	if ( arg.caseEqual("min") ) {
+		dist -= r+pr;
+	} else if ( arg.caseEqual("max") ) {
+		dist += r+pr;
+	}
     return true;
 }
+
 bool JagGeo::sphereDistanceEllipsoid(int srid,  double px0, double py0, double pz0, double pr,
 	                                    double x0, double y0, double z0, double w, double d, double h, 
 										double nx, double ny, const AbaxDataString& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
+	if ( arg.caseEqual("min") ) {
+		dist -= pr;
+	} else if ( arg.caseEqual("max") ) {
+		dist += pr;
+	}
     return true;
 }
+
 bool JagGeo::sphereDistanceCone(int srid,  double px0, double py0, double pz0, double pr,
 	                                    double x0, double y0, double z0, double r, double h, 
 										double nx, double ny, const AbaxDataString& arg, double &dist )
 {
-	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
+	point3DDistanceCone(srid, px0, py0, pz0, x0, y0, z0, r, h, nx, ny,  arg, dist );
+	if ( arg.caseEqual("min") ) {
+		dist -= pr;
+	} else if ( arg.caseEqual("max") ) {
+		dist += pr;
+	}
     return true;
 }
 
@@ -16780,6 +16817,11 @@ bool JagGeo::rectangleDistanceSquare(int srid, double px0, double py0, double a0
 	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
+	if ( arg.caseEqual("min") ) {
+		dist -= r;
+	} else if ( arg.caseEqual("max") ) {
+		dist += r;
+	}
     return true;
 }
 bool JagGeo::rectangleDistanceRectangle(int srid, double px0, double py0, double a0, double b0, double nx0,
@@ -16800,6 +16842,11 @@ bool JagGeo::rectangleDistanceCircle(int srid, double px0, double py0, double a0
 								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
+	if ( arg.caseEqual("min") ) {
+		dist -= r;
+	} else if ( arg.caseEqual("max") ) {
+		dist += r;
+	}
     return true;
 }
 
@@ -18652,7 +18699,7 @@ bool JagGeo::multiPolygonDistanceRectangle(int srid, const AbaxDataString &mk1, 
 
     int len = pgvec.size();
     prt(("s10009 len=[%d]\n", len));
-    if ( len < 1 ) return true;
+    if ( len < 1 ) return false;
 
     for ( int i=0; i < len; ++i ) {
         for (int j = 0; j < pgvec[i].linestr.size(); ++j ){
@@ -18661,8 +18708,7 @@ bool JagGeo::multiPolygonDistanceRectangle(int srid, const AbaxDataString &mk1, 
                  if ( arg.caseEqual( "max" )){
                       pointDistanceRectangle(srid,linestr.point[k].x, linestr.point[k].y, x0, y0 , a, b, nx, arg, d);
                       if ( d > maxd ) maxd = d;
-                 }
-                 else if (arg.caseEqual( "min" )){
+                 } else if (arg.caseEqual( "min" )){
                       pointDistanceRectangle(srid,linestr.point[k].x, linestr.point[k].y, x0, y0 , a, b, nx, arg, d);
                       if ( d < mind ) mind = d;
                  }
@@ -19066,12 +19112,14 @@ bool JagGeo::multiPolygon3DDistanceCone(int srid,  const AbaxDataString &mk1, co
         const JagLineString3D &linestr1 = pgvec[i].linestr[0];
         for ( int j=0; j < linestr1.size()-1; ++j ) {
              if ( arg.caseEqual( "max" ) ) {
-                dist1 = point3DDistanceCone( srid, linestr1.point[j].x, linestr1.point[j].y, linestr1.point[j].z, x0, y0, z0, r, h, nx, ny, arg, dist1 );
+                dist1 = point3DDistanceCone( srid, linestr1.point[j].x, linestr1.point[j].y, linestr1.point[j].z,
+											 x0, y0, z0, r, h, nx, ny, arg, dist1 );
                 if (dist1 > maxd){
                     maxd = dist1;
                     }
              }else if ( arg.caseEqual( "min" ) ) {
-                dist1 = point3DDistanceCone( srid, linestr1.point[j].x, linestr1.point[j].y, linestr1.point[j].z, x0, y0, z0, r, h, nx, ny, arg, dist1 );
+                dist1 = point3DDistanceCone( srid, linestr1.point[j].x, linestr1.point[j].y, linestr1.point[j].z, 
+											 x0, y0, z0, r, h, nx, ny, arg, dist1 );
                 if (dist1 < mind){
                     mind = dist1;
                 }
@@ -19340,6 +19388,7 @@ void JagGeo::center3DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &c
 // https://en.wikipedia.org/wiki/Quartic_function
 void JagGeo::fourthOrderEquation( double b, double c, double d, double e, int &num, double *root )
 {
+	//prt(("s1102 fourthOrderEquation b=%f c=%f d=%f e=%f\n", b, c, d, e ));
 	/***
 	double DELTA = 256.0*e*e*e - 192.0*b*d*e*e - 128.0*c*c*e*e + 144.0* c*d*d*e - 27.0 * d*d*d*d 
                    + 144.0* b*b*c*e*e - 6.0*b*b*d*d*e -80.0*b*c*c*d*e + 18.0*b*c*d*d*d + 16.0*c*c*c*c*e
@@ -19351,14 +19400,28 @@ void JagGeo::fourthOrderEquation( double b, double c, double d, double e, int &n
 	num = 0;
 	double DELTA0 = c*c - 3.0*b*d + 12.0*e;
 	double DELTA1 = 2.0* c*c - 9.0*b*c*d + 27.0*(b*b*e + d*d) - 72.0*c*e;
+	double DD = DELTA1*DELTA1 - 4.0*DELTA0*DELTA0*DELTA0;
+	//prt(("s48821 DELTA0=%f DELTA1=%f DD=%f\n", DELTA0, DELTA1, DD ));
+	if ( DD < 0.00000001 ) {
+		return;
+	}
+
 	double p = (8.0*c-3.0*b*b)/8.0;
 	double q = (b*b*b - 4.0*b*c + 8.0*d)/8.0;
-	double Q = pow( 0.5*(DELTA1 + sqrt(DELTA1*DELTA1 - 4.0*DELTA0*DELTA0*DELTA0) ), 1.0/3.0 );
-	double S = 0.5*sqrt( -2.0*p/3.0 + (Q + DELTA0/Q)/3.0 );
+	double Q = cbrt( 0.5*(DELTA1 + sqrt(DD) ) );
+	//prt(("s3934 Q=%f\n", Q ));
+	double s = -2.0*p/3.0 + (Q + DELTA0/Q)/3.0;
+	if ( s < 0.0000001 ) { 
+		//prt(("s3993 s=%f\n", s ));
+		return;
+	}
+	//prt(("s3994 s=%f\n", s ));
+	double S = 0.5*sqrt(s);
 
 	double f = -4.0*S*S - 2.0*p;
 	double f1 = f + q/S;
 	double f2 = f - q/S;
+	//prt(("s4088 f1=%f f2=%f S=%f p=%f q=%f Q=%f\n", f1, f2, S, p, q, Q ));
 	if ( f1 > 0.0 || f1 >= 0.00001 ) {
 		num += 2;
 		root[0] = -b/4.0 -S + 0.5*sqrt(f1);
@@ -19374,61 +19437,49 @@ void JagGeo::fourthOrderEquation( double b, double c, double d, double e, int &n
 
 // u v is external point, x & y is point on ellipse
 // dist is min dist
-void JagGeo::minPointOnNormalEllipse( int srid, double a, double b, double u, double v, double &x, double &y, double &dist )
+void JagGeo::minMaxPointOnNormalEllipse( int srid, double a, double b, double u, double v, bool isMin, double &x, double &y, double &dist )
 {
-	double b2 = b*b;
-	double a2 = a*a;
-	double a2u2 = a*a*u*u;
-	double b2v2 = b*b*v*v;
-
-	double B = -2.0*(b2+a2);
-	double C =  b2*b2 + 4.0*a2*b2 + a2*a2 - a2u2 - b2v2;
-	double D = 2.0*(a2u2*b2+b2v2*a2 - a2*a2*b2 - a2*b2*b2 );
-	double E = a2*a2*b2*b2 - a2u2*b2*b2 - b2v2 * a2*a2;
-	int num;
-	double t[4];
-	fourthOrderEquation( B, C, D, E, num, t );
-	double px, py;
-	double mindist = LONG_MAX;
-	for ( int i=0; i < num; ++i ) {
-		px = a2*u/(a2-t[i]);
-		py = b2*v/(b2-t[i]);
-		dist = distance( u, v, px, py, srid );
-		if ( dist < mindist ) {
-			mindist = dist;
-			x = px;
-			y = py;
+	// x = a*cos(THETA)
+	// y = b*sin(THETA)
+	double left = 0.0;
+	double right = 2.0*JAG_PI-0.001;
+	double mid, dL, dR, d1, d2;
+	double x1, x2, y1, y2;
+	double prevDist = LONG_MIN;
+	while ( true ) {
+		mid = (left+right)/2.0;
+		dL = mid - 0.1;
+		dR = mid + 0.1;
+		x1 = a* cos(dL);
+		y1 = b* sin(dL);
+		x2 = a* cos(dR);
+		y2 = b* sin(dR);
+		d1 = (u-x1)*(u-x1) + (v-y1)*(v-y1);
+		d2 = (u-x2)*(u-x2) + (v-y2)*(v-y2);
+		dist = (d1+d2)/2.0;
+		x = ( x1+x2)/2.0;
+		y = ( y1+y2)/2.0;
+		if ( fabs((dist-prevDist)/prevDist) < 0.01 ) {
+			break;
 		}
-	}
-	dist = mindist;
-}
 
-void JagGeo::maxPointOnNormalEllipse( int srid, double a, double b, double u, double v, double &x, double &y, double &dist )
-{
-	double b2 = b*b;
-	double a2 = a*a;
-	double a2u2 = a*a*u*u;
-	double b2v2 = b*b*v*v;
-
-	double B = -2.0*(b2+a2);
-	double C =  b2*b2 + 4.0*a2*b2 + a2*a2 - a2u2 - b2v2;
-	double D = 2.0*(a2u2*b2+b2v2*a2 - a2*a2*b2 - a2*b2*b2 );
-	double E = a2*a2*b2*b2 - a2u2*b2*b2 - b2v2 * a2*a2;
-	int num;
-	double t[4];
-	fourthOrderEquation( B, C, D, E, num, t );
-	double px, py;
-	double maxdist = LONG_MIN;
-	for ( int i=0; i < num; ++i ) {
-		px = a2*u/(a2-t[i]);
-		py = b2*v/(b2-t[i]);
-		dist = distance( u, v, px, py, srid );
-		if ( dist > maxdist ) {
-			maxdist = dist;
-			x = px;
-			y = py;
+		if ( isMin ) {
+			if ( d1 < d2 ) {
+				right = mid;
+			} else {
+				left = mid;
+			}
+		} else {
+			if ( d1 > d2 ) {
+				right = mid;
+			} else {
+				left = mid;
+			}
 		}
+
+		prevDist = dist;
 	}
-	dist = maxdist;
+	
+	dist = sqrt(dist);
 }
 

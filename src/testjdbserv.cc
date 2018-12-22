@@ -221,6 +221,7 @@ void test_linefile( int n );
 void test_distance();
 void test_cgal();
 void test_new( long n);
+void test_equation();
 
 int main(int argc, char *argv[] )
 {
@@ -295,8 +296,9 @@ int main(int argc, char *argv[] )
 	//test_linefile( N );
 	//test_json( N );
 	//test_distance();
-	test_cgal();
+	// test_cgal();
 	//test_new( N );
+	test_equation();
 }
 
 
@@ -3321,3 +3323,16 @@ void test_new( long n )
 	prt(("t=%0x n=%d\n", t, n ));
 }
 
+void test_equation()
+{
+	double x, y, dist;
+	JagGeo::minMaxPointOnNormalEllipse( 0, 20.0, 10.0, 800.0, 900.0, true, x, y, dist );
+	prt(("ellipse min x=%f y=%f  dist=%f\n", x, y, dist ));
+
+	JagGeo::minMaxPointOnNormalEllipse( 0, 40.0, 30.0, 80.0, 90.0, true, x, y, dist );
+	prt(("ellipse min x=%f y=%f  dist=%f\n", x, y, dist ));
+
+	JagGeo::minMaxPointOnNormalEllipse( 0, 40.0, 30.0, 80.0, 90.0, false, x, y, dist );
+	prt(("ellipse max x=%f y=%f  dist=%f\n", x, y, dist ));
+
+}

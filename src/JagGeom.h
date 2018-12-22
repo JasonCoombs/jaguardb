@@ -1757,8 +1757,7 @@ class JagGeo
 	static void center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy );
 	static void center3DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy, double &cz );
 	static void fourthOrderEquation( double a, double b, double c, double d, double e, int &num, double *root );
-    static void minPointOnNormalEllipse( int srid, double a, double b, double u, double v, double &x, double &y, double &dist );
-    static void maxPointOnNormalEllipse( int srid, double a, double b, double u, double v, double &x, double &y, double &dist );
+    static void minMaxPointOnNormalEllipse( int srid, double a, double b, double u, double v, bool isMin, double &x, double &y, double &dist );
 	static void fourthOrderEquation( double b, double c, double d, double e, int &num, double *root );
 	static double pointDistanceToEllipse( int srid, double px, double py, double x0, double y0, double a, double b, double nx, bool isMin );
 
