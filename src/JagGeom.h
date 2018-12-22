@@ -1758,8 +1758,14 @@ class JagGeo
 	static void center3DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy, double &cz );
 	static void fourthOrderEquation( double a, double b, double c, double d, double e, int &num, double *root );
     static void minMaxPointOnNormalEllipse( int srid, double a, double b, double u, double v, bool isMin, double &x, double &y, double &dist );
+    static void minMaxPoint3DOnNormalEllipsoid( int srid, double a, double b, double c,  
+											    double u, double v, double w, bool isMin, 
+												double &x, double &y, double &z, double &dist );
 	static void fourthOrderEquation( double b, double c, double d, double e, int &num, double *root );
 	static double pointDistanceToEllipse( int srid, double px, double py, double x0, double y0, double a, double b, double nx, bool isMin );
+	static double point3DDistanceToEllipsoid( int srid, double px, double py, double pz,
+											  double x0, double y0, double z0, 
+											  double a, double b, double c, double nx, double ny, bool isMin );
 
 
 
@@ -1946,6 +1952,11 @@ class JagGeo
 	static double computePolygonArea( const JagVector<std::pair<double,double>> &vec );
 	static bool lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y );
 	static bool lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z );
+	static void findMinBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy,
+	                              double &left, double &right, double &up, double &down );
+	static void findMaxBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy,
+	                              double &left, double &right, double &up, double &down );
+
 
 
 

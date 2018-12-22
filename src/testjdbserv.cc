@@ -3325,7 +3325,7 @@ void test_new( long n )
 
 void test_equation()
 {
-	double x, y, dist;
+	double x, y, z, dist;
 	JagGeo::minMaxPointOnNormalEllipse( 0, 20.0, 10.0, 800.0, 900.0, true, x, y, dist );
 	prt(("ellipse min x=%f y=%f  dist=%f\n", x, y, dist ));
 
@@ -3334,5 +3334,13 @@ void test_equation()
 
 	JagGeo::minMaxPointOnNormalEllipse( 0, 40.0, 30.0, 80.0, 90.0, false, x, y, dist );
 	prt(("ellipse max x=%f y=%f  dist=%f\n", x, y, dist ));
+
+	JagGeo::minMaxPoint3DOnNormalEllipsoid( 0,  40.0, 30.0, 20.0, 80.0, 90.0, 93.0, true, x, y, z, dist ); 
+	prt(("ellipsoid min x=%f y=%f z=%f  dist=%f\n", x, y, z, dist ));
+
+	JagGeo::minMaxPoint3DOnNormalEllipsoid( 0,  40.0, 30.0, 20.0, 80.0, 90.0, 93.0, false, x, y, z, dist ); 
+	prt(("ellipsoid max x=%f y=%f z=%f  dist=%f\n", x, y, z, dist ));
+
+
 
 }

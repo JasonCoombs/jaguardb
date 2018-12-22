@@ -16391,6 +16391,20 @@ double JagGeo::pointDistanceToEllipse( int srid, double px, double py, double x0
 	return dist;
 }
 
+double JagGeo::point3DDistanceToEllipsoid( int srid, double px, double py, double pz,
+                                           double x0, double y0, double z0, double a, double b, double c, double nx, double ny, bool isMin )
+{
+	double locx, locy, locz;
+	transform3DCoordGlobal2Local( x0,y0,z0, px, py, pz, nx, ny, locx, locy, locz );
+	double mx, my, mz, dist;
+	if ( isMin ) {
+		minMaxPoint3DOnNormalEllipsoid( srid, a, b, c, px, py, pz, true, mx, my, mz, dist );
+	} else {
+		minMaxPoint3DOnNormalEllipsoid( srid, a, b, c, px, py, pz, false, mx, my, mz, dist );
+	}
+	return dist;
+}
+
 
 // min max
 bool JagGeo::pointDistanceTriangle(int srid, double px, double py, double x1, double y1,
@@ -16575,18 +16589,30 @@ bool JagGeo::point3DDistanceBox(int srid, double dx, double dy, double dz,
     }
     return true;
 }
+
 bool JagGeo::point3DDistanceSphere(int srid, double px, double py, double pz, double x, double y, double z, double r, 
 									const AbaxDataString& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, pz, x, y, z, srid );
     return true;
 }
+
 bool JagGeo::point3DDistanceEllipsoid(int srid, double px, double py, double pz,  
-								  double x, double y, double z, double a, double b, double c, double nx, double ny, 
+								  double x0, double y0, double z0, double a, double b, double c, double nx, double ny, 
 								  const AbaxDataString& arg, double &dist )
 {
-	dist = JagGeo::distance( px, py, pz, x, y, z, srid );
-    return true;
+	if ( arg.caseEqual("center") ) {
+		dist = JagGeo::distance( px, py, pz, x0, y0, z0, srid );
+		return true;
+	}
+
+	if ( arg.caseEqual("min") ) {
+		dist = point3DDistanceToEllipsoid( srid, px, py, pz, x0, y0, z0, a, b, c, nx, ny, true );
+	} else {
+		dist = point3DDistanceToEllipsoid( srid, px, py, pz, x0, y0, z0, a, b, c, nx, ny, false );
+	}
+
+	return true;
 }
 
 bool JagGeo::point3DDistanceCone(int srid, double px, double py, double pz, 
@@ -19481,5 +19507,126 @@ void JagGeo::minMaxPointOnNormalEllipse( int srid, double a, double b, double u,
 	}
 	
 	dist = sqrt(dist);
+}
+
+void JagGeo::minMaxPoint3DOnNormalEllipsoid( int srid, double a, double b, double c,
+                                             double u, double v, double w, bool isMin,
+                                             double &x, double &y, double &z, double &dist )
+{
+	// x = a*cos(THETA) * cos( PHI)
+	// y = b*cos(THETA) * sin (PHI)
+	// z = c * sin(THETA)
+	// THETA: [-0.5*PI, 0.5*PI]   PHI: [-PI, PI)
+	double down = -0.5*JAG_PI;  // THETA
+	double up = 0.5*JAG_PI -0.001;
+	double left = 0.0;
+	double right = 2.0*JAG_PI-0.001;
+	double midx, midy, Lx, Rx, Ly, Ry, d1, d2, d3, d4;
+	double x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4;
+	double prevDist = LONG_MIN;
+	while ( true ) {
+		midx = (left+right)/2.0;  // PHI
+		midy = (down+up)/2.0;  // THETA
+		Lx = midx - 0.1;
+		Rx = midx + 0.1;
+		Ly = midy - 0.1;
+		Ry = midy + 0.1;
+
+		x1 = a* cos(Ly) * cos(Lx);
+		y1 = b* cos(Ly) * sin(Lx);
+		z1 = c* sin(Ly);
+		d1 = (u-x1)*(u-x1) + (v-y1)*(v-y1) + (w-z1)*(w-z1);
+
+		x2 = a* cos(Ry) * cos(Lx);
+		y2 = b* cos(Ry) * sin(Lx);
+		z2 = c* sin(Ry);
+		d2 = (u-x2)*(u-x2) + (v-y2)*(v-y2) + (w-z2)*(w-z2);
+
+		x3 = a* cos(Ly) * cos(Rx);
+		y3 = b* cos(Ly) * sin(Rx);
+		z3 = c* sin(Ly);
+		d3 = (u-x3)*(u-x3) + (v-y3)*(v-y3) + (w-z3)*(w-z3);
+
+		x4 = a* cos(Ry) * cos(Rx);
+		y4 = b* cos(Ry) * sin(Rx);
+		z4 = c* sin(Ry);
+		d4 = (u-x4)*(u-x4) + (v-y4)*(v-y4) + (w-z4)*(w-z4);
+
+		dist = (d1+d2+d3+d4)/4.0;
+		x = ( x1+x2+x3+x4)/4.0;
+		y = ( y1+y2+y3+y4)/4.0;
+		z = ( z1+z2+z3+z4)/4.0;
+		if ( fabs((dist-prevDist)/prevDist) < 0.01 ) {
+			break;
+		}
+
+		if ( isMin ) {
+			findMinBoundary(d1, d2, d3, d4, midx, midy, left, right, up, down );
+		} else {
+			findMaxBoundary(d1, d2, d3, d4, midx, midy, left, right, up, down );
+		}
+
+		prevDist = dist;
+	}
+	
+	dist = sqrt(dist);
+}
+
+/***
+   left   ------              right     up
+        d2                 d4           ^
+              midx/midy                 |
+        d1                 d3           v
+   left                       right    down
+***/
+
+void JagGeo::findMinBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy, 
+							  double &left, double &right, double &up, double &down )
+{
+	if ( d1 < d2 && d1 < d3 && d1 < d4 ) {
+		right = midx;
+		up = midy;
+		return;
+	}
+
+	if ( d2 < d1 && d2 < d3 && d2 < d4 ) {
+		right = midx;
+		down = midy;
+		return;
+	}
+
+	if ( d3 < d1 && d3 < d2 && d3 < d4 ) {
+		left = midx;
+		up = midy;
+		return;
+	}
+
+	left = midx;
+	down = midy;
+}
+
+void JagGeo::findMaxBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy, 
+							  double &left, double &right, double &up, double &down )
+{
+	if ( d1 > d2 && d1 > d3 && d1 > d4 ) {
+		right = midx;
+		up = midy;
+		return;
+	}
+
+	if ( d2 > d1 && d2 > d3 && d2 > d4 ) {
+		right = midx;
+		down = midy;
+		return;
+	}
+
+	if ( d3 > d1 && d3 > d2 && d3 > d4 ) {
+		left = midx;
+		up = midy;
+		return;
+	}
+
+	left = midx;
+	down = midy;
 }
 
