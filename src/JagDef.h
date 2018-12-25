@@ -444,6 +444,7 @@
 #define JAG_FUNC_CENTROID       254  // center of mass of a shape
 #define JAG_FUNC_VOLUME         255  // volume of a 3D shape
 #define JAG_FUNC_CLOSESTPOINT   256  // closest point on a shape from a point
+#define JAG_FUNC_ANGLE          257  // angle (0-359) between line segments
 
 
 // multi-line data ( string functions )

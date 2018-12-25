@@ -2706,6 +2706,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    convexhull(col)        -- get the convex hull of a shape with raster data\n";
 		str += "    centroid(col)          -- get the centroid coordinates of a vector or raster shape\n";
 		str += "    volume(col)            -- get the volume of a 3D shape\n";
+		str += "    closestpoint(point(x y), col)   -- get the closest point on col from point(x y)\n";
+		str += "    angle(line(x y), col)  -- get the closest point on geom from point(x y)\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

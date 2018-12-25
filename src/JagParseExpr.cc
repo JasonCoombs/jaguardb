@@ -1032,6 +1032,7 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
 	else if ( binaryOp == JAG_FUNC_WITHIN ) str = "within";
 	else if ( binaryOp == JAG_FUNC_CLOSESTPOINT ) str = "closestpoint";
+	else if ( binaryOp == JAG_FUNC_ANGLE ) str = "angle";
 	else if ( binaryOp == JAG_FUNC_AREA ) str = "area";
 	else if ( binaryOp == JAG_FUNC_VOLUME ) str = "volume";
 	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
@@ -1110,6 +1111,11 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
 		collen = 3*JAG_POINT_LEN + 2;
+		siglen = 0;
+	} else if ( _binaryOp == JAG_FUNC_ANGLE ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = JAG_POINT_LEN + 2;
 		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_BBOX ) {
 		ltmode = 0;
@@ -1771,8 +1777,10 @@ int BinaryOpNode::formatAggregateParts( AbaxDataString &parts, AbaxDataString &l
 		parts = AbaxDataString("dimension(") + lparts + ")";
 	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
 		parts = AbaxDataString("geotype(") + lparts + ")";
+	/***
 	} else if ( _binaryOp == JAG_FUNC_CLOSESTPOINT ) {
 		parts = AbaxDataString("closestpoint(") + lparts + "," + rparts + ")";
+	***/
 	}
 	// ... more calcuations ...
 	return 1;
@@ -3001,7 +3009,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		lstr = doubleToStr( dist );
 		ltmode = 2;
 		return 1;
-	} else if ( _binaryOp == JAG_FUNC_AREA  ||  _binaryOp == JAG_FUNC_VOLUME
+	} else if ( _binaryOp == JAG_FUNC_AREA  ||  _binaryOp == JAG_FUNC_VOLUME 
 			    || _binaryOp == JAG_FUNC_XMIN || _binaryOp == JAG_FUNC_YMIN || _binaryOp == JAG_FUNC_ZMIN
 	            || _binaryOp == JAG_FUNC_XMAX || _binaryOp == JAG_FUNC_YMAX || _binaryOp == JAG_FUNC_ZMAX ) {
 		ltmode = 2; // double
@@ -3065,7 +3073,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			lstr = "Primitive";
 		}
 		return 1;
-	} else if ( _binaryOp == JAG_FUNC_CLOSESTPOINT ) {
+	} else if ( _binaryOp == JAG_FUNC_CLOSESTPOINT ||  _binaryOp == JAG_FUNC_ANGLE ) {
 		ltmode = 0; // string
 		bool brc;
 		AbaxDataString res;
@@ -4025,6 +4033,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_DISJOINT 
 		 || fop == JAG_FUNC_NEARBY 
 		 || fop == JAG_FUNC_CLOSESTPOINT 
+		 || fop == JAG_FUNC_ANGLE 
 		 || fop == JAG_FUNC_POINTN 
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
@@ -4060,6 +4069,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_DISTANCE || 
 		fop == JAG_FUNC_WITHIN || 
 		fop == JAG_FUNC_CLOSESTPOINT || 
+		fop == JAG_FUNC_ANGLE || 
 		fop == JAG_FUNC_COVEREDBY || 
 		fop == JAG_FUNC_COVER || 
 		fop == JAG_FUNC_CONTAIN || 
@@ -4301,6 +4311,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_MILETOMETER; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "area", 4 ) ) {
 		fop = JAG_FUNC_AREA; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "angle", 5 ) ) {
+		fop = JAG_FUNC_ANGLE; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "volume", 6 ) ) {
 		fop = JAG_FUNC_VOLUME; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "dimension", 9 ) ) {
@@ -4777,6 +4789,14 @@ bool BinaryOpNode::doStringOp( int op, const AbaxDataString& mark1, const AbaxDa
 		} else {
 			return false;
 		}
+	} else if ( op == JAG_FUNC_ANGLE ) {
+		if ( colType1 == JAG_C_COL_TYPE_LINE && colType2 == JAG_C_COL_TYPE_LINE ) {
+			rc = doAllAngle2D( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
+		} else if ( colType1 == JAG_C_COL_TYPE_LINE3D && colType2 == JAG_C_COL_TYPE_LINE3D ) {
+			rc = doAllAngle3D( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
+		} else {
+			return false;
+		}
 	} else {
 		prt(("s6023 doStringOp op=%d\n", op ));
 	}
@@ -4823,6 +4843,85 @@ bool BinaryOpNode::doBooleanOp( int op, const AbaxDataString& mark1, const AbaxD
 	return rc;
 }
 
+// colType1 and colType2 must be LINE or LINE3D type
+bool BinaryOpNode::doAllAngle2D( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+								 const JagStrSplit &sp1, const AbaxDataString& mark2, 
+								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, AbaxDataString &res )
+{
+	prt(("s5887 doAllAngle2D mark1=%s colType1=%s srid1=%d sp1:\n", mark1.c_str(), colType1.c_str(), srid1 ));
+	//sp1.print();
+	prt(("s5888 doAllAngle2D mark2=%s colType2=%s srid2=%d sp2:\n", mark2.c_str(), colType2.c_str(), srid2 ));
+	//sp2.print();
+
+	double x1, y1, x2, y2;
+	x1 = jagatof( sp1[1].c_str() );
+	y1 = jagatof( sp1[2].c_str() );
+	x2 = jagatof( sp1[3].c_str() );
+	y2 = jagatof( sp1[4].c_str() );
+
+	double p1, q1, p2, q2;
+	p1 = jagatof( sp2[1].c_str() );
+	q1 = jagatof( sp2[2].c_str() );
+	p2 = jagatof( sp2[3].c_str() );
+	q2 = jagatof( sp2[4].c_str() );
+
+	// cos(theta) = P*Q/(|P|*|Q|}   theta = acos  * 180/PI
+	double vx = x2-x1;
+	double vy = y2-y1;
+	double wx = p2-p1;
+	double wy = q2-q1;
+	if ( JagGeo::jagEQ(vx, wx) && JagGeo::jagEQ(vy, wy) ) {
+		res = "0.0";
+		return true;
+	}
+
+	double t = ( vx*wx + vy*wy ) / ( sqrt(vx*vx+vy*vy) * sqrt( wx*wx+wy*wy ));
+	res = doubleToStr( acos(t) * 180.0/ JAG_PI );
+	return true;
+}
+
+// colType1 and colType2 must be LINE or LINE3D type
+bool BinaryOpNode::doAllAngle3D( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+								 const JagStrSplit &sp1, const AbaxDataString& mark2, 
+								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, AbaxDataString &res )
+{
+	prt(("s5887 doAllAngle3D mark1=%s colType1=%s srid1=%d sp1:\n", mark1.c_str(), colType1.c_str(), srid1 ));
+	//sp1.print();
+	prt(("s5888 doAllAngle3D mark2=%s colType2=%s srid2=%d sp2:\n", mark2.c_str(), colType2.c_str(), srid2 ));
+	//sp2.print();
+
+	double x1, y1, z1, x2, y2, z2;
+	x1 = jagatof( sp1[1].c_str() );
+	y1 = jagatof( sp1[2].c_str() );
+	z1 = jagatof( sp1[3].c_str() );
+	x2 = jagatof( sp1[4].c_str() );
+	y2 = jagatof( sp1[5].c_str() );
+	z2 = jagatof( sp1[6].c_str() );
+
+	double p1, q1, r1,  p2, q2, r2;
+	p1 = jagatof( sp2[1].c_str() );
+	q1 = jagatof( sp2[2].c_str() );
+	r1 = jagatof( sp2[3].c_str() );
+	p2 = jagatof( sp2[4].c_str() );
+	q2 = jagatof( sp2[5].c_str() );
+	r2 = jagatof( sp2[6].c_str() );
+
+	// cos(theta) = P*Q/(|P|*|Q|}   theta = acos  * 180/PI
+	double vx = x2-x1;
+	double vy = y2-y1;
+	double vz = z2-z1;
+	double wx = p2-p1;
+	double wy = q2-q1;
+	double wz = r2-r1;
+	if ( JagGeo::jagEQ(vx, wx) && JagGeo::jagEQ(vy, wy) && JagGeo::jagEQ(vz, wz) ) {
+		res = "0.0";
+		return true;
+	}
+	double t = ( vx*wx + vy*wy + vz*wz ) / ( sqrt(vx*vx+vy*vy+vz*vz) * sqrt(wx*wx+wy*wy+wz*wz));
+	res = doubleToStr( acos(t) * 180.0/ JAG_PI );
+	return true;
+}
+
 // colType1 must be point or point3D type
 bool BinaryOpNode::doAllClosestPoint( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString& mark2, 
@@ -4859,9 +4958,9 @@ bool BinaryOpNode::doAllClosestPoint( const AbaxDataString& mark1, const AbaxDat
 	}
 
 	prt(("s5887 doClosestPoint mark1=%s colType1=%s srid1=%d sp1:\n", mark1.c_str(), colType1.c_str(), srid1 ));
-	sp1.print();
+	//sp1.print();
 	prt(("s5888 doClosestPoint mark2=%s colType2=%s srid2=%d sp2:\n", mark2.c_str(), colType2.c_str(), srid2 ));
-	sp2.print();
+	//sp2.print();
 	bool rc =  JagGeo::doClosestPoint(colType1, srid1, px, py, pz, mark2, colType2, sp2, res  );
 	return rc;
 }
@@ -5134,8 +5233,8 @@ bool BinaryOpNode::doAllCentroid( const AbaxDataString& mk, const AbaxDataString
 		} else if ( colType == JAG_C_COL_TYPE_LINE ) {
 			double cx1 = jagatof( sp[0].c_str() );
 			double cy1 = jagatof( sp[1].c_str() );
-			double cx2 = jagatof( sp[3].c_str() );
-			double cy2 = jagatof( sp[4].c_str() );
+			double cx2 = jagatof( sp[2].c_str() );
+			double cy2 = jagatof( sp[3].c_str() );
 			cx = ( cx1 + cx2 ) /2.0;
 			cy = ( cy1 + cy2 ) /2.0;
 		} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {

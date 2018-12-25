@@ -246,6 +246,12 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllClosestPoint( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 AbaxDataString &res );
+	bool doAllAngle2D( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+							 AbaxDataString &res );
+	bool doAllAngle3D( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+							 AbaxDataString &res );
 	bool doAllIntersect( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 bool strict=true );
