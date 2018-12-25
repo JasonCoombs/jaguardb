@@ -17,7 +17,7 @@ CCFLAGS=$(CCFLAGS_DYNAMIC)
 
 STDLIBS_STATIC =  Web/GeographicLib-1.49/lib/libGeographic.a /usr/lib64/libpthread.a
 STDLIBS_DYNAMIC = -LWeb/GeographicLib-1.49/lib -LWeb/CGAL/CGAL-4.13/lib64 -LWeb/Boost/boost_1_68_0/lib \
-                  -lGeographic -lCGAL -lboost_thread -lboost_system -lpthread
+                  -lGeographic -lCGAL -lboost_thread -lboost_system 
 
 
 STDLIBS=$(STDLIBS_STATIC)

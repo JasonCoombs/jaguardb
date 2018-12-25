@@ -1751,7 +1751,7 @@ class JagGeo
 	static bool point3DDistanceNormalCone( int srid, double px, double py, double pz, 
 										 double r, double h, const AbaxDataString& arg, double &dist );
 
-	static double pointToLineDistance( double lata1, double lona1, double lata2, double lona2, double latb1, double lonb1 );
+	static double pointToLineGeoDistance( double lata1, double lona1, double lata2, double lona2, double latb1, double lonb1 );
 	static double safeget( const JagStrSplit &sp, int arg );
 	static AbaxDataString safeGetStr( const JagStrSplit &sp, int arg );
 	static void center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy );
@@ -1766,7 +1766,9 @@ class JagGeo
 	static double point3DDistanceToEllipsoid( int srid, double px, double py, double pz,
 											  double x0, double y0, double z0, 
 											  double a, double b, double c, double nx, double ny, bool isMin );
-
+	static bool doClosestPoint(  const AbaxDataString& colType1, int srid, double px, double py, double pz,
+									const AbaxDataString& mark2, const AbaxDataString &colType2, 
+									const JagStrSplit &sp2, AbaxDataString &res );
 
 
 
@@ -1956,6 +1958,25 @@ class JagGeo
 	                              double &left, double &right, double &up, double &down );
 	static void findMaxBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy,
 	                              double &left, double &right, double &up, double &down );
+
+	static double minPoint2DToLineSegDistance( double px, double py, double x1, double y1, double x2, double y2, int srid,
+											   double &projx, double  &projy );
+	static double minPoint3DToLineSegDistance( double px, double py, double pz, 
+											   double x1, double y1, double z1, 
+											   double x2, double y2, double z2, int srid,
+											   double &projx, double  &projy, double &projz);
+
+	static bool  closestPoint2DPolygon( int srid, double px, double py, const AbaxDataString &mk, 
+										const JagStrSplit &sp, AbaxDataString &res );
+	static bool  closestPoint3DPolygon( int srid, double px, double py, double pz, const AbaxDataString &mk, 
+										const JagStrSplit &sp, AbaxDataString &res );
+	static bool  closestPoint2DMultiPolygon( int srid, double px, double py, const AbaxDataString &mk, 
+										const JagStrSplit &sp, AbaxDataString &res );
+	static bool  closestPoint3DMultiPolygon( int srid, double px, double py, double pz, const AbaxDataString &mk, 
+										const JagStrSplit &sp, AbaxDataString &res );
+
+	static bool  closestPoint3DBox( int srid, double px, double py, double pz, double x0, double y0, double z0,
+								    double a, double b, double c, double nx, double ny, double &dist, AbaxDataString &res );
 
 
 

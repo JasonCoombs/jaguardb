@@ -285,6 +285,7 @@ long long jagatoll(const char *nptr);
 long jagatol(const char *nptr);
 long double jagstrtold(const char *nptr, char **endptr=NULL);
 double jagatof(const char *nptr );
+double jagatof(const AbaxDataString &str );
 int jagatoi(const char *nptr );
 int jagatoi(char *nptr, int len );
 void appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true);

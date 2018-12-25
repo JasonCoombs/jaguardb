@@ -4803,21 +4803,14 @@ int JagParser::getLineStringMinMax( const char *p, double &xmin, double &ymin, d
 int JagParser::addLineStringData( JagLineString &linestr, const char *p )
 {
 	if ( *p == 0 ) return -4410;
-
-	prt(("s2838 linestring( p=[%s]\n", p ));
+	//prt(("s2838 linestring( p=[%s]\n", p ));
 
 	JagStrSplit sp( p, ',', true );
 	int len = sp.length();
 	JagLineString3D linestr3d;
 	for ( int i = 0; i < len; ++i ) {
 		JagStrSplit ss( sp[i], ' ', true );
-		/**
-		if ( ss.length() < 2 ) { 
-			return -4401; 
-		}
-		**/
 		if ( ss.length() < 2 ) {  continue; }
-
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4416; }
 		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4417; }
 		JagPoint2D p( ss[0].c_str(), ss[1].c_str() );
@@ -5084,7 +5077,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p,
 int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSplit &sp, bool firstOnly, bool is3D )
 {
 	prt(("s5608 addMultiPolygonData firstOnly=%d is3D=%d sp.print():\n", firstOnly, is3D ));
-	sp.print();
+	//sp.print();
 
 	const char *str;
 	char *p;
@@ -5092,46 +5085,6 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 	double dx,dy,dz;
 	JagPolygon pgon;
 	dz = 0.0;
-	/***
-	for ( int i=1; i < sp.length(); ++i ) {
-		str = sp[i].c_str();
-		prt(("s4089 sp[i=%d]=[%s]\n", i, str ));
-		if ( is3D ) {
-			if ( strchrnum( str, ':') < 2 ) continue;
-			get3double(str, p, ':', dx, dy, dz );
-		} else {
-			if ( strchrnum( str, ':') < 1 ) continue;
-			get2double(str, p, ':', dx, dy );
-		}
-
-		JagPoint3D pt(dx,dy,dz);
-		if ( sp[i] == "!" ) {
-			// start a new polygon
-			if ( firstOnly ) break; 
-			pgvec.append(pgon);
-			pgon.init();
-		} else if ( sp[i] == "|" ) {
-			if ( ! firstOnly ) {
-				pgon.add( linestr );
-			}
-			linestr.init();
-		} else {
-			linestr.add( pt );
-		}
-	}
-
-	pgon.add( linestr );
-	pgvec.append( pgon );
-
-	prt(("s8874 pgvec.size=%d\n", pgvec.size() ));
-	prt(("s3348 linestr.print():\n" ));
-	linestr.print();
-	prt(("s3348 pgon.print():\n" ));
-	pgon.print();
-	prt(("s3348 pgvec.print():\n" ));
-	pgvec.print();
-	return 1;
-	***/
 	// "x:y x:y x:y x:y x:y"
 	// "x:y x:y ! x:y x:y x:y"
 	// "x:y x:y | x:y x:y x:y ! x:y x:y x:y"
@@ -5587,9 +5540,11 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	char *p;
 	JagLineString3D linestr;
 	double dx,dy;
+	int nc;
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') < 1 ) continue;
+		nc = strchrnum( str, ':');
+		if ( nc != 1 ) continue; // skip bbox
 		get2double(str, p, ':', dx, dy );
 		JagPoint2D pt(dx,dy);
 		if ( sp[i] == "|" || sp[i] == "!" ) {
@@ -5614,9 +5569,11 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 	char *p;
 	JagLineString3D linestr;
 	double dx,dy,dz;
+	int nc;
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') < 2 ) continue;
+		nc = strchrnum( str, ':');
+		if ( nc != 2 ) continue; // skip bbox
 		get3double(str, p, ':', dx, dy, dz );
 		JagPoint3D pt(dx,dy,dz);
 		if ( sp[i] == "|" || sp[i] == "!" ) {
@@ -5640,9 +5597,11 @@ void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp
 	const char *str;
 	char *p;
 	double dx,dy;
+	int nc;
 	for ( int i=0; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') < 1 ) continue;
+		nc = strchrnum( str, ':');
+		if ( nc != 1 ) continue;
 		get2double(str, p, ':', dx, dy );
 		linestr.add( dx, dy );
 		prt(("s4028 addLineStringData add(%.2f %.2f)\n", dx, dy ));
@@ -5657,7 +5616,7 @@ void JagParser::addLineString3DData( JagLineString3D &linestr, const JagStrSplit
 	double dx,dy, dz;
 	for ( int i=0; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') < 2 ) continue;
+		if ( strchrnum( str, ':') != 2 ) continue;
 		get3double(str, p, ':', dx, dy, dz );
 		linestr.add( dx, dy, dz );
 		prt(("s4048 addLineStringData add(%.2f %.2f %.2f)\n", dx, dy, dz ));

@@ -1031,6 +1031,7 @@ AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_DISTANCE ) str = "distance";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
 	else if ( binaryOp == JAG_FUNC_WITHIN ) str = "within";
+	else if ( binaryOp == JAG_FUNC_CLOSESTPOINT ) str = "closestpoint";
 	else if ( binaryOp == JAG_FUNC_AREA ) str = "area";
 	else if ( binaryOp == JAG_FUNC_VOLUME ) str = "volume";
 	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
@@ -1105,7 +1106,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		siglen = 0;
 		// todo qwer can we get number of points of lstr?
 	} else if ( _binaryOp == JAG_FUNC_POINTN ||  _binaryOp == JAG_FUNC_STARTPOINT || _binaryOp == JAG_FUNC_ENDPOINT
-                || _binaryOp == JAG_FUNC_CENTROID ) {
+                || _binaryOp == JAG_FUNC_CENTROID || _binaryOp == JAG_FUNC_CLOSESTPOINT ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
 		collen = 3*JAG_POINT_LEN + 2;
@@ -1290,7 +1291,7 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 								         const char *buffers[], AbaxFixString &str, int &typeMode, AbaxDataString &type, 
 										 int &length, bool &first, bool useZero, bool setGlobal )
 {
-	//prt(("s2301 tmp9999 BinaryOpNode::checkFuncValid _left=%0x _right=%0x ...\n", _left, _right ));
+	prt(("s2301 tmp9999 BinaryOpNode::checkFuncValid _left=%0x _right=%0x _binaryOp=%d ...\n", _left, _right, _binaryOp ));
 
 	AbaxFixString lstr, rstr;
 	AbaxDataString ltype, rtype;
@@ -1314,7 +1315,7 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 
 	if ( leftVal < 0 || rightVal < 0 ) { 
 		result = -1; 
-		// prt(("s0392  leftVal < 0 || rightVal < 0  result = -1\n" ));
+		prt(("s0392  leftVal < 0 || rightVal < 0  result = -1\n" ));
 	} else {
 		if ( JAG_LOGIC_OR == _binaryOp ) {
 			result = leftVal || rightVal;
@@ -1328,8 +1329,8 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 			// prt(("s2335 weird  result=%d\n", result ));
 		} else {
 			// prt(("s2039 in BinaryOpNode::checkFuncValid() \n" ));
-			//prt(("s2039 before _doCalculation _binaryOp=%d lstr=[%s] ltmode=%d ltype=%s \n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
-			// prt(("s2039 before _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
+			prt(("s2039 _doCalculation _binaryOp=%d lstr=[%s] ltmd=%d ltp=%s\n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
+			// prt(("s2039 _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
 			result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
 			if ( result < 0 && setGlobal ) {
 				_opString = ""; _numCnts = _initK = _stddevSum = _stddevSumSqr = 0;
@@ -1770,6 +1771,8 @@ int BinaryOpNode::formatAggregateParts( AbaxDataString &parts, AbaxDataString &l
 		parts = AbaxDataString("dimension(") + lparts + ")";
 	} else if ( _binaryOp == JAG_FUNC_GEOTYPE ) {
 		parts = AbaxDataString("geotype(") + lparts + ")";
+	} else if ( _binaryOp == JAG_FUNC_CLOSESTPOINT ) {
+		parts = AbaxDataString("closestpoint(") + lparts + "," + rparts + ")";
 	}
 	// ... more calcuations ...
 	return 1;
@@ -2343,8 +2346,9 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	int &ltmode, int &rtmode,  const AbaxDataString& ltype,  const AbaxDataString& rtype, 
 	int llength, int rlength, bool &first )
 {
-	//prt(("s0398 enter BinaryOpNode::_doCalculation lstr=[%s] rstr=[%s] first=%d\n", lstr.c_str(), rstr.c_str(), first ));
-	//prt(("s0398 enter BinaryOpNode::_doCalculation ltype=[%s] rtype=[%s]\n", ltype.c_str(), rtype.c_str() ));
+	prt(("s0398 enter BinaryOpNode::_doCalculation lstr=[%s] first=%d\n", lstr.c_str(), first ));
+	prt(("s0398 enter BinaryOpNode::_doCalculation rstr=[%s] first=%d\n", rstr.c_str(), first ));
+	prt(("s0398 enter BinaryOpNode::_doCalculation ltype=[%s] rtype=[%s]\n", ltype.c_str(), rtype.c_str() ));
 
 	int cmode;
 	if ( ltmode > rtmode ) cmode = ltmode;
@@ -3061,6 +3065,19 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			lstr = "Primitive";
 		}
 		return 1;
+	} else if ( _binaryOp == JAG_FUNC_CLOSESTPOINT ) {
+		ltmode = 0; // string
+		bool brc;
+		AbaxDataString res;
+		try {
+			brc = processStringOp( _binaryOp, lstr, rstr, _carg1, res );
+		} catch ( int e ) {
+			brc = 0;
+		} catch ( ... ) {
+			brc = 0;
+		}
+		lstr = res;
+		return brc;
 	} else if ( _binaryOp == JAG_FUNC_WITHIN || _binaryOp == JAG_FUNC_COVEREDBY
 	            || _binaryOp == JAG_FUNC_CONTAIN || _binaryOp == JAG_FUNC_COVER 
 	            || _binaryOp == JAG_FUNC_NEARBY
@@ -4007,6 +4024,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_INTERSECT 
 		 || fop == JAG_FUNC_DISJOINT 
 		 || fop == JAG_FUNC_NEARBY 
+		 || fop == JAG_FUNC_CLOSESTPOINT 
 		 || fop == JAG_FUNC_POINTN 
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
@@ -4041,6 +4059,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_TIME || 
 		fop == JAG_FUNC_DISTANCE || 
 		fop == JAG_FUNC_WITHIN || 
+		fop == JAG_FUNC_CLOSESTPOINT || 
 		fop == JAG_FUNC_COVEREDBY || 
 		fop == JAG_FUNC_COVER || 
 		fop == JAG_FUNC_CONTAIN || 
@@ -4266,6 +4285,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_CONTAIN; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "intersect", 9 ) ) {
 		fop = JAG_FUNC_INTERSECT; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "closestpoint", 12 ) ) {
+		fop = JAG_FUNC_CLOSESTPOINT; len = 12; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "disjoint", 8 ) ) {
 		fop = JAG_FUNC_DISJOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "nearby", 6 ) ) {
@@ -4531,6 +4552,97 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
+// rstr must be table/index column with all internal data or a const string "2 3 4"
+// op can be WITHIN, CONTAIN, COVER, COVERED, OVERLAP, INTERSECT
+// within: point-> line, linestring, triangle, square, cube, ...
+// within:  triangle -> triangle, square, cube, ...
+bool BinaryOpNode::processStringOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, 
+											const AbaxDataString &carg, AbaxDataString &res )
+{
+	prt(("s5481 do processStringOp lstr=[%s]\n", lstr.c_str() ));
+	prt(("s5481 do processStringOp rstr=[%s]\n", rstr.c_str() ));
+	prt(("s5481 do processStringOp carg=[%s]\n", carg.c_str() ));
+
+	AbaxDataString colobjstr1 = lstr.firstToken(' ');
+	AbaxDataString colobjstr2 = rstr.firstToken(' ');
+	JagStrSplit spcol2(colobjstr2, '=');  
+	AbaxDataString colType2;
+
+	AbaxDataString colType1;
+	JagStrSplit spcol1(colobjstr1, '=');  // OJAG=srid=name=type
+	int srid1 = 0;
+	AbaxDataString mark1, colName1;  // colname: "db.tab.col"
+	if ( spcol1.length() < 4 ) {
+		if ( spcol2.length() >= 4 ) {
+			colType2 = spcol2[3];
+			if ( colType2 == JAG_C_COL_TYPE_RANGE ) {
+				if (  _left && _left->_isElement ) {
+					mark1 = "OJAG";
+					srid1 = _left->_srid;
+					colName1 = _left->_name;
+					colType1 = _left->_type;
+					//prt(("s8273 left is element node. srid1=%d name=[%s] type=[%s]\n", srid1, colName1.c_str(), colType1.c_str() ));
+				} else {
+					//prt(("s7283 left is not element, use dummy" ));
+					mark1 = "OJAG";
+					srid1 = 0;
+					colName1 = "dummy";
+					colType1 = "dummy";
+				}
+			} else {
+				prt(("E4405 not enough header [%s] op=%d\n", lstr.c_str(), op ));
+				return false;
+			}
+		} else {
+			mark1 = "OJAG";
+			srid1 = 0;
+			colName1 = "dummy";
+			colType1 = "dummy";
+		}
+	}
+
+	if ( spcol1.length() >= 4 ) {
+		mark1 = spcol1[0];
+		srid1 = jagatoi( spcol1[1].c_str() );
+		colName1 = spcol1[2];
+		colType1 = spcol1[3];
+	}
+
+	int srid2 = 0;
+	AbaxDataString mark2, colName2;  // colname: "db.tab.col"
+	if ( spcol2.length() < 4 ) {
+		prt(("E4416 not enough header [%s]\n", colobjstr2.c_str() ));
+		return false;
+	}
+
+	mark2 = spcol2[0];
+	srid2 = jagatoi( spcol2[1].c_str() );
+	colName2 = spcol2[2];
+	colType2 = spcol2[3];
+
+	if ( mark2 == "OJAG" && mark1  == "OJAG" && srid1 != srid2 ) {
+		prt(("E4418 two columns but sriddiff hdr1=[%s] hdr2=[%s]\n", colobjstr1.c_str(), colobjstr2.c_str() ));
+		return false;
+	}
+
+	if ( mark2 == JAG_OJAG && mark1 == JAG_CJAG ) {
+		srid1 = srid2;
+	} else if (  mark2 == JAG_CJAG && mark1 == JAG_OJAG ) {
+		srid2 = srid1;
+	}
+
+	JagStrSplit sp1( lstr.c_str(), ' ', true );
+	JagStrSplit sp2( rstr.c_str(), ' ', true );
+
+	//sp1.shift();	
+	//sp2.shift();	
+
+	bool rc = doStringOp( op, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg, res );
+	return rc;
+}
+
+// return 0 for OK;  < 0 for error or false
+// lstr must be table/index column with its all internal data
 // op can be AEA
 bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &value )
 {
@@ -4645,6 +4757,33 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 	return rc;
 }
 
+bool BinaryOpNode::doStringOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+										const JagStrSplit &sp1, const AbaxDataString& mark2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+										const AbaxDataString &carg, AbaxDataString &res )
+{
+	prt(("s8710 doStringOp op=%d\n", op ));
+	bool rc = false;
+	if ( srid1 != srid2 ) {
+		prt(("s0381 srid1=%d != srid2=%d\n", srid1, srid2 ));
+		return rc;
+	}
+
+	if ( op == JAG_FUNC_CLOSESTPOINT ) {
+		if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
+			rc = doAllClosestPoint( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
+		} else if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+			rc = doAllClosestPoint( mark2, colType2, srid2, sp2, mark1, colType1, srid1, sp1, res );
+		} else {
+			return false;
+		}
+	} else {
+		prt(("s6023 doStringOp op=%d\n", op ));
+	}
+	//prt(("s1102 doBooleanOp rc=%d\n", rc ));
+	return rc;
+}
+
 
 bool BinaryOpNode::doBooleanOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString& mark2, 
@@ -4681,6 +4820,49 @@ bool BinaryOpNode::doBooleanOp( int op, const AbaxDataString& mark1, const AbaxD
 		//prt(("s6023 doBooleanOp op=%d\n", op ));
 	}
 	//prt(("s1102 doBooleanOp rc=%d\n", rc ));
+	return rc;
+}
+
+// colType1 must be point or point3D type
+bool BinaryOpNode::doAllClosestPoint( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+										const JagStrSplit &sp1, const AbaxDataString& mark2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, AbaxDataString &res )
+{
+	double px, py, pz;
+	if ( mark1 == JAG_OJAG ) {
+		if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+			/**
+				i=0 [OJAG=0=test.mpg.p1=MG=0]
+				i=1 [0.0:0.0:8.0:9.0]  // bbox
+				i=2 [0.0:0.0]
+			**/
+			JagStrSplit c( sp1[2], ':' );
+			px = jagatof( c[0].c_str() );
+			py = jagatof( c[1].c_str() );
+		} else {
+			JagStrSplit c( sp1[2], ':' );
+			px = jagatof( c[0].c_str() );
+			py = jagatof( c[1].c_str() );
+			pz = jagatof( c[2].c_str() );
+		}
+	} else {
+		/**
+			i=0 [CJAG=0=0=PT=0]
+			i=1 [0]
+			i=2 [0]
+		**/
+		px = jagatof( sp1[1].c_str() );
+		py = jagatof( sp1[2].c_str() );
+		if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+			pz = jagatof( sp1[3].c_str() );
+		} 
+	}
+
+	prt(("s5887 doClosestPoint mark1=%s colType1=%s srid1=%d sp1:\n", mark1.c_str(), colType1.c_str(), srid1 ));
+	sp1.print();
+	prt(("s5888 doClosestPoint mark2=%s colType2=%s srid2=%d sp2:\n", mark2.c_str(), colType2.c_str(), srid2 ));
+	sp2.print();
+	bool rc =  JagGeo::doClosestPoint(colType1, srid1, px, py, pz, mark2, colType2, sp2, res  );
 	return rc;
 }
 

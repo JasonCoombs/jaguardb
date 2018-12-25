@@ -226,11 +226,15 @@ class BinaryOpNode: public ExpressionElementNode
 						int llength, int rlength, bool &first );	
 
 	bool processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &carg );
+	bool processStringOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &carg, AbaxDataString &res );
 	bool processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &val );
 	bool processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &val );
 	bool doBooleanOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, 
 							 const JagStrSplit &sp2, const AbaxDataString &carg );
+	bool doStringOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, 
+							 const JagStrSplit &sp2, const AbaxDataString &carg, AbaxDataString &res );
 	bool doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString &carg, double &val );
 	bool doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString& hdr, const AbaxDataString &colType1, int srid1, 
@@ -239,6 +243,9 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllWithin( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 bool strict=true );
+	bool doAllClosestPoint( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+							 AbaxDataString &res );
 	bool doAllIntersect( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 bool strict=true );

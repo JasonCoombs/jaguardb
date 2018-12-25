@@ -3484,6 +3484,12 @@ double jagatof(const char *nptr)
 	return atof( nptr);
 }
 
+double jagatof(const AbaxDataString &str )
+{
+	return jagatof( str.c_str() );
+}
+
+
 int jagatoi(const char *nptr)
 {
 	if ( NULL == nptr || '\0' == *nptr ) return 0;
