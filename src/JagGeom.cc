@@ -394,7 +394,18 @@ JagLineString& JagLineString::copyFrom( const JagLineString3D& L2, bool removeLa
 	return *this;
 }
 
-void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax )
+JagLineString& JagLineString::appendFrom( const JagLineString3D& L2, bool removeLast )
+{
+	//init();
+	int len =  L2.size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len; ++i ) {
+		add( L2.point[i] );
+	}
+	return *this;
+}
+
+void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
 {
 	xmin = ymin = LONG_MAX;
 	xmax = ymax = LONG_MIN;
@@ -410,7 +421,7 @@ void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ym
 	}
 }
 
-void JagLineString::bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax )
+void JagLineString::bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const
 {
 	xmin = ymin = zmin = LONG_MAX;
 	xmax = ymax = zmax = LONG_MIN;
@@ -534,6 +545,42 @@ void JagLineString3D::center2D( double &cx, double &cy, bool dropLast ) const
 	}
 	cx = cx/len;
 	cy = cy/len;
+}
+
+void JagLineString3D::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
+{
+	xmin = ymin = LONG_MAX;
+	xmax = ymax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = point[i].x;
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = point[i].y;
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+	}
+}
+
+void JagLineString3D::bbox3D( double &xmin, double &ymin, double &zmin,double &xmax, double &ymax, double &zmax ) const
+{
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = point[i].x;
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = point[i].y;
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+
+		f = point[i].z;
+		if ( f < zmin ) zmin = f;
+		if ( f > zmax ) zmax = f;
+	}
 }
 
 
@@ -14648,7 +14695,7 @@ void JagGeo::getLineStringBound( const AbaxDataString &mk, const JagStrSplit &sp
 		char *p = secondTokenStart( sp.c_str() );
 		prt(("s2074 getLineStringBound p=[%s]\n", p ));
 		if ( ! p ) return;
-        JagParser::getLineStringMinMax( p, xmin, ymin, xmax, ymax );
+        JagParser::getLineStringMinMax( ' ', p, xmin, ymin, xmax, ymax );
 		prt(("s2227 xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f\n",  xmin, ymin, xmax, ymax ));
         bbx = ( xmin+xmax)/2.0; bby = ( ymin+ymax)/2.0;
         rx = (xmax-xmin)/2.0; ry = (ymax-ymin)/2.0;
@@ -20261,6 +20308,47 @@ void JagPolygon::center3D(  double &cx, double &cy, double &cz ) const
 	cz = cz / len;
 }
 
+bool JagPolygon::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
+{
+	int len = linestr.size();
+	if ( len < 1 ) return false;
+	double xmi, ymi, xma, yma;
+	xmin = ymin =  LONG_MAX;
+	xmax = ymax = LONG_MIN;
+	int cnt = 0;
+	for ( int i=0; i < len; ++i ) {
+		if ( linestr[i].size() < 1 ) continue;
+		linestr[i].bbox2D( xmi, ymi, xma, yma );
+		if ( xmi < xmin ) xmin = xmi;
+		if ( ymi < ymin ) ymin = ymi;
+		if ( xma > xmax ) xmax = xma;
+		if ( yma > ymax ) ymax = yma;
+		++cnt;
+	}
+
+	return (cnt > 0 );
+}
+
+bool JagPolygon::bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const
+{
+	int len = linestr.size();
+	if ( len < 1 ) return false;
+	double xmi, ymi, zmi, xma, yma, zma;
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	for ( int i=0; i < len; ++i ) {
+		linestr[i].bbox3D( xmi, ymi, zmi, xma, yma, zma );
+		if ( xmi < xmin ) xmin = xmi;
+		if ( ymi < ymin ) ymin = ymi;
+		if ( zmi < zmin ) zmin = zmi;
+		if ( xma > xmax ) xmax = xma;
+		if ( yma > ymax ) ymax = yma;
+		if ( zma > zmax ) zmax = zma;
+	}
+
+	return true;
+}
+
 void JagGeo::center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy )
 {
 	cx = cy = 0.0;
@@ -20294,6 +20382,7 @@ void JagGeo::center3DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &c
 	cy = cy / len;
 	cz = cz / len;
 }
+
 
 // ax^4 + bx^3 + cx^2 + dx + e = 0   a==1.0
 // https://en.wikipedia.org/wiki/Quartic_function
@@ -20783,3 +20872,27 @@ bool JagGeo::closestPoint3DBox( int srid, double px, double py, double pz, doubl
 	res = doubleToStr(dx) + " " + doubleToStr(dy) + " " + doubleToStr(dz); 
 	return true;
 }
+
+bool JagGeo::getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax )
+{
+	if ( pgvec.size() < 1 ) return false;
+
+	xmin = LONG_MAX; ymin = LONG_MAX;
+	xmax = LONG_MIN; ymax = LONG_MIN;
+	double xmi, ymi, xma, yma;
+	int cnt = 0;
+	for ( int i = 0; i < pgvec.size(); ++i ) {
+		if ( pgvec[i].linestr.size() <1 ) continue;
+		// using outer ring only works well enough
+		pgvec[i].linestr[0].bbox2D( xmi, ymi, xma, yma );
+		if ( xmi < xmin ) xmin = xmi;
+		if ( ymi < ymin ) ymin = ymi;
+		if ( xma > xmax ) xmax = xma;
+		if ( yma > ymax ) ymax = yma;
+		++cnt;
+	}
+
+	return ( cnt > 0 );
+}
+
+

@@ -445,6 +445,7 @@
 #define JAG_FUNC_VOLUME         255  // volume of a 3D shape
 #define JAG_FUNC_CLOSESTPOINT   256  // closest point on a shape from a point
 #define JAG_FUNC_ANGLE          257  // angle (0-359) between line segments
+#define JAG_FUNC_BUFFER         258  // buffer (polygon) of points/multipoints/line/linestring/polygon
 
 
 // multi-line data ( string functions )
@@ -689,5 +690,16 @@
 #define JAG_RANGE_FLOAT         16 
 
 #define JAG_RANGE_DIM	2   // begin end
+
+#define JAG_DIST_SYMMETRIC   1
+#define JAG_DIST_ASYMMETRIC  2
+#define JAG_SIDE_STRAIGHT    3
+#define JAG_JOIN_ROUND       4
+#define JAG_JOIN_MITER       5
+#define JAG_END_ROUND        6
+#define JAG_END_FLAT         7
+#define JAG_POINT_CIRCLE     8
+#define JAG_POINT_SQUARE     9
+
 
 #endif

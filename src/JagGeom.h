@@ -317,10 +317,13 @@ class JagLineString3D
 		abaxint size() const { return point.size(); }
 		void add( const JagPoint2D &p );
 		void add( const JagPoint3D &p );
-		void add( double x, double y, double z );
+		void add( double x, double y, double z=0.0 );
 		void print() const { point.print(); }
 		void center2D( double &cx, double &cy, bool dropLast=false ) const;
 		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
+		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
+		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+		const JagPoint3D& operator[](int i ) const { return point[i]; }
 
 		JagVector<JagPoint3D> point;
 };
@@ -332,6 +335,7 @@ class JagLineString
 		JagLineString& operator=( const JagLineString& L2 ) { point = L2.point; return *this; }
 		JagLineString& operator=( const JagLineString3D& L2 );
 		JagLineString& copyFrom( const JagLineString3D& L2, bool removeLast = false );
+		JagLineString& appendFrom( const JagLineString3D& L2, bool removeLast = false );
 		JagLineString( const JagLineString& L2 ) { point = L2.point; }
 		void init() { point.clean(); };
 		abaxint size() const { return point.size(); }
@@ -342,8 +346,9 @@ class JagLineString
 		void print() const { point.print(); }
 		void center2D( double &cx, double &cy, bool dropLast=false ) const;
 		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
-		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax );
-		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
+		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
+		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+		const JagPoint& operator[](int i ) const { return point[i]; }
 
 		JagVector<JagPoint> point;
 };
@@ -360,6 +365,8 @@ class JagPolygon
 		void add( const JagLineString3D &linestr3d ) { linestr.append(linestr3d); }
 		void center2D( double &cx, double &cy ) const;
 		void center3D( double &cx, double &cy, double &cz ) const;
+		bool bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
+		bool bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		JagVector<JagLineString3D> linestr;
 		void print() const { linestr.print(); }
 		
@@ -1769,6 +1776,8 @@ class JagGeo
 	static bool doClosestPoint(  const AbaxDataString& colType1, int srid, double px, double py, double pz,
 									const AbaxDataString& mark2, const AbaxDataString &colType2, 
 									const JagStrSplit &sp2, AbaxDataString &res );
+
+	static bool getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 
 
 
