@@ -5468,54 +5468,65 @@ bool BinaryOpNode::doAllBuffer( const AbaxDataString& mk, const AbaxDataString& 
 	prt(("s3420 doAllBuffer() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
 	sp.print();
 	value = "";
+
+	/**
+		point2D, linestring2D, Polygon2D, multiPoint2D, MultiLineString, MultiPolygon
+	**/
+	JagLineString line;
+	JagPolygon pgon;
+	JagVector<JagPolygon> pgvec;
+	double px, py;
+	bool rc;
 	if ( mk == JAG_OJAG ) {
 		//prt(("s8830 JAG_OJAG\n" ));
 		//sp.print();
-		JagLineString line;
-		JagPolygon pgon;
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 			JagParser::addLineStringData( line, sp );
-			JagCGAL::getBuffer2DStr( line, srid, hdr, carg, value );
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 		    JagParser::addPolygonData( pgon, sp, true );
 			line.copyFrom( pgon.linestr[0], true );
-			JagCGAL::getBuffer2DStr( line, srid, hdr, carg, value );
         } else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
 		    JagParser::addPolygonData( pgon, sp, false );
-			JagCGAL::getBuffer2DStr( pgon, srid, hdr, carg, value );
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, sp, false, false );
-			JagCGAL::getBuffer2DStr( pgvec, srid, hdr, carg, value );
 		} else  {
 		}
 	} else {
 		//prt(("s8831 JAG_CJAG c_str=[%s]\n", sp.c_str() ));
-		JagLineString line;
-		JagPolygon pgon;
 		const char *p = sp.c_str();
-		AbaxDataString objHdr;
-		objHdr = "OJAG=" + intToStr(srid) + "=dummy.dummy.dummy=MG=d";
-
 		if ( 0==strncasecmp( sp.c_str(), "linestring(", 11) || 0==strncasecmp( sp.c_str(), "multipoint(", 11) ) {
             JagParser::addLineStringData(line, p+10 );
-			JagCGAL::getBuffer2DStr( line, srid, objHdr, carg, value );
         } else if ( 0==strncasecmp( sp.c_str(), "polygon(", 8) ) {
 			JagParser::addPolygonData( pgon, p+7, true, false );
 			line.copyFrom( pgon.linestr[0], true );
-			JagCGAL::getBuffer2DStr( line, srid, objHdr, carg, value );
         } else if ( 0==strncasecmp( sp.c_str(), "multilinestring(", 16) ) {
 			JagParser::addPolygonData( pgon, p+15, false, false );
-			JagCGAL::getBuffer2DStr( pgon, srid, objHdr, carg, value );
         } else if ( 0==strncasecmp( sp.c_str(), "multipolygon(", 13) ) {
-			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, p+12, true, false, false );
-			JagCGAL::getBuffer2DStr( pgvec, srid, objHdr, carg, value );
 		} else  {
 		}
 	}
 
-	return true;
+    if ( colType == JAG_C_COL_TYPE_POINT ) {
+		px = jagatof( sp[1] );
+		py = jagatof( sp[2] );
+		line.add(px, py);
+		rc = JagCGAL::getBufferMultiPoint2DStr( line, srid, carg, value );
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+		rc = JagCGAL::getBufferLineString2DStr( line, srid, carg, value );
+    } else if (  colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		rc = JagCGAL::getBufferMultiPoint2DStr( line, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		rc = JagCGAL::getBufferMultiLineString2DStr( pgon, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		rc = JagCGAL::getBufferMultiPolygon2DStr( pgvec, srid, carg, value );
+	} else  {
+		rc = false;
+	}
+
+	return rc;
 }
 
 bool BinaryOpNode::doAllEndPoint( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )

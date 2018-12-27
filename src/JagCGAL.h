@@ -17,6 +17,7 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
+//#include <boost/geometry/geometries/adapted/boost_polygon.hpp>
 
 #include <JagGeom.h>
 
@@ -34,9 +35,11 @@ typedef CartKernel::Point_2 CartKernelPoint2;
 typedef CartKernel::Point_3 CartKernelPoint3;
 //typedef CartKernel::Segment_2 CartKernelSegment2;
 
-typedef boost::geometry::model::d2::point_xy<double> CGALPoint2D;
-typedef boost::geometry::model::polygon<CGALPoint2D> CGALPolygon2D;
-typedef boost::geometry::ring_type<CGALPolygon2D>::type CGALRingType;
+typedef boost::geometry::model::d2::point_xy<double> BoostPoint2D;
+typedef boost::geometry::model::linestring<BoostPoint2D> BoostLineString2D;
+typedef boost::geometry::model::polygon<BoostPoint2D> BoostPolygon2D;
+typedef boost::geometry::ring_type<BoostPolygon2D>::type BoostRingType;
+
 
 typedef boost::geometry::strategy::buffer::distance_symmetric<double> JagDistanceSymmetric;
 typedef boost::geometry::strategy::buffer::distance_asymmetric<double> JagDistanceASymmetric;
@@ -70,14 +73,16 @@ class JagCGAL
     static void getConvexHull3DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
     static void getConvexHull3D( const JagLineString &line, JagLineString &hull );
 
-    static bool getBuffer2DStr( const JagLineString &line, int srid, const AbaxDataString &hdr, const AbaxDataString &arg, AbaxDataString &value );
-    static bool getBuffer2D( const JagLineString &line, const AbaxDataString &arg, JagVector<JagPolygon> &mpgon );
+    static bool getBufferLineString2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferMultiPoint2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferPolygon2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferMultiLineString2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferMultiPolygon2DStr( const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &arg, AbaxDataString &value );
 
-    static bool getBuffer2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &hdr, const AbaxDataString &arg, AbaxDataString &value );
-    static bool getBuffer2D( const JagPolygon &pgon, const AbaxDataString &arg, JagVector<JagPolygon> &mpgon );
+	template <class TGeo>
+    static bool getBuffer2D( const TGeo &obj, const AbaxDataString &arg, JagVector<JagPolygon> &pgvec );
 
-    static bool getBuffer2DStr( const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &hdr, const AbaxDataString &arg, AbaxDataString &value );
-    static bool getBuffer2D( const JagVector<JagPolygon> &pgvec, const AbaxDataString &arg, JagVector<JagPolygon> &mpgon );
+	static bool get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, AbaxDataString &value );
 
   protected:
   	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );

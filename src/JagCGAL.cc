@@ -136,7 +136,10 @@ point_strategy : circular or square
 	JagPointCircle point_strategy(360);  // # of points
 ***/
 
-bool JagCGAL::getBuffer2D( const JagLineString &line, const AbaxDataString &arg, JagVector<JagPolygon> &mpgon )
+//bool JagCGAL::getBuffer2D( const JagLineString &line, const AbaxDataString &arg, bool isMultiPoint, JagVector<JagPolygon> &mpgon )
+
+template <class TGeo>
+bool JagCGAL::getBuffer2D( const TGeo &ls, const AbaxDataString &arg, JagVector<JagPolygon> &mpgon )
 {
 	bool rc;
 	JagStrategy *sptr[5];
@@ -146,13 +149,17 @@ bool JagCGAL::getBuffer2D( const JagLineString &line, const AbaxDataString &arg,
 		return false;
 	}
 
-	boost::geometry::model::multi_polygon<CGALPolygon2D> result;
-	boost::geometry::model::linestring<CGALPoint2D> ls;
+	boost::geometry::model::multi_polygon<BoostPolygon2D> result;
+	//boost::geometry::model::linestring<BoostPoint2D> ls;
+	//TGeo ls;
+
 	//line.print();
+	/***  do this in caller
 	for ( int i=0; i < line.size(); ++i ) {
-		boost::geometry::append( ls, CGALPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
+		boost::geometry::append( ls, BoostPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
 		prt(("s1129 append i=%d x=%s y=%s\n", i, line.point[i].x, line.point[i].y ));
 	}
+	***/
 
 	if ( sptr[0]->t == JAG_DIST_SYMMETRIC && sptr[2]->t == JAG_JOIN_ROUND && sptr[3]->t == JAG_END_ROUND && sptr[4]->t==JAG_POINT_CIRCLE ) {
 		boost::geometry::buffer( ls, result, *( (JagDistanceSymmetric*)sptr[0]->ptr), 
@@ -223,11 +230,11 @@ bool JagCGAL::getBuffer2D( const JagLineString &line, const AbaxDataString &arg,
 	}
 	
 	prt(("s9202 done buffer() result.size=%d\n", result.size() ));
-	boost::geometry::model::multi_polygon<CGALPolygon2D>::iterator iter; 
+	boost::geometry::model::multi_polygon<BoostPolygon2D>::iterator iter; 
 	for ( iter = result.begin(); iter != result.end(); ++iter ) {
 		prt(("s8272 iter :\n" ));
 		//std::cout << *iter << std::endl;
-		const CGALRingType &ring = iter->outer();
+		const BoostRingType &ring = iter->outer();
 		JagLineString3D lstr;
 		for ( auto it = boost::begin(ring); it != boost::end(ring); ++it ) {
 			lstr.add( it->x(), it->y() );
@@ -243,25 +250,144 @@ bool JagCGAL::getBuffer2D( const JagLineString &line, const AbaxDataString &arg,
 	return true;
 }
 
-
-bool JagCGAL::getBuffer2DStr( const JagLineString &line, int srid, const AbaxDataString &hdr, const AbaxDataString &arg, AbaxDataString &value )
+bool JagCGAL::getBufferLineString2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value )
 {
 	JagVector<JagPolygon> pgvec;
-	bool rc = getBuffer2D( line, arg, pgvec );
+	// bool rc = getBuffer2D( line, arg, false, pgvec );
+	boost::geometry::model::linestring<BoostPoint2D> ls;
+	for ( int i=0; i < line.size(); ++i ) {
+		boost::geometry::append( ls, BoostPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
+		prt(("s1129 append i=%d x=%s y=%s\n", i, line.point[i].x, line.point[i].y ));
+	}
+
+	bool rc = getBuffer2D<boost::geometry::model::linestring<BoostPoint2D> >( ls, arg, pgvec );
 	if ( ! rc ) {
 		prt(("s2428 getBuffer2D rc=%d error\n", rc ));
 		return false;
 	}
-	if ( pgvec.size() < 1 ) {
-		prt(("s2028 mpgon.size < 1 error\n" ));
+
+	rc = get2DStrFromMultiPolygon( pgvec, srid, value );
+	return rc;
+
+}
+
+bool JagCGAL::getBufferMultiPoint2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value )
+{
+	boost::geometry::model::multi_point<BoostPoint2D> mpoint;
+	for ( int i=0; i < line.size(); ++i ) {
+		boost::geometry::append( mpoint, BoostPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
+		prt(("s1129 append i=%d x=%s y=%s\n", i, line.point[i].x, line.point[i].y ));
+	}
+	JagVector<JagPolygon> pgvec;
+	bool rc = getBuffer2D<boost::geometry::model::multi_point<BoostPoint2D> >( mpoint, arg, pgvec );
+	if ( ! rc ) {
+		prt(("s2428 getBuffer2D rc=%d error\n", rc ));
 		return false;
 	}
 
+	rc = get2DStrFromMultiPolygon( pgvec, srid, value );
+	return rc;
+}
+
+bool JagCGAL::getBufferPolygon2DStr(  const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value )
+{
+	boost::geometry::model::polygon<BoostPoint2D> bgon;
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &linestr = pgon.linestr[i];
+		std::vector< BoostPoint2D > pointList; 
+		BoostRingType  ring;
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::assign_points( ring, pointList );
+		boost::geometry::append( bgon, ring );
+	}
+
+	JagVector<JagPolygon> pgvec;
+	bool rc = getBuffer2D<boost::geometry::model::polygon<BoostPoint2D> >( bgon, arg, pgvec );
+	if ( ! rc ) {
+		prt(("s2428 getBuffer2D rc=%d error\n", rc ));
+		return false;
+	}
+
+	rc = get2DStrFromMultiPolygon( pgvec, srid, value );
+	return rc;
+}
+
+bool JagCGAL::getBufferMultiLineString2DStr(  const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value )
+{
+	boost::geometry::model::multi_linestring<BoostLineString2D> mlstr;
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &linestr = pgon.linestr[i];
+		//BoostRingType ring;
+		std::vector< BoostPoint2D > pointList; 
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::append( mlstr, pointList );
+	}
+
+	JagVector<JagPolygon> pgvec;
+	bool rc = getBuffer2D<boost::geometry::model::multi_linestring<BoostLineString2D> >( mlstr, arg, pgvec );
+	if ( ! rc ) {
+		prt(("s2428 getBuffer2D rc=%d error\n", rc ));
+		return false;
+	}
+
+	rc = get2DStrFromMultiPolygon( pgvec, srid, value );
+	return rc;
+	//return true;
+}
+
+bool JagCGAL::getBufferMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &arg, AbaxDataString &value )
+{
+	boost::geometry::model::multi_polygon<BoostPolygon2D> mbgon;
+	for ( int k=0; k < pgvec.size(); ++k ) {
+		boost::geometry::model::polygon<BoostPoint2D> bgon;
+		const JagPolygon &pgon = pgvec[k];
+		for ( int i=0; i < pgon.size(); ++i ) {
+    		const JagLineString3D &linestr = pgon.linestr[i];
+    		BoostRingType ring;
+    		std::vector< BoostPoint2D > pointList; 
+    		for (  int j=0; j< linestr.size(); ++j ) {
+    			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+    			pointList.push_back(p2);
+    		}
+    		boost::geometry::assign_points( ring, pointList );
+			boost::geometry::append( bgon, ring );
+		}
+    	mbgon.push_back( bgon );
+	}
+
+	JagVector<JagPolygon> pgvec2;
+	bool rc = getBuffer2D<boost::geometry::model::multi_polygon<BoostPolygon2D> >( mbgon, arg, pgvec2 );
+	if ( ! rc ) {
+		prt(("s2428 getBuffer2D rc=%d error\n", rc ));
+		return false;
+	}
+
+	rc = get2DStrFromMultiPolygon( pgvec2, srid, value );
+	return rc;
+}
+
+
+
+
+
+// common method
+bool JagCGAL::get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, AbaxDataString &value )
+{
+	if ( pgvec.size() < 1 ) {
+		return false;
+	}
 
 	double xmin, ymin, xmax, ymax;
 	AbaxDataString s1, s2, s3, s4;
-
-	rc = JagGeo::getBBox2D( pgvec, xmin, ymin, xmax, ymax );
+	bool rc = JagGeo::getBBox2D( pgvec, xmin, ymin, xmax, ymax );
 	if ( ! rc ) return false;
 	AbaxDataString newbbox;
 	s1 = doubleToStr( xmin ).trimEndZeros();
@@ -269,38 +395,34 @@ bool JagCGAL::getBuffer2DStr( const JagLineString &line, int srid, const AbaxDat
 	s3 = doubleToStr( xmax ).trimEndZeros();
 	s4 = doubleToStr( ymax ).trimEndZeros();
 	newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4;
-	// value = hdr + " " + newbbox;
-	AbaxDataString nhdr = AbaxDataString(JAG_OJAG) + "=" + intToStr(srid) + "=dummy.dummy.dummy=PL=d";
+	AbaxDataString nhdr = AbaxDataString(JAG_OJAG) + "=" + intToStr(srid) + "=dummy.dummy.dummy=MG=d";
 	value = nhdr + " " + newbbox;
-
-	prt(("s7733 getBuffer2DStr mpgon.size=%d \n", pgvec.size() ));
 	AbaxDataString sx, sy;
-	//pgvec.print();
+
+	/***
 	const JagPolygon &pgon = pgvec[0];
 	const JagLineString3D &linestr = pgon.linestr[0];
 	for ( int i=0; i < linestr.size(); ++i ) {
 		value += AbaxDataString(" ") + doubleToStr(linestr.point[i].x) + ":" 
 			     +  doubleToStr(linestr.point[i].y);
 	}
+	***/
+	for ( int i = 0; i < pgvec.size(); ++i ) {
+		const JagPolygon &pgon = pgvec[i];
+		if ( i > 0 ) { value += "!"; }
+		for ( int j=0; j < pgon.size(); ++j ) {
+			const JagLineString3D &linestr = pgon.linestr[j];
+			if ( j > 0 ) { value += "|"; }
+			for ( int k=0; k < linestr.size(); ++k ) {
+				value += AbaxDataString(" ") + doubleToStr(linestr.point[k].x) + ":" 
+			     		 +  doubleToStr(linestr.point[k].y);
+			}
+		}
+	}
 
+	return true;
 }
 
-bool JagCGAL::getBuffer2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &hdr, const AbaxDataString &arg, AbaxDataString &value )
-{
-}
-
-bool JagCGAL::getBuffer2D( const JagPolygon &pgon,  const AbaxDataString &arg, JagVector<JagPolygon> &mpgon )
-{
-}
-
-
-bool JagCGAL::getBuffer2DStr( const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &hdr, const AbaxDataString &arg, AbaxDataString &value )
-{
-}
-
-bool JagCGAL::getBuffer2D( const JagVector<JagPolygon> &pgvec,  const AbaxDataString &arg, JagVector<JagPolygon> &mpgon )
-{
-}
 
 // arg: "distance=symmetric:20, side=side, join=round:5, end=round:90, point=circle:30
 // arg: "distance=asymmetric:20:30, side=side, join=miter:5, end=flat, point=square
