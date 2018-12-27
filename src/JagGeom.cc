@@ -20896,3 +20896,58 @@ bool JagGeo::getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double
 }
 
 
+// convert vector 2D shapes to polygon
+JagPolygon::JagPolygon( const JagSquare2D &sq )
+{
+	JagLineString3D ls;
+	for ( int i=0; i <4; ++i ) {
+		ls.add( sq.point[i].x, sq.point[i].y );
+	}
+	ls.add( sq.point[0].x, sq.point[0].y );
+	linestr.append( ls );
+}
+
+JagPolygon::JagPolygon( const JagRectangle2D &rect )
+{
+	JagLineString3D ls;
+	for ( int i=0; i <4; ++i ) {
+		ls.add( rect.point[i].x, rect.point[i].y );
+	}
+	ls.add( rect.point[0].x, rect.point[0].y );
+	linestr.append( ls );
+}
+
+JagPolygon::JagPolygon( const JagCircle2D &cir, int samples )
+{
+	JagLineString3D ls;
+	JagVector<JagPoint2D> vec;
+	JagGeo::samplesOn2DCircle( cir.x0, cir.y0, cir.r, samples, vec );
+	for ( int i=0; i < vec.size(); ++i ) {
+		ls.add( vec[i].x, vec[i].y );
+	}
+	ls.add( vec[0].x, vec[0].y );
+	linestr.append( ls );
+}
+
+JagPolygon::JagPolygon( const JagEllipse2D &e, int samples )
+{
+	JagLineString3D ls;
+	JagVector<JagPoint2D> vec;
+	JagGeo::samplesOn2DEllipse( e.x0, e.y0, e.a, e.b, e.nx, samples, vec );
+	for ( int i=0; i < vec.size(); ++i ) {
+		ls.add( vec[i].x, vec[i].y );
+	}
+	ls.add( vec[0].x, vec[0].y );
+	linestr.append( ls );
+}
+
+JagPolygon::JagPolygon( const JagTriangle2D &t )
+{
+	JagLineString3D ls;
+	ls.add( t.x1, t.y1 ); 
+	ls.add( t.x2, t.y2 ); 
+	ls.add( t.x3, t.y3 ); 
+	ls.add( t.x1, t.y1 ); 
+	linestr.append( ls );
+}
+

@@ -5530,6 +5530,49 @@ bool BinaryOpNode::doAllBuffer( const AbaxDataString& mk, const AbaxDataString& 
 		rc = JagCGAL::getBufferMultiLineString2DStr( pgon, srid, carg, value );
     } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		rc = JagCGAL::getBufferMultiPolygon2DStr( pgvec, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+		px = jagatof( sp[1] );
+		py = jagatof( sp[2] );
+		double a = jagatof( sp[3] );
+		double nx = jagatof( sp[4] );
+		JagSquare2D sq(px,py, a, nx );
+		JagPolygon pgon( sq );
+		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+		px = jagatof( sp[1] );
+		py = jagatof( sp[2] );
+		double a = jagatof( sp[3] );
+		JagCircle2D cir(px,py, a );
+		JagPolygon pgon( cir );
+		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
+		px = jagatof( sp[1] );
+		py = jagatof( sp[2] );
+		double a = jagatof( sp[3] );
+		double b = jagatof( sp[4] );
+		double nx = jagatof( sp[5] );
+		JagRectangle2D rect(px,py, a, b, nx );
+		JagPolygon pgon( rect );
+		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+		px = jagatof( sp[1] );
+		py = jagatof( sp[2] );
+		double a = jagatof( sp[3] );
+		double b = jagatof( sp[4] );
+		double nx = jagatof( sp[5] );
+		JagEllipse2D e(px,py, a, b, nx );
+		JagPolygon pgon( e );
+		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
+    } else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		double x1 = jagatof( sp[1] );
+		double y1 = jagatof( sp[2] );
+		double x2 = jagatof( sp[3] );
+		double y2 = jagatof( sp[4] );
+		double x3 = jagatof( sp[5] );
+		double y3 = jagatof( sp[6] );
+		JagTriangle2D t(x1,y1, x2,y2, x3,y3 );
+		JagPolygon pgon( t );
+		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
 	} else  {
 		rc = false;
 	}
