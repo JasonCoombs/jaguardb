@@ -5512,6 +5512,14 @@ bool BinaryOpNode::doAllBuffer( const AbaxDataString& mk, const AbaxDataString& 
 		py = jagatof( sp[2] );
 		line.add(px, py);
 		rc = JagCGAL::getBufferMultiPoint2DStr( line, srid, carg, value );
+	} else if ( colType == JAG_C_COL_TYPE_LINE ) {
+		px = jagatof( sp[1] );
+		py = jagatof( sp[2] );
+		line.add(px, py);
+		px = jagatof( sp[3] );
+		py = jagatof( sp[4] );
+		line.add(px, py);
+		rc = JagCGAL::getBufferLineString2DStr( line, srid, carg, value );
 	} else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
 		rc = JagCGAL::getBufferLineString2DStr( line, srid, carg, value );
     } else if (  colType == JAG_C_COL_TYPE_MULTIPOINT ) {
