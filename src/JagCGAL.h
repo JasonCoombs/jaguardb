@@ -14,6 +14,10 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h>
 #include <CGAL/Memory_sizer.h>
 #include <CGAL/convex_hull_3.h>
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/geometries.hpp>
+//#include <boost/geometry/geometries/adapted/boost_polygon.hpp>
 
 #include <JagGeom.h>
 
@@ -31,6 +35,34 @@ typedef CartKernel::Point_2 CartKernelPoint2;
 typedef CartKernel::Point_3 CartKernelPoint3;
 //typedef CartKernel::Segment_2 CartKernelSegment2;
 
+typedef boost::geometry::model::d2::point_xy<double> BoostPoint2D;
+typedef boost::geometry::model::linestring<BoostPoint2D> BoostLineString2D;
+typedef boost::geometry::model::polygon<BoostPoint2D> BoostPolygon2D;
+typedef boost::geometry::ring_type<BoostPolygon2D>::type BoostRingType;
+
+
+typedef boost::geometry::strategy::buffer::distance_symmetric<double> JagDistanceSymmetric;
+typedef boost::geometry::strategy::buffer::distance_asymmetric<double> JagDistanceASymmetric;
+typedef boost::geometry::strategy::buffer::side_straight JagSideStraight;
+typedef boost::geometry::strategy::buffer::join_round JagJoinRound;
+typedef boost::geometry::strategy::buffer::join_miter JagJoinMiter;
+typedef boost::geometry::strategy::buffer::end_round JagEndRound;
+typedef boost::geometry::strategy::buffer::end_flat JagEndFlat;
+typedef  boost::geometry::strategy::buffer::point_circle JagPointCircle;
+typedef boost::geometry::strategy::buffer::point_square JagPointSquare;
+
+class JagStrategy
+{
+  public:
+  	JagStrategy( const AbaxDataString &nm, double a1, double a2 );
+  	~JagStrategy();
+	void  *ptr;
+  	AbaxDataString name;
+	short  t;
+  protected:
+	double f1, f2;
+};
+
 
 class JagCGAL
 {
@@ -41,7 +73,21 @@ class JagCGAL
     static void getConvexHull3DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
     static void getConvexHull3D( const JagLineString &line, JagLineString &hull );
 
+    static bool getBufferLineString2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferMultiPoint2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferPolygon2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferMultiLineString2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferMultiPolygon2DStr( const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &arg, AbaxDataString &value );
+
+	template <class TGeo>
+    static bool getBuffer2D( const TGeo &obj, const AbaxDataString &arg, JagVector<JagPolygon> &pgvec );
+
+	static bool get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, AbaxDataString &value );
+
   protected:
+  	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );
+  	static void destroyStrategies( JagStrategy *sptr[] );
+
 
 };
 

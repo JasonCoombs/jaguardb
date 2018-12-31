@@ -268,6 +268,8 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllEndPoint( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllConvexHull( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
 						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
+	bool doAllBuffer( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
+						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg, AbaxDataString &val );
 	bool doAllCentroid( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
 						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllIsClosed( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );

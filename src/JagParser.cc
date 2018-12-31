@@ -4755,13 +4755,10 @@ int JagParser::checkLineStringData( const char *p )
 	//prt(("s2438 linestring( p=[%s]\n", p ));
 	JagStrSplit sp( p, ',', true );
 	int len = sp.length();
+	char c;
 	for ( int i = 0; i < len; ++i ) {
-		JagStrSplit ss( sp[i], ' ', true );
-		/**
-		if ( ss.length() < 2 ) { 
-			return -4401; 
-		}
-		***/
+		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
+		JagStrSplit ss( sp[i], c, true );
 		if ( ss.length() < 2 ) {  continue; }
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4416; }
 		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4417; }
@@ -4772,27 +4769,32 @@ int JagParser::checkLineStringData( const char *p )
 // get linestring data min max 
 // p: "( x1 y1, x2 y2, ...)
 // return 0: OK,  < 0 error
-int JagParser::getLineStringMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax )
+int JagParser::getLineStringMinMax( char sep, const char *p, double &xmin, double &ymin, double &xmax, double &ymax )
 {
+	//prt(("s2921 getLineStringMinMax p=[%s]\n", p ));
 	if ( *p == 0 ) return -4410;
 
 	double xv, yv;
-	//prt(("s2838 linestring( p=[%s]\n", p ));
-
-	JagStrSplit sp( p, ' ', true );
+	char c;
+	JagStrSplit sp( p, sep, true );
 	int len = sp.length();
 	for ( int i = 0; i < len; ++i ) {
-		JagStrSplit ss( sp[i], ':', true );
-		if ( ss.length() < 2 ) continue;
-		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4416; }
-		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4417; }
-		xv = jagatof( ss[0].c_str() );
-		yv = jagatof( ss[1].c_str() );
+		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
+    	JagStrSplit ss( sp[i], c, true );
+		//prt(("ss.length()=%d sp[%d]=[%s]\n", ss.length(), i, sp[i].c_str() ));
+    	if ( ss.length() < 2 ) continue;
+    	if ( ss[0].length() >= JAG_POINT_LEN ) { return -4616; }
+    	if ( ss[1].length() >= JAG_POINT_LEN ) { return -4617; }
+    	xv = jagatof( ss[0].c_str() );
+    	yv = jagatof( ss[1].c_str() );
+		//prt(("s2229 xv=%f yv=%f\n", xv, yv ));
+
 		if ( xv > xmax ) xmax = xv;
 		if ( yv > ymax ) ymax = yv;
 		if ( xv < xmin ) xmin = xv;
 		if ( yv < ymin ) ymin = yv;
 	}
+	//prt(("s1038 getLineStringMinMax() xmin=%f xmax=%f ymin=%f ymax=%f\n", xmin, xmax, ymin, ymax ));
 	return 0;
 }
 
@@ -4808,8 +4810,10 @@ int JagParser::addLineStringData( JagLineString &linestr, const char *p )
 	JagStrSplit sp( p, ',', true );
 	int len = sp.length();
 	JagLineString3D linestr3d;
+	char c;
 	for ( int i = 0; i < len; ++i ) {
-		JagStrSplit ss( sp[i], ' ', true );
+		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
+		JagStrSplit ss( sp[i], c, true );
 		if ( ss.length() < 2 ) {  continue; }
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4416; }
 		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4417; }
@@ -4829,8 +4833,10 @@ int JagParser::checkLineString3DData( const char *p )
 	if ( *p == 0 ) return -4322;
 	JagStrSplit sp( p, ',', true );
 	int len = sp.length();
+	char c;
 	for ( int i = 0; i < len; ++i ) {
-		JagStrSplit ss( sp[i], ' ', true );
+		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
+		JagStrSplit ss( sp[i], c, true );
 		//if ( ss.length() < 3 ) { return -3404; }
 		if ( ss.length() < 3 ) continue;
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -3426; }
@@ -4843,17 +4849,20 @@ int JagParser::checkLineString3DData( const char *p )
 // get linestring3d min max
 // p: "( x1 y1 z1, x2 y2 z2, ...)
 // return 0: OK,  < 0 error
-int JagParser::getLineString3DMinMax( const char *p, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax )
+int JagParser::getLineString3DMinMax( char sep, const char *p, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax )
 {
 	//prt(("s2838 linestring( p=[%s]\n", p ));
 	if ( *p == 0 ) return -4422;
 	double xv, yv, zv;
-	JagStrSplit sp( p, ',', true );
+	//JagStrSplit sp( p, ',', true );
+	JagStrSplit sp( p, sep, true );
 	int len = sp.length();
+	char c;
 	for ( int i = 0; i < len; ++i ) {
 		//prt(("s7712 sp[%d]=[%s]\n", i, sp[i].c_str() ));
 		if ( strchr( sp[i].c_str(), '(' ) )  { sp[i].remove('('); }
-		JagStrSplit ss( sp[i], ' ', true );
+		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
+		JagStrSplit ss( sp[i], c, true );
 		// if ( ss.length() < 3 ) { return -4404; }
 		if ( ss.length() < 3 ) continue;
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4426; }
@@ -4883,10 +4892,12 @@ int JagParser::addLineString3DData( JagLineString &linestr, const char *p )
 	JagStrSplit sp( p, ',', true );
 	int len = sp.length();
 	JagLineString3D linestr3d;
+	char c;
 	for ( int i = 0; i < len; ++i ) {
 		//prt(("s7712 sp[%d]=[%s]\n", i, sp[i].c_str() ));
 		if ( strchr( sp[i].c_str(), '(' ) )  { sp[i].remove('('); }
-		JagStrSplit ss( sp[i], ' ', true );
+		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
+		JagStrSplit ss( sp[i], c, true );
 		// if ( ss.length() < 3 ) { return -4404; }
 		if ( ss.length() < 3 ) continue;
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4436; }

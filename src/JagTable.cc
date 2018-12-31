@@ -227,10 +227,10 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 		rc = 0;
 		if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_LINESTRING 
 		     || parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOINT  ) {
-			rc = JagParser::getLineStringMinMax( parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
+			rc = JagParser::getLineStringMinMax( ',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
 		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_LINESTRING3D 
 					|| parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-			rc = JagParser::getLineString3DMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+			rc = JagParser::getLineString3DMinMax(',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
 		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_POLYGON
 		            || parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			rc = JagParser::getPolygonMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
