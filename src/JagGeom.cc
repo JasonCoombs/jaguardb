@@ -1,4 +1,5 @@
 /*
+/*
  * Copyright (C) 2018 DataJaguar, Inc.
  *
  * This file is part of JaguarDB.
@@ -18431,6 +18432,7 @@ bool JagGeo::lineStringDistanceRectangle(int srid, const AbaxDataString &mk1, co
 	prt(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"));
 	 sp1.print();
 	// sp2.print();
+    //test1111
 
 	int start = 0;
     if ( mk1 == JAG_OJAG ) {
@@ -18679,10 +18681,10 @@ bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, cons
 bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 										    const AbaxDataString &mk2, const JagStrSplit &sp2,  const AbaxDataString& arg, double &dist )
 {
-	// todo009 -- finish
-	// sp1.print();
-	// sp2.print();
-	//dist = 0.0;
+    // todo009 -- finish
+    // sp1.print();
+    // sp2.print();
+    //dist = 0.0;
     int start = 0;
     if ( mk1 == JAG_OJAG ) {
         start = 1;
@@ -19249,9 +19251,9 @@ bool JagGeo::polygonDistanceCircle(int srid, const AbaxDataString &mk1, const Ja
 bool JagGeo::polygonDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
 									const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
 {
-	// todo019 -- finish
-	// sp1.print();
-	// sp2.print();
+    // todo019 -- finish
+    // sp1.print();
+    // sp2.print();
 
     JagPolygon pgon1;
     JagPolygon pgon2;
