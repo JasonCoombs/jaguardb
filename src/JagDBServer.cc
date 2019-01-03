@@ -2707,7 +2707,9 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    centroid(col)          -- get the centroid coordinates of a vector or raster shape\n";
 		str += "    volume(col)            -- get the volume of a 3D shape\n";
 		str += "    closestpoint(point(x y), col)   -- get the closest point on col from point(x y)\n";
-		str += "    angle(line(x y), col)  -- get the closest point on geom from point(x y)\n";
+		str += "    angle(line(x y), col)  -- get the angle in degrees between two lines\n";
+		str += "    buffer(col, 'STRATEGY')  -- get polygon buffer of a shape. The STRATEGY is:\n";
+		str += "                 distance=symmetric/asymmetric:RADIUS,join=round/miter:N,end=round/flat,point=circle/square:N\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
@@ -2716,6 +2718,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "select uid, uid+addr, length(uid+addr)  from user limit 3;\n";
 		str += "select price/2.0 + 1.25 as newprice, lead*1.25 - 0.3 as newlead from plan limit 3;\n";
 		str += "select * from tm where dt < time() - tomicrosecond('1D');\n";
+		str += "select angle(c1,c2) from g3 where id < 100;\n";
+		str += "select buffer(col2, 'distance=symmetric:20,join=round:20,end=round') as buf from g2;\n";
 	} else if ( 0 == strncasecmp( cmd, "update", 6 ) ) {
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1='...' and KEY2='...', ... ;\n";
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1>='...' and KEY2>='...', ...;\n";

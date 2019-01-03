@@ -943,13 +943,13 @@ void BinaryOpNode::print( int mode ) {
 	if ( 0 == mode ) {
 		if ( _left && _right) {
 			prt(("L(")); _left->print( mode ); prt((")"));
-			prt((" [op=%s] ", getBinaryOpType( _binaryOp ).c_str()));
+			prt((" [op=%s] ", binaryOpStr( _binaryOp ).c_str()));
 			prt(("R(")); _right->print( mode );  prt((")"));
 		} else if ( _left && !_right ) {
-			prt((" [op=%s] ", getBinaryOpType( _binaryOp ).c_str()));
+			prt((" [op=%s] ", binaryOpStr( _binaryOp ).c_str()));
 			prt(("L(")); _left->print( mode ); prt((")"));
 		} else if ( !_left && _right ) {
-			prt((" [op=%s] ", getBinaryOpType( _binaryOp ).c_str()));
+			prt((" [op=%s] ", binaryOpStr( _binaryOp ).c_str()));
 			prt(("R(")); _right->print( mode ); prt((")"));
 		}
 	} else {
@@ -969,7 +969,7 @@ void BinaryOpNode::print( int mode ) {
 	}
 }
 
-AbaxDataString BinaryOpNode::getBinaryOpType( short binaryOp )
+AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 {
 	AbaxDataString str;
 	if ( binaryOp == JAG_FUNC_EQUAL ) str = "=";
@@ -1799,7 +1799,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 
 	/***
 	prt(("s3302  enter BinaryOpNode::doWhereCalc _binaryOpStr=[%s] _binaryOp=%d ltabnum=%d rtabnum=%d ...\n", 
-			getBinaryOpType( _binaryOp ).c_str(), _binaryOp, ltabnum, rtabnum ));
+			binaryOpStr( _binaryOp ).c_str(), _binaryOp, ltabnum, rtabnum ));
 	prt(("s3303 BinaryOpNode::doWhereCalc  lstr=[%s] lstr.size=%d\n", lstr.c_str(), lstr.length() ));
 	prt(("s3303 BinaryOpNode::doWhereCalc  rstr=[%s] rstr.size=%d\n", rstr.c_str(),  rstr.length() ));
 	***/
@@ -1922,10 +1922,10 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 				// int compare not equal
 				// string compare not equal
 			} else {
-				//prt(("s8839 _binaryOp=[%s]\n", getBinaryOpType( _binaryOp ).c_str() ));
+				//prt(("s8839 _binaryOp=[%s]\n", binaryOpStr( _binaryOp ).c_str() ));
 			}
 			str = "1";
-			//prt(("s0393 tmp9999 str=1 dummy return 1 _binaryOp=[%s]\n", getBinaryOpType( _binaryOp ).c_str() ));
+			//prt(("s0393 tmp9999 str=1 dummy return 1 _binaryOp=[%s]\n", binaryOpStr( _binaryOp ).c_str() ));
 			return 1;
 		}
 	}
@@ -2121,7 +2121,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 	}
 	// LENGTH
 	else if ( _binaryOp == JAG_FUNC_LENGTH ) {
-		// prt(("s2029 JAG_FUNC_LENGTH cmode=%d lstr=[%s]\n", cmode, lstr.c_str() ));
+		prt(("s2029 JAG_FUNC_LENGTH cmode=%d lstr=[%s]\n", cmode, lstr.c_str() ));
 		if ( 2 == cmode ) {
 			str = longDoubleToStr(jagstrtold(lstr.c_str(), NULL));
 		} else if ( 1 == cmode ) {
@@ -2363,6 +2363,9 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	int cmode;
 	if ( ltmode > rtmode ) cmode = ltmode;
 	else cmode = rtmode;
+
+	prt(("s0398 enter BinaryOpNode::_doCalculation _binaryOp=%d (%s) cmode=%d\n", _binaryOp, binaryOpStr(_binaryOp).c_str(), cmode ));
+
 
 	AbaxDataString errmsg;
 	// first, check if need to change datetime format
@@ -2748,7 +2751,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	}
 	// LENGTH
 	else if ( _binaryOp == JAG_FUNC_LENGTH ) {
-		// prt(("s2429 JAG_FUNC_LENGTH cmode=%d lstr=[%s] lstr.length=%d\n", cmode, lstr.c_str(), lstr.length() ));
+		prt(("s2429 JAG_FUNC_LENGTH cmode=%d lstr=[%s] lstr.length=%d\n", cmode, lstr.c_str(), lstr.length() ));
 		if ( 2 == cmode ) {
 			lstr = longDoubleToStr(jagstrtold(lstr.c_str(), NULL));
 		} else if ( 1 == cmode ) {
@@ -3197,7 +3200,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 	} else if (  0 == strncasecmp(str, "pointn(", 7 ) ) {
 		// _POINTN
 		type = 0;
-	} else if (  0 == strncasecmp(str, "bbox(", 5 ) ) {
+	} else if (  0 == strncasecmp(str, "bbox(", 5 ) || 0 == strncasecmp(str, "envelope(", 9 ) ) {
 		// _BBOX
 		type = 0;
 	} else if (  0 == strncasecmp(str, "startpoint(", 11 ) ) {
@@ -3757,12 +3760,12 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 			operatorStack.pop(); // remove '('
 			break;
 		} else if ( checkFuncType( fop ) ) {
-			prt(("s4093 in processRightParenthesis see fop=%d(%s) doBinary, operatorStack.pop(); break\n", fop, BinaryOpNode::getBinaryOpType(fop).c_str() ));
+			prt(("s4093 procRightParent see fop=%d(%s) doBinary, operatorStack.pop(); break\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 			break;
 		} else {
-			prt(("s4094 in processRightParenthesis see fop=%d doBinary, operatorStack.pop(); loop\n", fop));
+			prt(("s4094 in procRightParent see fop=%d doBinary, operatorStack.pop(); loop\n", fop));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 		}
@@ -3774,7 +3777,7 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 // takes their place on the top of the stack.
 void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 {
-	AbaxDataString opstr = BinaryOpNode::getBinaryOpType(op).c_str();
+	AbaxDataString opstr = BinaryOpNode::binaryOpStr(op);
 	prt(("s3376 doBinary op=[%s]\n", opstr.c_str() ));
 
 	ExpressionElementNode *right = NULL;
@@ -3955,7 +3958,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 	// debug
 	prt(("s4084 new BinaryOpNode with left, right, and push to operandStack op=[%s]\n", opstr.c_str() ));
-    opstr = BinaryOpNode::getBinaryOpType(operatorStack.top()).c_str();
+    opstr = BinaryOpNode::binaryOpStr(operatorStack.top());
 	prt(("s4094 operatorStack.top()=[%d] [%s]\n", operatorStack.top(),  opstr.c_str() ));
 
 	BinaryOpNode *p = new BinaryOpNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
@@ -4338,6 +4341,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_CENTROID; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "bbox", 4 ) ) {
 		fop = JAG_FUNC_BBOX; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "envelope", 8 ) ) {
+		fop = JAG_FUNC_BBOX; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "isclosed", 8 ) ) {
 		fop = JAG_FUNC_ISCLOSED; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numpoints", 9 ) ) {
@@ -4363,7 +4368,7 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		rc = 0;
 	}
 
-	// prt(("s3403 fop=%d fopstr=[%s]\n", fop,  BinaryOpNode::getBinaryOpType(fop).c_str() ));
+	// prt(("s3403 fop=%d fopstr=[%s]\n", fop,  BinaryOpNode::binaryOpStr(fop).c_str() ));
 	
 	// for funcs, need to check if those are colname or func name 
 	// ( e.g. find '(' after name and possible spaces )
