@@ -190,7 +190,7 @@ class BinaryOpNode: public ExpressionElementNode
 							    const char *buffers[], AbaxFixString &str, int &typeMode, AbaxDataString &type, 
 								int &length, bool &first, bool useZero, bool setGlobal );
 	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length );
-	static AbaxDataString getBinaryOpType( short binaryOp );
+	static AbaxDataString binaryOpStr( short binaryOp );
 	static bool isAggregateOp( short op );
 	static bool isMathOp( short op );
 	static bool isCompareOp( short op );
