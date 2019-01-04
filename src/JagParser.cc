@@ -2323,6 +2323,7 @@ int JagParser::setInsertVector()
 					//prt(("c2875 p=[%s] origcmd=[%s]\n", p, _ptrParam->origCmd.c_str() )); 
 					return -2875; 
 				}
+				//sp.print();
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -2780; }
 				}
@@ -2332,7 +2333,9 @@ int JagParser::setInsertVector()
 				strcpy(other.point.z, "0");
 				strcpy(other.point.a, sp[2].c_str() );
 				strcpy(other.point.nx, "0.0" );
-				if ( sp.length() >= 4 ) { strcpy(other.point.nx, sp[3].c_str() ); }
+				if ( sp.length() >= 4 ) { 
+					strcpy(other.point.nx, sp[3].c_str() ); 
+				}
 				q = _saveptr;
 			} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
 				// cube( x y z radius )   inner circle radius
@@ -2404,12 +2407,15 @@ int JagParser::setInsertVector()
 				}
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2558;
+				//prt(("s2091 p=[%s]\n", p ));
 				replaceChar(p, ',', ' ', ')' );
+				//prt(("s2092 p=[%s]\n", p ));
 				JagStrSplit sp(p, ' ', true );
 				if (  sp.length() < 4 ) { 
 					//prt(("c3275 p=[%s] origcmd=[%s]\n", p, _ptrParam->origCmd.c_str() )); 
 					return -3275; 
 				}
+				//sp.print();
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3380; }
 				}
@@ -2420,6 +2426,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.y, sp[1].c_str() );
 				strcpy(other.point.a, sp[2].c_str() );
 				strcpy(other.point.b, sp[3].c_str() );
+				strcpy(other.point.c, sp[3].c_str() );  // dup c from b
 
 				strcpy(other.point.nx, "0.0" );
 				if ( sp.length() >= 5 ) {
@@ -2448,6 +2455,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.z, sp[2].c_str() );
 				strcpy(other.point.a, sp[3].c_str() );
 				strcpy(other.point.b, sp[4].c_str() );
+				strcpy(other.point.c, sp[4].c_str() );
 
 				strcpy(other.point.nx, "0.0" );
 				strcpy(other.point.ny, "0.0" );
@@ -2510,6 +2518,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.y, sp[1].c_str() );
 				strcpy(other.point.z, sp[2].c_str() );
 				strcpy(other.point.a, sp[3].c_str() );
+				strcpy(other.point.b, sp[4].c_str() );
 				strcpy(other.point.c, sp[4].c_str() );
 
 				strcpy(other.point.nx, "0.0" );

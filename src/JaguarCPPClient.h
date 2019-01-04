@@ -336,6 +336,7 @@ class JaguarCPPClient
 	int  doRepairObject( const char *querys, int len );
 	int  doKVLen( const char *querys, int len, AbaxDataString &retmsg );
 	void getHostKeyStr( const char *kbuf, const JagTableOrIndexAttrs *objAttr, AbaxFixString &hostKeyStr );
+	AbaxDataString getSquareCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, int pos );
 	AbaxDataString getCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, 
 								int pos, bool hasX, bool hasY, bool hasZ, bool hasWidth, 
 								bool hasDepth=false, bool hasHeight=false ); 
