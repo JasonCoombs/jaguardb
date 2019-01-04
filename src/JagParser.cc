@@ -2634,7 +2634,7 @@ int JagParser::setInsertVector()
 				if ( 2 > _ptrParam->polyDim ) _ptrParam->polyDim = 2;
 			} else if ( strncasecmp( p, "multipolygon(", 13 )==0 ) {
 				// multipolygon( (( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...)), ( (..), (..) ) )
-				//prt(("s3834 polygon( p=[%s]\n", p ));
+				prt(("s3834 multipolygon( p=[%s]\n", p ));
 				while ( *p != '(' ) ++p;  // p: "(p ((...), (...), (...)), (...), ... )
 				rc = checkMultiPolygonData( p, true, false );
 				if ( rc < 0 ) return rc;
