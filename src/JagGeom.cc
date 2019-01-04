@@ -14230,7 +14230,6 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
 
 	rapidjson::StringBuffer bs;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
-	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
 	writer.StartObject();
 	writer.Key("type");
 	writer.String("Feature");
