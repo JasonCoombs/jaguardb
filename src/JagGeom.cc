@@ -16435,6 +16435,7 @@ bool JagGeo::doMultiPolygonDistance(const AbaxDataString& mk1, const JagStrSplit
 		double y2 = jagatof( sp2[3].c_str() );
 		double x3 = jagatof( sp2[4].c_str() );
 		double y3 = jagatof( sp2[5].c_str() );
+		prt(("x1:%f,\n y1:%f\n x2:%f\n y2:%f\n x3:%f\n y3:%f\n", x1, y1, x2, y2, x3, y3));
 		return multiPolygonDistanceTriangle( srid, mk1, sp1, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
 		prt(("s6040 JAG_C_COL_TYPE_SQUARE sp2 print():\n"));
@@ -16711,21 +16712,21 @@ bool JagGeo::pointDistanceEllipse( int srid, double px, double py, double x0, do
 								   const AbaxDataString& arg, double &dist )
 {
 
-	// todo001 problem
-	prt(("001!!!!!!!!!!!!!!!!!!!!"));
-	if ( arg.caseEqual("center") ) {
-		dist = JagGeo::distance( x0, y0, px, py, srid );
-		return true;
-	}
+    // todo001 problem
+    prt(("001!!!!!!!!!!!!!!!!!!!!"));
+    if ( arg.caseEqual("center") ) {
+        dist = JagGeo::distance( x0, y0, px, py, srid );
+        return true;
+    }
 
-	double locx, locy;
-	transform2DCoordGlobal2Local( x0,y0, px, py, nx, locx, locy );
-	double mx, my;
-	if ( arg.caseEqual("max") ) {
-		dist = pointDistanceToEllipse( srid, px, py, x0, y0, a, b, nx, false );
-	} else {
-		dist = pointDistanceToEllipse( srid, px, py, x0, y0, a, b, nx, true );
-	}
+    double locx, locy;
+    transform2DCoordGlobal2Local( x0,y0, px, py, nx, locx, locy );
+    double mx, my;
+    if ( arg.caseEqual("max") ) {
+        dist = pointDistanceToEllipse( srid, px, py, x0, y0, a, b, nx, false );
+    } else {
+        dist = pointDistanceToEllipse( srid, px, py, x0, y0, a, b, nx, true );
+    }
 
     return true;
 }
