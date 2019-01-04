@@ -7099,8 +7099,10 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_SQUARE ) {
+			//prt(("s3380 JAG_C_COL_TYPE_SQUARE colInOther=%d\n", colInOther ));
 			if ( colInOther ) {
-				newquery += getCoordStr( "square", parseParam, otherPos, 1, 1, 0, 1 );
+				newquery += getSquareCoordStr( "square", parseParam, otherPos );
+				//prt(("s1094 square getSquareCoordStr newquery=[%s]\n", newquery.c_str() ));
 			} else {
 				newquery += "''";
 			}
@@ -7121,21 +7123,21 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
 			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "rectangle", parseParam, otherPos, 1,1,0, 1,0,1, 1,0,0 );
+				newquery += get3DPlaneCoordStr( "rectangle", parseParam, otherPos, 1,1,0, 1,1,0, 1,0,0 );
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
 			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, otherPos, 1, 1, 1, 1,0,1, 1,1,1 );
+				newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, otherPos, 1, 1, 1, 1,1,0, 1,1,1 );
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
 			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, otherPos, 1,1,1, 1,0,1, 1,1,1 );
+				newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, otherPos, 1,1,1, 1,1,0, 1,1,1 );
 			} else {
 				newquery += "''";
 			}
@@ -7597,7 +7599,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_SQUARE ) {
-			newquery += getCoordStr( "square", parseParam, ii, 1, 1, 0, 1 );
+			newquery += getSquareCoordStr( "square", parseParam, ii );
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_SQUARE3D ) {
@@ -9943,6 +9945,20 @@ void JaguarCPPClient::getHostKeyStr( const char *kbuf, const JagTableOrIndexAttr
 	// prt(("c4029 hostKeyStr:\n" ));
 	// hostKeyStr.dump();
 	jagfree( nbuf );
+}
+
+AbaxDataString JaguarCPPClient::getSquareCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, int pos )
+{
+	if ( strlen( parseParam.otherVec[pos].point.x ) < 1 ) { return "''"; }
+
+	AbaxDataString res = shape + "(";
+	res += trimEndZeros(parseParam.otherVec[pos].point.x);
+	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.y);
+	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.a);
+	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.b);
+	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.nx);
+	res +=  ")";
+	return res;
 }
 
 AbaxDataString JaguarCPPClient::getCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, int pos, 
