@@ -69,14 +69,17 @@ class JagParser
 	static void addLineStringData( JagLineString &linestr, const JagStrSplit &sp );
 	static void addLineString3DData( JagLineString3D &linestr, const JagStrSplit &sp );
 	static int  addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose );
+	static int  addPolygonData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose );
 	static int  getPolygonMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax );
 	static int  addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose );
+	static int  addPolygon3DData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose );
 	static int  getPolygon3DMinMax( const char *p, double &xmin, double &ymin, double &zmin, 
 								    double &xmax, double &ymax, double &zmax );
 	static int  addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly );
 	static int  addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly );
 
 	static int  addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p, bool firstOnly, bool mustClose, bool is3D );
+	static int  addMultiPolygonData( AbaxDataString &pgs, const char *p, bool firstOnly, bool mustClose, bool is3D );
 	static int  addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSplit &sp, bool firstOnly, bool is3D );
 	static int  getMultiPolygonMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax );
 	static int  getMultiPolygon3DMinMax( const char *p, double &xmin, double &ymin, double &zmin, 
@@ -85,6 +88,7 @@ class JagParser
 	static AbaxDataString getFieldTypeString( int srid );
 	static void removeEndUnevenBracket( char *str );
 	static void removeEndUnevenBracketAll( char *str );
+	static void replaceChar( char *start, char oldc, char newc, char stopchar );
 
 	
   private:
@@ -115,7 +119,6 @@ class JagParser
 	// int setupCheckMap();
 	bool  isValidGrantPerm( AbaxDataString &perm );
 	bool  isValidGrantObj(  AbaxDataString &obj );
-	void replaceChar( char *start, char oldc, char newc, char stopchar );
 	void addCreateAttrAndColumn( bool isValue, CreateAttribute &cattr, int &coloffset );
 	void addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other, int &numCols );
 	void setToRealType( const AbaxDataString &rcs, CreateAttribute &cattr );

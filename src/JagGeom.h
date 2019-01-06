@@ -1614,6 +1614,7 @@ class JagGeo
 								    double a, double b, double c, double nx, double ny, double &dist, AbaxDataString &res );
 
 
+	static int convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr );
 
 
 

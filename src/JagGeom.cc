@@ -14875,9 +14875,29 @@ double JagGeo::dotProduct( const JagPoint2D &p1, const JagPoint2D &p2 )
 }
 
 
-bool JagGeo::distance( const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &arg, double &dist )
+bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr, const AbaxDataString &arg, double &dist )
 {
-	prt(("s3083 JagGeo::distance lstr=[%s] rstr=[%s] arg=[%s]\n", lstr.c_str(), rstr.c_str(), arg.c_str() ));
+	prt(("s3083 JagGeo::distance inlstr=[%s] arg=[%s]\n", inlstr.c_str(), arg.c_str() ));
+	prt(("s3083 JagGeo::distance inrstr=[%s] arg=[%s]\n", inrstr.c_str(), arg.c_str() ));
+
+	AbaxDataString lstr;
+	int rc = 0;
+	if ( !strchr( inlstr.c_str(), '=' ) ) {
+		rc = convertConstantObjToJAG( inlstr, lstr );
+		if ( rc < 0 ) return false;
+		// point(0 0 0 )  to "OJAG=srid=33=33=d x y z"
+	} else {
+		lstr = inlstr.c_str();
+	}
+
+	AbaxDataString rstr;
+	if ( !strchr( inrstr.c_str(), '=' ) ) {
+		rc = convertConstantObjToJAG( inrstr, rstr );
+		if ( rc < 0 ) return false;
+	} else {
+		rstr = inrstr.c_str();
+	}
+
 
 	JagStrSplit sp1( lstr.c_str(), ' ', true );
 	if ( sp1.length() < 1 ) return 0;
@@ -14888,16 +14908,14 @@ bool JagGeo::distance( const AbaxFixString &lstr, const AbaxFixString &rstr, con
 	if ( co1.length() < 4 ) return 0;
 	JagStrSplit co2( sp2[0], '=' );
 	if ( co2.length() < 4 ) return 0;
-	AbaxDataString mark1 = co1[0];
+	AbaxDataString mark1 = co1[0]; // CJAG or OJAG
 	AbaxDataString mark2 = co2[0];
 
 	AbaxDataString colType1 = co1[3];
 	AbaxDataString colType2 = co2[3];
 	int dim1 = JagGeo::getDimension( colType1 );
 	int dim2 = JagGeo::getDimension( colType2 );
-	if ( dim1 != dim2 ) {
-		return 0;
-	}
+	if ( dim1 != dim2 ) { return 0; }
 
 	int srid1 = jagatoi( co1[1].c_str() );
 	int srid2 = jagatoi( co2[1].c_str() );
@@ -14909,36 +14927,6 @@ bool JagGeo::distance( const AbaxFixString &lstr, const AbaxFixString &rstr, con
 	} else if ( srid2 != srid1 ) {
 		return 0;
 	}
-
-	#if 0
-		prt(("s3220 srid=%d dim1=%d\n", srid, dim1 ));
-		if ( 2 == dim1 ) {
-			// 2D distance
-    		double fx = jagatof( sp1[1].c_str());
-    		double fy = jagatof( sp1[2].c_str());
-    		double gx = jagatof( sp2[1].c_str());
-    		double gy = jagatof( sp2[2].c_str());
-    		dist  = JagGeo::distance( fx, fy, gx, gy, srid );
-			//prt(("s5003 distance 2=minargs fx=%f fy=%f gx=%f gy=%f res=%f\n", fx, fy, gx, gy, r ));
-		} else if ( 3 == dim1 ) {
-			// 3D distanc)
-    		double fx = jagatof( sp1[1].c_str());
-    		double fy = jagatof( sp1[2].c_str());
-    		double fz = jagatof( sp1[3].c_str());
-
-    		double gx = jagatof( sp2[1].c_str());
-    		double gy = jagatof( sp2[2].c_str());
-    		double gz = jagatof( sp2[3].c_str());
-    		dist = JagGeo::distance( fx, fy, fz, gx, gy, gz, srid );
-			/***
-			prt(("s5004 distance 3=minargs colType=[%s] fx=%f fy=%f fz=%f   gx=%f gy=%f gz=%f res=%f\n",
-					colType.c_str(), fx, fy, fz, gx, gy, gz, r ));
-			***/
-		} else {
-			// prt(("s8383 minargs=%d\n", minargs ));
-    		dist = 0;
-		}
-	#else
 
 	sp1.shift();
 	sp2.shift();
@@ -15003,7 +14991,6 @@ bool JagGeo::distance( const AbaxFixString &lstr, const AbaxFixString &rstr, con
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		return doMultiPolygon3DDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
 	} 
-	#endif
 
 	return true;
 }
@@ -16978,6 +16965,8 @@ bool JagGeo::point3DDistanceCone(int srid, double px, double py, double pz,
 	// transform px py pz to local normal cone
 	double lx, ly, lz; // x y z is coord of cone's center
 	transform3DCoordGlobal2Local( x,y,z, px,py,pz, nx, ny, lx, ly, lz );
+	prt(("s5018 point3DDistanceCone x=%f y=%f z=%f  px=%f py=%f pz=%f\n", x,y,z, px,py,pz ));
+	prt(("s5018 point3DDistanceCone lx=%f ly=%f lz=%f\n", lx,ly,lz ));
 	return point3DDistanceNormalCone(srid, lx, ly, lz, r, h, arg, dist ); 
 }
 
@@ -20249,6 +20238,7 @@ bool JagGeo::point3DDistanceNormalCone(int srid, double px, double py, double pz
 			dist = fabs(d - pr) * h*h/(h*h+r*r);
 		}
 	} else if ( arg.caseEqual( "max" ) ) {
+		prt(("s4401 pz=%f  h=%f r=%f srid=%d\n", pz, h, r, srid ));
 		if ( pz >= h ) {
 			double  pr2 = px*px + py*py;
 			double  pr = sqrt( pr2 );
@@ -21061,4 +21051,331 @@ JagPolygon::JagPolygon( const JagTriangle2D &t )
 	ls.add( t.x1, t.y1 ); 
 	linestr.append( ls );
 }
+
+// return 0: OK ,  <0 error
+// outstr: "CJAG=0=0=type=subtype  data1 data2 data3 ..."
+int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr )
+{
+	AbaxDataString othertype;
+	int rc = 0;
+	char *p = (char*)instr.c_str();
+	if ( strncasecmp( p, "point(", 6 ) == 0 || strncasecmp( p, "point3d(", 8 ) == 0 ) {
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -10;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -381; } }
+		if ( sp.length() == 3 ) {
+			outstr = AbaxDataString("CJAG=0=0=PT3=d ") + sp[0] + " " + sp[1] + " " + sp[2];
+		} else if ( sp.length() == 2 ) {
+			outstr = AbaxDataString("CJAG=0=0=PT=d ") + sp[0] + " " + sp[1];
+		} else {
+			outstr = "";
+			return -9;
+		}
+	} else if ( strncasecmp( p, "circle(", 7 ) == 0 ) {
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -20;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 3 ) { return -30; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -382; } }
+		outstr = AbaxDataString("CJAG=0=0=CR=d ") + sp[0] + " " + sp[1] + " " + sp[2];
+	} else if ( strncasecmp( p, "square(", 7 )==0 ) {
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -20;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 3 ) { return -30; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -383; } }
+		if ( sp.length() <= 3 ) {
+			outstr = AbaxDataString("CJAG=0=0=SQ=d ") + sp[0] + " " + sp[1] + " " + sp[2] + " 0.0";
+		} else {
+			outstr = AbaxDataString("CJAG=0=0=SQ=d ") + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+		}
+	} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
+		// cube( x y z radius )   inner circle radius
+		if ( strncasecmp( p, "cube", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_CUBE;
+		} else {
+			othertype =  JAG_C_COL_TYPE_SPHERE;
+		}
+
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -30;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 4 ) { return -32; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -384; } }
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		if ( othertype == JAG_C_COL_TYPE_CUBE ) {
+			AbaxDataString nx, ny;
+			if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
+			if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
+			outstr += nx + " " + ny;
+		}
+	} else if ( strncasecmp( p, "circle3d(", 9 )==0
+				|| strncasecmp( p, "square3d(", 9 )==0 ) {
+		// circle3d( x y z radius nx ny )   inner circle radius
+		if ( strncasecmp( p, "circ", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_CIRCLE3D;
+		} else {
+			othertype =  JAG_C_COL_TYPE_SQUARE3D;
+		} 
+
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -40;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 4 ) { return -42; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -385; } }
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		AbaxDataString nx, ny;
+		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
+		if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+	} else if (  strncasecmp( p, "rectangle(", 10 )==0 || strncasecmp( p, "ellipse(", 8 )==0 ) {
+		// rectangle( x y width height nx ny) 
+		if ( strncasecmp( p, "rect", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_RECTANGLE;
+		} else {
+			othertype =  JAG_C_COL_TYPE_ELLIPSE;
+		}
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -45;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 4 ) { return -46; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -386; } }
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		AbaxDataString nx;
+		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
+		outstr += nx;
+	} else if ( strncasecmp( p, "rectangle3d(", 12 )==0 || strncasecmp( p, "ellipse3d(", 10 )==0 ) {
+		// rectangle( x y z width height nx ny ) 
+		if ( strncasecmp( p, "rect", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_RECTANGLE3D;
+		} else {
+			othertype =  JAG_C_COL_TYPE_ELLIPSE3D;
+		}
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -55;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 5 ) { return -48; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -387; } }
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " ";
+		AbaxDataString nx, ny;
+		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
+		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+	} else if (  strncasecmp( p, "box(", 4 )==0 || strncasecmp( p, "ellipsoid(", 10 )==0 ) {
+		// box( x y z width depth height nx ny ) 
+		if ( strncasecmp( p, "box", 3 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_BOX;
+		} else {
+			othertype =  JAG_C_COL_TYPE_ELLIPSOID;
+		}
+		while ( *p != '(' ) ++p;
+		++p;  // (p
+		if ( *p == 0 ) return -56;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 6 ) { return -49; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -388; } }
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5];
+		AbaxDataString nx, ny;
+		if ( sp.length() >= 7 ) { nx = sp[6]; } else { nx="0.0"; }
+		if ( sp.length() >= 8 ) { ny = sp[7]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+	} else if ( strncasecmp( p, "cylinder(", 9 )==0 || strncasecmp( p, "cone(", 5 )==0 ) {
+		// cylinder( x y z r height  nx ny 
+		if ( strncasecmp( p, "cone", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_CONE;
+		} else {
+			othertype =  JAG_C_COL_TYPE_CYLINDER;
+		}
+		while ( *p != '(' ) ++p;
+		++p;  // (p
+		if ( *p == 0 ) return -58;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 5 ) { return -52; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -390; } }
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4];
+		AbaxDataString nx, ny;
+		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
+		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+	} else if ( strncasecmp( p, "line(", 5 )==0 ) {
+		// line( x1 y1 x2 y2)
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -61;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 4 ) { return -55; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -391; } }
+		othertype =  JAG_C_COL_TYPE_LINE;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+	} else if ( strncasecmp( p, "line3d(", 7 )==0 ) {
+		// line3d(x1 y1 z1 x2 y2 z2)
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -64;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 6 ) { return -57; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -440; } }
+		othertype =  JAG_C_COL_TYPE_LINE3D;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5];
+	} else if ( strncasecmp( p, "linestring(", 11 )==0 ) {
+		while ( *p != '(' ) ++p;  ++p;
+		if ( *p == 0 ) return -64;
+		othertype =  JAG_C_COL_TYPE_LINESTRING;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 2 ) {  continue; }
+			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1];
+		}
+	} else if ( strncasecmp( p, "linestring3d(", 13 )==0 ) {
+		// linestring( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4)
+		//prt(("s2836 linestring3d( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -65;
+		othertype =  JAG_C_COL_TYPE_LINESTRING3D;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 3 ) {  continue; }
+			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+		}
+	} else if ( strncasecmp( p, "multipoint(", 11 )==0 ) {
+		// multipoint( x1 y1, x2 y2, x3 y3, x4 y4)
+		//prt(("s2834 multipoint( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p;  ++p;
+		if ( *p == 0 ) return -67;
+		othertype =  JAG_C_COL_TYPE_MULTIPOINT;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 2 ) {  continue; }
+			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1];
+		}
+	} else if ( strncasecmp( p, "multipoint3d(", 13 )==0 ) {
+		// multipoint3d( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4)
+		//prt(("s2836 multipoint3d( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -68;
+		othertype =  JAG_C_COL_TYPE_MULTIPOINT3D;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 3 ) {  continue; }
+			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+		}
+	} else if ( strncasecmp( p, "polygon(", 8 )==0 ) {
+		// polygon( ( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...) )
+		//prt(("s3834 polygon( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -72;
+		othertype =  JAG_C_COL_TYPE_POLYGON;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		//rc = JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose );
+		AbaxDataString pgonstr;
+		rc = JagParser::addPolygonData( pgonstr, p, false, true );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+	} else if ( strncasecmp( p, "polygon3d(", 10 )==0 ) {
+		// polygon( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
+		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -73;
+		othertype =  JAG_C_COL_TYPE_POLYGON3D;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		AbaxDataString pgonstr;
+		rc = JagParser::addPolygon3DData( pgonstr, p, false, true );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+	} else if ( strncasecmp( p, "multipolygon(", 13 )==0 ) {
+		// multipolygon( (( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...)), ( (..), (..) ) )
+		prt(("s3834 multipolygon( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p;  // p: "(p ((...), (...), (...)), (...), ... )
+		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		AbaxDataString mgon;
+		rc = JagParser::addMultiPolygonData( mgon, p, false, true, false );
+		if ( rc <= 0 ) return rc; 
+		outstr += mgon;
+	} else if ( strncasecmp( p, "multipolygon3d(", 10 )==0 ) {
+		// polygon( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
+		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
+		while ( *p != '(' ) ++p;  // "(p ((...), (...), (...)), (...), ... ) 
+		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON3D;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		AbaxDataString mgon;
+		rc = JagParser::addMultiPolygonData( mgon, p, false, true, true );
+		if ( rc <= 0 ) return rc; 
+		outstr += mgon;
+	} else if ( strncasecmp( p, "multilinestring(", 16 )==0 ) {
+		// multilinestring( ( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...) )
+		//prt(("s3834 polygon( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -74;
+		othertype =  JAG_C_COL_TYPE_MULTILINESTRING;
+		AbaxDataString pgonstr;
+		rc = JagParser::addPolygonData( pgonstr, p, false, false );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+	} else if ( strncasecmp( p, "multilinestring3d(", 10 )==0 ) {
+		// multilinestring3d( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
+		//prt(("s3835 multilinestring3d( p=[%s] )\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -78;
+		othertype =  JAG_C_COL_TYPE_MULTILINESTRING3D;
+		AbaxDataString pgonstr;
+		rc = JagParser::addPolygon3DData( pgonstr, p, false, false );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+	} else if ( strncasecmp( p, "triangle(", 9 )==0 ) {
+		// triangle(x1 y1 x2 y2 x3 y3 )
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -82;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 6 ) { return -387; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -318; } }
+		othertype =  JAG_C_COL_TYPE_TRIANGLE;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5];
+	} else if ( strncasecmp( p, "triangle3d(", 11 )==0 ) {
+		// triangle3d(x1 y1 z1 x2 y2 z2 x3 y3 z3 )
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -88;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 9 ) { return -390; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -3592; } }
+		othertype =  JAG_C_COL_TYPE_TRIANGLE3D;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5] + " " + sp[6] + " " + sp[7] + " " + sp[8];
+	}
+
+	// cube sphere circle3d square3d rectangle ellipse rectangle 3d box ellipsoid cylinder cone line line3d linestring 
+	// linestring3d multipoint polygon polygon3d multipolygon/3d mutilinesring/3d triangle/3d 
+
+	return 0;
+}
+
 

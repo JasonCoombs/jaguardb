@@ -5040,6 +5040,68 @@ int JagParser::checkMultiPolygonData( const char *p, bool mustClose, bool is3D )
 
 // return 1: OK,  < 0 error , 0: no data ignore
 // p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
+// pgvec: " x:y:z x:y:z ...| ... ! ... | ... | ..."
+int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p, 
+								    bool eachFirstOnly, bool mustClose, bool is3D )
+{
+	prt(("s3524 multipolygon( p=[%s]\n", p ));
+	int rc;
+	const char *q;
+	if ( *p == 0 ) return 0;
+	int bracketCount = 0; // count ( ( ) )
+
+	++p; // skip first '('
+	++ bracketCount;
+
+	while ( *p != '\0' ) {
+		if ( 0 == bracketCount ) break;
+		while ( isspace(*p) ) ++p;
+		if ( *p == '\0' ) break;
+		if ( *p == '(' ) {
+			++ bracketCount;
+			// search ending ')'
+			q = p+1;
+			if ( *q == '\0' ) break;
+			while ( *q != '\0' ) {
+				if ( *q == '(' ) {
+					++ bracketCount;
+				} else if ( *q == ')' ) {
+					-- bracketCount;
+					if ( 1 == bracketCount ) {
+						AbaxDataString s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
+						//prt(("s3701 add polygon=[%s] ...\n", s.c_str() ));
+						// JagPolygon pgon;
+						AbaxDataString pgon;
+						if ( is3D ) {
+							rc = addPolygon3DData(pgon, s.c_str(), eachFirstOnly, mustClose );
+						} else {
+							rc = addPolygonData(pgon, s.c_str(), eachFirstOnly, mustClose );
+						}
+						if ( rc < 0 ) { return rc; }
+						//pgvec.append( pgon );
+						if ( pgvec.size() < 1 ) {
+							pgvec = pgon;
+						} else {
+							pgvec += AbaxDataString("!") + pgon;
+						}
+						p = q;
+						break;
+					}
+				}
+				++q;
+			}
+		} else if ( *p == ')' ) {
+			-- bracketCount;
+		}
+		++p;
+	}
+
+	return 1;
+}
+
+
+// return 1: OK,  < 0 error , 0: no data ignore
+// p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
 int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p, 
 								    bool eachFirstOnly, bool mustClose, bool is3D )
 {
@@ -5207,6 +5269,90 @@ int JagParser::getPolygonMinMax( const char *p,  double &xmin, double &ymin, dou
 	}
 
 	return 0;
+}
+
+// add polygon data to other
+// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
+// return 0: no data, ignore,  < 0 error
+// return 1: OK
+// pgon returns "x:y x:y ...|x:y x:y ..."
+int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose )
+{
+	//prt(("s3538 addPolygonData( p=[%s]\n", p ));
+	int len, j;
+	const char *q;
+	double x1, y1, xn, yn;
+	if ( *p == 0 ) return 0;
+	// (p  (...), (...) )
+	//while ( *p == '(' ) ++p; 
+
+	while ( *p != '\0' ) {
+		while ( *p != '(' && *p != '\0' ) ++p; 
+		if ( *p == '\0' ) break;
+		++p;
+		if ( *p == '\0' ) break;
+		// ( (p ...), ( ... )
+		while ( isspace(*p) ) ++p;
+		//prt(("s3093 p=[%s]\n", p ));
+		q = p;
+		while ( *q != ')' && *q != '\0' ) ++q; 
+		if ( *q == '\0' ) break;
+		//  // (  (p...q), (...) )
+		while ( *p == '(' ) ++p;
+		AbaxDataString polygon(p, q-p);
+		//prt(("s7252 one polygon=[%s] q=[%s] p=[%s]\n", polygon.c_str(), q, p ));
+		JagStrSplit sp( polygon, ',', true );
+		len = sp.length();
+		//JagLineString3D linestr3d;
+		AbaxDataString linestr3d;
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			//prt(("s2038 sp[i=%d]=[%s]\n", i, sp[i].c_str() ));
+			// if ( ss.length() < 2 ) { return -4523; }
+			if ( ss.length() < 2 ) continue;
+			if ( ss[0].length() >= JAG_POINT_LEN ) { return -4526; }
+			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4527; }
+			/**
+			JagPoint2D p2d( ss[0].c_str(), ss[1].c_str() );
+			linestr3d.add(p2d);
+			**/
+			linestr3d += ss[0] + ":" + ss[1];
+			if ( mustClose ) {
+    			if ( 0==i) {
+    				x1 = jagatof(ss[0].c_str() );
+    				y1 = jagatof(ss[1].c_str() );
+    			}
+    
+    			if ( len-1==i) {
+    				xn = jagatof(ss[0].c_str() );
+    				yn = jagatof(ss[1].c_str() );
+    			}
+			}
+		}
+
+		if ( mustClose ) {
+			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) ) {
+				//prt(("s4530 x1=%f xn=%f   y1=%f  yn=%f\n", x1, xn, y1, yn ));
+				return -4530;
+			}
+		}
+		//pgon.add( linestr3d ); // one linestring
+
+		if ( pgon.size() < 1 ) {
+			pgon = linestr3d; // first ring
+		} else {
+			pgon += AbaxDataString("|") + linestr3d; // more rings
+		}
+
+		if ( firstOnly ) break;
+		
+		p=q+1;
+		while ( *p != ',' && *p != '\0' ) ++p; 
+		if ( *p == '\0' ) break;
+		++p;
+	}
+
+	return 1;
 }
 
 // add polygon data to other
@@ -5410,6 +5556,87 @@ int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, d
 	}
 
 	return 0;
+}
+
+// add polygon data to other
+// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
+// return 0: no data ignore,  < 0 error  1: OK
+// pgon: "x:y:z x:y:z ...| x:y:z x:y:z ... | x:y:z x:y:z ..."
+int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose )
+{
+	if ( *p == 0 ) {
+		return 0;
+	}
+
+	int len;
+	const char *q;
+	double x1, y1, z1, xn, yn, zn;
+	while ( *p != '\0' ) {
+		while ( *p != '(' && *p != '\0' ) ++p; 
+		if ( *p == '\0' ) break;
+		++p;
+		if ( *p == '\0' ) break;
+		while ( isspace(*p) ) ++p;
+		q = p;
+		while ( *q != ')' && *q != '\0' ) ++q; 
+		if ( *q == '\0' ) break;
+		//  // (  (p...q), (...) )
+		AbaxDataString polygon(p, q-p);
+		//prt(("s8262 one polygon=[%s]\n", polygon.c_str() ));
+		JagStrSplit sp( polygon, ',', true );
+		len = sp.length();
+		//JagLineString3D linestr3d;
+		AbaxDataString linestr3d;
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			// if ( ss.length() < 3 ) { return -4533; }
+			if ( ss.length() < 3 ) continue;
+			if ( ss[0].length() >= JAG_POINT_LEN ) { return -4536; }
+			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4537; }
+			if ( ss[2].length() >= JAG_POINT_LEN ) { return -4538; }
+			/***
+			JagPoint3D p3d( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
+			linestr3d.add(p3d);
+			***/
+			linestr3d += ss[0] + ":" + ss[1] + ":" + ss[2];
+			if ( mustClose ) {
+    			if ( 0==i) {
+    				x1 = jagatof(ss[0].c_str() );
+    				y1 = jagatof(ss[1].c_str() );
+    				z1 = jagatof(ss[2].c_str() );
+    			}
+    
+    			if ( len-1==i) {
+    				xn = jagatof(ss[0].c_str() );
+    				yn = jagatof(ss[1].c_str() );
+    				zn = jagatof(ss[2].c_str() );
+    			}
+			}
+		}
+
+		if ( mustClose ) {
+			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) || ! JagGeo::jagEQ(z1,zn) ) {
+				return -4543;
+			}
+		}
+		// pgon.add( linestr3d ); // one polygon
+		if ( pgon.size() < 1 ) {
+			pgon = linestr3d;
+		} else {
+			pgon += AbaxDataString("|") + linestr3d;
+		}
+		if ( firstOnly ) break;
+		
+		p=q+1;
+		//prt(("s3246 p=[%s]\n", p ));
+		while ( *p != ',' && *p != '\0' ) ++p; 
+		//prt(("s3248 p=[%s]\n", p ));
+		if ( *p == '\0' ) break;
+		++p;
+		//prt(("s3249 p=[%s]\n", p ));
+	}
+
+	return 1;
 }
 
 // add polygon data to other
