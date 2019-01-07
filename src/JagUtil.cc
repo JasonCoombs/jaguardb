@@ -3792,3 +3792,17 @@ int levenshtein(const char *s1, const char *s2)
     }
     return(column[s1len]);
 }
+
+// check first n chars in s for c
+char *strnchr(const char *s, int c, int n)
+{
+	char *p = (char*)s;
+	while ( *p != '\0' ) {
+		if ( p-s >= n ) break;
+		if ( *p == c ) return p;
+		++p;
+	}
+	return NULL;
+}
+
+

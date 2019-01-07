@@ -157,7 +157,8 @@ AbaxDataString intToString( int i ) ;
 AbaxDataString longToString( abaxint i ) ;
 AbaxDataString ulongToString( uabaxint i ) ;
 abaxint  strchrnum( const char *str, char ch );
-int strInStr( const char *str, int len, const char *str2 );
+char *strnchr(const char *s, int c, int n);
+int  strInStr( const char *str, int len, const char *str2 );
 void splitFilePath( const char *fpath, AbaxDataString &first, AbaxDataString &last );
 void stripeFilePath( const AbaxDataString &fpath, abaxint stripe, AbaxDataString &stripePath );
 AbaxDataString makeDBObjName( JAGSOCK sock, const AbaxDataString &dbname, const AbaxDataString &objname );
@@ -165,15 +166,12 @@ AbaxDataString makeDBObjName( JAGSOCK sock, const AbaxDataString &dbdotname );
 AbaxDataString jaguarHome();
 AbaxDataString renameFilePath( const AbaxDataString& fpath, const AbaxDataString &newLast );
 int selectServer( const AbaxFixString &min, const AbaxFixString &max, const AbaxFixString &inkey );
-
 int trimEndWithChar ( char *msg, int len, char c );
 int trimEndToChar ( char *msg, int len, char stopc );
 int trimEndWithCharKeepNewline ( char *msg, int len, char c );
 abaxint availableMemory( abaxint &callCount, abaxint lastBytes );
-
 int checkReadOrWriteCommand( const char *pmesg );
 int checkColumnTypeMode( const AbaxDataString &type );
-
 AbaxDataString formOneColumnNaturalData( const char *buf, abaxint offset, abaxint length, const AbaxDataString &type );
 void printParseParam( JagParseParam *parseParam );
 int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], JagParseParam *parseParam,
@@ -189,7 +187,6 @@ int jaguar_cond_broadcast( pthread_cond_t *cond);
 int jaguar_cond_signal( pthread_cond_t *cond);
 int jaguar_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 int jaguar_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
-
 int getPassword( AbaxDataString &outPassword );
 void getWinPass( char *pass );
 const char *strcasestrskipquote( const char *str, const char *token );
@@ -200,8 +197,6 @@ void escapeNewline( const AbaxDataString &instr, AbaxDataString &outstr );
 char *jagmalloc( abaxint sz );
 int jagpthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg);
 int jagpthread_join(pthread_t thread, void **retval);
-
-
 abaxint sendData( JAGSOCK sock, const char *buf, abaxint len );
 abaxint recvData( JAGSOCK sock, char *hdr, char *&buf );
 abaxint recvData( JAGSOCK sock, char *buf, abaxint len );
@@ -213,8 +208,6 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N );
 #else
 #define dbg(x) ;
 #endif
-
-
 
 int jagmkdir(const char *path, mode_t mode);
 int jagfdatasync( int fd ); 
@@ -247,25 +240,19 @@ AbaxDataString psystem( const char *cmd );
 bool checkCmdTimeout( abaxint startTime, abaxint timeoutLimit );
 char *getNameValueFromStr( const char *content, const char *name );
 ssize_t jaggetline(char **lineptr, size_t *n, FILE *stream);
-
-//int daemonInit();
 AbaxDataString expandEnvPath( const AbaxDataString &path );
 struct tm *jag_localtime_r(const time_t *timep, struct tm *result);
 char *jag_ctime_r(const time_t *timep, char *result);
-
 int formatInsertSelectCmdHeader( const JagParseParam *parseParam, AbaxDataString &str );
 bool isValidVar( const char *name );
 bool isValidNameChar( char c );
 void stripEndSpace( char *qstr, char endc );
 abaxint _getFieldInt( const char * rowstr, char fieldToken );
-
 void makeMapFromOpt( const char *options, JagHashMap<AbaxString, AbaxString> &omap );
 AbaxDataString makeStringFromOneVec( const JagVector<AbaxDataString> &vec, int dquote );
 AbaxDataString makeStringFromTwoVec( const JagVector<AbaxDataString> &xvec, const JagVector<AbaxDataString> &yvec );
-
 int oneFileSender( JAGSOCK sock, const AbaxDataString &inpath );
 int oneFileReceiver( JAGSOCK sock, const AbaxDataString &outpath, bool isDirPath=true );
-
 abaxint sendDirectToSock( JAGSOCK sock, const char *mesg, abaxint len, bool nohdr=false );
 abaxint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr );
 abaxint sendDirectToSockWithHdr( JAGSOCK sock, const char *hdr, const char *mesg, abaxint len );
