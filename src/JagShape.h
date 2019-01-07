@@ -346,6 +346,7 @@ class JagLineString3D
 		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
 		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		const JagPoint3D& operator[](int i ) const { return point[i]; }
+		double lineLength( bool removeLast, bool is3D );
 
 		JagVector<JagPoint3D> point;
 };
@@ -371,6 +372,7 @@ class JagLineString
 		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
 		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		const JagPoint& operator[](int i ) const { return point[i]; }
+		double lineLength( bool removeLast, bool is3D );
 
 		JagVector<JagPoint> point;
 };
@@ -391,6 +393,7 @@ class JagPolygon
 		bool bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		JagVector<JagLineString3D> linestr;
 		void print() const { linestr.print(); }
+		double lineLength( bool removeLast, bool is3D );
 
 		JagPolygon( const JagSquare2D &sq );
 		JagPolygon( const JagRectangle2D &rect );

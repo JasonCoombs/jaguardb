@@ -2121,7 +2121,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 	}
 	// LENGTH
 	else if ( _binaryOp == JAG_FUNC_LENGTH ) {
-		prt(("s2029 JAG_FUNC_LENGTH cmode=%d lstr=[%s]\n", cmode, lstr.c_str() ));
+		prt(("s2029 not called JAG_FUNC_LENGTH cmode=%d lstr=[%s]\n", cmode, lstr.c_str() ));
 		if ( 2 == cmode ) {
 			str = longDoubleToStr(jagstrtold(lstr.c_str(), NULL));
 		} else if ( 1 == cmode ) {
@@ -2751,17 +2751,21 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	}
 	// LENGTH
 	else if ( _binaryOp == JAG_FUNC_LENGTH ) {
-		prt(("s2429 JAG_FUNC_LENGTH cmode=%d lstr=[%s] lstr.length=%d\n", cmode, lstr.c_str(), lstr.length() ));
-		if ( 2 == cmode ) {
-			lstr = longDoubleToStr(jagstrtold(lstr.c_str(), NULL));
-		} else if ( 1 == cmode ) {
-			lstr = longToStr(jagatoll(lstr.c_str()));
-		} 
-
-		// prt(("s0292 lstr=[%s] lstr.length=%d \n",  lstr.c_str(), lstr.length() ));
-		// lstr = longToStr(lstr.length());
-		lstr = longToStr( strlen(lstr.c_str()) );
-		// prt(("s0293 lstr=[%s]\n",  lstr.c_str() ));
+		prt(("s2429 called. JAG_FUNC_LENGTH cmode=%d lstr=[%s] lstr.length=%d\n", cmode, lstr.c_str(), lstr.length() ));
+		if ( strncmp( lstr.c_str(), "CJAG=", 5) == 0 ) {
+			lstr = doubleToStr(JagGeo::getGeoLength( JAG_CJAG, lstr ));
+			prt(("s2384 cjag lstr=%s\n", lstr.c_str() ));
+		} else if ( strncmp( lstr.c_str(), "OJAG=", 5) == 0 ) {
+			lstr = doubleToStr(JagGeo::getGeoLength( JAG_OJAG, lstr ));
+			prt(("s2385 ojag lstr=%s\n", lstr.c_str() ));
+		} else {
+    		if ( 2 == cmode ) {
+    			lstr = longDoubleToStr(jagstrtold(lstr.c_str(), NULL));
+    		} else if ( 1 == cmode ) {
+    			lstr = longToStr(jagatoll(lstr.c_str()));
+    		} 
+    		lstr = longToStr( strlen(lstr.c_str()) );
+		}
 		return 1;
 	}
 	// ABS
@@ -3549,7 +3553,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		**/
 		bool isPoly = false;
 		if ( 0==strncasecmp(p, "linestring", 10 ) || 0==strncasecmp(p, "polygon", 7) 
-			 || 0==strncasecmp(p, "multipoint", 10 ) || 0==strncasecmp(p, "multilinestring", 10 ) 
+			 || 0==strncasecmp(p, "multipoint", 10 ) || 0==strncasecmp(p, "multilinestring", 12 ) 
 			 || 0==strncasecmp(p, "multipolygon", 10 )
 		   ) { isPoly = true; }
 
@@ -3562,16 +3566,17 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		
 		AbaxDataString val;
 		if ( isPoly ) {
-			if ( geotype == JAG_C_COL_TYPE_POLYGON || geotype == JAG_C_COL_TYPE_POLYGON3D ) {
+			if ( geotype == JAG_C_COL_TYPE_POLYGON || geotype == JAG_C_COL_TYPE_POLYGON3D 
+				 || geotype == JAG_C_COL_TYPE_MULTILINESTRING || geotype == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 				p = q; // ( points to (
-				//prt(("s3482 p=[%s] q=[%s]\n", p, q ));
+				prt(("s3482 p=[%s] q=[%s]\n", p, q ));
 				q = strrchr(p, ')' );
 				if ( ! q ) { throw 101; }
 				char *d = strdup(p);
 				JagParser::removeEndUnevenBracketAll( d );
 				val = d;
 				free(d );
-				//prt(("s6752 val=[%s]\n", val.c_str() ));
+				prt(("s6752 val=[%s]\n", val.c_str() ));
 				q = p + val.size();
 			} else {
 				//prt(("s3484 p=[%s] q=[%s]\n", p, q ));

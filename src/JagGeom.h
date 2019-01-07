@@ -1404,7 +1404,7 @@ class JagGeo
 									const JagStrSplit &sp2, AbaxDataString &res );
 
 	static bool getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
-
+	static double getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr );
 
 
   protected:

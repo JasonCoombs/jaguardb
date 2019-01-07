@@ -406,6 +406,41 @@ JagLineString& JagLineString::appendFrom( const JagLineString3D& L2, bool remove
 	return *this;
 }
 
+double JagLineString::lineLength( bool removeLast, bool is3D )
+{
+	double sum = 0.0;
+	int len =  size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len-1; ++i ) {
+		if ( is3D ) {
+			sum += JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y), jagatof(point[i].z),
+									 jagatof(point[i+1].x), jagatof(point[i+1].y), jagatof(point[i+1].z), 0);
+		} else {
+			sum += JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y),
+									 jagatof(point[i+1].x), jagatof(point[i+1].y), 0);
+		}
+	}
+	return sum;
+}
+
+double JagLineString3D::lineLength( bool removeLast, bool is3D )
+{
+	double sum = 0.0;
+	int len =  size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len-1; ++i ) {
+		if ( is3D ) {
+			sum += JagGeo::distance( point[i].x, point[i].y, point[i].z,
+									 point[i+1].x, point[i+1].y, point[i+1].z, 0);
+		} else {
+			sum += JagGeo::distance( point[i].x, point[i].y,
+									 point[i+1].x, point[i+1].y, 0);
+		}
+	}
+	return sum;
+}
+
+
 void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
 {
 	xmin = ymin = LONG_MAX;
@@ -20576,6 +20611,18 @@ bool JagPolygon::bbox3D( double &xmin, double &ymin, double &zmin, double &xmax,
 	return true;
 }
 
+double JagPolygon::lineLength( bool removeLast, bool is3D )
+{
+	int len = linestr.size();
+	if ( len < 1 ) return 0.0;
+	double sum = 0.0;
+	for ( int i=0; i < len; ++i ) {
+		sum += linestr[i].lineLength( removeLast, is3D );
+		//prt(("s0393 i=%d/%d sum=%f\n", i, len, sum ));
+	}
+	return sum;
+}
+
 void JagGeo::center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy )
 {
 	cx = cy = 0.0;
@@ -21498,10 +21545,133 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		outstr += sp[4] + " " + sp[5] + " " + sp[6] + " " + sp[7] + " " + sp[8];
 	}
 
-	// cube sphere circle3d square3d rectangle ellipse rectangle 3d box ellipsoid cylinder cone line line3d linestring 
-	// linestring3d multipoint polygon polygon3d multipolygon/3d mutilinesring/3d triangle/3d 
-
 	return 0;
 }
 
+
+// mk: OJAG or CJAG
+// *** not supported lstr: CJAG=0=0=PL=0 ( (0 0, 1 1, 4 6, 9 3, 0 0))
+// lstr: CJAG=0=0=LN=0  0  0  1 1
+// lstr: OJAG=srid=db.tab.col=LN=0 0 0  1 1
+// lstr: OJAG=0=0=LS=0 1:2:3:4 0:0 1:1 4:6 9:3
+// lstr: CJAG=0=0=LS=0 0:0 1:1 4:6 9:3
+// lstr: CJAG=0=0=ML=0 ( (0 0, 1 1, 4 6, 9 3, 0 0),( 3 4 , 2 1, 9 2, 3 4 ) )
+// lstr: OJAG=0=0=ML=0 1:2:3:4 x:y ...|x:y ...
+// type: line/3d, linestring/3d, multilinestring/3d
+double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr )
+{
+	double sum = 0.0;
+	char *p;
+	const char *str;
+	if ( mk == JAG_OJAG ) {
+		JagStrSplit sp( lstr.c_str(), ' ', true );
+		AbaxDataString hdr = sp[0];
+		JagStrSplit hsp(hdr, '=' );
+		if ( hsp.length() < 4 ) return 0.0;
+		int srid = jagatoi( hsp[1].c_str() );
+		AbaxDataString gtype = hsp[3];
+		if ( gtype == JAG_C_COL_TYPE_LINE ) {
+			if ( sp.length() < 5 ) return 0.0;
+			return distance( jagatof( sp[1]), jagatof( sp[2]), jagatof( sp[3]), jagatof( sp[4]), srid );
+		} else if ( gtype == JAG_C_COL_TYPE_LINE3D ) {
+			if ( sp.length() < 7 ) return 0.0;
+			return distance( jagatof( sp[1]), jagatof( sp[2]), jagatof( sp[3]), 
+							 jagatof( sp[4]), jagatof( sp[5]), jagatof( sp[6]), srid );
+		} else if ( gtype == JAG_C_COL_TYPE_LINESTRING || gtype == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			double x1, y1, x2, y2;
+			for ( int i = 2; i < sp.length()-1; ++i ) {
+				str = sp[i].c_str();
+				if ( strchrnum( str, ':') != 1 ) continue;
+				get2double(str, p, ':', x1, y1 );
+				str = sp[i+1].c_str();
+				if ( strchrnum( str, ':') != 1 ) continue;
+				get2double(str, p, ':', x2, y2 );
+				sum += distance( x1, y1, x2, y2, srid );
+			}
+			return sum;
+		} else if ( gtype == JAG_C_COL_TYPE_LINESTRING3D || gtype == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+			double x1, y1, z1, x2, y2, z2;
+			for ( int i = 2; i < sp.length()-1; ++i ) {
+				str = sp[i].c_str();
+				if ( strchrnum( str, ':') != 2 ) continue;
+				get3double(str, p, ':', x1, y1, z1 );
+				str = sp[i+1].c_str();
+				if ( strchrnum( str, ':') != 2 ) continue;
+				get3double(str, p, ':', x2, y2, z2 );
+				sum += distance( x1, y1, z1, x2, y2, z2, srid );
+			}
+			return sum;
+		} else {
+		}
+	} else {
+		int srid = 0;
+		const char *start = lstr.c_str();
+		char *p = (char*)start;
+		while ( *p != ' ' && *p != '\0' ) ++p;
+		if ( *p == '\0' ) return 0.0;
+		AbaxDataString hdr = AbaxDataString( start, p-start );
+		//prt(("s2431 hdr=[%s]\n", hdr.c_str() ));
+		JagStrSplit hsp(hdr, '=' );
+		if ( hsp.length() < 4 ) return 0.0;
+		AbaxDataString gtype = hsp[3];
+		//prt(("s2031 gtype=[%s]\n", gtype.c_str() ));
+		if ( gtype == JAG_C_COL_TYPE_LINE ) {
+			JagStrSplit sp( lstr.c_str(), ' ', true );
+			if ( sp.length() < 5 ) return 0.0;
+			return distance( jagatof( sp[1]), jagatof( sp[2]), jagatof( sp[3]), jagatof( sp[4]), srid );
+		} else if ( gtype == JAG_C_COL_TYPE_LINE3D ) {
+			JagStrSplit sp( lstr.c_str(), ' ', true );
+			if ( sp.length() < 7 ) return 0.0;
+			return distance( jagatof( sp[1]), jagatof( sp[2]), jagatof( sp[3]), 
+							 jagatof( sp[4]), jagatof( sp[5]), jagatof( sp[6]), srid );
+		} else if ( gtype == JAG_C_COL_TYPE_LINESTRING ) {
+			double x1, y1, x2, y2;
+			JagStrSplit sp( lstr.c_str(), ' ', true );
+			for ( int i = 1; i < sp.length()-1; ++i ) {
+				str = sp[i].c_str();
+				if ( strchrnum( str, ':') != 1 ) continue;
+				get2double(str, p, ':', x1, y1 );
+				str = sp[i+1].c_str();
+				if ( strchrnum( str, ':') != 1 ) continue;
+				get2double(str, p, ':', x2, y2 );
+				sum += distance( x1, y1, x2, y2, srid );
+			}
+			return sum;
+		} else if ( gtype == JAG_C_COL_TYPE_LINESTRING3D ) {
+			double x1, y1, z1, x2, y2, z2;
+			JagStrSplit sp( lstr.c_str(), ' ', true );
+			for ( int i = 1; i < sp.length()-1; ++i ) {
+				str = sp[i].c_str();
+				if ( strchrnum( str, ':') != 2 ) continue;
+				get3double(str, p, ':', x1, y1, z1 );
+				str = sp[i+1].c_str();
+				if ( strchrnum( str, ':') != 2 ) continue;
+				get3double(str, p, ':', x2, y2, z2 );
+				sum += distance( x1, y1, z1, x2, y2, z2, srid );
+			}
+			return sum;
+		} else if ( gtype == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			// lstr: CJAG=0=0=ML=0 ( (0 0, 1 1, 4 6, 9 3, 0 0),( 3 4 , 2 1, 9 2, 3 4 ) )
+			char *sec = secondTokenStart( lstr.c_str() );
+			//prt(("s2024 secondTokenStart lstr=[%s] sec=[%s]\n", lstr.c_str(), sec ));
+			if ( ! sec ) return 0.0;
+			JagPolygon pgon;
+			int rc = JagParser::addPolygonData( pgon, sec, false, false );
+			//prt(("s2029 addPolygonData rc=%d sec=[%s]\n", rc, sec ));
+			if ( rc <= 0 ) return 0.0;
+			return pgon.lineLength( false, false );
+		} else if ( gtype == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+			// lstr: CJAG=0=0=ML=0 ( (0 0 0, 1 1 3, 4 6 3, 9 9 3, 0 1 0),( 3 9 4 , 1 2 1, 1 9 2,  0 3 4 ) )
+			char *sec = secondTokenStart( lstr.c_str() );
+			if ( ! sec ) return 0.0;
+			JagPolygon pgon;
+			int rc = JagParser::addPolygon3DData( pgon, sec, false, false );
+			if ( rc <= 0 ) return 0.0;
+			return pgon.lineLength( false, true );
+		} else {
+		}
+	}
+
+	return 0.0;
+}
 

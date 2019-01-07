@@ -7223,6 +7223,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
 			if ( colInOther ) {
 				newquery += AbaxDataString("polygon(") + parseParam.otherVec[otherPos].valueData  + ")";
+				prt(("s0291 POLYGON valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
 			} else {
 				newquery += "''";
 			}
@@ -7251,6 +7252,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			if ( colInOther ) {
 				newquery += AbaxDataString("multilinestring(") + parseParam.otherVec[otherPos].valueData  + ")";
+				prt(("s0295 MULTILINESTRING valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
 			} else {
 				newquery += "''";
 			}
@@ -7684,6 +7686,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
 				newquery += AbaxDataString("polygon(") + parseParam.otherVec[ii].valueData  + ")";
+				prt(("s2093 POLYGON valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
 			} else {
 				newquery += AbaxDataString("''");
 			}
@@ -7716,6 +7719,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
 				newquery += AbaxDataString("multilinestring(") + parseParam.otherVec[ii].valueData  + ")";
+				//prt(("s2053 MULTILINESTRING valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
 			} else {
 				newquery += AbaxDataString("''");
 			}

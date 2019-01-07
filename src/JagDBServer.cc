@@ -2710,6 +2710,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    angle(line(x y), col)  -- get the angle in degrees between two lines\n";
 		str += "    buffer(col, 'STRATEGY')  -- get polygon buffer of a shape. The STRATEGY is:\n";
 		str += "                 distance=symmetric/asymmetric:RADIUS,join=round/miter:N,end=round/flat,point=circle/square:N\n";
+		str += "    length(col)            -- get length of line/3d, linestring/3d, multilinestring/3d\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
