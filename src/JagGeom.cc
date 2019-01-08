@@ -21169,6 +21169,33 @@ bool JagGeo::getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double
 	return ( cnt > 0 );
 }
 
+bool JagGeo::getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, 
+						double &xmax, double &ymax, double &zmax )
+{
+	if ( pgvec.size() < 1 ) return false;
+
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double xmi, ymi, zmi, xma, yma, zma;
+	int cnt = 0;
+	for ( int i = 0; i < pgvec.size(); ++i ) {
+		if ( pgvec[i].linestr.size() <1 ) continue;
+		// using outer ring only works well enough
+		pgvec[i].linestr[0].bbox3D( xmi, ymi, zmi, xma, yma, zma );
+		if ( xmi < xmin ) xmin = xmi;
+		if ( ymi < ymin ) ymin = ymi;
+		if ( zmi < zmin ) zmin = zmi;
+
+		if ( xma > xmax ) xmax = xma;
+		if ( yma > ymax ) ymax = yma;
+		if ( zma > zmax ) zmax = zma;
+
+		++cnt;
+	}
+
+	return ( cnt > 0 );
+}
+
 
 // convert vector 2D shapes to polygon
 JagPolygon::JagPolygon( const JagSquare2D &sq )
@@ -21675,3 +21702,55 @@ double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr
 	return 0.0;
 }
 
+AbaxDataString JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing ) 
+{
+	prt(("s7330 JagGeo::bboxstr sp:\n" ));
+	sp.print();
+
+	double xmin, ymin, zmin, xmax, ymax, zmax;
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double dx, dy, dz;
+	bool is3D = false;
+	const char *str;
+	char *p;
+	int cnum;
+	bool firstRing = true;
+	for ( int i=0; i < sp.length(); ++i ) {
+		if (  sp[i] == "!" ) { firstRing = true; continue; }
+		if (  sp[i] == "|" ) { firstRing = false; continue; }
+
+		if ( skipRing && ! firstRing ) { continue; }
+
+		cnum = strchrnum( sp[i].c_str(), ':');
+		if ( cnum < 1 ) continue;
+		str = sp[i].c_str();
+		if ( cnum == 2 ) { 
+			is3D = true; 
+			get3double(str, p, ':', dx, dy, dz );
+			if ( dx < xmin ) xmin = dx;
+			if ( dx > xmax ) xmax = dx;
+			if ( dy < ymin ) ymin = dy;
+			if ( dy > ymax ) ymax = dy;
+			if ( dz < zmin ) zmin = dz;
+			if ( dz > zmax ) zmax = dz;
+		} else {
+			get2double(str, p, ':', dx, dy );
+			if ( dx < xmin ) xmin = dx;
+			if ( dx > xmax ) xmax = dx;
+			if ( dy < ymin ) ymin = dy;
+			if ( dy > ymax ) ymax = dy;
+		}
+	}
+
+	AbaxDataString res;
+	if ( is3D ) {
+		res = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(zmin) 
+		      + " " + doubleToStr(xmax) + " " + doubleToStr(ymax) + " " + doubleToStr(zmax)  ;
+	} else {
+		res = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(xmax) + " " + doubleToStr(ymax);
+	}
+	prt(("s2239 is3D=%d res=[%s]\n", is3D, res.c_str() ));
+
+	return res;
+}

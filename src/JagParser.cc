@@ -5564,9 +5564,7 @@ int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, d
 // pgon: "x:y:z x:y:z ...| x:y:z x:y:z ... | x:y:z x:y:z ..."
 int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose )
 {
-	if ( *p == 0 ) {
-		return 0;
-	}
+	if ( *p == 0 ) { return 0; }
 
 	int len;
 	const char *q;

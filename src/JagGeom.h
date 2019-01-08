@@ -1404,7 +1404,10 @@ class JagGeo
 									const JagStrSplit &sp2, AbaxDataString &res );
 
 	static bool getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
+	static bool getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 	static double getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr );
+	static AbaxDataString bboxstr( const JagStrSplit &sp, bool skipRing );
+	static int convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr );
 
 
   protected:
@@ -1614,7 +1617,6 @@ class JagGeo
 								    double a, double b, double c, double nx, double ny, double &dist, AbaxDataString &res );
 
 
-	static int convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr );
 
 
 
