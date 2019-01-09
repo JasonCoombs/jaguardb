@@ -14918,9 +14918,11 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 	AbaxDataString lstr;
 	int rc = 0;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
+		prt(("s5510 convertConstantObjToJAG ...\n" ));
 		rc = convertConstantObjToJAG( inlstr, lstr );
 		if ( rc < 0 ) return false;
 		// point(0 0 0 )  to "OJAG=srid=33=33=d x y z"
+		prt(("s5512 convertConstantObjToJAG lstr=[%s] rc=%d ...\n", lstr.c_str(), rc ));
 	} else {
 		lstr = inlstr.c_str();
 	}
@@ -14966,6 +14968,7 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 	sp1.shift();
 	sp2.shift();
 	prt(("s4872 colType1=[%s]\n", colType1.c_str() ));
+	prt(("s4872 colType2=[%s]\n", colType2.c_str() ));
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return doPointDistance( mark1, sp1, mark2, colType2, sp2, srid, arg, dist );
@@ -16458,7 +16461,7 @@ bool JagGeo::doMultiPolygonDistance(const AbaxDataString& mk1, const JagStrSplit
 		double y2 = jagatof( sp2[3].c_str() );
 		double x3 = jagatof( sp2[4].c_str() );
 		double y3 = jagatof( sp2[5].c_str() );
-		prt(("x1:%f,\n y1:%f\n x2:%f\n y2:%f\n x3:%f\n y3:%f\n", x1, y1, x2, y2, x3, y3));
+		prt(("x1:%f\n y1:%f\n x2:%f\n y2:%f\n x3:%f\n y3:%f\n", x1, y1, x2, y2, x3, y3));
 		return multiPolygonDistanceTriangle( srid, mk1, sp1, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
 		prt(("s6040 JAG_C_COL_TYPE_SQUARE sp2 print():\n"));
@@ -21511,11 +21514,12 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 	} else if ( strncasecmp( p, "multipolygon(", 13 )==0 ) {
 		// multipolygon( (( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...)), ( (..), (..) ) )
 		prt(("s3834 multipolygon( p=[%s]\n", p ));
-		while ( *p != '(' ) ++p;  // p: "(p ((...), (...), (...)), (...), ... )
+		while ( *p != '(' ) ++p;  // p: "( ((...), (...), (...)), (...), ... )
 		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON;
 		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
 		AbaxDataString mgon;
-		rc = JagParser::addMultiPolygonData( mgon, p, false, true, false );
+		rc = JagParser::addMultiPolygonData( mgon, p, false, false, false );
+		prt(("s3238 addMultiPolygonData mgon=[%s] rc=%d\n", mgon.c_str(), rc ));
 		if ( rc <= 0 ) return rc; 
 		outstr += mgon;
 	} else if ( strncasecmp( p, "multipolygon3d(", 10 )==0 ) {

@@ -5044,7 +5044,7 @@ int JagParser::checkMultiPolygonData( const char *p, bool mustClose, bool is3D )
 int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p, 
 								    bool eachFirstOnly, bool mustClose, bool is3D )
 {
-	prt(("s3524 multipolygon( p=[%s]\n", p ));
+	prt(("s3524 multipolygon p=[%s]\n", p ));
 	int rc;
 	const char *q;
 	if ( *p == 0 ) return 0;
@@ -5082,7 +5082,7 @@ int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p,
 						if ( pgvec.size() < 1 ) {
 							pgvec = pgon;
 						} else {
-							pgvec += AbaxDataString("!") + pgon;
+							pgvec += AbaxDataString(" ! ") + pgon;
 						}
 						p = q;
 						break;
@@ -5316,7 +5316,7 @@ int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOn
 			JagPoint2D p2d( ss[0].c_str(), ss[1].c_str() );
 			linestr3d.add(p2d);
 			**/
-			linestr3d += ss[0] + ":" + ss[1];
+			linestr3d += ss[0] + ":" + ss[1] + " ";
 			if ( mustClose ) {
     			if ( 0==i) {
     				x1 = jagatof(ss[0].c_str() );
@@ -5341,7 +5341,7 @@ int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOn
 		if ( pgon.size() < 1 ) {
 			pgon = linestr3d; // first ring
 		} else {
-			pgon += AbaxDataString("|") + linestr3d; // more rings
+			pgon += AbaxDataString(" | ") + linestr3d; // more rings
 		}
 
 		if ( firstOnly ) break;
@@ -5596,7 +5596,7 @@ int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool first
 			JagPoint3D p3d( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
 			linestr3d.add(p3d);
 			***/
-			linestr3d += ss[0] + ":" + ss[1] + ":" + ss[2];
+			linestr3d += ss[0] + ":" + ss[1] + ":" + ss[2] + " ";
 			if ( mustClose ) {
     			if ( 0==i) {
     				x1 = jagatof(ss[0].c_str() );
@@ -5621,7 +5621,7 @@ int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool first
 		if ( pgon.size() < 1 ) {
 			pgon = linestr3d;
 		} else {
-			pgon += AbaxDataString("|") + linestr3d;
+			pgon += AbaxDataString(" | ") + linestr3d;
 		}
 		if ( firstOnly ) break;
 		
