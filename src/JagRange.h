@@ -44,6 +44,11 @@ class JagRange
 
 	static bool rangeIntersectRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, const AbaxDataString &begin1, const AbaxDataString &end1,
 	                              AbaxDataString &begin2, AbaxDataString &end2 );
+   	static bool doRangeSame( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, 
+							 int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+							 int srid2, const JagStrSplit &sp2 );
+	static bool rangeSameRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, const AbaxDataString &begin1, const AbaxDataString &end1,
+	                              AbaxDataString &begin2, AbaxDataString &end2 );
 
 };
 

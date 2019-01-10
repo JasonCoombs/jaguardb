@@ -1030,6 +1030,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_TIME ) str = "time";
 	else if ( binaryOp == JAG_FUNC_DISTANCE ) str = "distance";
 	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
+	else if ( binaryOp == JAG_FUNC_SAME ) str = "equal";
 	else if ( binaryOp == JAG_FUNC_WITHIN ) str = "within";
 	else if ( binaryOp == JAG_FUNC_CLOSESTPOINT ) str = "closestpoint";
 	else if ( binaryOp == JAG_FUNC_ANGLE ) str = "angle";
@@ -1057,7 +1058,6 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_ZMAX ) str = "zmax";
 	else if ( binaryOp == JAG_FUNC_COVEREDBY ) str = "coveredby";
 	else if ( binaryOp == JAG_FUNC_COVER ) str = "cover";
-	else if ( binaryOp == JAG_FUNC_CONTAIN ) str = "contain";
 	else if ( binaryOp == JAG_FUNC_INTERSECT ) str = "intersect";
 	else if ( binaryOp == JAG_FUNC_DISJOINT ) str = "disjoint";
 	else if ( binaryOp == JAG_FUNC_NEARBY ) str = "nearby";
@@ -3098,6 +3098,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		return brc;
 	} else if ( _binaryOp == JAG_FUNC_WITHIN || _binaryOp == JAG_FUNC_COVEREDBY
 	            || _binaryOp == JAG_FUNC_CONTAIN || _binaryOp == JAG_FUNC_COVER 
+	            || _binaryOp == JAG_FUNC_SAME
 	            || _binaryOp == JAG_FUNC_NEARBY
 				|| _binaryOp == JAG_FUNC_INTERSECT || _binaryOp == JAG_FUNC_DISJOINT ) {
 		// always regard as int  boolean
@@ -4039,6 +4040,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_COVER
 		 || fop == JAG_FUNC_DIFF
 		 || fop == JAG_FUNC_CONTAIN 
+		 || fop == JAG_FUNC_SAME 
 		 || fop == JAG_FUNC_INTERSECT 
 		 || fop == JAG_FUNC_DISJOINT 
 		 || fop == JAG_FUNC_NEARBY 
@@ -4084,6 +4086,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_COVEREDBY || 
 		fop == JAG_FUNC_COVER || 
 		fop == JAG_FUNC_CONTAIN || 
+		fop == JAG_FUNC_SAME || 
 		fop == JAG_FUNC_INTERSECT || 
 		fop == JAG_FUNC_DISJOINT || 
 		fop == JAG_FUNC_NEARBY || 
@@ -4306,6 +4309,10 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_COVER; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "contain", 7 ) ) {
 		fop = JAG_FUNC_CONTAIN; len = 7; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "same", 4 ) ) {
+		fop = JAG_FUNC_SAME; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "equal", 5 ) ) {
+		fop = JAG_FUNC_SAME; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "intersect", 9 ) ) {
 		fop = JAG_FUNC_INTERSECT; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "closestpoint", 12 ) ) {
@@ -4893,8 +4900,9 @@ bool BinaryOpNode::doBooleanOp( int op, const AbaxDataString& mark1, const AbaxD
 		//prt(("s4350 JAG_FUNC_COVEREDBY ...\n" ));
 		rc = doAllWithin( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, false );
 	} else if ( op == JAG_FUNC_CONTAIN ) {
-		//prt(("s4450 JAG_FUNC_CONTAIN ...\n" ));
 		rc = doAllWithin( mark2, colType2, srid2, sp2, mark1, colType1, srid1, sp1,  true );
+	} else if ( op == JAG_FUNC_SAME ) {
+		rc = doAllSame( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( op == JAG_FUNC_COVER ) {
 		//prt(("s4450 JAG_FUNC_COVER ...\n" ));
 		rc = doAllWithin( mark2, colType2, srid2, sp2, mark1, colType1, srid1, sp1,  false );
@@ -5112,6 +5120,78 @@ bool BinaryOpNode::doAllWithin( const AbaxDataString& mark1, const AbaxDataStrin
 	             || colType1 == JAG_C_COL_TYPE_DMEDINT
 			  ) {
 		return JagRange::doRangeWithin(_jpa, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} 
+
+	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
+	return false;
+}
+
+bool BinaryOpNode::doAllSame( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+								const JagStrSplit &sp1, const AbaxDataString& mark2, 
+								const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	prt(("s2315 colType1=[%s] \n", colType1.c_str() ));
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		return JagGeo::doPointSame(  sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPoint3DSame(  sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE ) {
+		return JagGeo::doCircleSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE3D ) {
+		return JagGeo::doCircle3DSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_SPHERE ) {
+		return JagGeo::doSphereSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE ) {
+		return JagGeo::doSquareSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE3D ) {
+		return JagGeo::doSquare3DSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_CUBE ) {
+		return JagGeo::doCubeSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE ) {
+		return JagGeo::doRectangleSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		return JagGeo::doRectangle3DSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_BOX ) {
+		return JagGeo::doBoxSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE ) {
+		return JagGeo::doTriangleSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		return JagGeo::doTriangle3DSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_CYLINDER ) {
+		return JagGeo::doCylinderSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_CONE ) {
+		return JagGeo::doConeSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSE ) {
+		return JagGeo::doEllipseSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSOID ) {
+		return JagGeo::doEllipsoidSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
+		return JagGeo::doLineSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLine3DSame(  srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
+		return JagGeo::doLineStringSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineString3DSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
+		return JagGeo::doPolygon3DSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
+		return JagGeo::doLineStringSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		return JagGeo::doLineString3DSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return JagGeo::doPolygonSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doPolygon3DSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return JagGeo::doMultiPolygonSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		return JagGeo::doMultiPolygon3DSame(  mark1, srid1, sp1, mark2, colType2,  srid2, sp2);
+	} else if ( colType1 == JAG_C_COL_TYPE_RANGE ) {
+		return JagRange::doRangeSame(_jpa, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2);
 	} 
 
 	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));

@@ -86,7 +86,7 @@ bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const AbaxDataStr
 		if ( ! strchr( end2.c_str(), ':' ) ) return false;
 		AbaxDataString buf1, buf2;
 		JagTime::convertTimeToStr( begin1, buf1, 0 );
-		JagTime::convertTimeToStr( end1, buf1, 0 );
+		JagTime::convertTimeToStr( end1, buf2, 0 );
 
 		//prt(("s2238 buf1=[%s] buf2=[%s]\n", buf1.c_str(), buf2.c_str() ));
 		//prt(("s2238 begin2=[%s] end2=[%s]\n", begin2.c_str(), end2.c_str() ));
@@ -299,6 +299,81 @@ bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const AbaxData
 		     && ( (end1n < end2n) || JagGeo::jagEQ( end1n, end2n ) ) ) {
 			return true;
 		}
+	}
+	
+	return false;
+}
+
+
+bool 
+JagRange::doRangeSame( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, 
+						 int srid1, const JagStrSplit &sp1, 
+						 const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	/***
+	prt(("s6683 doRangeWithin colType2=[%s]\n", colType2.c_str() ));
+	sp1.print();
+	sp2.print();
+	prt(("s2220 sp1[-1]=[%s]\n", sp1[-1].c_str() ));
+	prt(("s2220 sp2[-1]=[%s]\n", sp2[-1].c_str() ));
+	prt(("s2039 srid1=%d srid2=%d\n", srid1, srid2 ));
+	***/
+
+	if (  colType2 != JAG_C_COL_TYPE_RANGE ) {
+		return false;
+	} 
+
+	JagStrSplit ssp( sp2[0], '|' );
+	AbaxDataString begin2 = ssp[0]; begin2.replace('_', ' ' );
+	AbaxDataString end2 = ssp[1]; end2.replace('_', ' ' );
+
+	AbaxDataString colobj = sp1[-1];
+	JagStrSplit sp( colobj, '=' );
+	if ( sp.length() < 5 ) return false;
+	AbaxDataString subtype = sp[4];
+	AbaxDataString begin1 = sp1[0];
+	AbaxDataString end1 = sp1[1];
+	return rangeSameRange( jpa, subtype, begin1, end1, begin2, end2 );
+}
+
+bool JagRange::rangeSameRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, 
+								 const AbaxDataString &begin1, const AbaxDataString &end1,
+								 AbaxDataString &begin2, AbaxDataString &end2 )
+{
+	//prt(("s2238 rangeWithinRange begin1=[%s] end1=[%s]\n", begin1.c_str(), end1.c_str() ));
+
+	if ( subtype == JAG_C_COL_TYPE_DATE ) {
+		if ( ! strchr( begin2.c_str(), '-' ) ) return false;
+		if ( ! strchr( end2.c_str(), '-' ) ) return false;
+		begin2.remove('-');
+		end2.remove('-');
+		if ( begin2 == begin1 && end2 == end1 ) return true;
+	} else if ( subtype == JAG_C_COL_TYPE_TIME ) {
+		//prt(("s2234 begin2=[%s] end2=[%s]\n", begin2.c_str(), end2.c_str() ));
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		AbaxDataString buf1, buf2;
+		JagTime::convertTimeToStr( begin1, buf1, 0 );
+		JagTime::convertTimeToStr( end1, buf2, 0 );
+
+		if ( buf1 == begin2 && buf2 == end2 ) return true;
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIME ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		time_t begin1t, end1t;
+		begin1t = jagatoll( begin1.c_str() )/1000000;  // microseconds to seconds
+		end1t = jagatoll( end1.c_str() )/1000000;  // microseconds to seconds
+
+		time_t begin2t, end2t;
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), false )/1000000;
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), false )/1000000;
+		if ( begin2t == begin1t && end1t == end2t ) return true;
+	} else {
+		double begin1n = jagatof( begin1.c_str() );
+		double end1n = jagatof( end1.c_str() );
+		double begin2n = jagatof( begin2.c_str() );
+		double end2n = jagatof( end2.c_str() );
+		if ( begin2n == begin1n && end1n == end2n ) return true;
 	}
 	
 	return false;

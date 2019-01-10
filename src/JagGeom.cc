@@ -1483,9 +1483,9 @@ bool JagGeo::doConeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 		double y0 = jagatof( sp2[1].c_str() ); 
 		double z0 = jagatof( sp2[2].c_str() ); 
 		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double h = jagatof( sp2[4].c_str() );
+		double nx = safeget( sp2, 5 );
+		double ny = safeget( sp2, 6 );
 		return coneWithinCone( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -3252,6 +3252,24 @@ bool JagGeo::lineStringWithinLineString(  const AbaxDataString &mk1, const JagSt
 	return true;
 }
 
+bool JagGeo::sequenceSame(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+											const AbaxDataString &mk2, const JagStrSplit &sp2 )
+{
+	int start1 = 0;
+	if ( mk1 == JAG_OJAG ) { start1 = 1; }
+	int start2 = 0;
+	if ( mk2 == JAG_OJAG ) { start2 = 1; }
+	if ( sp1.length() - start1 != sp2.length() - start2 ) {
+		return false;
+	}
+
+	int j = start2;
+	for ( int i=start1; i < sp1.length(); ++i ) {
+		if ( sp1[i] != sp2[j++] ) return false;
+	}
+
+	return true;
+}
 
 bool JagGeo::lineStringWithinSquare( const AbaxDataString &mk1, const JagStrSplit &sp1,
                            			 double x0, double y0, double r, double nx, bool strict )
@@ -11417,6 +11435,566 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 	}
 
 	return true;
+}
+
+////////////////// same(equal) methods
+bool JagGeo::doPointSame( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+		double x0 = jagatof( sp2[0].c_str() ); 
+		double y0 = jagatof( sp2[1].c_str() ); 
+		return jagEQ(px0, x0) && jagEQ(py0, y0);
+	} else {
+		return false;
+	} 
+}
+
+bool JagGeo::doPoint3DSame( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	//prt(("s4409 doPoint3DSame colType2=[%s]\n", colType2.c_str() ));
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		double x1 = jagatof( sp2[0].c_str() ); 
+		double y1 = jagatof( sp2[1].c_str() ); 
+		double z1 = jagatof( sp2[2].c_str() ); 
+		return jagEQ( px0,x1) && jagEQ( py0, y1 ) && jagEQ(pz0, z1 );
+	} else {
+		return false;
+	}
+}
+
+bool JagGeo::doCircleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pr0 = jagatof( sp1[2].c_str() ); 
+	pr0 = meterToLon( srid2, pr0, px0, py0);
+
+	if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double r = jagatof( sp2[2].c_str() );
+		r = meterToLon( srid2, r, x, y);
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pr0, r );
+	} else {
+		return false;
+	}
+}
+
+// circle surface with x y z and orientation
+bool JagGeo::doCircle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double pr0 = jagatof( sp1[3].c_str() ); 
+
+	double nx0 = 0.0;
+	double ny0 = 0.0;
+	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[4].c_str() ); }
+	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[5].c_str() ); }
+
+	if (  colType2 == JAG_C_COL_TYPE_CIRCLE3D ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double r = jagatof( sp2[3].c_str() );
+		double nx = 0.0;
+		double ny = 0.0;
+		if ( sp2.length() >= 5 ) { nx = jagatof( sp2[4].c_str() ); }
+		if ( sp2.length() >= 6 ) { ny = jagatof( sp2[5].c_str() ); }
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pz0, z) && jagEQ(pr0, r) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
+	} else {
+		return false;
+	}
+
+}
+
+bool JagGeo::doSphereSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double pr0 = jagatof( sp1[2].c_str() ); 
+
+	if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double r = jagatof( sp2[3].c_str() );
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pz0, z) && jagEQ(pr0, r);
+	} else {
+		return false;
+	}
+}
+
+// 2D
+bool JagGeo::doSquareSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	//prt(("s3033 doSquareSame colType2=[%s] \n", colType2.c_str() ));
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pr0 = jagatof( sp1[2].c_str() ); 
+	pr0 = meterToLon( srid2, pr0, px0, py0 );
+	double nx0 = safeget( sp1, 3 );
+
+	if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double a = jagatof( sp2[2].c_str() ); 
+		a = meterToLon( srid2, a, x, y );
+		double nx = safeget(sp2, 3 );
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pr0, a) && jagEQ(nx0, nx);
+	} else {
+		return false;
+	}
+}
+
+bool JagGeo::doSquare3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double pr0 = jagatof( sp1[3].c_str() ); 
+	double nx0 = safeget( sp1, 4);
+	double ny0 = safeget( sp1, 5);
+
+	if (  colType2 == JAG_C_COL_TYPE_SQUARE3D ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double r = jagatof( sp2[3].c_str() ); 
+		double nx = safeget( sp2, 4 );
+		double ny = safeget( sp2, 5 );
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(pr0, r) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
+	} else  {
+	}
+	
+	return false;
+}
+
+
+bool JagGeo::doCubeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double pr0 = jagatof( sp1[3].c_str() ); 
+	double nx0 = safeget(sp1, 4);
+	double ny0 = safeget(sp1, 5);
+
+	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double r = jagatof( sp2[3].c_str() ); 
+		double nx = safeget( sp2, 4 );
+		double ny = safeget( sp2, 5 );
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(pr0, r) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
+	} else {
+		return false;
+	}
+}
+
+// 2D
+bool JagGeo::doRectangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double a0 = jagatof( sp1[2].c_str() ); 
+	double b0 = jagatof( sp1[3].c_str() ); 
+	double nx0 = safeget( sp1, 4 );
+
+	a0 = meterToLon( srid2, a0, px0, py0 );
+	b0 = meterToLat( srid2, b0, px0, py0 );
+
+	if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double a = jagatof( sp2[2].c_str() ); 
+		double b = jagatof( sp2[3].c_str() ); 
+		a = meterToLon( srid2, a, x, y );
+		b = meterToLat( srid2, b, x, y );
+		double nx = safeget( sp2, 4 );
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(nx0, nx);
+	} else {
+		return false;
+	}
+}
+
+// 3D rectiangle
+bool JagGeo::doRectangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double a0 = jagatof( sp1[3].c_str() ); 
+	double b0 = jagatof( sp1[4].c_str() ); 
+	double nx0 = safeget( sp1, 5 );
+	double ny0 = safeget( sp1, 6 );
+
+	if ( colType2 == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double a = jagatof( sp2[3].c_str() ); 
+		double b = jagatof( sp2[4].c_str() ); 
+		double nx = safeget( sp2, 5);
+		double ny = safeget( sp2, 6);
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
+	} else {
+		return false;
+	}
+
+}
+
+bool JagGeo::doBoxSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double a0 = jagatof( sp1[3].c_str() ); 
+	double b0 = jagatof( sp1[4].c_str() ); 
+	double c0 = jagatof( sp1[5].c_str() ); 
+	double nx0 = safeget( sp1, 6 );
+	double ny0 = safeget( sp1, 7 );
+
+	if ( colType2 == JAG_C_COL_TYPE_BOX ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double a = jagatof( sp2[3].c_str() ); 
+		double b = jagatof( sp2[4].c_str() ); 
+		double c = jagatof( sp2[5].c_str() ); 
+		double nx = safeget( sp2, 6 );
+		double ny = safeget( sp2, 7 );
+		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(a0, a) && jagEQ(b0, b) 
+				&& jagEQ(c0, c) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
+	} else {
+		return false;
+	}
+}
+
+// 3D
+bool JagGeo::doCylinderSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double pr0 = jagatof( sp1[3].c_str() ); 
+	double c0 = jagatof( sp1[4].c_str() ); 
+
+	double nx0 = safeget(sp1, 5);
+	double ny0 = safeget(sp1, 6);
+
+	if (  colType2 == JAG_C_COL_TYPE_CYLINDER ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double r = jagatof( sp2[3].c_str() ); 
+		double c = jagatof( sp2[4].c_str() ); 
+		double nx = safeget( sp2, 5 );
+		double ny = safeget( sp2, 6 );
+		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(pz0,z) && jagEQ(pr0, r) && jagEQ(c0, c) 
+				&& jagEQ(nx0, nx) && jagEQ(ny0, ny);
+	} else {
+		return false;
+	}
+	
+}
+
+bool JagGeo::doConeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double pr0 = jagatof( sp1[3].c_str() ); 
+	double c0 = jagatof( sp1[4].c_str() ); 
+	double nx0 = safeget(sp1, 5 );
+	double ny0 = safeget(sp1, 6 );
+
+	if ( colType2 == JAG_C_COL_TYPE_CONE ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double r = jagatof( sp2[3].c_str() );
+		double c = jagatof( sp2[4].c_str() );
+		double nx = safeget( sp2, 5 );
+		double ny = safeget( sp2, 6 );
+		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(pz0,z) && jagEQ(pr0, r) && jagEQ(c0, c) 
+				&& jagEQ(nx0, nx) && jagEQ(ny0, ny);
+	} else {
+		return false;
+	}
+}
+
+// 2D
+bool JagGeo::doEllipseSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double a0 = jagatof( sp1[2].c_str() ); 
+	double b0 = jagatof( sp1[3].c_str() ); 
+	double nx0 = safeget(sp1, 4);
+
+	a0 = meterToLon( srid2, a0, px0, py0 );
+	b0 = meterToLat( srid2, b0, px0, py0 );
+
+	if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double a = jagatof( sp2[2].c_str() );
+		double b = jagatof( sp2[3].c_str() );
+		double nx = safeget( sp2, 4);
+		a = meterToLon( srid2, a, x, y );
+		b = meterToLat( srid2, b, x, y );
+		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(nx0, nx);
+	} else { 
+		return false;
+	}
+}
+
+// 3D ellipsoid
+bool JagGeo::doEllipsoidSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double px0 = jagatof( sp1[0].c_str() ); 
+	double py0 = jagatof( sp1[1].c_str() ); 
+	double pz0 = jagatof( sp1[2].c_str() ); 
+	double a0 = jagatof( sp1[3].c_str() ); 
+	double b0 = jagatof( sp1[4].c_str() ); 
+	double c0 = jagatof( sp1[5].c_str() ); 
+	double nx0 = safeget( sp1, 6);
+	double ny0 = safeget( sp1, 7);
+
+	if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
+		double x = jagatof( sp2[0].c_str() ); 
+		double y = jagatof( sp2[1].c_str() ); 
+		double z = jagatof( sp2[2].c_str() ); 
+		double a = jagatof( sp2[3].c_str() );
+		double b = jagatof( sp2[4].c_str() );
+		double c = jagatof( sp2[5].c_str() );
+		double nx = safeget( sp2, 6);
+		double ny = safeget( sp2, 7);
+		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(pz0,z) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(c0,c)
+				&& jagEQ(nx0, nx) && jagEQ(ny0,ny);
+	} else {
+		return false;
+	}
+}
+
+// 2D triangle within
+bool JagGeo::doTriangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double x10 = jagatof( sp1[0].c_str() );
+	double y10 = jagatof( sp1[1].c_str() );
+	double x20 = jagatof( sp1[2].c_str() );
+	double y20 = jagatof( sp1[3].c_str() );
+	double x30 = jagatof( sp1[4].c_str() );
+	double y30 = jagatof( sp1[5].c_str() );
+
+	// like point within
+	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
+		// JAG_C_COL_TYPE_TRIANGLE is 2D already
+		double x1 = jagatof( sp2[0].c_str() );
+		double y1 = jagatof( sp2[1].c_str() );
+		double x2 = jagatof( sp2[2].c_str() );
+		double y2 = jagatof( sp2[3].c_str() );
+		double x3 = jagatof( sp2[4].c_str() );
+		double y3 = jagatof( sp2[5].c_str() );
+		return    jagEQ(x10,x1)
+		       && jagEQ(y10,y1)
+		       && jagEQ(x20,x2)
+		       && jagEQ(y20,y2)
+		       && jagEQ(x30,x3)
+		       && jagEQ(y30,y3);
+	} else {
+		return false;
+	}
+}
+
+// 3D  triangle
+bool JagGeo::doTriangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double x10 = jagatof( sp1[0].c_str() );
+	double y10 = jagatof( sp1[1].c_str() );
+	double z10 = jagatof( sp1[2].c_str() );
+	double x20 = jagatof( sp1[3].c_str() );
+	double y20 = jagatof( sp1[4].c_str() );
+	double z20 = jagatof( sp1[5].c_str() );
+	double x30 = jagatof( sp1[6].c_str() );
+	double y30 = jagatof( sp1[7].c_str() );
+	double z30 = jagatof( sp1[8].c_str() );
+
+	if ( colType2 == JAG_C_COL_TYPE_TRIANGLE3D ) {
+    	double x1 = jagatof( sp1[0].c_str() );
+    	double y1 = jagatof( sp1[1].c_str() );
+    	double z1 = jagatof( sp1[2].c_str() );
+    	double x2 = jagatof( sp1[3].c_str() );
+    	double y2 = jagatof( sp1[4].c_str() );
+    	double z2 = jagatof( sp1[5].c_str() );
+    	double x3 = jagatof( sp1[6].c_str() );
+    	double y3 = jagatof( sp1[7].c_str() );
+    	double z3 = jagatof( sp1[8].c_str() );
+		return    jagEQ(x10,x1)
+		       && jagEQ(y10,y1)
+		       && jagEQ(z10,z1)
+		       && jagEQ(x20,x2)
+		       && jagEQ(y20,y2)
+		       && jagEQ(z20,z2)
+		       && jagEQ(x30,x3)
+		       && jagEQ(y30,y3)
+		       && jagEQ(z30,z3);
+	} else {
+		return false;
+	}
+}
+
+// 2D line
+bool JagGeo::doLineSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double x10 = jagatof( sp1[0].c_str() );
+	double y10 = jagatof( sp1[1].c_str() );
+	double x20 = jagatof( sp1[2].c_str() );
+	double y20 = jagatof( sp1[3].c_str() );
+
+	// like point within
+	if (  colType2 == JAG_C_COL_TYPE_LINE ) {
+		double x1 = jagatof( sp2[0].c_str() );
+		double y1 = jagatof( sp2[1].c_str() );
+		double x2 = jagatof( sp2[2].c_str() );
+		double y2 = jagatof( sp2[3].c_str() );
+		return    jagEQ(x10,x1)
+		       && jagEQ(y10,y1)
+		       && jagEQ(x20,x2)
+		       && jagEQ(y20,y2);
+	} else {
+		return false;
+	}
+}
+
+bool JagGeo::doLine3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	double x10 = jagatof( sp1[0].c_str() );
+	double y10 = jagatof( sp1[1].c_str() );
+	double z10 = jagatof( sp1[2].c_str() );
+	double x20 = jagatof( sp1[3].c_str() );
+	double y20 = jagatof( sp1[4].c_str() );
+	double z20 = jagatof( sp1[5].c_str() );
+
+	if (  colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		double x1 = jagatof( sp1[0].c_str() );
+		double y1 = jagatof( sp1[1].c_str() );
+		double z1 = jagatof( sp1[2].c_str() );
+		double x2 = jagatof( sp1[3].c_str() );
+		double y2 = jagatof( sp1[4].c_str() );
+		double z2 = jagatof( sp1[5].c_str() );
+		return    jagEQ(x10,x1)
+		       && jagEQ(y10,y1)
+		       && jagEQ(z10,z1)
+		       && jagEQ(x20,x2)
+		       && jagEQ(y20,y2)
+		       && jagEQ(z20,z2);
+	} else {
+		return false;
+	}
+}
+
+// 2D linestring
+bool JagGeo::doLineStringSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	// like point within
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+		return sequenceSame( mk1, sp1, mk2, sp2 );
+	} else {
+		return false;
+	}
+}
+
+bool JagGeo::doLineString3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return sequenceSame( mk1, sp1, mk2, sp2 );
+	} else {
+		return false;
+	}
+}
+
+bool JagGeo::doPolygonSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	/***
+	//sp1.print();
+	i=0 [OJAG=0=test.pol2.po2=PL]
+	i=1 [0.0:0.0:500.0:600.0] // bbox
+	i=2 [0.0:0.0]
+	i=3 [20.0:0.0]
+	i=4 [8.0:9.0]
+	i=5 [0.0:0.0]
+	i=6 [|]
+	i=7 [1.0:2.0]
+	i=8 [2.0:3.0]
+	i=9 [1.0:2.0]
+	***/
+
+	if ( colType2 != JAG_C_COL_TYPE_POLYGON ) {
+		return false;
+	} 
+
+	return sequenceSame( mk1, sp1, mk2, sp2 );
+}
+
+bool JagGeo::doMultiPolygonSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 != JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return false;
+	} 
+
+	return sequenceSame( mk1, sp1, mk2, sp2 );
+}
+
+
+bool JagGeo::doPolygon3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 != JAG_C_COL_TYPE_POLYGON ) {
+		return false;
+	} 
+	return sequenceSame( mk1, sp1, mk2, sp2 );
+}
+
+bool JagGeo::doMultiPolygon3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return false;
+	} 
+	return sequenceSame( mk1, sp1, mk2, sp2 );
 }
 
 

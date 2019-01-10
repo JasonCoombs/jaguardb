@@ -818,7 +818,59 @@ class JagGeo
    	static double doMultiPolygonPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
    	static double doMultiPolygon3DPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
 
+	/////////////////////////////////////// same(equal) function ///////////////////////////////////////////
+   	static bool doPointSame(  const JagStrSplit &sp1, const AbaxDataString &mk2, 
+								const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doPoint3DSame( const JagStrSplit &sp1, const AbaxDataString &mk2, 
+								const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doTriangleSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+									const JagStrSplit &sp2 );
+   	static bool doTriangle3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+									const JagStrSplit &sp2 );
+   	static bool doCircleSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+									const JagStrSplit &sp2 );
+   	static bool doCircle3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+									const JagStrSplit &sp2 );
+   	static bool doSphereSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doBoxSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doRectangleSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doRectangle3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doSquareSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doSquare3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									  int srid2, const JagStrSplit &sp2 );
+   	static bool doCubeSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									 int srid2, const JagStrSplit &sp2 );
+   	static bool doCylinderSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									 int srid2, const JagStrSplit &sp2 );
+   	static bool doConeSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doEllipseSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doEllipsoidSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doLineSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doLine3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static bool doLineStringSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doLineString3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									  const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doPolygonSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doPolygon3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									  const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doMultiPolygonSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doMultiPolygon3DSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
 
+	static bool sequenceSame( const AbaxDataString &mk1, const JagStrSplit &sp1, const AbaxDataString &mk2, const JagStrSplit &sp2  );
 	/*****
 	// polygon intersect
 	static bool multiPolygonIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,

@@ -243,6 +243,8 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllWithin( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 bool strict=true );
+	bool doAllSame( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
+							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
 	bool doAllClosestPoint( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
 							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
 							 AbaxDataString &res );

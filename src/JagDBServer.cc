@@ -2712,6 +2712,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "                 distance=symmetric/asymmetric:RADIUS,join=round/miter:N,end=round/flat,point=circle/square:N\n";
 		str += "    length(col)            -- get length of line/3d, linestring/3d, multilinestring/3d\n";
 		str += "    perimeter(col)         -- get perimeter length of a closed shape (vector or raster)\n";
+		str += "    equal(g1,g2)           -- check if shape g1 is exactly the same as shape g2\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

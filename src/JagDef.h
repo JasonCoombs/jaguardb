@@ -447,6 +447,7 @@
 #define JAG_FUNC_ANGLE          257  // angle (0-359) between line segments
 #define JAG_FUNC_BUFFER         258  // buffer (polygon) of points/multipoints/line/linestring/polygon
 #define JAG_FUNC_PERIMETER		259  // length of polygons and multipolygons, squares, rectangles, etc
+#define JAG_FUNC_SAME		    260  // is two shapes are equal
 
 
 // multi-line data ( string functions )
