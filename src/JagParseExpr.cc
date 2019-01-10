@@ -3483,7 +3483,6 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		prt(("s2033 root is NULL\n" ));
 	}
 	**/
-
 	
 	if ( *p == '\'' || *p == '"' ) {
 		// quote operand is constant
@@ -4482,7 +4481,7 @@ bool BinaryExpressionBuilder::nameAndOpGood( const JagParser *jpsr, const AbaxDa
 // op can be WITHIN, CONTAIN, COVER, COVERED, OVERLAP, INTERSECT
 // within: point-> line, linestring, triangle, square, cube, ...
 // within:  triangle -> triangle, square, cube, ...
-bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, 
+bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, 
 											const AbaxDataString &carg )
 {
 	//prt(("s5481 do processBooleanOp lstr=[%s]\n", lstr.c_str() ));
@@ -4491,6 +4490,22 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
 	//  rstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
 	//  rstr : CJAG=0=0=type=subtype  data1 data2 data3 ...
+
+	AbaxDataString lstr;
+	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
+		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
+		if ( rc1 < 0 ) return false;
+	} else {
+		lstr = inlstr.c_str();
+	}
+
+    AbaxDataString rstr;
+    if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
+        int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
+        if ( rc2 < 0 ) return false;
+    } else {
+        rstr = inrstr.c_str();
+    }
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
 	AbaxDataString colobjstr2 = rstr.firstToken(' ');
@@ -4583,12 +4598,28 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &lstr, const Ab
 // op can be WITHIN, CONTAIN, COVER, COVERED, OVERLAP, INTERSECT
 // within: point-> line, linestring, triangle, square, cube, ...
 // within:  triangle -> triangle, square, cube, ...
-bool BinaryOpNode::processStringOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, 
+bool BinaryOpNode::processStringOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, 
 											const AbaxDataString &carg, AbaxDataString &res )
 {
-	prt(("s5481 do processStringOp lstr=[%s]\n", lstr.c_str() ));
-	prt(("s5481 do processStringOp rstr=[%s]\n", rstr.c_str() ));
+	prt(("s5481 do processStringOp lstr=[%s]\n", inlstr.c_str() ));
+	prt(("s5481 do processStringOp rstr=[%s]\n", inrstr.c_str() ));
 	prt(("s5481 do processStringOp carg=[%s]\n", carg.c_str() ));
+
+	AbaxDataString lstr;
+	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
+		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
+		if ( rc1 < 0 ) return false;
+	} else {
+		lstr = inlstr.c_str();
+	}
+
+    AbaxDataString rstr;
+    if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
+        int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
+        if ( rc2 < 0 ) return false;
+    } else {
+        rstr = inrstr.c_str();
+    }
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
 	AbaxDataString colobjstr2 = rstr.firstToken(' ');
@@ -4671,11 +4702,18 @@ bool BinaryOpNode::processStringOp( int op, const AbaxFixString &lstr, const Aba
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
 // op can be AEA
-bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &value )
+bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &inlstr, const AbaxDataString &carg, AbaxDataString &value )
 {
 	// prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
 	//prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
+	AbaxDataString lstr;
+	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
+		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
+		if ( rc1 < 0 ) return false;
+	} else {
+		lstr = inlstr.c_str();
+	}
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
 	// colobjstr1: "OJAG=srid=db.obj.col=type"
@@ -4704,11 +4742,18 @@ bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &lstr, const 
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
 // op can be AEA
-bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &value )
+bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &inlstr, const AbaxDataString &carg, double &value )
 {
-	prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", lstr.c_str() ));
+	prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", inlstr.c_str() ));
 	//prt(("s5481 do processSingleDoubleOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
+	AbaxDataString lstr;
+	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
+		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
+		if ( rc1 < 0 ) return false;
+	} else {
+		lstr = inlstr.c_str();
+	}
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
 	// colobjstr1: "OJAG=srid=db.obj.col=type"
@@ -5158,10 +5203,11 @@ bool BinaryOpNode::doAllBBox( const AbaxDataString& mk, const AbaxDataString &co
 		int rc2;
 		if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 		    //prt(("s8383 sp.c_str()=[%s]\n", sp.c_str() ));
-			char *sec = secondTokenStart( sp.c_str() );
-			if ( ! sec ) return false;
+			//char *sec = secondTokenStart( sp.c_str() );
+			//if ( ! sec ) return false;
 			JagPolygon pgon;
-			rc2 = JagParser::addPolygonData( pgon, sec, true, false );
+			// rc2 = JagParser::addPolygonData( pgon, sec, true, false );
+			rc2 = JagParser::addPolygonData( pgon, sp, true );
 			//rc = JagParser::addPolygon3DData( pgon, sec, false, false );
 			//rc1 = JagParser::addMultiPolygonData( pgvec, p1, false, false, false );
 			if ( rc2 <= 0 ) return false; 
@@ -5169,39 +5215,43 @@ bool BinaryOpNode::doAllBBox( const AbaxDataString& mk, const AbaxDataString &co
 			pgon.bbox2D( xmin, ymin, xmax, ymax );
 			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(xmax) + " " + doubleToStr(ymax);
 		} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
-			char *sec = secondTokenStart( sp.c_str() );
-			if ( ! sec ) return false;
+			//char *sec = secondTokenStart( sp.c_str() );
+			//if ( ! sec ) return false;
 			JagPolygon pgon;
-			rc2 = JagParser::addPolygon3DData( pgon, sec, true, false );
+			// rc2 = JagParser::addPolygon3DData( pgon, sec, true, false );
+			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
 			if ( rc2 <= 0 ) return false;
 			double xmin,ymin,zmin,xmax,ymax, zmax;
 			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
 			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(zmin) + " "
 			        + doubleToStr(xmax) + " " + doubleToStr(ymax) + " " + doubleToStr(zmax);
 		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
-			char *sec = secondTokenStart( sp.c_str() );
-			if ( ! sec ) return false;
+			//char *sec = secondTokenStart( sp.c_str() );
+			//if ( ! sec ) return false;
 			JagPolygon pgon;
-			rc2 = JagParser::addPolygonData( pgon, sec, true, false );
+			// rc2 = JagParser::addPolygonData( pgon, sec, true, false );
+			rc2 = JagParser::addPolygonData( pgon, sp, true );
 			if ( rc2 <= 0 ) return false;
 			double xmin,ymin,xmax,ymax;
 			pgon.bbox2D( xmin, ymin, xmax, ymax );
 			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(xmax) + " " + doubleToStr(ymax);
 		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			char *sec = secondTokenStart( sp.c_str() );
-			if ( ! sec ) return false;
+			//char *sec = secondTokenStart( sp.c_str() );
+			//if ( ! sec ) return false;
 			JagPolygon pgon;
-			rc2 = JagParser::addPolygon3DData( pgon, sec, true, false );
+			// rc2 = JagParser::addPolygon3DData( pgon, sec, true, false );
+			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
 			if ( rc2 <= 0 ) return false;
 			double xmin,ymin,zmin,xmax,ymax, zmax;
 			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
 			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(zmin) + " "
 			        + doubleToStr(xmax) + " " + doubleToStr(ymax) + " " + doubleToStr(zmax);
 		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			char *sec = secondTokenStart( sp.c_str() );
-			if ( ! sec ) return false;
+			//char *sec = secondTokenStart( sp.c_str() );
+			//if ( ! sec ) return false;
 			JagVector<JagPolygon> pgvec;
-			rc2 = JagParser::addMultiPolygonData( pgvec, sec, true, false, false );
+			// rc2 = JagParser::addMultiPolygonData( pgvec, sec, true, false, false );
+			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, false );
 			if ( rc2 <= 0 ) return false;
 			double xmin,ymin,xmax,ymax;
 			bool rb = JagGeo::getBBox2D( pgvec, xmin,ymin,xmax,ymax );
@@ -5211,10 +5261,11 @@ bool BinaryOpNode::doAllBBox( const AbaxDataString& mk, const AbaxDataString &co
 				return false;
 			}
 		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			char *sec = secondTokenStart( sp.c_str() );
-			if ( ! sec ) return false;
+			//char *sec = secondTokenStart( sp.c_str() );
+			//if ( ! sec ) return false;
 			JagVector<JagPolygon> pgvec;
-			rc2 = JagParser::addMultiPolygonData( pgvec, sec, true, false, true );
+			// rc2 = JagParser::addMultiPolygonData( pgvec, sec, true, false, true );
+			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, true );
 			if ( rc2 <= 0 ) return false;
 			double xmin,ymin,zmin,xmax,ymax,zmax;
 			bool rb = JagGeo::getBBox3D( pgvec, xmin,ymin,zmin, xmax,ymax,zmax );
