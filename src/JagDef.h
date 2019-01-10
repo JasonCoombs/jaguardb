@@ -446,6 +446,7 @@
 #define JAG_FUNC_CLOSESTPOINT   256  // closest point on a shape from a point
 #define JAG_FUNC_ANGLE          257  // angle (0-359) between line segments
 #define JAG_FUNC_BUFFER         258  // buffer (polygon) of points/multipoints/line/linestring/polygon
+#define JAG_FUNC_PERIMETER		259  // length of polygons and multipolygons, squares, rectangles, etc
 
 
 // multi-line data ( string functions )

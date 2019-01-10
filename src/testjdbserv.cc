@@ -296,9 +296,9 @@ int main(int argc, char *argv[] )
 	//test_linefile( N );
 	//test_json( N );
 	//test_distance();
-	// test_cgal();
+	test_cgal();
 	//test_new( N );
-	test_equation();
+	//test_equation();
 }
 
 
@@ -3184,7 +3184,7 @@ void test_distance()
 	latb1 = 52.2;
 	lonb1 = 5.39;
 
-	double dist = JagGeo::pointToLineDistance( lata1, lona1, lata2, lona2, latb1, lonb1 );
+	double dist = JagGeo::pointToLineGeoDistance( lata1, lona1, lata2, lona2, latb1, lonb1 );
 	prt(("dist=%.3f meters\n", dist ));
 }
 
@@ -3304,6 +3304,8 @@ void test_cgal()
   std::cout << "The convex hull contains " << num_vertices(sm) << " vertices" << std::endl;
 ***/
 
+	boost::geometry::model::multi_polygon<BoostPolygon2D> mbgon;
+	double ds = boost::geometry::perimeter( mbgon );
 
 }
 #endif

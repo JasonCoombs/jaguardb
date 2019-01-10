@@ -74,5 +74,5 @@ createKeyPair: createKeyPair.o
 	$(CPP) -o createKeyPair.bin  createKeyPair.o libJaguarClient.so $(STDLIBS)
 
 testjdbserv: testjdbserv.o $(OBJS) 
-	$(GPP) -o testjdbserv testjdbserv.o libJaguarClient.so $(STDLIBS)
+	$(GPP) -o testjdbserv testjdbserv.o libJaguarClient.so $(STDLIBS) -lpthread
 

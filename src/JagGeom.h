@@ -799,6 +799,25 @@ class JagGeo
    	static double doPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
    	static double doMultiPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
 
+	// 2D area or 3D perimeter
+   	static double doCirclePerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doCircle3DPerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doSquarePerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doSquare3DPerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doCubePerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doRectanglePerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doRectangle3DPerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doBoxPerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doTrianglePerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doTriangle3DPerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doEllipsePerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doEllipse3DPerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doEllipsoidPerimeter(  int srid1, const JagStrSplit &sp1 );
+   	static double doPolygonPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doPolygon3DPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doMultiPolygonPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doMultiPolygon3DPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
+
 
 	/*****
 	// polygon intersect
@@ -1590,6 +1609,8 @@ class JagGeo
     static double meterToLon( int srid, double meter, double lon, double lat);
     static double meterToLat( int srid, double meter, double lon, double lat);
 	static double computePolygonArea( const JagVector<std::pair<double,double>> &vec );
+	static double computePolygonPerimeter( const JagVector<std::pair<double,double>> &vec, int srid );
+	static double computePolygon3DPerimeter( const JagVector<JagPoint3D> &vec, int srid );
 	static bool lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y );
 	static bool lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z );
 	static void findMinBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy,

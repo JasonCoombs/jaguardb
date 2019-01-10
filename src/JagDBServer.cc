@@ -2711,6 +2711,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    buffer(col, 'STRATEGY')  -- get polygon buffer of a shape. The STRATEGY is:\n";
 		str += "                 distance=symmetric/asymmetric:RADIUS,join=round/miter:N,end=round/flat,point=circle/square:N\n";
 		str += "    length(col)            -- get length of line/3d, linestring/3d, multilinestring/3d\n";
+		str += "    perimeter(col)         -- get perimeter length of a closed shape (vector or raster)\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
@@ -2721,6 +2722,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "select * from tm where dt < time() - tomicrosecond('1D');\n";
 		str += "select angle(c1,c2) from g3 where id < 100;\n";
 		str += "select buffer(col2, 'distance=symmetric:20,join=round:20,end=round') as buf from g2;\n";
+		str += "select perimeter(squares) as perim from myshape;\n";
 	} else if ( 0 == strncasecmp( cmd, "update", 6 ) ) {
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1='...' and KEY2='...', ... ;\n";
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1>='...' and KEY2>='...', ...;\n";

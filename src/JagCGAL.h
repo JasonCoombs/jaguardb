@@ -17,7 +17,8 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
-//#include <boost/geometry/geometries/adapted/boost_polygon.hpp>
+#include <boost/geometry/algorithms/perimeter.hpp>
+
 
 #include <JagGeom.h>
 
@@ -37,7 +38,7 @@ typedef CartKernel::Point_3 CartKernelPoint3;
 
 typedef boost::geometry::model::d2::point_xy<double> BoostPoint2D;
 typedef boost::geometry::model::linestring<BoostPoint2D> BoostLineString2D;
-typedef boost::geometry::model::polygon<BoostPoint2D> BoostPolygon2D;
+typedef boost::geometry::model::polygon<BoostPoint2D,false> BoostPolygon2D;
 typedef boost::geometry::ring_type<BoostPolygon2D>::type BoostRingType;
 
 

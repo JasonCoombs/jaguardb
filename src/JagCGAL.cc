@@ -291,7 +291,7 @@ bool JagCGAL::getBufferMultiPoint2DStr( const JagLineString &line, int srid, con
 
 bool JagCGAL::getBufferPolygon2DStr(  const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value )
 {
-	boost::geometry::model::polygon<BoostPoint2D> bgon;
+	boost::geometry::model::polygon<BoostPoint2D,false> bgon;
 	for ( int i=0; i < pgon.size(); ++i ) {
 		const JagLineString3D &linestr = pgon.linestr[i];
 		std::vector< BoostPoint2D > pointList; 
@@ -306,7 +306,7 @@ bool JagCGAL::getBufferPolygon2DStr(  const JagPolygon &pgon, int srid, const Ab
 	}
 
 	JagVector<JagPolygon> pgvec;
-	bool rc = getBuffer2D<boost::geometry::model::polygon<BoostPoint2D> >( bgon, arg, pgvec );
+	bool rc = getBuffer2D<boost::geometry::model::polygon<BoostPoint2D,false> >( bgon, arg, pgvec );
 	if ( ! rc ) {
 		prt(("s2428 getBuffer2D rc=%d error\n", rc ));
 		return false;
@@ -347,7 +347,7 @@ bool JagCGAL::getBufferMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec, i
 {
 	boost::geometry::model::multi_polygon<BoostPolygon2D> mbgon;
 	for ( int k=0; k < pgvec.size(); ++k ) {
-		boost::geometry::model::polygon<BoostPoint2D> bgon;
+		boost::geometry::model::polygon<BoostPoint2D,false> bgon;
 		const JagPolygon &pgon = pgvec[k];
 		for ( int i=0; i < pgon.size(); ++i ) {
     		const JagLineString3D &linestr = pgon.linestr[i];
@@ -371,11 +371,11 @@ bool JagCGAL::getBufferMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec, i
 	}
 
 	rc = get2DStrFromMultiPolygon( pgvec2, srid, value );
+
+	//double ds = boost::geometry::perimeter( mbgon );
+
 	return rc;
 }
-
-
-
 
 
 // common method

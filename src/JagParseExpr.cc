@@ -1034,6 +1034,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_CLOSESTPOINT ) str = "closestpoint";
 	else if ( binaryOp == JAG_FUNC_ANGLE ) str = "angle";
 	else if ( binaryOp == JAG_FUNC_AREA ) str = "area";
+	else if ( binaryOp == JAG_FUNC_PERIMETER ) str = "perimeter";
 	else if ( binaryOp == JAG_FUNC_VOLUME ) str = "volume";
 	else if ( binaryOp == JAG_FUNC_DIMENSION ) str = "dimension";
 	else if ( binaryOp == JAG_FUNC_GEOTYPE ) str = "geotype";
@@ -1154,7 +1155,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		siglen = JAG_DOUBLE_SIG_LEN;
 	} else if ( !_right ) {
 		// one child
-		prt(("s6512 one left child ltmode=%d\n", ltmode ));
+		//prt(("s6512 one left child ltmode=%d\n", ltmode ));
 		if ( 0 == ltmode && 
 			(( isStringOp(_binaryOp) || isSpecialOp(_binaryOp) || isTimedateOp(_binaryOp) ) 
 			   && _binaryOp != JAG_FUNC_LENGTH ) ) {
@@ -1167,10 +1168,10 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 				type = ltype;
 				collen = lcollen;
 				siglen = lsiglen;
-				prt(("s8120 type=[%s] lcollen=%d \n", type.c_str(), lcollen ));
+				//prt(("s8120 type=[%s] lcollen=%d \n", type.c_str(), lcollen ));
 			}
 		} else {
-			prt(("s2035 JAG_C_COL_TYPE_FLOAT JAG_MAX_INT_LEN JAG_MAX_SIG_LEN\n" ));
+			//prt(("s2035 JAG_C_COL_TYPE_FLOAT JAG_MAX_INT_LEN JAG_MAX_SIG_LEN\n" ));
 			ltmode = 2;
 			type = JAG_C_COL_TYPE_FLOAT;
 			collen = JAG_MAX_INT_LEN;
@@ -1178,7 +1179,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		}
 	} else {
 		// two children
-		prt(("s7102 two children\n" ));
+		//prt(("s7102 two children\n" ));
 		if ( 0 == ltmode && 0 == rtmode && _binaryOp == JAG_NUM_ADD ) {
 			type = ltype;
 			collen = lcollen + rcollen;
@@ -3017,6 +3018,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		ltmode = 2;
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_AREA  ||  _binaryOp == JAG_FUNC_VOLUME 
+				|| _binaryOp == JAG_FUNC_PERIMETER 
 			    || _binaryOp == JAG_FUNC_XMIN || _binaryOp == JAG_FUNC_YMIN || _binaryOp == JAG_FUNC_ZMIN
 	            || _binaryOp == JAG_FUNC_XMAX || _binaryOp == JAG_FUNC_YMAX || _binaryOp == JAG_FUNC_ZMAX ) {
 		ltmode = 2; // double
@@ -3758,16 +3760,16 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 	while ( 1 ) {
 		int fop = operatorStack.top();
 		if ( fop == '(' ) {
-			prt(("s8733 in processRightParenthesis see (, pop it and break\n" ));
+			//prt(("s8733 in processRightParenthesis see (, pop it and break\n" ));
 			operatorStack.pop(); // remove '('
 			break;
 		} else if ( checkFuncType( fop ) ) {
-			prt(("s4093 procRightParent see fop=%d(%s) doBinary, operatorStack.pop(); break\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
+			//prt(("s4093 procRightParent see fop=%d(%s) doBinary, operatorStack.pop(); break\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 			break;
 		} else {
-			prt(("s4094 in procRightParent see fop=%d doBinary, operatorStack.pop(); loop\n", fop));
+			//prt(("s4094 in procRightParent see fop=%d doBinary, operatorStack.pop(); loop\n", fop));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 		}
@@ -4087,6 +4089,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NEARBY || 
 		fop == JAG_FUNC_ALL || 
 		fop == JAG_FUNC_AREA || 
+		fop == JAG_FUNC_PERIMETER || 
 		fop == JAG_FUNC_VOLUME || 
 		fop == JAG_FUNC_DIMENSION || 
 		fop == JAG_FUNC_GEOTYPE || 
@@ -4321,6 +4324,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_MILETOMETER; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "area", 4 ) ) {
 		fop = JAG_FUNC_AREA; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "perimeter", 9 ) ) {
+		fop = JAG_FUNC_PERIMETER; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "angle", 5 ) ) {
 		fop = JAG_FUNC_ANGLE; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "volume", 6 ) ) {
@@ -4791,6 +4796,8 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const 
 		rc = doAllMinMax( op, mark1, colType1, sp1, value );
 	} else if (  op == JAG_FUNC_VOLUME ) {
 		rc = doAllVolume( mark1, colType1, srid1, sp1, value );
+	} else if (  op == JAG_FUNC_PERIMETER ) {
+		rc = doAllPerimeter( mark1, colType1, srid1, sp1, value );
 	} else {
 	}
 	return rc;
@@ -6024,6 +6031,93 @@ bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &c
 		return true;
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		return false;
+	} else { 
+		return false;
+	} 
+
+	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
+	return false;
+}
+
+
+bool BinaryOpNode::doAllPerimeter( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, 
+									 const JagStrSplit &sp1, double &value )
+{
+	//prt(("s2315 colType1=[%s] \n", colType1.c_str() ));
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE ) {
+		value = JagGeo::doCirclePerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE3D ) {
+		value = JagGeo::doCircle3DPerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_SPHERE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE ) {
+		value = JagGeo::doSquarePerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE3D ) {
+		value = JagGeo::doSquare3DPerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_CUBE ) {
+		value = JagGeo::doCubePerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE ) {
+		value = JagGeo::doRectanglePerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		value = JagGeo::doRectangle3DPerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_BOX ) {
+		value = JagGeo::doBoxPerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE ) {
+		value = JagGeo::doTrianglePerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		value = JagGeo::doTriangle3DPerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_CYLINDER ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_CONE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSE ) {
+		value = JagGeo::doEllipsePerimeter(  srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSOID ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		value = JagGeo::doPolygonPerimeter(  mk1, srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
+		value = JagGeo::doPolygon3DPerimeter(  mk1, srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return false;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		value = JagGeo::doMultiPolygonPerimeter( mk1, srid1, sp1 );
+		return true;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		value = JagGeo::doMultiPolygon3DPerimeter( mk1, srid1, sp1 );
+		return true;
 	} else { 
 		return false;
 	} 
