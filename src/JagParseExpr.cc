@@ -6036,7 +6036,7 @@ bool BinaryOpNode::doAllArea( const AbaxDataString& mk1, const AbaxDataString &c
 bool BinaryOpNode::doAllMinMax( int op, const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, double &value )
 {
 	prt(("s2815 colType=[%s] sp.print(): \n", colType.c_str() ));
-	sp.print();
+	//sp.print();
 
 	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
 	value = 0.0;
@@ -6046,43 +6046,126 @@ bool BinaryOpNode::doAllMinMax( int op, const AbaxDataString& mk, const AbaxData
 		return rc;
 	}
 
-	int len;
-	for ( int i=0; i < sp.length(); ++i ) {
-		JagStrSplit ss(sp[i], ':');
-		len = ss.length();
-		if ( len < 4 ) continue;
-		if ( len == 4 ) {
-			// xmin:ymin:xmax:ymax
-			if (  op == JAG_FUNC_XMIN ) {
-				value = jagatof( ss[0].c_str() );
-			} else if ( op == JAG_FUNC_YMIN ) {
-				value = jagatof( ss[1].c_str() );
-			} else if ( op == JAG_FUNC_XMAX ) {
-				value = jagatof( ss[2].c_str() );
-			} else if ( op == JAG_FUNC_YMAX ) {
-				value = jagatof( ss[3].c_str() );
-			} 
-		} else if ( len == 6 ) {
-			if (  op == JAG_FUNC_XMIN ) {
-				value = jagatof( ss[0].c_str() );
-			} else if ( op == JAG_FUNC_YMIN ) {
-				value = jagatof( ss[1].c_str() );
-			} else if ( op == JAG_FUNC_ZMIN ) {
-				value = jagatof( ss[2].c_str() );
-			} else if ( op == JAG_FUNC_XMAX ) {
-				value = jagatof( ss[3].c_str() );
-			} else if ( op == JAG_FUNC_YMAX ) {
-				value = jagatof( ss[4].c_str() );
-			} else if ( op == JAG_FUNC_ZMAX ) {
-				value = jagatof( ss[5].c_str() );
-			} 
+	if ( mk == JAG_OJAG ) {
+    	int len;
+    	for ( int i=0; i < sp.length(); ++i ) {
+    		JagStrSplit ss(sp[i], ':');
+    		len = ss.length();
+    		if ( len < 4 ) continue;
+    		if ( len == 4 ) {
+    			// xmin:ymin:xmax:ymax
+    			if (  op == JAG_FUNC_XMIN ) {
+    				value = jagatof( ss[0].c_str() );
+    			} else if ( op == JAG_FUNC_YMIN ) {
+    				value = jagatof( ss[1].c_str() );
+    			} else if ( op == JAG_FUNC_XMAX ) {
+    				value = jagatof( ss[2].c_str() );
+    			} else if ( op == JAG_FUNC_YMAX ) {
+    				value = jagatof( ss[3].c_str() );
+    			} 
+    		} else if ( len == 6 ) {
+    			if (  op == JAG_FUNC_XMIN ) {
+    				value = jagatof( ss[0].c_str() );
+    			} else if ( op == JAG_FUNC_YMIN ) {
+    				value = jagatof( ss[1].c_str() );
+    			} else if ( op == JAG_FUNC_ZMIN ) {
+    				value = jagatof( ss[2].c_str() );
+    			} else if ( op == JAG_FUNC_XMAX ) {
+    				value = jagatof( ss[3].c_str() );
+    			} else if ( op == JAG_FUNC_YMAX ) {
+    				value = jagatof( ss[4].c_str() );
+    			} else if ( op == JAG_FUNC_ZMAX ) {
+    				value = jagatof( ss[5].c_str() );
+    			} 
+    		}
+    		rc = true;
+    		break;
+    	}
+    	return rc;
+	} else {
+		// CJAG
+		/**
+		i=0 [CJAG=0=0=LS=0]
+		i=1 [0:0]
+		i=2 [2:3]
+		i=3 [4:5]
+		i=4 [9:3]
+		i=5 [33:22]
+		**/
+		AbaxDataString bbox;
+		double xmin,ymin,xmax,ymax,zmin,zmax;
+		int rc2;
+		bool is3D = false;
+		if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygonData( pgon, sp, true );
+			if ( rc2 <= 0 ) return false; 
+			pgon.bbox2D( xmin, ymin, xmax, ymax );
+		} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
+			if ( rc2 <= 0 ) return false;
+			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			is3D = true;
+		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygonData( pgon, sp, true );
+			if ( rc2 <= 0 ) return false;
+			pgon.bbox2D( xmin, ymin, xmax, ymax );
+		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
+			if ( rc2 <= 0 ) return false;
+			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			is3D = true;
+		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+			JagVector<JagPolygon> pgvec;
+			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, false );
+			if ( rc2 <= 0 ) return false;
+			bool rb = JagGeo::getBBox2D( pgvec, xmin,ymin,xmax,ymax );
+			if ( ! rb ) { return false; }
+		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+			JagVector<JagPolygon> pgvec;
+			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, true );
+			if ( rc2 <= 0 ) return false;
+			is3D = true;
+			bool rb = JagGeo::getBBox3D( pgvec, xmin,ymin,zmin, xmax,ymax,zmax );
+			if ( ! rb ) { return false; }
+		} else {
+			return false;
 		}
-		rc = true;
-		break;
-	}
-	return rc;
-}
 
+    	if ( ! is3D ) {
+    			// xmin:ymin:xmax:ymax
+    			if (  op == JAG_FUNC_XMIN ) {
+    				value = xmin;
+    			} else if ( op == JAG_FUNC_YMIN ) {
+    				value = ymin;
+    			} else if ( op == JAG_FUNC_XMAX ) {
+    				value = xmax;
+    			} else if ( op == JAG_FUNC_YMAX ) {
+    				value = ymax;
+    			} 
+   		} else {
+    			if (  op == JAG_FUNC_XMIN ) {
+    				value = xmin;
+    			} else if ( op == JAG_FUNC_YMIN ) {
+    				value = ymin;
+    			} else if ( op == JAG_FUNC_ZMIN ) {
+    				value = zmin;
+    			} else if ( op == JAG_FUNC_XMAX ) {
+    				value = xmax;
+    			} else if ( op == JAG_FUNC_YMAX ) {
+    				value = ymax;
+    			} else if ( op == JAG_FUNC_ZMAX ) {
+    				value = zmax;
+    			} 
+   		}
+
+		rc = true;
+		return rc;
+	}
+}
 
 bool BinaryOpNode::doAllIntersect( const AbaxDataString& mark1, const AbaxDataString &colType1, 
 										int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2, 
