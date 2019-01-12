@@ -277,6 +277,7 @@ class BinaryOpNode: public ExpressionElementNode
 						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllIsClosed( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllIsSimple( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
+	bool doAllIsValid( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllNumPoints( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllNumSegments( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllNumRings( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );

@@ -1041,6 +1041,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_GEOTYPE ) str = "geotype";
 	else if ( binaryOp == JAG_FUNC_ISCLOSED ) str = "isclosed";
 	else if ( binaryOp == JAG_FUNC_ISSIMPLE ) str = "issimple";
+	else if ( binaryOp == JAG_FUNC_ISVALID ) str = "isvalid";
 	else if ( binaryOp == JAG_FUNC_POINTN ) str = "pointn";
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
@@ -1131,7 +1132,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		type = JAG_C_COL_TYPE_STR;
 		collen = 32;
 		siglen = 0;
-	} else if ( _binaryOp == JAG_FUNC_ISCLOSED ||  _binaryOp == JAG_FUNC_ISSIMPLE ) {
+	} else if ( _binaryOp == JAG_FUNC_ISCLOSED ||  _binaryOp == JAG_FUNC_ISSIMPLE ||  _binaryOp == JAG_FUNC_ISVALID ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
 		collen = 2;
@@ -3046,6 +3047,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 				 || _binaryOp == JAG_FUNC_CENTROID
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 	             || _binaryOp == JAG_FUNC_ISSIMPLE 
+	             || _binaryOp == JAG_FUNC_ISVALID 
 				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
 				 || _binaryOp == JAG_FUNC_NUMSEGMENTS 
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
@@ -4109,6 +4111,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_CENTROID || 
 		fop == JAG_FUNC_ISCLOSED || 
 		fop == JAG_FUNC_ISSIMPLE || 
+		fop == JAG_FUNC_ISVALID || 
 		fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMSEGMENTS || 
 		fop == JAG_FUNC_NUMRINGS || 
@@ -4367,6 +4370,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ISCLOSED; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "issimple", 8 ) ) {
 		fop = JAG_FUNC_ISSIMPLE; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "isvalid", 7 ) ) {
+		fop = JAG_FUNC_ISVALID; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numpoints", 9 ) ) {
 		fop = JAG_FUNC_NUMPOINTS; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numsegments", 11 ) ) {
@@ -4842,6 +4847,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllIsClosed( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_ISSIMPLE ) {
 		rc = doAllIsSimple( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_ISVALID ) {
+		rc = doAllIsValid( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_NUMPOINTS ) {
 		rc = doAllNumPoints( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_NUMSEGMENTS ) {
@@ -5754,6 +5761,46 @@ bool BinaryOpNode::doAllEndPoint( const AbaxDataString& mk, const AbaxDataString
 	return true;
 }
 
+bool BinaryOpNode::doAllIsValid( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	if ( JagParser::isVectorGeoType( colType ) ) {
+		value = "1";
+		return true;
+	}
+
+	bool rc;
+
+	rc = true;
+	value = "1";
+    if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+		JagLineString line;
+		JagParser::addLineStringData( line, sp );
+		rc = JagCGAL::getIsValidLineString2DStr( line );
+    } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		JagPolygon pgon;
+	    JagParser::addPolygonData( pgon, sp, true );
+		rc = JagCGAL::getIsValidPolygon2DStr( pgon );
+    } else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		JagPolygon pgon;
+	    JagParser::addPolygonData( pgon, sp, false );
+		rc = JagCGAL::getIsValidMultiLineString2DStr( pgon );
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		JagVector<JagPolygon> pgvec;
+		JagParser::addMultiPolygonData( pgvec, sp, false, false );
+		rc = JagCGAL::getIsValidMultiPolygon2DStr( pgvec );
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		JagLineString line;
+		JagParser::addLineStringData( line, sp );
+		rc = JagCGAL::getIsValidMultiPoint2DStr( line );
+	} else  {
+	}
+
+	if ( rc ) value = "1";
+	else value = "0";
+	return rc;
+}
+
 bool BinaryOpNode::doAllIsSimple( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
 {
 	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
@@ -5762,24 +5809,24 @@ bool BinaryOpNode::doAllIsSimple( const AbaxDataString& mk, const AbaxDataString
 		return true;
 	}
 
-	JagLineString line;
-	JagPolygon pgon;
-	JagVector<JagPolygon> pgvec;
 	bool rc;
 
 	rc = true;
 	value = "1";
     if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+		JagLineString line;
 		JagParser::addLineStringData( line, sp );
 		rc = JagCGAL::getIsSimpleLineString2DStr( line );
     } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		JagPolygon pgon;
 	    JagParser::addPolygonData( pgon, sp, true );
-		line.copyFrom( pgon.linestr[0], true );
 		rc = JagCGAL::getIsSimplePolygon2DStr( pgon );
     } else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		JagPolygon pgon;
 	    JagParser::addPolygonData( pgon, sp, false );
 		rc = JagCGAL::getIsSimpleMultiLineString2DStr( pgon );
     } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		JagVector<JagPolygon> pgvec;
 		JagParser::addMultiPolygonData( pgvec, sp, false, false );
 		rc = JagCGAL::getIsSimpleMultiPolygon2DStr( pgvec );
 	} else  {

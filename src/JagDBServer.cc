@@ -2715,6 +2715,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    perimeter(geom)         -- get perimeter length of a closed shape (vector or raster)\n";
 		str += "    equal(geom1,geom2)      -- check if shape geom1 is exactly the same as shape geom2\n";
 		str += "    issimple(geom)          -- check if shape geom has no self-intersecting or tangent points\n";
+		str += "    isvalid(geom )          -- check if multipoint, linestring, polygon, multilinestring, multipolygon is valid\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

@@ -450,6 +450,7 @@
 #define JAG_FUNC_SAME		    260  // is two shapes are equal
 #define JAG_FUNC_NUMSEGMENTS    261  // total number of segments in line, linestring/3d, multilinestring/3d
 #define JAG_FUNC_ISSIMPLE       262  // if linestring/polygon has no self-intersecting or tangent lines 
+#define JAG_FUNC_ISVALID        263  // if linestring/polygon is valid
 
 
 // multi-line data ( string functions )
