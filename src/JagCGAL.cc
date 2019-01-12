@@ -631,3 +631,83 @@ JagStrategy::~JagStrategy()
 	}
 
 }
+
+
+// IsSimple methods
+bool JagCGAL::getIsSimpleLineString2DStr( const JagLineString &line )
+{
+	JagVector<JagPolygon> pgvec;
+	boost::geometry::model::linestring<BoostPoint2D> ls;
+	for ( int i=0; i < line.size(); ++i ) {
+		boost::geometry::append( ls, BoostPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
+		prt(("s1129 append i=%d x=%s y=%s\n", i, line.point[i].x, line.point[i].y ));
+	}
+
+	//bool rc = boost::geometry::is_simple(multi_linestring);
+	bool rc = boost::geometry::is_simple( ls );
+	return rc;
+}
+
+bool JagCGAL::getIsSimplePolygon2DStr(  const JagPolygon &pgon ) 
+{
+	boost::geometry::model::polygon<BoostPoint2D,false> bgon;
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &linestr = pgon.linestr[i];
+		std::vector< BoostPoint2D > pointList; 
+		BoostRingType  ring;
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::assign_points( ring, pointList );
+		boost::geometry::append( bgon, ring );
+	}
+
+	bool rc = boost::geometry::is_simple( bgon );
+	return rc;
+}
+
+bool JagCGAL::getIsSimpleMultiLineString2DStr(  const JagPolygon &pgon )
+{
+	boost::geometry::model::multi_linestring<BoostLineString2D> mlstr;
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &linestr = pgon.linestr[i];
+		//BoostRingType ring;
+		std::vector< BoostPoint2D > pointList; 
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::append( mlstr, pointList );
+	}
+
+	bool rc = boost::geometry::is_simple( mlstr );
+	return rc;
+	//return true;
+}
+
+bool JagCGAL::getIsSimpleMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec )
+{
+	boost::geometry::model::multi_polygon<BoostPolygon2D> mbgon;
+	for ( int k=0; k < pgvec.size(); ++k ) {
+		boost::geometry::model::polygon<BoostPoint2D,false> bgon;
+		const JagPolygon &pgon = pgvec[k];
+		for ( int i=0; i < pgon.size(); ++i ) {
+    		const JagLineString3D &linestr = pgon.linestr[i];
+    		BoostRingType ring;
+    		std::vector< BoostPoint2D > pointList; 
+    		for (  int j=0; j< linestr.size(); ++j ) {
+    			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+    			pointList.push_back(p2);
+    		}
+    		boost::geometry::assign_points( ring, pointList );
+			boost::geometry::append( bgon, ring );
+		}
+    	mbgon.push_back( bgon );
+	}
+
+	bool rc = boost::geometry::is_simple( mbgon );
+	return rc;
+}

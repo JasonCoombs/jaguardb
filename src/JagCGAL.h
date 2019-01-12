@@ -80,6 +80,11 @@ class JagCGAL
     static bool getBufferMultiLineString2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value );
     static bool getBufferMultiPolygon2DStr( const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &arg, AbaxDataString &value );
 
+    static bool getIsSimpleLineString2DStr( const JagLineString &line );
+    static bool getIsSimpleMultiLineString2DStr( const JagPolygon &pgon );
+    static bool getIsSimplePolygon2DStr( const JagPolygon &pgon );
+    static bool getIsSimpleMultiPolygon2DStr( const JagVector<JagPolygon> &pgvec );
+
 	template <class TGeo>
     static bool getBuffer2D( const TGeo &obj, const AbaxDataString &arg, JagVector<JagPolygon> &pgvec );
 

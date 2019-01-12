@@ -448,7 +448,8 @@
 #define JAG_FUNC_BUFFER         258  // buffer (polygon) of points/multipoints/line/linestring/polygon
 #define JAG_FUNC_PERIMETER		259  // length of polygons and multipolygons, squares, rectangles, etc
 #define JAG_FUNC_SAME		    260  // is two shapes are equal
-#define JAG_FUNC_NUMSEGMENTS       261  // total number of segments in line, linestring/3d, multilinestring/3d
+#define JAG_FUNC_NUMSEGMENTS    261  // total number of segments in line, linestring/3d, multilinestring/3d
+#define JAG_FUNC_ISSIMPLE       262  // if linestring/polygon has no self-intersecting or tangent lines 
 
 
 // multi-line data ( string functions )

@@ -22761,7 +22761,7 @@ int JagGeo::numberOfSegments( const JagStrSplit &sp )
 	int num = 0;
 	int nc;
    	for ( int i=0; i < sp.length(); ++i ) {
-   		if ( sp[i] == "|" ) { 
+   		if ( sp[i] == "|" || sp[i] == "!" ) { 
 			--num;
 		} else {
        		nc = strchrnum( sp[i].c_str(), ':');
