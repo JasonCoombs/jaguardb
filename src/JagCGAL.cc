@@ -636,7 +636,7 @@ JagStrategy::~JagStrategy()
 // IsSimple methods
 bool JagCGAL::getIsSimpleLineString2DStr( const JagLineString &line )
 {
-	JagVector<JagPolygon> pgvec;
+	//JagVector<JagPolygon> pgvec;
 	boost::geometry::model::linestring<BoostPoint2D> ls;
 	for ( int i=0; i < line.size(); ++i ) {
 		boost::geometry::append( ls, BoostPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
@@ -716,7 +716,7 @@ bool JagCGAL::getIsSimpleMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec 
 // IsValid methods
 bool JagCGAL::getIsValidLineString2DStr( const JagLineString &line )
 {
-	JagVector<JagPolygon> pgvec;
+	//JagVector<JagPolygon> pgvec;
 	boost::geometry::model::linestring<BoostPoint2D> ls;
 	for ( int i=0; i < line.size(); ++i ) {
 		boost::geometry::append( ls, BoostPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
@@ -807,4 +807,24 @@ bool JagCGAL::getIsValidMultiPoint2DStr( const JagLineString &line )
 	boost::geometry::validity_failure_type failure;
 	bool rc = boost::geometry::is_valid( mpoint, failure );
 	return rc;
+}
+
+
+// IsRing methods
+bool JagCGAL::getIsRingLineString2DStr( const JagLineString &line )
+{
+	boost::geometry::model::linestring<BoostPoint2D> ls;
+	for ( int i=0; i < line.size(); ++i ) {
+		boost::geometry::append( ls, BoostPoint2D( jagatof(line.point[i].x), jagatof(line.point[i].y) ) );
+		prt(("s1129 append i=%d x=%s y=%s\n", i, line.point[i].x, line.point[i].y ));
+	}
+
+	//bool rc = boost::geometry::is_Valid(multi_linestring);
+	bool rc = boost::geometry::is_simple( ls );
+	if ( ! rc ) return false;
+
+	// closed
+	rc = ( line.point[0].equal2D( line.point[line.size()-1] ) );
+	if ( ! rc ) return false;
+	return true;
 }

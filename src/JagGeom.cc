@@ -345,6 +345,15 @@ JagPoint& JagPoint::operator=( const JagPoint& p2 )
 	return *this; 
 }
 
+bool JagPoint::equal2D(const JagPoint &p ) const
+{
+	return JagGeo::jagEQ( jagatof(x), jagatof(p.x) ) && JagGeo::jagEQ( jagatof(y), jagatof(p.y) );
+}
+bool JagPoint::equal3D(const JagPoint &p ) const
+{
+	return JagGeo::jagEQ( jagatof(x), jagatof(p.x) ) && JagGeo::jagEQ( jagatof(y), jagatof(p.y) ) && JagGeo::jagEQ( jagatof(z), jagatof(p.z) );
+}
+
 
 JagPoint::JagPoint( const JagPoint& p2 ) 
 {

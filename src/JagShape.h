@@ -312,6 +312,8 @@ class JagPoint
 		JagPoint( const char *x, const char *y );
 		JagPoint( const char *x, const char *y, const char *z );
 		JagPoint& operator=( const JagPoint& p2 );
+		bool equal2D(const JagPoint &JagPoint ) const;
+		bool equal3D(const JagPoint &JagPoint ) const;
 		JagPoint( const JagPoint& p2 );
 		void init();
 		void copyData( const JagPoint& p2 );
