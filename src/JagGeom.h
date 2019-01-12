@@ -1479,6 +1479,8 @@ class JagGeo
 	static double getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr );
 	static AbaxDataString bboxstr( const JagStrSplit &sp, bool skipRing );
 	static int convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr );
+	static int numberOfSegments( const JagStrSplit &sp );
+
 
 
   protected:

@@ -2694,6 +2694,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    endtpoint(geom)         -- get end point of a line string geomumn. (x y [z])\n";
 		str += "    isclosed(geom)          -- check if points of a line string geomumn is closed. (0 or 1)\n";
 		str += "    numpoints(geom)         -- get total number of points of a line string or polygon\n";
+		str += "    numsegments(geom)       -- get total number of line segments of linestring/3d, multilinestring/3d\n";
 		str += "    numrings(geom)          -- get total number of rings of a polygon or multipolygon\n";
 		str += "    srid(geom)              -- get SRID of a shape geomumn\n";
 		str += "    summary(geom)           -- get a text summary of a shape geomumn\n";

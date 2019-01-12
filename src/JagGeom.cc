@@ -22751,3 +22751,26 @@ AbaxDataString JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing )
 
 	return res;
 }
+
+// of linestring/3d, multilinestring/3d
+// ps: "hdr bbx x:y ... | x:y ..."
+// ps: "hdr x:y ... | x:y ..."
+// ps: "hdr x:y ... x:y ..."
+int JagGeo::numberOfSegments( const JagStrSplit &sp )
+{
+	int num = 0;
+	int nc;
+   	for ( int i=0; i < sp.length(); ++i ) {
+   		if ( sp[i] == "|" ) { 
+			--num;
+		} else {
+       		nc = strchrnum( sp[i].c_str(), ':');
+       		if ( nc != 1 && nc != 2 ) continue;
+			++num;
+   		}
+	}
+
+	--num;
+	if ( num < 0 ) return 0;
+	return num;
+}

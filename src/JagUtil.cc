@@ -3796,6 +3796,7 @@ int levenshtein(const char *s1, const char *s2)
 // check first n chars in s for c
 char *strnchr(const char *s, int c, int n)
 {
+	if ( ! s || *s=='\0' ) return 0;
 	char *p = (char*)s;
 	while ( *p != '\0' ) {
 		if ( p-s >= n ) break;
