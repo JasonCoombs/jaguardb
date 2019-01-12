@@ -107,7 +107,7 @@ class StringElementNode: public ExpressionElementNode
   public:
 	StringElementNode();
 	StringElementNode( BinaryExpressionBuilder* builder,  const AbaxDataString &name, const AbaxFixString &value, 
-					   const AbaxDataString &columns, const JagParseAttribute &jpa, int tabnum, int typeMode=0 ) ;
+					   const JagParseAttribute &jpa, int tabnum, int typeMode=0 ) ;
 	virtual ~StringElementNode();
 	virtual int getBinaryOp() { return 0; }
 	virtual int getName( const char *&p ) { if ( _name.length() > 0 ) { p = _name.c_str(); return _tabnum; } return -1; }
@@ -145,7 +145,7 @@ class StringElementNode: public ExpressionElementNode
 	                         const char *buffers[], const AbaxDataString &uuid, const AbaxDataString &db, const AbaxDataString &tab, 
 							 const AbaxDataString &col, bool isBoundBox3D, bool is3D=false );
 
-	AbaxDataString		_columns;
+	//AbaxDataString		_columns;
 	AbaxFixString		_value;
 	unsigned int		_tabnum;
 	int					_typeMode;

@@ -2418,6 +2418,9 @@ void *JagTable::parallelSelectStatic( void * ptr )
 			pass->parseParam->selColVec[i].isAggregate = isAggregate;
 			if ( isAggregate ) hasAggregate = true;
 			offset += collen;
+
+			prt(("s2235 parseParam->selColVec i=%d name=[%s] asName=[%s]\n", 
+				 pass->parseParam->selColVec[i].name.c_str(), pass->parseParam->selColVec[i].asName.c_str() ));
 		}
 	}
 

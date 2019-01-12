@@ -4752,7 +4752,11 @@ AbaxDataString JagParser::getColumns( const char *str )
 	}
 
 	//prt(("s2220 columns res=[%s]\n", res.c_str() ));
-	return res;
+	if ( strchr( res.c_str(), ' ') || strchr( res.c_str(), ',') ) {
+		return "";
+	} else {
+		return res;
+	}
 }
 
 // add linestring data to other

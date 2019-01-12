@@ -27,6 +27,7 @@ JagParseParam::JagParseParam( const JagParser *jps )
 { 
 	jagParser = jps;
 	_rowHash = NULL;
+	_colHash = NULL;
 	_lineFile = NULL;
 	init( NULL, false ); 
 }
@@ -35,6 +36,7 @@ JagParseParam::~JagParseParam()
 {
 	//prt(("s3088 JagParseParam::~JagParseParam() \n" ));
 	if ( _rowHash ) delete _rowHash;
+	if ( _colHash ) delete _colHash;
 	if ( _lineFile ) {
 		//prt(("s3082 delete _lineFile\n" ));
 		delete _lineFile;
@@ -85,6 +87,7 @@ void JagParseParam::init( const JagParseAttribute *ijpa, bool needClean )
 	hasPoly = false;
 	polyDim = 0;
 	_rowHash = NULL;
+	_colHash = NULL;
 	_lineFile = NULL;
 	hasCountAll = false;
 	like="";
@@ -102,9 +105,13 @@ void JagParseParam::clean()
 	jpa.clean();
 
 	if ( _rowHash ) {
-		//prt(("s2838 JagParseParam::clean() ... this=%0x\n", this ));
 		delete _rowHash;
 		_rowHash = NULL;
+	}
+
+	if ( _colHash ) {
+		delete _colHash;
+		_colHash = NULL;
 	}
 
 	if ( _lineFile ) {
@@ -1133,3 +1140,8 @@ void JagParseParam::clearRowHash()
 	}
 }
 
+void JagParseParam::initColHash()
+{
+	if ( _colHash ) return;
+	_colHash = new JagHashStrStr();
+}

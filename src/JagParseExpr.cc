@@ -99,16 +99,28 @@ StringElementNode& StringElementNode::operator=(const StringElementNode& n)
 
 // ctor
 StringElementNode::StringElementNode( BinaryExpressionBuilder *builder, const AbaxDataString &name, 
-									 const AbaxFixString &value, const AbaxDataString &columns,
+									 const AbaxFixString &value, 
                        				  const JagParseAttribute &jpa, int tabnum, int typeMode )
 {
     _name = makeLowerString(name); 
 	_value = value; _jpa = jpa; _tabnum = tabnum; _typeMode = typeMode;
     _srid = _offset = _length = _sig = _nodenum = _begincol = _endcol = 0;
-    _type = ""; _columns =  columns;
+    _type = ""; 
+	// _columns =  columns;
 	_builder = builder;
 	_isElement = true;
 	// prt(("s2075 StringElementNode ctor _columns=[%s]\n", _columns.c_str() ));
+
+	if ( _name.size() > 0 ) {
+		_builder->_pparam->initColHash();
+		if ( strchr(_name.c_str(), '.' ) ) {
+			JagStrSplit sp( _name, '.' );
+			int n = sp.length();
+			_builder->_pparam->_colHash->addKeyValue( sp[n-1], "1" );
+		} else {
+			_builder->_pparam->_colHash->addKeyValue( _name, "1" );
+		}
+	}
 }
 
 // dtor
@@ -250,8 +262,6 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 	#endif
 
 	if ( _name.length() > 0 ) {
-		// bool iscomplex = JagParser::isComplexType( _type );
-		// if ( !iscomplex && ( buffers[_tabnum] == NULL || buffers[_tabnum][0] == '\0' ) ) 
 		if (  ( buffers[_tabnum] == NULL || buffers[_tabnum][0] == '\0' ) ) {
 			// this buffers does not have value, regard as true
 			typeMode = 0;
@@ -429,13 +439,21 @@ void StringElementNode::getPolyData( const AbaxDataString &polyType, JagMergeRea
 									const char *buffers[], AbaxFixString &str, bool is3D )
 {
 	AbaxDataString polyColumns;
-	//prt(("s6732 polyType=[%s] _columns=[%s] is3D=%d\n", polyType.c_str(), _columns.c_str(), is3D ));
+	// prt(("s6732 polyType=[%s] _columns=[%s] is3D=%d\n", polyType.c_str(), _columns.c_str(), is3D ));
+	prt(("s6732 polyType=[%s] is3D=%d\n", polyType.c_str(), is3D ));
 	int acqpos;
 	JagStrSplit dbc( _name, '.' );
 	AbaxDataString db = dbc[0];
 	AbaxDataString tab = dbc[1];
-	//JagStrSplit sp( _columns, '|', true );
-	JagStrSplit sp( _columns, '|' );
+	//JagStrSplit sp( _columns, '|' );
+	if ( _builder->_pparam->_allColumns.size() < 1 ) {
+		if ( _builder->_pparam->_colHash ) {
+			_builder->_pparam->_allColumns = _builder->_pparam->_colHash->getKeyStrings();
+		}
+	}
+	prt(("s2283 allColumns=[%s]\n", _builder->_pparam->_allColumns.c_str() ));
+	JagStrSplit sp( _builder->_pparam->_allColumns, '|' );
+
 	AbaxDataString colType;
 	AbaxDataString fullname;
 	JagHashStrInt hash;
@@ -1212,7 +1230,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		else constMode = rcmode;
 	}
 	
-	prt(("s5882 collen=%d type=%s ltmode=%d\n", collen, type.c_str(), ltmode ));
+	//prt(("s5882 collen=%d type=%s ltmode=%d\n", collen, type.c_str(), ltmode ));
     return 1;
 }
 
@@ -3190,9 +3208,13 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		AbaxDataString &colList )
 {
 	//prt(("s3712 BinaryExpressionBuilder::parse() str=[%s] type=%d\n", str, type ));
-	AbaxDataString columns = JagParser::getColumns( str );
-	//prt(("s2821 parse columns=[%s]\n", columns.c_str() ));
+	//AbaxDataString columns = JagParser::getColumns( str );
+	//prt(("s2821 getColumns=[%s]\n", columns.c_str() ));
 	if ( 0 == strncasecmp(str, "all(", 4 ) ) {
+		/***
+		// simple way for all, exact columns are in _colHash
+		AbaxDataString columns = JagParser::getColumns( str );
+		prt(("s2821 getColumns=[%s]\n", columns.c_str() ));
 		const char *q = str + 4;
 		while ( *q != ')' && *q != '\0' ) ++q;  // q is at )
 		if ( *q == '\0' ) throw 2008;
@@ -3208,6 +3230,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 				}
 			}
 		}
+		***/
 	} else if (  0 == strncasecmp(str, "geotype(", 8 ) ) {
 		// _GEOTYPE
 		type = 0;
@@ -3230,7 +3253,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
     const char *p = str, *q;
 	short fop = 0, len = 0, isandor = 0, ctype = 0;
 	StringElementNode lastNode;
-	lastNode._columns = columns;
+	//lastNode._columns = columns;
 	
 	while ( *p != '\0' ) {
 		while ( isspace(*p) ) ++p;
@@ -3399,7 +3422,7 @@ void BinaryExpressionBuilder::processBetween( const JagParser *jpsr, const char 
 				const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
 				AbaxDataString &colList )
 {
-	StringElementNode lnode( this, lastNode._name, lastNode._value, lastNode._columns, _jpa, 
+	StringElementNode lnode( this, lastNode._name, lastNode._value, _jpa, 
 							 lastNode._tabnum, lastNode._typeMode );
 	// process operator >=, if "isNot", process operator <
 	if ( !_isNot ) processOperator( JAG_FUNC_GREATEREQUAL, jmap );
@@ -3418,7 +3441,7 @@ void BinaryExpressionBuilder::processBetween( const JagParser *jpsr, const char 
 	else processOperator( JAG_LOGIC_OR, jmap );
 	// get second operand after and
 	// push lnode to operand stack again, and get second operand
-	StringElementNode *newNode = new StringElementNode( this, lastNode._name, lastNode._value, lastNode._columns,
+	StringElementNode *newNode = new StringElementNode( this, lastNode._name, lastNode._value, 
 														_jpa, lastNode._tabnum, lastNode._typeMode );
 
     prt(("s4440 new element, operandStack.push( newelement node )\n"));
@@ -3435,7 +3458,7 @@ void BinaryExpressionBuilder::processIn( const JagParser *jpsr, const char *&p, 
 										 const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
 										 AbaxDataString &colList )
 {
-	StringElementNode lnode( this, lastNode._name, lastNode._value, "", _jpa, lastNode._tabnum, lastNode._typeMode );
+	StringElementNode lnode( this, lastNode._name, lastNode._value, _jpa, lastNode._tabnum, lastNode._typeMode );
 	bool first = 1, hasSep = 0;
 	p += 2;
 	while ( isspace(*p) ) ++p;
@@ -3454,7 +3477,7 @@ void BinaryExpressionBuilder::processIn( const JagParser *jpsr, const char *&p, 
 		}
 
 		if ( !first ) {	
-			StringElementNode *newNode = new StringElementNode( this, lastNode._name, lastNode._value, lastNode._columns,
+			StringElementNode *newNode = new StringElementNode( this, lastNode._name, lastNode._value, 
 													_jpa, lastNode._tabnum, lastNode._typeMode );
 			operandStack.push(newNode);
 		} else {
@@ -3512,7 +3535,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		typeMode = 0;
 		r = p+1;
 		value = AbaxDataString(r, q-r);
-		StringElementNode *newNode = new StringElementNode( this, name, value, "", _jpa, 0, typeMode );
+		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
 		prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		// prt(("s0393  new StringElementNode name=[%s] value=[%s] typeMode=%d\n", name.c_str(), value.c_str(), typeMode ));
@@ -3652,7 +3675,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		typeMode = 2;
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
-		StringElementNode *newNode = new StringElementNode( this, name, value, "", _jpa, 0, typeMode );
+		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
 		prt(("s4502 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		++q; p = q;
@@ -3677,7 +3700,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		if ( typeMode > 0 ) {
 			// for no quote operand, if all digits, regard as constant
 			value = AbaxDataString(p, q-p);
-			StringElementNode *newNode = new StringElementNode( this, name, value, "", _jpa, 0, typeMode );
+			StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
 		    prt(("s4503 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 			operandStack.push(newNode);
 			//operandStack.print();
@@ -3687,7 +3710,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			// otherwise, if is first part of datediff or the fourth part of substr, regard as value
 			if ( 3 == _substrClause || 0 == _datediffClause ) {
 				value = AbaxDataString(p, q-p);
-				StringElementNode *newNode = new StringElementNode( this, name, value, "", _jpa, 0, typeMode );
+				StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
 				// prt(("s5503 processOperand new StringElementNode name=[%s] value=[%s]\n", name.c_str(), value.c_str() ));
 				operandStack.push(newNode);
 				if ( _substrClause >= 0 ) ++_substrClause;
@@ -3709,7 +3732,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 					throw 334;
 				}
 
-				StringElementNode *newNode = new StringElementNode( this, name, value, lastNode._columns, _jpa, tabnum, typeMode );
+				StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, tabnum, typeMode );
 				prt(("s5505 processOperand new StringElementNode name=[%s] value=[%s] operandStack.push()\n", name.c_str(), value.c_str() ));
 				// name="test.el1.c1:y"
 
@@ -3838,7 +3861,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			throw 1434;
 		} else right = operandStack.top();
 		operandStack.pop();
-		prt(("s3308 operandStack.pop()\n"));
+		//prt(("s3308 operandStack.pop()\n"));
 
 		// left child
 		if ( operandStack.empty() ) {
@@ -3846,7 +3869,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			throw 1435;
 		} else left = operandStack.top();
 		operandStack.pop();
-		prt(("s3309 operandStack.pop()\n"));
+		//prt(("s3309 operandStack.pop()\n"));
 
 		// if datediff, pop and process third top operand as diff type
 		if ( op == JAG_FUNC_DATEDIFF ) {
@@ -3971,14 +3994,14 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 	}
 
 	// debug
-	prt(("s4084 new BinaryOpNode with left, right, and push to operandStack op=[%s]\n", opstr.c_str() ));
-    opstr = BinaryOpNode::binaryOpStr(operatorStack.top());
-	prt(("s4094 operatorStack.top()=[%d] [%s]\n", operatorStack.top(),  opstr.c_str() ));
+	//prt(("s4084 new BinaryOpNode with left, right, and push to operandStack op=[%s]\n", opstr.c_str() ));
+    //opstr = BinaryOpNode::binaryOpStr(operatorStack.top());
+	//prt(("s4094 operatorStack.top()=[%d] [%s]\n", operatorStack.top(),  opstr.c_str() ));
 
 	BinaryOpNode *p = new BinaryOpNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
-	operandStack.print();	
+	//operandStack.print();	
 	operandStack.push(p);	
-	operandStack.print();	
+	//operandStack.print();	
 }
 
 short BinaryExpressionBuilder::precedence( short fop )

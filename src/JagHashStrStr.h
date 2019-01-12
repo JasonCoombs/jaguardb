@@ -37,7 +37,8 @@ class JagHashStrStr
 		char *getValue( const AbaxDataString &key ) const;
 		void reset();
 		bool getValue( const AbaxDataString &key, AbaxDataString &val ) const;
-		AbaxDataString getKVStrings( const char *sep = "=" );
+		AbaxDataString getKVStrings( const char *sep = "|" );
+		AbaxDataString getKeyStrings( const char *sep = "|" );
 		int  size(); // how many items
 		void removeAllKey();
 

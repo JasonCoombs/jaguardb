@@ -369,6 +369,7 @@ class JagParseParam
 	void fillRangeSubData( int colLen, CreateAttribute &cattr, int &offset, int isKey, int isSub = true );
 	void init( const JagParseAttribute *ijpa=NULL, bool needClean=true );
 	void clearRowHash();
+	void initColHash();
 
 	
 	// data memebers
@@ -451,20 +452,19 @@ class JagParseParam
 	JagVector<AbaxDataString> selAllColVec;
 	JagVector<OnlyTreeAttribute> joinOnVec;
 	JagVector<OnlyTreeAttribute> whereVec;
-	//JagVector<OnlyTreeAttribute> havingVec;
 	JagVector<abaxint> offsetVec;
 	JagHashStrInt inscolmap;
 	JagHashStrInt joincolmap;
 	JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> treecheckmap;
 	JagParseAttribute jpa;
 	const JagParser  *jagParser;
-	//AbaxDataString   allString;
 	JagParseParam    *parent;
 	JagHashStrStr    *_rowHash;
+	JagHashStrStr    *_colHash; // save column names in select and where
 	AbaxDataString   _rowUUID;
 	JagLineFile	     *_lineFile;
-	//AbaxDataString    _lastLine;
 	AbaxDataString    like;
+	AbaxDataString    _allColumns;
 
 };
 

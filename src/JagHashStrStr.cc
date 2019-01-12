@@ -160,6 +160,7 @@ JagVector<AbaxPair<AbaxDataString,AbaxDataString>> JagHashStrStr::getStrStrVecto
 }
 ***/
 
+// return "a=1|c=3|f=34" if sep is |
 AbaxDataString JagHashStrStr::getKVStrings( const char *sep)
 {
 	AbaxDataString res;
@@ -172,6 +173,27 @@ AbaxDataString JagHashStrStr::getKVStrings( const char *sep)
 				res = AbaxDataString(node->key) + "=" + node->value;
 			} else {
 				res += AbaxDataString(sep) + AbaxDataString(node->key) + "=" + node->value;
+			}
+			node = node->next;
+		}
+	}
+
+	return res;
+}
+
+// return "a|c|f" if sep is |
+AbaxDataString JagHashStrStr::getKeyStrings( const char *sep)
+{
+	AbaxDataString res;
+
+	HashNodeT *node;
+	for ( int i = 0; i < _hash.size; ++i ) {
+		node = _hash.bucket[i];
+		while ( node != NULL ) {
+			if ( res.size() < 1 ) {
+				res = AbaxDataString(node->key);
+			} else {
+				res += AbaxDataString(sep) + AbaxDataString(node->key);
 			}
 			node = node->next;
 		}
