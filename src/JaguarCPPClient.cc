@@ -2785,11 +2785,11 @@ int JaguarCPPClient::doreply( bool headerOnly )
 			_row->type = 'E';
 			_replyerrmsg = buf;
 			break;
-		} else if ( 'J' == h1 && 'V' == h2 ) {
-			// "JV"
+		} else if ( 'K' == h1 && 'V' == h2 ) {
+			// "KV"  old was "JV"
 			_row->type = 'V';
 			_row->data = buf;
-			//prt(("c3130 got JV data=[%s]\n", buf ));
+			//prt(("c3130 got KV data=[%s]\n", buf ));
 			break;
 		} else if ( 'J' == h1 && 'S' == h2 ) {
 			// "JS"

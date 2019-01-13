@@ -3057,14 +3057,14 @@ void JagDBServer::_showDatabases( JagCfg *cfg, const JagRequest &req )
 	res = JagSchema::getDatabases( cfg, req.session->replicateType );
 	JagStrSplit sp(res, '\n', true);
 	if ( sp.length() < 1 ) {
-		JagTable::sendMessageLength( req, " ", 1, "JV" );
+		JagTable::sendMessageLength( req, " ", 1, "KV" );
 		return;
 	}
 
 	for ( int i = 0; i < sp.length(); ++i ) {
 		JagRecord rec;
 		rec.addNameValue("TABLE_CAT", sp[i].c_str() );
-		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "JV" );
+		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
     }
 }
 
@@ -3125,8 +3125,8 @@ void JagDBServer::_showTables( const JagRequest &req, const JagTableSchema *tabl
 		rec.addNameValue( "TABLE_NAME", split[1].c_str() );
 		rec.addNameValue( "TABLE_TYPE", "TABLE" );
 
-		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "JV" );
-		// JV records
+		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
+		// KV records
 	}
 	if ( vec ) delete vec;
 	vec = NULL;
@@ -3165,7 +3165,7 @@ void JagDBServer::showAllIndexes( const JagRequest &req,  const JagParseParam &p
 
 void JagDBServer::_showIndexes( const JagRequest &req, const JagIndexSchema *indexschema, const AbaxDataString &dbtable )
 {
-	JagTable::sendMessageLength( req, " ", 1, "JV" );
+	JagTable::sendMessageLength( req, " ", 1, "KV" );
 }
 
 void JagDBServer::showTask( const JagRequest &req, JagDBServer *servobj )
@@ -3477,8 +3477,8 @@ void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const J
 			rec.addNameValue("KEY_SEQ", buf ); // 
 		}
 
-		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "JV" );
-		// JV records
+		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
+		// KV records
 	}
 }
 
@@ -12841,7 +12841,7 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
 		}
 
 		if ( cnt > 0 ) {
-        	int rc = JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "JV" );
+        	int rc = JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
 			prt(("s1128 sendMessageLength msg=[%s] rc=%d\n", rec.getSource(), rc  ));
 			return rc;
 		} else {
