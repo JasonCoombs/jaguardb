@@ -370,6 +370,7 @@ class JagParseParam
 	void init( const JagParseAttribute *ijpa=NULL, bool needClean=true );
 	void clearRowHash();
 	void initColHash();
+	bool isSelectConst() const;
 
 	
 	// data memebers
@@ -465,6 +466,7 @@ class JagParseParam
 	JagLineFile	     *_lineFile;
 	AbaxDataString    like;
 	AbaxDataString    _allColumns;
+	bool              _selectStar;
 
 };
 

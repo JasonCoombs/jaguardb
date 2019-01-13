@@ -962,7 +962,15 @@ int JagParser::setTableIndexList( short setType )
 		_ptrParam->objectVec.append(oname);
 	} else {
 		// check if select from multiple tables/indexs or if cmd is join related
-		if ( _ptrParam->selectTablistClause.length() < 1 ) return -2060;
+		// if ( _ptrParam->selectTablistClause.length() < 1 ) return -2060;
+		bool selectConst;
+		if ( ! _ptrParam->_selectStar && _ptrParam->_allColumns.size() < 1 ) {
+			selectConst = true;
+		} else {
+			selectConst = false;
+			if ( _ptrParam->selectTablistClause.length() < 1 ) return -2060;
+		}
+
 		char *pmultab, *pjoin, *pon;
 		pmultab = (char*)strchr( _ptrParam->selectTablistClause.c_str(), ',' );
 		pjoin = (char*)strcasestrskipquote( _ptrParam->selectTablistClause.c_str(), " join " );
@@ -1005,7 +1013,11 @@ int JagParser::setTableIndexList( short setType )
 				_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + "." + oname.indexName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
-			} else return -2080;
+			// } else return -2080;
+			} else {
+				if ( ! selectConst ) return -2080;
+			}
+
 			if ( JAG_INSERTSELECT_OP != _ptrParam->opcode ) {
 				if ( JAG_GETFILE_OP == _ptrParam->opcode ) {
 					_ptrParam->opcode = JAG_GETFILE_OP;
@@ -1238,7 +1250,10 @@ int JagParser::getAllClauses( short setType )
 			_ptrParam->tabidxpos = plist; // command position before table/index name
 			while ( isspace(*plist) ) ++plist;
 			//prt(("s7330 plist=[%s]\n", plist ));
-		} else return -2210;
+		} else {
+			// return -2210;
+		}
+
 		if ( pwhere ) {
 			*pwhere = '\0'; 
 			pwhere += 6;
@@ -1293,7 +1308,8 @@ int JagParser::getAllClauses( short setType )
 		if ( pcol ) _ptrParam->selectColumnClause = pcol;
 		if ( plist ) _ptrParam->selectTablistClause = plist;
 		// get end pos of plist
-		char *ppp = plist; while ( *ppp != '\0' ) ++ppp;
+		// char *ppp = plist; while ( *ppp != '\0' ) ++ppp;
+		char *ppp = plist; if ( ppp) { while ( *ppp != '\0' ) ++ppp; }
 		_ptrParam->endtabidxpos = ppp; // command position after table/index name
 		if ( pwhere ) { _ptrParam->selectWhereClause = pwhere; }
 		if ( pgroup ) _ptrParam->selectGroupClause = pgroup;
@@ -1423,7 +1439,7 @@ int JagParser::getAllClauses( short setType )
 		
 	} else if ( 3 == setType ) {
 		// insert_select cmd clauses
-		char *pcol, *plist, *pwhere, *pgroup, *phaving, *porder, *plimit, *ptimeout, *ppivot, *pexport;
+		char *pcol, *plist, *pwhere, *pgroup, *phaving, *porder, *plimit, *ptimeout, *pexport;
 		// get all column start position
 		pcol = _saveptr;
 		plist = (char*)strcasestrskipquote( _saveptr, " from " );
@@ -1542,7 +1558,11 @@ int JagParser::setAllClauses( short setType )
 	int rc;
 	if ( 0 == setType ) {
 		// read related, such as select
-		if ( _ptrParam->selectTablistClause.length() < 1 ) return -2400;
+		// if ( _ptrParam->selectTablistClause.length() < 1 ) return -2400;
+		if ( _ptrParam->_selectStar || _ptrParam->_allColumns.size() > 0 ) {
+			if ( _ptrParam->selectTablistClause.length() < 1 ) return -2400;
+		}
+
 		rc = setTableIndexList( 2 ); if ( rc < 0 ) return rc;
 		if ( _ptrParam->selectColumnClause.length() < 1 ) return -2410;
 		rc = setSelectColumn(); if ( rc < 0 ) return rc;
@@ -1655,6 +1675,7 @@ int JagParser::setSelectColumn()
 			*changep = '1';
 		}
 	} else if ( *(_ptrParam->selectColumnClause.c_str()) == '*' ) {
+		_ptrParam->_selectStar = true;
 		return 1;
 	}
 

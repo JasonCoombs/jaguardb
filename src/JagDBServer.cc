@@ -855,6 +855,14 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 	// methods of frequent use
 	if ( JAG_SELECT_OP == parseParam.opcode || JAG_INSERTSELECT_OP == parseParam.opcode 
 		 || JAG_GETFILE_OP == parseParam.opcode ) {
+
+
+		if (  parseParam.isSelectConst() ) {
+			 servobj->processSelectConstData( req, &parseParam );
+			 return 1;
+		}
+
+
 		AbaxDataString dbidx, tabName, idxName; 
 		JagDataAggregate *jda = NULL; int pos = 0;
 			if ( JAG_INSERTSELECT_OP == parseParam.opcode && parseParam.objectVec.size() > 1 ) {
@@ -12806,4 +12814,37 @@ AbaxDataString JagDBServer::fillDescBuf( const JagSchema *schema, const JagColum
 		}
 
 	return res;
+}
+
+int JagDBServer::processSelectConstData( const JagRequest &req, const JagParseParam *parseParam )
+{
+        JagRecord rec;
+		AbaxDataString asName;
+    	int  typeMode;
+    	AbaxDataString type;
+    	int length;
+    	ExpressionElementNode *root; 
+		int cnt = 0;
+		for ( int i=0; i < parseParam->selColVec.size(); ++i ) {
+    	    root = parseParam->selColVec[i].tree->getRoot();
+    		AbaxFixString str;
+    		root->checkFuncValidConstantOnly( str, typeMode, type, length );
+    		prt(("s7372 checkFuncValidConstantOnly str=[%s] typeMode=%d type=[%s] length=%d name=%s asname=%s\n",
+    			 str.c_str(), typeMode, type.c_str(), length, 
+    			 parseParam->selColVec[i].name.c_str(), parseParam->selColVec[i].asName.c_str() ));
+    
+			if ( str.size() > 0 ) {
+    			asName = parseParam->selColVec[i].asName;
+            	rec.addNameValue( asName.c_str(), str.c_str() );
+				++cnt;
+			}
+		}
+
+		if ( cnt > 0 ) {
+        	int rc = JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "JV" );
+			prt(("s1128 sendMessageLength msg=[%s] rc=%d\n", rec.getSource(), rc  ));
+			return rc;
+		} else {
+			return 0;
+		}
 }

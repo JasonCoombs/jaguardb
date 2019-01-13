@@ -38,6 +38,7 @@
 #include <JagStrSplitWithQuote.h>
 #include <JagParser.h>
 #include <JagLineFile.h>
+#include <JagRecord.h>
 
 JagTable::JagTable( int replicateType, const JagDBServer *servobj, const AbaxDataString &dbname, const AbaxDataString &tableName, 
 					  const JagSchemaRecord &record, bool buildInitIndex ) : _tableRecord(record), _servobj( servobj )
@@ -1944,7 +1945,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 						  AbaxDataString &errmsg, bool nowherecnt, bool isInsertSelect )
 {
 	// set up timeout for select starting timestamp
-	//prt(("s8773 JagTable::select cmd=[%s]\n", cmd ));
+	// prt(("s8773 JagTable::select cmd=[%s]\n", cmd ));
 	struct timeval now;
 	gettimeofday( &now, NULL ); 
 	abaxint bsec = now.tv_sec;
@@ -2347,7 +2348,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	}	
 
 	if ( timeoutFlag ) {
-		AbaxDataString timeoutStr = "Table select has timed out. Results have been truncated;";
+		AbaxDataString timeoutStr = "E0283 Table select has timed out. Results have been truncated;";
 		sendMessage( req, timeoutStr.c_str(), "ER" );
 	}
 	
@@ -2419,8 +2420,10 @@ void *JagTable::parallelSelectStatic( void * ptr )
 			if ( isAggregate ) hasAggregate = true;
 			offset += collen;
 
+			#ifdef DEVDEBUG
 			prt(("s2235 parseParam->selColVec i=%d name=[%s] asName=[%s]\n", 
-				 pass->parseParam->selColVec[i].name.c_str(), pass->parseParam->selColVec[i].asName.c_str() ));
+				 i, pass->parseParam->selColVec[i].name.c_str(), pass->parseParam->selColVec[i].asName.c_str() ));
+		    #endif
 		}
 	}
 
@@ -2501,6 +2504,8 @@ void *JagTable::parallelSelectStatic( void * ptr )
 		if ( ntr ) {			
 			while ( 1 ) {
 				if ( !pass->parseParam->hasExport && checkCmdTimeout( pass->starttime, pass->parseParam->timeout ) ) {
+					prt(("s1929 timeoutFlag set to 1  pass->starttime=%ld pass->parseParam->timeout=%ld\n", 
+						  pass->starttime, pass->parseParam->timeout ));
 					pass->timeoutFlag = 1;
 					break;
 				}
@@ -2660,6 +2665,7 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 									JagDataAggregate *jda, const AbaxDataString &writeName, std::atomic<abaxint> &cnt, 
 									bool nowherecnt, const JagSchemaRecord *nrec, bool oneLine )
 {
+	prt(("s4817 nonAggregateFinalbuf parseParam->hasColumn=%d\n", parseParam->hasColumn ));
 	if ( parseParam->hasColumn ) {
 		memset(finalbuf, 0, finalsendlen);
 		AbaxDataString treetype;
@@ -2674,12 +2680,8 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 			rc = root->checkFuncValid( ntr, maps, attrs, buffers, parseParam->selColVec[i].strResult, typeMode, 
 									   treetype, treelength, init, 1, 1 );
 			//prt(("s7263 strResult=[%s]\n", parseParam->selColVec[i].strResult.c_str() ));
-
 			//prt(("s2082 in JagTable::nonAggregateFinalbuf() checkFuncValid rc=%d\n", rc ));
-			if ( rc != 1 ) {
-				return;
-			}
-
+			if ( rc != 1 ) { return; }
 			offset = parseParam->selColVec[i].offset;
 			treelength = parseParam->selColVec[i].length;
 			treesig = parseParam->selColVec[i].sig;

@@ -373,6 +373,7 @@ class JagDBServer
 	void refreshUserDB( abaxint seq );
 	void refreshUserRole( abaxint seq );
 	AbaxDataString  fillDescBuf( const JagSchema *schema, const JagColumn &column, const AbaxDataString &dbobj ) const;
+	int processSelectConstData( const JagRequest &req, const JagParseParam *parseParam );
 
 
 

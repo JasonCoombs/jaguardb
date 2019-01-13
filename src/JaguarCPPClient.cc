@@ -1270,6 +1270,24 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 	int qmode = checkRegularCommands( querys );
 	AbaxDataString newquery = querys;
 	JagParseParam parseParam;
+	bool doneParse = false;
+
+	if ( 4 == qmode ) {
+		// qwer
+		rc = getParseInfo( newquery, parseParam, retmsg );
+		if ( ! rc ) {
+			_queryerrmsg = retmsg;
+			_debug && prt(("c2043 getParseInfo rc=%d return 0 [%s]\n", rc, retmsg.c_str() ));
+			return 0;
+		}
+
+		if ( parseParam.isSelectConst() ) {
+			qmode = 0;
+		}
+		doneParse = true;
+		_lastOpCode = JAG_SELECT_OP;
+		_queryCode = parseParam.opcode;
+	}
 
 	if ( _isExclusive && 6 != qmode && strncasecmp( querys, "hello", 5 ) != 0 ) {
 		prt(("Regular command is not accpeted by exclusive admin user\n"));
@@ -1329,6 +1347,8 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 				return 0;
 			}
 		}
+
+		prt(("c1282 objAttr=%0x\n", objAttr ));
 
 		bool hasFile = objAttr->hasFile, noQueryButReply = false;
 		JagVector<AbaxDataString> *files = new JagVector<AbaxDataString>();
@@ -1444,13 +1464,16 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 				_debug && prt(("c4056 rebuildHostsConnections done\n" ));
 			}
 		}
-		// JagClock tclock; tclock.start();
-		rc = getParseInfo( newquery, parseParam, retmsg );
-		// tclock.stop(); prt(("parser parse time is=%lld micro\n", tclock.elapsedusec()));
-		if ( ! rc ) {
-			_queryerrmsg = retmsg;
-			_debug && prt(("c2093 getParseInfo rc=%d return 0 [%s]\n", rc, retmsg.c_str() ));
-			return 0;
+
+		if ( ! doneParse ) {
+			// JagClock tclock; tclock.start();
+			rc = getParseInfo( newquery, parseParam, retmsg );
+			// tclock.stop(); prt(("parser parse time is=%lld micro\n", tclock.elapsedusec()));
+			if ( ! rc ) {
+				_queryerrmsg = retmsg;
+				_debug && prt(("c2093 getParseInfo rc=%d return 0 [%s]\n", rc, retmsg.c_str() ));
+				return 0;
+			}
 		}
 
 		_debug && prt(("c5023 processMultiServerCommands qmode=%d (%s)\n", qmode, querys ));
@@ -1492,11 +1515,18 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 
 	if ( JAG_END_BEGIN == setEnd && _isCluster ) {
 		// desc/show/help/hello
+		/***
 		rc = getParseInfo( newquery, parseParam, retmsg );
 		if ( *querys == '_' && _username =="admin" ) rc = true;
 		if ( ! rc ) {
 			_queryerrmsg = retmsg;
 			return 0;
+		}
+		***/
+		if ( ! doneParse ) {
+			rc = getParseInfo( newquery, parseParam, retmsg );
+			if ( ! rc ) { _queryerrmsg = retmsg; return 0; }
+			if ( *querys == '_' && _username =="admin" ) rc = true;
 		}
 
 		if ( JAG_SHOWCVER_OP == parseParam.opcode ) {
@@ -2618,7 +2648,7 @@ int JaguarCPPClient::doreply( bool headerOnly )
 		// _debug && prt(("c8832 this=%0x _row=%0x _row->data=%0x freeRow()...\n", this, _row, _row->data ));
    		freeRow( 1 );
     
-		#if 0
+		#if 1
 		if ( 'Y' != *buf && _debug ) {
     		prt(("c4930 recv sock=%d, thrd=%lld hdr=[%s] buf=[%s] type=[%c]\n", _sock, THREADID, recvhdr, buf, _row->type ));
 		}
@@ -8151,10 +8181,12 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 		// rc2 = _schemaMap->getValue( AbaxString(dbobjs[i]), *objAttr );
 		objAttr = _schemaMap->getValue( AbaxString(dbobjs[i]) );
 		if ( ! objAttr ) {
+			/***
 			prt(("s7339 error getValue for _schemaMap=%0x  dbobj=[%s] skip: printKeyStringOnly:\n", 
 					_schemaMap,  dbobjs[i].c_str()  ));
 			_schemaMap->printKeyStringOnly();
 			prt(("\n.\n"));
+			***/
 			continue;
 		}
 		// prt(("c8330 _schemaMap->getValue i=%d dbobjs[i]=[%s] getValue rc2=%d\n", i, dbobjs[i].c_str(), rc2 ));
@@ -8323,12 +8355,19 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 
 	// begin process querys
 	// for point query
+
 	if ( !isJoin(parseParam.opcode) && memcmp( minmax[0].minbuf, minmax[0].maxbuf, keylen[0] ) == 0 ) { 
 		//prt(("s0283 point query\n" ));
 		// first, need to see if request object is table or index
 		// if is index, get table kstr from index object
 		// otherwise, format kstr using minbuf
 		AbaxFixString hostkstr;
+		if ( ! objAttr ) {
+			_mapLock->readUnlock( -1 );
+			errmsg = AbaxDataString("E5054 error objAttr, no table found.");
+			return 0;
+		}
+
 		if ( objAttr->indexName.size() > 0 ) { // is index
 			const JagTableOrIndexAttrs *objAttr2 = NULL;
 			AbaxString idxdbtab = objAttr->dbName + "." + objAttr->tableName;
@@ -8375,7 +8414,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	_mapLock->readUnlock( -1 );
 	
 	if ( parseParam.opcode == JAG_GETFILE_OP && !isPointQuery ) {
-		errmsg = "E2080 getfile command must be point query";
+		errmsg = "E2580 getfile command must be point query";
 		if ( _debug ) { prt(("c5003 errmsg=%s\n", errmsg.c_str() )); }
 		return 0;
 	}

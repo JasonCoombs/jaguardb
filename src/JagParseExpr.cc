@@ -311,14 +311,15 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 
 int StringElementNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length )
 {
+	prt(("s1026 StringElementNode::checkFuncValidConstantOnly() ...\n" ));
 	if ( _value.length() > 0 ) {
 		str = _value;
 		typeMode = _typeMode;
-		// type = 0;
 		type = "";
 		length = 0;
 	}
 
+	prt(("s1120 str=_value=[%s] typeMode=%d\n", str.c_str(), typeMode ));
 	return 1;
 }
 
@@ -1400,13 +1401,22 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 // 1 OK and true ( e.g. 1 == 1 )
 int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length )
 {
+	prt(("s1128 BinaryOpNode::checkFuncValidConstantOnly _left=%0x _right=%0x\n", _left, _right ));
+
 	bool first = 0;
 	AbaxFixString lstr, rstr;
 	AbaxDataString ltype, rtype;
 	int leftVal = 1, rightVal = 1, ltmode = 0, rtmode = 0, llength = 0, rlength = 0, result = 0;
 
-	if ( _left ) leftVal = _left->checkFuncValidConstantOnly( lstr, ltmode, ltype, llength );
-	if ( _right ) rightVal = _right->checkFuncValidConstantOnly( rstr, rtmode, rtype, rlength );
+	if ( _left ) {
+		leftVal = _left->checkFuncValidConstantOnly( lstr, ltmode, ltype, llength );
+		prt(("s1177 leftVal=%d lstr=[%s]\n", leftVal, lstr.c_str() ));
+	}
+	if ( _right ) {
+		rightVal = _right->checkFuncValidConstantOnly( rstr, rtmode, rtype, rlength );
+		prt(("s1178 rightVal=%d rstr=[%s]\n", rightVal, rstr.c_str() ));
+	}
+
 	if ( leftVal < 0 || rightVal < 0 ) result = -1;
 	else {	
 		if ( !isAggregateOp( _binaryOp ) ) {
@@ -1416,10 +1426,11 @@ int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode,
 			} else if ( JAG_LOGIC_AND == _binaryOp ) {
 				result = leftVal && rightVal;
 			} else {
-				//prt(("s2810 in BinaryOpNode::checkFuncValidConstantOnly before _doCalculation \n" ));
-				//prt(("s2810 lstr=[%s]\n", lstr.c_str() ));
-				//prt(("s2810 rstr=[%s]\n", rstr.c_str() ));
+				prt(("s2810 in BinaryOpNode::checkFuncValidConstantOnly before _doCalculation \n" ));
+				prt(("s2810 lstr=[%s]\n", lstr.c_str() ));
+				prt(("s2810 rstr=[%s]\n", rstr.c_str() ));
 				result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
+				prt(("s1143 _doCalculation result=%d lstr=%s\n", result, lstr.c_str() ));
 				if ( result < 0 ) {
 					_opString = ""; _numCnts = _initK = _stddevSum = _stddevSumSqr = 0;
 				} else result = 1;
@@ -1427,17 +1438,21 @@ int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode,
 
 			if ( ltmode > rtmode ) typeMode = ltmode;
 			else typeMode = rtmode;
+			prt(("s1491 ltype=%s rtype=%s typeMode=%d\n", ltype.c_str(), rtype.c_str(), typeMode ));
 
 			if ( ltype.size() > 0 ) {
 				type = ltype;
 				length = llength;
 				str = _opString = lstr;
+				prt(("s1029 ltype >=  str=%s\n", str.c_str() ));
 			} else {
 				type = rtype;
 				length = rlength;
-				// str = _opString = lstr;  
-				str = _opString = rstr;
+				str = _opString = lstr;  
+				//str = _opString = rstr;
+				prt(("s1031 ltype <= 0 str=%s\n", str.c_str() ));
 			}
+
 		} else {
 			// ignore, since aggregate value has already been set
 			str = _opString;
@@ -2691,6 +2706,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	}
 	// +
 	else if ( _binaryOp == JAG_NUM_ADD ) {
+		prt(("s9923 JAG_NUM_ADD cmode=%d lstr=%s rstr=%s\n", cmode, lstr.c_str(), rstr.c_str()));
 		if ( 2 == cmode ) {
 			lstr = longDoubleToStr(jagstrtold(lstr.c_str(), NULL)+jagstrtold(rstr.c_str(), NULL));
 			return 1;
@@ -4842,13 +4858,13 @@ bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &inlstr, c
 bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, double &value )
 {
-	//prt(("s2059 doSingleDoubleOp sp1:\n" ));
+	prt(("s2059 doSingleDoubleOp sp1:\n" ));
 	//sp1.print();
 
 	bool rc = false;
 	if ( op == JAG_FUNC_AREA ) {
 		rc = doAllArea( mark1, colType1, srid1, sp1, value );
-	} else if ( op == JAG_FUNC_XMIN || op == JAG_FUNC_XMIN || op == JAG_FUNC_XMIN
+	} else if ( op == JAG_FUNC_XMIN || op == JAG_FUNC_YMIN || op == JAG_FUNC_ZMIN
 	            || op == JAG_FUNC_XMAX || op == JAG_FUNC_YMAX || op == JAG_FUNC_ZMAX ) {
 		rc = doAllMinMax( op, mark1, colType1, sp1, value );
 	} else if (  op == JAG_FUNC_VOLUME ) {
@@ -6290,7 +6306,6 @@ bool BinaryOpNode::doAllPerimeter( const AbaxDataString& mk1, const AbaxDataStri
 	return false;
 }
 
-
 bool BinaryOpNode::doAllMinMax( int op, const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, double &value )
 {
 	prt(("s2815 colType=[%s] sp.print(): \n", colType.c_str() ));
@@ -6354,7 +6369,16 @@ bool BinaryOpNode::doAllMinMax( int op, const AbaxDataString& mk, const AbaxData
 		double xmin,ymin,xmax,ymax,zmin,zmax;
 		int rc2;
 		bool is3D = false;
-		if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString lstr;
+			JagParser::addLineStringData( lstr, sp );
+			lstr.bbox2D( xmin, ymin, xmax, ymax );
+		} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+			JagLineString3D lstr;
+			JagParser::addLineString3DData( lstr, sp );
+			lstr.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			is3D = true;
+		} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 			JagPolygon pgon;
 			rc2 = JagParser::addPolygonData( pgon, sp, true );
 			if ( rc2 <= 0 ) return false; 

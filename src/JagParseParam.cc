@@ -91,6 +91,7 @@ void JagParseParam::init( const JagParseAttribute *ijpa, bool needClean )
 	_lineFile = NULL;
 	hasCountAll = false;
 	like="";
+	_selectStar = false;
 }
 
 // clean all trees and reset all vectors
@@ -103,6 +104,7 @@ void JagParseParam::clean()
 	// havingVec.clean(); 
 	selAllColVec.clean();
 	jpa.clean();
+	_selectStar = false;
 
 	if ( _rowHash ) {
 		delete _rowHash;
@@ -1144,4 +1146,13 @@ void JagParseParam::initColHash()
 {
 	if ( _colHash ) return;
 	_colHash = new JagHashStrStr();
+}
+
+bool JagParseParam::isSelectConst() const
+{
+	if ( _allColumns.size() < 1 && ! _selectStar && objectVec.size() < 1 ) {
+		return true;
+	} else {
+		return false;
+	}
 }
