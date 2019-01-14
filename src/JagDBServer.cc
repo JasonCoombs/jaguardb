@@ -2704,6 +2704,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    numpoints(geom)         -- get total number of points of a line string or polygon\n";
 		str += "    numsegments(geom)       -- get total number of line segments of linestring or polygon\n";
 		str += "    numrings(geom)          -- get total number of rings of a polygon or multipolygon\n";
+		str += "    numpolygons(geom)       -- get total number of polygons of a multipolygon\n";
 		str += "    srid(geom)              -- get SRID of a shape geomumn\n";
 		str += "    summary(geom)           -- get a text summary of a shape geomumn\n";
 		str += "    xmin(geom)              -- get the minimum x-coordinate of a shape with raster data\n";
@@ -2732,6 +2733,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    innerrings(polygon)     -- the inner rings as multilinestring of a polygon or multipolygon\n";
 		str += "    ringn(polygon,n)        -- the n-th ring as linestring of a polygon. n is 1-based\n";
 		str += "    innerringn(polygon,n)   -- the n-th inner ring as linestring of a polygon. n is 1-based\n";
+		str += "    polygonn(multipgon,n)   -- the n-th polygon of a multipolygon. n is 1-based\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

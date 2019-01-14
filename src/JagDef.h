@@ -461,6 +461,7 @@
 #define JAG_FUNC_POLYGONN       271  // n-th polygon (starting from 1) of multipolygon
 #define JAG_FUNC_RINGN          272  // n-th ring as linestring of polygon
 #define JAG_FUNC_INNERRINGN     273  // n-th inner ring as linestring of polygon
+#define JAG_FUNC_NUMPOLYGONS    274  // total number of polygons in a multipolygon
 
 
 // multi-line data ( string functions )

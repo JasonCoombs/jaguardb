@@ -174,6 +174,10 @@ abaxint JagStrSplit::length() const
 {
 	return length_ - start_;
 }
+abaxint JagStrSplit::size() const
+{
+	return length_ - start_;
+}
 
 abaxint JagStrSplit::slength() const
 {

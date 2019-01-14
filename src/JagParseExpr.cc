@@ -1072,11 +1072,13 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_OUTERRINGS ) str = "outerrings";
 	else if ( binaryOp == JAG_FUNC_INNERRINGS ) str = "innerrings";
 	else if ( binaryOp == JAG_FUNC_RINGN ) str = "ringn";
+	else if ( binaryOp == JAG_FUNC_POLYGONN ) str = "polygonn";
 	else if ( binaryOp == JAG_FUNC_BUFFER ) str = "buffer";
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
 	else if ( binaryOp == JAG_FUNC_NUMSEGMENTS ) str = "numsegments";
 	else if ( binaryOp == JAG_FUNC_NUMRINGS ) str = "numrings";
+	else if ( binaryOp == JAG_FUNC_NUMPOLYGONS ) str = "numpolygons";
 	else if ( binaryOp == JAG_FUNC_NUMINNERRINGS ) str = "numinnerrings";
 	else if ( binaryOp == JAG_FUNC_SRID ) str = "srid";
 	else if ( binaryOp == JAG_FUNC_SUMMARY ) str = "summary";
@@ -1133,7 +1135,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		
 	//prt(("s2238 _right=%0x\n", _right ));
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
-	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
+	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -1170,6 +1172,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_NUMPOINTS 
 				 || _binaryOp == JAG_FUNC_DIMENSION || _binaryOp == JAG_FUNC_NUMSEGMENTS
+				 ||  _binaryOp == JAG_FUNC_NUMPOLYGONS
 	             || _binaryOp == JAG_FUNC_NUMRINGS || _binaryOp == JAG_FUNC_NUMINNERRINGS ) {
 		// important for integer
 		ltmode = 1;
@@ -3095,9 +3098,10 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 	             || _binaryOp == JAG_FUNC_ISSIMPLE  || _binaryOp == JAG_FUNC_ISRING
 	             || _binaryOp == JAG_FUNC_ISVALID  || _binaryOp == JAG_FUNC_ISPOLYGONCCW 
-				 || _binaryOp == JAG_FUNC_ISPOLYGONCW
+				 || _binaryOp == JAG_FUNC_ISPOLYGONCW || _binaryOp == JAG_FUNC_POLYGONN 
 				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
 				 || _binaryOp == JAG_FUNC_NUMSEGMENTS  || _binaryOp == JAG_FUNC_NUMINNERRINGS
+				 ||  _binaryOp == JAG_FUNC_NUMPOLYGONS
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		ltmode = 0; // string
 		bool brc = false;
@@ -3915,7 +3919,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				else throw 437;				
 			} else throw 438;
 			operandStack.pop();
-		}  else if ( op == JAG_FUNC_POINTN || op == JAG_FUNC_BUFFER
+		}  else if ( op == JAG_FUNC_POINTN || op == JAG_FUNC_BUFFER || op == JAG_FUNC_POLYGONN
 		             || op == JAG_FUNC_RINGN || op == JAG_FUNC_INNERRINGN ) {
 			const char *p = NULL;
 			if ( right->getValue(p) ) {
@@ -4108,6 +4112,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_ANGLE 
 		 || fop == JAG_FUNC_POINTN 
 		 || fop == JAG_FUNC_RINGN 
+		 || fop == JAG_FUNC_POLYGONN 
 		 || fop == JAG_FUNC_INNERRINGN 
 		 || fop == JAG_FUNC_BUFFER 
 		 || BinaryOpNode::isCompareOp(fop) ) {
@@ -4163,6 +4168,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_STARTPOINT || 
 		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
+		fop == JAG_FUNC_POLYGONN || 
 		fop == JAG_FUNC_OUTERRING || 
 		fop == JAG_FUNC_OUTERRINGS || 
 		fop == JAG_FUNC_INNERRINGS || 
@@ -4179,6 +4185,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMSEGMENTS || 
 		fop == JAG_FUNC_NUMRINGS || 
+		fop == JAG_FUNC_NUMPOLYGONS || 
 		fop == JAG_FUNC_NUMINNERRINGS || 
 		fop == JAG_FUNC_SRID || 
 		fop == JAG_FUNC_SUMMARY || 
@@ -4423,6 +4430,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "convexhull", 10 ) ) {
 		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "polygonn", 8 ) ) {
+		fop = JAG_FUNC_POLYGONN; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "innerrings", 10 ) ) {
 		fop = JAG_FUNC_INNERRINGS; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "outerrings", 10 ) ) {
@@ -4459,6 +4468,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_NUMSEGMENTS; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numrings", 8 ) ) {
 		fop = JAG_FUNC_NUMRINGS; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "numpolygons", 11 ) ) {
+		fop = JAG_FUNC_NUMPOLYGONS; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numinnerrings", 13 ) ) {
 		fop = JAG_FUNC_NUMINNERRINGS; len = 13; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "srid", 4 ) ) {
@@ -4964,6 +4975,10 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllRingN( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_INNERRINGN ) {
 		rc = doAllInnerRingN( mark1, hdr, colType1, srid1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_POLYGONN ) {
+		rc = doAllPolygonN( mark1, hdr, colType1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_NUMPOLYGONS ) {
+		rc = doAllNumPolygons( mark1, hdr, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_BUFFER ) {
 		rc = doAllBuffer( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_CENTROID ) {
@@ -5874,6 +5889,54 @@ bool BinaryOpNode::doAllInnerRingN( const AbaxDataString& mk, const AbaxDataStri
 		if ( pgon.linestr.size() < N ) return false;
 		line.copyFrom( pgon.linestr[N-1], true );
 		JagCGAL::getRingStr( line, hdr, bbox, true, value );
+    } else {
+		return false;
+	}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllPolygonN( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    const JagStrSplit &sp, const AbaxDataString &carg, AbaxDataString &value )
+{
+	prt(("s3420 doAllPolygonN() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	sp.print();
+
+	value = "";
+	int N = jagatoi( carg.c_str() );
+	if ( N <= 0 ) return false;
+
+	AbaxDataString bbox;
+	if ( mk == JAG_OJAG ) { bbox = sp[0]; } 
+	JagVector<JagPolygon> pgvec;
+	int rc;
+    if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+	    JagParser::addMultiPolygonData( pgvec, sp, false, false );
+		JagCGAL::getPolygonNStr( pgvec, hdr, bbox, false, N, value );
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	    JagParser::addMultiPolygonData( pgvec, sp, false, true );
+		JagCGAL::getPolygonNStr( pgvec, hdr, bbox, true, N, value );
+    } else {
+		return false;
+	}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllNumPolygons( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    const JagStrSplit &sp, AbaxDataString &value )
+{
+	prt(("s3420 doAllNumPolygons() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	sp.print();
+	int num;
+	value = "";
+	int rc;
+    if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		num = 1;
+		for ( int i=0; i < sp.length(); ++i ) {
+			if ( sp[i] == "!" ) ++num;
+		}
+		value = intToStr( num );
     } else {
 		return false;
 	}

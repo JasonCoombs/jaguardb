@@ -38,6 +38,7 @@ class JagStrSplit
 	    AbaxDataString& operator[](int i );
 		AbaxDataString& last() const;
 		abaxint length() const;
+		abaxint size() const;
 		abaxint slength() const;
 		bool  exists(const AbaxDataString &token) const;
 		bool  contains(const AbaxDataString &token, AbaxDataString &rec ) const;

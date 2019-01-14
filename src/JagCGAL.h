@@ -100,6 +100,8 @@ class JagCGAL
     static void getRingStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
     static void getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
     static void getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
+    static void getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, 
+							   bool is3D, int N, AbaxDataString &value );
 
   protected:
   	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );
