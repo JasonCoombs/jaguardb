@@ -456,6 +456,7 @@
 #define JAG_FUNC_ISPOLYGONCW    266  // if polygon is clock-wise (outer-ring)
 #define JAG_FUNC_OUTERRING      267  // outer-ring as linestring of a polygon "hdr(LS) [bbox] x:y ..."
 #define JAG_FUNC_OUTERRINGS     268  // outer-rings as multi-linestring of a multipolygon "hdr(ML) [bbox] x:y ..."
+#define JAG_FUNC_INNERRINGS     269  // inner-rings as multi-linestring of a polygon/multipolygon "hdr(ML) [bbox] x:y ..."
 
 
 // multi-line data ( string functions )

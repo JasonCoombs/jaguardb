@@ -1476,6 +1476,8 @@ class JagGeo
 
 	static bool getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 	static bool getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
+	static bool getBBox2DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
+	static bool getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 	static double getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr );
 	static AbaxDataString bboxstr( const JagStrSplit &sp, bool skipRing );
 	static int convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr );

@@ -5801,8 +5801,7 @@ void JagParser::removeEndUnevenBracketAll( char *str )
 	}
 }
 
-
-// from OJAG type
+// from OJAG or CJAG type
 // 1: OK  < 0 error
 int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
@@ -5813,16 +5812,16 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	int nc;
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-		nc = strchrnum( str, ':');
-		if ( nc != 1 ) continue; // skip bbox
-		get2double(str, p, ':', dx, dy );
-		JagPoint2D pt(dx,dy);
 		if ( sp[i] == "|" || sp[i] == "!" ) {
 			// start a new polygon
 			if ( firstOnly ) break; 
 			pgon.add( linestr );
 			linestr.init();
 		} else {
+			nc = strchrnum( str, ':');
+			if ( nc != 1 ) continue; // skip bbox
+			get2double(str, p, ':', dx, dy );
+			JagPoint2D pt(dx,dy);
 			linestr.add( pt );
 		}
 	}
@@ -5831,7 +5830,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	return 1;
 }
 
-// from OJAG type
+// from OJAG or CJAG type
 // 1: OK  < 0 error
 int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
@@ -5842,16 +5841,15 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 	int nc;
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-		nc = strchrnum( str, ':');
-		if ( nc != 2 ) continue; // skip bbox
-		get3double(str, p, ':', dx, dy, dz );
-		JagPoint3D pt(dx,dy,dz);
 		if ( sp[i] == "|" || sp[i] == "!" ) {
-			// start a new polygon
 			if ( firstOnly ) break; 
 			pgon.add( linestr );
 			linestr.init();
 		} else {
+			nc = strchrnum( str, ':');
+			if ( nc != 2 ) continue; // skip bbox
+			get3double(str, p, ':', dx, dy, dz );
+			JagPoint3D pt(dx,dy,dz);
 			linestr.add( pt );
 		}
 	}

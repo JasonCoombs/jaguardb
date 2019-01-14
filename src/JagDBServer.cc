@@ -2727,6 +2727,9 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    isring(geom )           -- check if linestring is a ring\n";
 		str += "    ispolygonccw(geom )     -- check if the outer ring is counter-clock-wise, inner rings clock-wise\n";
 		str += "    ispolygoncw(geom  )     -- check if the outer ring is clock-wise, inner rings couter-clock-wise\n";
+		str += "    outerring(polygon)      -- the outer ring as linestring of a polygon\n";
+		str += "    outerrings(mpolygon)    -- the outer rings as multilinestring of a multipolygon\n";
+		str += "    innerrings(polygon)     -- the inner rings as multilinestring of a polygon or multipolygon\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

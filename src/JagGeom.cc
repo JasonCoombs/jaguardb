@@ -22132,6 +22132,32 @@ bool JagGeo::getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double
 	return ( cnt > 0 );
 }
 
+bool JagGeo::getBBox2DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax )
+{
+	if ( pgvec.size() < 1 ) return false;
+
+	xmin = LONG_MAX; ymin = LONG_MAX;
+	xmax = LONG_MIN; ymax = LONG_MIN;
+	double xmi, ymi, xma, yma;
+	int cnt = 0;
+	for ( int i = 0; i < pgvec.size(); ++i ) {
+		if ( pgvec[i].linestr.size() <1 ) continue;
+		// using outer ring only works well enough
+		for ( int j=1; j < pgvec[i].linestr.size(); ++j ) {
+			pgvec[i].linestr[j].bbox2D( xmi, ymi, xma, yma );
+			if ( xmi < xmin ) xmin = xmi;
+			if ( ymi < ymin ) ymin = ymi;
+			if ( xma > xmax ) xmax = xma;
+			if ( yma > ymax ) ymax = yma;
+			++cnt;
+		}
+	}
+
+	return ( cnt > 0 );
+}
+
+
+
 bool JagGeo::getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, 
 						double &xmax, double &ymax, double &zmax )
 {
@@ -22154,6 +22180,35 @@ bool JagGeo::getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double
 		if ( zma > zmax ) zmax = zma;
 
 		++cnt;
+	}
+
+	return ( cnt > 0 );
+}
+
+bool JagGeo::getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, 
+						double &xmax, double &ymax, double &zmax )
+{
+	if ( pgvec.size() < 1 ) return false;
+
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double xmi, ymi, zmi, xma, yma, zma;
+	int cnt = 0;
+	for ( int i = 0; i < pgvec.size(); ++i ) {
+		if ( pgvec[i].linestr.size() <1 ) continue;
+		// using outer ring only works well enough
+		for ( int j=1; j < pgvec[i].linestr.size(); ++j ) {
+    		pgvec[i].linestr[j].bbox3D( xmi, ymi, zmi, xma, yma, zma );
+    		if ( xmi < xmin ) xmin = xmi;
+    		if ( ymi < ymin ) ymin = ymi;
+    		if ( zmi < zmin ) zmin = zmi;
+    
+    		if ( xma > xmax ) xmax = xma;
+    		if ( yma > ymax ) ymax = yma;
+    		if ( zma > zmax ) zmax = zma;
+    
+    		++cnt;
+		}
 	}
 
 	return ( cnt > 0 );
