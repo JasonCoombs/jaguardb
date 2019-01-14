@@ -1076,6 +1076,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
 	else if ( binaryOp == JAG_FUNC_NUMSEGMENTS ) str = "numsegments";
 	else if ( binaryOp == JAG_FUNC_NUMRINGS ) str = "numrings";
+	else if ( binaryOp == JAG_FUNC_NUMINNERRINGS ) str = "numinnerrings";
 	else if ( binaryOp == JAG_FUNC_SRID ) str = "srid";
 	else if ( binaryOp == JAG_FUNC_SUMMARY ) str = "summary";
 	else if ( binaryOp == JAG_FUNC_XMIN ) str = "xmin";
@@ -1167,7 +1168,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_NUMPOINTS 
 				 || _binaryOp == JAG_FUNC_DIMENSION || _binaryOp == JAG_FUNC_NUMSEGMENTS
-	             || _binaryOp == JAG_FUNC_NUMRINGS ) {
+	             || _binaryOp == JAG_FUNC_NUMRINGS || _binaryOp == JAG_FUNC_NUMINNERRINGS ) {
 		// important for integer
 		ltmode = 1;
 		type = JAG_C_COL_TYPE_DINT;
@@ -3094,7 +3095,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	             || _binaryOp == JAG_FUNC_ISVALID  || _binaryOp == JAG_FUNC_ISPOLYGONCCW 
 				 || _binaryOp == JAG_FUNC_ISPOLYGONCW
 				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
-				 || _binaryOp == JAG_FUNC_NUMSEGMENTS 
+				 || _binaryOp == JAG_FUNC_NUMSEGMENTS  || _binaryOp == JAG_FUNC_NUMINNERRINGS
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		ltmode = 0; // string
 		bool brc = false;
@@ -4171,6 +4172,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMSEGMENTS || 
 		fop == JAG_FUNC_NUMRINGS || 
+		fop == JAG_FUNC_NUMINNERRINGS || 
 		fop == JAG_FUNC_SRID || 
 		fop == JAG_FUNC_SUMMARY || 
 		fop == JAG_FUNC_XMIN || 
@@ -4446,6 +4448,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_NUMSEGMENTS; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numrings", 8 ) ) {
 		fop = JAG_FUNC_NUMRINGS; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "numinnerrings", 13 ) ) {
+		fop = JAG_FUNC_NUMINNERRINGS; len = 13; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "srid", 4 ) ) {
 		fop = JAG_FUNC_SRID; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "xmin", 4 ) ) {
@@ -4929,6 +4933,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllNumSegments( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_NUMRINGS ) {
 		rc = doAllNumRings( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_NUMINNERRINGS ) {
+		rc = doAllNumInnerRings( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_SRID ) {
 		value = intToStr(srid1);
 		// prt(("s0293 JAG_FUNC_SRID value=[%s]\n", value.c_str() ));
@@ -6179,6 +6185,24 @@ bool BinaryOpNode::doAllNumRings( const AbaxDataString& mk, const AbaxDataString
 		int cnt = 1;
 		for ( int i =0; i < sp.length(); ++i ) {
 			if ( sp[i] == "|" || sp[i] == "!" ) ++cnt;
+		}
+		value = intToStr(cnt);
+		return true;
+	}
+	 
+	value = "0";
+	return true;
+}
+
+bool BinaryOpNode::doAllNumInnerRings( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+	if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON 
+	    || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D 
+		|| colType == JAG_C_COL_TYPE_POLYGON
+		|| colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		int cnt = 0;
+		for ( int i =0; i < sp.length(); ++i ) {
+			if ( sp[i] == "|" ) ++cnt;
 		}
 		value = intToStr(cnt);
 		return true;
