@@ -1068,6 +1068,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
+	else if ( binaryOp == JAG_FUNC_OUTERRING ) str = "outerring";
 	else if ( binaryOp == JAG_FUNC_BUFFER ) str = "buffer";
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
@@ -1127,7 +1128,8 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	}
 		
 	//prt(("s2238 _right=%0x\n", _right ));
-	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER ) {
+	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
+		 || _binaryOp == JAG_FUNC_OUTERRING ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
 		collen = 3000*JAG_POINT_LEN + 2;
@@ -3083,7 +3085,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
 				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER
-				 || _binaryOp == JAG_FUNC_CENTROID
+				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 	             || _binaryOp == JAG_FUNC_ISSIMPLE  || _binaryOp == JAG_FUNC_ISRING
 	             || _binaryOp == JAG_FUNC_ISVALID  || _binaryOp == JAG_FUNC_ISPOLYGONCCW 
@@ -4152,6 +4154,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_STARTPOINT || 
 		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
+		fop == JAG_FUNC_OUTERRING || 
 		fop == JAG_FUNC_BUFFER || 
 		fop == JAG_FUNC_CENTROID || 
 		fop == JAG_FUNC_ISCLOSED || 
@@ -4406,6 +4409,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "convexhull", 10 ) ) {
 		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "outerring", 9 ) ) {
+		fop = JAG_FUNC_OUTERRING; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "buffer", 6 ) ) {
 		fop = JAG_FUNC_BUFFER; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "centroid", 8 ) ) {
@@ -4923,6 +4928,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllSummary( mark1, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_CONVEXHULL ) {
 		rc = doAllConvexHull( mark1, hdr, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_OUTERRING ) {
+		rc = doAllOuterRing( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_BUFFER ) {
 		rc = doAllBuffer( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_CENTROID ) {
@@ -5678,6 +5685,30 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
 		} else  {
 		}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllOuterRing( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    int srid, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllConvexHull() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	//sp.print();
+	value = "";
+
+	JagLineString line;
+	JagPolygon pgon;
+    if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+	    JagParser::addPolygonData( pgon, sp, true );
+		line.copyFrom( pgon.linestr[0], true );
+		JagCGAL::getOuterRingStr( line, hdr, sp[0], false, value );
+    } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+	    JagParser::addPolygon3DData( pgon, sp, true );
+		line.copyFrom( pgon.linestr[0], true );
+		JagCGAL::getOuterRingStr( line, hdr, sp[0], true, value );
+    } else {
+		return false;
+	}
 
 	return true;
 }

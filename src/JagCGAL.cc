@@ -828,3 +828,55 @@ bool JagCGAL::getIsRingLineString2DStr( const JagLineString &line )
 	if ( ! rc ) return false;
 	return true;
 }
+
+void JagCGAL::getOuterRingStr( const JagLineString &line, const AbaxDataString &inhdr, const AbaxDataString &bbox, bool is3D,
+							   AbaxDataString &value )
+{
+	const JagVector<JagPoint> &point = line.point;
+	AbaxDataString sx, sy, sz;
+	AbaxDataString hdr = inhdr;
+	if ( is3D ) {
+		hdr.replace("=PL3=", "=LS3=");
+	} else {
+		hdr.replace("=PL=", "=LS=");
+	}
+
+	if ( bbox.size() < 1 ) {
+    	double xmin, ymin, xmax, ymax;
+    	AbaxDataString s1, s2, s3, s4;
+    	AbaxDataString newbbox;
+		if ( is3D ) {
+			double zmin, zmax;
+    		AbaxDataString s5, s6;
+    		line.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+    		s1 = doubleToStr( xmin ).trimEndZeros();
+    		s2 = doubleToStr( ymin ).trimEndZeros();
+    		s3 = doubleToStr( zmin ).trimEndZeros();
+    		s4 = doubleToStr( xmax ).trimEndZeros();
+    		s5 = doubleToStr( ymax ).trimEndZeros();
+    		s6 = doubleToStr( zmax ).trimEndZeros();
+    		newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4  + ":" + s5 + ":" + s6;
+		} else {
+    		line.bbox2D( xmin, ymin, xmax, ymax );
+    		s1 = doubleToStr( xmin ).trimEndZeros();
+    		s2 = doubleToStr( ymin ).trimEndZeros();
+    		s3 = doubleToStr( xmax ).trimEndZeros();
+    		s4 = doubleToStr( ymax ).trimEndZeros();
+    		newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4;
+		}
+    	value = hdr + " " + newbbox;
+	} else {
+		value = hdr + " " + bbox;
+	}
+
+	for ( int i = 0; i <  point.size(); ++i ) {
+		sx = point[i].x; sx.trimEndZeros();
+		sy = point[i].y; sy.trimEndZeros();
+		if ( is3D ) {
+			sz = point[i].z; sz.trimEndZeros();
+			value += AbaxDataString(" ") + sx + ":" + sy + ":" + sz;
+		} else {
+			value += AbaxDataString(" ") + sx + ":" + sy;
+		}
+	}
+}

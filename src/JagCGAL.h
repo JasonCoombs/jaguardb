@@ -97,6 +97,7 @@ class JagCGAL
     static bool getBuffer2D( const TGeo &obj, const AbaxDataString &arg, JagVector<JagPolygon> &pgvec );
 
 	static bool get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, AbaxDataString &value );
+    static void getOuterRingStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
 
   protected:
   	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );

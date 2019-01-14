@@ -454,6 +454,7 @@
 #define JAG_FUNC_ISRING         264  // if linestring is simple and closed
 #define JAG_FUNC_ISPOLYGONCCW   265  // if polygon is counter-clock-wise (outer-ring)
 #define JAG_FUNC_ISPOLYGONCW    266  // if polygon is clock-wise (outer-ring)
+#define JAG_FUNC_OUTERRING      267  // outer-ring as linestring of a polygon "hdr(ML) [bbox] x:y ..."
 
 
 // multi-line data ( string functions )
