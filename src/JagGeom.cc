@@ -22783,3 +22783,120 @@ int JagGeo::numberOfSegments( const JagStrSplit &sp )
 	if ( num < 0 ) return 0;
 	return num;
 }
+
+// sum over (x2-x1)(y2+y1): if < 0: CCW  if > 0: CW
+bool JagGeo::isPolygonCCW( const JagStrSplit &sp )
+{
+    double dx, dy;
+    const char *str;
+    char *p;
+	bool firstRing = true;
+	double sum = 0.0;
+	double lastx, lasty;
+	bool firstPoint = true;
+	int n = 0;
+   	for ( int i=0; i < sp.length(); ++i ) {
+   		if ( sp[i] == "!" ) { 
+			prt(("s1296 sum=%f\n", sum ));
+			if ( firstRing ) {
+				if ( sum > 0.0 ) { return false; } // outer-ring is CW
+			} else {
+				if ( sum < 0.0 ) { return false; } // inner-ring is CCW
+			}
+			sum = 0.0;
+			firstRing = true; firstPoint = true; 
+		} else if ( sp[i] == "|" ) { 
+			prt(("s9293 sum=%f\n", sum ));
+			if ( firstRing ) {
+				if ( sum > 0.0 ) { return false; } // outer-ring is CW
+			} else {
+				if ( sum < 0.0 ) { return false; } // inner-ring is CCW
+			}
+
+			sum = 0.0;
+			firstRing = false; firstPoint = true; 
+		} else {
+       		str = sp[i].c_str();
+       		if ( strchrnum( str, ':') != 1 ) continue;
+       		get2double(str, p, ':', dx, dy );
+			if ( ! firstPoint ) {
+				sum += (dx - lastx )* (dy + lasty );
+				++n;
+			} else {
+				firstPoint = false;
+			}
+			lastx = dx;
+			lasty = dy;
+   		}
+	}
+
+	if ( firstRing ) {
+		prt(("s4294 sum=%f\n", sum ));
+		if ( sum > 0.0 ) { return false; } // outer-ring is CW
+	} else {
+		if ( sum < 0.0 ) { return false; } // inner-ring is CCW
+	}
+
+	prt(("s3748 n=%d\n", n ));
+	if ( n < 1 ) return false;
+	return true;
+}
+
+// sum over (x2-x1)(y2+y1): if < 0: CCW  if > 0: CW
+bool JagGeo::isPolygonCW( const JagStrSplit &sp )
+{
+    double dx, dy;
+    const char *str;
+    char *p;
+	bool firstRing = true;
+	double sum = 0.0;
+	double lastx, lasty;
+	bool firstPoint = true;
+	int n = 0;
+   	for ( int i=0; i < sp.length(); ++i ) {
+   		if ( sp[i] == "!" ) { 
+			prt(("s1294 sum=%f\n", sum ));
+			if ( firstRing ) {
+				if ( sum < 0.0 ) { return false; } // outer-ring is CCW
+			} else {
+				if ( sum > 0.0 ) { return false; } // inner-ring is CW
+			}
+			sum = 0.0;
+			firstRing = true; firstPoint = true; 
+		} else if ( sp[i] == "|" ) { 
+			prt(("s0294 sum=%f\n", sum ));
+			if ( firstRing ) {
+				if ( sum < 0.0 ) { return false; } // outer-ring is CCW
+			} else {
+				if ( sum > 0.0 ) { return false; } // inner-ring is CW
+			}
+
+			sum = 0.0;
+			firstRing = false; firstPoint = true; 
+		} else {
+       		str = sp[i].c_str();
+       		if ( strchrnum( str, ':') != 1 ) continue;
+       		get2double(str, p, ':', dx, dy );
+			if ( ! firstPoint ) {
+				sum += (dx - lastx )* (dy + lasty );
+				++n;
+			} else {
+				firstPoint = false;
+			}
+			lastx = dx;
+			lasty = dy;
+   		}
+	}
+
+	if ( firstRing ) {
+		prt(("s1594 sum=%f\n", sum ));
+		if ( sum < 0.0 ) { return false; } // outer-ring is CCW
+	} else {
+		if ( sum > 0.0 ) { return false; } // inner-ring is CW
+	}
+
+	prt(("s3798 n=%d\n", n ));
+	if ( n < 1 ) return false;
+	return true;
+}
+

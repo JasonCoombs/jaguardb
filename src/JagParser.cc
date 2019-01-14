@@ -964,7 +964,7 @@ int JagParser::setTableIndexList( short setType )
 		// check if select from multiple tables/indexs or if cmd is join related
 		// if ( _ptrParam->selectTablistClause.length() < 1 ) return -2060;
 		bool selectConst;
-		if ( ! _ptrParam->_selectStar && _ptrParam->_allColumns.size() < 1 ) {
+		if ( ! _ptrParam->isSelectConst() ) {
 			selectConst = true;
 		} else {
 			selectConst = false;
@@ -1559,7 +1559,7 @@ int JagParser::setAllClauses( short setType )
 	if ( 0 == setType ) {
 		// read related, such as select
 		// if ( _ptrParam->selectTablistClause.length() < 1 ) return -2400;
-		if ( _ptrParam->_selectStar || _ptrParam->_allColumns.size() > 0 ) {
+		if ( _ptrParam->isSelectConst() ) {
 			if ( _ptrParam->selectTablistClause.length() < 1 ) return -2400;
 		}
 

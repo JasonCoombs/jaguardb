@@ -1062,6 +1062,8 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_ISSIMPLE ) str = "issimple";
 	else if ( binaryOp == JAG_FUNC_ISVALID ) str = "isvalid";
 	else if ( binaryOp == JAG_FUNC_ISRING ) str = "isring";
+	else if ( binaryOp == JAG_FUNC_ISPOLYGONCCW ) str = "ispolygonccw";
+	else if ( binaryOp == JAG_FUNC_ISPOLYGONCW ) str = "ispolygoncw";
 	else if ( binaryOp == JAG_FUNC_POINTN ) str = "pointn";
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
@@ -1153,7 +1155,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		collen = 32;
 		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_ISCLOSED ||  _binaryOp == JAG_FUNC_ISSIMPLE 
-			    || _binaryOp == JAG_FUNC_ISRING
+			    || _binaryOp == JAG_FUNC_ISRING || _binaryOp == JAG_FUNC_ISPOLYGONCCW || _binaryOp == JAG_FUNC_ISPOLYGONCW
 			    ||  _binaryOp == JAG_FUNC_ISVALID ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3084,7 +3086,8 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 				 || _binaryOp == JAG_FUNC_CENTROID
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 	             || _binaryOp == JAG_FUNC_ISSIMPLE  || _binaryOp == JAG_FUNC_ISRING
-	             || _binaryOp == JAG_FUNC_ISVALID 
+	             || _binaryOp == JAG_FUNC_ISVALID  || _binaryOp == JAG_FUNC_ISPOLYGONCCW 
+				 || _binaryOp == JAG_FUNC_ISPOLYGONCW
 				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
 				 || _binaryOp == JAG_FUNC_NUMSEGMENTS 
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
@@ -4155,6 +4158,8 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_ISSIMPLE || 
 		fop == JAG_FUNC_ISVALID || 
 		fop == JAG_FUNC_ISRING || 
+		fop == JAG_FUNC_ISPOLYGONCCW || 
+		fop == JAG_FUNC_ISPOLYGONCW || 
 		fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMSEGMENTS || 
 		fop == JAG_FUNC_NUMRINGS || 
@@ -4417,6 +4422,10 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ISVALID; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "isring", 6 ) ) {
 		fop = JAG_FUNC_ISRING; len = 6; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "ispolygonccw", 12 ) ) {
+		fop = JAG_FUNC_ISPOLYGONCCW; len = 12; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "ispolygoncw", 11 ) ) {
+		fop = JAG_FUNC_ISPOLYGONCW; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numpoints", 9 ) ) {
 		fop = JAG_FUNC_NUMPOINTS; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numsegments", 11 ) ) {
@@ -4896,6 +4905,10 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllIsValid( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_ISRING ) {
 		rc = doAllIsRing( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_ISPOLYGONCCW ) {
+		rc = doAllIsPolygonCCW( mark1, colType1, sp1, value );
+	} else if ( op == JAG_FUNC_ISPOLYGONCW ) {
+		rc = doAllIsPolygonCW( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_NUMPOINTS ) {
 		rc = doAllNumPoints( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_NUMSEGMENTS ) {
@@ -5817,9 +5830,6 @@ bool BinaryOpNode::doAllIsRing( const AbaxDataString& mk, const AbaxDataString &
 	}
 
 	bool rc;
-
-	rc = true;
-	value = "1";
     if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
 		JagLineString line;
 		JagParser::addLineStringData( line, sp );
@@ -5830,8 +5840,33 @@ bool BinaryOpNode::doAllIsRing( const AbaxDataString& mk, const AbaxDataString &
 	
 	if ( rc ) value = "1";
 	else value = "0";
-	return rc;
+	return true;
 }
+
+bool BinaryOpNode::doAllIsPolygonCCW( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+    if ( colType != JAG_C_COL_TYPE_POLYGON ) {
+		value = "0";
+		return true;
+	}
+	bool rc = JagGeo::isPolygonCCW( sp );
+	if ( rc ) value = "1";
+	else value = "0";
+	return true;
+}
+
+bool BinaryOpNode::doAllIsPolygonCW( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
+{
+    if ( colType != JAG_C_COL_TYPE_POLYGON ) {
+		value = "0";
+		return true;
+	}
+	bool rc = JagGeo::isPolygonCW( sp );
+	if ( rc ) value = "1";
+	else value = "0";
+	return true;
+}
+
 
 bool BinaryOpNode::doAllIsValid( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
 {
@@ -5843,8 +5878,7 @@ bool BinaryOpNode::doAllIsValid( const AbaxDataString& mk, const AbaxDataString 
 
 	bool rc;
 
-	rc = true;
-	value = "1";
+	rc = false;
     if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
 		JagLineString line;
 		JagParser::addLineStringData( line, sp );
@@ -5870,7 +5904,7 @@ bool BinaryOpNode::doAllIsValid( const AbaxDataString& mk, const AbaxDataString 
 
 	if ( rc ) value = "1";
 	else value = "0";
-	return rc;
+	return true;
 }
 
 bool BinaryOpNode::doAllIsSimple( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
@@ -5883,8 +5917,7 @@ bool BinaryOpNode::doAllIsSimple( const AbaxDataString& mk, const AbaxDataString
 
 	bool rc;
 
-	rc = true;
-	value = "1";
+	rc = false;
     if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
 		JagLineString line;
 		JagParser::addLineStringData( line, sp );
@@ -5906,7 +5939,7 @@ bool BinaryOpNode::doAllIsSimple( const AbaxDataString& mk, const AbaxDataString
 
 	if ( rc ) value = "1";
 	else value = "0";
-	return rc;
+	return true;
 }
 
 bool BinaryOpNode::doAllIsClosed( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
@@ -5914,7 +5947,7 @@ bool BinaryOpNode::doAllIsClosed( const AbaxDataString& mk, const AbaxDataString
 	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
 	value = "0";
 	if ( colType == JAG_C_COL_TYPE_LINE || colType == JAG_C_COL_TYPE_LINE3D ) {
-		return false;
+		return true;
 	}
 
 	if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_POLYGON3D ) {
@@ -5949,12 +5982,12 @@ bool BinaryOpNode::doAllIsClosed( const AbaxDataString& mk, const AbaxDataString
 			return true;
 		} else {
 			value = "0";
-			return false;
+			return true;
 		}
 	}
 
 	value = "0";
-	return false;
+	return true;
 }
 
 bool BinaryOpNode::doAllNumPoints( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
@@ -5974,7 +6007,7 @@ bool BinaryOpNode::doAllNumPoints( const AbaxDataString& mk, const AbaxDataStrin
 
 	if ( JagParser::isVectorGeoType( colType ) ) {
 		value = "0";
-		return false;
+		return true;
 	}
 
 	value = intToStr( sp.length() - 1 );
@@ -6005,7 +6038,7 @@ bool BinaryOpNode::doAllNumSegments( const AbaxDataString& mk, const AbaxDataStr
 
 	if ( JagParser::isVectorGeoType( colType ) ) {
 		value = "0";
-		return false;
+		return true;
 	}
 
 	if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D
@@ -6019,7 +6052,7 @@ bool BinaryOpNode::doAllNumSegments( const AbaxDataString& mk, const AbaxDataStr
 	}
 
 	value = "0";
-	return false;
+	return true;
 }
 
 bool BinaryOpNode::doAllNumRings( const AbaxDataString& mk, const AbaxDataString &colType, const JagStrSplit &sp, AbaxDataString &value )
@@ -6035,7 +6068,7 @@ bool BinaryOpNode::doAllNumRings( const AbaxDataString& mk, const AbaxDataString
 	}
 	 
 	value = "0";
-	return false;
+	return true;
 }
 
 bool BinaryOpNode::doAllSummary( const AbaxDataString& mk, const AbaxDataString &colType, int srid, const JagStrSplit &sp, AbaxDataString &value )

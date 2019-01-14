@@ -1480,6 +1480,8 @@ class JagGeo
 	static AbaxDataString bboxstr( const JagStrSplit &sp, bool skipRing );
 	static int convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr );
 	static int numberOfSegments( const JagStrSplit &sp );
+	static bool isPolygonCCW( const JagStrSplit &sp );
+	static bool isPolygonCW( const JagStrSplit &sp );
 
 
 

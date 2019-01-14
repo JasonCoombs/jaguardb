@@ -452,6 +452,8 @@
 #define JAG_FUNC_ISSIMPLE       262  // if linestring/polygon has no self-intersecting or tangent lines 
 #define JAG_FUNC_ISVALID        263  // if linestring/polygon is valid
 #define JAG_FUNC_ISRING         264  // if linestring is simple and closed
+#define JAG_FUNC_ISPOLYGONCCW   265  // if polygon is counter-clock-wise (outer-ring)
+#define JAG_FUNC_ISPOLYGONCW    266  // if polygon is clock-wise (outer-ring)
 
 
 // multi-line data ( string functions )
