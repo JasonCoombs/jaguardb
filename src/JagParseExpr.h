@@ -273,6 +273,8 @@ class BinaryOpNode: public ExpressionElementNode
 						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllOuterRing( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
 						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
+	bool doAllOuterRings( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
+						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
 	bool doAllBuffer( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
 						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg, AbaxDataString &val );
 	bool doAllCentroid( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 

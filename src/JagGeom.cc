@@ -22711,7 +22711,7 @@ double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr
 AbaxDataString JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing ) 
 {
 	prt(("s7330 JagGeo::bboxstr sp:\n" ));
-	sp.print();
+	//sp.print();
 
 	double xmin, ymin, zmin, xmax, ymax, zmax;
 	xmin = ymin = zmin = LONG_MAX;

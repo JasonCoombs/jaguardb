@@ -454,7 +454,8 @@
 #define JAG_FUNC_ISRING         264  // if linestring is simple and closed
 #define JAG_FUNC_ISPOLYGONCCW   265  // if polygon is counter-clock-wise (outer-ring)
 #define JAG_FUNC_ISPOLYGONCW    266  // if polygon is clock-wise (outer-ring)
-#define JAG_FUNC_OUTERRING      267  // outer-ring as linestring of a polygon "hdr(ML) [bbox] x:y ..."
+#define JAG_FUNC_OUTERRING      267  // outer-ring as linestring of a polygon "hdr(LS) [bbox] x:y ..."
+#define JAG_FUNC_OUTERRINGS     268  // outer-rings as multi-linestring of a multipolygon "hdr(ML) [bbox] x:y ..."
 
 
 // multi-line data ( string functions )
@@ -710,5 +711,7 @@
 #define JAG_POINT_CIRCLE     8
 #define JAG_POINT_SQUARE     9
 
+// max number of points to be sent to client for unspecified points
+#define JAG_MAX_POINTS_SENT  3000
 
 #endif

@@ -880,3 +880,63 @@ void JagCGAL::getOuterRingStr( const JagLineString &line, const AbaxDataString &
 		}
 	}
 }
+
+void JagCGAL::getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &inhdr, const AbaxDataString &bbox, 
+								bool is3D, AbaxDataString &value )
+{
+	AbaxDataString sx, sy, sz;
+	AbaxDataString hdr = inhdr;
+	if ( is3D ) {
+		hdr.replace("=MG3=", "=ML3=");
+	} else {
+		hdr.replace("=MG=", "=ML=");
+	}
+
+	if ( bbox.size() < 1 ) {
+    	double xmin, ymin, xmax, ymax;
+    	AbaxDataString s1, s2, s3, s4;
+    	AbaxDataString newbbox;
+		if ( is3D ) {
+			double zmin, zmax;
+    		AbaxDataString s5, s6;
+    		JagGeo::getBBox3D( pgvec, xmin, ymin, zmin, xmax, ymax, zmax );
+    		s1 = doubleToStr( xmin ).trimEndZeros();
+    		s2 = doubleToStr( ymin ).trimEndZeros();
+    		s3 = doubleToStr( zmin ).trimEndZeros();
+    		s4 = doubleToStr( xmax ).trimEndZeros();
+    		s5 = doubleToStr( ymax ).trimEndZeros();
+    		s6 = doubleToStr( zmax ).trimEndZeros();
+    		newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4  + ":" + s5 + ":" + s6;
+		} else {
+			JagGeo::getBBox2D( pgvec, xmin, ymin, xmax, ymax );
+    		s1 = doubleToStr( xmin ).trimEndZeros();
+    		s2 = doubleToStr( ymin ).trimEndZeros();
+    		s3 = doubleToStr( xmax ).trimEndZeros();
+    		s4 = doubleToStr( ymax ).trimEndZeros();
+    		newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4;
+		}
+    	value = hdr + " " + newbbox;
+	} else {
+		value = hdr + " " + bbox;
+	}
+
+	for ( int i = 0; i <  pgvec.size(); ++i ) {
+		const JagLineString3D &line = pgvec[i].linestr[0];
+		if ( i > 0 && line.size() > 0 ) {
+			value += AbaxDataString(" |");
+		}
+
+		for ( int j = 0; j < line.size(); ++j ) {
+			const JagVector<JagPoint3D> &point = line.point;
+    		sx = doubleToStr(point[j].x); sx.trimEndZeros();
+    		sy = doubleToStr(point[j].y); sy.trimEndZeros();
+    		if ( is3D ) {
+    			sz = doubleToStr(point[j].z); sz.trimEndZeros();
+    			value += AbaxDataString(" ") + sx + ":" + sy + ":" + sz;
+    		} else {
+    			value += AbaxDataString(" ") + sx + ":" + sy;
+    		}
+		}
+	}
+
+}

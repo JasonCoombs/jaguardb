@@ -1991,7 +1991,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 		_tableschema->getAttr( _dbtable, getstr );
 		honespa.setattr( _numKeys, false, _dbtable, &_tableRecord, getstr.c_str() );
 		hspa.append( honespa );
-		//prt(("s5640 nowherecnt rearrangeHdr ...\n" ));
+		prt(("s5640 nowherecnt rearrangeHdr ...\n" ));
 		rc = rearrangeHdr( 1, maps, attrs, parseParam, hspa, newhdr, gbvheader, finalsendlen, gbvsendlen );
 		if ( !rc ) {
 			errmsg = "E0823 Error header for select";
@@ -2032,6 +2032,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	memset(finalbuf, 0, finalsendlen+1);
 	char *gbvbuf = (char*)jagmalloc(gbvsendlen+1);
 	memset(gbvbuf, 0, gbvsendlen+1);
+	prt(("s1028 finalsendlen=%d gbvsendlen=%d\n", finalsendlen, gbvsendlen ));
 	JagMemDiskSortArray *gmdarr = NULL;
 	if ( gbvsendlen > 0 ) {
 		gmdarr = newObject<JagMemDiskSortArray>();
@@ -2340,12 +2341,12 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 			}	
 		}	
 
-		//prt(("s5003 jda->flushwrite() ...\n" ));
 		if ( jda ) {
+			//prt(("s5003 jda->flushwrite() ...\n" ));
 			jda->flushwrite();
+			//prt(("s5003 jda->flushwrite() done ...\n" ));
 		}
-		// prt(("s5003 jda->flushwrite() done ...\n" ));
-	}	
+	}
 
 	if ( timeoutFlag ) {
 		AbaxDataString timeoutStr = "E0283 Table select has timed out. Results have been truncated;";

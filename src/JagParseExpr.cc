@@ -1069,6 +1069,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
 	else if ( binaryOp == JAG_FUNC_OUTERRING ) str = "outerring";
+	else if ( binaryOp == JAG_FUNC_OUTERRINGS ) str = "outerrings";
 	else if ( binaryOp == JAG_FUNC_BUFFER ) str = "buffer";
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
@@ -1129,10 +1130,10 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		
 	//prt(("s2238 _right=%0x\n", _right ));
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
-		 || _binaryOp == JAG_FUNC_OUTERRING ) {
+		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
-		collen = 3000*JAG_POINT_LEN + 2;
+		collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN + 2;
 		siglen = 0;
 		// todo qwer can we get number of points of lstr?
 	} else if ( _binaryOp == JAG_FUNC_POINTN ||  _binaryOp == JAG_FUNC_STARTPOINT || _binaryOp == JAG_FUNC_ENDPOINT
@@ -3085,7 +3086,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
 				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER
-				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING
+				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 	             || _binaryOp == JAG_FUNC_ISSIMPLE  || _binaryOp == JAG_FUNC_ISRING
 	             || _binaryOp == JAG_FUNC_ISVALID  || _binaryOp == JAG_FUNC_ISPOLYGONCCW 
@@ -4155,6 +4156,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
 		fop == JAG_FUNC_OUTERRING || 
+		fop == JAG_FUNC_OUTERRINGS || 
 		fop == JAG_FUNC_BUFFER || 
 		fop == JAG_FUNC_CENTROID || 
 		fop == JAG_FUNC_ISCLOSED || 
@@ -4409,6 +4411,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "convexhull", 10 ) ) {
 		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "outerrings", 10 ) ) {
+		fop = JAG_FUNC_OUTERRINGS; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "outerring", 9 ) ) {
 		fop = JAG_FUNC_OUTERRING; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "buffer", 6 ) ) {
@@ -4930,6 +4934,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllConvexHull( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_OUTERRING ) {
 		rc = doAllOuterRing( mark1, hdr, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_OUTERRINGS ) {
+		rc = doAllOuterRings( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_BUFFER ) {
 		rc = doAllBuffer( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_CENTROID ) {
@@ -5638,6 +5644,8 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 	//prt(("s3420 doAllConvexHull() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
 	//sp.print();
 	value = "";
+	AbaxDataString bbox;
+	if ( mk == JAG_OJAG ) { bbox = sp[0]; } 
 
 		//prt(("s8830 JAG_OJAG\n" ));
 		//sp.print();
@@ -5645,44 +5653,44 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 		JagPolygon pgon;
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 			JagParser::addLineStringData( line, sp );
-			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull2DStr( line, hdr, bbox, value );
         } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 			JagLineString3D line3D;
 			JagParser::addLineString3DData( line3D, sp );
 			line = line3D;
-			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull3DStr( line, hdr, bbox, value );
         } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 		    JagParser::addPolygonData( pgon, sp, true );
 			line.copyFrom( pgon.linestr[0], true );
-			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull2DStr( line, hdr, bbox, value );
         } else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
 		    JagParser::addPolygonData( pgon, sp, false );
 			for ( int i=1; i < pgon.size(); ++i ) {
 				line.appendFrom( pgon.linestr[i], false );
 			}
-			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull2DStr( line, hdr, bbox, value );
         } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
 		    JagParser::addPolygon3DData( pgon, sp, true );
 			line.copyFrom( pgon.linestr[0], true );
-			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull3DStr( line, hdr, bbox, value );
         } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
 		    JagParser::addPolygon3DData( pgon, sp, true );
 			line.copyFrom( pgon.linestr[0], false );
-			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull3DStr( line, hdr, bbox, value );
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, sp, false, false );
 			for ( int i=0; i < pgvec.size(); ++i ) {
 				line.appendFrom( pgvec[i].linestr[0], true );
 			}
-			JagCGAL::getConvexHull2DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull2DStr( line, hdr, bbox, value );
         } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			JagVector<JagPolygon> pgvec;
 			JagParser::addMultiPolygonData( pgvec, sp, false, true );
 			for ( int i=0; i < pgvec.size(); ++i ) {
 				line.appendFrom( pgvec[i].linestr[0], true );
 			}
-			JagCGAL::getConvexHull3DStr( line, hdr, sp[0], value );
+			JagCGAL::getConvexHull3DStr( line, hdr, bbox, value );
 		} else  {
 		}
 
@@ -5692,20 +5700,44 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 bool BinaryOpNode::doAllOuterRing( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
 								    int srid, const JagStrSplit &sp, AbaxDataString &value )
 {
-	//prt(("s3420 doAllConvexHull() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	//prt(("s3420 doAllOuterRing() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
 	//sp.print();
 	value = "";
+	AbaxDataString bbox;
+	if ( mk == JAG_OJAG ) { bbox = sp[0]; } 
 
 	JagLineString line;
 	JagPolygon pgon;
     if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 	    JagParser::addPolygonData( pgon, sp, true );
 		line.copyFrom( pgon.linestr[0], true );
-		JagCGAL::getOuterRingStr( line, hdr, sp[0], false, value );
+		JagCGAL::getOuterRingStr( line, hdr, bbox, false, value );
     } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
 	    JagParser::addPolygon3DData( pgon, sp, true );
 		line.copyFrom( pgon.linestr[0], true );
-		JagCGAL::getOuterRingStr( line, hdr, sp[0], true, value );
+		JagCGAL::getOuterRingStr( line, hdr, bbox, true, value );
+    } else {
+		return false;
+	}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllOuterRings( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    int srid, const JagStrSplit &sp, AbaxDataString &value )
+{
+	//prt(("s3420 doAllOuterRings() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	//sp.print();
+	value = "";
+	AbaxDataString bbox;
+	if ( mk == JAG_OJAG ) { bbox = sp[0]; } 
+	JagVector<JagPolygon> pgvec;
+    if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+	    JagParser::addMultiPolygonData( pgvec, sp, true, false );
+		JagCGAL::getOuterRingsStr( pgvec, hdr, bbox, false, value );
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	    JagParser::addMultiPolygonData( pgvec, sp, true, true );
+		JagCGAL::getOuterRingsStr( pgvec, hdr, bbox, true, value );
     } else {
 		return false;
 	}
