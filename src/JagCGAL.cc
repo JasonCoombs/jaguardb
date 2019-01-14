@@ -829,7 +829,7 @@ bool JagCGAL::getIsRingLineString2DStr( const JagLineString &line )
 	return true;
 }
 
-void JagCGAL::getOuterRingStr( const JagLineString &line, const AbaxDataString &inhdr, const AbaxDataString &bbox, bool is3D,
+void JagCGAL::getRingStr( const JagLineString &line, const AbaxDataString &inhdr, const AbaxDataString &bbox, bool is3D,
 							   AbaxDataString &value )
 {
 	const JagVector<JagPoint> &point = line.point;

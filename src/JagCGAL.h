@@ -97,7 +97,7 @@ class JagCGAL
     static bool getBuffer2D( const TGeo &obj, const AbaxDataString &arg, JagVector<JagPolygon> &pgvec );
 
 	static bool get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, AbaxDataString &value );
-    static void getOuterRingStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
+    static void getRingStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
     static void getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
     static void getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
 

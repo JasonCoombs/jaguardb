@@ -2730,6 +2730,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    outerring(polygon)      -- the outer ring as linestring of a polygon\n";
 		str += "    outerrings(mpolygon)    -- the outer rings as multilinestring of a multipolygon\n";
 		str += "    innerrings(polygon)     -- the inner rings as multilinestring of a polygon or multipolygon\n";
+		str += "    ringn(polygon,n)        -- the n-th ring as linestring of a polygon. n is 1-based\n";
+		str += "    innerringn(polygon,n)   -- the n-th inner ring as linestring of a polygon. n is 1-based\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

@@ -458,6 +458,9 @@
 #define JAG_FUNC_OUTERRINGS     268  // outer-rings as multi-linestring of a multipolygon "hdr(ML) [bbox] x:y ..."
 #define JAG_FUNC_INNERRINGS     269  // inner-rings as multi-linestring of a polygon/multipolygon "hdr(ML) [bbox] x:y ..."
 #define JAG_FUNC_NUMINNERRINGS  270  // number of inner-rings of a polygon/multipolygon 
+#define JAG_FUNC_POLYGONN       271  // n-th polygon (starting from 1) of multipolygon
+#define JAG_FUNC_RINGN          272  // n-th ring as linestring of polygon
+#define JAG_FUNC_INNERRINGN     273  // n-th inner ring as linestring of polygon
 
 
 // multi-line data ( string functions )
