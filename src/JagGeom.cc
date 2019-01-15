@@ -22955,3 +22955,165 @@ bool JagGeo::isPolygonCW( const JagStrSplit &sp )
 	return true;
 }
 
+
+///////// additon or union
+//qwer
+AbaxDataString JagGeo::doPointAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+		val = AbaxDataString("CJAG=0=0=LN=d ") + sp1[1] + " " + sp1[2] + " " + sp2[1] + " " + sp2[2]; 
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+		val = AbaxDataString("CJAG=0=0=LS=d ") + sp1[1] + ":" + sp1[2] + " " + sp2[1] + ":" + sp2[2] + " " + sp2[3] + ":" + sp2[4];
+	} else {
+	}
+
+	return val;
+}
+
+AbaxDataString JagGeo::doPoint3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		val = AbaxDataString("CJAG=0=0=LN=d ") + sp1[1] + " " + sp1[2] + " " + sp2[1] + " " + sp2[2]; 
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		val = AbaxDataString("CJAG=0=0=LS=d ") + sp1[1] + ":" + sp1[2] + " " + sp2[1] + ":" + sp2[2] + " " + sp2[3] + ":" + sp2[4];
+	} else {
+	}
+
+	return val;
+}
+
+// 2D line
+AbaxDataString JagGeo::doLineAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+	// like point within
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+	}
+	return false;
+}
+
+AbaxDataString JagGeo::doLine3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+										 int srid2, const JagStrSplit &sp2 )
+{
+
+	return "";
+}
+
+AbaxDataString JagGeo::lineAdditionLineString( double x10, double y10, double x20, double y20,
+							          const AbaxDataString &mk2, const JagStrSplit &sp2 )
+{
+	int start = 0;
+	if ( mk2 == JAG_OJAG ) {
+		start = 1;
+	}
+
+	return "";
+}
+
+
+///////////////////////////////////// line 3D /////////////////////////////////
+AbaxDataString JagGeo::line3DAdditionLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
+							          const AbaxDataString &mk2, const JagStrSplit &sp2)
+{
+	// 2 points are some two neighbor points in sp2
+	int start = 0;
+	if ( mk2 == JAG_OJAG ) {
+		start = 1;
+	}
+
+	return "";
+}
+
+// lineString3D Addition
+AbaxDataString JagGeo::lineString3DAdditionLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
+			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
+{
+	int start1 = 0;
+	if ( mk1 == JAG_OJAG ) { start1 = 1; }
+	int start2 = 0;
+	if ( mk2 == JAG_OJAG ) { start2 = 1; }
+
+	return false;
+}
+
+// 2D linestring
+AbaxDataString JagGeo::doLineStringAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
+								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+								    int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+	}
+	return "";
+}
+
+AbaxDataString JagGeo::doLineString3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
+									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									  int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+	}
+	return "";
+}
+
+AbaxDataString JagGeo::doPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
+								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+								    int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	} 
+	return "";
+}
+
+AbaxDataString JagGeo::doPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
+									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									  int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	} 
+	return "";
+}
+
+AbaxDataString JagGeo::doMultiPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
+								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+								    int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	} 
+	return "";
+}
+
+AbaxDataString JagGeo::doMultiPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
+									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									  int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	} 
+	return "";
+}
+
+AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
+								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+								    int srid2, const JagStrSplit &sp2 )
+{
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	} 
+	return "";
+}

@@ -1068,6 +1068,8 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
+	else if ( binaryOp == JAG_FUNC_UNION ) str = "union";
+	else if ( binaryOp == JAG_FUNC_COLLECT ) str = "collect";
 	else if ( binaryOp == JAG_FUNC_OUTERRING ) str = "outerring";
 	else if ( binaryOp == JAG_FUNC_OUTERRINGS ) str = "outerrings";
 	else if ( binaryOp == JAG_FUNC_INNERRINGS ) str = "innerrings";
@@ -1137,6 +1139,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	//prt(("s2238 _right=%0x\n", _right ));
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER || _binaryOp == JAG_FUNC_UNIQUE
 	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
+		 || _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3093,7 +3096,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			return 0;
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
-				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER
+				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
 				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS
 				 ||  _binaryOp == JAG_FUNC_INNERRINGS || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
@@ -3158,7 +3161,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	} else if ( _binaryOp == JAG_FUNC_WITHIN || _binaryOp == JAG_FUNC_COVEREDBY
 	            || _binaryOp == JAG_FUNC_CONTAIN || _binaryOp == JAG_FUNC_COVER 
 	            || _binaryOp == JAG_FUNC_SAME
-	            || _binaryOp == JAG_FUNC_NEARBY
+	            || _binaryOp == JAG_FUNC_NEARBY 
 				|| _binaryOp == JAG_FUNC_INTERSECT || _binaryOp == JAG_FUNC_DISJOINT ) {
 		// always regard as int  boolean
 		ltmode = 1; // int
@@ -3185,6 +3188,13 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			lstr = "0";
 			return 0;
 		}
+	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT ) {
+		try {
+			lstr = processTwoStrOp( _binaryOp, lstr, rstr, _carg1 );
+		} catch ( ... ) {
+			lstr = "";
+		}
+		return 1;
 	}
 	// ... more calcuations ...
 	
@@ -4128,6 +4138,8 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_POLYGONN 
 		 || fop == JAG_FUNC_INNERRINGN 
 		 || fop == JAG_FUNC_BUFFER 
+		 || fop == JAG_FUNC_UNION 
+		 || fop == JAG_FUNC_COLLECT
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
 	}
@@ -4181,6 +4193,8 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_STARTPOINT || 
 		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
+		fop == JAG_FUNC_UNION || 
+		fop == JAG_FUNC_COLLECT || 
 		fop == JAG_FUNC_POLYGONN || 
 		fop == JAG_FUNC_OUTERRING || 
 		fop == JAG_FUNC_OUTERRINGS || 
@@ -4444,6 +4458,10 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "convexhull", 10 ) ) {
 		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "union", 5 ) ) {
+		fop = JAG_FUNC_UNION; len = 5; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "collect", 7 ) ) {
+		fop = JAG_FUNC_COLLECT; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "polygonn", 8 ) ) {
 		fop = JAG_FUNC_POLYGONN; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "innerrings", 10 ) ) {
@@ -4730,6 +4748,123 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const 
 	//prt(("s4480 doBooleanOp rc=%d\n", rc ));
 	return rc;
 }
+
+
+// return result value 
+// lstr must be table/index column with its all internal data
+// rstr must be table/index column with all internal data 
+// op can be UNION
+AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, const AbaxDataString &carg )
+{
+	//prt(("s5481 do processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
+	//prt(("s5481 do processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
+	//prt(("s5481 do processTwoStrOp carg=[%s]\n", carg.c_str() ));
+	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
+	//  rstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
+	//  rstr : CJAG=0=0=type=subtype  data1 data2 data3 ...
+
+	if ( inlstr.size() < 1 ) return "";
+
+	AbaxDataString lstr;
+	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
+		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
+		if ( rc1 < 0 ) return "";
+	} else {
+		lstr = inlstr.c_str();
+	}
+
+    AbaxDataString rstr;
+    if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
+        int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
+        if ( rc2 < 0 ) return "";
+    } else {
+        rstr = inrstr.c_str();
+    }
+
+	AbaxDataString colobjstr1 = lstr.firstToken(' ');
+	AbaxDataString colobjstr2 = rstr.firstToken(' ');
+	JagStrSplit spcol2(colobjstr2, '=');  
+	AbaxDataString colType2;
+
+	// colobjstr1: "OJAG=srid=db.obj.col=type=subtype"
+	AbaxDataString colType1;
+	JagStrSplit spcol1(colobjstr1, '=');  // OJAG=srid=name=type=subtype
+	int srid1 = 0;
+	AbaxDataString mark1, colName1;  // colname: "db.tab.col"
+	if ( spcol1.length() < 4 ) {
+		if ( spcol2.length() >= 4 ) {
+			colType2 = spcol2[3];
+			if ( colType2 == JAG_C_COL_TYPE_RANGE ) {
+				if (  _left && _left->_isElement ) {
+					mark1 = "OJAG";
+					srid1 = _left->_srid;
+					colName1 = _left->_name;
+					colType1 = _left->_type;
+					//prt(("s8273 left is element node. srid1=%d name=[%s] type=[%s]\n", srid1, colName1.c_str(), colType1.c_str() ));
+				} else {
+					//prt(("s7283 left is not element, use dummy" ));
+					mark1 = "OJAG";
+					srid1 = 0;
+					colName1 = "dummy";
+					colType1 = "dummy";
+				}
+			} else {
+				prt(("E5405 not enough header [%s] op=%d\n", lstr.c_str(), op ));
+				return false;
+			}
+		} else {
+			//prt(("E4406 not enough header [%s] op=%d\n", lstr.c_str(), op ));
+			//return false;
+			mark1 = "OJAG";
+			srid1 = 0;
+			colName1 = "dummy";
+			colType1 = "dummy";
+		}
+	}
+
+	if ( spcol1.length() >= 4 ) {
+		mark1 = spcol1[0];
+		srid1 = jagatoi( spcol1[1].c_str() );
+		colName1 = spcol1[2];
+		colType1 = spcol1[3];
+	}
+
+	// colobjstr2: "OJAG=srid=db.obj.col=type=subtype 33 44"
+	// colobjstr2: "CJAG=0=0=type=subtype 3 4"
+	int srid2 = 0;
+	AbaxDataString mark2, colName2;  // colname: "db.tab.col"
+
+	if ( spcol2.length() < 4 ) {
+		prt(("E5416 not enough header [%s]\n", colobjstr2.c_str() ));
+		return "";
+	}
+
+	mark2 = spcol2[0];
+	srid2 = jagatoi( spcol2[1].c_str() );
+	colName2 = spcol2[2];
+	colType2 = spcol2[3];
+
+	if ( mark2 == "OJAG" && mark1  == "OJAG" && srid1 != srid2 ) {
+		prt(("E5418 two columns but sriddiff hdr1=[%s] hdr2=[%s]\n", colobjstr1.c_str(), colobjstr2.c_str() ));
+		return "";
+	}
+
+	if ( mark2 == JAG_OJAG && mark1 == JAG_CJAG ) {
+		srid1 = srid2;
+	} else if (  mark2 == JAG_CJAG && mark1 == JAG_OJAG ) {
+		srid2 = srid1;
+	}
+
+	JagStrSplit sp1( lstr.c_str(), ' ', true );
+	JagStrSplit sp2( rstr.c_str(), ' ', true );
+
+	//sp1.shift();	
+	//sp2.shift();	
+
+	return doTwoStrOp( op, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg );
+}
+
+
 
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
@@ -5082,6 +5217,25 @@ bool BinaryOpNode::doBooleanOp( int op, const AbaxDataString& mark1, const AbaxD
 	}
 	//prt(("s1102 doBooleanOp rc=%d\n", rc ));
 	return rc;
+}
+
+AbaxDataString BinaryOpNode::doTwoStrOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, 
+										const JagStrSplit &sp1, const AbaxDataString& mark2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+										const AbaxDataString &carg )
+{
+	if ( srid1 != srid2 ) {
+		prt(("s0881 srid1=%d != srid2=%d\n", srid1, srid2 ));
+		return "";
+	}
+
+	if ( op == JAG_FUNC_UNION ) {
+		return doAllUnion( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( op == JAG_FUNC_COLLECT ) {
+		return doAllCollect( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else {
+		return "";
+	}
 }
 
 // colType1 and colType2 must be LINE or LINE3D type
@@ -5588,7 +5742,7 @@ bool BinaryOpNode::doAllCentroid( const AbaxDataString& mk, const AbaxDataString
 	bool is3D = false;
 
 		prt(("s8830 JAG_OJAG\n" ));
-		sp.print();
+		//sp.print();
 		JagLineString line;
 		JagPolygon pgon;
         if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
@@ -5822,7 +5976,7 @@ bool BinaryOpNode::doAllInnerRings( const AbaxDataString& mk, const AbaxDataStri
 								    int srid, const JagStrSplit &sp, AbaxDataString &value )
 {
 	prt(("s3420 doAllInnerRings() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
-	sp.print();
+	//sp.print();
 	value = "";
 	AbaxDataString bbox;
 	if ( mk == JAG_OJAG ) { bbox = sp[0]; } 
@@ -5920,7 +6074,7 @@ bool BinaryOpNode::doAllPolygonN( const AbaxDataString& mk, const AbaxDataString
 								    const JagStrSplit &sp, const AbaxDataString &carg, AbaxDataString &value )
 {
 	prt(("s3420 doAllPolygonN() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
-	sp.print();
+	//sp.print();
 
 	value = "";
 	int N = jagatoi( carg.c_str() );
@@ -5947,7 +6101,7 @@ bool BinaryOpNode::doAllNumPolygons( const AbaxDataString& mk, const AbaxDataStr
 								    const JagStrSplit &sp, AbaxDataString &value )
 {
 	prt(("s3420 doAllNumPolygons() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
-	sp.print();
+	//sp.print();
 	int num;
 	value = "";
 	int rc;
@@ -5968,7 +6122,7 @@ bool BinaryOpNode::doAllUnique( const AbaxDataString& mk, const AbaxDataString& 
 								    const JagStrSplit &sp, AbaxDataString &value )
 {
 	prt(("s3420 doAllUnique() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
-	sp.print();
+	//sp.print();
 	prt(("s3420 doAllUnique() hdr=[%s] src=[%s]\n", hdr.c_str(), sp.c_str() ));
 
 	AbaxDataString bbox;
@@ -6808,6 +6962,76 @@ bool BinaryOpNode::doAllMinMax( int op, const AbaxDataString& mk, const AbaxData
 
 		rc = true;
 		return rc;
+	}
+}
+
+AbaxDataString BinaryOpNode::doAllUnion( const AbaxDataString& mark1, const AbaxDataString &colType1, 
+										int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	//prt(("s2410 doAllIntersect colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		return JagGeo::doPointAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPoint3DAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
+		return JagGeo::doLineAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLine3DAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
+		return JagGeo::doLineStringAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineString3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonUnion( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
+		return JagGeo::doPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return JagGeo::doPolygonAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return JagGeo::doMultiPolygonAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		return JagGeo::doMultiPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else {
+		return "";
+	}
+}
+
+AbaxDataString BinaryOpNode::doAllCollect( const AbaxDataString& mark1, const AbaxDataString &colType1, 
+										int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+{
+	//prt(("s2410 doAllIntersect colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		return JagGeo::doPointAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPoint3DAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
+		return JagGeo::doLineAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLine3DAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
+		return JagGeo::doLineStringAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineString3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
+		return JagGeo::doPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return JagGeo::doPolygonAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return JagGeo::doMultiPolygonAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		return JagGeo::doMultiPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else {
+		return "";
 	}
 }
 

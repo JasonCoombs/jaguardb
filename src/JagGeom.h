@@ -518,6 +518,38 @@ class JagGeo
    	static bool doMultiPolygon3DIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
 										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
 
+	// addtion or collection/concatenation
+   	static AbaxDataString doPointAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+									const JagStrSplit &sp2 );
+   	static AbaxDataString doPoint3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+								const JagStrSplit &sp2 );
+   	static AbaxDataString doLineAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doLine3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+									int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doLineStringAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doLineString3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doMultiPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doMultiPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static AbaxDataString doPolygonUnion( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
+										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+
+	static AbaxDataString lineAdditionLineString( double x10, double y10, double x20, double y20, 
+													const AbaxDataString &mk2, const JagStrSplit &sp2 );
+	static AbaxDataString line3DAdditionLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
+	                                      const AbaxDataString &mk2, const JagStrSplit &sp2);
+	static AbaxDataString lineString3DAdditionLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
+                                            const AbaxDataString &mk2, const JagStrSplit &sp2 );
+
+
 
 	// 2D circle
 	static bool circleIntersectCircle( double px, double py, double pr, double x, double y, double r, bool strict );
