@@ -2734,6 +2734,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    ringn(polygon,n)        -- the n-th ring as linestring of a polygon. n is 1-based\n";
 		str += "    innerringn(polygon,n)   -- the n-th inner ring as linestring of a polygon. n is 1-based\n";
 		str += "    polygonn(multipgon,n)   -- the n-th polygon of a multipolygon. n is 1-based\n";
+		str += "    unique(geom)            -- geom with consecutive duplicate points removed\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

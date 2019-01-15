@@ -102,6 +102,7 @@ class JagCGAL
     static void getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
     static void getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, 
 							   bool is3D, int N, AbaxDataString &value );
+    static void getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
 
   protected:
   	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );

@@ -1073,3 +1073,37 @@ void JagCGAL::getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxData
    		}
 	}
 }
+
+void JagCGAL::getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value )
+{
+	value = hdr;
+	if ( bbox.size() > 0 ) {
+		value += AbaxDataString(" ") + bbox;
+	}
+
+	bool firstPoint = true;
+	int num;
+	AbaxDataString lastP;
+	const char *str;
+	for  ( int i=0; i < sp.length(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) {
+			firstPoint = true;
+			value += AbaxDataString(" ") + sp[i];
+		} else {
+			num = strchrnum( sp[i].c_str(), ':');
+			if ( num != 1 && num != 2 ) continue;
+			if ( ! firstPoint ) {
+				if ( sp[i] != lastP ) {
+					value += AbaxDataString(" ") + sp[i];
+				} 
+			} else {
+				firstPoint = false;
+				value += AbaxDataString(" ") + sp[i];
+			}
+
+			lastP = sp[i];
+		}
+	}
+}
+
+

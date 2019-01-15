@@ -1073,6 +1073,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_INNERRINGS ) str = "innerrings";
 	else if ( binaryOp == JAG_FUNC_RINGN ) str = "ringn";
 	else if ( binaryOp == JAG_FUNC_POLYGONN ) str = "polygonn";
+	else if ( binaryOp == JAG_FUNC_UNIQUE ) str = "unique";
 	else if ( binaryOp == JAG_FUNC_BUFFER ) str = "buffer";
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
 	else if ( binaryOp == JAG_FUNC_NUMPOINTS ) str = "numpoints";
@@ -1134,7 +1135,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	}
 		
 	//prt(("s2238 _right=%0x\n", _right ));
-	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
+	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER || _binaryOp == JAG_FUNC_UNIQUE
 	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
@@ -3101,7 +3102,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 				 || _binaryOp == JAG_FUNC_ISPOLYGONCW || _binaryOp == JAG_FUNC_POLYGONN 
 				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
 				 || _binaryOp == JAG_FUNC_NUMSEGMENTS  || _binaryOp == JAG_FUNC_NUMINNERRINGS
-				 ||  _binaryOp == JAG_FUNC_NUMPOLYGONS
+				 ||  _binaryOp == JAG_FUNC_NUMPOLYGONS || _binaryOp == JAG_FUNC_UNIQUE
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		ltmode = 0; // string
 		bool brc = false;
@@ -3623,11 +3624,13 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		q = p;
 		while ( *q != '(' ) ++q;
 		AbaxDataString geotype(p, q-p); // "point" or "sphere" etc
+		AbaxDataString typeStr = geotype;
 		geotype = JagGeo::convertType2Short( geotype ); // to PT, SP, etc, short type
 		//prt(("s3481 geotype=[%s]\n", geotype.c_str() ));
 		//prt(("s3481 p=[%s] q=[%s]\n", p, q ));
 		
 		AbaxDataString val;
+		bool isRaw = false;
 		if ( isPoly ) {
 			if ( geotype == JAG_C_COL_TYPE_POLYGON || geotype == JAG_C_COL_TYPE_POLYGON3D 
 				 || geotype == JAG_C_COL_TYPE_MULTILINESTRING || geotype == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
@@ -3641,6 +3644,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 				free(d );
 				prt(("s6752 val=[%s]\n", val.c_str() ));
 				q = p + val.size();
+				isRaw = true;
 			} else {
 				//prt(("s3484 p=[%s] q=[%s]\n", p, q ));
 				p = q+1; // (p
@@ -3702,7 +3706,16 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			sp[1].replace(' ', '_');
 			val = sp[0] + "|" + sp[1];
 		}
-		value = AbaxDataString("CJAG=0=0=") + geotype + "=0 " + val;
+
+		// value = AbaxDataString("CJAG=0=0=") + geotype + "=0 " + val;
+		if ( isRaw ) {
+			value = typeStr + val;
+			prt(("s3627 isRaw value=%s\n", value.c_str() ));
+		} else {
+			value = AbaxDataString("CJAG=0=0=") + geotype + "=0 " + val;
+			prt(("s3628 !isRaw value=%s\n", value.c_str() ));
+		}
+
 		typeMode = 2;
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
@@ -4173,6 +4186,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_OUTERRINGS || 
 		fop == JAG_FUNC_INNERRINGS || 
 		fop == JAG_FUNC_RINGN || 
+		fop == JAG_FUNC_UNIQUE || 
 		fop == JAG_FUNC_INNERRINGN || 
 		fop == JAG_FUNC_BUFFER || 
 		fop == JAG_FUNC_CENTROID || 
@@ -4440,6 +4454,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_OUTERRING; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "ringn", 5 ) ) {
 		fop = JAG_FUNC_RINGN; len = 5; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "unique", 6 ) ) {
+		fop = JAG_FUNC_UNIQUE; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "innerringn", 10 ) ) {
 		fop = JAG_FUNC_INNERRINGN; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "buffer", 6 ) ) {
@@ -4829,15 +4845,17 @@ bool BinaryOpNode::processStringOp( int op, const AbaxFixString &inlstr, const A
 // op can be AEA
 bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &inlstr, const AbaxDataString &carg, AbaxDataString &value )
 {
-	// prt(("s5481 do processSingleStrOp lstr=[%s]\n", lstr.c_str() ));
-	//prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
+	prt(("s5481 do processSingleStrOp lstr=[%s]\n", inlstr.c_str() ));
+	prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
 	if ( inlstr.size() < 1 ) return false;
 	AbaxDataString lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
+		prt(("s1390 has no = sign in beginning\n" ));
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
 		if ( rc1 < 0 ) return false;
 	} else {
+		prt(("s1029 has = sign\n" ));
 		lstr = inlstr.c_str();
 	}
 
@@ -4967,6 +4985,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllConvexHull( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_OUTERRING ) {
 		rc = doAllOuterRing( mark1, hdr, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_UNIQUE ) {
+		rc = doAllUnique( mark1, hdr, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_OUTERRINGS ) {
 		rc = doAllOuterRings( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_INNERRINGS ) {
@@ -5939,6 +5959,33 @@ bool BinaryOpNode::doAllNumPolygons( const AbaxDataString& mk, const AbaxDataStr
 		value = intToStr( num );
     } else {
 		return false;
+	}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllUnique( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    const JagStrSplit &sp, AbaxDataString &value )
+{
+	prt(("s3420 doAllUnique() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	sp.print();
+	prt(("s3420 doAllUnique() hdr=[%s] src=[%s]\n", hdr.c_str(), sp.c_str() ));
+
+	AbaxDataString bbox;
+	if ( mk == JAG_OJAG ) { bbox = sp[0]; }
+	value = "";
+    if ( colType == JAG_C_COL_TYPE_POLYGON
+	     || colType == JAG_C_COL_TYPE_POLYGON3D 
+	     || colType == JAG_C_COL_TYPE_LINESTRING 
+	     || colType == JAG_C_COL_TYPE_LINESTRING3D 
+	     || colType == JAG_C_COL_TYPE_MULTILINESTRING
+	     || colType == JAG_C_COL_TYPE_MULTILINESTRING3D 
+	     || colType == JAG_C_COL_TYPE_MULTIPOLYGON
+	     || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D
+		 ) {
+		JagCGAL::getUniqueStr( sp, hdr, bbox, value );
+    } else {
+		value = sp.c_str();
 	}
 
 	return true;

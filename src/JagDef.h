@@ -462,16 +462,17 @@
 #define JAG_FUNC_RINGN          272  // n-th ring as linestring of polygon
 #define JAG_FUNC_INNERRINGN     273  // n-th inner ring as linestring of polygon
 #define JAG_FUNC_NUMPOLYGONS    274  // total number of polygons in a multipolygon
+#define JAG_FUNC_UNIQUE         275  // geom with consecutive duplicate points removed
 
 
 // multi-line data ( string functions )
-#define JAG_FUNC_SUBSTR			300  // substr(str, offset, len)  susstr(str, offset )
-#define JAG_FUNC_UPPER			320
-#define JAG_FUNC_LOWER			322
-#define JAG_FUNC_LTRIM			330
-#define JAG_FUNC_RTRIM			332
-#define JAG_FUNC_TRIM			334
-#define JAG_FUNC_LENGTH			336
+#define JAG_FUNC_SUBSTR			350  // substr(str, offset, len)  susstr(str, offset )
+#define JAG_FUNC_UPPER			351
+#define JAG_FUNC_LOWER			352
+#define JAG_FUNC_LTRIM			353
+#define JAG_FUNC_RTRIM			354
+#define JAG_FUNC_TRIM			355
+#define JAG_FUNC_LENGTH			356
 
 // date and time
 #define JAG_FUNC_SECOND			400 // 0-59

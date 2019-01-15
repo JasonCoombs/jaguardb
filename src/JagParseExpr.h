@@ -300,6 +300,8 @@ class BinaryOpNode: public ExpressionElementNode
 						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg,  AbaxDataString &val );
 	bool doAllRingN( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
 						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg,  AbaxDataString &val );
+	bool doAllUnique( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
+					   const JagStrSplit &sp1, AbaxDataString &val );
 
 
 	// data members
