@@ -1108,12 +1108,12 @@ void JagCGAL::getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, co
 }
 
 
-void JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, std::vector<std::string> &vec )
+// return: 0 OK,  <0 error
+int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, std::vector<std::string> &vec )
 {
  	JagPolygon pgon1;
     int rc = JagParser::addPolygonData( pgon1, sp1, false );
-	if ( rc < 0 ) return;
-	//boost::geometry::model::polygon<BoostPoint2D,false> bgon1;
+	if ( rc < 0 ) { return -1;}
 	BoostPolygon2D  bgon1;
 	for ( int i=0; i < pgon1.size(); ++i ) {
 		const JagLineString3D &linestr = pgon1.linestr[i];
@@ -1130,8 +1130,7 @@ void JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2
 
  	JagPolygon pgon2;
     rc = JagParser::addPolygonData( pgon2, sp2, false );
-	if ( rc < 0 ) return;
-	//boost::geometry::model::polygon<BoostPoint2D,false> bgon2;
+	if ( rc < 0 ) return -2;
 	BoostPolygon2D  bgon2;
 	for ( int i=0; i < pgon2.size(); ++i ) {
 		const JagLineString3D &linestr = pgon2.linestr[i];
@@ -1146,13 +1145,17 @@ void JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2
 		boost::geometry::append( bgon2, ring );
 	}
 
-	std::vector<BoostPolygon2D> output;
-	boost::geometry::union_( bgon1, bgon2, output);
-	for ( int i=0; i < output.size(); ++i ) {
+	std::vector<BoostPolygon2D> outputvec;
+	boost::geometry::union_( bgon1, bgon2, outputvec );
+	prt(("s1023 union_ outputvec.size=%d\n", outputvec.size() ));
+	for ( int i=0; i < outputvec.size(); ++i ) {
 		std::stringstream ifs;
-		ifs << boost::geometry::wkt(output[i]);
+		ifs << boost::geometry::wkt(outputvec[i]);
 		vec.push_back( ifs.str() );
+		prt(("s1823 i=%d str=[%s]\n", i, ifs.str().c_str() ));
 	}
+
+	return 0;
 }
 
 

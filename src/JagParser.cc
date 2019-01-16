@@ -5107,7 +5107,7 @@ int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p,
 						if ( pgvec.size() < 1 ) {
 							pgvec = pgon;
 						} else {
-							pgvec += AbaxDataString(" ! ") + pgon;
+							pgvec += AbaxDataString("! ") + pgon;
 						}
 						p = q;
 						break;
@@ -5366,7 +5366,7 @@ int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOn
 		if ( pgon.size() < 1 ) {
 			pgon = linestr3d; // first ring
 		} else {
-			pgon += AbaxDataString(" | ") + linestr3d; // more rings
+			pgon += AbaxDataString("| ") + linestr3d; // more rings
 		}
 
 		if ( firstOnly ) break;

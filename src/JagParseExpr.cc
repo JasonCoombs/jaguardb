@@ -1446,7 +1446,7 @@ int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode,
 				prt(("s2810 lstr=[%s]\n", lstr.c_str() ));
 				prt(("s2810 rstr=[%s]\n", rstr.c_str() ));
 				result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
-				prt(("s1143 _doCalculation result=%d lstr=%s\n", result, lstr.c_str() ));
+				prt(("s1143 _doCalculation result=[%d] lstr=[%s]\n", result, lstr.c_str() ));
 				if ( result < 0 ) {
 					_opString = ""; _numCnts = _initK = _stddevSum = _stddevSumSqr = 0;
 				} else result = 1;
@@ -2419,7 +2419,6 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	else cmode = rtmode;
 
 	prt(("s0398 enter BinaryOpNode::_doCalculation _binaryOp=%d (%s) cmode=%d\n", _binaryOp, binaryOpStr(_binaryOp).c_str(), cmode ));
-
 
 	AbaxDataString errmsg;
 	// first, check if need to change datetime format
@@ -4643,8 +4642,8 @@ bool BinaryExpressionBuilder::nameAndOpGood( const JagParser *jpsr, const AbaxDa
 bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, 
 											const AbaxDataString &carg )
 {
-	//prt(("s5481 do processBooleanOp lstr=[%s]\n", lstr.c_str() ));
-	//prt(("s5481 do processBooleanOp rstr=[%s]\n", rstr.c_str() ));
+	prt(("s5481 do processBooleanOp inlstr=[%s]\n", inlstr.c_str() ));
+	prt(("s5481 do processBooleanOp inrstr=[%s]\n", inrstr.c_str() ));
 	//prt(("s5481 do processBooleanOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
 	//  rstr : OJAG=srid=name=type=subtype  data1 data2 data3 ...
@@ -4760,8 +4759,8 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const 
 // op can be UNION
 AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, const AbaxDataString &carg )
 {
-	//prt(("s5481 do processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
-	//prt(("s5481 do processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
+	prt(("s5481 do processTwoStrOp inlstr=[%s]\n", inlstr.c_str() ));
+	prt(("s5481 do processTwoStrOp inrstr=[%s]\n", inrstr.c_str() ));
 	//prt(("s5481 do processTwoStrOp carg=[%s]\n", carg.c_str() ));
 	//  lstr : OJAG=srid=name=type=subtype bbx  data1 data2 data3 ...
 	//  rstr : OJAG=srid=name=type=subtype bbx  data1 data2 data3 ...
@@ -4772,7 +4771,10 @@ AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inls
 	AbaxDataString lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
-		if ( rc1 < 0 ) return "";
+		if ( rc1 < 0 ) {
+			prt(("s2019 error convertConstantObjToJAG inlstr rc1=%d\n", rc1 ));
+			return "";
+		}
 	} else {
 		lstr = inlstr.c_str();
 	}
@@ -4780,10 +4782,16 @@ AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inls
     AbaxDataString rstr;
     if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
         int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
-        if ( rc2 < 0 ) return "";
+        if ( rc2 < 0 ) {
+			prt(("s2029 error convertConstantObjToJAG inrstr rc2=%d\n", rc2 ));
+			return "";
+		}
     } else {
         rstr = inrstr.c_str();
     }
+
+	prt(("s5482 do processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
+	prt(("s5482 do processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
 
 	AbaxDataString colobjstr1 = lstr.firstToken(' ');
 	AbaxDataString colobjstr2 = rstr.firstToken(' ');
@@ -4864,8 +4872,9 @@ AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inls
 
 	//sp1.shift();	
 	//sp2.shift();	
-	sp1.print();
-	sp2.print();
+	prt(("s1021 sp1.print sp2.print \n" ));
+	//sp1.print();
+	//sp2.print();
 
 	return doTwoStrOp( op, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg );
 }
@@ -5067,7 +5076,7 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const 
 										const JagStrSplit &sp1, const AbaxDataString &carg, double &value )
 {
 	prt(("s2059 doSingleDoubleOp sp1:\n" ));
-	sp1.print();
+	//sp1.print();
 
 	bool rc = false;
 	if ( op == JAG_FUNC_AREA ) {
@@ -5088,7 +5097,7 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 										const JagStrSplit &sp1, const AbaxDataString &carg, AbaxDataString &value )
 {
 	prt(("s2232 doSingleStrOp  sp1:\n" ));
-	sp1.print();
+	//sp1.print();
 
 	bool rc = false;
 	if ( op == JAG_FUNC_POINTN ) {
@@ -5929,7 +5938,7 @@ bool BinaryOpNode::doAllOuterRing( const AbaxDataString& mk, const AbaxDataStrin
 								    int srid, const JagStrSplit &sp, AbaxDataString &value )
 {
 	prt(("s3420 doAllOuterRing() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
-	sp.print();
+	//sp.print();
 	value = "";
 	AbaxDataString bbox;
 	if ( mk == JAG_OJAG ) { bbox = sp[1]; } 

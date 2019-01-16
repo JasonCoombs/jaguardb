@@ -2545,20 +2545,6 @@ bool JagGeo::pointWithinPolygon( double x, double y,
 	//JagLineString3D linestr;
 	JagPolygon pgon;
 	int rc;
-	/***
-	if ( mk2 == JAG_OJAG ) {
-		//prt(("s8123 JAG_OJAG sp2: prnt\n" ));
-		//sp2.print();
-		rc = JagParser::addPolygonData( pgon, sp2, false );
-	} else {
-		// form linesrting3d  from pdata
-		p = secondTokenStart( sp2.c_str() );
-		//prt(("s8110 p=[%s]\n", p ));
-		rc = JagParser::addPolygonData( pgon, p, false, false );
-		//prt(("s8390 pointWithinPolygon pgon.print():\n" ));
-		//pgon.print();
-	}
-	***/
 	rc = JagParser::addPolygonData( pgon, sp2, false );
 	if ( rc < 0 ) {
 		//prt(("s8112 rc=%d false\n", rc ));
@@ -3825,109 +3811,6 @@ bool JagGeo::multiPolygonWithinEllipse( const AbaxDataString &mk1, const JagStrS
 	return true;
 }
 
-// first polygon is column, second is CJAG 
-// O - O  O - C   C - O   no C-C
-#if 0
-bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
-								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
-{
-	if ( mk1 == JAG_CJAG && mk2 == JAG_CJAG ) return false;
-	if ( mk1 == JAG_CJAG && mk2 == JAG_OJAG ) return false;
-
-	//int start1 = 0;
-	//int start2 = 0;
-	double bbx1, bby1, brx1, bry1;
-	double bbx2, bby2, brx2, bry2;
-	double xmin, ymin, xmax, ymax;
-   	const char *str;
-   	double dx, dy;
-	char *p, *pdata;
-
-	xmin = ymin = LONG_MAX; xmax = ymax = LONG_MIN;
-
-	int rc;
-	if ( mk1 == JAG_OJAG ) {
-		start1 = 1;
-	} 
-	getPolygonBound( mk1, sp1, bbx1, bby1, brx1, bry1 );
-
-	if ( mk2 == JAG_OJAG ) {
-		boundingBoxRegion(sp2[JAG_SP_START+0], bbx2, bby2, brx2, bry2 );
-		start2 = 1;
-	} else {
-		pdata = secondTokenStart( sp2.c_str() );
-		if ( ! pdata ) return false;
-	}
-	getPolygonBound( mk2, sp2, bbx2, bby2, brx2, bry2 );
-
-	if ( bound2DDisjoint( bbx1, bby1, brx1, bry1,  bbx2, bby2, brx2, bry2 ) ) {
-		prt(("s7581 bound2DDisjoint two polygon not within\n" ));
-		return false;
-	}
-
-	if (   mk1 == JAG_OJAG  &&  mk2 == JAG_CJAG ) {
-    	JagPolygon pgon;  // each polygon can have multiple linestrings
-    	rc = JagParser::addPolygonData( pgon, pdata, true, false );
-    	//prt(("s3388 addPolygonData pgon: print():\n" ));
-    	//pgon.print();
-    
-    	if ( rc <  0 ) { return false; }
-    	if ( pgon.size() < 1 ) { return false; }
-    
-    	// sp1 array:  "bbox  x:y x:y  ... | x:y  x:y ...| ..." sp1: start=1 skip '|' and '!'
-    	// sp2 cstr:  ( ( x y, x y, ...), ( ... ), (...) )
-    	// pgon has sp2 data parsed
-    	// check first polygon only for now
-		bool skip = false;
-    	for ( int i=start1; i < sp1.length(); ++i ) {
-			if ( sp1[i] == "|" ) {  skip = true; }
-			else if ( sp1[i] == "!" ) {  skip = false; }
-			else {
-				if ( skip ) continue;
-    			str = sp1[i].c_str();
-    			if ( strchrnum( str, ':') < 1 ) continue;
-    			get2double(str, p, ':', dx, dy );
-    			if ( ! pointWithinPolygon( dx, dy, pgon.linestr[0] ) ) { return false; }
-			}
-    	}
-    	return true;
-	} else if (  mk1 == JAG_OJAG  &&  mk2 == JAG_OJAG ) {
-		// get a linestring from cords in sp2
-		JagLineString3D linestr;
-		bool skip = false;
-		for ( int i=start2; i < sp2.length(); ++i ) {
-			if ( sp2[i] == "|" ) {  skip = true; }
-			else if ( sp2[i] == "!" ) {  skip = false; }
-			else {
-				if ( skip ) continue;
-    			str = sp2[i].c_str();
-    			if ( strchrnum( str, ':') < 1 ) continue;
-    			get2double(str, p, ':', dx, dy );
-				JagPoint2D pt(dx,dy);
-				linestr.add(pt);
-			}
-		}
-
-		skip = false;
-    	for ( int i=start1; i < sp1.length(); ++i ) {
-    		//if ( sp1[i] == "|" || sp1[i] == "!" ) break;
-			if ( sp1[i] == "|" ) {  skip = true; }
-			else if ( sp1[i] == "!" ) {  skip = false; }
-			else {
-				if ( skip ) continue;
-    			str = sp1[i].c_str();
-    			if ( strchrnum( str, ':') < 1 ) continue;
-    			get2double(str, p, ':', dx, dy );
-    			if ( ! pointWithinPolygon( dx, dy, linestr ) ) { return false; }
-			}
-    	}
-    	return true;
-	} else {
-    	return false;
-	}
-}
-#endif
-
 bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
 								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
@@ -3939,14 +3822,6 @@ bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrS
 
 	int rc;
 	getPolygonBound( mk1, sp1, bbx1, bby1, brx1, bry1 );
-	/***
-	if ( mk2 == JAG_OJAG ) {
-		boundingBoxRegion(sp2[JAG_SP_START+0], bbx2, bby2, brx2, bry2 );
-	} else {
-		pdata = secondTokenStart( sp2.c_str() );
-		if ( ! pdata ) return false;
-	}
-	***/
 	getPolygonBound( mk2, sp2, bbx2, bby2, brx2, bry2 );
 
 	if ( bound2DDisjoint( bbx1, bby1, brx1, bry1,  bbx2, bby2, brx2, bry2 ) ) {
@@ -8559,19 +8434,6 @@ bool JagGeo::triangleIntersectPolygon( double x10, double y10, double x20, doubl
 	JagPolygon pgon;
 	int rc;
 	//sp2.print();
-	/***
-	if ( mk2 == JAG_OJAG ) {
-		//prt(("s4123 JAG_OJAG sp2: prnt\n" ));
-		//sp2.print();
-		rc = JagParser::addPolygonData( pgon, sp2, false );
-	} else {
-		// form linesrting3d  from pdata
-		char *p = secondTokenStart( sp2.c_str() );
-		//prt(("s4110 p=[%s]\n", p ));
-		rc = JagParser::addPolygonData( pgon, p, false, false );
-	}
-	***/
-
 	rc = JagParser::addPolygonData( pgon, sp2, false );
 	if ( rc < 0 ) {
 		//prt(("s6338 triangleIntersectPolygon addPolygonData rc=%d false\n", rc ));
@@ -10988,7 +10850,7 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 			                     const JagStrSplit &sp2, AbaxDataString &res )
 {
 	prt(("s1102 doAllClosestPoint sp2:\n" ));
-	sp2.print();
+	//sp2.print();
 	char *str, p;
 	double dx,dy,dz;
 
@@ -17555,19 +17417,6 @@ bool JagGeo::pointDistancePolygon( int srid, double x, double y, const AbaxDataS
     //char *p;
 	JagPolygon pgon;
 	int rc;
-	/***
-	if ( mk2 == JAG_OJAG ) {
-		//prt(("s8123 JAG_OJAG sp2: prnt\n" ));
-		//sp2.print();
-		rc = JagParser::addPolygonData( pgon, sp2, true );
-	} else {
-		// form linesrting3d  from pdata
-		p = secondTokenStart( sp2.c_str() );
-		//prt(("s8110 p=[%s]\n", p ));
-		rc = JagParser::addPolygonData( pgon, p, true, false );
-	}
-	***/
-
 	rc = JagParser::addPolygonData( pgon, sp2, true );
 	if ( rc < 0 ) { return false; }
 
@@ -19493,7 +19342,7 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
     // sp2.print();
     //	dist = 0.0;
     prt(("--------------------lineString3DDistanceBox-----------------"));
-    sp1.print();
+    //sp1.print();
     prt(("--------------------lineString3DDistanceBox-----------------"));
 	int start = JAG_SP_START;
     double dx, dy, dz, pd, d1, px, py, pz, maxd1, maxd2, maxd3, mind1;
@@ -19649,7 +19498,7 @@ bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1,
 
 	// todo013
 	prt(("013--------------------------------------------\n"));
-	sp1.print();
+	//sp1.print();
     prt(("013--------------------------------------------\n"));
     const char *str;
     char *p;
@@ -19810,7 +19659,7 @@ bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const
 	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
 {
     // todo017  -- finish
-    sp1.print();
+    //sp1.print();
     // sp2.print();
     JagPolygon pgon;
     int rc;
@@ -20226,7 +20075,7 @@ bool JagGeo::multiPolygonDistanceTriangle(int srid, const AbaxDataString &mk1, c
 
     for ( int i=0; i < len; ++i ) {
     	const JagLineString3D &linestr = pgvec[i].linestr[0];
-    	pgvec[i].print();
+    	//pgvec[i].print();
     	for ( int j=0; j < linestr.size()-1; ++j ) {
                 d1 = JagGeo::distance( linestr.point[j].x, linestr.point[j].y, x1, y1, srid );
                 d2 = JagGeo::distance( linestr.point[j].x, linestr.point[j].y, x2, y2, srid );
@@ -20340,7 +20189,7 @@ bool JagGeo::multiPolygonDistanceEllipse(int srid, const AbaxDataString &mk1, co
     if ( len < 1 ) return true;
     for ( int i=0; i < len; ++i ) {
         const JagLineString3D &linestr = pgvec[i].linestr[0];
-        pgvec[i].print();
+        //pgvec[i].print();
         for ( int j=0; j < linestr.size()-1; ++j ) {
             d = JagGeo::distance( linestr.point[j].x, linestr.point[j].y, x0, y0, srid );
             if ( d < mind ) mind = d;
@@ -22598,7 +22447,12 @@ AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, con
 	char *p;
 	int rc;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
-		JagCGAL::unionOfTwoPolygons( sp1, sp2, vec );
+		rc = JagCGAL::unionOfTwoPolygons( sp1, sp2, vec );
+		if ( rc < 0 ) {
+			prt(("s2038 error unionOfTwoPolygons rc=%d\n", rc ));
+			return "";
+		}
+
 		prt(("s8621 vec.size=%d\n", vec.size() ));
 		if ( vec.size() == 1 ) {
 			// polygon
