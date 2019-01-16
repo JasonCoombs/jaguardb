@@ -707,59 +707,59 @@ bool JagGeo::pointWithinTriangle( const JagPoint2D &point,
 bool JagGeo::doPointWithin( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 		return pointWithinPoint( px0, py0, x0, y0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double x2 = jagatof( sp2[2].c_str() ); 
-		double y2 = jagatof( sp2[3].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		return pointWithinLine( px0, py0, x1, y1, x2, y2, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
 		return pointWithinLineString( px0, py0, mk2, sp2, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-    	JagPoint2D point( sp1[0].c_str(), sp1[1].c_str() );
-    	JagPoint2D p1( sp2[0].c_str(), sp2[1].c_str() );
-    	JagPoint2D p2( sp2[2].c_str(), sp2[3].c_str() );
-    	JagPoint2D p3( sp2[4].c_str(), sp2[5].c_str() );
+    	JagPoint2D point( sp1[JAG_SP_START+0].c_str(), sp1[JAG_SP_START+1].c_str() );
+    	JagPoint2D p1( sp2[JAG_SP_START+0].c_str(), sp2[JAG_SP_START+1].c_str() );
+    	JagPoint2D p2( sp2[JAG_SP_START+2].c_str(), sp2[JAG_SP_START+3].c_str() );
+    	JagPoint2D p3( sp2[JAG_SP_START+4].c_str(), sp2[JAG_SP_START+5].c_str() );
 		return pointWithinTriangle( point, p1, p2, p3, strict, true );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		double lon = meterToLon( srid2, r, x0, y0);
 		double lat = meterToLat( srid2, r, x0, y0);
 		return pointWithinRectangle( px0, py0, x0, y0, lon, lat, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double w = jagatof( sp2[2].c_str() ); 
-		double h = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		double lon = meterToLon( srid2, w, x0, y0);
 		double lat = meterToLat( srid2, h, x0, y0);
 		return pointWithinRectangle( px0, py0, x0, y0, lon, lat, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 		double lon = meterToLon( srid2, r, x, y);
 		double lat = meterToLat( srid2, r, x, y);
 		// return pointWithinCircle( px0, py0, x, y, r, strict );
 		return pointWithinEllipse( px0, py0, x, y, lon, lat, 0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double w = jagatof( sp2[2].c_str() );
-		double h = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		double lon = meterToLon( srid2, w, x0, y0);
 		double lat = meterToLat( srid2, h, x0, y0);
 		return pointWithinEllipse( px0, py0, x0, y0, lon, lat, nx, strict );
@@ -774,66 +774,66 @@ bool JagGeo::doPoint3DWithin( const JagStrSplit &sp1, const AbaxDataString &mk2,
 {
 	//prt(("s4409 doPoint3DWithin colType2=[%s]\n", colType2.c_str() ));
 
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		return point3DWithinPoint3D( px0, py0, pz0, x1, y1, z1, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
-		double x2 = jagatof( sp2[3].c_str() ); 
-		double y2 = jagatof( sp2[4].c_str() ); 
-		double z2 = jagatof( sp2[5].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 		return point3DWithinLine3D( px0, py0, pz0, x1, y1, z1, x2, y2, z2, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		return point3DWithinLineString3D( px0, py0, pz0, mk2, sp2, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return point3DWithinBox( px0, py0, pz0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double c = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return point3DWithinBox( px0, py0, pz0, x0, y0, z0, a,b,c, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return point3DWithinSphere( px0,py0,pz0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() );
-		double b = jagatof( sp2[4].c_str() );
-		double c = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return point3DWithinEllipsoid( px0, py0, pz0, x0, y0, z0, a,b,c, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return point3DWithinCone( px0,py0,pz0, x, y, z, r, h, nx, ny, strict );
 	}
 	return false;
@@ -841,64 +841,64 @@ bool JagGeo::doPoint3DWithin( const JagStrSplit &sp1, const AbaxDataString &mk2,
 
 double JagGeo::doCircleArea( int srid1, const JagStrSplit &sp1 )
 {
-	//double px0 = jagatof( sp1[0].c_str() ); 
-	//double py0 = jagatof( sp1[1].c_str() ); 
-	double r = jagatof( sp1[2].c_str() ); 
+	//double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	//double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	return r * r * JAG_PI;
 }
 
 double JagGeo::doCirclePerimeter( int srid1, const JagStrSplit &sp1 )
 {
-	double r = jagatof( sp1[2].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	return 2.0 * r * JAG_PI;
 }
 
 bool JagGeo::doCircleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	pr0 = meterToLon( srid2, pr0, px0, py0);
 
 	if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 		r = meterToLon( srid2, r, x, y);
 		return circleWithinCircle(px0,py0,pr0, x,y,r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 		r = meterToLon( srid2, r, x, y);
-		double nx = safeget( sp2, 3);
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return circleWithinSquare(px0,py0,pr0, x,y,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double w = jagatof( sp2[2].c_str() );
-		double h = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+3].c_str() );
 		w = meterToLon( srid2, w, x0, y0);
 		h = meterToLat( srid2, h, x0, y0);
-		double nx = safeget( sp2, 4);
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return circleWithinRectangle( px0, py0, pr0, x0, y0, w, h, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double x2 = jagatof( sp2[2].c_str() ); 
-		double y2 = jagatof( sp2[3].c_str() ); 
-		double x3 = jagatof( sp2[4].c_str() ); 
-		double y3 = jagatof( sp2[5].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 		return circleWithinTriangle(px0, py0, pr0, x1, y1, x2, y2, x3, y3, strict, true );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0);
 		b = meterToLat( srid2, b, x0, y0);
-		double nx = safeget( sp2, 4);
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return circleWithinEllipse(px0, py0, pr0, x0, y0, a, b, nx, strict, true );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return circleWithinPolygon(px0, py0, pr0, mk2, sp2, strict );
@@ -910,58 +910,58 @@ bool JagGeo::doCircleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 bool JagGeo::doCircle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 
 	double nx0 = 0.0;
 	double ny0 = 0.0;
-	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[4].c_str() ); }
-	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[5].c_str() ); }
+	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[JAG_SP_START+4].c_str() ); }
+	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[JAG_SP_START+5].c_str() ); }
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return circle3DWithinCube( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double c = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return circle3DWithinBox( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, a,b,c, nx, ny, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return circle3DWithinSphere( px0, py0, pz0, pr0, nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return circle3DWithinEllipsoid( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, w,d,h,  nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return circle3DWithinCone( px0,py0,pz0,pr0,nx0,ny0, x, y, z, r, h, nx, ny, strict );
 	}
 
@@ -971,53 +971,53 @@ bool JagGeo::doCircle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 bool JagGeo::doSphereWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return sphereWithinCube( px0, py0, pz0, pr0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return sphereWithinBox( px0, py0, pz0, pr0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return sphereWithinSphere( px0, py0, pz0, pr0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return sphereWithinEllipsoid( px0, py0, pz0, pr0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return sphereWithinCone( px0, py0, pz0, pr0,    x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1028,53 +1028,53 @@ bool JagGeo::doSquareWithin( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	//prt(("s3033 doSquareWithin colType2=[%s] \n", colType2.c_str() ));
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	pr0 = meterToLon( srid2, pr0, px0, py0 );
-	double nx0 = safeget( sp1, 3 );
+	double nx0 = safeget(sp1, JAG_SP_START+3);
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return rectangleWithinTriangle( px0, py0, pr0,pr0, nx0, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
-		double nx = safeget(sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleWithinSquare( px0, py0, pr0,pr0, nx0, x0, y0, a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget(sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleWithinRectangle( px0, py0, pr0,pr0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget(sp2, 3);
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleWithinCircle( px0, py0, pr0,pr0, nx0, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget(sp2, 4);
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleWithinEllipse( px0, py0, pr0,pr0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return rectangleWithinPolygon( px0, py0, pr0,pr0,nx0, mk2, sp2, strict );
@@ -1085,59 +1085,59 @@ bool JagGeo::doSquareWithin( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 bool JagGeo::doSquare3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4);
-	double ny0 = safeget( sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		// return square3DWithinCube( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 		return rectangle3DWithinCube( px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		// return square3DWithinBox( px0, py0, pz0, pr0,  nx0, ny0,x0, y0, z0, w,d,h, nx, ny, strict );
 		return rectangle3DWithinBox( px0, py0, pz0, pr0,pr0, nx0, ny0,x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		// return square3DWithinSphere( px0, py0, pz0, pr0, nx0, ny0, x, y, z, r, strict );
 		return rectangle3DWithinSphere( px0, py0, pz0, pr0,pr0, nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		// return square3DWithinEllipsoid( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 		return rectangle3DWithinEllipsoid( px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		// return square3DWithinCone( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 		return rectangle3DWithinCone( px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
@@ -1148,55 +1148,55 @@ bool JagGeo::doSquare3DWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 bool JagGeo::doCubeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
-	double ny0 = safeget(sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return boxWithinCube( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxWithinBox( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return boxWithinSphere( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxWithinEllipsoid( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return boxWithinCone( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, r, h, nx,ny, strict );
 	}
 	return false;
@@ -1206,11 +1206,11 @@ bool JagGeo::doCubeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 bool JagGeo::doRectangleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	a0 = meterToLon( srid2, a0, px0, py0 );
 	b0 = meterToLat( srid2, b0, px0, py0 );
@@ -1218,44 +1218,44 @@ bool JagGeo::doRectangleWithin( int srid1, const JagStrSplit &sp1, const AbaxDat
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return rectangleWithinTriangle( px0, py0, a0, b0, nx0, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleWithinSquare( px0, py0, a0, b0, nx0, x0, y0, a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleWithinRectangle( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleWithinCircle( px0, py0, a0, b0, nx0, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleWithinEllipse( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return rectangleWithinPolygon( px0,py0,a0,b0,nx0, mk2, sp2, strict );
@@ -1267,56 +1267,56 @@ bool JagGeo::doRectangleWithin( int srid1, const JagStrSplit &sp1, const AbaxDat
 bool JagGeo::doRectangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double nx0 = safeget( sp1, 5 );
-	double ny0 = safeget( sp1, 6 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return rectangle3DWithinCube( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DWithinBox( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return rectangle3DWithinSphere( px0, py0, pz0, a0, b0, nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DWithinEllipsoid( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return rectangle3DWithinCone( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1325,57 +1325,57 @@ bool JagGeo::doRectangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxD
 bool JagGeo::doBoxWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6 );
-	double ny0 = safeget( sp1, 7 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return boxWithinCube( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxWithinBox( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return boxWithinSphere( px0, py0, pz0, a0, b0, c0, nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxWithinEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return boxWithinCone( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1386,57 +1386,57 @@ bool JagGeo::doBoxWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStrin
 bool JagGeo::doCylinderWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 
-	double nx0 = safeget(sp1, 5);
-	double ny0 = safeget(sp1, 6);
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return cylinderWithinCube( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return cylinderWithinBox( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return cylinderWithinSphere( px0, py0, pz0, pr0, c0,  nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return cylinderWithinEllipsoid( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return cylinderWithinCone( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1445,56 +1445,56 @@ bool JagGeo::doCylinderWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 bool JagGeo::doConeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
-	double nx0 = safeget(sp1, 5 );
-	double ny0 = safeget(sp1, 6 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return coneWithinCube( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneWithinBox( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return coneWithinSphere( px0, py0, pz0, pr0, c0,  nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneWithinEllipsoid( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return coneWithinCone( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1504,11 +1504,11 @@ bool JagGeo::doConeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 bool JagGeo::doEllipseWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	a0 = meterToLon( srid2, a0, px0, py0 );
 	b0 = meterToLat( srid2, b0, px0, py0 );
@@ -1516,44 +1516,44 @@ bool JagGeo::doEllipseWithin( int srid1, const JagStrSplit &sp1, const AbaxDataS
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return ellipseWithinTriangle( px0, py0, a0, b0, nx0, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		a = meterToLon( srid2, a, x0, y0 );
 		double b = meterToLat( srid2, a, x0, y0 );
 		//return ellipseWithinSquare( px0, py0, a0, b0, nx0, x0, y0, a, nx, strict );
 		return ellipseWithinRectangle( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4);
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return ellipseWithinRectangle( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget( sp2, 3);
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return ellipseWithinCircle( px0, py0, a0, b0, nx0, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
 		return ellipseWithinEllipse( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
@@ -1567,57 +1567,57 @@ bool JagGeo::doEllipseWithin( int srid1, const JagStrSplit &sp1, const AbaxDataS
 bool JagGeo::doEllipsoidWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6);
-	double ny0 = safeget( sp1, 7);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return ellipsoidWithinCube( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidWithinBox( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return ellipsoidWithinSphere( px0, py0, pz0, a0, b0, c0, nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidWithinEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return ellipsoidWithinCone( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1627,56 +1627,56 @@ bool JagGeo::doEllipsoidWithin( int srid1, const JagStrSplit &sp1, const AbaxDat
 bool JagGeo::doTriangleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
-	double x30 = jagatof( sp1[4].c_str() );
-	double y30 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return triangleWithinTriangle( x10, y10, x20, y20, x30, y30, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		a = meterToLon( srid2, a, x0, y0 );
 		double b = meterToLat( srid2, a, x0, y0 );
 		// return triangleWithinSquare( x10, y10, x20, y20, x30, y30, x0, y0, a, nx, strict );
 		return triangleWithinRectangle( x10, y10, x20, y20, x30, y30, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4);
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return triangleWithinRectangle( x10, y10, x20, y20, x30, y30, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget( sp2, 3);
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return triangleWithinCircle( x10, y10, x20, y20, x30, y30, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4);
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return triangleWithinEllipse( x10, y10, x20, y20, x30, y30, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return triangleWithinPolygon( x10, y10, x20, y20, x30, y30, mk2, sp2, strict );
@@ -1688,58 +1688,58 @@ bool JagGeo::doTriangleWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 bool JagGeo::doTriangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
-	double x30 = jagatof( sp1[6].c_str() );
-	double y30 = jagatof( sp1[7].c_str() );
-	double z30 = jagatof( sp1[8].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+6].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+7].c_str() );
+	double z30 = jagatof( sp1[JAG_SP_START+8].c_str() );
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return triangle3DWithinCube( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return triangle3DWithinBox( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return triangle3DWithinSphere( x10,y10,z10,x20,y20,z20,x30,y30,z30, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return triangle3DWithinEllipsoid( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return triangle3DWithinCone( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1749,54 +1749,54 @@ bool JagGeo::doTriangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDa
 bool JagGeo::doLineWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return lineWithinTriangle( x10, y10, x20, y20, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineWithinSquare( x10, y10, x20, y20, x0, y0, a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return lineWithinLineString( x10, y10, x20, y20, mk2, sp2, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineWithinRectangle( x10, y10, x20, y20, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineWithinCircle( x10, y10, x20, y20, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineWithinEllipse( x10, y10, x20, y20, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return lineWithinPolygon( x10, y10, x20, y20, mk2, sp2, strict );
@@ -1807,57 +1807,57 @@ bool JagGeo::doLineWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 bool JagGeo::doLine3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return line3DWithinCube( x10,y10,z10,x20,y20,z20, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return line3DWithinLineString3D( x10,y10,z10,x20,y20,z20, mk2, sp2, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return line3DWithinBox( x10,y10,z10,x20,y20,z20, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return line3DWithinSphere( x10,y10,z10,x20,y20,z20, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return line3DWithinEllipsoid( x10,y10,z10,x20,y20,z20, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return line3DWithinCone( x10,y10,z10,x20,y20,z20, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -1871,47 +1871,47 @@ bool JagGeo::doLineStringWithin( const AbaxDataString &mk1, int srid1, const Jag
 	//prt(("s6683 doLineStringWithin colType2=[%s]\n", colType2.c_str() ));
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return lineStringWithinTriangle( mk1, sp1, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return lineStringWithinLineString( mk1, sp1, mk2, sp2, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		//prt(("s0881 lineStringWithinSquare ...\n" ));
 		return lineStringWithinSquare( mk1, sp1, x0, y0, a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineStringWithinRectangle( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineStringWithinCircle( mk1, sp1, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineStringWithinEllipse( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return lineStringWithinPolygon( mk1, sp1, mk2, sp2, strict );
@@ -1923,49 +1923,49 @@ bool JagGeo::doLineString3DWithin( const AbaxDataString &mk1, int srid1, const J
 									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return lineString3DWithinCube( mk1, sp1, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return lineString3DWithinLineString3D( mk1, sp1, mk2, sp2, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return lineString3DWithinBox( mk1, sp1, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return lineString3DWithinSphere( mk1, sp1, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return lineString3DWithinEllipsoid( mk1, sp1, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return lineString3DWithinCone( mk1, sp1, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -2000,46 +2000,46 @@ bool JagGeo::doPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStr
 	prt(("s6683 doPolygonWithin colType2=[%s]\n", colType2.c_str() ));
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return polygonWithinTriangle( mk1, sp1, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
 		prt(("s6040 JAG_C_COL_TYPE_SQUARE sp2 print():\n"));
 		//sp2.print();
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonWithinSquare( mk1, sp1, x0, y0, a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonWithinRectangle( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonWithinCircle( mk1, sp1, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonWithinEllipse( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return polygonWithinPolygon( mk1, sp1, mk2, sp2 );
@@ -2052,8 +2052,7 @@ double JagGeo::doMultiPolygonArea( const AbaxDataString &mk1, int srid1, const J
 	prt(("s7739 doMultiPolygonArea sp1.print():\n" ));
 	//sp1.print();
 
-   	int start = 0;
-   	if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
     double dx, dy;
     const char *str;
     char *p;
@@ -2132,8 +2131,7 @@ double JagGeo::doMultiPolygonPerimeter( const AbaxDataString &mk1, int srid1, co
 	prt(("s7739 doMultiPolygonArea sp1.print():\n" ));
 	//sp1.print();
 
-   	int start = 0;
-   	if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
     double dx, dy;
     const char *str;
     char *p;
@@ -2163,8 +2161,7 @@ double JagGeo::doMultiPolygon3DPerimeter( const AbaxDataString &mk1, int srid1, 
 	prt(("s7739 doMultiPolygon3DPerimeter sp1.print():\n" ));
 	//sp1.print();
 
-   	int start = 0;
-   	if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
     double dx, dy, dz;
     const char *str;
     char *p;
@@ -2195,44 +2192,44 @@ bool JagGeo::doMultiPolygonWithin( const AbaxDataString &mk1, int srid1, const J
 	// like point within
 	prt(("s6683 domultiPolygonWithin colType2=[%s]\n", colType2.c_str() ));
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return multiPolygonWithinTriangle( mk1, sp1, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
 		prt(("s6040 JAG_C_COL_TYPE_SQUARE sp2 print():\n"));
 		//sp2.print();
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		a = meterToLon( srid2, a, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return multiPolygonWithinSquare( mk1, sp1, x0, y0, a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return multiPolygonWithinRectangle( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		r = meterToLon( srid2, r, x0, y0 );
-		double nx = safeget( sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return multiPolygonWithinCircle( mk1, sp1, x0, y0, r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
 		a = meterToLon( srid2, a, x0, y0 );
 		b = meterToLat( srid2, b, x0, y0 );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return multiPolygonWithinEllipse( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return multiPolygonWithinPolygon( mk1, sp1, mk2, sp2 );
@@ -2245,47 +2242,47 @@ bool JagGeo::doPolygon3DWithin( const AbaxDataString &mk1, int srid1, const JagS
 									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return polygon3DWithinCube( mk1, sp1, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DWithinBox( mk1, sp1, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return polygon3DWithinSphere( mk1, sp1, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DWithinEllipsoid( mk1, sp1, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return polygon3DWithinCone( mk1, sp1, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -2295,47 +2292,47 @@ bool JagGeo::doMultiPolygon3DWithin( const AbaxDataString &mk1, int srid1, const
 									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return multiPolygon3DWithinCube( mk1, sp1, x0, y0, z0, r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return multiPolygon3DWithinBox( mk1, sp1, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return multiPolygon3DWithinSphere( mk1, sp1, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return multiPolygon3DWithinEllipsoid( mk1, sp1, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return multiPolygon3DWithinCone( mk1, sp1, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -2475,11 +2472,7 @@ bool JagGeo::pointWithinLine( double px, double py, double x1, double y1, double
 bool JagGeo::pointWithinLineString( double x, double y, 
 									const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
-
+	int start = JAG_SP_START;
     double dx1, dy1, dx2, dy2;
     const char *str;
     char *p;
@@ -2590,11 +2583,7 @@ bool JagGeo::pointWithinPolygon( double x, double y,
 bool JagGeo::point3DWithinLineString3D( double x, double y, double z, 
 									const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
-
+	int start = JAG_SP_START;
     double dx1, dy1, dz1, dx2, dy2, dz2;
     const char *str;
     char *p;
@@ -3057,11 +3046,7 @@ bool JagGeo::lineWithinLineString( double x10, double y10, double x20, double y2
  								   const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
-
+	int start = JAG_SP_START;
     double dx1, dy1, dx2, dy2;
     const char *str;
     char *p;
@@ -3198,14 +3183,13 @@ bool JagGeo::lineStringWithinTriangle(  const AbaxDataString &mk1, const JagStrS
 {
 	double trix, triy, rx, ry;
 	triangleRegion(x1,y1, x2,y2, x3,y3, trix, triy, rx, ry );
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  trix, triy, rx, ry ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
     JagPoint2D p1( x1, y1 );
@@ -3231,22 +3215,22 @@ bool JagGeo::lineStringWithinTriangle(  const AbaxDataString &mk1, const JagStrS
 bool JagGeo::lineStringWithinLineString(  const AbaxDataString &mk1, const JagStrSplit &sp1,
 											const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
-	int start1 = 0;
+	int start1 = JAG_SP_START;
 	double bbx1, bby1, brx1, bry1;
 	if ( mk1 == JAG_OJAG ) {
-		boundingBoxRegion(sp1[0], bbx1, bby1, brx1, bry1 );
-		start1 = 1;
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx1, bby1, brx1, bry1 );
 	}
 
-	int start2 = 0;
+	int start2 = JAG_SP_START;
 	double bbx2, bby2, brx2, bry2;
 	if ( mk2 == JAG_OJAG ) {
-		boundingBoxRegion(sp2[0], bbx2, bby2, brx2, bry2 );
-		start2 = 1;
+		boundingBoxRegion(sp2[JAG_SP_START+0], bbx2, bby2, brx2, bry2 );
 	}
 
-	if ( bound2DDisjoint( bbx1, bby1, brx1, bry1,  bbx2, bby2, brx2, bry2 ) ) {
-		return false;
+	if (  mk1 == JAG_OJAG && mk2 == JAG_OJAG ) {
+		if ( bound2DDisjoint( bbx1, bby1, brx1, bry1,  bbx2, bby2, brx2, bry2 ) ) {
+			return false;
+		}
 	}
 
 	// assume sp1 has fewer lines than sp2
@@ -3264,10 +3248,8 @@ bool JagGeo::lineStringWithinLineString(  const AbaxDataString &mk1, const JagSt
 bool JagGeo::sequenceSame(  const AbaxDataString &mk1, const JagStrSplit &sp1,
 											const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
-	int start1 = 0;
-	if ( mk1 == JAG_OJAG ) { start1 = 1; }
-	int start2 = 0;
-	if ( mk2 == JAG_OJAG ) { start2 = 1; }
+	int start1 = JAG_SP_START;
+	int start2 = JAG_SP_START;
 	if ( sp1.length() - start1 != sp2.length() - start2 ) {
 		return false;
 	}
@@ -3285,15 +3267,14 @@ bool JagGeo::lineStringWithinSquare( const AbaxDataString &mk1, const JagStrSpli
 {
 	prt(("s6724 lineStringWithinSquare nx=%f ...\n", nx ));
 	if ( ! validDirection(nx) ) return false;
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, r, r ) ) {
 			prt(("s6770 false\n" ));
 			return false;
 		}
-		start = 1;
 	}
 
 	double loc_x, loc_y;
@@ -3321,14 +3302,13 @@ bool JagGeo::lineStringWithinRectangle( const AbaxDataString &mk1, const JagStrS
 {
 	if ( ! validDirection(nx) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3352,14 +3332,13 @@ bool JagGeo::lineStringWithinCircle( const AbaxDataString &mk1, const JagStrSpli
 {
 	if ( ! validDirection(nx) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, r, r ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3384,14 +3363,13 @@ bool JagGeo::lineStringWithinEllipse( const AbaxDataString &mk1, const JagStrSpl
 	if ( ! validDirection(nx) ) return false;
 	if ( jagIsZero(a) || jagIsZero(b) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3412,10 +3390,10 @@ bool JagGeo::lineStringWithinPolygon( const AbaxDataString &mk1, const JagStrSpl
 									  const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx1, bby1, brx1, bry1;
-		boundingBoxRegion(sp1[0], bbx1, bby1, brx1, bry1 );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx1, bby1, brx1, bry1 );
 
 		double bbx2, bby2, rx2, ry2;
 		getPolygonBound( mk2, sp2, bbx2, bby2, rx2, ry2 );
@@ -3423,7 +3401,6 @@ bool JagGeo::lineStringWithinPolygon( const AbaxDataString &mk1, const JagStrSpl
 		if ( bound2DDisjoint( bbx1, bby1, brx1, bry1,  bbx2, bby2, rx2, ry2 ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
 	JagPolygon pgon;
@@ -3452,14 +3429,13 @@ bool JagGeo::polygonWithinTriangle(  const AbaxDataString &mk1, const JagStrSpli
 {
 	double trix, triy, rx, ry;
 	triangleRegion(x1,y1, x2,y2, x3,y3, trix, triy, rx, ry );
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  trix, triy, rx, ry ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
     JagPoint2D p1( x1, y1 );
@@ -3488,15 +3464,14 @@ bool JagGeo::polygonWithinSquare( const AbaxDataString &mk1, const JagStrSplit &
 {
 	prt(("s6724 polygonWithinSquare nx=%f ...\n", nx ));
 	if ( ! validDirection(nx) ) return false;
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, r, r ) ) {
 			prt(("s6770 false\n" ));
 			return false;
 		}
-		start = 1;
 	}
 	//prt(("s8120 polygonWithinSquare sp1:\n" ));
 	//sp1.print();
@@ -3527,14 +3502,13 @@ bool JagGeo::polygonWithinRectangle( const AbaxDataString &mk1, const JagStrSpli
 {
 	if ( ! validDirection(nx) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3559,14 +3533,13 @@ bool JagGeo::polygonWithinCircle( const AbaxDataString &mk1, const JagStrSplit &
 {
 	if ( ! validDirection(nx) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, r, r ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3592,14 +3565,13 @@ bool JagGeo::polygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit 
 	if ( ! validDirection(nx) ) return false;
 	if ( jagIsZero(a) || jagIsZero(b) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3617,123 +3589,6 @@ bool JagGeo::polygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit 
 	return true;
 }
 
-// first polygon is column, second is CJAG 
-// O - O  O - C   C - O   no C-C
-#if 0
-bool JagGeo::polygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
-								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
-{
-	if ( mk1 == JAG_CJAG && mk2 == JAG_CJAG ) return false;
-
-	int start1 = 0;
-	int start2 = 0;
-	double bbx1, bby1, brx1, bry1;
-	double bbx2, bby2, brx2, bry2;
-	double xmin, ymin, xmax, ymax;
-   	const char *str;
-   	double dx, dy;
-	char *p, *pdata;
-
-	xmin = ymin = LONG_MAX; xmax = ymax = LONG_MIN;
-
-	int rc;
-	if ( mk1 == JAG_OJAG ) {
-		start1 = 1;
-	} else {
-		pdata = secondTokenStart( sp1.c_str() );
-		if ( ! pdata ) return false;
-	}
-	getPolygonBound( mk1, sp1, bbx1, bby1, brx1, bry1 );
-
-	if ( mk2 == JAG_OJAG ) {
-		boundingBoxRegion(sp2[0], bbx2, bby2, brx2, bry2 );
-		start2 = 1;
-	} else {
-		pdata = secondTokenStart( sp2.c_str() );
-		if ( ! pdata ) return false;
-	}
-	getPolygonBound( mk2, sp2, bbx2, bby2, brx2, bry2 );
-
-	if ( bound2DDisjoint( bbx1, bby1, brx1, bry1,  bbx2, bby2, brx2, bry2 ) ) {
-		prt(("s7581 bound2DDisjoint two polygon not within\n" ));
-		return false;
-	}
-
-
-	if (   mk1 == JAG_OJAG  &&  mk2 == JAG_CJAG ) {
-    	JagPolygon pgon;  // each polygon can have multiple linestrings
-    	rc = JagParser::addPolygonData( pgon, pdata, true, false );
-    	//prt(("s3388 addPolygonData pgon: print():\n" ));
-    	//pgon.print();
-    
-    	if ( rc <  0 ) { return false; }
-    	if ( pgon.size() < 1 ) { return false; }
-    
-    	// sp1 array:  "bbox  x:y x:y  ... | x:y  x:y ...| ..." sp1: start=1 skip '|' and '!'
-    	// sp2 cstr:  ( ( x y, x y, ...), ( ... ), (...) )
-    	// pgon has sp2 data parsed
-    	// check first polygon only for now
-    	for ( int i=start1; i < sp1.length(); ++i ) {
-    		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
-    		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') < 1 ) continue;
-    		get2double(str, p, ':', dx, dy );
-    		if ( ! pointWithinPolygon( dx, dy, pgon.linestr[0] ) ) {
-    			return false;
-    		}
-    	}
-    	return true;
-	} else if (  mk1 == JAG_OJAG  &&  mk2 == JAG_OJAG ) {
-		// get a linestring from cords in sp2
-		JagLineString3D linestr;
-		for ( int i=start2; i < sp2.length(); ++i ) {
-			if ( sp2[i] == "|" || sp2[i] == "!" ) break;
-    		str = sp2[i].c_str();
-    		if ( strchrnum( str, ':') < 1 ) continue;
-    		get2double(str, p, ':', dx, dy );
-			JagPoint2D pt(dx,dy);
-			linestr.add(pt);
-		}
-
-    	for ( int i=start1; i < sp1.length(); ++i ) {
-    		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
-    		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') < 1 ) continue;
-    		get2double(str, p, ':', dx, dy );
-    		if ( ! pointWithinPolygon( dx, dy, linestr ) ) {
-    			return false;
-    		}
-    	}
-    	return true;
-	} else if (  mk1 == JAG_CJAG  &&  mk2 == JAG_OJAG  ) {
-    	JagPolygon pgon;  // each polygon can have multiple linestrings
-    	rc = JagParser::addPolygonData( pgon, pdata, true, false );
-
-    	//prt(("s3338 addPolygonData pgon: print():\n" ));
-    	//pgon.print();
-    
-    	if ( rc <  0 ) { return false; }
-    	if ( pgon.size() < 1 ) { return false; }
-    
-    	// sp1 array:  "bbox  x:y x:y  ... | x:y  x:y ...| ..." sp1: start=1 skip '|' and '!'
-    	// sp2 cstr:  ( ( x y, x y, ...), ( ... ), (...) )
-    	// pgon has sp2 data parsed
-    	// check first polygon only for now
-    	for ( int i=start2; i < sp2.length(); ++i ) {
-    		if ( sp2[i] == "|" || sp2[i] == "!" ) break;
-    		str = sp2[i].c_str();
-    		if ( strchrnum( str, ':') < 1 ) continue;
-    		get2double(str, p, ':', dx, dy );
-    		if ( ! pointWithinPolygon( dx, dy, pgon.linestr[0] ) ) {
-    			return false;
-    		}
-    	}
-    	return true;
-	} else {
-    	return false;
-	}
-}
-#endif
 
 bool JagGeo::polygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
 								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
@@ -3750,7 +3605,7 @@ bool JagGeo::polygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit 
 	int rc;
 	getPolygonBound( mk1, sp1, bbx1, bby1, brx1, bry1 );
 	if ( mk2 == JAG_OJAG ) {
-		boundingBoxRegion(sp2[0], bbx2, bby2, brx2, bry2 );
+		boundingBoxRegion(sp2[JAG_SP_START+0], bbx2, bby2, brx2, bry2 );
 	} else {
 		//pdata = secondTokenStart( sp2.c_str() );
 		//if ( ! pdata ) return false;
@@ -3790,14 +3645,13 @@ bool JagGeo::multiPolygonWithinTriangle(  const AbaxDataString &mk1, const JagSt
 {
 	double trix, triy, rx, ry;
 	triangleRegion(x1,y1, x2,y2, x3,y3, trix, triy, rx, ry );
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  trix, triy, rx, ry ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
     JagPoint2D p1( x1, y1 );
@@ -3829,15 +3683,14 @@ bool JagGeo::multiPolygonWithinSquare( const AbaxDataString &mk1, const JagStrSp
 {
    	prt(("s6724 multiPolygonWithinSquare nx=%f ...\n", nx ));
    	if ( ! validDirection(nx) ) return false;
-   	int start = 0;
+	int start = JAG_SP_START;
    	if ( mk1 == JAG_OJAG ) {
    		double bbx, bby, brx, bry;
-   		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+   		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, r, r ) ) {
 			prt(("s6770 false\n" ));
 			return false;
 		}
-		start = 1;
 	}
 
 	double loc_x, loc_y;
@@ -3870,14 +3723,13 @@ bool JagGeo::multiPolygonWithinRectangle( const AbaxDataString &mk1, const JagSt
 {
 	if ( ! validDirection(nx) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3906,14 +3758,13 @@ bool JagGeo::multiPolygonWithinCircle( const AbaxDataString &mk1, const JagStrSp
 {
 	if ( ! validDirection(nx) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, r, r ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -3944,14 +3795,13 @@ bool JagGeo::multiPolygonWithinEllipse( const AbaxDataString &mk1, const JagStrS
 	if ( ! validDirection(nx) ) return false;
 	if ( jagIsZero(a) || jagIsZero(b) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 	
 	double loc_x, loc_y;
@@ -4001,7 +3851,7 @@ bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrS
 	getPolygonBound( mk1, sp1, bbx1, bby1, brx1, bry1 );
 
 	if ( mk2 == JAG_OJAG ) {
-		boundingBoxRegion(sp2[0], bbx2, bby2, brx2, bry2 );
+		boundingBoxRegion(sp2[JAG_SP_START+0], bbx2, bby2, brx2, bry2 );
 		start2 = 1;
 	} else {
 		pdata = secondTokenStart( sp2.c_str() );
@@ -4090,7 +3940,7 @@ bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrS
 	getPolygonBound( mk1, sp1, bbx1, bby1, brx1, bry1 );
 	/***
 	if ( mk2 == JAG_OJAG ) {
-		boundingBoxRegion(sp2[0], bbx2, bby2, brx2, bry2 );
+		boundingBoxRegion(sp2[JAG_SP_START+0], bbx2, bby2, brx2, bry2 );
 	} else {
 		pdata = secondTokenStart( sp2.c_str() );
 		if ( ! pdata ) return false;
@@ -4363,14 +4213,13 @@ bool JagGeo::lineStringIntersectTriangle( const AbaxDataString &mk1, const JagSt
 {
 	double trix, triy, rx, ry;
 	triangleRegion(x1,y1, x2,y2, x3,y3, trix, triy, rx, ry );
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  trix, triy, rx, ry ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
 	double dx1, dy1, dx2, dy2;
@@ -4405,14 +4254,13 @@ bool JagGeo::lineStringIntersectRectangle( const AbaxDataString &mk1, const JagS
                                          double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
 	JagLine2D line[4];
@@ -4454,14 +4302,13 @@ bool JagGeo::lineStringIntersectEllipse( const AbaxDataString &mk1, const JagStr
 	if ( ! validDirection(nx) ) return false;
 	if ( jagIsZero(a) || jagIsZero(b) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
     double dx1, dy1, dx2, dy2;
@@ -4722,14 +4569,13 @@ bool JagGeo::polygonIntersectTriangle( const AbaxDataString &mk1, const JagStrSp
 {
 	double trix, triy, rx, ry;
 	triangleRegion(x1,y1, x2,y2, x3,y3, trix, triy, rx, ry );
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  trix, triy, rx, ry ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
 	double dx1, dy1, dx2, dy2;
@@ -4772,16 +4618,15 @@ bool JagGeo::polygonIntersectLine( const AbaxDataString &mk1, const JagStrSplit 
 	ry = fabs( triy - jagmin(y1,y2) );
 	//prt(("s1209 x1=%.2f y1=%.2f  x2=%.2f y2=%.2f\n", x1, y1, x2, y2 ));
 	//prt(("s2288 line x1 trix=%.2f triy=%.2f rx=%.2f ry=%.2f\n", trix, triy, rx, ry ));
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
-		//prt(("s3062 sp1[]0]=[%s] bbx=%.2f bby=%.2f brx=%.2f bry=%.2f\n", sp1[0].c_str(), bbx, bby, brx, bry ));
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
+		//prt(("s3062 sp1[]0]=[%s] bbx=%.2f bby=%.2f brx=%.2f bry=%.2f\n", sp1[JAG_SP_START+0].c_str(), bbx, bby, brx, bry ));
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  trix, triy, rx, ry ) ) {
-			//prt(("s3383 bound2DDisjoint sp1[0]=[%s]\n", sp1[0].c_str() ));
+			//prt(("s3383 bound2DDisjoint sp1[JAG_SP_START+0]=[%s]\n", sp1[JAG_SP_START+0].c_str() ));
 			return false;
 		}
-		start = 1;
 	}
 
 	JagPolygon pgon;
@@ -4828,14 +4673,13 @@ bool JagGeo::polygonIntersectRectangle( const AbaxDataString &mk1, const JagStrS
                                          double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
 	//prt(("s8612 polygonIntersectRectangle sp1:\n" ));
@@ -4881,14 +4725,13 @@ bool JagGeo::polygonIntersectEllipse( const AbaxDataString &mk1, const JagStrSpl
 	if ( ! validDirection(nx) ) return false;
 	if ( jagIsZero(a) || jagIsZero(b) ) return false;
 
-	int start = 0;
+	int start = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) {
 		double bbx, bby, brx, bry;
-		boundingBoxRegion(sp1[0], bbx, bby, brx, bry );
+		boundingBoxRegion(sp1[JAG_SP_START+0], bbx, bby, brx, bry );
 		if ( bound2DDisjoint( bbx, bby, brx, bry,  x0, y0, a, b ) ) {
 			return false;
 		}
-		start = 1;
 	}
 
     double dx1, dy1, dx2, dy2;
@@ -5283,11 +5126,7 @@ bool JagGeo::line3DWithinLineString3D( double x10, double y10, double z10, doubl
  								   const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
-
+	int start = JAG_SP_START;
     double dx1, dy1, dz1, dx2, dy2, dz2;
     const char *str;
     char *p;
@@ -5414,14 +5253,14 @@ bool JagGeo::lineString3DWithinLineString3D(  const AbaxDataString &mk1, const J
 	int start1 = 0;
 	double bbx1, bby1, bbz1, brx1, bry1, brz1;
 	if ( mk1 == JAG_OJAG ) {
-		boundingBox3DRegion(sp1[0], bbx1, bby1, bbz1, brx1, bry1, brz1 );
+		boundingBox3DRegion(sp1[JAG_SP_START+0], bbx1, bby1, bbz1, brx1, bry1, brz1 );
 		start1 = 1;
 	}
 
 	int start2 = 0;
 	double bbx2, bby2, bbz2, brx2, bry2, brz2;
 	if ( mk2 == JAG_OJAG ) {
-		boundingBox3DRegion(sp2[0], bbx2, bby2, bbz2, brx2, bry2, brz2 );
+		boundingBox3DRegion(sp2[JAG_SP_START+0], bbx2, bby2, bbz2, brx2, bry2, brz2 );
 		start2 = 1;
 	}
 
@@ -5446,11 +5285,10 @@ bool JagGeo::lineString3DWithinCube( const AbaxDataString &mk1, const JagStrSpli
 
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5478,11 +5316,10 @@ bool JagGeo::lineString3DWithinBox( const AbaxDataString &mk1, const JagStrSplit
 									double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5507,11 +5344,10 @@ bool JagGeo::lineString3DWithinBox( const AbaxDataString &mk1, const JagStrSplit
 bool JagGeo::lineString3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5536,11 +5372,10 @@ bool JagGeo::lineString3DWithinEllipsoid(  const AbaxDataString &mk1, const JagS
 								double w, double d, double h, double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5566,11 +5401,10 @@ bool JagGeo::lineString3DWithinCone(  const AbaxDataString &mk1, const JagStrSpl
 								double r, double h, double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5597,11 +5431,10 @@ bool JagGeo::polygon3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &
 
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5633,11 +5466,10 @@ bool JagGeo::polygon3DWithinBox( const AbaxDataString &mk1, const JagStrSplit &s
 									double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5663,11 +5495,10 @@ bool JagGeo::polygon3DWithinBox( const AbaxDataString &mk1, const JagStrSplit &s
 bool JagGeo::polygon3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5693,11 +5524,10 @@ bool JagGeo::polygon3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrS
 								double w, double d, double h, double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5724,11 +5554,10 @@ bool JagGeo::polygon3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit 
 								double r, double h, double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5755,11 +5584,10 @@ bool JagGeo::multiPolygon3DWithinCube( const AbaxDataString &mk1, const JagStrSp
 
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5793,11 +5621,10 @@ bool JagGeo::multiPolygon3DWithinBox( const AbaxDataString &mk1, const JagStrSpl
 									double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5828,11 +5655,10 @@ bool JagGeo::multiPolygon3DWithinBox( const AbaxDataString &mk1, const JagStrSpl
 bool JagGeo::multiPolygon3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5864,11 +5690,10 @@ bool JagGeo::multiPolygon3DWithinEllipsoid(  const AbaxDataString &mk1, const Ja
 								double w, double d, double h, double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -5901,11 +5726,10 @@ bool JagGeo::multiPolygon3DWithinCone(  const AbaxDataString &mk1, const JagStrS
 								double r, double h, double nx, double ny, bool strict )
 {
 	if ( ! validDirection(nx, ny) ) return false;
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
-        start = 1;
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, h ) ) {
             //prt(("s6770 false\n" ));
             return false;
@@ -6975,51 +6799,51 @@ bool JagGeo::point3DWithinCylinder( double px, double py, double pz,
 bool JagGeo::doPointIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 		return pointWithinPoint( px0, py0, x0, y0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double x2 = jagatof( sp2[2].c_str() ); 
-		double y2 = jagatof( sp2[3].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		return pointWithinLine( px0, py0, x1, y1, x2, y2, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-    	JagPoint2D point( sp1[0].c_str(), sp1[1].c_str() );
-    	JagPoint2D p1( sp2[0].c_str(), sp2[1].c_str() );
-    	JagPoint2D p2( sp2[2].c_str(), sp2[3].c_str() );
-    	JagPoint2D p3( sp2[4].c_str(), sp2[5].c_str() );
+    	JagPoint2D point( sp1[JAG_SP_START+0].c_str(), sp1[JAG_SP_START+1].c_str() );
+    	JagPoint2D p1( sp2[JAG_SP_START+0].c_str(), sp2[JAG_SP_START+1].c_str() );
+    	JagPoint2D p2( sp2[JAG_SP_START+2].c_str(), sp2[JAG_SP_START+3].c_str() );
+    	JagPoint2D p3( sp2[JAG_SP_START+4].c_str(), sp2[JAG_SP_START+5].c_str() );
 		return pointWithinTriangle( point, p1, p2, p3, strict, true );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		//return pointWithinSquare( px0, py0, x0, y0, r, nx, strict );
 		return pointWithinRectangle( px0, py0, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-			double x0 = jagatof( sp2[0].c_str() ); 
-			double y0 = jagatof( sp2[1].c_str() ); 
-			double w = jagatof( sp2[2].c_str() ); 
-			double h = jagatof( sp2[3].c_str() ); 
-			double nx = safeget( sp2, 4 );
+			double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double w = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double h = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			double nx = safeget(sp2, JAG_SP_START+4);
 			return pointWithinRectangle( px0, py0, x0, y0, w,h, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-			double x = jagatof( sp2[0].c_str() ); 
-			double y = jagatof( sp2[1].c_str() ); 
-			double r = jagatof( sp2[2].c_str() );
+			double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 			return pointWithinCircle( px0, py0, x, y, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-			double x0 = jagatof( sp2[0].c_str() ); 
-			double y0 = jagatof( sp2[1].c_str() ); 
-			double w = jagatof( sp2[2].c_str() );
-			double h = jagatof( sp2[3].c_str() );
-			double nx = safeget( sp2, 4 );
-			double ny = safeget( sp2, 5 );
+			double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double w = jagatof( sp2[JAG_SP_START+2].c_str() );
+			double h = jagatof( sp2[JAG_SP_START+3].c_str() );
+			double nx = safeget(sp2, JAG_SP_START+4);
+			double ny = safeget(sp2, JAG_SP_START+5);
 			return pointWithinEllipse( px0, py0, x0, y0, w, h, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 			return pointWithinPolygon( px0, py0, mk2, sp2, false );
@@ -7030,64 +6854,64 @@ bool JagGeo::doPointIntersect( int srid1, const JagStrSplit &sp1, const AbaxData
 bool JagGeo::doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		return point3DWithinPoint3D( px0, py0, pz0, x1, y1, z1, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
-		double x2 = jagatof( sp2[3].c_str() ); 
-		double y2 = jagatof( sp2[4].c_str() ); 
-		double z2 = jagatof( sp2[5].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 		return point3DWithinLine3D( px0, py0, pz0, x1, y1, z1, x2, y2, z2, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return point3DWithinBox( px0, py0, pz0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double c = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return point3DWithinBox( px0, py0, pz0, x0, y0, z0, a,b,c, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return point3DWithinSphere( px0,py0,pz0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() );
-		double b = jagatof( sp2[4].c_str() );
-		double c = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return point3DWithinEllipsoid( px0, py0, pz0, x0, y0, z0, a,b,c, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return point3DWithinCone( px0,py0,pz0, x, y, z, r, h, nx, ny, strict );
 	}
 	return false;
@@ -7096,42 +6920,42 @@ bool JagGeo::doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDa
 bool JagGeo::doCircleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 
 	if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 		return circleIntersectCircle(px0,py0,pr0, x,y,r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
-		double nx = safeget( sp2, 3);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return circleIntersectRectangle(px0,py0,pr0, x,y,r,r,nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double w = jagatof( sp2[2].c_str() );
-		double h = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return circleIntersectRectangle( px0, py0, pr0, x0, y0, w, h, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double x2 = jagatof( sp2[2].c_str() ); 
-		double y2 = jagatof( sp2[3].c_str() ); 
-		double x3 = jagatof( sp2[4].c_str() ); 
-		double y3 = jagatof( sp2[5].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 		return circleIntersectTriangle(px0, py0, pr0, x1, y1, x2, y2, x3, y3, strict, true );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return circleIntersectEllipse(px0, py0, pr0, x0, y0, a, b, nx, strict, true );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return circleIntersectPolygon(px0, py0, pr0, mk2, sp2, strict );
@@ -7141,12 +6965,12 @@ bool JagGeo::doCircleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 
 double JagGeo::doCircle3DArea( int srid1, const JagStrSplit &sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return r * r * JAG_PI;
 }
 double JagGeo::doCircle3DPerimeter( int srid1, const JagStrSplit &sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return 2.0 * r * JAG_PI;
 }
 
@@ -7154,58 +6978,58 @@ double JagGeo::doCircle3DPerimeter( int srid1, const JagStrSplit &sp1 )
 bool JagGeo::doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 
 	double nx0 = 0.0;
 	double ny0 = 0.0;
-	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[4].c_str() ); }
-	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[5].c_str() ); }
+	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[JAG_SP_START+4].c_str() ); }
+	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[JAG_SP_START+5].c_str() ); }
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return circle3DIntersectBox( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double c = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return circle3DIntersectBox( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, a,b,c, nx, ny, strict );
 	} else if (  colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return circle3DIntersectSphere( px0, py0, pz0, pr0, nx0, ny0, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return circle3DIntersectEllipsoid( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, w,d,h,  nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return circle3DIntersectCone( px0,py0,pz0,pr0,nx0,ny0, x, y, z, r, h, nx, ny, strict );
 	}
 
@@ -7215,53 +7039,53 @@ bool JagGeo::doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 bool JagGeo::doSphereIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return ellipsoidIntersectBox( px0, py0, pz0, pr0,pr0,pr0,0.0,0.0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidIntersectBox( px0, py0, pz0, pr0,pr0,pr0,0.0,0.0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return ellipsoidIntersectEllipsoid( px0, py0, pz0, pr0,pr0,pr0,0.0,0.0, x, y, z, r,r,r, 0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidIntersectEllipsoid( px0, py0, pz0, pr0,pr0,pr0,0.0,0.0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return ellipsoidIntersectCone( px0, py0, pz0, pr0,pr0,pr0,0.0,0.0,  x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -7269,25 +7093,25 @@ bool JagGeo::doSphereIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 
 double JagGeo::doSquareArea( int srid1, const JagStrSplit &sp1 )
 {
-	double a = jagatof( sp1[2].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	return (a*a*4.0);
 }
 
 double JagGeo::doSquarePerimeter( int srid1, const JagStrSplit &sp1 )
 {
-	double a = jagatof( sp1[2].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	return (a*8.0);
 }
 
 double JagGeo::doSquare3DArea( int srid1, const JagStrSplit &sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return (a*a*4.0);
 }
 
 double JagGeo::doSquare3DPerimeter( int srid1, const JagStrSplit &sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return (a*8.0);
 }
 // 2D
@@ -7295,46 +7119,46 @@ bool JagGeo::doSquareIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	//prt(("s3033 doSquareIntersect colType2=[%s] \n", colType2.c_str() ));
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
-	double nx0 = safeget( sp1, 3 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+3);
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return rectangleIntersectTriangle( px0, py0, pr0, pr0, nx0, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget(sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleIntersectRectangle( px0, py0, pr0,pr0, nx0, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget(sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleIntersectRectangle( px0, py0, pr0,pr0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget(sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleIntersectEllipse( px0, py0, pr0,pr0, nx0, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget(sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleIntersectEllipse( px0, py0, pr0,pr0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return rectangleIntersectPolygon( px0, py0, pr0,pr0, nx0, mk2, sp2 );
@@ -7347,56 +7171,56 @@ bool JagGeo::doSquareIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 bool JagGeo::doSquare3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4);
-	double ny0 = safeget( sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		// return square3DIntersectCube( px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, r, nx, ny, strict );
 		return rectangle3DIntersectBox( px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DIntersectBox( px0, py0, pz0, pr0,pr0,  nx0, ny0,x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return rectangle3DIntersectEllipsoid( px0, py0, pz0, pr0,pr0, nx0, ny0, x, y, z, r,r,r, 0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DIntersectEllipsoid( px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return rectangle3DIntersectCone( px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -7406,55 +7230,55 @@ bool JagGeo::doSquare3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 bool JagGeo::doCubeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
-	double ny0 = safeget(sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return boxIntersectBox( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxIntersectBox( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return boxIntersectEllipsoid( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x, y, z, r,r,r, 0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxIntersectEllipsoid( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return boxIntersectCone( px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, r, h, nx,ny, strict );
 	}
 	return false;
@@ -7464,47 +7288,47 @@ bool JagGeo::doCubeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataS
 bool JagGeo::doRectangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return rectangleIntersectTriangle( px0, py0, a0, b0, nx0, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleIntersectRectangle( px0, py0, a0, b0, nx0, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleIntersectRectangle( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleIntersectEllipse( px0, py0, a0, b0, nx0, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleIntersectEllipse( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
 		return rectangleIntersectPolygon( px0, py0, a0, b0, nx0, mk2, sp2 );
@@ -7516,57 +7340,57 @@ bool JagGeo::doRectangleIntersect( int srid1, const JagStrSplit &sp1, const Abax
 bool JagGeo::doRectangle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 
-	double nx0 = safeget( sp1, 5 );
-	double ny0 = safeget( sp1, 6 );
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return rectangle3DIntersectBox( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DIntersectBox( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return rectangle3DIntersectEllipsoid( px0, py0, pz0, a0, b0, nx0, ny0, x, y, z, r,r,r,0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DIntersectEllipsoid( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return rectangle3DIntersectCone( px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -7575,57 +7399,57 @@ bool JagGeo::doRectangle3DIntersect( int srid1, const JagStrSplit &sp1, const Ab
 bool JagGeo::doBoxIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6 );
-	double ny0 = safeget( sp1, 7 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return boxIntersectBox( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxIntersectBox( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return boxIntersectEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, x, y, z, r,r,r,0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxIntersectEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return boxIntersectCone( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -7637,57 +7461,57 @@ bool JagGeo::doCylinderIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	// not supported for now
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 
-	double nx0 = safeget(sp1, 5);
-	double ny0 = safeget(sp1, 6);
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return cylinderIntersectBox( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return cylinderIntersectBox( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return cylinderIntersectEllipsoid( px0, py0, pz0, pr0, c0,  nx0, ny0, x, y, z, r,r,r,0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return cylinderIntersectEllipsoid( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return cylinderIntersectCone( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -7696,56 +7520,56 @@ bool JagGeo::doCylinderIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 bool JagGeo::doConeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
-	double nx0 = safeget(sp1, 5 );
-	double ny0 = safeget(sp1, 6 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return coneIntersectBox( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneIntersectBox( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return coneIntersectEllipsoid( px0, py0, pz0, pr0, c0,  nx0, ny0, x, y, z, r,r,r, 0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneIntersectEllipsoid( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneIntersectCone( px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	} else {
 		throw 2910;
@@ -7757,47 +7581,47 @@ bool JagGeo::doConeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataS
 bool JagGeo::doEllipseIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return ellipseIntersectTriangle( px0, py0, a0, b0, nx0, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return ellipseIntersectRectangle( px0, py0, a0, b0, nx0, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return ellipseIntersectRectangle( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return ellipseIntersectEllipse( px0, py0, a0, b0, nx0, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return ellipseIntersectEllipse( px0, py0, a0, b0, nx0, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return ellipseIntersectPolygon( px0, py0, a0, b0, nx0, mk2, sp2 );
@@ -7809,57 +7633,57 @@ bool JagGeo::doEllipseIntersect( int srid1, const JagStrSplit &sp1, const AbaxDa
 bool JagGeo::doEllipsoidIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6);
-	double ny0 = safeget( sp1, 7);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return ellipsoidIntersectBox( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidIntersectBox( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return ellipsoidIntersectEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, x, y, z, r,r,r, 0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidIntersectEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return ellipsoidIntersectCone( px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -7869,54 +7693,54 @@ bool JagGeo::doEllipsoidIntersect( int srid1, const JagStrSplit &sp1, const Abax
 bool JagGeo::doTriangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
-	double x30 = jagatof( sp1[4].c_str() );
-	double y30 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return triangleIntersectTriangle( x10, y10, x20, y20, x30, y30, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return triangleIntersectLine( x10, y10, x20, y20, x30, y30, x1, y1, x2, y2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return triangleIntersectRectangle( x10, y10, x20, y20, x30, y30, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return triangleIntersectRectangle( x10, y10, x20, y20, x30, y30, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return triangleIntersectEllipse( x10, y10, x20, y20, x30, y30, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return triangleIntersectEllipse( x10, y10, x20, y20, x30, y30, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return triangleIntersectPolygon( x10, y10, x20, y20, x30, y30, mk2, sp2 );
@@ -7930,58 +7754,58 @@ bool JagGeo::doTriangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 bool JagGeo::doTriangle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
-	double x30 = jagatof( sp1[6].c_str() );
-	double y30 = jagatof( sp1[7].c_str() );
-	double z30 = jagatof( sp1[8].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+6].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+7].c_str() );
+	double z30 = jagatof( sp1[JAG_SP_START+8].c_str() );
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return triangle3DIntersectBox( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return triangle3DIntersectBox( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return triangle3DIntersectEllipsoid( x10,y10,z10,x20,y20,z20,x30,y30,z30, x, y, z, r,r,r,0.0,0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return triangle3DIntersectEllipsoid( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return triangle3DIntersectCone( x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, r,h, nx,ny, strict );
 	}
 	return false;
@@ -7991,48 +7815,48 @@ bool JagGeo::doTriangle3DIntersect( int srid1, const JagStrSplit &sp1, const Aba
 bool JagGeo::doLineIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return lineIntersectTriangle( x10, y10, x20, y20, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return lineIntersectLineString( x10, y10, x20, y20, mk2, sp2, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineIntersectRectangle( x10, y10, x20, y20, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineIntersectRectangle( x10, y10, x20, y20, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineIntersectEllipse( x10, y10, x20, y20, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineIntersectEllipse( x10, y10, x20, y20, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return lineIntersectPolygon( x10, y10, x20, y20, mk2, sp2 );
@@ -8043,75 +7867,75 @@ bool JagGeo::doLineIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataS
 bool JagGeo::doLine3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return line3DIntersectBox( x10,y10,z10,x20,y20,z20, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return line3DIntersectBox( x10,y10,z10,x20,y20,z20, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return line3DIntersectSphere( x10,y10,z10,x20,y20,z20, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return line3DIntersectEllipsoid( x10,y10,z10,x20,y20,z20, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return line3DIntersectCone( x10,y10,z10,x20,y20,z20, x0, y0, z0, r,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return line3DIntersectCylinder( x10,y10,z10,x20,y20,z20, x0, y0, z0, r,r,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
-		double x2 = jagatof( sp2[3].c_str() ); 
-		double y2 = jagatof( sp2[4].c_str() ); 
-		double z2 = jagatof( sp2[5].c_str() ); 
-		double x3 = jagatof( sp2[6].c_str() ); 
-		double y3 = jagatof( sp2[7].c_str() ); 
-		double z3 = jagatof( sp2[8].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double x3 = jagatof( sp2[JAG_SP_START+6].c_str() ); 
+		double y3 = jagatof( sp2[JAG_SP_START+7].c_str() ); 
+		double z3 = jagatof( sp2[JAG_SP_START+8].c_str() ); 
 		JagLine3D line(x10, y10, z10, x20, y20, z20 );
 		JagPoint3D p1(x1,y1,z1);
 		JagPoint3D p2(x2,y2,z2);
@@ -8120,22 +7944,22 @@ bool JagGeo::doLine3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 		return line3DIntersectTriangle3D( line, p1, p2, p3, atPoint ); 
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE3D ) {
 		JagLine3D line(x10, y10, z10, x20, y20, z20 );
-    	double px0 = jagatof( sp2[0].c_str() ); 
-    	double py0 = jagatof( sp2[1].c_str() ); 
-    	double pz0 = jagatof( sp2[2].c_str() ); 
-    	double w = jagatof( sp2[3].c_str() ); 
-    	double h = jagatof( sp2[4].c_str() ); 
-    	double nx = safeget( sp2, 5 );
-    	double ny = safeget( sp2, 6 );
+    	double px0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    	double py0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    	double pz0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    	double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    	double h = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    	double nx = safeget(sp2, JAG_SP_START+5);
+    	double ny = safeget(sp2, JAG_SP_START+6);
 		return line3DIntersectRectangle3D( line, px0, py0, pz0, w, h, nx, ny );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE3D ) {
 		JagLine3D line(x10, y10, z10, x20, y20, z20 );
-    	double px0 = jagatof( sp2[0].c_str() ); 
-    	double py0 = jagatof( sp2[1].c_str() ); 
-    	double pz0 = jagatof( sp2[2].c_str() ); 
-    	double w = jagatof( sp2[3].c_str() ); 
-    	double nx = safeget( sp2, 5 );
-    	double ny = safeget( sp2, 6 );
+    	double px0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    	double py0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    	double pz0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    	double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    	double nx = safeget(sp2, JAG_SP_START+5);
+    	double ny = safeget(sp2, JAG_SP_START+6);
 		return line3DIntersectRectangle3D( line, px0, py0, pz0, w, w, nx, ny );
 	}
 	return false;
@@ -8541,11 +8365,7 @@ bool JagGeo::lineIntersectLineString( double x10, double y10, double x20, double
 							          const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
-
+	int start = JAG_SP_START;
     double dx1, dy1, dx2, dy2;
     const char *str;
     char *p;
@@ -8977,11 +8797,7 @@ bool JagGeo::line3DIntersectLineString3D( double x10, double y10, double z10, do
 							          const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
-
+	int start = JAG_SP_START;
     double dx1, dy1, dz1, dx2, dy2, dz2;
     const char *str;
     char *p;
@@ -9302,10 +9118,10 @@ bool JagGeo::lineString3DIntersectBox(  const AbaxDataString &mk1, const JagStrS
 									double nx, double ny, bool strict )
 {
 	// prt(("s6752 lineString3DIntersectBox ..\n" ));
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
 		/***
 		prt(("s6753 sp1: bbx=%f bby=%f bbz=%f    brx=%f bry=%f brz=%f\n",
 				bbx, bby, bbz, brx, bry, brz ));
@@ -9316,7 +9132,6 @@ bool JagGeo::lineString3DIntersectBox(  const AbaxDataString &mk1, const JagStrS
 			// prt(("s6750 bound3DDisjoint return false\n" ));
             return false;
         }
-        start = 1;
     }
 
 	JagRectangle3D rect[6];
@@ -9357,14 +9172,13 @@ bool JagGeo::lineString3DIntersectBox(  const AbaxDataString &mk1, const JagStrS
 bool JagGeo::lineString3DIntersectSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -9405,14 +9219,13 @@ bool JagGeo::lineString3DIntersectEllipsoid(  const AbaxDataString &mk1, const J
 	if ( rel > 0 ) return true;
 	return false;
 	*****/
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -9442,14 +9255,13 @@ bool JagGeo::lineString3DIntersectCone(  const AbaxDataString &mk1, const JagStr
 								 double x0, double y0, double z0,
 								double r, double h, double nx, double ny, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, h ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -9478,14 +9290,13 @@ bool JagGeo::lineString3DIntersectCylinder(  const AbaxDataString &mk1, const Ja
 								 double x0, double y0, double z0,
 								double a, double b, double c, double nx, double ny, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  a, b, c ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -9514,27 +9325,25 @@ bool JagGeo::lineString3DIntersectTriangle3D(  const AbaxDataString &mk1, const 
 											   const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
 	if ( sp2.length() < 9 ) return false;
-	double x1 = jagatof( sp2[0].c_str() ); 
-	double y1 = jagatof( sp2[1].c_str() ); 
-	double z1 = jagatof( sp2[2].c_str() ); 
-	double x2 = jagatof( sp2[3].c_str() ); 
-	double y2 = jagatof( sp2[4].c_str() ); 
-	double z2 = jagatof( sp2[5].c_str() ); 
-	double x3 = jagatof( sp2[6].c_str() ); 
-	double y3 = jagatof( sp2[7].c_str() ); 
-	double z3 = jagatof( sp2[8].c_str() ); 
+	double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+	double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+	double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+	double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+	double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+	double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+	double x3 = jagatof( sp2[JAG_SP_START+6].c_str() ); 
+	double y3 = jagatof( sp2[JAG_SP_START+7].c_str() ); 
+	double z3 = jagatof( sp2[JAG_SP_START+8].c_str() ); 
 
-
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
 		double x0, y0, z0, Rx, Ry, Rz;
 		triangle3DRegion( x1, y1, z1, x2, y2, z2, x3, y3, z3, x0, y0, z0, Rx, Ry, Rz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  Rx, Ry, Rz ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -9567,21 +9376,20 @@ bool JagGeo::lineString3DIntersectSquare3D(  const AbaxDataString &mk1, const Ja
 											   const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
 	if ( sp2.length() < 4 ) return false;
-	double px0 = jagatof( sp2[0].c_str() ); 
-	double py0 = jagatof( sp2[1].c_str() ); 
-	double pz0 = jagatof( sp2[2].c_str() ); 
-	double pr0 = jagatof( sp2[3].c_str() ); 
-	double nx0 = safeget( sp2, 4);
-	double ny0 = safeget( sp2, 5);
+	double px0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp2, JAG_SP_START+4);
+	double ny0 = safeget(sp2, JAG_SP_START+5);
 
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  px0, py0, pz0,  pr0, pr0, pr0 ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -9611,22 +9419,21 @@ bool JagGeo::lineString3DIntersectRectangle3D(  const AbaxDataString &mk1, const
 											   const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
 	if ( sp2.length() < 4 ) return false;
-	double px0 = jagatof( sp2[0].c_str() ); 
-	double py0 = jagatof( sp2[1].c_str() ); 
-	double pz0 = jagatof( sp2[2].c_str() ); 
-	double a0 = jagatof( sp2[3].c_str() ); 
-	double b0 = jagatof( sp2[3].c_str() ); 
-	double nx0 = safeget( sp2, 4);
-	double ny0 = safeget( sp2, 5);
+	double px0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp2, JAG_SP_START+4);
+	double ny0 = safeget(sp2, JAG_SP_START+5);
 
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  px0, py0, pz0,  a0, a0, b0 ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -9899,10 +9706,10 @@ bool JagGeo::polygon3DIntersectBox(  const AbaxDataString &mk1, const JagStrSpli
 									double nx, double ny, bool strict )
 {
 	// prt(("s6752 polygon3DIntersectBox ..\n" ));
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
 		/***
 		prt(("s6753 sp1: bbx=%f bby=%f bbz=%f    brx=%f bry=%f brz=%f\n",
 				bbx, bby, bbz, brx, bry, brz ));
@@ -9913,7 +9720,6 @@ bool JagGeo::polygon3DIntersectBox(  const AbaxDataString &mk1, const JagStrSpli
 			prt(("s6750 bound3DDisjoint return false\n" ));
             return false;
         }
-        start = 1;
     }
 
 	JagRectangle3D rect[6];
@@ -9954,14 +9760,13 @@ bool JagGeo::polygon3DIntersectBox(  const AbaxDataString &mk1, const JagStrSpli
 bool JagGeo::polygon3DIntersectSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, r ) ) {
             return false;
         }
-        start = 1;
     }
 
 	//prt(("s9381 polygon3DIntersectSphere sp1:\n" ));
@@ -9995,14 +9800,13 @@ bool JagGeo::polygon3DIntersectEllipsoid(  const AbaxDataString &mk1, const JagS
 								 double x0, double y0, double z0,
 								double w, double d, double h, double nx, double ny, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  w, d, h ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -10032,14 +9836,13 @@ bool JagGeo::polygon3DIntersectCone(  const AbaxDataString &mk1, const JagStrSpl
 								 double x0, double y0, double z0,
 								double r, double h, double nx, double ny, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  r, r, h ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -10068,14 +9871,13 @@ bool JagGeo::polygon3DIntersectCylinder(  const AbaxDataString &mk1, const JagSt
 								 double x0, double y0, double z0,
 								double a, double b, double c, double nx, double ny, bool strict )
 {
-    int start = 0;
+	int start = JAG_SP_START;
     if ( mk1 == JAG_OJAG ) {
         double bbx, bby, bbz, brx, bry, brz;
-        boundingBox3DRegion(sp1[0], bbx, bby, bbz, brx, bry, brz );
+        boundingBox3DRegion(sp1[JAG_SP_START+0], bbx, bby, bbz, brx, bry, brz );
         if ( bound3DDisjoint( bbx, bby, bbz, brx, bry, brz,  x0, y0, z0,  a, b, c ) ) {
             return false;
         }
-        start = 1;
     }
 
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -10109,40 +9911,40 @@ bool JagGeo::doLineStringIntersect( const AbaxDataString &mk1, int srid1, const 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return lineStringIntersectTriangle( mk1, sp1, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return lineStringIntersectLineString( mk1, sp1, mk2, sp2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineStringIntersectRectangle( mk1, sp1, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineStringIntersectRectangle( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineStringIntersectEllipse( mk1, sp1, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineStringIntersectEllipse( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return polygonIntersectLineString( mk2, sp2, mk1, sp1 );
@@ -10156,59 +9958,59 @@ bool JagGeo::doLineString3DIntersect( const AbaxDataString &mk1, int srid1, cons
 {
 	prt(("s8761 doLineString3DIntersect colType2=[%s]\n", colType2.c_str() ));
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		prt(("s0872 lineString3DIntersectBox ..\n" ));
 		return lineString3DIntersectBox( mk1, sp1, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return lineString3DIntersectLineString3D( mk1, sp1, mk2, sp2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return lineString3DIntersectBox( mk1, sp1, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return lineString3DIntersectSphere( mk1, sp1, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return lineString3DIntersectEllipsoid( mk1, sp1, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return lineString3DIntersectCone( mk1, sp1, x0, y0, z0, r,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return lineString3DIntersectCylinder( mk1, sp1, x0, y0, z0, r,r,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE3D ) {
 		return lineString3DIntersectTriangle3D( mk1, sp1, mk2, sp2 );
@@ -10222,8 +10024,7 @@ bool JagGeo::doLineString3DIntersect( const AbaxDataString &mk1, int srid1, cons
 
 double JagGeo::doPolygonArea( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
 {
-	int start = 0;
-	if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
 	double dx, dy;
 	const char *str;
 	char *p;
@@ -10295,8 +10096,7 @@ double JagGeo::doPolygonArea( const AbaxDataString &mk1, int srid1, const JagStr
 
 double JagGeo::doPolygonPerimeter( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
 {
-	int start = 0;
-	if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
 	double dx, dy;
 	const char *str;
 	char *p;
@@ -10336,8 +10136,7 @@ double JagGeo::doPolygonPerimeter( const AbaxDataString &mk1, int srid1, const J
 
 double JagGeo::doPolygon3DPerimeter( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
 {
-	int start = 0;
-	if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
 	double dx, dy, dz;
 	const char *str;
 	char *p;
@@ -10425,52 +10224,52 @@ bool JagGeo::doPolygonIntersect( const AbaxDataString &mk1, int srid1, const Jag
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return polygonIntersectTriangle( mk1, sp1, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double x2 = jagatof( sp2[2].c_str() ); 
-		double y2 = jagatof( sp2[3].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		return polygonIntersectLine( mk1, sp1, x1, y1, x2, y2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 		//prt(("s2938 pointWithinPolygon x=%.2f y=%.2f\n", x, y ));
 		//sp1.print();
 		return pointWithinPolygon( x, y, mk1, sp1, false );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return polygonIntersectLineString( mk1, sp1, mk2, sp2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonIntersectRectangle( mk1, sp1, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonIntersectRectangle( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonIntersectEllipse( mk1, sp1, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonIntersectEllipse( mk1, sp1, x0, y0, a, b, nx, strict );
 	}
 	return false;
@@ -10482,59 +10281,59 @@ bool JagGeo::doPolygon3DIntersect( const AbaxDataString &mk1, int srid1, const J
 {
 	prt(("s8761 dopolygon3DIntersect colType2=[%s]\n", colType2.c_str() ));
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		prt(("s0872 polygon3DIntersectBox ..\n" ));
 		return polygon3DIntersectBox( mk1, sp1, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return polygon3DIntersectLineString3D( mk1, sp1, mk2, sp2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DIntersectBox( mk1, sp1, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return polygon3DIntersectSphere( mk1, sp1, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DIntersectEllipsoid( mk1, sp1, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return polygon3DIntersectCone( mk1, sp1, x0, y0, z0, r,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return polygon3DIntersectCylinder( mk1, sp1, x0, y0, z0, r,r,h, nx,ny, strict );
 	}
 	return false;
@@ -10547,40 +10346,40 @@ bool JagGeo::doMultiPolygonIntersect( const AbaxDataString &mk1, int srid1, cons
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return polygonIntersectTriangle( mk1, sp1, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return polygonIntersectLineString( mk1, sp1, mk2, sp2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonIntersectRectangle( mk1, sp1, x0, y0, a,a, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonIntersectRectangle( mk1, sp1, x0, y0, a, b, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonIntersectEllipse( mk1, sp1, x0, y0, r,r, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonIntersectEllipse( mk1, sp1, x0, y0, a, b, nx, strict );
 	}
 	return false;
@@ -10592,59 +10391,59 @@ bool JagGeo::doMultiPolygon3DIntersect( const AbaxDataString &mk1, int srid1, co
 {
 	prt(("s8761 domultiPolygon3DIntersect colType2=[%s]\n", colType2.c_str() ));
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		prt(("s0872 multiPolygon3DIntersectBox ..\n" ));
 		return polygon3DIntersectBox( mk1, sp1, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return polygon3DIntersectLineString3D( mk1, sp1, mk2, sp2 );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DIntersectBox( mk1, sp1, x0, y0, z0, w,d,h, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return polygon3DIntersectSphere( mk1, sp1, x, y, z, r, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DIntersectEllipsoid( mk1, sp1, x0, y0, z0, w,d,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return polygon3DIntersectCone( mk1, sp1, x0, y0, z0, r,h, nx,ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return polygon3DIntersectCylinder( mk1, sp1, x0, y0, z0, r,r,h, nx,ny, strict );
 	}
 	return false;
@@ -11195,12 +10994,12 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 	// colType1 must be point or point3d
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
     	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-			res = sp2[1] + " " + sp2[2];
+			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
     	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-    		double x1 = jagatof( sp2[1].c_str() ); 
-    		double y1 = jagatof( sp2[2].c_str() ); 
-    		double x2 = jagatof( sp2[3].c_str() ); 
-    		double y2 = jagatof( sp2[4].c_str() ); 
+    		double x1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
 			double projx, projy;
 			minPoint2DToLineSegDistance( px, py, x1, y1, x2, y2, srid, projx, projy );
 			res = doubleToStr(projx) + " " + doubleToStr(projy);
@@ -11223,12 +11022,12 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 			} else return false;
     	} else if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 			double d1, d2, d3, p1x, p1y, p2x, p2y, p3x, p3y;
-			double x1 = jagatof( sp2[1].c_str());
-			double y1 = jagatof( sp2[2].c_str());
-			double x2 = jagatof( sp2[3].c_str());
-			double y2 = jagatof( sp2[4].c_str());
-			double x3 = jagatof( sp2[5].c_str());
-			double y3 = jagatof( sp2[6].c_str());
+			double x1 = jagatof( sp2[JAG_SP_START+1].c_str());
+			double y1 = jagatof( sp2[JAG_SP_START+2].c_str());
+			double x2 = jagatof( sp2[JAG_SP_START+3].c_str());
+			double y2 = jagatof( sp2[JAG_SP_START+4].c_str());
+			double x3 = jagatof( sp2[JAG_SP_START+5].c_str());
+			double y3 = jagatof( sp2[JAG_SP_START+6].c_str());
 			d1 = minPoint2DToLineSegDistance( px, py, x1, y1, x2, y2, srid, p1x, p1y );
 			d2 = minPoint2DToLineSegDistance( px, py, x1, y1, x3, y3, srid, p2x, p2y );
 			d3 = minPoint2DToLineSegDistance( px, py, x2, y2, x3, y3, srid, p3x, p3y );
@@ -11240,10 +11039,10 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 				res = doubleToStr(p3x) + " " + doubleToStr(p3y);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-    		double x0 = jagatof( sp2[1].c_str() ); 
-    		double y0 = jagatof( sp2[2].c_str() ); 
-    		double r = jagatof( sp2[3].c_str() ); 
-    		double nx = safeget( sp2, 4);
+    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+4);
 			double locx, locy;
 			transform2DCoordGlobal2Local( x0, y0, px, py, nx, locx, locy );
 			double d1, d2, d3, d4, p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y;
@@ -11261,11 +11060,11 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 				res = doubleToStr(p4x) + " " + doubleToStr(p4y);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-    		double x0 = jagatof( sp2[1].c_str() ); 
-    		double y0 = jagatof( sp2[2].c_str() ); 
-    		double w = jagatof( sp2[3].c_str() ); 
-    		double h = jagatof( sp2[4].c_str() ); 
-    		double nx = safeget( sp2, 5 );
+    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double h = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+5);
 			double locx, locy;
 			transform2DCoordGlobal2Local( x0, y0, px, py, nx, locx, locy );
 			double d1, d2, d3, d4, p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y;
@@ -11283,9 +11082,9 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 				res = doubleToStr(p4x) + " " + doubleToStr(p4y);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-    		double x = jagatof( sp2[1].c_str() ); 
-    		double y = jagatof( sp2[2].c_str() ); 
-    		double r = jagatof( sp2[3].c_str() );
+    		double x = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 			double d = distance(px, py, x, y, srid );
 			if ( r < d ) {
 				res = doubleToStr(px*d/r) + " " + doubleToStr(py*d/r);
@@ -11293,11 +11092,11 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 				res = doubleToStr(px*r/d) + " " + doubleToStr(py*r/d);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-    		double x0 = jagatof( sp2[1].c_str() ); 
-    		double y0 = jagatof( sp2[2].c_str() ); 
-    		double a = jagatof( sp2[3].c_str() );
-    		double b = jagatof( sp2[4].c_str() );
-    		double nx = safeget( sp2, 4 );
+    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double a = jagatof( sp2[JAG_SP_START+3].c_str() );
+    		double b = jagatof( sp2[JAG_SP_START+4].c_str() );
+    		double nx = safeget(sp2, JAG_SP_START+4);
 			double locx, locy;
 			transform2DCoordGlobal2Local( x0,y0, px, py, nx, locx, locy );
 			double projx, projy, dist;
@@ -11308,18 +11107,18 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
     	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			return closestPoint2DMultiPolygon( srid, px, py, mark2, sp2, res );
     	} else {
-			res = sp2[1] + " " + sp2[2];
+			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
 		}
 	} else {
     	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-			res = sp2[1] + " " + sp2[2] + " " + sp2[3];
+			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2] + " " + sp2[JAG_SP_START+3];
     	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-    		double x1 = jagatof( sp2[1].c_str() ); 
-    		double y1 = jagatof( sp2[2].c_str() ); 
-    		double z1 = jagatof( sp2[3].c_str() ); 
-    		double x2 = jagatof( sp2[4].c_str() ); 
-    		double y2 = jagatof( sp2[5].c_str() ); 
-    		double z2 = jagatof( sp2[6].c_str() ); 
+    		double x1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double z1 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double x2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    		double y2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+    		double z2 = jagatof( sp2[JAG_SP_START+6].c_str() ); 
 			double projx, projy, projz;
 			minPoint3DToLineSegDistance( px, py, pz, x1, y1, z1, x2, y2, z2, srid, projx, projy, projz );
 			res = doubleToStr(projx) + " " + doubleToStr(projy) + " " + doubleToStr(projz);;
@@ -11341,30 +11140,30 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
                 res.replace(':', ' ');
             } else return false;
     	} else if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-    		double x0 = jagatof( sp2[1].c_str() ); 
-    		double y0 = jagatof( sp2[2].c_str() ); 
-    		double z0 = jagatof( sp2[3].c_str() ); 
-    		double r = jagatof( sp2[4].c_str() ); 
-    		double nx = safeget( sp2, 5 );
-    		double ny = safeget( sp2, 6 );
+    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+5);
+    		double ny = safeget(sp2, JAG_SP_START+6);
 			double dist;
 			closestPoint3DBox( srid, px, py, pz, x0, y0, z0, r, r, r, nx, ny, dist, res ); 
     	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-    		double x0 = jagatof( sp2[1].c_str() ); 
-    		double y0 = jagatof( sp2[2].c_str() ); 
-    		double z0 = jagatof( sp2[3].c_str() ); 
-    		double a = jagatof( sp2[4].c_str() ); 
-    		double b = jagatof( sp2[5].c_str() ); 
-    		double c = jagatof( sp2[6].c_str() ); 
-    		double nx = safeget( sp2, 7 );
-    		double ny = safeget( sp2, 8 );
+    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double a = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    		double b = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+    		double c = jagatof( sp2[JAG_SP_START+6].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+7);
+    		double ny = safeget(sp2, JAG_SP_START+8);
 			double dist;
 			closestPoint3DBox( srid, px, py, pz, x0, y0, z0, a, b, c, nx, ny, dist, res ); 
     	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-    		double x = jagatof( sp2[1].c_str() ); 
-    		double y = jagatof( sp2[2].c_str() ); 
-    		double z = jagatof( sp2[3].c_str() ); 
-    		double r = jagatof( sp2[4].c_str() );
+    		double x = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double z = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+4].c_str() );
 			double d = distance(px, py, pz, x, y, z, srid );
 			if ( r < d ) {
 				res = doubleToStr(px*d/r) + " " + doubleToStr(py*d/r) + " " + doubleToStr(pz*d/r);
@@ -11372,14 +11171,14 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 				res = doubleToStr(px*r/d) + " " + doubleToStr(py*r/d) + " " + doubleToStr(pz*r/d);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-    		double x0 = jagatof( sp2[0].c_str() ); 
-    		double y0 = jagatof( sp2[1].c_str() ); 
-    		double z0 = jagatof( sp2[2].c_str() ); 
-    		double a = jagatof( sp2[3].c_str() );
-    		double b = jagatof( sp2[4].c_str() );
-    		double c = jagatof( sp2[5].c_str() );
-    		double nx = safeget( sp2, 6 );
-    		double ny = safeget( sp2, 7 );
+    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double a = jagatof( sp2[JAG_SP_START+4].c_str() );
+    		double b = jagatof( sp2[JAG_SP_START+5].c_str() );
+    		double c = jagatof( sp2[JAG_SP_START+6].c_str() );
+    		double nx = safeget(sp2, JAG_SP_START+7);
+    		double ny = safeget(sp2, JAG_SP_START+8);
 			double locx, locy, locz;
 			transform3DCoordGlobal2Local( x0,y0,z0, px, py, pz, nx, ny, locx, locy, locz );
 			double projx, projy, projz, dist;
@@ -11388,13 +11187,13 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 			transform3DCoordLocal2Global( x0, y0, z0, projx, projy, projz, nx, ny, a, b, c );
 			res = doubleToStr(a) + " " + doubleToStr(b) + " " + doubleToStr(c);
     	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-    		double x0 = jagatof( sp2[1].c_str() ); 
-    		double y0 = jagatof( sp2[2].c_str() ); 
-    		double z0 = jagatof( sp2[3].c_str() ); 
-    		double r = jagatof( sp2[4].c_str() );
-    		double h = jagatof( sp2[5].c_str() );
-    		double nx = safeget( sp2, 6 );
-    		double ny = safeget( sp2, 7 );
+    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+4].c_str() );
+    		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+    		double nx = safeget(sp2, JAG_SP_START+6);
+    		double ny = safeget(sp2, JAG_SP_START+7);
 			// use triangle model
 			double locx, locy, locz;
 			transform3DCoordGlobal2Local( x0,y0,z0, px, py, pz, nx, ny, locx, locy, locz );
@@ -11439,7 +11238,7 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
     	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			return closestPoint3DMultiPolygon( srid, px, py, pz, mark2, sp2, res );
     	} else {
-			res = sp2[1] + " " + sp2[2] + " " +  sp2[3];
+			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2] + " " +  sp2[JAG_SP_START+3];
     	}
 	}
 
@@ -11450,11 +11249,11 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 bool JagGeo::doPointSame( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 		return jagEQ(px0, x0) && jagEQ(py0, y0);
 	} else {
 		return false;
@@ -11465,13 +11264,13 @@ bool JagGeo::doPoint3DSame( const JagStrSplit &sp1, const AbaxDataString &mk2, c
 										 int srid2, const JagStrSplit &sp2 )
 {
 	//prt(("s4409 doPoint3DSame colType2=[%s]\n", colType2.c_str() ));
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		return jagEQ( px0,x1) && jagEQ( py0, y1 ) && jagEQ(pz0, z1 );
 	} else {
 		return false;
@@ -11481,15 +11280,15 @@ bool JagGeo::doPoint3DSame( const JagStrSplit &sp1, const AbaxDataString &mk2, c
 bool JagGeo::doCircleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	pr0 = meterToLon( srid2, pr0, px0, py0);
 
 	if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 		r = meterToLon( srid2, r, x, y);
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pr0, r );
 	} else {
@@ -11501,25 +11300,25 @@ bool JagGeo::doCircleSame( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 bool JagGeo::doCircle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 
 	double nx0 = 0.0;
 	double ny0 = 0.0;
-	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[4].c_str() ); }
-	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[5].c_str() ); }
+	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[JAG_SP_START+4].c_str() ); }
+	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[JAG_SP_START+5].c_str() ); }
 
 	if (  colType2 == JAG_C_COL_TYPE_CIRCLE3D ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		double nx = 0.0;
 		double ny = 0.0;
-		if ( sp2.length() >= 5 ) { nx = jagatof( sp2[4].c_str() ); }
-		if ( sp2.length() >= 6 ) { ny = jagatof( sp2[5].c_str() ); }
+		if ( sp2.length() >= 5 ) { nx = jagatof( sp2[JAG_SP_START+4].c_str() ); }
+		if ( sp2.length() >= 6 ) { ny = jagatof( sp2[JAG_SP_START+5].c_str() ); }
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pz0, z) && jagEQ(pr0, r) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
 	} else {
 		return false;
@@ -11530,16 +11329,16 @@ bool JagGeo::doCircle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 bool JagGeo::doSphereSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 
 	if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pz0, z) && jagEQ(pr0, r);
 	} else {
 		return false;
@@ -11551,18 +11350,18 @@ bool JagGeo::doSquareSame( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 										 int srid2, const JagStrSplit &sp2 )
 {
 	//prt(("s3033 doSquareSame colType2=[%s] \n", colType2.c_str() ));
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	pr0 = meterToLon( srid2, pr0, px0, py0 );
-	double nx0 = safeget( sp1, 3 );
+	double nx0 = safeget(sp1, JAG_SP_START+3);
 
 	if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		a = meterToLon( srid2, a, x, y );
-		double nx = safeget(sp2, 3 );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(pr0, a) && jagEQ(nx0, nx);
 	} else {
 		return false;
@@ -11572,20 +11371,20 @@ bool JagGeo::doSquareSame( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 bool JagGeo::doSquare3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4);
-	double ny0 = safeget( sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_SQUARE3D ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(pr0, r) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
 	} else  {
 	}
@@ -11597,20 +11396,20 @@ bool JagGeo::doSquare3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 bool JagGeo::doCubeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
-	double ny0 = safeget(sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(pr0, r) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
 	} else {
 		return false;
@@ -11621,23 +11420,23 @@ bool JagGeo::doCubeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString
 bool JagGeo::doRectangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	a0 = meterToLon( srid2, a0, px0, py0 );
 	b0 = meterToLat( srid2, b0, px0, py0 );
 
 	if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		a = meterToLon( srid2, a, x, y );
 		b = meterToLat( srid2, b, x, y );
-		double nx = safeget( sp2, 4 );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(nx0, nx);
 	} else {
 		return false;
@@ -11648,22 +11447,22 @@ bool JagGeo::doRectangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataS
 bool JagGeo::doRectangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double nx0 = safeget( sp1, 5 );
-	double ny0 = safeget( sp1, 6 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if ( colType2 == JAG_C_COL_TYPE_RECTANGLE3D ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
 	} else {
 		return false;
@@ -11674,24 +11473,24 @@ bool JagGeo::doRectangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDat
 bool JagGeo::doBoxSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6 );
-	double ny0 = safeget( sp1, 7 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double c = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return jagEQ(px0,x) && jagEQ( py0,y) && jagEQ( pz0,z) && jagEQ(a0, a) && jagEQ(b0, b) 
 				&& jagEQ(c0, c) && jagEQ(nx0, nx) && jagEQ(ny0, ny);
 	} else {
@@ -11703,23 +11502,23 @@ bool JagGeo::doBoxSame( int srid1, const JagStrSplit &sp1, const AbaxDataString 
 bool JagGeo::doCylinderSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 
-	double nx0 = safeget(sp1, 5);
-	double ny0 = safeget(sp1, 6);
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CYLINDER ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double c = jagatof( sp2[4].c_str() ); 
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(pz0,z) && jagEQ(pr0, r) && jagEQ(c0, c) 
 				&& jagEQ(nx0, nx) && jagEQ(ny0, ny);
 	} else {
@@ -11731,22 +11530,22 @@ bool JagGeo::doCylinderSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 bool JagGeo::doConeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
-	double nx0 = safeget(sp1, 5 );
-	double ny0 = safeget(sp1, 6 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double c = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double c = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(pz0,z) && jagEQ(pr0, r) && jagEQ(c0, c) 
 				&& jagEQ(nx0, nx) && jagEQ(ny0, ny);
 	} else {
@@ -11758,21 +11557,21 @@ bool JagGeo::doConeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString
 bool JagGeo::doEllipseSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	a0 = meterToLon( srid2, a0, px0, py0 );
 	b0 = meterToLat( srid2, b0, px0, py0 );
 
 	if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		a = meterToLon( srid2, a, x, y );
 		b = meterToLat( srid2, b, x, y );
 		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(nx0, nx);
@@ -11785,24 +11584,24 @@ bool JagGeo::doEllipseSame( int srid1, const JagStrSplit &sp1, const AbaxDataStr
 bool JagGeo::doEllipsoidSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6);
-	double ny0 = safeget( sp1, 7);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() );
-		double b = jagatof( sp2[4].c_str() );
-		double c = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return jagEQ(px0,x) && jagEQ(py0,y) && jagEQ(pz0,z) && jagEQ(a0, a) && jagEQ(b0, b) && jagEQ(c0,c)
 				&& jagEQ(nx0, nx) && jagEQ(ny0,ny);
 	} else {
@@ -11814,22 +11613,22 @@ bool JagGeo::doEllipsoidSame( int srid1, const JagStrSplit &sp1, const AbaxDataS
 bool JagGeo::doTriangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
-	double x30 = jagatof( sp1[4].c_str() );
-	double y30 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return    jagEQ(x10,x1)
 		       && jagEQ(y10,y1)
 		       && jagEQ(x20,x2)
@@ -11845,26 +11644,26 @@ bool JagGeo::doTriangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 bool JagGeo::doTriangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
-	double x30 = jagatof( sp1[6].c_str() );
-	double y30 = jagatof( sp1[7].c_str() );
-	double z30 = jagatof( sp1[8].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+6].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+7].c_str() );
+	double z30 = jagatof( sp1[JAG_SP_START+8].c_str() );
 
 	if ( colType2 == JAG_C_COL_TYPE_TRIANGLE3D ) {
-    	double x1 = jagatof( sp1[0].c_str() );
-    	double y1 = jagatof( sp1[1].c_str() );
-    	double z1 = jagatof( sp1[2].c_str() );
-    	double x2 = jagatof( sp1[3].c_str() );
-    	double y2 = jagatof( sp1[4].c_str() );
-    	double z2 = jagatof( sp1[5].c_str() );
-    	double x3 = jagatof( sp1[6].c_str() );
-    	double y3 = jagatof( sp1[7].c_str() );
-    	double z3 = jagatof( sp1[8].c_str() );
+    	double x1 = jagatof( sp1[JAG_SP_START+0].c_str() );
+    	double y1 = jagatof( sp1[JAG_SP_START+1].c_str() );
+    	double z1 = jagatof( sp1[JAG_SP_START+2].c_str() );
+    	double x2 = jagatof( sp1[JAG_SP_START+3].c_str() );
+    	double y2 = jagatof( sp1[JAG_SP_START+4].c_str() );
+    	double z2 = jagatof( sp1[JAG_SP_START+5].c_str() );
+    	double x3 = jagatof( sp1[JAG_SP_START+6].c_str() );
+    	double y3 = jagatof( sp1[JAG_SP_START+7].c_str() );
+    	double z3 = jagatof( sp1[JAG_SP_START+8].c_str() );
 		return    jagEQ(x10,x1)
 		       && jagEQ(y10,y1)
 		       && jagEQ(z10,z1)
@@ -11883,17 +11682,17 @@ bool JagGeo::doTriangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxData
 bool JagGeo::doLineSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
 
 	// like point within
 	if (  colType2 == JAG_C_COL_TYPE_LINE ) {
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return    jagEQ(x10,x1)
 		       && jagEQ(y10,y1)
 		       && jagEQ(x20,x2)
@@ -11906,20 +11705,20 @@ bool JagGeo::doLineSame( int srid1, const JagStrSplit &sp1, const AbaxDataString
 bool JagGeo::doLine3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	if (  colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		double x1 = jagatof( sp1[0].c_str() );
-		double y1 = jagatof( sp1[1].c_str() );
-		double z1 = jagatof( sp1[2].c_str() );
-		double x2 = jagatof( sp1[3].c_str() );
-		double y2 = jagatof( sp1[4].c_str() );
-		double z2 = jagatof( sp1[5].c_str() );
+		double x1 = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double z1 = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double x2 = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double y2 = jagatof( sp1[JAG_SP_START+4].c_str() );
+		double z2 = jagatof( sp1[JAG_SP_START+5].c_str() );
 		return    jagEQ(x10,x1)
 		       && jagEQ(y10,y1)
 		       && jagEQ(z10,z1)
@@ -15824,9 +15623,9 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 	JagStrSplit sp2( rstr.c_str(), ' ', true );
 	if ( sp2.length() < 1 ) return 0;
 
-	JagStrSplit co1( sp1[0], '=' );
+	JagStrSplit co1( sp1[JAG_SP_START+0], '=' );
 	if ( co1.length() < 4 ) return 0;
-	JagStrSplit co2( sp2[0], '=' );
+	JagStrSplit co2( sp2[JAG_SP_START+0], '=' );
 	if ( co2.length() < 4 ) return 0;
 	AbaxDataString mark1 = co1[0]; // CJAG or OJAG
 	AbaxDataString mark2 = co2[0];
@@ -15922,51 +15721,51 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 bool JagGeo::doPointDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 		return pointDistancePoint( srid, px0, py0, x0, y0, arg, dist);
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double x2 = jagatof( sp2[2].c_str() ); 
-		double y2 = jagatof( sp2[3].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 		return pointDistanceLine( srid, px0, py0, x1, y1, x2, y2, arg, dist);
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
 		return pointDistanceLineString( srid, px0, py0, mk2, sp2, arg, dist);
 	} else if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		return pointDistanceTriangle( srid, jagatof( sp1[0].c_str()), jagatof( sp1[1].c_str()), 
-									  jagatof( sp2[0].c_str() ), jagatof( sp2[1].c_str() ), 
-									  jagatof( sp2[2].c_str() ), jagatof( sp2[3].c_str() ), 
-									  jagatof( sp2[4].c_str() ), jagatof( sp2[5].c_str() ),
+		return pointDistanceTriangle( srid, jagatof( sp1[JAG_SP_START+0].c_str()), jagatof( sp1[JAG_SP_START+1].c_str()), 
+									  jagatof( sp2[JAG_SP_START+0].c_str() ), jagatof( sp2[JAG_SP_START+1].c_str() ), 
+									  jagatof( sp2[JAG_SP_START+2].c_str() ), jagatof( sp2[JAG_SP_START+3].c_str() ), 
+									  jagatof( sp2[JAG_SP_START+4].c_str() ), jagatof( sp2[JAG_SP_START+5].c_str() ),
 									  arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return pointDistanceSquare( srid, px0, py0, x0, y0, r, nx, arg, dist);
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double w = jagatof( sp2[2].c_str() ); 
-		double h = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return pointDistanceRectangle( srid, px0, py0, x0, y0, w,h, nx, arg, dist);
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 		return pointDistanceCircle( srid, px0, py0, x, y, r, arg, dist);
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double w = jagatof( sp2[2].c_str() );
-		double h = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return pointDistanceEllipse( srid, px0, py0, x0, y0, w, h, nx, arg, dist);
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return pointDistancePolygon( srid, px0, py0, mk2, sp2, arg, dist);
@@ -15982,66 +15781,66 @@ bool JagGeo::doPoint3DDistance( const AbaxDataString& mk1, const JagStrSplit& sp
 	//sp1.print();
 	//sp2.print();
 
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 		return point3DDistancePoint3D( srid, px0, py0, pz0, x1, y1, z1, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double z1 = jagatof( sp2[2].c_str() ); 
-		double x2 = jagatof( sp2[3].c_str() ); 
-		double y2 = jagatof( sp2[4].c_str() ); 
-		double z2 = jagatof( sp2[5].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 		return point3DDistanceLine3D( srid, px0, py0, pz0, x1, y1, z1, x2, y2, z2, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		return point3DDistanceLineString3D( srid, px0, py0, pz0, mk2, sp2, arg, dist );
 	} else if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return point3DDistanceBox( srid, px0, py0, pz0, x0, y0, z0, r,r,r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double c = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return point3DDistanceBox( srid, px0, py0, pz0, x0, y0, z0, a,b,c, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return point3DDistanceSphere( srid, px0,py0,pz0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() );
-		double b = jagatof( sp2[4].c_str() );
-		double c = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return point3DDistanceEllipsoid( srid, px0, py0, pz0, x0, y0, z0, a,b,c, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return point3DDistanceCone( srid, px0,py0,pz0, x, y, z, r, h, nx, ny, arg, dist );
 	}
 	return false;
@@ -16050,42 +15849,42 @@ bool JagGeo::doPoint3DDistance( const AbaxDataString& mk1, const JagStrSplit& sp
 bool JagGeo::doCircleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 
 	if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 		return circleDistanceCircle( srid, px0,py0,pr0, x,y,r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() );
-		double nx = safeget( sp2, 3);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return circleDistanceSquare( srid, px0,py0,pr0, x,y,r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double w = jagatof( sp2[2].c_str() );
-		double h = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return circleDistanceRectangle( srid, px0, py0, pr0, x0, y0, w, h, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp2[0].c_str() ); 
-		double y1 = jagatof( sp2[1].c_str() ); 
-		double x2 = jagatof( sp2[2].c_str() ); 
-		double y2 = jagatof( sp2[3].c_str() ); 
-		double x3 = jagatof( sp2[4].c_str() ); 
-		double y3 = jagatof( sp2[5].c_str() ); 
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 		return circleDistanceTriangle( srid, px0, py0, pr0, x1, y1, x2, y2, x3, y3, arg, dist  );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return circleDistanceEllipse( srid, px0, py0, pr0, x0, y0, a, b, nx, arg, dist  );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return circleDistancePolygon( srid, px0, py0, pr0, mk2, sp2, arg, dist );
@@ -16096,58 +15895,58 @@ bool JagGeo::doCircleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1
 bool JagGeo::doCircle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
 								const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 
 	double nx0 = 0.0;
 	double ny0 = 0.0;
-	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[4].c_str() ); }
-	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[5].c_str() ); }
+	if ( sp1.length() >= 5 ) { nx0 = jagatof( sp1[JAG_SP_START+4].c_str() ); }
+	if ( sp1.length() >= 6 ) { ny0 = jagatof( sp1[JAG_SP_START+5].c_str() ); }
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return circle3DDistanceCube( srid, px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if (  colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double a = jagatof( sp2[3].c_str() ); 
-		double b = jagatof( sp2[4].c_str() ); 
-		double c = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return circle3DDistanceBox( srid, px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, a,b,c, nx, ny, arg, dist );
 	} else if (  colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return circle3DDistanceSphere( srid, px0, py0, pz0, pr0, nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return circle3DDistanceEllipsoid( srid, px0, py0, pz0, pr0, nx0, ny0, x0, y0, z0, w,d,h,  nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return circle3DDistanceCone( srid, px0,py0,pz0,pr0,nx0,ny0, x, y, z, r, h, nx, ny, arg, dist );
 	}
 
@@ -16156,66 +15955,66 @@ bool JagGeo::doCircle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 
 double JagGeo::doSphereArea( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[2].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	return r * r * 4.0 * JAG_PI;
 }
 
 double JagGeo::doSphereVolume( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[2].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	return r * r * r * 4.0 * JAG_PI/3.0;
 }
 
 bool JagGeo::doSphereDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return sphereDistanceCube( srid, px0, py0, pz0, pr0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return sphereDistanceBox( srid, px0, py0, pz0, pr0, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return sphereDistanceSphere( srid, px0, py0, pz0, pr0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return sphereDistanceEllipsoid( srid, px0, py0, pz0, pr0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return sphereDistanceCone( srid, px0, py0, pz0, pr0,    x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16224,47 +16023,47 @@ bool JagGeo::doSphereDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1
 bool JagGeo::doSquareDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
 							const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pr0 = jagatof( sp1[2].c_str() ); 
-	double nx0 = safeget( sp1, 3 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+3);
 
 	// like point Distance
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		// return squareDistanceTriangle( srid, px0, py0, pr0, nx0, x1, y1, x2, y2, x3, y3, arg, dist );
 		return rectangleDistanceTriangle( srid, px0, py0, pr0,pr0, nx0, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget(sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleDistanceSquare( srid, px0, py0, pr0,pr0, nx0, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget(sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleDistanceRectangle( srid, px0, py0, pr0,pr0, nx0, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget(sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleDistanceCircle( srid, px0, py0, pr0,pr0, nx0, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget(sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleDistanceEllipse( srid, px0, py0, pr0,pr0, nx0, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return rectangleDistancePolygon( srid, px0, py0, pr0,pr0,nx0, mk2, sp2, arg, dist );
@@ -16275,55 +16074,55 @@ bool JagGeo::doSquareDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1
 bool JagGeo::doSquare3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
 							const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4);
-	double ny0 = safeget( sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return rectangle3DDistanceCube( srid, px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DDistanceBox( srid, px0, py0, pz0, pr0,pr0, nx0, ny0,x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return rectangle3DDistanceSphere( srid, px0, py0, pz0, pr0,pr0, nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DDistanceEllipsoid( srid, px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return rectangle3DDistanceCone( srid, px0, py0, pz0, pr0,pr0, nx0, ny0, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16332,74 +16131,74 @@ bool JagGeo::doSquare3DDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 
 double JagGeo::doCubeArea( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return (r*r*24.0);  // 2r*2r*6
 }
 
 double JagGeo::doCubePerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return (r*24.0);  // 2r*12
 }
 
 double JagGeo::doCubeVolume( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return (r*r*r*8.0);  // 2r*2r*2r
 }
 
 bool JagGeo::doCubeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
-	double ny0 = safeget(sp1, 5);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
+	double ny0 = safeget(sp1, JAG_SP_START+5);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return boxDistanceCube( srid, px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxDistanceBox( srid, px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return boxDistanceSphere( srid, px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxDistanceEllipsoid( srid, px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return boxDistanceCone( srid, px0, py0, pz0, pr0,pr0,pr0, nx0, ny0, x0, y0, z0, r, h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16407,73 +16206,73 @@ bool JagGeo::doCubeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, 
 
 double JagGeo::doRectangleArea( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[2].c_str() ); 
-	double b = jagatof( sp1[3].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return a*b* 4.0;
 }
 
 double JagGeo::doRectanglePerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[2].c_str() ); 
-	double b = jagatof( sp1[3].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return (a+b)* 4.0;
 }
 double JagGeo::doRectangle3DArea( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	return a*b* 4.0;
 }
 double JagGeo::doRectangle3DPerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	return (a+b)* 4.0;
 }
 
 bool JagGeo::doRectangleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
 						const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget( sp1, 4 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	// like point Distance
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return rectangleDistanceTriangle( srid, px0, py0, a0, b0, nx0, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleDistanceSquare( srid, px0, py0, a0, b0, nx0, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleDistanceRectangle( srid, px0, py0, a0, b0, nx0, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return rectangleDistanceCircle( srid, px0, py0, a0, b0, nx0, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return rectangleDistanceEllipse( srid, px0, py0, a0, b0, nx0, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return rectangleDistancePolygon( srid, px0,py0,a0,b0,nx0, mk2, sp2, arg, dist );
@@ -16484,56 +16283,56 @@ bool JagGeo::doRectangleDistance(const AbaxDataString& mk1,  const JagStrSplit& 
 bool JagGeo::doRectangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
 						const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double nx0 = safeget( sp1, 5 );
-	double ny0 = safeget( sp1, 6 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return rectangle3DDistanceCube( srid, px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DDistanceBox( srid, px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return rectangle3DDistanceSphere( srid, px0, py0, pz0, a0, b0, nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return rectangle3DDistanceEllipsoid( srid, px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return rectangle3DDistanceCone( srid, px0, py0, pz0, a0, b0, nx0, ny0, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16541,25 +16340,25 @@ bool JagGeo::doRectangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit
 
 double JagGeo::doBoxArea( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
-	double c = jagatof( sp1[5].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+5].c_str() ); 
 	return  (a*b + b*c + c*a ) * 8.0;
 	// ( 2a*2b + 2b*2c + 2a*2c )*2 
 }
 double JagGeo::doBoxPerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
-	double c = jagatof( sp1[5].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+5].c_str() ); 
 	return  (a + b + c ) * 8.0;
 }
 
 double JagGeo::doBoxVolume( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
-	double c = jagatof( sp1[5].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+5].c_str() ); 
 	return  a*b*c* 8.0;
 	// ( 2a*2b*2c )
 }
@@ -16567,57 +16366,57 @@ double JagGeo::doBoxVolume( int srid1, const JagStrSplit& sp1 )
 bool JagGeo::doBoxDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6 );
-	double ny0 = safeget( sp1, 7 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return boxDistanceCube( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxDistanceBox( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return boxDistanceSphere( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return boxDistanceEllipsoid( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return boxDistanceCone( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16625,84 +16424,84 @@ bool JagGeo::doBoxDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, c
 
 double JagGeo::doTriangleArea( int srid1, const JagStrSplit& sp1 )
 {
-	double Ax = jagatof( sp1[0].c_str() );
-	double Ay = jagatof( sp1[1].c_str() );
-	double Bx = jagatof( sp1[2].c_str() );
-	double By = jagatof( sp1[3].c_str() );
-	double Cx = jagatof( sp1[4].c_str() );
-	double Cy = jagatof( sp1[5].c_str() );
+	double Ax = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double Ay = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double Bx = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double By = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double Cx = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double Cy = jagatof( sp1[JAG_SP_START+5].c_str() );
 	return fabs( Ax*(By-Cy) + Bx*(Cy-Ay) + Cx*(Ay-By))/2.0;
 }
 
 double JagGeo::doTrianglePerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double Ax = jagatof( sp1[0].c_str() );
-	double Ay = jagatof( sp1[1].c_str() );
-	double Bx = jagatof( sp1[2].c_str() );
-	double By = jagatof( sp1[3].c_str() );
-	double Cx = jagatof( sp1[4].c_str() );
-	double Cy = jagatof( sp1[5].c_str() );
+	double Ax = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double Ay = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double Bx = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double By = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double Cx = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double Cy = jagatof( sp1[JAG_SP_START+5].c_str() );
 	return distance(Ax,Ay, Bx,By, srid1) + distance(Ax,Ay, Cx,Cy, srid1) + distance(Cx,Cy, Bx,By, srid1);
 }
 double JagGeo::doTriangle3DPerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double Ax = jagatof( sp1[0].c_str() );
-	double Ay = jagatof( sp1[1].c_str() );
-	double Az = jagatof( sp1[2].c_str() );
-	double Bx = jagatof( sp1[3].c_str() );
-	double By = jagatof( sp1[4].c_str() );
-	double Bz = jagatof( sp1[5].c_str() );
-	double Cx = jagatof( sp1[6].c_str() );
-	double Cy = jagatof( sp1[7].c_str() );
-	double Cz = jagatof( sp1[8].c_str() );
+	double Ax = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double Ay = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double Az = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double Bx = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double By = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double Bz = jagatof( sp1[JAG_SP_START+5].c_str() );
+	double Cx = jagatof( sp1[JAG_SP_START+6].c_str() );
+	double Cy = jagatof( sp1[JAG_SP_START+7].c_str() );
+	double Cz = jagatof( sp1[JAG_SP_START+8].c_str() );
 	return distance(Ax,Ay,Az, Bx,By,Bz, srid1) + distance(Ax,Ay,Az, Cx,Cy,Cz, srid1) + distance(Cx,Cy,Cz, Bx,By,Bz, srid1);
 }
 
 bool JagGeo::doTriangleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
-	double x30 = jagatof( sp1[4].c_str() );
-	double y30 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	// like point Distance
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return triangleDistanceTriangle( srid, x10, y10, x20, y20, x30, y30, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return triangleDistanceSquare( srid, x10, y10, x20, y20, x30, y30, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return triangleDistanceRectangle( srid, x10, y10, x20, y20, x30, y30, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return triangleDistanceCircle( srid, x10, y10, x20, y20, x30, y30, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return triangleDistanceEllipse( srid, x10, y10, x20, y20, x30, y30, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return triangleDistancePolygon( srid, x10, y10, x20, y20, x30, y30, mk2, sp2, arg, dist );
@@ -16712,73 +16511,73 @@ bool JagGeo::doTriangleDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 
 double JagGeo::doTriangle3DArea( int srid1, const JagStrSplit& sp1 )
 {
-	double x1 = jagatof( sp1[0].c_str() );
-	double y1 = jagatof( sp1[1].c_str() );
-	double z1 = jagatof( sp1[2].c_str() );
-	double x2 = jagatof( sp1[3].c_str() );
-	double y2 = jagatof( sp1[4].c_str() );
-	double z2 = jagatof( sp1[5].c_str() );
-	double x3 = jagatof( sp1[6].c_str() );
-	double y3 = jagatof( sp1[7].c_str() );
-	double z3 = jagatof( sp1[8].c_str() );
+	double x1 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y1 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z1 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x2 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y2 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z2 = jagatof( sp1[JAG_SP_START+5].c_str() );
+	double x3 = jagatof( sp1[JAG_SP_START+6].c_str() );
+	double y3 = jagatof( sp1[JAG_SP_START+7].c_str() );
+	double z3 = jagatof( sp1[JAG_SP_START+8].c_str() );
 	return sqrt( jagsq2(x2*y3-x3*y2) + jagsq2(x3*y1-x1*y3) + jagsq2(x1*y2-x2*y1) )/2.0;
 }
 
 bool JagGeo::doTriangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
 						const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
-	double x30 = jagatof( sp1[6].c_str() );
-	double y30 = jagatof( sp1[7].c_str() );
-	double z30 = jagatof( sp1[8].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
+	double x30 = jagatof( sp1[JAG_SP_START+6].c_str() );
+	double y30 = jagatof( sp1[JAG_SP_START+7].c_str() );
+	double z30 = jagatof( sp1[JAG_SP_START+8].c_str() );
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return triangle3DDistanceCube( srid, x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return triangle3DDistanceBox( srid, x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return triangle3DDistanceSphere( srid, x10,y10,z10,x20,y20,z20,x30,y30,z30, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return triangle3DDistanceEllipsoid( srid, x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return triangle3DDistanceCone( srid, x10,y10,z10,x20,y20,z20,x30,y30,z30, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16786,72 +16585,72 @@ bool JagGeo::doTriangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit&
 
 double JagGeo::doCylinderArea( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
-	double c = jagatof( sp1[4].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	return 2.0*JAG_PI*r*(c*2.0 + r);  // 2πrH+2πr^2 = 2*PI*r ( H + r) 
 }
 
 double JagGeo::doCylinderVolume( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
-	double c = jagatof( sp1[4].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	return r*r*JAG_PI *c*2.0;
 }
 
 bool JagGeo::doCylinderDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 
-	double nx0 = safeget(sp1, 5);
-	double ny0 = safeget(sp1, 6);
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return cylinderDistanceCube( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return cylinderDistanceBox( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return cylinderDistanceSphere( srid, px0, py0, pz0, pr0, c0,  nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return cylinderDistanceEllipsoid( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return cylinderDistanceCone( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16859,8 +16658,8 @@ bool JagGeo::doCylinderDistance(const AbaxDataString& mk1,  const JagStrSplit& s
 
 double JagGeo::doConeArea( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
-	double c = jagatof( sp1[4].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	double R = r * 2.0;
 	double h = c * 2.0;
 	return JAG_PI * R * ( R + sqrt( h*h+ R*R) );
@@ -16868,8 +16667,8 @@ double JagGeo::doConeArea( int srid1, const JagStrSplit& sp1 )
 
 double JagGeo::doConeVolume( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[3].c_str() ); 
-	double c = jagatof( sp1[4].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	double R = r * 2.0;
 	double h = c * 2.0;
 	return JAG_PI*R*R*h/3.0; 
@@ -16878,56 +16677,56 @@ double JagGeo::doConeVolume( int srid1, const JagStrSplit& sp1 )
 bool JagGeo::doConeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double pr0 = jagatof( sp1[3].c_str() ); 
-	double c0 = jagatof( sp1[4].c_str() ); 
-	double nx0 = safeget(sp1, 5 );
-	double ny0 = safeget(sp1, 6 );
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+5);
+	double ny0 = safeget(sp1, JAG_SP_START+6);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return coneDistanceCube( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneDistanceBox( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return coneDistanceSphere( srid, px0, py0, pz0, pr0, c0,  nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneDistanceEllipsoid( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return coneDistanceCone( srid, px0, py0, pz0, pr0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -16935,77 +16734,77 @@ bool JagGeo::doConeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, 
 
 double JagGeo::doEllipseArea( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[2].c_str() ); 
-	double b = jagatof( sp1[3].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return a*b*JAG_PI;
 }
 
 double JagGeo::doEllipsePerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[2].c_str() ); 
-	double b = jagatof( sp1[3].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return JAG_PI*( 3.0*(a+b) - sqrt( (3.0*a+b)*(a+3.0*b) ) );
 	// Ramanujan approximation
 }
 
 double JagGeo::doEllipse3DArea( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	return a*b*JAG_PI;
 }
 
 double JagGeo::doEllipse3DPerimeter( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
 	return JAG_PI*( 3.0*(a+b) - sqrt( (3.0*a+b)*(a+3.0*b) ) );
 }
 
 bool JagGeo::doEllipseDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double a0 = jagatof( sp1[2].c_str() ); 
-	double b0 = jagatof( sp1[3].c_str() ); 
-	double nx0 = safeget(sp1, 4);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+4);
 
 	// like point Distance
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return ellipseDistanceTriangle( srid, px0, py0, a0, b0, nx0, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return ellipseDistanceSquare( srid, px0, py0, a0, b0, nx0, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return ellipseDistanceRectangle( srid, px0, py0, a0, b0, nx0, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return ellipseDistanceCircle( srid, px0, py0, a0, b0, nx0, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return ellipseDistanceEllipse( srid, px0, py0, a0, b0, nx0, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return ellipseDistancePolygon( srid, px0, py0, a0, b0, nx0, mk2, sp2, arg, dist );
@@ -17015,9 +16814,9 @@ bool JagGeo::doEllipseDistance(const AbaxDataString& mk1,  const JagStrSplit& sp
 
 double JagGeo::doEllipsoidArea( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
-	double c = jagatof( sp1[5].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+5].c_str() ); 
 	double p=1.6075; // Knud Thomsen approximation formula
 	double ap = pow(a, p);
 	double bp = pow(b, p);
@@ -17029,66 +16828,66 @@ double JagGeo::doEllipsoidArea( int srid1, const JagStrSplit& sp1 )
 
 double JagGeo::doEllipsoidVolume( int srid1, const JagStrSplit& sp1 )
 {
-	double a = jagatof( sp1[3].c_str() ); 
-	double b = jagatof( sp1[4].c_str() ); 
-	double c = jagatof( sp1[5].c_str() ); 
+	double a = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c = jagatof( sp1[JAG_SP_START+5].c_str() ); 
 	return 4.0*JAG_PI*a*b*c/3.0;
 }
 
 bool JagGeo::doEllipsoidDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double px0 = jagatof( sp1[0].c_str() ); 
-	double py0 = jagatof( sp1[1].c_str() ); 
-	double pz0 = jagatof( sp1[2].c_str() ); 
-	double a0 = jagatof( sp1[3].c_str() ); 
-	double b0 = jagatof( sp1[4].c_str() ); 
-	double c0 = jagatof( sp1[5].c_str() ); 
-	double nx0 = safeget( sp1, 6);
-	double ny0 = safeget( sp1, 7);
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double a0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	double b0 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+	double c0 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	double nx0 = safeget(sp1, JAG_SP_START+6);
+	double ny0 = safeget(sp1, JAG_SP_START+7);
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4);
-		double ny = safeget( sp2, 5);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return ellipsoidDistanceCube( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidDistanceBox( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return ellipsoidDistanceSphere( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6);
-		double ny = safeget( sp2, 7);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return ellipsoidDistanceEllipsoid( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5);
-		double ny = safeget( sp2, 6);
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return ellipsoidDistanceCone( srid, px0, py0, pz0, a0, b0, c0, nx0, ny0, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -17097,48 +16896,48 @@ bool JagGeo::doEllipsoidDistance(const AbaxDataString& mk1,  const JagStrSplit& 
 bool JagGeo::doLineDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double x20 = jagatof( sp1[2].c_str() );
-	double y20 = jagatof( sp1[3].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+3].c_str() );
 
 	// like point Distance
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return lineDistanceTriangle( srid, x10, y10, x20, y20, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineDistanceSquare( srid, x10, y10, x20, y20, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return lineDistanceLineString( srid, x10, y10, x20, y20, mk2, sp2, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineDistanceRectangle( srid, x10, y10, x20, y20, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineDistanceCircle( srid, x10, y10, x20, y20, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineDistanceEllipse( srid, x10, y10, x20, y20, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return lineDistancePolygon( srid, x10, y10, x20, y20, mk2, sp2, arg, dist );
@@ -17149,57 +16948,57 @@ bool JagGeo::doLineDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, 
 bool JagGeo::doLine3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
-	double x10 = jagatof( sp1[0].c_str() );
-	double y10 = jagatof( sp1[1].c_str() );
-	double z10 = jagatof( sp1[2].c_str() );
-	double x20 = jagatof( sp1[3].c_str() );
-	double y20 = jagatof( sp1[4].c_str() );
-	double z20 = jagatof( sp1[5].c_str() );
+	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
+	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
+	double z10 = jagatof( sp1[JAG_SP_START+2].c_str() );
+	double x20 = jagatof( sp1[JAG_SP_START+3].c_str() );
+	double y20 = jagatof( sp1[JAG_SP_START+4].c_str() );
+	double z20 = jagatof( sp1[JAG_SP_START+5].c_str() );
 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return line3DDistanceCube( srid, x10,y10,z10,x20,y20,z20, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return line3DDistanceLineString3D( srid, x10,y10,z10,x20,y20,z20, mk2, sp2, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return line3DDistanceBox( srid, x10,y10,z10,x20,y20,z20, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return line3DDistanceSphere( srid, x10,y10,z10,x20,y20,z20, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return line3DDistanceEllipsoid( srid, x10,y10,z10,x20,y20,z20, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return line3DDistanceCone( srid, x10,y10,z10,x20,y20,z20, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -17211,41 +17010,41 @@ bool JagGeo::doLineStringDistance(const AbaxDataString& mk1, const JagStrSplit& 
 
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return lineStringDistanceTriangle( srid, mk1, sp1, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 		return lineStringDistanceLineString( srid, mk1, sp1, mk2, sp2, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		//prt(("s0881 lineStringDistanceSquare ...\n" ));
 		return lineStringDistanceSquare( srid, mk1, sp1, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineStringDistanceRectangle( srid, mk1, sp1, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return lineStringDistanceCircle( srid, mk1, sp1, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return lineStringDistanceEllipse( srid, mk1, sp1, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return lineStringDistancePolygon( srid, mk1, sp1, mk2, sp2, arg, dist );
@@ -17259,49 +17058,49 @@ bool JagGeo::doLineString3DDistance(const AbaxDataString& mk1, const JagStrSplit
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
 		return doPoint3DDistance( mk2, sp2, mk1, JAG_C_COL_TYPE_LINESTRING3D, sp1, srid,  arg, dist);
 	} else if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return lineString3DDistanceCube( srid, mk1, sp1, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return lineString3DDistanceLineString3D( srid, mk1, sp1, mk2, sp2, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return lineString3DDistanceBox( srid, mk1, sp1, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return lineString3DDistanceSphere( srid, mk1, sp1, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return lineString3DDistanceEllipsoid( srid, mk1, sp1, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return lineString3DDistanceCone( srid, mk1, sp1, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -17311,38 +17110,38 @@ bool JagGeo::doPolygonDistance(const AbaxDataString& mk1, const JagStrSplit& sp1
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return polygonDistanceTriangle( srid, mk1, sp1, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonDistanceSquare( srid, mk1, sp1, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonDistanceRectangle( srid, mk1, sp1, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return polygonDistanceCircle( srid, mk1, sp1, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return polygonDistanceEllipse( srid, mk1, sp1, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return polygonDistancePolygon( srid, mk1, sp1, mk2, sp2, arg, dist );
@@ -17354,47 +17153,47 @@ bool JagGeo::doPolygon3DDistance(const AbaxDataString& mk1, const JagStrSplit& s
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return polygon3DDistanceCube( srid, mk1, sp1, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DDistanceBox( srid, mk1, sp1, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return polygon3DDistanceSphere( srid, mk1, sp1, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return polygon3DDistanceEllipsoid( srid, mk1, sp1, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return polygon3DDistanceCone( srid, mk1, sp1, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -17404,41 +17203,41 @@ bool JagGeo::doMultiPolygonDistance(const AbaxDataString& mk1, const JagStrSplit
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp2[0].c_str() );
-		double y1 = jagatof( sp2[1].c_str() );
-		double x2 = jagatof( sp2[2].c_str() );
-		double y2 = jagatof( sp2[3].c_str() );
-		double x3 = jagatof( sp2[4].c_str() );
-		double y3 = jagatof( sp2[5].c_str() );
+		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
+		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() );
+		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x3 = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		prt(("x1:%f\n y1:%f\n x2:%f\n y2:%f\n x3:%f\n y3:%f\n", x1, y1, x2, y2, x3, y3));
 		return multiPolygonDistanceTriangle( srid, mk1, sp1, x1, y1, x2, y2, x3, y3, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
 		prt(("s6040 JAG_C_COL_TYPE_SQUARE sp2 print():\n"));
 		//sp2.print();
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return multiPolygonDistanceSquare( srid, mk1, sp1, x0, y0, a, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() ); 
-		double b = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return multiPolygonDistanceRectangle( srid, mk1, sp1, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double r = jagatof( sp2[2].c_str() ); 
-		double nx = safeget( sp2, 3 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+3);
 		return multiPolygonDistanceCircle( srid, mk1, sp1, x0, y0, r, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double a = jagatof( sp2[2].c_str() );
-		double b = jagatof( sp2[3].c_str() );
-		double nx = safeget( sp2, 4 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+4);
 		return multiPolygonDistanceEllipse( srid, mk1, sp1, x0, y0, a, b, nx, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return multiPolygonDistancePolygon( srid, mk1, sp1, mk2, sp2, arg, dist );
@@ -17450,47 +17249,47 @@ bool JagGeo::doMultiPolygon3DDistance(const AbaxDataString& mk1, const JagStrSpl
 										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() ); 
-		double nx = safeget( sp2, 4 );
-		double ny = safeget( sp2, 5 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+4);
+		double ny = safeget(sp2, JAG_SP_START+5);
 		return multiPolygon3DDistanceCube( srid, mk1, sp1, x0, y0, z0, r, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() ); 
-		double d = jagatof( sp2[4].c_str() ); 
-		double h = jagatof( sp2[5].c_str() ); 
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return multiPolygon3DDistanceBox( srid, mk1, sp1, x0, y0, z0, w,d,h, nx, ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-		double x = jagatof( sp2[0].c_str() ); 
-		double y = jagatof( sp2[1].c_str() ); 
-		double z = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 		return multiPolygon3DDistanceSphere( srid, mk1, sp1, x, y, z, r, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double w = jagatof( sp2[3].c_str() );
-		double d = jagatof( sp2[4].c_str() );
-		double h = jagatof( sp2[5].c_str() );
-		double nx = safeget( sp2, 6 );
-		double ny = safeget( sp2, 7 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double w = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double d = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+6);
+		double ny = safeget(sp2, JAG_SP_START+7);
 		return multiPolygon3DDistanceEllipsoid( srid, mk1, sp1, x0, y0, z0, w,d,h, nx,ny, arg, dist );
 	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-		double x0 = jagatof( sp2[0].c_str() ); 
-		double y0 = jagatof( sp2[1].c_str() ); 
-		double z0 = jagatof( sp2[2].c_str() ); 
-		double r = jagatof( sp2[3].c_str() );
-		double h = jagatof( sp2[4].c_str() );
-		double nx = safeget( sp2, 5 );
-		double ny = safeget( sp2, 6 );
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
 		return multiPolygon3DDistanceCone( srid, mk1, sp1, x0, y0, z0, r,h, nx,ny, arg, dist );
 	}
 	return false;
@@ -17538,11 +17337,7 @@ bool JagGeo::pointDistanceLine( int srid, double px, double py, double x1, doubl
 bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const AbaxDataString &mk2, const JagStrSplit &sp2, 
 									  const AbaxDataString& arg, double &dist )
 {
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
-
+	int start = JAG_SP_START;
 	if ( arg.caseEqual( "center" ) ) {
 		double avgx, avgy;
 		bool rc = lineStringAverage( mk2, sp2, avgx, avgy );
@@ -19107,7 +18902,7 @@ bool JagGeo::lineDistancePolygon(int srid, double x10, double y10, double x20, d
 								const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
 {
 	if ( sp2.length() < 3 ) { dist = 0.0; return false; }
-	const char *str = sp2[2].c_str();
+	const char *str = sp2[JAG_SP_START+2].c_str();
 	char *p;
 	double dx, dy;
 	get2double(str, p, ':', dx, dy );
@@ -19127,7 +18922,7 @@ bool JagGeo::line3DDistanceLineString3D(int srid, double x10, double y10, double
 	                              const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
 {
 	if ( sp2.length() < 3 ) { dist = 0.0; return false; }
-	const char *str = sp2[2].c_str();
+	const char *str = sp2[JAG_SP_START+2].c_str();
 	char *p;
 	double dx, dy, dz;
 	get3double(str, p, ':', dx, dy, dz );
@@ -19260,16 +19055,8 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
     // return true;
 
     prt(("002-----------------------------\n"));
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
-
-    int start2 = 0;
-    if ( mk2 == JAG_OJAG ) {
-        start2 = 1;
-    }
-
+	int start = JAG_SP_START;
+	int start2 = JAG_SP_START;
     if (arg.caseEqual( "center" )) {
             double px, py, px1, py1;
             lineStringAverage(mk1, sp1, px, py);
@@ -19318,10 +19105,7 @@ bool JagGeo::lineStringDistanceTriangle(int srid, const AbaxDataString &mk1, con
 	// todo003  ---------------------pass
 	// sp1.print();
 	// sp2.print();
-	int start = 0;
-	if ( mk1 == JAG_OJAG ) {
-		start = 1;
-	}
+	int start = JAG_SP_START;
 
     double dx, dy, min, max, d1, d2, d3;
 	double mind = LONG_MAX;
@@ -19364,10 +19148,7 @@ bool JagGeo::lineStringDistanceSquare(int srid, const AbaxDataString &mk1, const
 	// todo004 ----------pass
 	// sp1.print();
 	// sp2.print();
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
+	int start = JAG_SP_START;
 
     if (arg.caseEqual( "center" )) {
             double px, py;
@@ -19409,11 +19190,7 @@ bool JagGeo::lineStringDistanceRectangle(int srid, const AbaxDataString &mk1, co
 	 // sp1.print();
 	// sp2.print();
     //test1111
-
-	int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
+	int start = JAG_SP_START;
 
     if (arg.caseEqual( "center" )) {
             double px, py;
@@ -19482,10 +19259,7 @@ bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, cons
     // sp1.print();
     // sp2.print();
     //dist = 0.0;
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
+	int start = JAG_SP_START;
 
     double dx, dy, d;
     double mind = LONG_MAX;
@@ -19537,12 +19311,7 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
     // sp1.print();
     // sp2.print();
     //dist = 0.0;
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        //JAG_OJAG: column name
-        //JAG_CJAG: type in constant
-    }
+	int start = JAG_SP_START;
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
@@ -19584,8 +19353,8 @@ bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, cons
     //prt(("s10001 JAG_OJAG sp2: prnt\n" ));
     JagPolygon pgon;
     int rc;
-    int start = 0;
-    int start2 = 0;
+	int start = JAG_SP_START;
+	int start2 = JAG_SP_START;
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
@@ -19594,8 +19363,6 @@ bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, cons
     char *p2;
     //prt(("s10001 colType2=[%s]\n", colType2.c_str() ));
     //prt(("s10001 mk1=[%s]\n , mk2=[%s]\n", mk1.c_str(), mk2.c_str() ));
-    if ( mk1 == JAG_OJAG ) { start = 1; }
-    if ( mk2 == JAG_OJAG ) { start2 = 1; } 
     rc = JagParser::addPolygonData( pgon, sp2, false );
     if ( rc < 0 ) {
         return false;
@@ -19641,85 +19408,6 @@ bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, cons
     return true;
 }
 
-#if 0
-bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								     const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
-{
-    // todo008 -- finish
-    //sp1.print();
-    //sp2.print();
-    //prt(("s10001 JAG_OJAG sp2: prnt\n" ));
-    JagPolygon pgon;
-    int rc;
-    int start = 0;
-    int start2 = 0;
-    double dx, dy, d;
-    double mind = LONG_MAX;
-    double maxd = LONG_MIN;
-    const char *str;
-    char *p;
-    char *p2;
-    //prt(("s10001 colType2=[%s]\n", colType2.c_str() ));
-    //prt(("s10001 mk1=[%s]\n , mk2=[%s]\n", mk1.c_str(), mk2.c_str() ));
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
-    if ( mk2 == JAG_OJAG ) {
-        start2 = 1;
-        rc = JagParser::addPolygonData( pgon, sp2, false );
-        //prt(("s10002 rc=%d false\n", rc ));
-    } else {
-        p2 = secondTokenStart( sp2.c_str() );
-        //prt(("s10002 p2=[%s]\n", p2 ));
-        rc = JagParser::addPolygonData( pgon, p2, false, false );
-        //prt(("s10002 rc=%d false\n", rc ));
-    }
-
-
-    if ( rc < 0 ) {
-        return false;
-    }
-    //pgon.print();
-
-    if (arg.caseEqual( "center" )) {
-        double px, py;
-        lineStringAverage(mk1, sp1, px, py);
-        double cx, cy;
-        pgon.center2D(cx, cy);
-        //prt(("s10006 px=[%f] py=[%f] cx=[%f] cy=[%f]", px, py, cx, cy));
-        dist = JagGeo::distance( px, py, cx, cy, srid );
-        return true;
-    }
-
-    for ( int i=start; i < sp1.length(); ++i ) {
-        str = sp1[i].c_str();
-        if ( strchrnum( str, ':') < 1 ) continue;
-        get2double(str, p, ':', dx, dy );
-        for (int j = 0 ; j < pgon.linestr.size(); ++j){
-            prt(("linestr.size()=[%]", pgon.linestr.size()));
-            JagLineString3D &linestr = pgon.linestr[j];
-            //linestr.print();
-            for ( int k=0; k < linestr.size()-1; ++k ) {  //first point = last point,so pass
-                prt(("s10003 dx=[%f] dy=[%f] px=[%f] py=[%f]\n",linestr.point[k].x, linestr.point[k].y));
-                d = JagGeo::distance( dx, dy, linestr.point[k].x, linestr.point[k].y, srid );
-                prt(("s10003 d=[%f]\n",d));
-                if ( d > maxd ) maxd = d;
-                if ( d < mind ) mind = d;
-            }
-        }
-
-    }
-    //prt(("s10005 xsum=[%f] ysum=[%f] xsum2=[%f] ysum2=[%f]\n",  xsum, ysum, xsum2, ysum2 ));
-
-    if ( arg.caseEqual( "max" ) ) {
-        dist = maxd;
-    } else  {
-        dist = mind;
-    }
-
-    return true;
-}
-#endif
 
 // linestring3d
 bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
@@ -19729,15 +19417,8 @@ bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk
     // sp1.print();
     // sp2.print();
     //dist = 0.0;
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
-
-    int start2 = 0;
-    if ( mk2 == JAG_OJAG ) {
-        start2 = 1;
-    }
+	int start = JAG_SP_START;
+	int start2 = JAG_SP_START;
 
     double dx, dy, dz, d, dx2, dy2, dz2, d2;
     double mind = LONG_MAX;
@@ -19813,11 +19494,7 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
     prt(("--------------------lineString3DDistanceBox-----------------"));
     sp1.print();
     prt(("--------------------lineString3DDistanceBox-----------------"));
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
-
+	int start = JAG_SP_START;
     double dx, dy, dz, pd, d1, px, py, pz, maxd1, maxd2, maxd3, mind1;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
@@ -19918,10 +19595,7 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
 	// todo012 -----------------------pass
 	// sp1.print();
 	// sp2.print();
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-    }
+	int start = JAG_SP_START;
 
     double dx, dy, dz, d, d1;
     double xsum = 0, ysum = 0, zsum = 0;
@@ -19978,8 +19652,7 @@ bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1,
     prt(("013--------------------------------------------\n"));
     const char *str;
     char *p;
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
     double dx, dy, dz, dst;
     if  (arg.caseEqual("min" )){
         double mind = LONG_MAX;
@@ -20031,8 +19704,7 @@ bool JagGeo::lineString3DDistanceCone(int srid,  const AbaxDataString &mk1, cons
 	// todo013
     const char *str;
     char *p;
-    int start = 0;
-    if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
     double dx, dy, dz, d;
     if  (arg.caseEqual("min" )){
         double mind = LONG_MAX;
@@ -20077,26 +19749,13 @@ bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const 
     const char *str;
     char *p1;
     int rc;
-    int start = 0;
     double d, d1, d2, d3, mind, maxd;
     double min = LONG_MAX;
     double max = LONG_MIN;
     double xsum = 0, ysum = 0;
     long counter = 0;
 
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygonData( pgon, sp1, true );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygonData( pgon, p1, true, false );
-    }
-    if ( rc < 0 ) {
-            return false;
-    }
-	***/
-    if ( mk1 == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
     rc = JagParser::addPolygonData( pgon, sp1, true );
     if ( rc < 0 ) { return false; }
 
@@ -20154,25 +19813,9 @@ bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const
     // sp2.print();
     JagPolygon pgon;
     int rc;
-    int start = 0;
-    int start2 = 0;
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    //const char *str;
-    //const char *str2;
-	/***
-    char *p;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygonData( pgon, sp1, false );
-    }
-    else{
-        p = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygonData( pgon, p, false, false );
-    }
-	***/
-    if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addPolygonData( pgon, sp1, false );
     if ( rc < 0 ) { return false; }
 
@@ -20209,23 +19852,9 @@ bool JagGeo::polygonDistanceEllipse(int srid, const AbaxDataString &mk1, const J
     // sp2.print();
     JagPolygon pgon;
     int rc;
-    //int start = 0;
-    //double dx, dy, d;
 	double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    //const char *str;
-	/***
-    char *p;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygonData( pgon, sp1, false );
-    } else {
-        p = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygonData( pgon, p, false, false );
-    }
-	***/
-    //if ( mk1 == JAG_OJAG ) { start = 1; } 
     rc = JagParser::addPolygonData( pgon, sp1, false );
     if ( rc < 0 ) {
         return false;
@@ -20262,22 +19891,9 @@ bool JagGeo::polygonDistanceCircle(int srid, const AbaxDataString &mk1, const Ja
 {
     JagPolygon pgon;
     int rc;
-    //int start = 0;
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-	/***
-    const char *str;
-    char *p;
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygonData( pgon, sp1, false );
-    } else {
-        p = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygonData( pgon, p, false, false );
-    }
-	***/
-    //if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addPolygonData( pgon, sp1, false );
     if ( rc < 0 ) { return false; }
 
@@ -20316,39 +19932,11 @@ bool JagGeo::polygonDistancePolygon(int srid, const AbaxDataString &mk1, const J
     JagPolygon pgon2;
 
     int rc1, rc2;
-    //int start = 0;
-    //int start2 = 0;
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    //char *p1;
-    //char *p2;
-
-    //prt(("s10001 mk1=[%s]\n , mk2=[%s]\n", mk1.c_str(), mk2.c_str() ));
-
-    //Polygon1
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc1 = JagParser::addPolygonData( pgon1, sp1, false );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc1 = JagParser::addPolygonData( pgon1, p1, false, false );
-    }
-
-    //Polygon2
-    if ( mk2 == JAG_OJAG ) {
-        start2 = 1;
-        rc2 = JagParser::addPolygonData( pgon2, sp2, false );
-    } else {
-        p2 = secondTokenStart( sp2.c_str() );
-        rc2 = JagParser::addPolygonData( pgon2, p2, false, false );
-    }
-	****/
-    //if ( mk1 == JAG_OJAG ) { start = 1; } 
     rc1 = JagParser::addPolygonData( pgon1, sp1, false );
     if ( rc1 < 0 ) { return false; }
-    //if ( mk2 == JAG_OJAG ) { start2 = 1; }
     rc2 = JagParser::addPolygonData( pgon2, sp2, false );
     if ( rc2 < 0 ) { return false; }
 
@@ -20409,7 +19997,6 @@ bool JagGeo::polygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const Ja
     //const char *str;
     //char *p1;
     int rc;
-    //int start = 0;
     double d1, d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
@@ -20417,19 +20004,6 @@ bool JagGeo::polygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const Ja
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
 
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygon3DData( pgon, sp1, true );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygon3DData( pgon, p1, true, false );
-    }
-    if ( rc < 0 ) {
-            return false;
-    }
-	***/
-    //if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addPolygon3DData( pgon, sp1, true );
     if ( rc < 0 ) { return false; }
 
@@ -20476,7 +20050,6 @@ bool JagGeo::polygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const
     const char *str;
     //char *p1;
     int rc;
-    //int start = 0;
     double d1, d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
@@ -20484,16 +20057,6 @@ bool JagGeo::polygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
 
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygon3DData( pgon, sp1, true );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygon3DData( pgon, p1, true, false );
-    }
-	***/
-    //if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addPolygon3DData( pgon, sp1, true );
     if ( rc < 0 ) { return false; }
 
@@ -20536,10 +20099,7 @@ bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, co
 	// sp1.print();
 	// sp2.print();
     JagPolygon pgon;
-    //const char *str;
-    //char *p1;
     int rc;
-    //int start = 0;
     double d1, d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
@@ -20547,16 +20107,6 @@ bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, co
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
 
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygon3DData( pgon, sp1, true );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygon3DData( pgon, p1, true, false );
-    }
-	***/
-    //if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addPolygon3DData( pgon, sp1, true );
     if ( rc < 0 ) { return false; }
 
@@ -20602,27 +20152,13 @@ bool JagGeo::polygon3DDistanceCone(int srid,  const AbaxDataString &mk1, const J
 	// sp2.print();
     // dist = 0.0;
     JagPolygon pgon;
-    //const char *str;
-    //char *p1;
     int rc;
-    //int start = 0;
     double d1, d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
     double dist1;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addPolygon3DData( pgon, sp1, true );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addPolygon3DData( pgon, p1, true, false );
-    }
-	***/
-    //if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addPolygon3DData( pgon, sp1, true );
     if ( rc < 0 ) { return false; }
 
@@ -20667,24 +20203,12 @@ bool JagGeo::multiPolygonDistanceTriangle(int srid, const AbaxDataString &mk1, c
 	// todo025 problem
 	// sp1.print();
 	// sp2.print();
-    //char *p1;
     int rc;
     JagVector<JagPolygon> pgvec;
-    //int start = 0;
     double d1, d2, d3, min, max;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
 
-	/***
-	if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addMultiPolygonData( pgvec, sp1, false, false );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addMultiPolygonData( pgvec, p1, false, false, false );
-    }
-	***/
-	//if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addMultiPolygonData( pgvec, sp1, false, false );
     if ( rc <= 0 ) { return false; }
 
@@ -20744,21 +20268,10 @@ bool JagGeo::multiPolygonDistanceRectangle(int srid, const AbaxDataString &mk1, 
     //char *p1;
     int rc;
     JagVector<JagPolygon> pgvec;
-    //int start = 0;
     double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
 
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addMultiPolygonData( pgvec, sp1, false, false );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addMultiPolygonData( pgvec, p1, false, false, false );
-    }
-	***/
-    //if ( mk1 == JAG_OJAG ) { start = 1; }
     rc = JagParser::addMultiPolygonData( pgvec, sp1, false, false );
     if ( rc <= 0 ) { return false; }
 
@@ -20805,23 +20318,11 @@ bool JagGeo::multiPolygonDistanceEllipse(int srid, const AbaxDataString &mk1, co
     // todo028 -- not percise
     // sp1.print();
     // sp2.print();
-    //char *p1;
     int rc;
     JagVector<JagPolygon> pgvec;
-    //int start = 0;
     double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addMultiPolygonData( pgvec, sp1, true , false );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
-    }
-	***/
 
     rc = JagParser::addMultiPolygonData( pgvec, sp1, true , false );
     if ( rc <= 0 ) { return false; }
@@ -20864,20 +20365,9 @@ bool JagGeo::multiPolygonDistanceCircle(int srid, const AbaxDataString &mk1, con
     //char *p1;
     int rc;
     JagVector<JagPolygon> pgvec;
-    //int start = 0;
     double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start = 1;
-        rc = JagParser::addMultiPolygonData( pgvec, sp1, false, false );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc = JagParser::addMultiPolygonData( pgvec, p1, false, false, false );
-    }
-	***/
 
     rc = JagParser::addMultiPolygonData( pgvec, sp1, false, false );
     if ( rc <= 0 ) { return false; }
@@ -20924,33 +20414,10 @@ bool JagGeo::multiPolygonDistancePolygon(int srid, const AbaxDataString &mk1, co
     int rc1, rc2;
     JagVector<JagPolygon> pgvec;
     JagPolygon pgon;
-    //int start1 = 0, start2 = 0;
     double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
 
-	/***
-    if ( mk1 == JAG_OJAG ) {
-        start1 = 1;
-        rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , false );
-    } else {
-        p1 = secondTokenStart( sp1.c_str() );
-        rc1 = JagParser::addMultiPolygonData( pgvec, p1, false, false, false );
-    }
-
-    if ( mk2 == JAG_OJAG ) {
-        start2 = 1;
-        rc2 = JagParser::addPolygonData( pgon, sp2, false );
-
-    } else {
-        p2 = secondTokenStart( sp2.c_str() );
-        rc2 = JagParser::addPolygonData( pgon, p2, false, false );
-    }
-
-    if ( rc1 <= 0 || rc2 <= 0 ) {
-        return false;
-    }
-	***/
     rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , false );
 	if ( rc1 <= 0 ) { return false; }
     rc2 = JagParser::addPolygonData( pgon, sp2, false );
@@ -21004,24 +20471,11 @@ bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, con
     //	sp1.print();
 	// sp2.print();
     int rc;
-    //int start = 0;
-    //int rc1;
-    //int start1 = 0;
     double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     double dist1;
-    //char *p1;
     JagVector<JagPolygon> pgvec;
-	/***
-    if ( mk1 == JAG_OJAG ) {
-       start = 1;
-       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
-    } else {
-       p1 = secondTokenStart( sp1.c_str() );
-       rc1 = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
-    }
-	***/
     rc = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
     if ( rc <=0 ) { return false; }
 
@@ -21067,23 +20521,11 @@ bool JagGeo::multiPolygon3DDistanceBox(int srid,  const AbaxDataString &mk1, con
 	// sp1.print();
 	// sp2.print();
     int rc;
-    //int start = 0;
     int rc1;
-    int start1 = 0;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     double dist1;
-    //char *p1;
     JagVector<JagPolygon> pgvec;
-	/***
-    if ( mk1 == JAG_OJAG ) {
-       start = 1;
-       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
-    } else {
-       p1 = secondTokenStart( sp1.c_str() );
-       rc1 = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
-    }
-	***/
     rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
 	if ( rc1 <= 0 ) { return false; }
 
@@ -21127,23 +20569,11 @@ bool JagGeo::multiPolygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, 
 	// sp1.print();
 	// sp2.print();
     int rc;
-    //int start = 0;
     int rc1;
-    //int start1 = 0;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     double dist1;
-    //char *p1;
     JagVector<JagPolygon> pgvec;
-	/***
-    if ( mk1 == JAG_OJAG ) {
-       start = 1;
-       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
-    } else {
-       p1 = secondTokenStart( sp1.c_str() );
-       rc1 = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
-    }
-	***/
     rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
 	if ( rc1 <= 0 ) { return false; }
 
@@ -21174,7 +20604,6 @@ bool JagGeo::multiPolygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, 
     }
 
     if ( arg.caseEqual( "max" ) ) {
-//        prt(("dist:%f:\n",dist));
         dist = maxd + r;
     } else if(arg.caseEqual( "min" )) {
         dist = mind - r;
@@ -21192,23 +20621,11 @@ bool JagGeo::multiPolygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk
 	// sp1.print();
 	// sp2.print();
     int rc;
-    //int start = 0;
     int rc1;
-    //int start1 = 0;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     double dist1;
-    //char *p1;
     JagVector<JagPolygon> pgvec;
-	/***
-    if ( mk1 == JAG_OJAG ) {
-       start = 1;
-       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
-    } else {
-       p1 = secondTokenStart( sp1.c_str() );
-       rc1 = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
-    }
-	***/
     rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
 	if ( rc1 <= 0 ) { return false; }
 
@@ -21253,23 +20670,11 @@ bool JagGeo::multiPolygon3DDistanceCone(int srid,  const AbaxDataString &mk1, co
 	// sp1.print();
 	// sp2.print();
     int rc;
-    //int start = 0;
     int rc1;
-    //int start1 = 0;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     double dist1;
-    //char *p1;
     JagVector<JagPolygon> pgvec;
-	/***
-    if ( mk1 == JAG_OJAG ) {
-       start = 1;
-       rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
-    } else {
-       p1 = secondTokenStart( sp1.c_str() );
-       rc1 = JagParser::addMultiPolygonData( pgvec, p1, true, false, false );
-    }
-	***/
     rc1 = JagParser::addMultiPolygonData( pgvec, sp1, false , true );
 	if ( rc1 <= 0 ) { return false; }
 
@@ -21303,27 +20708,6 @@ bool JagGeo::multiPolygon3DDistanceCone(int srid,  const AbaxDataString &mk1, co
     }
     return true;
 }
-
-/***
-bool JagGeo::pointDistanceNormalEllipse(int srid, double px, double py, double w, double h, const AbaxDataString& arg, double &dist )
-{
-	// todo036
-	// sp1.print();
-	// sp2.print();
-	dist = 0.0;
-    return true;
-}
-
-bool JagGeo::point3DDistanceNormalEllipsoid(int srid, double px, double py, double pz, 
-										   double w, double d, double h, const AbaxDataString& arg, double &dist )
-{
-	// todo037
-	// sp1.print();
-	// sp2.print();
-	dist = 0.0;
-    return true;
-}
-***/
 
 bool JagGeo::point3DDistanceNormalCone(int srid, double px, double py, double pz, 
 									 double r, double h, const AbaxDataString& arg, double &dist )
@@ -21424,8 +20808,7 @@ double JagGeo::meterToLat( int srid, double meter, double lon, double lat)
 
 bool JagGeo::lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y )
 {
-	int start = 0;
-	if ( mk == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
 
 	double dx, dy;
     double xsum = 0.0, ysum = 0.0;
@@ -21455,8 +20838,7 @@ bool JagGeo::lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp,
 
 bool JagGeo::lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z )
 {
-	int start = 0;
-	if ( mk == JAG_OJAG ) { start = 1; }
+	int start = JAG_SP_START;
 
 	double dx, dy, dz;
     double xsum = 0.0, ysum = 0.0, zsum = 0.0;
@@ -22284,9 +21666,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -381; } }
 		if ( sp.length() == 3 ) {
-			outstr = AbaxDataString("CJAG=0=0=PT3=d ") + sp[0] + " " + sp[1] + " " + sp[2];
+			outstr = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
 		} else if ( sp.length() == 2 ) {
-			outstr = AbaxDataString("CJAG=0=0=PT=d ") + sp[0] + " " + sp[1];
+			outstr = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp[0] + " " + sp[1];
 		} else {
 			outstr = "";
 			return -9;
@@ -22298,7 +21680,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 3 ) { return -30; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -382; } }
-		outstr = AbaxDataString("CJAG=0=0=CR=d ") + sp[0] + " " + sp[1] + " " + sp[2];
+		outstr = AbaxDataString("CJAG=0=0=CR=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
 	} else if ( strncasecmp( p, "square(", 7 )==0 ) {
 		while ( *p != '(' ) ++p; ++p;  // (p
 		if ( *p == 0 ) return -20;
@@ -22307,9 +21689,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() < 3 ) { return -30; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -383; } }
 		if ( sp.length() <= 3 ) {
-			outstr = AbaxDataString("CJAG=0=0=SQ=d ") + sp[0] + " " + sp[1] + " " + sp[2] + " 0.0";
+			outstr = AbaxDataString("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " 0.0";
 		} else {
-			outstr = AbaxDataString("CJAG=0=0=SQ=d ") + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+			outstr = AbaxDataString("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
 		}
 	} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
 		// cube( x y z radius )   inner circle radius
@@ -22325,7 +21707,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 4 ) { return -32; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -384; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		if ( othertype == JAG_C_COL_TYPE_CUBE ) {
 			AbaxDataString nx, ny;
 			if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
@@ -22347,7 +21729,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 4 ) { return -42; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -385; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		AbaxDataString nx, ny;
 		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
 		if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
@@ -22365,7 +21747,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 4 ) { return -46; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -386; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		AbaxDataString nx;
 		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
 		outstr += nx;
@@ -22382,7 +21764,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 5 ) { return -48; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -387; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " ";
 		AbaxDataString nx, ny;
 		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
@@ -22402,7 +21784,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 6 ) { return -49; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -388; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
 		AbaxDataString nx, ny;
 		if ( sp.length() >= 7 ) { nx = sp[6]; } else { nx="0.0"; }
@@ -22422,7 +21804,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 5 ) { return -52; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -390; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4];
 		AbaxDataString nx, ny;
 		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
@@ -22437,7 +21819,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 4 ) { return -55; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -391; } }
 		othertype =  JAG_C_COL_TYPE_LINE;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
 	} else if ( strncasecmp( p, "line3d(", 7 )==0 ) {
 		// line3d(x1 y1 z1 x2 y2 z2)
 		while ( *p != '(' ) ++p; ++p;  // (p
@@ -22447,13 +21829,13 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 6 ) { return -57; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -440; } }
 		othertype =  JAG_C_COL_TYPE_LINE3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
 	} else if ( strncasecmp( p, "linestring(", 11 )==0 ) {
 		while ( *p != '(' ) ++p;  ++p;
 		if ( *p == 0 ) return -64;
 		othertype =  JAG_C_COL_TYPE_LINESTRING;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
@@ -22467,7 +21849,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -65;
 		othertype =  JAG_C_COL_TYPE_LINESTRING3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
@@ -22481,7 +21863,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p;  ++p;
 		if ( *p == 0 ) return -67;
 		othertype =  JAG_C_COL_TYPE_MULTIPOINT;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
@@ -22495,7 +21877,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -68;
 		othertype =  JAG_C_COL_TYPE_MULTIPOINT3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
@@ -22509,7 +21891,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -72;
 		othertype =  JAG_C_COL_TYPE_POLYGON;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
 		//rc = JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose );
 		AbaxDataString pgonstr;
 		rc = JagParser::addPolygonData( pgonstr, p, false, true );
@@ -22521,7 +21903,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -73;
 		othertype =  JAG_C_COL_TYPE_POLYGON3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
 		AbaxDataString pgonstr;
 		rc = JagParser::addPolygon3DData( pgonstr, p, false, true );
 		if ( rc <= 0 ) return rc; 
@@ -22531,7 +21913,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		prt(("s3834 multipolygon( p=[%s]\n", p ));
 		while ( *p != '(' ) ++p;  // p: "( ((...), (...), (...)), (...), ... )
 		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
 		AbaxDataString mgon;
 		rc = JagParser::addMultiPolygonData( mgon, p, false, false, false );
 		prt(("s3238 addMultiPolygonData mgon=[%s] rc=%d\n", mgon.c_str(), rc ));
@@ -22542,7 +21924,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
 		while ( *p != '(' ) ++p;  // "(p ((...), (...), (...)), (...), ... ) 
 		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
 		AbaxDataString mgon;
 		rc = JagParser::addMultiPolygonData( mgon, p, false, true, true );
 		if ( rc <= 0 ) return rc; 
@@ -22553,6 +21935,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -74;
 		othertype =  JAG_C_COL_TYPE_MULTILINESTRING;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
 		AbaxDataString pgonstr;
 		rc = JagParser::addPolygonData( pgonstr, p, false, false );
 		if ( rc <= 0 ) return rc; 
@@ -22563,6 +21946,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -78;
 		othertype =  JAG_C_COL_TYPE_MULTILINESTRING3D;
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
 		AbaxDataString pgonstr;
 		rc = JagParser::addPolygon3DData( pgonstr, p, false, false );
 		if ( rc <= 0 ) return rc; 
@@ -22576,7 +21960,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 6 ) { return -387; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -318; } }
 		othertype =  JAG_C_COL_TYPE_TRIANGLE;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
 	} else if ( strncasecmp( p, "triangle3d(", 11 )==0 ) {
 		// triangle3d(x1 y1 z1 x2 y2 z2 x3 y3 z3 )
@@ -22587,7 +21971,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 9 ) { return -390; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -3592; } }
 		othertype =  JAG_C_COL_TYPE_TRIANGLE3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5] + " " + sp[6] + " " + sp[7] + " " + sp[8];
 	}
 
@@ -22963,9 +22347,11 @@ AbaxDataString JagGeo::doPointAddition( int srid1, const JagStrSplit &sp1, const
 {
 	AbaxDataString val;
 	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		val = AbaxDataString("CJAG=0=0=LN=d ") + sp1[1] + " " + sp1[2] + " " + sp2[1] + " " + sp2[2]; 
+		val = AbaxDataString("CJAG=0=0=LN=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " 
+		        + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1]; 
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		val = AbaxDataString("CJAG=0=0=LS=d ") + sp1[1] + ":" + sp1[2] + " " + sp2[1] + ":" + sp2[2] + " " + sp2[3] + ":" + sp2[4];
+		val = AbaxDataString("CJAG=0=0=LS=d ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " 
+		        + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3];
 	} else {
 	}
 
@@ -22977,9 +22363,12 @@ AbaxDataString JagGeo::doPoint3DAddition( int srid1, const JagStrSplit &sp1, con
 {
 	AbaxDataString val;
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		val = AbaxDataString("CJAG=0=0=LN=d ") + sp1[1] + " " + sp1[2] + " " + sp2[1] + " " + sp2[2]; 
+		val = AbaxDataString("CJAG=0=0=LN3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1]  +" " + sp1[JAG_SP_START+2]
+					+ " " + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		val = AbaxDataString("CJAG=0=0=LS=d ") + sp1[1] + ":" + sp1[2] + " " + sp2[1] + ":" + sp2[2] + " " + sp2[3] + ":" + sp2[4];
+		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2] + " " 
+		   + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2] + " "
+		   + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5];
 	} else {
 	}
 
@@ -23009,10 +22398,7 @@ AbaxDataString JagGeo::doLine3DAddition( int srid1, const JagStrSplit &sp1, cons
 AbaxDataString JagGeo::lineAdditionLineString( double x10, double y10, double x20, double y20,
 							          const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
+	int start = JAG_SP_START;
 
 	return "";
 }
@@ -23023,10 +22409,7 @@ AbaxDataString JagGeo::line3DAdditionLineString3D( double x10, double y10, doubl
 							          const AbaxDataString &mk2, const JagStrSplit &sp2)
 {
 	// 2 points are some two neighbor points in sp2
-	int start = 0;
-	if ( mk2 == JAG_OJAG ) {
-		start = 1;
-	}
+	int start = JAG_SP_START;
 
 	return "";
 }
@@ -23035,9 +22418,9 @@ AbaxDataString JagGeo::line3DAdditionLineString3D( double x10, double y10, doubl
 AbaxDataString JagGeo::lineString3DAdditionLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
 			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
-	int start1 = 0;
+	int start1 = JAG_SP_START;
 	if ( mk1 == JAG_OJAG ) { start1 = 1; }
-	int start2 = 0;
+	int start2 = JAG_SP_START;
 	if ( mk2 == JAG_OJAG ) { start2 = 1; }
 
 	return false;

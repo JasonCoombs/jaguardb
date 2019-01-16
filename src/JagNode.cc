@@ -33,6 +33,7 @@ JagNode::~JagNode()
 	this->destroy();
 }
 
+#if 0
 // PASS: password; PERM: role:  READ/WRITE  READ: read-only    WRITE: read and write
 // PERM:  ADMIN or USER
 bool JagNode::addNode( const AbaxString &nodeid, const AbaxString& usedGB, const AbaxString& freeGB )
@@ -41,7 +42,7 @@ bool JagNode::addNode( const AbaxString &nodeid, const AbaxString& usedGB, const
 	char buf[32];
 	sprintf( buf, "%lld", time(NULL) );
 
-	JagRecord  record;
+	//JagRecord  record;
 	record.addNameValue( JAG_USED, usedGB.c_str() );
 	record.addNameValue( JAG_FREE, freeGB.c_str() );
 	record.addNameValue( JAG_REG,  buf );
@@ -66,6 +67,7 @@ bool JagNode::dropNode( const AbaxString &nodeid )
 {
 	return this->dropKey( nodeid ); 
 }
+#endif
 
 AbaxDataString JagNode::getListNodes()
 {

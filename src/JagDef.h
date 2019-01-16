@@ -723,4 +723,6 @@
 // max number of points to be sent to client for unspecified points
 #define JAG_MAX_POINTS_SENT  3000
 
+#define  JAG_SP_START  2
+
 #endif

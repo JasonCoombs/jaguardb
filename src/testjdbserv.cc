@@ -232,7 +232,7 @@ int main(int argc, char *argv[] )
 
 	// test_misc();
 	//testjson();
-	//testrayrecord();
+	testrayrecord();
 	//testwheretree();
 	//testtime();
 	//testlaststr();
@@ -296,7 +296,7 @@ int main(int argc, char *argv[] )
 	//test_linefile( N );
 	//test_json( N );
 	//test_distance();
-	test_cgal();
+	// test_cgal();
 	//test_new( N );
 	//test_equation();
 }
@@ -355,9 +355,10 @@ void testjson()
 
 void testrayrecord()
 {
-	int max = 200000;
+	int max = 200;
 
 	time_t t1 = time(NULL);
+	/***
 	for ( int i = 0; i < max ; ++i ) {
 		JagRecord root;  
 		root.addNameValue("uid", "u849494944949494");
@@ -368,15 +369,18 @@ void testrayrecord()
 	}
 	time_t t2 = time(NULL);
 	printf("write rayrecord %d rows used %d seconds\n", max, t2-t1 );
+	***/
 
-		JagRecord root;  
-		root.addNameValue("uid", "u849494944949494");
-		root.addNameValue("key", "kdk38393jffjfrj");
-		root.addNameValue("addr", "123 djkdfd  blvd, cr kdk38393jffjfrj");
-		root.addNameValue("age", "40");
-		root.addNameValue("score", "90");
+	JagRecord root;  
+	//root.addNameValue("uid", "u849494944949494");
+	//root.addNameValue("key", "kdk38393jffjfrj");
+	//root.addNameValue("addr", "123 djkdfd  blvd, cr kdk38393jffjfrj");
+	//root.addNameValue("age", "40");
+	int c = root.addNameValue("score", "90");
+	prt(("s1118 add score->90 rc=%d\n", c ));
 	t1 = time(NULL);
 	char *p;
+	/**
 	for ( int i = 0; i < max ; ++i ) {
 		p = root.getValue("uid");
 		free( p );
@@ -391,7 +395,13 @@ void testrayrecord()
 	}
 	t2 = time(NULL);
 	printf("read rayrecord %d rows used %d seconds\n", max, t2-t1 );
+	***/
 
+	p = root.getValue("score");
+	prt(("s1028 score=[%s] src=[%s]\n", p, root.getSource() ));
+	if ( p) free(p);
+
+	#if 0
 	using namespace rapidjson;
 	StringBuffer s;
 	Writer<StringBuffer> writer(s);
@@ -418,6 +428,7 @@ void testrayrecord()
 	writer.EndArray();   
 
 	//cout << s.GetString() << endl;
+	#endif
 
 	/**
 	JagRecord rec2;
@@ -427,6 +438,17 @@ void testrayrecord()
 	rec2.toJSON();
 	rec2.print();
 	**/
+	JagRecord rec;
+	AbaxDataString n = "innerrings(polygon((0 0, 22 44, 98 12, 0 0), (9 3 , 9 0, 82 83, 9 3 )))";
+	//AbaxDataString n = "innerrings(polygon((0 0, 22 44,";
+	AbaxDataString v = "CJAG=0=0=PL=d 9.0:0.0:82.0:83.0 9.0:3.0 9.0:0.0 82.0:83.0 9.0:3.0";
+	int nc = rec.addNameValue( n.c_str(), v.c_str() );
+	prt(("s1728 nc=%d\n",  nc ));
+	prt(("s1728 src=[%s]\n", rec.getSource() ));
+
+	p = root.getValue( n.c_str() );
+	prt(("s2831 n=[%s]  v=[%s]\n", n.c_str(), v.c_str() ));
+	if (p) free(p);
 
 }
 

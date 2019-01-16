@@ -23,8 +23,6 @@
 #include <string.h>
 #include <malloc.h>
 #include <sstream>
-
-//#include <json/json.h>
 #include "JagRecord.h"
 #include "JagUtil.h"
 
@@ -74,36 +72,44 @@ JagRecord::~JagRecord ( )
 }
 
 // private method
-void JagRecord::makeNewRecLength( const char *name, int n1,  const char *value, int n2 )
+int JagRecord::makeNewRecLength( const char *name, int n1,  const char *value, int n2 )
 {
 	char *pnew;
 	int len;
 	int hdrsize;
-	char buf128[128];
+	//char buf256[256];
+	AbaxDataString buf256str;
+	char buf[32];
 
-	if ( n1 > FREC_MAX_NAME_LEN ) return;
+	//if ( n1 > FREC_MAX_NAME_LEN ) return -2089;
 	if ( _record ) {
 		free ( _record );
+		_record = NULL;
 	}
-	_record = NULL;
 
-	// len = n1 + 32 + n2; 
 	len = 10 + n1 + 32 + n2; 
 	pnew = (char*)jagmalloc( len );
 	memset(pnew, 0, len );
 
 	// name:start+length^value
 	// name:0+strlen(value)^value
-	memset(buf128, 0, 128);
-	sprintf(buf128, "%s:0+%06d", name, n2 ); 
-	hdrsize = strlen(buf128);  // hdrsize
+	/**
+	memset(buf256, 0, 256);
+	sprintf(buf256, "%s:0+%06d", name, n2 ); 
+	hdrsize = strlen(buf256);  // hdrsize
+	***/
+	sprintf(buf, "%06d", n2 );
+	buf256str = AbaxDataString(name) + ":0+" + buf;
+	hdrsize = buf256str.size();
 
 	// fixhead
-	// sprintf(pnew, "%06d#%06d,%s^%s", n, n2, buf128, value );
+	// sprintf(pnew, "%06d#%06d,%s^%s", n, n2, buf256, value );
 	int len2 = 6+1+6+1 + hdrsize + 1 + n2; 
-	sprintf(pnew, "  %08d%06d#%06d,%s^%s", len2, hdrsize, n2, buf128, value );
-
+	//sprintf(pnew, "  %08d%06d#%06d,%s^%s", len2, hdrsize, n2, buf256, value );
+	// sprintf(pnew, "  %08d%06d#%06d%c%s^%s", len2, hdrsize, n2, FREC_COMMA, buf256, value );
+	sprintf(pnew, "  %08d%06d%c%06d%c%s%c%s", len2, hdrsize, FREC_VAL_SEP, n2, FREC_COMMA, buf256str.c_str(), FREC_HDR_END, value );
 	_record = pnew;
+	return 0;
 }
 
 // private
@@ -116,64 +122,69 @@ int JagRecord::getNameStartLen( const char *name, int namelen, int *colstart, in
 	int index;
 	char *p;
 	char *start;
-	char startpos[FREC_STR_MAX_LEN];
-	char poslen[FREC_STR_MAX_LEN];
-	int  i;
-	char buf128[128];
-
-	if ( name == NULL || *name == '\0' )
-	{
+	//char startpos[FREC_STR_MAX_LEN];
+	//char poslen[FREC_STR_MAX_LEN];  // FREC_STR_MAX_LEN=128
+	AbaxDataString startposstr;
+	AbaxDataString poslenstr;;
+	//int  i;
+	//char buf256[256];
+	if ( name == NULL || *name == '\0' ) {
 		*colstart = *collen = 0;
 		return 0;
 	}
+	AbaxDataString buf256;
 
-	if (namelen > FREC_MAX_NAME_LEN ) return -100;
+	//if (namelen > FREC_MAX_NAME_LEN ) return -100;
+	/**
+	memset( buf256, 0, 256); 
+	//strncat(buf256, ",", 1);
+	strncat(buf256, FREC_COMMA_STR, 1);
+	strncat(buf256, name, namelen);
+	strncat(buf256, ":", 1);
+	**/
+	buf256 = FREC_COMMA_STR;
+	buf256 += AbaxDataString(name, namelen );
+	buf256 += ":";
 
-	memset( buf128, 0, 128); 
-	strncat(buf128, ",", 1);
-	strncat(buf128, name, namelen);
-	strncat(buf128, ":", 1);
-
-
-	// index = str_str_ch( _record, FREC_HDR_END, buf128 );
-	index = str_str_ch( _record+10, FREC_HDR_END, buf128 );
-
-	if ( index < 0 ) 
-	{
+	// index = str_str_ch( _record, FREC_HDR_END, buf256 );
+	index = str_str_ch( _record+10, FREC_HDR_END, buf256.c_str() );
+	if ( index < 0 ) {
 		return -2;
 	}
 
 	// start = (char*)( _record + index + 1 + namelen + 1); // 1st:1 is to pass; 2nd 1 is to point to once byte after :
 	start = (char*)( _record + 10 + index + 1 + namelen + 1); // 1st:1 is to pass; 2nd 1 is to point to once byte after :
-	memset(startpos, 0, FREC_STR_MAX_LEN);
-	memset(poslen, 0, FREC_STR_MAX_LEN);
+
+	//memset(startpos, 0, FREC_STR_MAX_LEN);
+	//memset(poslen, 0, FREC_STR_MAX_LEN);
 
 	//if ( debug ) { printf("start=[%s]\n", start ); }
 
 	// name1:mm+nn,name2:mm+nn,name3:mmm+nnn^value1#value2#value3
 	// name1:mm+nn,name2:mm+nn,name3:mmm+nnn,^value1#value2#value3
 	// start point to mm+nn[,|^]
-	i = 0;
-	for( p= start; (*p != '+' ) && ( *p!='\0'); p++ )
-	{
-		startpos[i++] = *p;
-		if ( i > FREC_STR_MAX_LEN ) 
-		{
+	//i = 0;
+	for( p= start; *p != '+' && *p!='\0'; p++ ) {
+		//startpos[i++] = *p;
+		startposstr += *p;
+		/***
+		if ( i > FREC_STR_MAX_LEN ) {
 			//if ( debug ) { printf("startpos too large name=[%s] namelen=%d \n", name, namelen ); }
 			return -3; // too large
 		}
+		***/
 	}
 
-	if ( *p != '+' )
-	{
+	//prt(("s2129  startposstr=[%s]\n", startposstr.c_str() ));
+
+	if ( *p != '+' ) {
 		// if ( debug ) { printf("no + sign \n"); }
 		return -4;  // strucure error, not found
 	}
-
-	*colstart = atoi( startpos );
+	// *colstart = atoi( startpos );
+	*colstart = jagatoi( startposstr.c_str() );
 	/**
-	if ( debug )
-	{
+	if ( debug ) {
 		printf("startpos=[%s] colstart=[%d]\n", startpos, *colstart );
 	}
 	**/
@@ -182,19 +193,25 @@ int JagRecord::getNameStartLen( const char *name, int namelen, int *colstart, in
 
 	// if ( debug ) { printf("now p=[%s]\n", p ); }
 
-	i = 0;
-	while ( (*p != ',') && ( *p != FREC_HDR_END ) && ( *p != '\0' ) )
-	{
+	//i = 0;
+	//while ( (*p != ',') && ( *p != FREC_HDR_END ) && ( *p != '\0' ) )
+	while ( (*p != FREC_COMMA ) && ( *p != FREC_HDR_END ) && ( *p != '\0' ) ) {
+		poslenstr += *p;
+		/***
 		poslen[i++] = *p;
-		if ( i > FREC_STR_MAX_LEN ) 
-		{
+		if ( i > FREC_STR_MAX_LEN ) {
 			// if ( debug ) { printf("poslen too large i=%d poslen=[%s] name=[%s] namelen=%d \n", i, poslen, name, namelen ); }
 			return -5; // too large
 		}
+		***/
 		p++;
 	}
 
-	*collen = atoi( poslen );
+	//*collen = atoi( poslen );
+	//prt(("s2123  poslenstr=[%s]\n", poslenstr.c_str() ));
+	*collen = jagatoi( poslenstr.c_str() );
+
+	//prt(("s61029 name=[%s] colstart=%d  collen=%d\n", name, *colstart, *collen ));
 
 	return 0;
 }
@@ -206,57 +223,56 @@ int JagRecord::getNameStartLen( const char *name, int namelen, int *colstart, in
 // int getSize(const char *record, int *hdrsize, int *valsize )
 int JagRecord::getSize( int *hdrsize, int *valsize )
 {
-
 	char *p;
-	char lenbuf[FREC_STR_MAX_LEN];
-	int i;
-
+	//char lenbuf[FREC_STR_MAX_LEN];
+	AbaxDataString lenbufstr;
+	//int i;
 	// uncompress();
-
-	memset(lenbuf, 0, FREC_STR_MAX_LEN );
+	//memset(lenbuf, 0, FREC_STR_MAX_LEN );
 	// p = _record;
 	p = _record+10;
-	i = 0;
-	while ( (*p !=  FREC_VAL_SEP ) && *p != '\0' )
-	{
+	//i = 0;
+	while ( (*p !=  FREC_VAL_SEP ) && *p != '\0' ) {
+		/**
 		if ( i > FREC_STR_MAX_LEN ) { return -1; }
-
 		lenbuf[i++] = *p;
+		**/
+		lenbufstr += *p;
 		p++;
 	}
 
-	if ( *p != FREC_VAL_SEP ) 
-	{
+	if ( *p != FREC_VAL_SEP ) {
 		*hdrsize = 0;
 		*valsize = 0;
 		return -2;
 	}
 
 	// printf("s23232 keys lenbuf=[%s] _record=[%s]\n", lenbuf, _record );
-	*hdrsize = atoi(lenbuf);
+	//*hdrsize = atoi(lenbuf);
+	*hdrsize = jagatoi(lenbufstr.c_str());
 
 	// look for total size
-	memset(lenbuf, 0, FREC_STR_MAX_LEN );
+	//memset(lenbuf, 0, FREC_STR_MAX_LEN );
+	lenbufstr = "";
 	p++;
-	i = 0;
-	while ( (*p != FREC_COMMA ) && *p != '\0' )
-	{
-		if ( i > FREC_STR_MAX_LEN ) { return -4; }
-
-		lenbuf[i++] = *p;
+	//i = 0;
+	while ( (*p != FREC_COMMA ) && *p != '\0' ) {
+		//if ( i > FREC_STR_MAX_LEN ) { return -4; }
+		//lenbuf[i++] = *p;
+		lenbufstr += *p;
 		p++;
 	}
 
-	if ( *p != FREC_COMMA ) 
-	{
+	if ( *p != FREC_COMMA ) {
 		*hdrsize = 0;
 		*valsize = 0;
 		return -5;
 	}
 
 	// printf("s23234 val lenbuf=[%s]\n", lenbuf );
-	*valsize = atoi(lenbuf);
-
+	//*valsize = atoi(lenbuf);
+	*valsize = jagatoi(lenbufstr.c_str() );
+	//prt(("s1723 hdrsize=%d valsize=%d\n", *hdrsize, *valsize ));
 	return 0;
 }
 
@@ -270,7 +286,6 @@ size_t JagRecord::getLength()
 
 	size_t  len = 0;
 	// CZnnnnnnnn666666#666666,
-
 	/*********
 	int hdrsize, valsize;
 	hdrsize = valsize = 0;
@@ -301,21 +316,20 @@ size_t JagRecord::getLength()
 // int getAllNameValues(const char *record, char *names[],  char *values[], int *len )
 int JagRecord::getAllNameValues( char *names[],  char *values[], int *len )
 {
+	//int i;
+	//char *pname; 
+	//char *pvalue; 
+	//char buf[FREC_MAX_NAME_LEN];
 	char *p;
-	int i;
-	char *pname; 
-	char *pvalue; 
-	char buf[FREC_MAX_NAME_LEN];
-	int startposi[FREC_MAX_NAMES];
-	int posleni[FREC_MAX_NAMES];
-	char valbuf[FREC_STR_MAX_LEN];
+	int  startposi[FREC_MAX_NAMES];
+	int  posleni[FREC_MAX_NAMES];
+	//char valbuf[FREC_STR_MAX_LEN];
 	int  donenames = 0;
-	int   total = 0;
-	int   hdrsize, valsize;
+	int  total = 0;
+	int  hdrsize, valsize;
 
 	//#define FREC_MAX_NAMES 64
 	//#define FREC_MAX_NAME_LEN 64
-
 	// i = uncompress();
 	// printf("after uncompress rc=%d\n", i );
 
@@ -323,160 +337,165 @@ int JagRecord::getAllNameValues( char *names[],  char *values[], int *len )
 	*len = 0;
 
 	// names is array of maxsize 
-	memset(valbuf, 0, FREC_STR_MAX_LEN);
-	i = 0;
+	AbaxDataString valbufstr;
+	//memset(valbuf, 0, FREC_STR_MAX_LEN);
+	//i = 0;
 	// for ( p = _record;  (*p != FREC_VAL_SEP ) && *p != '\0'; p++ )
-	for ( p = _record+10;  (*p != FREC_VAL_SEP ) && *p != '\0'; p++ )
-	{
-		if ( i>=FREC_STR_MAX_LEN )
-		{
+	for ( p = _record+10;  (*p != FREC_VAL_SEP ) && *p != '\0'; p++ ) {
+		/**
+		if ( i>=FREC_STR_MAX_LEN ) {
 			//debug
 			// printf("c3949 i=%d > %d return -1\n", i, FREC_STR_MAX_LEN );
 			return -1;
 		}
-
-		valbuf[i++] = *p;
+		***/
+		//valbuf[i++] = *p;
+		valbufstr += *p;
 	}
 
-	if ( *p != FREC_VAL_SEP )
-	{
+	if ( *p != FREC_VAL_SEP ) {
 		// printf("c3963 -1 \n");
 		return -1;
 	}
-	hdrsize = atoi( valbuf );
-
+	//hdrsize = atoi( valbuf );
+	hdrsize = jagatoi( valbufstr.c_str() );
 
 	p++;
-	memset(valbuf, 0, FREC_STR_MAX_LEN);
-	i = 0;
-	while ( (*p != FREC_COMMA ) && *p != '\0' )
-	{
-		if ( i>=FREC_STR_MAX_LEN ) return -1;
-		valbuf[i++] = *p;
+	//memset(valbuf, 0, FREC_STR_MAX_LEN);
+	valbufstr = "";
+	//i = 0;
+	while ( (*p != FREC_COMMA ) && *p != '\0' ) {
+		//if ( i>=FREC_STR_MAX_LEN ) return -1;
+		//valbuf[i++] = *p;
+		valbufstr += *p;
 		p++;
 	}
 
-	if ( *p != FREC_COMMA )
-	{
+	if ( *p != FREC_COMMA ) {
 		//printf("c3961 -1 \n");
 		return -2;
 	}
 
 	// if ( debug ) printf("valsize valbuf=[%s]\n", valbuf );
-	valsize = atoi( valbuf );
+	//valsize = atoi( valbuf );
+	valsize = jagatoi( valbufstr.c_str() );
 
 	p++; // past second  #
 
     // get all names and positions
-	while ( ( *p != FREC_HDR_END ) && (*p != '\0')  )
-	{
+	AbaxDataString bufstr;
+	valbufstr = "";
+	while ( ( *p != FREC_HDR_END ) && (*p != '\0')  ) {
 		donenames = 0;
 
 		// work with one name/value
-		memset(buf, 0, FREC_MAX_NAME_LEN  );
-		i = 0;
-		while ( *p != ':' && *p != '\0' )
-		{
+		//memset(buf, 0, FREC_MAX_NAME_LEN  );
+		bufstr = "";
+		//i = 0;
+		while ( *p != ':' && *p != '\0' ) {
+			/**
 			if ( i>=FREC_MAX_NAME_LEN )
 			{
 				//printf("c3961 error -1 \n");
 				return -3;
 			}
+			**/
 
-			buf[i++] = *p;
+			//buf[i++] = *p;
+			bufstr += *p;
 			p++;
 		}
 
-		if ( *p != ':' )
-		{
+		if ( *p != ':' ) {
 			return -4;
 		}
 
 		// if ( *len  >= FREC_MAX_NAMES  )
-		if ( total  >= FREC_MAX_NAMES  )
-		{
+		if ( total  >= FREC_MAX_NAMES  ) {
 			return -5;
 		}
 
-		names[total] = strdup(buf);
+		//names[total] = strdup(buf);
+		names[total] = strdup(bufstr.c_str());
 		// 21#234#name1:mm+nn,name2:mm+nn,name3:mmm+nnn^value1#value2#value3
 
 		p++;  // past :
 
-		memset(valbuf, 0, FREC_STR_MAX_LEN);
-		i = 0;
-		while ( *p != '+' && *p != '\0' )
-		{
+		//memset(valbuf, 0, FREC_STR_MAX_LEN);
+		valbufstr = "";
+		//i = 0;
+		while ( *p != '+' && *p != '\0' ) {
+			/**
 			if ( i>=FREC_STR_MAX_LEN )
 			{
 				return -6;
 			}
+			**/
 
-			valbuf[i++] = *p;
+			// valbuf[i++] = *p;
+			valbufstr += *p;
 			p++;
 		}
 
-		if ( *p != '+' )
-		{
+		if ( *p != '+' ) {
 			return -7;
 		}
 
-		startposi[total] = atoi(valbuf);  // got start position
+		//startposi[total] = atoi(valbuf);  // got start position
+		startposi[total] = atoi(valbufstr.c_str() );  // got start position
 
 		p++; // pas '+'
 
-		memset(valbuf, 0, FREC_STR_MAX_LEN);
-		i = 0;
-		while ( *p != ',' && *p != FREC_HDR_END && *p != '\0' )
-		{
-			valbuf[i++] = *p;
+		// memset(valbuf, 0, FREC_STR_MAX_LEN);
+		valbufstr = "";
+		//i = 0;
+		//while ( *p != ',' && *p != FREC_HDR_END && *p != '\0' )
+		while ( *p != FREC_COMMA && *p != FREC_HDR_END && *p != '\0' ) {
+			//valbuf[i++] = *p;
+			valbufstr += *p;
 			p++;
+			/**
 			if ( i>=FREC_STR_MAX_LEN )
 			{
 				return -8;
 			}
+			**/
 		}
 
-		if ( *p == FREC_HDR_END )
-		{
+		if ( *p == FREC_HDR_END ) {
 			donenames = 1;
 		}
 
-		if ( *p == '\0' )
-		{
+		if ( *p == '\0' ) {
 			return -8;
 		}
 
-
-		posleni[total] = atoi(valbuf);  // got length
+		//posleni[total] = atoi(valbuf);  // got length
+		posleni[total] = atoi(valbufstr.c_str());  // got length
 
 		total ++;
 		p++;
 
-		if ( donenames )
-		{
+		if ( donenames ) {
 			break;
 		}
 
-		if ( total >= JAG_GETALL_VALUE_MAX ) 
-		{
+
+		//if ( total >= JAG_GETALL_VALUE_MAX ) 
+		if ( total >= FREC_MAX_NAMES-1 ) {
 			break;
 		}
-
 	}
 
 	// find value strings
-	for (i = 0; i < total; i++)
-	{
+	for (int i = 0; i < total; i++) {
 		values[i] = getValueFromPosition( startposi[i], posleni[i], hdrsize, valsize );
-		if ( ! values[i] )
-		{
+		if ( ! values[i] ) {
 			return -12;
 		}
 	}
 
 	*len = total;
-
 	return 0;
 }
 
@@ -498,8 +517,7 @@ char * JagRecord::getValueFromPosition( int start, int len, int hdrsize, int val
 	}
 	**/
 
-	if ( ( start + len ) > valsize )
-	{
+	if ( ( start + len ) > valsize ) {
 		return NULL; 
 	}
 
@@ -520,14 +538,12 @@ char * JagRecord::getValueFromPosition( int start, int len, int hdrsize, int val
 
 	// if ( debug ) { //printf("new pstart=[%s] start=%d len=%d\n", pstart, start, len ); }
 
-	for ( i = start; i< start + len; i++)
-	{
+	for ( i = start; i< start + len; i++) {
 		*p = pstart[i]; 
 		p++;
 	}
 
 	// if ( debug ) { printf("pd=[%s]\n\n", pd ); }
-
 	return pd;
 }
 
@@ -581,28 +597,27 @@ bool JagRecord::remove ( const char *name )
 	memset( pval, 0, oldlen + 1 );
 
 	relpos = 0;
-	for (i=0; i<len; i++ )
-	{
+	for (i=0; i<len; i++ ) {
 		if ( 0 == strcmp( name, names[i] ) ) {
 			continue;
 		}
 
 		memset( sizebuf, 0, 32 );
-
 		namelen = strlen( names[i] );
 		vallen = strlen( vals[i] );
 
 		strcat( phdr, names[i] );
-		sprintf( sizebuf, ":%06d+%06d,", relpos, vallen ); 
+		//sprintf( sizebuf, ":%06d+%06d,", relpos, vallen ); 
+		sprintf( sizebuf, ":%06d+%06d%c", relpos, vallen, FREC_COMMA ); 
 		strcat( phdr, sizebuf); 
 
 		// if ( debug ) { printf("namelen=%d vallen=%d\n", namelen, vallen ); printf("phdr=%s\n", phdr ); }
 
 		strcat( pval, vals[i] );
-		strcat( pval, "#");
+		//strcat( pval, "#");
+		strcat( pval, FREC_VAL_SEP_STR );
 
 		// if ( debug ) printf("pval=%s\n", pval );
-
 		relpos += vallen + 1;
 	}
 
@@ -615,7 +630,9 @@ bool JagRecord::remove ( const char *name )
 	// sprintf( pnew, "%06d#%06d,%s^%s", hdrsize, valsize, phdr, pval );
 	// sprintf( pnew, "  %06d#%06d,%s^%s", hdrsize, valsize, phdr, pval );
 	int len2 = 6+1+6+1 +hdrsize + 1 + valsize; 
-	sprintf( pnew, "  %08d%06d#%06d,%s^%s", len2, hdrsize, valsize, phdr, pval );
+	//sprintf( pnew, "  %08d%06d#%06d,%s^%s", len2, hdrsize, valsize, phdr, pval );
+	//sprintf( pnew, "  %08d%06d#%06d%c%s^%s", len2, hdrsize, valsize, FREC_COMMA, phdr, pval );
+	sprintf( pnew, "  %08d%06d%c%06d%c%s%c%s", len2, hdrsize, FREC_VAL_SEP, valsize, FREC_COMMA, phdr, FREC_HDR_END, pval );
 	// if ( debug ) printf( "%s\n", pnew );
 
 	if ( phdr ) free(phdr);
@@ -633,39 +650,21 @@ bool JagRecord::remove ( const char *name )
 	return true;
 }
 
-bool JagRecord::addNameValueArray ( const char *name[], const char *value[], int len )
-{
-	if ( _readOnly ) { return false; }
-
-	// uncompress();
-
-	int  i;
-	for ( i = 0; i < len; i++ ) {
-		addNameValue (  name[i], value[i] );
-	}
-
-	return true;
-}
 
 
 // 21#234,name1:mm+nn,name2:0000mm+0000nn,name3:000mmm+000nnn^value1#value2#value3
 // 21#234,name1:mm+nn,name2:0000mm+0000nn,name3:000mmm+000nnn,^value1#value2#value3#
 // if record is empty, make a new record
 // char *addNameValue (const char *record, const char *name, const char *value )
-void JagRecord::addNameValue ( const char *name, const char *value )
+int JagRecord::addNameValue ( const char *name, const char *value )
 {
-	int reclen;
 	int namelen;
 	int vallen;
-
-	if ( _readOnly ) { return; }
-
+	if ( _readOnly ) { return -1; }
 	// uncompress();
-
 	namelen = strlen(name);
 	vallen = strlen(value);
-
-	addNameValueLength ( name, namelen, value, vallen );
+	return addNameValueLength ( name, namelen, value, vallen );
 }
 
 
@@ -674,7 +673,7 @@ void JagRecord::addNameValue ( const char *name, const char *value )
 // 21#234,name1:mm+nn,name2:mm+nn,name3:mmm+nnn,^value1#value2#value3#
 // if record is empty, make a new record
 // char *addNameValueLength (const char *record, int oldlen, const char *name, int n1, const char *value, int n2 )
-void JagRecord::addNameValueLength ( const char *name, int n1, const char *value, int n2 )
+int JagRecord::addNameValueLength ( const char *name, int n1, const char *value, int n2 )
 {
 	int newlen;
 	char *pnew;
@@ -686,8 +685,8 @@ void JagRecord::addNameValueLength ( const char *name, int n1, const char *value
 	char  *p;
 	int   comma;
 	int   pound;
-	char  buf128[128];
-
+	//char  buf256[256];
+	char buf[32];
 	int oldlen;
 
 	if ( NULL == _record ) {
@@ -697,18 +696,20 @@ void JagRecord::addNameValueLength ( const char *name, int n1, const char *value
 	}
 
 	if ( oldlen <1 || NULL == _record ) {
-		return makeNewRecLength( name, n1, value, n2 );
+		rc = makeNewRecLength( name, n1, value, n2 );
+		//prt(("s1383 makeNewRecLength rc=%d\n", rc ));
+		return rc;
 	}
 
 	// parse record, looking for hdrsize#valsize, in record begining
 	// rc = getSize(record, &hdrsize, &valsize ); 
 	rc = getSize( &hdrsize, &valsize ); 
 	if ( rc < 0 ) {
-		return;
+		return -2903;
 	}
 
 	// if ( debug ) { printf("oldlen=%d hdrsize=%d  valsize=%d\n", oldlen, hdrsize, valsize ); }
-	if (n1 > FREC_MAX_NAME_LEN ) return;
+	//if (n1 > FREC_MAX_NAME_LEN ) return -2813;
 
 	newlen = oldlen + n1 + 32 + n2; 
 
@@ -716,38 +717,44 @@ void JagRecord::addNameValueLength ( const char *name, int n1, const char *value
 	// phdr = _record;
 	phdr = _record + 10;
 	while ( *phdr != FREC_COMMA && *phdr != '\0' ) phdr++;
-	if ( *phdr == '\0' ) { return; }
+	if ( *phdr == '\0' ) { return -2829; }
 	phdr++;
 
 
 	// find the separation spot
 	psep = phdr;
 	while ( *psep != FREC_HDR_END && *psep != '\0' ) psep++;
-	if ( *psep == '\0' ) { return; }
+	if ( *psep == '\0' ) { return -2818; }
 	// psep now points to '^'
 
-	memset(buf128, 0, 128 );
+	//memset(buf256, 0, 256 );
+	AbaxDataString buf256str;
 	pound = 0;
 	if ( _record[oldlen-1] == FREC_VAL_SEP ) {
 		pound = 1;
-		sprintf( buf128, "%s:%06d+%06d", name, valsize, n2 );
+		//sprintf( buf256, "%s:%06d+%06d", name, valsize, n2 );
+		buf256str = name;
+		sprintf( buf, ":%06d+%06d", valsize, n2 );
+		buf256str += buf;
 		new_valsize = valsize + n2;
 	} else {
-		sprintf( buf128, "%s:%06d+%06d", name, valsize+1, n2 );
+		//sprintf( buf256, "%s:%06d+%06d", name, valsize+1, n2 );
+		buf256str = name;
+		sprintf( buf, ":%06d+%06d", valsize+1, n2 );
+		buf256str += buf;
 		new_valsize = valsize + 1 + n2;  // 1 is for #
-
 	}
 
-	// if ( debug ) { printf("buf128=[%s]\n", buf128 ); }
+	// if ( debug ) { printf("buf256=[%s]\n", buf256 ); }
 	comma = 0;
-	if ( *(psep-1) == ',' )
-	{
-		new_hdrsize = hdrsize + strlen(buf128);
+	//if ( *(psep-1) == ',' )
+	if ( *(psep-1) == FREC_COMMA ) {
+		//new_hdrsize = hdrsize + strlen(buf256);
+		new_hdrsize = hdrsize + buf256str.size();
 		comma = 1;
-	} 
-	else
-	{
-		new_hdrsize = hdrsize + 1 + strlen(buf128);  // 1 for the ,
+	} else {
+		//new_hdrsize = hdrsize + 1 + strlen(buf256);  // 1 for the ,
+		new_hdrsize = hdrsize + 1 + buf256str.size();  // 1 for the ,
 	}
 
 	pnew = (char*)jagmalloc( newlen );
@@ -756,31 +763,34 @@ void JagRecord::addNameValueLength ( const char *name, int n1, const char *value
 	// fixhead
 	// sprintf( pnew, "%06d#%06d,", new_hdrsize, new_valsize );
 	int len2 = 6+1+6+1 + new_hdrsize + 1 + new_valsize; 
-	sprintf( pnew, "  %08d%06d#%06d,", len2, new_hdrsize, new_valsize );
-	strncat(pnew, phdr, psep - phdr );
-	if ( comma ) 
-	{
-		strcat(pnew, buf128);
-	}
-	else
-	{
-		strcat(pnew, ",");
-		strcat(pnew, buf128);
+	//sprintf( pnew, "  %08d%06d#%06d,", len2, new_hdrsize, new_valsize );
+	sprintf( pnew, "  %08d%06d%c%06d%c", len2, new_hdrsize, FREC_VAL_SEP, new_valsize, FREC_COMMA );
+	strncat( pnew, phdr, psep - phdr );
+	if ( comma ) {
+		//strcat(pnew, buf256);
+		strcat(pnew, buf256str.c_str());
+	} else {
+		//strcat(pnew, ",");
+		strcat(pnew, FREC_COMMA_STR);
+		//strcat(pnew, buf256);
+		strcat(pnew, buf256str.c_str() );
 	}
 
-	strcat(pnew, "^");
+	//strcat(pnew, "^");
+	strcat(pnew, FREC_HDR_END_STR);
 	strcat(pnew, psep+1);
 
 	if ( pound ) {
 		strcat(pnew, value);
 	} else {
-		strcat(pnew, "#");
+		strcat(pnew, FREC_VAL_SEP_STR);
 		strcat(pnew, value);
 	}
 
 	if ( _record ) free ( _record );
 	_record = pnew;
 
+	return 0;
 }
 
 
@@ -840,7 +850,6 @@ char * JagRecord::getValueLength( const char *name, int namelen )
 int JagRecord::nameExists( const char *name )
 {
 	// uncompress();
-
 	int namelen = strlen(name);
 	return nameLengthExists( name, namelen );
 }
@@ -851,18 +860,24 @@ int JagRecord::nameExists( const char *name )
 int JagRecord::nameLengthExists( const char *name, int namelen )
 {
 	int    index;
-	char  buf128[128];
+	//char  buf256[256];
+	AbaxDataString buf256;
 
-	if ( namelen > FREC_MAX_NAME_LEN ) return 0;
+	//if ( namelen > FREC_MAX_NAME_LEN ) return 0;
+	/***
+    memset(buf256, 0, 256 );
+    //strncat(buf256, ",", 1);
+    strncat(buf256, FREC_COMMA_STR, 1);
+    strncat(buf256, name, namelen);
+    strncat(buf256, ":", 1);
+	**/
+	buf256 = FREC_COMMA_STR;
+	buf256 += AbaxDataString(name, namelen );
+	buf256 += ":";
 
-    memset(buf128, 0, 128 );
-    strncat(buf128, ",", 1);
-    strncat(buf128, name, namelen);
-    strncat(buf128, ":", 1);
-
-    index = str_str_ch( _record+10, FREC_HDR_END, buf128 );
-    if ( index < 0 )
-    {
+    //index = str_str_ch( _record+10, FREC_HDR_END, buf256 );
+    index = str_str_ch( _record+10, FREC_HDR_END, buf256.c_str() );
+    if ( index < 0 ) {
         return 0; 
     }
 
@@ -881,28 +896,21 @@ bool JagRecord::setValue ( const char *name, const char *value )
 
 	// uncompress();
 	namelen = strlen(name);
-
 	rc = nameLengthExists( name, namelen );
-	if ( rc )
-	{
+	if ( rc ) {
 		// delete name from value record
 		// pdel = remove (record, name );
 		pdel = remove ( name );
-		if ( 0 == pdel )
-		{
+		if ( 0 == pdel ) {
 			return 0;
 		}
-
 		addNameValue ( name, value );
-	}
-	else
-	{
+	} else {
 		addNameValue ( name, value );
 	}
 
 	return true;
 }
-
 
 // Accept new source string as record
 void JagRecord::setSource( const char *srcrec )
@@ -964,3 +972,14 @@ void JagRecord::print()
 	fflush( stdout );
 }
 
+bool JagRecord::addNameValueArray ( const char *name[], const char *value[], int len )
+{
+	if ( _readOnly ) { return false; }
+	// uncompress();
+	int  i;
+	for ( i = 0; i < len; i++ ) {
+		addNameValue (  name[i], value[i] );
+	}
+
+	return true;
+}

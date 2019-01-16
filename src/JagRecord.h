@@ -20,15 +20,18 @@
 #define _jag_record_h_
 #include <stdio.h>
 
-#define FREC_STR_MAX_LEN 128
+//#define FREC_STR_MAX_LEN 128
 #define FREC_HDR_END '^'
-#define FREC_VAL_SEP '#'
-#define FREC_COMMA ','
-#define FREC_MAX_NAMES 256
-#define FREC_MAX_NAME_LEN 64
+#define FREC_HDR_END_STR "^"
 
-#define JAG_GROUPBY_VALUE_MAX 32
-#define JAG_GETALL_VALUE_MAX 1024
+#define FREC_VAL_SEP '#'
+#define FREC_VAL_SEP_STR "#"
+
+//#define FREC_COMMA ','
+#define FREC_COMMA '~'
+#define FREC_COMMA_STR "~"
+
+#define FREC_MAX_NAMES 256
 
 class JagRecord
 {
@@ -49,7 +52,7 @@ class JagRecord
 		void 	    toJSON();
 
 		// add a new pair of name, value into the reccord
-        void  addNameValue ( const char *name, const char *value );
+        int  addNameValue ( const char *name, const char *value );
         bool  addNameValueArray ( const char *name[], const char *value[], int len );
 
         bool  remove ( const char *name );
@@ -76,7 +79,7 @@ class JagRecord
 		char *_record;
 		int   _readOnly;
 
-        void makeNewRecLength( const char *name, int namelen,  const char *value, int vallen );
+        int makeNewRecLength( const char *name, int namelen,  const char *value, int vallen );
         int  getNameStartLen( const char *name, int namelen, int *colstart, int *collen );
         int  getSize( int *hdrsize, int *totalsize );
 
@@ -87,7 +90,7 @@ class JagRecord
 		// Note: you must free the pointer after use
         char *getValueLength( const char *name, int namelen );
 
-        void  addNameValueLength ( const char *name, int namelen, const char *value, int vallen );
+        int  addNameValueLength ( const char *name, int namelen, const char *value, int vallen );
 
         int  nameLengthExists( const char *name, int namelen );
 };

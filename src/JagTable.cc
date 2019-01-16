@@ -38,7 +38,6 @@
 #include <JagStrSplitWithQuote.h>
 #include <JagParser.h>
 #include <JagLineFile.h>
-#include <JagRecord.h>
 
 JagTable::JagTable( int replicateType, const JagDBServer *servobj, const AbaxDataString &dbname, const AbaxDataString &tableName, 
 					  const JagSchemaRecord &record, bool buildInitIndex ) : _tableRecord(record), _servobj( servobj )
