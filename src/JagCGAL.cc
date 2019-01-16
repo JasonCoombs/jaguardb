@@ -1,5 +1,6 @@
 #include <JagGlobalDef.h>
 #include <JagCGAL.h>
+#include <JagParser.h>
 
 /***
  * typedef CGAL::Exact_predicates_inexact_constructions_kernel CGALKernel;
@@ -1103,6 +1104,54 @@ void JagCGAL::getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, co
 
 			lastP = sp[i];
 		}
+	}
+}
+
+
+void JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, std::vector<std::string> &vec )
+{
+ 	JagPolygon pgon1;
+    int rc = JagParser::addPolygonData( pgon1, sp1, false );
+	if ( rc < 0 ) return;
+	//boost::geometry::model::polygon<BoostPoint2D,false> bgon1;
+	BoostPolygon2D  bgon1;
+	for ( int i=0; i < pgon1.size(); ++i ) {
+		const JagLineString3D &linestr = pgon1.linestr[i];
+		std::vector< BoostPoint2D > pointList; 
+		BoostRingType  ring;
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::assign_points( ring, pointList );
+		boost::geometry::append( bgon1, ring );
+	}
+
+ 	JagPolygon pgon2;
+    rc = JagParser::addPolygonData( pgon2, sp2, false );
+	if ( rc < 0 ) return;
+	//boost::geometry::model::polygon<BoostPoint2D,false> bgon2;
+	BoostPolygon2D  bgon2;
+	for ( int i=0; i < pgon2.size(); ++i ) {
+		const JagLineString3D &linestr = pgon2.linestr[i];
+		std::vector< BoostPoint2D > pointList; 
+		BoostRingType  ring;
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::assign_points( ring, pointList );
+		boost::geometry::append( bgon2, ring );
+	}
+
+	std::vector<BoostPolygon2D> output;
+	boost::geometry::union_( bgon1, bgon2, output);
+	for ( int i=0; i < output.size(); ++i ) {
+		std::stringstream ifs;
+		ifs << boost::geometry::wkt(output[i]);
+		vec.push_back( ifs.str() );
 	}
 }
 

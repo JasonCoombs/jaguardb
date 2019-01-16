@@ -4864,6 +4864,8 @@ AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inls
 
 	//sp1.shift();	
 	//sp2.shift();	
+	sp1.print();
+	sp2.print();
 
 	return doTwoStrOp( op, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg );
 }
@@ -5065,7 +5067,7 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const 
 										const JagStrSplit &sp1, const AbaxDataString &carg, double &value )
 {
 	prt(("s2059 doSingleDoubleOp sp1:\n" ));
-	//sp1.print();
+	sp1.print();
 
 	bool rc = false;
 	if ( op == JAG_FUNC_AREA ) {
@@ -5085,6 +5087,9 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const 
 bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString& hdr, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, AbaxDataString &value )
 {
+	prt(("s2232 doSingleStrOp  sp1:\n" ));
+	sp1.print();
+
 	bool rc = false;
 	if ( op == JAG_FUNC_POINTN ) {
 		rc = doAllPointN( mark1, colType1, srid1, sp1, carg, value );
@@ -6168,10 +6173,8 @@ bool BinaryOpNode::doAllBuffer( const AbaxDataString& mk, const AbaxDataString& 
 	JagVector<JagPolygon> pgvec;
 	double px, py;
 	bool rc;
-	int st = 1;
-
-		//prt(("s8830 JAG_OJAG\n" ));
-		//sp.print();
+	//prt(("s8830 JAG_OJAG\n" ));
+	//sp.print();
     if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 		JagParser::addLineStringData( line, sp );
     } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
@@ -6186,16 +6189,16 @@ bool BinaryOpNode::doAllBuffer( const AbaxDataString& mk, const AbaxDataString& 
 
 
     if ( colType == JAG_C_COL_TYPE_POINT ) {
-		px = jagatof( sp[st+1] );
-		py = jagatof( sp[st+2] );
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
 		line.add(px, py);
 		rc = JagCGAL::getBufferMultiPoint2DStr( line, srid, carg, value );
 	} else if ( colType == JAG_C_COL_TYPE_LINE ) {
-		px = jagatof( sp[st+1] );
-		py = jagatof( sp[st+2] );
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
 		line.add(px, py);
-		px = jagatof( sp[st+3] );
-		py = jagatof( sp[st+4] );
+		px = jagatof( sp[JAG_SP_START+2] );
+		py = jagatof( sp[JAG_SP_START+3] );
 		line.add(px, py);
 		rc = JagCGAL::getBufferLineString2DStr( line, srid, carg, value );
 	} else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
@@ -6209,45 +6212,45 @@ bool BinaryOpNode::doAllBuffer( const AbaxDataString& mk, const AbaxDataString& 
     } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		rc = JagCGAL::getBufferMultiPolygon2DStr( pgvec, srid, carg, value );
     } else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
-		px = jagatof( sp[st+1] );
-		py = jagatof( sp[st+2] );
-		double a = jagatof( sp[st+3] );
-		double nx = jagatof( sp[st+4] );
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
+		double a = jagatof( sp[JAG_SP_START+2] );
+		double nx = jagatof( sp[JAG_SP_START+3] );
 		JagSquare2D sq(px,py, a, nx );
 		JagPolygon pgon( sq );
 		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
     } else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
-		px = jagatof( sp[st+1] );
-		py = jagatof( sp[st+2] );
-		double a = jagatof( sp[st+3] );
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
+		double a = jagatof( sp[JAG_SP_START+2] );
 		JagCircle2D cir(px,py, a );
 		JagPolygon pgon( cir );
 		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
     } else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
-		px = jagatof( sp[st+1] );
-		py = jagatof( sp[st+2] );
-		double a = jagatof( sp[st+3] );
-		double b = jagatof( sp[st+4] );
-		double nx = jagatof( sp[st+5] );
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
+		double a = jagatof( sp[JAG_SP_START+2] );
+		double b = jagatof( sp[JAG_SP_START+3] );
+		double nx = jagatof( sp[JAG_SP_START+4] );
 		JagRectangle2D rect(px,py, a, b, nx );
 		JagPolygon pgon( rect );
 		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
     } else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
-		px = jagatof( sp[st+1] );
-		py = jagatof( sp[st+2] );
-		double a = jagatof( sp[st+3] );
-		double b = jagatof( sp[st+4] );
-		double nx = jagatof( sp[5] );
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
+		double a = jagatof( sp[JAG_SP_START+2] );
+		double b = jagatof( sp[JAG_SP_START+3] );
+		double nx = jagatof( sp[JAG_SP_START+4] );
 		JagEllipse2D e(px,py, a, b, nx );
 		JagPolygon pgon( e );
 		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
     } else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
-		double x1 = jagatof( sp[st+1] );
-		double y1 = jagatof( sp[st+2] );
-		double x2 = jagatof( sp[st+3] );
-		double y2 = jagatof( sp[st+4] );
-		double x3 = jagatof( sp[st+5] );
-		double y3 = jagatof( sp[st+6] );
+		double x1 = jagatof( sp[JAG_SP_START+0] );
+		double y1 = jagatof( sp[JAG_SP_START+1] );
+		double x2 = jagatof( sp[JAG_SP_START+2] );
+		double y2 = jagatof( sp[JAG_SP_START+3] );
+		double x3 = jagatof( sp[JAG_SP_START+4] );
+		double y3 = jagatof( sp[JAG_SP_START+5] );
 		JagTriangle2D t(x1,y1, x2,y2, x3,y3 );
 		JagPolygon pgon( t );
 		rc = JagCGAL::getBufferPolygon2DStr( pgon, srid, carg, value );
@@ -6993,7 +6996,7 @@ AbaxDataString BinaryOpNode::doAllUnion( const AbaxDataString& mark1, const Abax
 										int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2, 
 										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
 {
-	//prt(("s2410 doAllIntersect colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	prt(("s2410 doAllUnion colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return JagGeo::doPointAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );

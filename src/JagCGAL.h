@@ -52,6 +52,8 @@ typedef boost::geometry::strategy::buffer::end_flat JagEndFlat;
 typedef  boost::geometry::strategy::buffer::point_circle JagPointCircle;
 typedef boost::geometry::strategy::buffer::point_square JagPointSquare;
 
+
+
 class JagStrategy
 {
   public:
@@ -103,6 +105,7 @@ class JagCGAL
     static void getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, 
 							   bool is3D, int N, AbaxDataString &value );
     static void getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
+	static void unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, std::vector<std::string> &vec );
 
   protected:
   	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );

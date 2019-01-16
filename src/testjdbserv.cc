@@ -459,6 +459,15 @@ void testrayrecord()
 	prt(("s2831 n=[%s]  v=[%s]\n", n.c_str(), v.c_str() ));
 	if (p) free(p);
 
+	std::vector<string> output;
+	output.push_back("dsdsd11");
+	output.push_back("dsdsd2");
+	output.push_back("dsdsd3");
+
+	std::stringstream ifs;
+	ifs << boost::geometry::wkt(output);
+	AbaxFixString out;
+	out = ifs.str();
 }
 
 void testwheretree()

@@ -30,6 +30,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <JaguarCPPClient.h>
 #include <JagParser.h>
+#include <JagCGAL.h>
 
 using namespace GeographicLib;
 
@@ -21653,7 +21654,8 @@ JagPolygon::JagPolygon( const JagTriangle2D &t )
 }
 
 // return 0: OK ,  <0 error
-// outstr: "CJAG=0=0=type=subtype  data1 data2 data3 ..."
+// instr: "point3d(...)"  "polygon((...),(...))"
+// outstr: "CJAG=0=0=type=subtype  bbox data1 data2 data3 ..."
 int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr )
 {
 	AbaxDataString othertype;
@@ -22350,8 +22352,18 @@ AbaxDataString JagGeo::doPointAddition( int srid1, const JagStrSplit &sp1, const
 		val = AbaxDataString("CJAG=0=0=LN=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " 
 		        + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1]; 
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		val = AbaxDataString("CJAG=0=0=LS=d ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " 
+		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " 
 		        + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3];
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
+		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1];
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1];
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
 	} else {
 	}
 
@@ -22369,6 +22381,16 @@ AbaxDataString JagGeo::doPoint3DAddition( int srid1, const JagStrSplit &sp1, con
 		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2] + " " 
 		   + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2] + " "
 		   + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5];
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2];
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1]  + ":" + sp1[JAG_SP_START+2];
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
 	} else {
 	}
 
@@ -22379,51 +22401,44 @@ AbaxDataString JagGeo::doPoint3DAddition( int srid1, const JagStrSplit &sp1, con
 AbaxDataString JagGeo::doLineAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	// like point within
-	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+	AbaxDataString val;
+	AbaxDataString p2 = sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2] + ":" + sp1[JAG_SP_START+3];
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		val = AbaxDataString("CJAG=0=0=ML=d 0:0:0:0 ") + p2 + " |"; 
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + p2 + " " + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1]; 
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + p2 + " " + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1]
+		        + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3]; 
+	} else {
 	}
-	return false;
+	return val;
 }
 
 AbaxDataString JagGeo::doLine3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-
-	return "";
-}
-
-AbaxDataString JagGeo::lineAdditionLineString( double x10, double y10, double x20, double y20,
-							          const AbaxDataString &mk2, const JagStrSplit &sp2 )
-{
-	int start = JAG_SP_START;
-
-	return "";
-}
-
-
-///////////////////////////////////// line 3D /////////////////////////////////
-AbaxDataString JagGeo::line3DAdditionLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
-							          const AbaxDataString &mk2, const JagStrSplit &sp2)
-{
-	// 2 points are some two neighbor points in sp2
-	int start = JAG_SP_START;
-
-	return "";
-}
-
-// lineString3D Addition
-AbaxDataString JagGeo::lineString3DAdditionLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
-{
-	int start1 = JAG_SP_START;
-	if ( mk1 == JAG_OJAG ) { start1 = 1; }
-	int start2 = JAG_SP_START;
-	if ( mk2 == JAG_OJAG ) { start2 = 1; }
-
-	return false;
+	AbaxDataString val;
+	AbaxDataString p2 = sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2] 
+	                    + " " + sp1[JAG_SP_START+3] + ":" + sp1[JAG_SP_START+4] + ":" + sp1[JAG_SP_START+5];
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		val = AbaxDataString("CJAG=0=0=ML3=d 0:0:0:0:0:0 ") + p2 + " |"; 
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + p2 + " " 
+				+ sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2]; 
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + p2 + " " 
+		        + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2]
+		        + " " + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5]; 
+	} else {
+	}
+	return val;
 }
 
 // 2D linestring
@@ -22431,72 +22446,190 @@ AbaxDataString JagGeo::doLineStringAddition( const AbaxDataString &mk1, int srid
 								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		val = AbaxDataString("CJAG=0=0=ML=d 0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" |");
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1];
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + " " 
+		         + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3];
+	} else { 
 	}
-	return "";
+	return val;
 }
 
 AbaxDataString JagGeo::doLineString3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
 									  int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		val = AbaxDataString("CJAG=0=0=ML3=d 0:0:0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" |");
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2];
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2] 
+		         + " " + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5];
+	} else { 
 	}
-	return "";
+	return val;
 }
 
 AbaxDataString JagGeo::doPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		// multipolygon
+		val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" !");
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
+	} else {
 	} 
-	return "";
+	return val;
 }
 
 AbaxDataString JagGeo::doPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
 									  int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		val = AbaxDataString("CJAG=0=0=MG3=d 0:0:0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" !");
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
+	} else {
 	} 
-	return "";
+	return val;
 }
 
 AbaxDataString JagGeo::doMultiPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		// multipolygon
+		val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" !");
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
+	} else {
 	} 
-	return "";
+	return val;
 }
 
 AbaxDataString JagGeo::doMultiPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
 									  int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		val = AbaxDataString("CJAG=0=0=MG3=d 0:0:0:0:0:0");
+		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
+			val += AbaxDataString(" ") + sp1[i];
+		}
+		val += AbaxDataString(" !");
+		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
+			val += AbaxDataString(" ") + sp2[i];
+		}
+	} else {
 	} 
-	return "";
+	return val;
 }
 
+// Union of two polygons
+// qwer
 AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
-	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+	prt(("s4811 doPolygonUnion colType2=%s\n", colType2.c_str() ));
+	AbaxDataString val;
+	AbaxDataString t;
+	AbaxFixString txt;
+	std::vector< std::string> vec;
+	char *p;
+	int rc;
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		JagCGAL::unionOfTwoPolygons( sp1, sp2, vec );
+		prt(("s8621 vec.size=%d\n", vec.size() ));
+		if ( vec.size() == 1 ) {
+			// polygon
+			rc = convertConstantObjToJAG( AbaxFixString(vec[0].c_str()), val );
+			if ( rc < 0 ) { val = ""; }
+		} else if ( vec.size() > 1 ) {
+			// multipolygon
+			val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
+			for ( int i=0; i < vec.size(); ++i ) {
+				if ( i>0 ) {
+					val += AbaxDataString(" !");
+				}
+				rc = convertConstantObjToJAG( AbaxFixString(vec[i].c_str()), t );
+				if ( rc >= 0 ) {
+					p = (char*)t.c_str();
+					while ( *p != ' ' && *p != '\0' ) ++p;
+					if ( *p == '\0' ) continue;
+					while ( *p == ' ' ) ++p;
+					while ( *p != ' ' && *p != '\0' ) ++p;
+					if ( *p == '\0' ) continue;
+					while ( *p == ' ' ) ++p;
+					val += AbaxDataString(" ") + AbaxDataString(p);  // "hdr bbx (p)data ..." 
+				}
+			}
+		} else {
+		}
+	} else { 
 	} 
-	return "";
+	return val;
+
+	// int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr )
+
 }
+

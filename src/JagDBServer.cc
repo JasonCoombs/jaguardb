@@ -2705,8 +2705,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    numsegments(geom)       -- get total number of line segments of linestring or polygon\n";
 		str += "    numrings(geom)          -- get total number of rings of a polygon or multipolygon\n";
 		str += "    numpolygons(geom)       -- get total number of polygons of a multipolygon\n";
-		str += "    srid(geom)              -- get SRID of a shape geomumn\n";
-		str += "    summary(geom)           -- get a text summary of a shape geomumn\n";
+		str += "    srid(geom)              -- get SRID of a shape geom\n";
+		str += "    summary(geom)           -- get a text summary of a shape geom\n";
 		str += "    xmin(geom)              -- get the minimum x-coordinate of a shape with raster data\n";
 		str += "    ymin(geom)              -- get the minimum y-coordinate of a shape with raster data\n";
 		str += "    zmin(geom)              -- get the minimum z-coordinate of a shape with raster data\n";
@@ -2735,6 +2735,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    innerringn(polygon,n)   -- the n-th inner ring as linestring of a polygon. n is 1-based\n";
 		str += "    polygonn(multipgon,n)   -- the n-th polygon of a multipolygon. n is 1-based\n";
 		str += "    unique(geom)            -- geom with consecutive duplicate points removed\n";
+		str += "    union(geom1,geom2)      -- union of two geoms\n";
+		str += "    collect(geom1,geom2)    -- collection of two geoms\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
