@@ -371,14 +371,15 @@ void testrayrecord()
 	printf("write rayrecord %d rows used %d seconds\n", max, t2-t1 );
 	***/
 
-	JagRecord root;  
 	//root.addNameValue("uid", "u849494944949494");
 	//root.addNameValue("key", "kdk38393jffjfrj");
 	//root.addNameValue("addr", "123 djkdfd  blvd, cr kdk38393jffjfrj");
 	//root.addNameValue("age", "40");
+	JagRecord root;  
 	int c = root.addNameValue("score", "90");
 	prt(("s1118 add score->90 rc=%d\n", c ));
 	t1 = time(NULL);
+	c = root.addNameValue("db:tab123", "myvalue");
 	char *p;
 	/**
 	for ( int i = 0; i < max ; ++i ) {
@@ -399,6 +400,14 @@ void testrayrecord()
 
 	p = root.getValue("score");
 	prt(("s1028 score=[%s] src=[%s]\n", p, root.getSource() ));
+	if ( p) free(p);
+
+	p = root.getValue("db:tab123");
+	prt(("s1028 db:tab123=[%s] src=[%s]\n", p, root.getSource() ));
+	if ( p) free(p);
+
+	p = root.getValue("db32");
+	prt(("s1028 db32=[%s] src=[%s]\n", p, root.getSource() ));
 	if ( p) free(p);
 
 	#if 0
@@ -439,9 +448,9 @@ void testrayrecord()
 	rec2.print();
 	**/
 	JagRecord rec;
-	AbaxDataString n = "innerrings(polygon((0 0, 22 44, 98 12, 0 0), (9 3 , 9 0, 82 83, 9 3 )))";
+	AbaxDataString n = "innerrings(polygon((0 0, 22 44, 98 12, 0 0), (9 3 , 9 0, 82 83, 9 3 ))) dkdjdjdd djdd jdkdjkdjkdjkd djkdjdk djdjd jdkdjdkj";
 	//AbaxDataString n = "innerrings(polygon((0 0, 22 44,";
-	AbaxDataString v = "CJAG=0=0=PL=d 9.0:0.0:82.0:83.0 9.0:3.0 9.0:0.0 82.0:83.0 9.0:3.0";
+	AbaxDataString v = "CJAG=0=0=PL=d 9.0:0.0:82.0:83.0 9.0:3.0 9.0:0.0 82.0:83.0 9.0:3.0 03jejde9 jdkv njvneje fj vvj eij ehehfnffffffffffff jeihej ee ene eeneddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd==";
 	int nc = rec.addNameValue( n.c_str(), v.c_str() );
 	prt(("s1728 nc=%d\n",  nc ));
 	prt(("s1728 src=[%s]\n", rec.getSource() ));

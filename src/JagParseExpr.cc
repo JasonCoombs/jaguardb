@@ -6109,16 +6109,18 @@ bool BinaryOpNode::doAllNumPolygons( const AbaxDataString& mk, const AbaxDataStr
 	prt(("s3420 doAllNumPolygons() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
 	//sp.print();
 	int num;
-	value = "";
+	value = "0";
 	int rc;
     if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		num = 1;
-		for ( int i=0; i < sp.length(); ++i ) {
+		for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 			if ( sp[i] == "!" ) ++num;
 		}
 		value = intToStr( num );
+	} else if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		value = "1"; 
     } else {
-		return false;
+		return true;
 	}
 
 	return true;
@@ -6464,6 +6466,12 @@ bool BinaryOpNode::doAllNumPoints( const AbaxDataString& mk, const AbaxDataStrin
 	//prt(("s3420 doAllNumPoints() colType=[%s] sp.print(): \n", colType.c_str() ));
 	//sp.print();
 	value = "0";
+
+	if ( colType == JAG_C_COL_TYPE_POINT || colType == JAG_C_COL_TYPE_POINT3D ) {
+		value = "1";
+		return true;
+	}
+
 	if ( colType == JAG_C_COL_TYPE_LINE || colType == JAG_C_COL_TYPE_LINE3D ) {
 		value = "2";
 		return true;
@@ -6479,7 +6487,17 @@ bool BinaryOpNode::doAllNumPoints( const AbaxDataString& mk, const AbaxDataStrin
 		return true;
 	}
 
-	value = intToStr( sp.length() - 1 );
+	/**
+	value = intToStr( sp.length() - 2 );
+	prt(("s5029 value=[%s]\n", value.c_str() ));
+	***/
+	int cnt = 0;
+	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
+		if ( sp[i] != "|" && sp[i] != "!" ) {
+			++cnt;
+		}
+	}
+	value = intToStr( cnt );
 	prt(("s5029 value=[%s]\n", value.c_str() ));
 	return true;
 }
