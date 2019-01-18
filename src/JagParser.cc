@@ -5802,7 +5802,7 @@ void JagParser::removeEndUnevenBracketAll( char *str )
 }
 
 // from OJAG or CJAG type
-// 1: OK  < 0 error
+// 1: OK  < 0 error  0: no data
 int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
 	const char *str;
@@ -5810,6 +5810,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	JagLineString3D linestr;
 	double dx,dy;
 	int nc;
+	int cnt = 0;
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		if ( sp[i] == "|" || sp[i] == "!" ) {
@@ -5823,9 +5824,11 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 			get2double(str, p, ':', dx, dy );
 			JagPoint2D pt(dx,dy);
 			linestr.add( pt );
+			++cnt;
 		}
 	}
 
+	if ( cnt < 1 ) return 0;
 	pgon.add( linestr );
 	return 1;
 }
@@ -5839,6 +5842,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 	JagLineString3D linestr;
 	double dx,dy,dz;
 	int nc;
+	int cnt = 0;
 	for ( int i=1; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		if ( sp[i] == "|" || sp[i] == "!" ) {
@@ -5851,9 +5855,11 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 			get3double(str, p, ':', dx, dy, dz );
 			JagPoint3D pt(dx,dy,dz);
 			linestr.add( pt );
+			++cnt;
 		}
 	}
 
+	if ( cnt < 1 ) return 0;
 	pgon.add( linestr );
 	return 1;
 }

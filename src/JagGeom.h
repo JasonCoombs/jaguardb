@@ -24,11 +24,12 @@
 #include <JagUtil.h>
 #include <JagShape.h>
 
-//class JagNameIndex;
 
 class JagGeo
 {
   public:
+	template <class POINT> static int sortLinePoints( POINT arr[], int elements );
+	template <class POINT> static int JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
 
 	/////////////////////////////////////// Within function ////////////////////////////////////////////////////
    	static bool doPointWithin(  const JagStrSplit &sp1, const AbaxDataString &mk2, 
@@ -549,6 +550,16 @@ class JagGeo
 	static AbaxDataString lineString3DAdditionLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
                                             const AbaxDataString &mk2, const JagStrSplit &sp2 );
 
+   	static AbaxDataString doPointIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doLineIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doLineStringIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doMultiLineStringIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doPolygonIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
 
 
 	// 2D circle
@@ -739,7 +750,7 @@ class JagGeo
 
 	// linestring intersect
 	static bool lineStringIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2  );
+											const AbaxDataString &mk2, const JagStrSplit &sp2, bool doRes, JagVector<JagPoint2D> &vec );
 	static bool lineStringIntersectTriangle( const AbaxDataString &m1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
 	static bool lineStringIntersectRectangle( const AbaxDataString &m1, const JagStrSplit &sp1,
@@ -750,7 +761,7 @@ class JagGeo
 
 
 	static bool lineString3DIntersectLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2  );
+											const AbaxDataString &mk2, const JagStrSplit &sp2, bool doRes, JagVector<JagPoint3D> &vec  );
 
 	static bool lineString3DIntersectBox(  const AbaxDataString &m1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
@@ -1007,7 +1018,6 @@ class JagGeo
     static int getDimension( const AbaxDataString& colType );
     static AbaxDataString getTypeStr( const AbaxDataString& colType );
     static int getPolyDimension( const AbaxDataString& colType );
-	template <class POINT> static int sortLinePoints( POINT arr[], int elements );
 	static bool above(double x, double y, double x2, double y2, double x3, double y3 );
 	static bool above(double x, double y, double z, double x2, double y2, double z2, double x3, double y3, double z3 );
 	static bool aboveOrSame(double x, double y, double x2, double y2, double x3, double y3 );
@@ -1727,9 +1737,20 @@ class JagGeo
 	static bool  closestPoint3DBox( int srid, double px, double py, double pz, double x0, double y0, double z0,
 								    double a, double b, double c, double nx, double ny, double &dist, AbaxDataString &res );
 
+	static bool  matchPoint2D( double px, double py, const JagStrSplit &sp, AbaxDataString &xs, AbaxDataString &ys );
+	static bool  matchPoint3D( double px, double py, double pz, const JagStrSplit &sp, 
+							   AbaxDataString &xs, AbaxDataString &ys, AbaxDataString &zs );
 
+	static bool  line2DLineStringIntersection( const JagLine2D &line1, const JagStrSplit &sp, JagVector<JagPoint2D> &vec );
+	static bool  line3DLineStringIntersection( const JagLine3D &line1, const JagStrSplit &sp, JagVector<JagPoint3D> &vec );
 
+	static void  appendLine2DLine2DIntersection(double x1, double y1, double x2, double y2, 
+												double mx1, double my1, double mx2, double my2, JagVector<JagPoint2D> &vec ); 
+	static void  appendLine3DLine3DIntersection(double x1, double y1, double z1, double x2, double y2, double z2, 
+												double mx1, double my1, double mz1, double mx2, double my2, double mz2, 
+												JagVector<JagPoint3D> &vec ); 
 
+	static void splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<AbaxDataString> &svec );
 
 };  // end of class JagGeo
 

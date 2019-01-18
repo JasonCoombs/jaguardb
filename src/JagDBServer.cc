@@ -2735,7 +2735,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    innerringn(polygon,n)   -- the n-th inner ring as linestring of a polygon. n is 1-based\n";
 		str += "    polygonn(multipgon,n)   -- the n-th polygon of a multipolygon. n is 1-based\n";
 		str += "    unique(geom)            -- geom with consecutive duplicate points removed\n";
-		str += "    union(geom1,geom2)      -- union of two geoms\n";
+		str += "    union(geom1,geom2)      -- union of two geoms. Polygon outer ring should be counter-clock-wise\n";
 		str += "    collect(geom1,geom2)    -- collection of two geoms\n";
 		str += "\n";
 		str += "Example:\n";

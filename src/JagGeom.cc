@@ -32,6 +32,7 @@
 #include <JagParser.h>
 #include <JagCGAL.h>
 
+
 using namespace GeographicLib;
 
 const double JagGeo::ZERO = 0.0000000001;
@@ -3859,14 +3860,12 @@ bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrS
 
 //////////////////////////// 2D linestring intersect  //////////////////////////////////////////////////
 bool JagGeo::lineStringIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
+			                                const AbaxDataString &mk2, const JagStrSplit &sp2,
+											bool doRes, JagVector<JagPoint2D> &retVec )
 {
 	// sweepline algo
-	int start1 = 0;
-	if ( mk1 == JAG_OJAG ) { start1 = 1; }
-	int start2 = 0;
-	if ( mk2 == JAG_OJAG ) { start2 = 1; }
-
+	int start1 = JAG_SP_START;
+	int start2 = JAG_SP_START;
 
 	double dx1, dy1, dx2, dy2, t;
 	const char *str;
@@ -3875,6 +3874,7 @@ bool JagGeo::lineStringIntersectLineString( const AbaxDataString &mk1, const Jag
 	JagSortPoint2D *points = new JagSortPoint2D[2*totlen];
 	int j = 0;
 	int rc;
+	bool found = false;
 	for ( i=start1; i < sp1.length()-1; ++i ) {
 		str = sp1[i].c_str();
 		if ( strchrnum( str, ':') < 1 ) continue;
@@ -3995,7 +3995,15 @@ bool JagGeo::lineStringIntersectLineString( const AbaxDataString &mk1, const Jag
 				     && lineIntersectLine( above->key.x1,above->key.y1,above->key.x2,above->key.y2, 
 									    below->key.x1,below->key.y1,below->key.x2,below->key.y2) ) {
 					//prt(("s7640 left above below intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine2DLine2DIntersection(above->key.x1,above->key.y1, above->key.x2,above->key.y2,
+										below->key.x1,below->key.y1,below->key.x2,below->key.y2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( above ) {
 				if ( above->color != seg.color 
@@ -4006,14 +4014,30 @@ bool JagGeo::lineStringIntersectLineString( const AbaxDataString &mk1, const Jag
 					above->println();
 					seg.println();
 					***/
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine2DLine2DIntersection(above->key.x1,above->key.y1, above->key.x2,above->key.y2,
+										seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( below ) {
 				if ( below->color != seg.color 
 					 && lineIntersectLine( below->key.x1,below->key.y1,below->key.x2,below->key.y2, 
 									    seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2) ) {
 					//prt(("s7641 left below seg intersect\n" ));
-					return true;
+					if ( doRes ) {
+						appendLine2DLine2DIntersection( below->key.x1,below->key.y1,below->key.x2,below->key.y2,
+										seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2, retVec );
+					} else {
+						found = true;
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			}
 		} else {
@@ -4054,21 +4078,45 @@ bool JagGeo::lineStringIntersectLineString( const AbaxDataString &mk1, const Jag
 					 && lineIntersectLine( above->key.x1,above->key.y1,above->key.x2,above->key.y2, 
 									    below->key.x1,below->key.y1,below->key.x2,below->key.y2) ) {
 					//prt(("s7740 rightend above below intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine2DLine2DIntersection( above->key.x1,above->key.y1,above->key.x2,above->key.y2,
+										below->key.x1,below->key.y1,below->key.x2,below->key.y2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( above ) {
 				if ( above->color != seg.color 
 					 && lineIntersectLine( above->key.x1,above->key.y1,above->key.x2,above->key.y2, 
 									    seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2) ) {
 					//prt(("s7740 rightend above seg intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine2DLine2DIntersection( above->key.x1,above->key.y1,above->key.x2,above->key.y2,
+										seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( below ) {
 				if ( below->color != seg.color 
 					 && lineIntersectLine( below->key.x1,below->key.y1,below->key.x2,below->key.y2, 
 									    seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2) ) {
 					//prt(("s7740 rightend below seg intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine2DLine2DIntersection( below->key.x1,below->key.y1,below->key.x2,below->key.y2,
+										seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			}
 			jarr->remove( seg );
@@ -4216,15 +4264,11 @@ bool JagGeo::polygonIntersectLineString( const AbaxDataString &mk1, const JagStr
 			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
 	// sweepline algo
-	int start1 = 0;
-	if ( mk1 == JAG_OJAG ) { start1 = 1; }
-	int start2 = 0;
-	if ( mk2 == JAG_OJAG ) { start2 = 1; }
-
+	int start1 = JAG_SP_START;
+	int start2 = JAG_SP_START;
 	//prt(("s8019 polygonIntersectLineString sp1: sp2:\n" ));
 	//sp1.print();
 	//sp2.print();
-
 
 	double dx1, dy1, dx2, dy2, t;
 	const char *str;
@@ -5126,18 +5170,16 @@ bool JagGeo::lineString3DWithinLineString3D(  const AbaxDataString &mk1, const J
 											const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
 
 {
-	int start1 = 0;
+	int start1 = JAG_SP_START;
 	double bbx1, bby1, bbz1, brx1, bry1, brz1;
 	if ( mk1 == JAG_OJAG ) {
 		boundingBox3DRegion(sp1[JAG_SP_START+0], bbx1, bby1, bbz1, brx1, bry1, brz1 );
-		start1 = 1;
 	}
 
-	int start2 = 0;
+	int start2 = JAG_SP_START;
 	double bbx2, bby2, bbz2, brx2, bry2, brz2;
 	if ( mk2 == JAG_OJAG ) {
 		boundingBox3DRegion(sp2[JAG_SP_START+0], bbx2, bby2, bbz2, brx2, bry2, brz2 );
-		start2 = 1;
 	}
 
 	if ( bound3DDisjoint( bbx1, bby1, bbz1, brx1, bry1, brz1, bbx2, bby2, bbz2, brx2, bry2, brz2 ) ) {
@@ -8761,14 +8803,12 @@ bool JagGeo::line3DIntersectCylinder(  double x10, double y10, double z10, doubl
 
 // lineString3D intersect
 bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
+			                                const AbaxDataString &mk2, const JagStrSplit &sp2,
+											bool doRes, JagVector<JagPoint3D> &retVec )
 {
 	// sweepline algo
-	int start1 = 0;
-	if ( mk1 == JAG_OJAG ) { start1 = 1; }
-	int start2 = 0;
-	if ( mk2 == JAG_OJAG ) { start2 = 1; }
-
+	int start1 = JAG_SP_START;
+	int start2 = JAG_SP_START;
 
 	double dx1, dy1, dz1, dx2, dy2, dz2, t;
 	const char *str;
@@ -8777,6 +8817,7 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 	JagSortPoint3D *points = new JagSortPoint3D[2*totlen];
 	int j = 0;
 	int rc;
+	bool found = false;
 	for ( i=start1; i < sp1.length()-1; ++i ) {
 		str = sp1[i].c_str();
 		if ( strchrnum( str, ':') < 2 ) continue;
@@ -8895,7 +8936,17 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 									           below->key.x1,below->key.y1,below->key.z1,
 											   below->key.x2,below->key.y2, below->key.z2 ) ) {
 					prt(("s7440 left above below intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine3DLine3DIntersection( above->key.x1,above->key.y1,above->key.z1, 
+											above->key.x2,above->key.y2, above->key.z2,
+											below->key.x1,below->key.y1,below->key.z1,
+											 below->key.x2,below->key.y2, below->key.z2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( above ) {
 				if ( above->color != seg.color 
@@ -8904,7 +8955,17 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 									    	   seg.key.x1,seg.key.y1,seg.key.z1,
 											   seg.key.x2,seg.key.y2,seg.key.z2 ) ) {
 					prt(("s7341 left above seg intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine3DLine3DIntersection( above->key.x1,above->key.y1,above->key.z1, 
+											above->key.x2,above->key.y2, above->key.z2,
+											seg.key.x1,seg.key.y1,seg.key.z1,
+											seg.key.x2,seg.key.y2,seg.key.z2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( below ) {
 				if ( below->color != seg.color 
@@ -8913,7 +8974,17 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 									    	  seg.key.x1,seg.key.y1,seg.key.z1,
 											  seg.key.x2,seg.key.y2,seg.key.z2 ) ) {
 					prt(("s7611 left below seg intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine3DLine3DIntersection( below->key.x1,below->key.y1,below->key.z1,
+											below->key.x2,below->key.y2,below->key.z2,
+											seg.key.x1,seg.key.y1,seg.key.z1,
+											seg.key.x2,seg.key.y2,seg.key.z2, retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			}
 		} else {
@@ -8943,7 +9014,18 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 									    	   below->key.x1,below->key.y1,below->key.z1,
 											   below->key.x2,below->key.y2,below->key.z2 ) ) {
 					prt(("s7043 rightend above below intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine3DLine3DIntersection( above->key.x1,above->key.y1,above->key.z1,
+											 above->key.x2,above->key.y2,above->key.z2,
+											 below->key.x1,below->key.y1,below->key.z1,
+											 below->key.x2,below->key.y2,below->key.z2,
+											 retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( above ) {
 				if ( above->color != seg.color 
@@ -8952,7 +9034,18 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 									    	   seg.key.x1,seg.key.y1,seg.key.z1,
 											   seg.key.x2,seg.key.y2,seg.key.z2 ) ) {
 					prt(("s7710 rightend above seg intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine3DLine3DIntersection( above->key.x1,above->key.y1,above->key.z1,
+											 above->key.x2,above->key.y2,above->key.z2,
+											 seg.key.x1,seg.key.y1,seg.key.z1,
+											 seg.key.x2,seg.key.y2,seg.key.z2,
+											 retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			} else if ( below ) {
 				if ( below->color != seg.color 
@@ -8961,7 +9054,18 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 									    	   seg.key.x1,seg.key.y1,seg.key.z1,
 											   seg.key.x2,seg.key.y2,seg.key.z2) ) {
 					prt(("s4740 rightend below seg intersect\n" ));
-					return true;
+					if ( doRes ) {
+						found = true;
+						appendLine3DLine3DIntersection( below->key.x1,below->key.y1,below->key.z1,
+											 below->key.x2,below->key.y2,below->key.z2,
+											 seg.key.x1,seg.key.y1,seg.key.z1,
+											 seg.key.x2,seg.key.y2,seg.key.z2,
+											 retVec );
+					} else {
+						delete [] points;
+						delete jarr;
+						return true;
+					}
 				}
 			}
 			jarr->remove( seg );
@@ -8972,7 +9076,7 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 	delete jarr;
 
 	prt(("s7810 no intersect\n"));
-	return false;
+	return found;
 }
 
 bool JagGeo::lineString3DIntersectBox(  const AbaxDataString &mk1, const JagStrSplit &sp1,
@@ -9328,11 +9432,8 @@ bool JagGeo::polygon3DIntersectLineString3D( const AbaxDataString &mk1, const Ja
 			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
 {
 	// sweepline algo
-	int start1 = 0;
-	if ( mk1 == JAG_OJAG ) { start1 = 1; }
-	int start2 = 0;
-	if ( mk2 == JAG_OJAG ) { start2 = 1; }
-
+	int start1 = JAG_SP_START;
+	int start2 = JAG_SP_START;
 	//prt(("s8122 polygon3DIntersectLineString3D sp1: sp2:\n" ));
 	//sp1.print();
 	//sp2.print();
@@ -9782,7 +9883,8 @@ bool JagGeo::doLineStringIntersect( const AbaxDataString &mk1, int srid1, const 
 		double y3 = jagatof( sp2[JAG_SP_START+5].c_str() );
 		return lineStringIntersectTriangle( mk1, sp1, x1, y1, x2, y2, x3, y3, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
-		return lineStringIntersectLineString( mk1, sp1, mk2, sp2 );
+		JagVector<JagPoint2D> vec;
+		return lineStringIntersectLineString( mk1, sp1, mk2, sp2, false, vec );
 	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
 		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
@@ -9830,7 +9932,8 @@ bool JagGeo::doLineString3DIntersect( const AbaxDataString &mk1, int srid1, cons
 		prt(("s0872 lineString3DIntersectBox ..\n" ));
 		return lineString3DIntersectBox( mk1, sp1, x0, y0, z0, r,r,r, nx, ny, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
-		return lineString3DIntersectLineString3D( mk1, sp1, mk2, sp2 );
+		JagVector<JagPoint3D> vec;
+		return lineString3DIntersectLineString3D( mk1, sp1, mk2, sp2, false, vec );
 	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
 		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
@@ -14123,71 +14226,6 @@ int JagGeo::KMPPointsWithin( const JagStrSplit &sp1, int start1, const JagStrSpl
 	return -1;
 }
 
-#if 0
-#define  MAX_LEVELS  300
-template <class POINT>
-int JagGeo::sortLinePoints( POINT arr[], int elements )
-{
-    // int  piv, beg[MAX_LEVELS], end[MAX_LEVELS], i=0, L, R, swap;
-    int  beg[MAX_LEVELS], end[MAX_LEVELS], i=0, L, R, swap;
-	POINT piv;
-    beg[0]=0; end[0]=elements;
-    while (i>=0) {
-        L=beg[i]; R=end[i]-1;
-        if (L<R) {
-            piv=arr[L];
-            while (L<R) {
-            	while ( arr[R] >= piv && L<R) { 
-					// if arr[R] and piv intersect, return 1
-					/***
-					if ( arr[R].color != piv.color ) {
-						if ( lineIntersectLine( arr[R].x1,arr[R].y1,arr[R].x2,arr[R].y2, 
-											    piv.x1,piv.y1,piv.x2,piv.y2 ) ) {
-							prt(("e6303 %f %f %f %f   %f %f %f %f  intersect\n",
-								  arr[R].x1,arr[R].y1,arr[R].x2,arr[R].y2,
-								  piv.x1,piv.y1,piv.x2,piv.y2  ));
-							return 1;
-						}
-					}
-					***/
-					R--; 
-				}
-    			if (L<R) { arr[L++]=arr[R]; }
-            	while (arr[L] <= piv && L<R) { 
-					// if arr[L] and piv intersect, return 1
-					// if ( lineIntersectLine(  x1, y1, x2, y2, x3, y3, x4, y4  ) ) return 1;
-					/***
-					if ( arr[L].color != piv.color ) {
-						if ( lineIntersectLine( arr[L].x1,arr[L].y1,arr[L].x2,arr[L].y2, 
-							 piv.x1,piv.y1,piv.x2,piv.y2 ) ) {
-							prt(("e6304 %f %f %f %f   %f %f %f %f  intersect\n",
-								  arr[L].x1,arr[L].y1,arr[L].x2,arr[L].y2,
-								  piv.x1,piv.y1,piv.x2,piv.y2  ));
-							 return 1;
-					    }
-					}
-					***/
-					L++; 
-				}
-    			if (L<R) { arr[R--]=arr[L];  }
-    	    }
-    
-            arr[L]=piv; 
-			beg[i+1]=L+1; end[i+1]=end[i]; end[i++]=L; 
-    
-            if (end[i]-beg[i]>end[i-1]-beg[i-1]) {
-            	swap=beg[i]; beg[i]=beg[i-1]; beg[i-1]=swap;
-            	swap=end[i]; end[i]=end[i-1]; end[i-1]=swap; 
-    	  	} 
-  	  	} else {
-        	i--; 
-  	  	}
-   }
-
-   return 0;
-}
-#endif
-
 ////////////////////////////////////////// 2D orientation //////////////////////
 short JagGeo::orientation(double x1, double y1, double x2, double y2, double x3, double y3 )
 {
@@ -17346,7 +17384,6 @@ bool JagGeo::pointDistanceEllipse( int srid, double px, double py, double x0, do
 {
 
     // todo001 problem
-    prt(("001!!!!!!!!!!!!!!!!!!!!"));
     if ( arg.caseEqual("center") ) {
         dist = JagGeo::distance( x0, y0, px, py, srid );
         return true;
@@ -21510,6 +21547,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 	AbaxDataString othertype;
 	int rc = 0;
 	char *p = (char*)instr.c_str();
+	if ( ! p || *p == '\0' ) return -1;
 	if ( strncasecmp( p, "point(", 6 ) == 0 || strncasecmp( p, "point3d(", 8 ) == 0 ) {
 		while ( *p != '(' ) ++p; ++p;  // (p
 		if ( *p == 0 ) return -10;
@@ -22192,7 +22230,6 @@ bool JagGeo::isPolygonCW( const JagStrSplit &sp )
 
 
 ///////// additon or union
-//qwer
 AbaxDataString JagGeo::doPointAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
@@ -22434,7 +22471,6 @@ AbaxDataString JagGeo::doMultiPolygon3DAddition( const AbaxDataString &mk1, int 
 }
 
 // Union of two polygons
-// qwer
 AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
 								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
@@ -22486,4 +22522,673 @@ AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, con
 	// int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr )
 
 }
+
+
+AbaxDataString JagGeo::doPointIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1, 
+											 const AbaxDataString &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0;
+	if ( 3 == dim1 ) { pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); } 
+
+	AbaxDataString val;
+	if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		if ( 3 == dim2 ) { 
+			double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			if ( jagEQ(px0,x0) && jagEQ(py0,y0) && jagEQ(pz0, z0) ) {
+				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
+				      + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2];
+			} 
+		} else {
+			if ( jagEQ(px0,x0) && jagEQ(py0,y0) ) {
+				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1];
+			} 
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		if ( 3 == dim2 ) { 
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+			double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+			if ( jagEQ(px0,x1) && jagEQ(py0,y1) && jagEQ(pz0, z1) ) {
+				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
+				      + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
+			} else if ( jagEQ(px0,x2) && jagEQ(py0,y2) && jagEQ(pz0, z2) ) {
+				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
+				      + sp2[JAG_SP_START+3] + " " + sp2[JAG_SP_START+4] + " " + sp2[JAG_SP_START+5];
+			}
+		} else {
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			if ( jagEQ(px0,x1) && jagEQ(py0,y1) ) {
+				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1];
+			} else if ( jagEQ(px0,x2) && jagEQ(py0,y2) ) {
+				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp2[JAG_SP_START+2] + " " + sp2[JAG_SP_START+3];
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D
+	            || colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
+	            || colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_POLYGON3D
+	            || colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		// point or point3d
+		if ( 2 == dim2 ) {
+			AbaxDataString xs, ys;
+			if ( matchPoint2D( px0,py0, sp2, xs, ys ) ) {
+				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + xs + " " + ys;
+			}
+		} else if ( 3 == dim2 ) {
+			AbaxDataString xs, ys, zs;
+			if ( matchPoint3D( px0,py0,pz0, sp2, xs, ys, zs ) ) {
+				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") + xs + " " + ys + " " + zs;
+			}
+		}
+	} 
+	return val;
+}
+
+// No need to check points
+// output is multipoint MP/MP3
+AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
+                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+
+	double px1,py1,pz1,px2,py2,pz2;
+	if ( 3 == dim1 ) { 
+		px1 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+		py1 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+		pz1 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+		px2 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+		py2 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+		pz2 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+	} else {
+		px1 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+		py1 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+		px2 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+		py2 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+	}
+
+	AbaxDataString val;
+	int cnt = 0;
+	if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		if ( 3 == dim2 ) { 
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+			double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+			JagLine3D line1(px1,py1,pz1, px2,py2,pz2);
+			JagLine3D line2(x1,y1,z1, x2,y2,z2);
+			JagVector<JagPoint3D> res;
+			val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0") ;
+			bool sect = JagCGAL::hasIntersection( line1, line2, res );
+			if ( sect ) {
+				for ( int i=0; i < res.size(); ++i ) {
+					val += AbaxDataString(" ") + doubleToStr(res[i].x) + ":" + doubleToStr(res[i].y) + ":" + doubleToStr(res[i].z);
+					++cnt;
+				}
+			}
+		} else {
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			JagLine2D line1(px1,py1,px2,py2);
+			JagLine2D line2(x1,y1, x2,y2);
+			JagVector<JagPoint2D> res;
+			val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+			bool sect = JagCGAL::hasIntersection( line1, line2, res );
+			if ( sect ) {
+				for ( int i=0; i < res.size(); ++i ) {
+					val += AbaxDataString(" ") + doubleToStr(res[i].x) + ":" + doubleToStr(res[i].y);
+					++cnt;
+				}
+			}
+
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D
+	            || colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
+	            || colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+		// point or point3d
+		if ( 2 == dim2 ) {
+			val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+			JagLine2D line1(px1,py1,px2,py2);
+			JagVector<JagPoint2D> vec;
+			if ( line2DLineStringIntersection( line1, sp2, vec )) {
+				for ( int i=0; i < vec.size(); ++i ) {
+					val += AbaxDataString(" ") + doubleToStr(vec[i].x) + ":" + doubleToStr(vec[i].y);
+					++cnt;
+				}
+			}
+		} else if ( 3 == dim2 ) {
+			val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+			JagLine3D line1(px1,py1,pz1, px2,py2,pz2);
+			JagVector<JagPoint3D> vec;
+			if ( line3DLineStringIntersection( line1, sp2, vec )) {
+				for ( int i=0; i < vec.size(); ++i ) {
+					val += AbaxDataString(" ") + doubleToStr(vec[i].x) + ":" + doubleToStr(vec[i].y) + ":" + doubleToStr(vec[i].z);
+					++cnt;
+				}
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		// point or point3d
+		if ( 2 == dim2 ) {
+			val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+			AbaxDataString xs, ys;
+			if ( matchPoint2D( px1,py1, sp2, xs, ys ) ) {
+				val += AbaxDataString(" ") + xs + ":" + ys;
+				++cnt;
+			}
+			if ( matchPoint2D( px2,py2, sp2, xs, ys ) ) {
+				val += AbaxDataString(" ") + xs + ":" + ys;
+				++cnt;
+			}
+
+		} else if ( 3 == dim2 ) {
+			val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+			AbaxDataString xs, ys, zs;
+			if ( matchPoint3D( px1,py1,pz1, sp2, xs, ys, zs ) ) {
+				val += AbaxDataString(" ") + xs + ":" + ys + ":" + zs;
+				++cnt;
+			}
+			if ( matchPoint3D( px2,py2,pz2, sp2, xs, ys, zs ) ) {
+				val += AbaxDataString(" ") + xs + ":" + ys + ":" + zs;
+				++cnt;
+			}
+		}
+	} 
+
+	if ( cnt > 0 ) {
+		return val;
+	} else {
+		return "";
+	}
+}
+
+AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
+                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+	AbaxDataString val;
+	if ( 2 == dim2 ) {
+		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+	} else {
+		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+	}
+
+	const char *str; char *p;
+	double px1,py1,pz1,px2,py2,pz2;
+	int cnt = 0;
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		if ( 2 == dim2 ) {
+    		JagVector<JagPoint2D> vec;
+			bool intsect =  lineStringIntersectLineString( "",sp1, "", sp2, true, vec );
+			if ( intsect ) {
+   				for ( int i=0; i < vec.size(); ++i ) {
+    				val += AbaxDataString(" ") + doubleToStr(vec[i].x) + ":" + doubleToStr(vec[i].y);
+    				++cnt;
+				}
+			}
+		} else if ( 3 == dim2 ) {
+    		JagVector<JagPoint3D> vec;
+			bool intsect =  lineString3DIntersectLineString3D( "",sp1, "", sp2, true, vec );
+			if ( intsect ) {
+   				for ( int i=0; i < vec.size(); ++i ) {
+   					val += AbaxDataString(" ") + doubleToStr(vec[i].x) + ":" + doubleToStr(vec[i].y) + ":" + doubleToStr(vec[i].z);
+   					++cnt;
+   				}
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
+				|| colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+		if ( 2 == dim2 ) {
+			JagPolygon pgon;
+			int n = JagParser::addPolygonData( pgon, sp2, false );
+			if ( n <= 0 ) return "";
+			JagVector<AbaxDataString> svec;
+			splitPolygonToVector( pgon, false, svec );
+			bool intsect;
+			for ( int i=0; i < svec.size(); ++i ) {
+				JagStrSplit sp( svec[i], ' ', true );
+    			JagVector<JagPoint2D> pvec;
+				intsect =  lineStringIntersectLineString( "",sp1, "", sp, true, pvec );
+				if ( intsect ) {
+   					for ( int i=0; i < pvec.size(); ++i ) {
+   						val += AbaxDataString(" ") + doubleToStr(pvec[i].x) + ":" + doubleToStr(pvec[i].y);
+   						++cnt;
+   					}
+				}
+			}
+		} else if ( 3 == dim2 ) {
+			JagPolygon pgon;
+			int n = JagParser::addPolygon3DData( pgon, sp2, false );
+			if ( n <= 0 ) return "";
+			JagVector<AbaxDataString> svec;
+			splitPolygonToVector( pgon, true, svec );
+			bool intsect;
+			for ( int i=0; i < svec.size(); ++i ) {
+				JagStrSplit sp( svec[i], ' ', true );
+    			JagVector<JagPoint3D> pvec;
+				intsect =  lineString3DIntersectLineString3D( "",sp1, "", sp, true, pvec );
+				if ( intsect ) {
+   					for ( int i=0; i < pvec.size(); ++i ) {
+   						val += AbaxDataString(" ") + doubleToStr(pvec[i].x) + ":" + doubleToStr(pvec[i].y);
+   						++cnt;
+   					}
+				}
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		if ( 2 == dim2 ) {
+			JagVector<JagPoint2D> vec1;
+			JagVector<JagPoint2D> vec2;
+			JagCGAL::split2DSPToVector( sp1, vec1 );
+			JagCGAL::split2DSPToVector( sp2, vec2 );
+			int len1 = vec1.size();
+			int len2 = vec1.size();
+			JagPoint2D *pt1 =new JagPoint2D[len1];
+			JagPoint2D *pt2 =new JagPoint2D[len2];
+			for ( int i=0; i < len1; ++i ) { pt1[i] = vec1[i]; }
+			for ( int i=0; i < len2; ++i ) { pt2[i] = vec2[i]; }
+			sortLinePoints( pt1, len1 );
+			sortLinePoints( pt2, len2 );
+			JagVector<JagPoint2D> pvec;
+			JagSortedSetJoin( pt1, len1, pt2, len2, pvec );
+			for ( int i=0; i < pvec.size(); ++i ) {
+   				val += AbaxDataString(" ") + doubleToStr(pvec[i].x) + ":" + doubleToStr(pvec[i].y);
+   				++cnt;
+			}
+			delete [] pt1;
+			delete [] pt2;
+		} else if ( 3 == dim2 ) {
+			JagVector<JagPoint3D> vec1;
+			JagVector<JagPoint3D> vec2;
+			JagCGAL::split3DSPToVector( sp1, vec1 );
+			JagCGAL::split3DSPToVector( sp2, vec2 );
+			int len1 = vec1.size();
+			int len2 = vec1.size();
+			JagPoint3D *pt1 =new JagPoint3D[len1];
+			JagPoint3D *pt2 =new JagPoint3D[len2];
+			for ( int i=0; i < len1; ++i ) { pt1[i] = vec1[i]; }
+			for ( int i=0; i < len2; ++i ) { pt2[i] = vec2[i]; }
+			sortLinePoints( pt1, len1 );
+			sortLinePoints( pt2, len2 );
+			JagVector<JagPoint3D> pvec;
+			JagSortedSetJoin( pt1, len1, pt2, len2, pvec );
+			for ( int i=0; i < pvec.size(); ++i ) {
+   				val += AbaxDataString(" ") + doubleToStr(pvec[i].x) + ":" + doubleToStr(pvec[i].y);
+   				++cnt;
+			}
+			delete [] pt1;
+			delete [] pt2;
+		}
+	} 
+
+	if ( cnt > 0 ) {
+		return val;
+	} else {
+		return "";
+	}
+}
+
+// sp1 is m-linestring;  sp2: m-linestring/polygon
+AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
+                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+	AbaxDataString val;
+	if ( 2 == dim2 ) {
+		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+	} else {
+		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+	}
+
+	int cnt = 0;
+    bool intsect;
+	if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
+				|| colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+		if ( 2 == dim2 ) {
+        	JagPolygon pgon1;
+        	int n = JagParser::addPolygonData( pgon1, sp1, false );
+        	if ( n <= 0 ) return "";
+        	JagVector<AbaxDataString> svec1;
+        	splitPolygonToVector( pgon1, false, svec1 );
+        
+        	JagPolygon pgon2;
+        	n = JagParser::addPolygonData( pgon2, sp2, false );
+        	if ( n <= 0 ) return "";
+        	JagVector<AbaxDataString> svec2;
+        	splitPolygonToVector( pgon2, false, svec2 );
+        
+        	for ( int k=0; k < svec1.size(); ++k ) {
+        		JagStrSplit sp11( svec1[k], ' ', true );
+        		for ( int i=0; i < svec2.size(); ++i ) {
+        			JagStrSplit sp22( svec2[i], ' ', true );
+            		JagVector<JagPoint2D> pvec;
+        			intsect = lineStringIntersectLineString( "",sp11, "", sp22, true, pvec );
+        			if ( intsect ) {
+           				for ( int i=0; i < pvec.size(); ++i ) {
+           					val += AbaxDataString(" ") + doubleToStr(pvec[i].x) + ":" + doubleToStr(pvec[i].y);
+           					++cnt;
+           				}
+        			}
+        		}
+        	}
+		} else {
+        	JagPolygon pgon1;
+        	int n = JagParser::addPolygon3DData( pgon1, sp1, false );
+        	if ( n <= 0 ) return "";
+        	JagVector<AbaxDataString> svec1;
+        	splitPolygonToVector( pgon1, false, svec1 );
+        
+        	JagPolygon pgon2;
+        	n = JagParser::addPolygon3DData( pgon2, sp2, false );
+        	if ( n <= 0 ) return "";
+        	JagVector<AbaxDataString> svec2;
+        	splitPolygonToVector( pgon2, false, svec2 );
+        
+        	for ( int k=0; k < svec1.size(); ++k ) {
+        		JagStrSplit sp11( svec1[k], ' ', true );
+        		for ( int i=0; i < svec2.size(); ++i ) {
+        			JagStrSplit sp22( svec2[i], ' ', true );
+            		JagVector<JagPoint3D> pvec;
+        			intsect = lineString3DIntersectLineString3D( "",sp11, "", sp22, true, pvec );
+        			if ( intsect ) {
+           				for ( int i=0; i < pvec.size(); ++i ) {
+           					val += AbaxDataString(" ") + doubleToStr(pvec[i].x) 
+							       + ":" + doubleToStr(pvec[i].y) + ":" + doubleToStr(pvec[i].z);
+           					++cnt;
+           				}
+        			}
+        		}
+        	}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		if ( 2 == dim2 ) {
+        	JagPolygon pgon1;
+        	int n = JagParser::addPolygonData( pgon1, sp1, false );
+        	if ( n <= 0 ) return "";
+        	JagVector<AbaxDataString> svec1;
+        	splitPolygonToVector( pgon1, false, svec1 );
+        
+			JagVector<JagPolygon> pgvec;
+			n = JagParser::addMultiPolygonData( pgvec, sp2, false, false );
+        	if ( n <= 0 ) return "";
+        	for ( int m=0; m < svec1.size(); ++m ) {
+        		JagStrSplit sp11( svec1[m], ' ', true );
+    			for ( int j=0; j < pgvec.size(); ++j ) {
+                	const JagPolygon &pgon2 = pgvec[j];
+                	JagVector<AbaxDataString> svec2;
+                	splitPolygonToVector( pgon2, false, svec2 );
+                	for ( int k=0; k < svec2.size(); ++k ) {
+                		JagStrSplit sp22( svec2[k], ' ', true );
+                   		JagVector<JagPoint2D> pvec;
+                		intsect = lineStringIntersectLineString( "",sp11, "", sp22, true, pvec );
+                		if ( intsect ) {
+                   			for ( int i=0; i < pvec.size(); ++i ) {
+                   				val += AbaxDataString(" ") + doubleToStr(pvec[i].x) + ":" + doubleToStr(pvec[i].y);
+                   				++cnt;
+                   			}
+                		}
+                	}
+    			}
+			}
+		} else {
+        	JagPolygon pgon1;
+        	int n = JagParser::addPolygon3DData( pgon1, sp1, false );
+        	if ( n <= 0 ) return "";
+        	JagVector<AbaxDataString> svec1;
+        	splitPolygonToVector( pgon1, false, svec1 );
+        
+			JagVector<JagPolygon> pgvec;
+			n = JagParser::addMultiPolygonData( pgvec, sp2, false, true );
+        	if ( n <= 0 ) return "";
+        	for ( int m=0; m < svec1.size(); ++m ) {
+        		JagStrSplit sp11( svec1[m], ' ', true );
+    			for ( int j=0; j < pgvec.size(); ++j ) {
+                	const JagPolygon &pgon2 = pgvec[j];
+                	JagVector<AbaxDataString> svec2;
+                	splitPolygonToVector( pgon2, false, svec2 );
+                	for ( int k=0; k < svec2.size(); ++k ) {
+                		JagStrSplit sp22( svec2[k], ' ', true );
+                   		JagVector<JagPoint3D> pvec;
+                		intsect = lineString3DIntersectLineString3D( "",sp11, "", sp22, true, pvec );
+                		if ( intsect ) {
+                   			for ( int i=0; i < pvec.size(); ++i ) {
+                   				val += AbaxDataString(" ") + doubleToStr(pvec[i].x) + ":" 
+									+ doubleToStr(pvec[i].y) + ":" + doubleToStr(pvec[i].z);
+                   				++cnt;
+                   			}
+                		}
+                	}
+    			}
+			}
+		}
+		
+	} 
+
+	if ( cnt > 0 ) {
+		return val;
+	} else {
+		return "";
+	}
+}
+
+// polygon intersect polygon? multi-polygon?
+AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
+                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+	if ( 2 != dim2 ) return "";  // no 3D polygons
+	AbaxDataString val;
+	if ( 2 == dim2 ) {
+		val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
+	} else {
+		val = AbaxDataString("CJAG=0=0=MG3=d 0:0:0:0:0:0");
+	}
+
+	int cnt = 0;
+	int n;
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		if ( 2 == dim2 ) {
+        	JagPolygon pgon1, pgon2;
+        	n = JagParser::addPolygonData( pgon1, sp1, false );
+        	if ( n <= 0 ) return "";
+        	n = JagParser::addPolygonData( pgon2, sp2, false );
+        	if ( n <= 0 ) return "";
+			JagVector<JagPolygon> vec;
+			n = JagCGAL::getTwoPolygonIntersection( pgon1, pgon2, vec );
+        	if ( n <= 0 ) return "";
+			for ( int i=0; i <vec.size(); ++i ) {
+				if ( vec[i].size() < 1 ) continue;
+			    if ( i > 0 ) { val += " !"; }
+			    for ( int k=0; k < vec[i].size(); ++k ) {
+				    const JagLineString3D &lstr = vec[i].linestr[k];
+					if ( lstr.size() < 1 ) continue;
+			    	if ( k > 0 ) { val += " |"; }
+					for ( int j=0; j < lstr.size(); ++j ) {
+						val += AbaxDataString(" ") + doubleToStr(lstr.point[j].x) + ":" + doubleToStr(lstr.point[j].y);
+						++cnt;
+					}
+			  	}
+			}
+		} 
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+       	JagPolygon pgon1;
+       	n = JagParser::addPolygonData( pgon1, sp1, false );
+       	if ( n <= 0 ) return "";
+
+		JagVector<JagPolygon> pgvec;
+    	n = JagParser::addMultiPolygonData( pgvec, sp2, false, false );
+       	if ( n <= 0 ) return "";
+
+		for ( int i=0; i < pgvec.size(); ++i ) {
+			const JagPolygon &pgon2 = pgvec[i];
+			if ( pgon2.size() < 1 ) continue;
+			JagVector<JagPolygon> vec;
+			n = JagCGAL::getTwoPolygonIntersection( pgon1, pgon2, vec );
+			if ( n <= 0 ) continue;
+			for ( int i=0; i <vec.size(); ++i ) {
+				if ( vec[i].size() < 1 ) continue;
+			    if ( i > 0 ) { val += " !"; }
+			    for ( int k=0; k < vec[i].size(); ++k ) {
+					const JagLineString3D &lstr = vec[i].linestr[k];
+					if ( lstr.size() < 1 ) continue;
+			    	if ( k > 0 ) { val += " |"; }
+					for ( int j=0; j < lstr.size(); ++j ) {
+						val += AbaxDataString(" ") + doubleToStr(lstr.point[j].x) + ":" + doubleToStr(lstr.point[j].y);
+						++cnt;
+					}
+			  	}
+			}
+		}
+	}
+
+	if ( cnt > 0 ) {
+		return val;
+	} else {
+		return "";
+	}
+}
+
+// sp: linestring/m-linestring/polygon/m-polygon
+bool JagGeo::matchPoint2D( double px, double py, const JagStrSplit &sp, AbaxDataString &xs, AbaxDataString &ys )
+{
+	double x, y;
+	const char *str; char *p;
+	bool rc = false;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':' ) != 1 ) continue;
+       	get2double(str, p, ':', x, y );
+		if ( jagEQ(px,x) && jagEQ(py,y) ) {
+			JagStrSplit ss(sp[i], ':');
+			xs = ss[0]; ys = ss[1];
+			rc = true;
+			break;
+		}
+	}
+
+	return rc;
+}
+
+// sp: linestring/m-linestring/polygon/m-polygon
+bool JagGeo::matchPoint3D( double px, double py, double pz, const JagStrSplit &sp, 
+							AbaxDataString &xs, AbaxDataString &ys, AbaxDataString &zs )
+{
+	double x, y, z;
+	const char *str; char *p;
+	bool rc = false;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':' ) != 2 ) continue;
+    	get3double(str, p, ':', x, y, z );
+		if ( jagEQ(px,x) && jagEQ(py,y) && jagEQ(pz,z) ) {
+			JagStrSplit ss(sp[i], ':');
+			xs = ss[0]; ys = ss[1]; zs = ss[2];
+			rc = true;
+			break;
+		}
+	}
+	return rc;
+}
+
+// sp is of linestring or multi-linestring
+bool  JagGeo::line2DLineStringIntersection( const JagLine2D &line1, const JagStrSplit &sp, JagVector<JagPoint2D> &vec )
+{
+	JagPolygon pgon;
+	int n = JagParser::addPolygonData( pgon, sp, false );
+	if ( n <= 0 ) return false;
+	int cnt = 0;
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &lstr = pgon.linestr[i];
+		for ( int j=0; j < lstr.size() -1; ++j ) {
+			JagLine2D line2(lstr.point[j].x, lstr.point[j].y,  lstr.point[j+1].x, lstr.point[j+1].y );
+			if ( JagCGAL::hasIntersection( line1, line2, vec ) ) {
+				cnt += vec.size();
+			}
+		}
+	}
+	if ( cnt < 1 ) return false;
+	return true;
+}
+
+// sp is of linestring or multi-linestring
+bool  JagGeo::line3DLineStringIntersection( const JagLine3D &line1, const JagStrSplit &sp, JagVector<JagPoint3D> &vec )
+{
+	JagPolygon pgon;
+	int n = JagParser::addPolygon3DData( pgon, sp, false );
+	if ( n <= 0 ) return false;
+	int cnt = 0;
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &lstr = pgon.linestr[i];
+		for ( int j=0; j < lstr.size() -1; ++j ) {
+			JagLine3D line2( lstr.point[j].x, lstr.point[j].y, lstr.point[j].z, 
+							 lstr.point[j+1].x, lstr.point[j+1].y, lstr.point[j+1].z );
+			if ( JagCGAL::hasIntersection( line1, line2, vec ) ) {
+				cnt += vec.size();
+			}
+		}
+	}
+
+	if ( cnt < 1 ) return false;
+	return true;
+}
+
+void JagGeo::appendLine2DLine2DIntersection(double x1, double y1, double x2, double y2,
+                                            double mx1, double my1, double mx2, double my2, JagVector<JagPoint2D> &vec )
+{
+	JagLine2D line1(x1,y1,x2,y2);
+	JagLine2D line2(mx1,my1,mx2,my2);
+	JagCGAL::hasIntersection( line1, line2, vec );
+}
+
+void JagGeo::appendLine3DLine3DIntersection(double x1, double y1, double z1, double x2, double y2, double z2,
+                                            double mx1, double my1, double mz1, double mx2, double my2, double mz2, 
+											JagVector<JagPoint3D> &vec )
+{
+	JagLine3D line1(x1,y1,z1, x2,y2,z2);
+	JagLine3D line2(mx1,my1,mz1, mx2,my2,mz2);
+	JagCGAL::hasIntersection( line1, line2, vec );
+}
+
+void JagGeo::splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<AbaxDataString> &svec )
+{
+	for ( int i=0; i < pgon.size(); ++i ) {
+		AbaxDataString str = "CJAG=0=0=XX=0 0:0:0:0";
+		const JagLineString3D &lstr = pgon.linestr[i];
+		for ( int j=0; j< lstr.size(); ++j ) {
+			if ( is3D ) {
+				str += AbaxDataString(" ") + doubleToStr(lstr.point[j].x) + ":" + doubleToStr(lstr.point[j].y) + ":" + doubleToStr(lstr.point[j].z);
+			} else {
+				str += AbaxDataString(" ") + doubleToStr(lstr.point[j].x) + ":" + doubleToStr(lstr.point[j].y);
+			}
+			svec.append( str );
+		}
+	}
+}
+
 

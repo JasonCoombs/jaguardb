@@ -1,6 +1,8 @@
 #ifndef _jag_shape_h_
 #define _jag_shape_h_
 
+#include <math.h>
+
 #define jagmin(a, b) ( (a) < (b) ? (a) : (b))
 #define jagmax(a, b) ( (a) > (b) ? (a) : (b))
 #define jagmin3(a, b, c) jagmin(jagmin(a, b),(c))
@@ -21,6 +23,23 @@ class JagPoint2D
 	 void print() const { printf("x=%.1f y=%.1f ", x, y ); }
      double x;
 	 double y;
+	 int operator< ( const JagPoint2D &p2 ) const 
+	 { 
+	 	return (x < p2.x && y < p2.y );
+	 }
+	 int operator<= ( const JagPoint2D &p2 ) const 
+	 { 
+	 	return (x <= p2.x && y <= p2.y );
+	 }
+	 int operator>= ( const JagPoint2D &p2 ) const 
+	 { 
+	 	return (x >= p2.x && y >= p2.y );
+	 }
+	 int operator== ( const JagPoint2D &p2 ) const 
+	 { 
+	 	return ( fabs(x-p2.x) < 0.0000001 && fabs(y - p2.y) < 0.0000001 );
+	 }
+
 };
 
 
@@ -96,6 +115,22 @@ class JagPoint3D
      double x;
 	 double y;
 	 double z;
+	 int operator< ( const JagPoint3D &p2 ) const 
+	 { 
+	 	return (x < p2.x && y < p2.y && z < p2.z );
+	 }
+	 int operator<= ( const JagPoint3D &p2 ) const 
+	 { 
+	 	return (x <= p2.x && y <= p2.y && z <= p2.z );
+	 }
+	 int operator>= ( const JagPoint3D &p2 ) const 
+	 { 
+	 	return (x >= p2.x && y >= p2.y && z >= p2.z );
+	 }
+	 int operator== ( const JagPoint3D &p2 ) const 
+	 { 
+	 	return ( fabs(x-p2.x) < 0.0000001 && fabs(y - p2.y) < 0.0000001 && fabs(z - p2.z ) < 0.0000001 );
+	 }
 };
 
 class JagSortPoint3D

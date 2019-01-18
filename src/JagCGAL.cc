@@ -2,16 +2,6 @@
 #include <JagCGAL.h>
 #include <JagParser.h>
 
-/***
- * typedef CGAL::Exact_predicates_inexact_constructions_kernel CGALKernel;
- * typedef CGALKernel::Point_2 CGALKernelPoint_2;
- * typedef std::vector<Point_2> CGALKernelPoints;
- *
- * typedef CGAL::Simple_cartesian<double> CartKernel;
- * typedef CartKernel::Point_2 CartKernelPoint2;
- * typedef CartKernel::Segment_2 CartKernelSegment2;
- *
-***/
 
 void JagCGAL::getConvexHull2DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value )
 {
@@ -44,10 +34,10 @@ void JagCGAL::getConvexHull2DStr( const JagLineString &line, const AbaxDataStrin
 
 void JagCGAL::getConvexHull2D( const JagLineString &line, JagLineString &hull )
 {
-	CGALKernelPoints2D vpoints, vresult;
+	std::vector<CGALKernel::Point_2> vpoints, vresult;
 	const JagVector<JagPoint> &point = line.point;
 	for ( int i = 0; i <  point.size(); ++i ) {
-		vpoints.push_back(  CGALKernelPoint_2( jagatof(point[i].x), jagatof(point[i].y) ));
+		vpoints.push_back(  CGALKernel::Point_2( jagatof(point[i].x), jagatof(point[i].y) ));
 	}
 
 	CGAL::convex_hull_2( vpoints.begin(), vpoints.end(), std::back_inserter(vresult) );
@@ -59,10 +49,10 @@ void JagCGAL::getConvexHull2D( const JagLineString &line, JagLineString &hull )
 void JagCGAL::getConvexHull3D( const JagLineString &line, JagLineString &hull )
 {
 	//prt(("s3382 getConvexHull3D line.size=%d\n", line.size() ));
-	CGALKernelPoints3D vpoints;
+	std::vector<CGALKernel::Point_3> vpoints;
 	const JagVector<JagPoint> &point = line.point;
 	for ( int i = 0; i <  point.size(); ++i ) {
-		vpoints.push_back(  CGALKernelPoint_3( jagatof(point[i].x), jagatof(point[i].y), jagatof(point[i].z) ));
+		vpoints.push_back(  CGALKernel::Point_3( jagatof(point[i].x), jagatof(point[i].y), jagatof(point[i].z) ));
 	}
 
 	CGALSurfaceMesh sm;
@@ -235,7 +225,7 @@ bool JagCGAL::getBuffer2D( const TGeo &ls, const AbaxDataString &arg, JagVector<
 	for ( iter = result.begin(); iter != result.end(); ++iter ) {
 		prt(("s8272 iter :\n" ));
 		//std::cout << *iter << std::endl;
-		const BoostRingType &ring = iter->outer();
+		const BoostRing2D &ring = iter->outer();
 		JagLineString3D lstr;
 		for ( auto it = boost::begin(ring); it != boost::end(ring); ++it ) {
 			lstr.add( it->x(), it->y() );
@@ -296,7 +286,7 @@ bool JagCGAL::getBufferPolygon2DStr(  const JagPolygon &pgon, int srid, const Ab
 	for ( int i=0; i < pgon.size(); ++i ) {
 		const JagLineString3D &linestr = pgon.linestr[i];
 		std::vector< BoostPoint2D > pointList; 
-		BoostRingType  ring;
+		BoostRing2D  ring;
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
 			pointList.push_back(p2);
@@ -322,7 +312,7 @@ bool JagCGAL::getBufferMultiLineString2DStr(  const JagPolygon &pgon, int srid, 
 	boost::geometry::model::multi_linestring<BoostLineString2D> mlstr;
 	for ( int i=0; i < pgon.size(); ++i ) {
 		const JagLineString3D &linestr = pgon.linestr[i];
-		//BoostRingType ring;
+		//BoostRing2D ring;
 		std::vector< BoostPoint2D > pointList; 
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
@@ -352,7 +342,7 @@ bool JagCGAL::getBufferMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec, i
 		const JagPolygon &pgon = pgvec[k];
 		for ( int i=0; i < pgon.size(); ++i ) {
     		const JagLineString3D &linestr = pgon.linestr[i];
-    		BoostRingType ring;
+    		BoostRing2D ring;
     		std::vector< BoostPoint2D > pointList; 
     		for (  int j=0; j< linestr.size(); ++j ) {
     			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
@@ -655,7 +645,7 @@ bool JagCGAL::getIsSimplePolygon2DStr(  const JagPolygon &pgon )
 	for ( int i=0; i < pgon.size(); ++i ) {
 		const JagLineString3D &linestr = pgon.linestr[i];
 		std::vector< BoostPoint2D > pointList; 
-		BoostRingType  ring;
+		BoostRing2D  ring;
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
 			pointList.push_back(p2);
@@ -674,7 +664,7 @@ bool JagCGAL::getIsSimpleMultiLineString2DStr(  const JagPolygon &pgon )
 	boost::geometry::model::multi_linestring<BoostLineString2D> mlstr;
 	for ( int i=0; i < pgon.size(); ++i ) {
 		const JagLineString3D &linestr = pgon.linestr[i];
-		//BoostRingType ring;
+		//BoostRing2D ring;
 		std::vector< BoostPoint2D > pointList; 
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
@@ -697,7 +687,7 @@ bool JagCGAL::getIsSimpleMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec 
 		const JagPolygon &pgon = pgvec[k];
 		for ( int i=0; i < pgon.size(); ++i ) {
     		const JagLineString3D &linestr = pgon.linestr[i];
-    		BoostRingType ring;
+    		BoostRing2D ring;
     		std::vector< BoostPoint2D > pointList; 
     		for (  int j=0; j< linestr.size(); ++j ) {
     			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
@@ -736,7 +726,7 @@ bool JagCGAL::getIsValidPolygon2DStr(  const JagPolygon &pgon )
 	for ( int i=0; i < pgon.size(); ++i ) {
 		const JagLineString3D &linestr = pgon.linestr[i];
 		std::vector< BoostPoint2D > pointList; 
-		BoostRingType  ring;
+		BoostRing2D  ring;
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
 			pointList.push_back(p2);
@@ -756,7 +746,7 @@ bool JagCGAL::getIsValidMultiLineString2DStr(  const JagPolygon &pgon )
 	boost::geometry::model::multi_linestring<BoostLineString2D> mlstr;
 	for ( int i=0; i < pgon.size(); ++i ) {
 		const JagLineString3D &linestr = pgon.linestr[i];
-		//BoostRingType ring;
+		//BoostRing2D ring;
 		std::vector< BoostPoint2D > pointList; 
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
@@ -780,7 +770,7 @@ bool JagCGAL::getIsValidMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec )
 		const JagPolygon &pgon = pgvec[k];
 		for ( int i=0; i < pgon.size(); ++i ) {
     		const JagLineString3D &linestr = pgon.linestr[i];
-    		BoostRingType ring;
+    		BoostRing2D ring;
     		std::vector< BoostPoint2D > pointList; 
     		for (  int j=0; j< linestr.size(); ++j ) {
     			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
@@ -1118,7 +1108,7 @@ int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2,
 	for ( int i=0; i < pgon1.size(); ++i ) {
 		const JagLineString3D &linestr = pgon1.linestr[i];
 		std::vector< BoostPoint2D > pointList; 
-		BoostRingType  ring;
+		BoostRing2D  ring;
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
 			pointList.push_back(p2);
@@ -1135,7 +1125,7 @@ int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2,
 	for ( int i=0; i < pgon2.size(); ++i ) {
 		const JagLineString3D &linestr = pgon2.linestr[i];
 		std::vector< BoostPoint2D > pointList; 
-		BoostRingType  ring;
+		BoostRing2D  ring;
 		for (  int j=0; j< linestr.size(); ++j ) {
 			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
 			pointList.push_back(p2);
@@ -1156,6 +1146,132 @@ int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2,
 	}
 
 	return 0;
+}
+
+bool JagCGAL::hasIntersection( const JagLine2D &line1, const JagLine2D &line2, JagVector<JagPoint2D> &res )
+{
+	CGALKernel::Segment_2 seg1(CGALPoint2D(line1.x1, line1.y1), CGALPoint2D(line1.x2, line1.y2) );
+	CGALKernel::Segment_2 seg2(CGALPoint2D(line2.x1, line2.y1), CGALPoint2D(line2.x2, line2.y2) );
+	auto result = intersection(seg1, seg2);
+	if ( result ) {
+		boost::apply_visitor(JagIntersectionVisitor2D(res), *result);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool JagCGAL::hasIntersection( const JagLine3D &line1, const JagLine3D &line2, JagVector<JagPoint3D> &res )
+{
+	CGALKernel::Segment_3 seg1(CGALPoint3D(line1.x1, line1.y1, line1.z1), CGALPoint3D(line1.x2, line1.y2, line1.z2) );
+	CGALKernel::Segment_3 seg2(CGALPoint3D(line2.x1, line2.y1, line2.z1), CGALPoint3D(line2.x2, line2.y2, line2.z2) );
+	auto result = intersection(seg1, seg2);
+	if ( result ) {
+		boost::apply_visitor(JagIntersectionVisitor3D(res), *result);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+// sp: x:y x:y ... |  ... ! ... |
+void JagCGAL::split2DSPToVector( const JagStrSplit &sp, JagVector<JagPoint2D> &vec )
+{
+	const char *str;
+	char *p;
+	double x,y;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		str = sp[i].c_str();
+		if ( *str == '|' || *str == '!' ) continue;
+		if ( strchrnum( str, ':') != 1 ) continue;
+		get2double(str, p, ':', x, y );
+		vec.append(JagPoint2D(x,y) );
+	}
+}
+
+void JagCGAL::split3DSPToVector( const JagStrSplit &sp, JagVector<JagPoint3D> &vec )
+{
+	const char *str;
+	char *p;
+	double x,y,z;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		str = sp[i].c_str();
+		if ( *str == '|' || *str == '!' ) continue;
+		if ( strchrnum( str, ':') != 2 ) continue;
+		get3double(str, p, ':', x, y,z );
+		vec.append(JagPoint3D(x,y,z) );
+	}
+}
+
+// 2D only
+// return 0 or <0 error
+// return number of intersected polygons
+int JagCGAL::getTwoPolygonIntersection( const JagPolygon &pgon1, const JagPolygon &pgon2, JagVector<JagPolygon> &vec )
+{
+	if ( pgon1.size() < 1 || pgon2.size() < 1 ) return 0;
+
+	boost::geometry::model::polygon<BoostPoint2D,false> bgon1;
+	for ( int i=0; i < pgon1.size(); ++i ) {
+		const JagLineString3D &linestr = pgon1.linestr[i];
+		std::vector< BoostPoint2D > pointList; 
+		BoostRing2D  ring;
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::assign_points( ring, pointList );
+		boost::geometry::append( bgon1, ring );
+	}
+
+	boost::geometry::model::polygon<BoostPoint2D,false> bgon2;
+	for ( int i=0; i < pgon2.size(); ++i ) {
+		const JagLineString3D &linestr = pgon1.linestr[i];
+		std::vector< BoostPoint2D > pointList; 
+		BoostRing2D  ring;
+		for (  int j=0; j< linestr.size(); ++j ) {
+			BoostPoint2D p2( linestr.point[j].x, linestr.point[j].y );
+			pointList.push_back(p2);
+		}
+
+		boost::geometry::assign_points( ring, pointList );
+		boost::geometry::append( bgon2, ring );
+	}
+
+	std::vector<BoostPolygon2D> output;
+	boost::geometry::intersection( bgon1, bgon2, output);
+
+	double x, y;
+	BOOST_FOREACH( BoostPolygon2D const& poly, output) 
+	{
+		JagPolygon pgon;
+
+		// outer ring
+		JagLineString3D outlstr;
+		for( auto it = boost::begin(boost::geometry::exterior_ring(poly)); 
+			 it != boost::end(boost::geometry::exterior_ring(poly)); ++it ) {
+			x =  boost::geometry::get<0>(*it);
+			y =  boost::geometry::get<1>(*it);
+			outlstr.add( JagPoint2D(x,y) );
+		}
+		pgon.add( outlstr );
+
+		// interior rings
+		const std::vector<BoostRing2D> &inners = poly.inners();
+		for ( int i=0; i < inners.size(); ++i ) {
+			JagLineString3D inlstr;
+			BOOST_FOREACH( BoostPoint2D const& pt, inners[i] ) {
+				x =  boost::geometry::get<0>(pt);
+				y =  boost::geometry::get<1>(pt);
+				inlstr.add( JagPoint2D(x,y) );
+			}
+			pgon.add( inlstr );
+		}
+
+		vec.append( pgon );
+	}
+
+	return vec.size();
 }
 
 

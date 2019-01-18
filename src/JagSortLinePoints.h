@@ -78,3 +78,21 @@ int JagGeo::sortLinePoints( POINT arr[], int elements )
 
    return 0;
 }
+
+template <class POINT>
+int JagGeo::JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec )
+{
+	int i=0; int j=0;
+	int cnt = 0;
+	while ( true ) {
+		if ( i >= len1 || j >= len2 ) break;
+		if ( arr1[i] == arr2[j] ) {
+			vec.append( arr1[i] );
+			++cnt; ++i; ++j;
+		} else if ( arr1[i] < arr2[j] ) {
+			++i;
+		} else {
+			++j;
+		}
+	}
+}

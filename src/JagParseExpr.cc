@@ -1069,6 +1069,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
 	else if ( binaryOp == JAG_FUNC_UNION ) str = "union";
+	else if ( binaryOp == JAG_FUNC_INTERSECTION ) str = "intersection";
 	else if ( binaryOp == JAG_FUNC_COLLECT ) str = "collect";
 	else if ( binaryOp == JAG_FUNC_OUTERRING ) str = "outerring";
 	else if ( binaryOp == JAG_FUNC_OUTERRINGS ) str = "outerrings";
@@ -1139,7 +1140,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	//prt(("s2238 _right=%0x\n", _right ));
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER || _binaryOp == JAG_FUNC_UNIQUE
 	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
-		 || _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT
+		 || _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT || _binaryOp == JAG_FUNC_INTERSECTION
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3189,7 +3190,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			lstr = "0";
 			return 0;
 		}
-	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT ) {
+	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT || _binaryOp == JAG_FUNC_INTERSECTION ) {
 		prt(("s7140 before processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
 		prt(("s7140 before processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
 		try {
@@ -4142,6 +4143,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_INNERRINGN 
 		 || fop == JAG_FUNC_BUFFER 
 		 || fop == JAG_FUNC_UNION 
+		 || fop == JAG_FUNC_INTERSECTION 
 		 || fop == JAG_FUNC_COLLECT
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
@@ -4197,6 +4199,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
 		fop == JAG_FUNC_UNION || 
+		fop == JAG_FUNC_INTERSECTION || 
 		fop == JAG_FUNC_COLLECT || 
 		fop == JAG_FUNC_POLYGONN || 
 		fop == JAG_FUNC_OUTERRING || 
@@ -4425,6 +4428,9 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_SAME; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "equal", 5 ) ) {
 		fop = JAG_FUNC_SAME; len = 5; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "intersection", 12 ) ) {
+		// must be before the intersect
+		fop = JAG_FUNC_INTERSECTION; len = 12; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "intersect", 9 ) ) {
 		fop = JAG_FUNC_INTERSECT; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "closestpoint", 12 ) ) {
@@ -5251,6 +5257,8 @@ AbaxDataString BinaryOpNode::doTwoStrOp( int op, const AbaxDataString& mark1, co
 		return doAllUnion( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( op == JAG_FUNC_COLLECT ) {
 		return doAllCollect( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( op == JAG_FUNC_INTERSECTION ) {
+		return doAllIntersection( mark1, colType1, sp1, mark2, colType2, sp2 );
 	} else {
 		return "";
 	}
@@ -7040,7 +7048,7 @@ AbaxDataString BinaryOpNode::doAllCollect( const AbaxDataString& mark1, const Ab
 										int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2, 
 										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
 {
-	//prt(("s2410 doAllIntersect colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	//prt(("s2410 doAllCollect colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return JagGeo::doPointAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
@@ -7066,6 +7074,37 @@ AbaxDataString BinaryOpNode::doAllCollect( const AbaxDataString& mark1, const Ab
 		return JagGeo::doMultiPolygonAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		return JagGeo::doMultiPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else {
+		return "";
+	}
+}
+
+AbaxDataString BinaryOpNode::doAllIntersection( const AbaxDataString& mark1, const AbaxDataString &colType1, 
+										const JagStrSplit &sp1, const AbaxDataString& mark2, 
+										const AbaxDataString &colType2, const JagStrSplit &sp2 )
+{
+	//prt(("s2410 doAllIntersection colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPointIntersection(  colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPointIntersection(  colType2,sp2, colType1,sp1 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE || colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLineIntersection( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLineIntersection( colType2,sp2, colType1,sp1 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING || colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineStringIntersection( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineStringIntersection( colType2,sp2, colType1,sp1 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING || colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doMultiLineStringIntersection( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doMultiLineStringIntersection( colType2,sp2, colType1,sp1 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonIntersection( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonIntersection( colType2,sp2, colType1,sp1 );
 	} else {
 		return "";
 	}

@@ -34,27 +34,6 @@
 
 #include <JagCGAL.h>
 
-/**
-#include <boost/array.hpp>
-#include <boost/iterator.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/iterator/iterator_adaptor.hpp>
-***/
-
-
-//#define CGAL_HEADER_ONLY 1
-//#define BOOST_NO_RESULT_OF 1
-//#define CGAL_GMPQ_TYPE_H 1
-// OK here
-/**
-#include <CGAL/Simple_cartesian.h>
-//#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Polyhedron_3.h>
-#include <CGAL/Surface_mesh.h>
-#include <CGAL/convex_hull_3.h>
-**/
-
-
 #include <abax.h>
 #include <JagCfg.h>
 #include <JagTableSchema.h>
@@ -222,6 +201,7 @@ void test_distance();
 void test_cgal();
 void test_new( long n);
 void test_equation();
+void test_intersection();
 
 int main(int argc, char *argv[] )
 {
@@ -232,7 +212,7 @@ int main(int argc, char *argv[] )
 
 	// test_misc();
 	//testjson();
-	testrayrecord();
+	//testrayrecord();
 	//testwheretree();
 	//testtime();
 	//testlaststr();
@@ -299,6 +279,7 @@ int main(int argc, char *argv[] )
 	// test_cgal();
 	//test_new( N );
 	//test_equation();
+	test_intersection();
 }
 
 
@@ -464,10 +445,12 @@ void testrayrecord()
 	output.push_back("dsdsd2");
 	output.push_back("dsdsd3");
 
+	/***
 	std::stringstream ifs;
 	ifs << boost::geometry::wkt(output);
-	AbaxFixString out;
-	out = ifs.str();
+	AbaxDataString out;
+	out = ifs.str().c_str();
+	***/
 }
 
 void testwheretree()
@@ -3231,14 +3214,10 @@ void test_distance()
 
 //#include <CGAL/Simple_cartesian.h>
 #if 1
-typedef CGAL::Exact_predicates_inexact_constructions_kernel CGALKernel;
+//typedef CGAL::Exact_predicates_inexact_constructions_kernel CGALKernel;
 typedef CGALKernel::Point_2 Point_2;
-typedef std::vector<Point_2> Points;
-
-typedef CGAL::Simple_cartesian<double> CartKernel;
-typedef CartKernel::Point_2 Point2;
-typedef CartKernel::Segment_2 Segment2;
-
+typedef CGALKernel::Point_3 Point_3;
+//typedef std::vector<Point_2> Points;
 
 /**
 typedef CGAL::Exact_predicates_inexact_constructions_kernel  K;
@@ -3246,8 +3225,6 @@ typedef CGAL::Polyhedron_3<K>                     Polyhedron_3;
 typedef K::Point_3                                Point_3;
 typedef CGAL::Surface_mesh<Point_3>               Surface_mesh;
 **/
-
-
 
 void test_cgal()
 {
@@ -3262,7 +3239,7 @@ void test_cgal()
     }
 
     // convex_hull_2 of vector of points
-    Points vpoints, vresult;
+    std::vector<Point_2> vpoints, vresult;
     vpoints.push_back(Point_2(0,0));
     vpoints.push_back(Point_2(10,0));
     vpoints.push_back(Point_2(10,10));
@@ -3295,8 +3272,6 @@ void test_cgal()
 	JagCGAL::getConvexHull3D( lines, hull );
     prt(("result hull=%d:\n", hull.size() ));
 	hull.print();
-
-
 
     /////// orientation ///////////////
 	/***
@@ -3350,6 +3325,120 @@ void test_cgal()
 }
 #endif
 
+struct Intersection_visitor2 
+{
+  typedef void result_type;
+  Intersection_visitor2( ) { _a = 0; }
+  Intersection_visitor2( int a ) { _a = a; }
+
+  void operator()(const CGALKernel::Point_2& p) const
+  {
+    std::cout << "2D point " <<  p << std::endl;
+  }
+
+  void operator()(const CGALKernel::Segment_2& seg) const
+  {
+     std::cout << "2D segm " << seg << std::endl;
+	 CGALKernel::Point_2 s = seg.source();
+	 CGALKernel::Point_2 t = seg.target();
+     std::cout << "2D s.x " << s.x() << " y " << s.y() <<  std::endl;
+     std::cout << "2D t.x " << t.x() << " y " << t.y() <<  std::endl;
+  }
+  int _a;
+};
+
+struct Intersection_visitor3 
+{
+	Intersection_visitor3( int a ) { _a = a; }
+  typedef void result_type;
+
+  void operator()(const CGALKernel::Point_3& p) const
+  {
+    std::cout << "CGALKernelPoint_3 _a=" << _a << std::endl;
+    std::cout << p.x() << ":" << p.y() << std::endl;
+  }
+
+  void operator()(const CGALKernel::Segment_3& s) const
+  {
+    std::cout << "Segment_3 _a=" << _a << std::endl;
+    std::cout << s << std::endl;
+  }
+
+  int _a;
+};
+
+
+void test_intersection()
+{
+    CGALKernel::Segment_3 seg(CGALKernel::Point_3(0,0,8), CGALKernel::Point_3(2,2,2));
+	CGALKernel::Point_3 p1( 0, 0, 8 );
+	CGALKernel::Point_3 p2( 4, 8, 9 );
+    CGALKernel::Line_3 lin(p1, p2 );
+    CGALKernel::Segment_3 seg2(CGALKernel::Point_3(0,0,8), CGALKernel::Point_3(4,4,2));
+    auto result = intersection(seg, lin);
+	if ( result ) {
+		boost::apply_visitor(Intersection_visitor3(2), *result); 
+	} else {
+		std::cout << "3D No intersection point" << std::endl;
+	}
+
+    result = intersection(seg, seg2);
+	if ( result ) {
+		boost::apply_visitor(Intersection_visitor3(8), *result); 
+	} else {
+		std::cout << "3D No intersection point" << std::endl;
+	}
+
+	// 2D
+    CGALKernel::Segment_2 seg20(CGALKernel::Point_2(0,0), CGALKernel::Point_2(2,2));
+    CGALKernel::Segment_2 seg21(CGALKernel::Point_2(0,0), CGALKernel::Point_2(2,2));
+    CGALKernel::Segment_2 seg22(CGALKernel::Point_2(0,0), CGALKernel::Point_2(2,4));
+    auto result2 = intersection(seg20, seg21);
+	if ( result2 ) {
+		boost::apply_visitor(Intersection_visitor2(8), *result2); 
+	} else {
+		std::cout << "2D No intersection point" << std::endl;
+	}
+
+    result2 = intersection(seg20, seg22);
+	if ( result2 ) {
+		boost::apply_visitor(Intersection_visitor2(8), *result2); 
+	} else {
+		std::cout << "2D No intersection point" << std::endl;
+	}
+
+	typedef boost::geometry::model::polygon<boost::geometry::model::d2::point_xy<double> > polygon;
+    polygon green, blue;
+
+    boost::geometry::read_wkt(
+        "POLYGON((2 1.3,2.4 1.7,2.8 1.8,3.4 1.2,3.7 1.6,3.4 2,4.1 3,5.3 2.6,5.4 1.2,4.9 0.8,2.9 0.7,2 1.3)"
+            "(4.0 2.0, 4.2 1.4, 4.8 1.9, 4.4 2.2, 4.0 2.0))", green);
+
+    boost::geometry::read_wkt(
+        "POLYGON((4.0 -0.5 , 3.5 1.0 , 2.0 1.5 , 3.5 2.0 , 4.0 3.5 , 4.5 2.0 , 6.0 1.5 , 4.5 1.0 , 4.0 -0.5))", blue);
+
+    //std::deque<polygon> output;
+    std::vector<polygon> output;
+    boost::geometry::intersection(green, blue, output);
+	prt(("s2029 intersection output #of polygons=%d\n", output.size() ));
+
+    int i = 0;
+    std::cout << "green && blue:" << std::endl;
+    BOOST_FOREACH(polygon const& poly, output)
+    {
+        std::cout << i++ << ": " << boost::geometry::area(poly) << std::endl;
+		//boost::apply_visitor(Intersection_visitor2(8), p); 
+		//getting the vertices back
+		for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+    		double x = boost::geometry::get<0>(*it);
+    		double y = boost::geometry::get<1>(*it);
+			prt(("s203 x=%0f  y=%f\n", x, y ));
+		}
+    }
+
+}
+
 class TestN
 {
   public:
@@ -3382,7 +3471,5 @@ void test_equation()
 
 	JagGeo::minMaxPoint3DOnNormalEllipsoid( 0,  40.0, 30.0, 20.0, 80.0, 90.0, 93.0, false, x, y, z, dist ); 
 	prt(("ellipsoid max x=%f y=%f z=%f  dist=%f\n", x, y, z, dist ));
-
-
 
 }
