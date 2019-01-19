@@ -15503,7 +15503,7 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		prt(("s5510 convertConstantObjToJAG ...\n" ));
 		rc = convertConstantObjToJAG( inlstr, lstr );
-		if ( rc < 0 ) return false;
+		if ( rc <= 0 ) return false;
 		// point(0 0 0 )  to "OJAG=srid=33=33=d x y z"
 		prt(("s5512 convertConstantObjToJAG lstr=[%s] rc=%d ...\n", lstr.c_str(), rc ));
 	} else {
@@ -15513,7 +15513,7 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 	AbaxDataString rstr;
 	if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
 		rc = convertConstantObjToJAG( inrstr, rstr );
-		if ( rc < 0 ) return false;
+		if ( rc <= 0 ) return false;
 	} else {
 		rstr = inrstr.c_str();
 	}
@@ -21592,11 +21592,12 @@ JagPolygon::JagPolygon( const JagTriangle2D &t )
 	linestr.append( ls );
 }
 
-// return 0: OK ,  <0 error
+// return n>0: OK ,  <=0 error
 // instr: "point3d(...)"  "polygon((...),(...))"
 // outstr: "CJAG=0=0=type=subtype  bbox data1 data2 data3 ..."
 int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr )
 {
+	int cnt = 0;
 	AbaxDataString othertype;
 	int rc = 0;
 	char *p = (char*)instr.c_str();
@@ -21615,6 +21616,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 			outstr = "";
 			return -9;
 		}
+		++cnt;
 	} else if ( strncasecmp( p, "circle(", 7 ) == 0 ) {
 		while ( *p != '(' ) ++p; ++p;  // (p
 		if ( *p == 0 ) return -20;
@@ -21623,6 +21625,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() < 3 ) { return -30; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -382; } }
 		outstr = AbaxDataString("CJAG=0=0=CR=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
+		++cnt;
 	} else if ( strncasecmp( p, "square(", 7 )==0 ) {
 		while ( *p != '(' ) ++p; ++p;  // (p
 		if ( *p == 0 ) return -20;
@@ -21635,6 +21638,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		} else {
 			outstr = AbaxDataString("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
 		}
+		++cnt;
 	} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
 		// cube( x y z radius )   inner circle radius
 		if ( strncasecmp( p, "cube", 4 )==0 ) {
@@ -21650,6 +21654,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() < 4 ) { return -32; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -384; } }
 		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		++cnt;
 		if ( othertype == JAG_C_COL_TYPE_CUBE ) {
 			AbaxDataString nx, ny;
 			if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
@@ -21676,6 +21681,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
 		if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
+		++cnt;
 	} else if (  strncasecmp( p, "rectangle(", 10 )==0 || strncasecmp( p, "ellipse(", 8 )==0 ) {
 		// rectangle( x y width height nx ny) 
 		if ( strncasecmp( p, "rect", 4 )==0 ) {
@@ -21693,6 +21699,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		AbaxDataString nx;
 		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
 		outstr += nx;
+		++cnt;
 	} else if ( strncasecmp( p, "rectangle3d(", 12 )==0 || strncasecmp( p, "ellipse3d(", 10 )==0 ) {
 		// rectangle( x y z width height nx ny ) 
 		if ( strncasecmp( p, "rect", 4 )==0 ) {
@@ -21712,6 +21719,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
 		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
+		++cnt;
 	} else if (  strncasecmp( p, "box(", 4 )==0 || strncasecmp( p, "ellipsoid(", 10 )==0 ) {
 		// box( x y z width depth height nx ny ) 
 		if ( strncasecmp( p, "box", 3 )==0 ) {
@@ -21732,6 +21740,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if ( sp.length() >= 7 ) { nx = sp[6]; } else { nx="0.0"; }
 		if ( sp.length() >= 8 ) { ny = sp[7]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
+		++cnt;
 	} else if ( strncasecmp( p, "cylinder(", 9 )==0 || strncasecmp( p, "cone(", 5 )==0 ) {
 		// cylinder( x y z r height  nx ny 
 		if ( strncasecmp( p, "cone", 4 )==0 ) {
@@ -21752,6 +21761,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
 		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
+		++cnt;
 	} else if ( strncasecmp( p, "line(", 5 )==0 ) {
 		// line( x1 y1 x2 y2)
 		while ( *p != '(' ) ++p; ++p;  // (p
@@ -21762,6 +21772,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -391; } }
 		othertype =  JAG_C_COL_TYPE_LINE;
 		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+		++cnt;
 	} else if ( strncasecmp( p, "line3d(", 7 )==0 ) {
 		// line3d(x1 y1 z1 x2 y2 z2)
 		while ( *p != '(' ) ++p; ++p;  // (p
@@ -21773,6 +21784,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		othertype =  JAG_C_COL_TYPE_LINE3D;
 		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
+		++cnt;
 	} else if ( strncasecmp( p, "linestring(", 11 )==0 ) {
 		while ( *p != '(' ) ++p;  ++p;
 		if ( *p == 0 ) return -64;
@@ -21785,6 +21797,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 			if ( ss.length() < 2 ) {  continue; }
 			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1];
 		}
+		++cnt;
 	} else if ( strncasecmp( p, "linestring3d(", 13 )==0 ) {
 		// linestring( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4)
 		//prt(("s2836 linestring3d( p=[%s]\n", p ));
@@ -21798,6 +21811,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 			JagStrSplit ss( sp[i], ' ', true );
 			if ( ss.length() < 3 ) {  continue; }
 			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+			++cnt;
 		}
 	} else if ( strncasecmp( p, "multipoint(", 11 )==0 ) {
 		// multipoint( x1 y1, x2 y2, x3 y3, x4 y4)
@@ -21812,6 +21826,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 			JagStrSplit ss( sp[i], ' ', true );
 			if ( ss.length() < 2 ) {  continue; }
 			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1];
+			++cnt;
 		}
 	} else if ( strncasecmp( p, "multipoint3d(", 13 )==0 ) {
 		// multipoint3d( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4)
@@ -21826,6 +21841,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 			JagStrSplit ss( sp[i], ' ', true );
 			if ( ss.length() < 3 ) {  continue; }
 			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+			++cnt;
 		}
 	} else if ( strncasecmp( p, "polygon(", 8 )==0 ) {
 		// polygon( ( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...) )
@@ -21839,6 +21855,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		rc = JagParser::addPolygonData( pgonstr, p, false, true );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
+		++cnt;
 	} else if ( strncasecmp( p, "polygon3d(", 10 )==0 ) {
 		// polygon( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
 		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
@@ -21850,6 +21867,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		rc = JagParser::addPolygon3DData( pgonstr, p, false, true );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
+		++cnt;
 	} else if ( strncasecmp( p, "multipolygon(", 13 )==0 ) {
 		// multipolygon( (( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...)), ( (..), (..) ) )
 		prt(("s3834 multipolygon( p=[%s]\n", p ));
@@ -21861,6 +21879,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		prt(("s3238 addMultiPolygonData mgon=[%s] rc=%d\n", mgon.c_str(), rc ));
 		if ( rc <= 0 ) return rc; 
 		outstr += mgon;
+		++cnt;
 	} else if ( strncasecmp( p, "multipolygon3d(", 10 )==0 ) {
 		// polygon( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
 		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
@@ -21871,6 +21890,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		rc = JagParser::addMultiPolygonData( mgon, p, false, true, true );
 		if ( rc <= 0 ) return rc; 
 		outstr += mgon;
+		++cnt;
 	} else if ( strncasecmp( p, "multilinestring(", 16 )==0 ) {
 		// multilinestring( ( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...) )
 		//prt(("s3834 polygon( p=[%s]\n", p ));
@@ -21882,6 +21902,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		rc = JagParser::addPolygonData( pgonstr, p, false, false );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
+		++cnt;
 	} else if ( strncasecmp( p, "multilinestring3d(", 10 )==0 ) {
 		// multilinestring3d( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
 		//prt(("s3835 multilinestring3d( p=[%s] )\n", p ));
@@ -21893,6 +21914,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		rc = JagParser::addPolygon3DData( pgonstr, p, false, false );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
+		++cnt;
 	} else if ( strncasecmp( p, "triangle(", 9 )==0 ) {
 		// triangle(x1 y1 x2 y2 x3 y3 )
 		while ( *p != '(' ) ++p; ++p;  // (p
@@ -21904,6 +21926,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		othertype =  JAG_C_COL_TYPE_TRIANGLE;
 		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
+		++cnt;
 	} else if ( strncasecmp( p, "triangle3d(", 11 )==0 ) {
 		// triangle3d(x1 y1 z1 x2 y2 z2 x3 y3 z3 )
 		while ( *p != '(' ) ++p; ++p;  // (p
@@ -21915,9 +21938,11 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		othertype =  JAG_C_COL_TYPE_TRIANGLE3D;
 		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5] + " " + sp[6] + " " + sp[7] + " " + sp[8];
+		++cnt;
 	}
 
-	return 0;
+	//return 0;
+	return cnt;
 }
 
 
@@ -22543,17 +22568,20 @@ AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, con
 			return "";
 		}
 		rc = convertConstantObjToJAG( AbaxFixString(uwkt.c_str()), val );
-		if ( rc < 0 ) { val = ""; }
+		if ( rc <= 0 ) { val = ""; }
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		AbaxDataString res;
 		rc = JagCGAL::unionOfPolygonAndMultiPolygons( sp1, sp2, res );
 		// res is WKT
 		if ( rc < 0 ) {
-			prt(("s2038 error unionOfPolygonAndMultiPolygons rc=%d\n", rc ));
+			prt(("s2039 error unionOfPolygonAndMultiPolygons rc=%d res=[%s]\n", rc, res.c_str() ));
 			return "";
 		}
+		prt(("s1728 res=[%s] rc=%d\n", res.c_str(), rc ));
+		if ( res.size() < 1 ) return "";
 		rc = convertConstantObjToJAG( AbaxFixString(res.c_str()), val );
-		if ( rc < 0 ) {
+		prt(("s1728 val=[%s] rc=%d\n", val.c_str(), rc ));
+		if ( rc <= 0 ) {
 			prt(("s2038 error convertConstantObjToJAG rc=%d\n", rc ));
 			return "";
 		}

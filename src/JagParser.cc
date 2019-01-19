@@ -5073,6 +5073,7 @@ int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p,
 	int rc;
 	const char *q;
 	if ( *p == 0 ) return 0;
+	if ( 0==strcmp(p, "()") ) return 0;
 	int bracketCount = 0; // count ( ( ) )
 
 	++p; // skip first '('
@@ -5134,6 +5135,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p,
 	int rc;
 	const char *q;
 	if ( *p == 0 ) return 0;
+	if ( 0==strcmp(p, "()") ) return 0;
 	int bracketCount = 0; // count ( ( ) )
 
 	++p; // skip first '('
@@ -5308,6 +5310,7 @@ int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOn
 	const char *q;
 	double x1, y1, xn, yn;
 	if ( *p == 0 ) return 0;
+	if ( 0==strcmp(p, "()") ) return -1;
 	// (p  (...), (...) )
 	//while ( *p == '(' ) ++p; 
 
@@ -5391,6 +5394,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 	const char *q;
 	double x1, y1, xn, yn;
 	if ( *p == 0 ) return 0;
+	if ( 0==strcmp(p, "()") ) return -1;
 	// (p  (...), (...) )
 	//while ( *p == '(' ) ++p; 
 
@@ -5590,6 +5594,7 @@ int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, d
 int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose )
 {
 	if ( *p == 0 ) { return 0; }
+	if ( 0==strcmp(p, "()") ) return -1;
 
 	int len;
 	const char *q;
@@ -5670,6 +5675,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 	if ( *p == 0 ) {
 		return 0;
 	}
+	if ( 0==strcmp(p, "()") ) return 0;
 
 	//prt(("s3238 polygon( p=[%s]\n", p ));
 	int len;

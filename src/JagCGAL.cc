@@ -1057,6 +1057,7 @@ int JagCGAL::unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagSt
 	std::stringstream ifs;
 	ifs << boost::geometry::wkt(output);
 	unionWKT = ifs.str().c_str();
+	if ( unionWKT.size() < 1 ) return -3;
 	return 0;
 }
 
@@ -1079,6 +1080,7 @@ int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2,
 	std::stringstream ifs;
 	ifs << boost::geometry::wkt(output);
 	unionWKT = ifs.str().c_str();
+	if ( unionWKT.size() < 1 ) return -3;
 	return 0;
 }
 

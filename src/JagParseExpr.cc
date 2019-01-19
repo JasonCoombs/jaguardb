@@ -4660,7 +4660,7 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const 
 	AbaxDataString lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
-		if ( rc1 < 0 ) return false;
+		if ( rc1 <= 0 ) return false;
 	} else {
 		lstr = inlstr.c_str();
 	}
@@ -4668,7 +4668,7 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const 
     AbaxDataString rstr;
     if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
         int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
-        if ( rc2 < 0 ) return false;
+        if ( rc2 <= 0 ) return false;
     } else {
         rstr = inrstr.c_str();
     }
@@ -4777,7 +4777,7 @@ AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inls
 	AbaxDataString lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
-		if ( rc1 < 0 ) {
+		if ( rc1 <= 0 ) {
 			prt(("s2019 error convertConstantObjToJAG inlstr rc1=%d\n", rc1 ));
 			return "";
 		}
@@ -4788,7 +4788,7 @@ AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inls
     AbaxDataString rstr;
     if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
         int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
-        if ( rc2 < 0 ) {
+        if ( rc2 <= 0 ) {
 			prt(("s2029 error convertConstantObjToJAG inrstr rc2=%d\n", rc2 ));
 			return "";
 		}
@@ -4905,7 +4905,7 @@ bool BinaryOpNode::processStringOp( int op, const AbaxFixString &inlstr, const A
 	AbaxDataString lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
-		if ( rc1 < 0 ) return false;
+		if ( rc1 <= 0 ) return false;
 	} else {
 		lstr = inlstr.c_str();
 	}
@@ -4913,7 +4913,7 @@ bool BinaryOpNode::processStringOp( int op, const AbaxFixString &inlstr, const A
     AbaxDataString rstr;
     if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
         int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
-        if ( rc2 < 0 ) return false;
+        if ( rc2 <= 0 ) return false;
     } else {
         rstr = inrstr.c_str();
     }
@@ -5009,7 +5009,7 @@ bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &inlstr, cons
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		prt(("s1390 has no = sign in beginning\n" ));
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
-		if ( rc1 < 0 ) return false;
+		if ( rc1 <= 0 ) return false;
 	} else {
 		prt(("s1029 has = sign\n" ));
 		lstr = inlstr.c_str();
@@ -5051,7 +5051,7 @@ bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &inlstr, c
 	AbaxDataString lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
-		if ( rc1 < 0 ) return false;
+		if ( rc1 <= 0 ) return false;
 	} else {
 		lstr = inlstr.c_str();
 	}
@@ -7030,6 +7030,8 @@ AbaxDataString BinaryOpNode::doAllUnion( const AbaxDataString& mark1, const Abax
 		return JagGeo::doLineString3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
 		return JagGeo::doPolygonUnion( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonUnion( mark2, srid2, sp2, mark1, colType1, srid1, sp1 );
 	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
 		return JagGeo::doPolygon3DAddition( mark1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
