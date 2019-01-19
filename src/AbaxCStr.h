@@ -94,6 +94,7 @@ class AbaxCStr
 		int     	numPunct() const;
 		void    	print() const;
 		AbaxCStr&   trimEndZeros();
+		inline AbaxCStr& trim0() { return trimEndZeros(); }
 		AbaxCStr 	firstToken( char sep );
 		const char *secondTokenStart( char sep );
 		AbaxCStr 	substr( char startc, char endc );

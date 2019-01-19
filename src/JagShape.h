@@ -431,6 +431,7 @@ class JagPolygon
 		JagVector<JagLineString3D> linestr;
 		void print() const { linestr.print(); }
 		double lineLength( bool removeLast, bool is3D );
+		void toWKT( bool is3D, AbaxDataString &str ) const;
 
 		JagPolygon( const JagSquare2D &sq );
 		JagPolygon( const JagRectangle2D &rect );

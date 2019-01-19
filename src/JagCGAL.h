@@ -32,8 +32,20 @@ typedef CGAL::Surface_mesh<CGALKernel::Point_3> CGALSurfaceMesh;
 typedef boost::geometry::model::d2::point_xy<double> BoostPoint2D;
 typedef boost::geometry::model::linestring<BoostPoint2D> BoostLineString2D;
 typedef boost::geometry::model::polygon<BoostPoint2D,false> BoostPolygon2D; // counter-clock-wise
-typedef boost::geometry::ring_type<BoostPolygon2D>::type BoostRing2D; // clock-wise
-//typedef boost::geometry::ring_type<BoostPolygon2D,false>::type BoostRing2D; // counter-clock-wise
+typedef boost::geometry::model::polygon<BoostPoint2D,true> BoostPolygon2DCW; // clock-wise
+typedef boost::geometry::ring_type<BoostPolygon2D>::type BoostRing2D; // counter-clock-wise
+typedef boost::geometry::ring_type<BoostPolygon2DCW>::type BoostRing2DCW; // clock-wise
+
+//typedef boost::geometry::interior_type<BoostPolygon2DCW>::type BoostInnerRing2D;
+
+//typedef boost::geometry::ring_type<BoostPolygon2D,false>::type BoostRing2DCCW; // counter-clock-wise
+//typedef boost::geometry::ring_type<BoostPoint2D>::type BoostRing2D; // clock-wise
+//typedef boost::geometry::ring_type<BoostPoint2D,false>::type BoostRing2DCCW; // counter-clock-wise
+
+//typedef bg::model::ring<DPoint, false> DRing;
+//typedef bg::model::ring<BoostPoint2D, true>  BoostRing2D;
+//typedef bg::model::ring<BoostPoint2D, false> BoostRing2DCCW;
+
 
 typedef boost::geometry::strategy::buffer::distance_symmetric<double> JagDistanceSymmetric;
 typedef boost::geometry::strategy::buffer::distance_asymmetric<double> JagDistanceASymmetric;
@@ -105,6 +117,7 @@ class JagCGAL
 	static void split2DSPToVector( const JagStrSplit &sp, JagVector<JagPoint2D> &vec1 );
 	static void split3DSPToVector( const JagStrSplit &sp, JagVector<JagPoint3D> &vec1 );
 	static int  getTwoPolygonIntersection( const JagPolygon &pgon1, const JagPolygon &pgon2, JagVector<JagPolygon> &vec );
+	static bool convertPolygonJ2B( const JagPolygon &pgon1, BoostPolygon2D &bgon );
 
 
   protected:

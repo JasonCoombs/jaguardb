@@ -20844,6 +20844,29 @@ double JagPolygon::lineLength( bool removeLast, bool is3D )
 	return sum;
 }
 
+void JagPolygon::toWKT( bool is3D, AbaxDataString &str ) const
+{
+	if ( linestr.size() < 1 ) { str=""; return; }
+	str = "polygon(";
+
+	for ( int i=0; i < linestr.size(); ++i ) {
+		if ( i==0 ) {
+			str += "(";
+		} else {
+			str += ",(";
+		}
+		const JagLineString3D &lstr = linestr[i];
+		for (  int j=0; j< lstr.size(); ++j ) {
+			if ( j>0) { str += AbaxDataString(","); }
+			str += doubleToStr(lstr.point[j].x) + " " +  doubleToStr(lstr.point[j].y);
+			if ( is3D ) { str += AbaxDataString(" ") + doubleToStr(lstr.point[j].z); }
+		}
+		str += ")";
+	}
+	
+	str += ")";
+}
+
 void JagGeo::center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy )
 {
 	cx = cy = 0.0;
@@ -22997,6 +23020,10 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
 AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
                                                const AbaxDataString &colType2,const JagStrSplit &sp2 )
 {
+	prt(("s1029 doPolygonIntersection sp1: sp2:\n" ));
+	sp1.print();
+	sp2.print();
+
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";

@@ -267,7 +267,7 @@ int main(int argc, char *argv[] )
 	// test_sys_getline();
 	// test_jag_getline();
 	// test_reply( argv[1] );
-	//test_str( N );
+	test_str( N );
 	//test_geo( N );
 	//test_sqrt( N );
 	// test_split( N );
@@ -2630,14 +2630,14 @@ void test_str( int N )
 	prt(("std::string init + = took %d millisec\n", clock.elapsed() ));
 
 
-	AbaxDataString  a1 = "0000000000003.45000000000";
+	AbaxDataString  c1 = "0000000000003.45000000000";
 	AbaxDataString  a2 = "3.0";
 	AbaxDataString  a3 = "4";
-	prt(("a1=[%s] a1len=%d a2=[%s] a3=[%s]\n", a1.c_str(), a1.size(), a2.c_str(), a3.c_str() ));
-	a1.trimEndZeros();
+	prt(("a1=[%s] a1len=%d a2=[%s] a3=[%s]\n", c1.c_str(), c1.size(), a2.c_str(), a3.c_str() ));
+	c1.trimEndZeros();
 	a2.trimEndZeros();
 	a3.trimEndZeros();
-	prt(("after trimend0 a1=[%s] a1len=%d a2=[%s] a3=[%s]\n", a1.c_str(), a1.size(), a2.c_str(), a3.c_str() ));
+	prt(("after trimend0 a1=[%s] a1len=%d a2=[%s] a3=[%s]\n", c1.c_str(), c1.size(), a2.c_str(), a3.c_str() ));
 
 	AbaxDataString q1 = "all(ls )";
 	AbaxDataString nm = q1.substr('(', ')');
@@ -2699,6 +2699,46 @@ void test_str( int N )
 	//s3 += bf; 
 	s3[0]  += AbaxDataString(bf);
 	prt(("after s3=[%s]\n", s3[0].c_str() ));
+
+	AbaxDataString a1 = "00000000.2222000000";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = "0.000000";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = "0000000";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = "222.0000000";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = ".0000000";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = ".00000020";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = "2.";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = "299";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
 
 }
 
@@ -3421,7 +3461,6 @@ void test_intersection()
     std::vector<polygon> output;
     boost::geometry::intersection(green, blue, output);
 	prt(("s2029 intersection output #of polygons=%d\n", output.size() ));
-
     int i = 0;
     std::cout << "green && blue:" << std::endl;
     BOOST_FOREACH(polygon const& poly, output)
@@ -3436,6 +3475,25 @@ void test_intersection()
 			prt(("s203 x=%0f  y=%f\n", x, y ));
 		}
     }
+
+	output.clear();
+    boost::geometry::intersection( blue, green, output);
+	prt(("s20292 intersection output #of polygons=%d\n", output.size() ));
+    i = 0;
+    std::cout << "green && blue:" << std::endl;
+    BOOST_FOREACH(polygon const& poly, output)
+    {
+        std::cout << i++ << ": " << boost::geometry::area(poly) << std::endl;
+		//boost::apply_visitor(Intersection_visitor2(8), p); 
+		//getting the vertices back
+		for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+    		double x = boost::geometry::get<0>(*it);
+    		double y = boost::geometry::get<1>(*it);
+			prt(("s203 x=%0f  y=%f\n", x, y ));
+		}
+    }
+
 
 }
 

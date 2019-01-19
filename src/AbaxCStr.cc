@@ -574,7 +574,11 @@ void AbaxCStr::print() const
 
 AbaxCStr&  AbaxCStr::trimEndZeros()
 {
+	//printf("s2083  AbaxCStr::trimEndZeros ... %s\n", buf_ );
+
 	if ( length_ < 1 ) return *this;
+	if ( ! strchr( buf_, '.') ) return *this;
+	if ( ! buf_ ) return *this;
 
 	char *buf= new char[nseg_ * ASTRSIZ];
 	memset( (void*)buf, 0, nseg_ * ASTRSIZ );
@@ -597,6 +601,15 @@ AbaxCStr&  AbaxCStr::trimEndZeros()
 		}
 	}
 
+	//printf("a8080 len=%d buf=[%s]\n", len, buf );
+    if ( len < 1 ) {
+		buf[0] = '0'; buf[1] = '\0'; len=1;
+		free( buf_ );
+		buf_ = buf;
+		length_ = len;
+		return *this;
+	}
+
 	char *p = buf+len-1;
 	while ( p >= buf+1 ) {
 		if ( *(p-1) != '.' && *p == '0' ) {
@@ -607,6 +620,9 @@ AbaxCStr&  AbaxCStr::trimEndZeros()
 		}
 		--p;
 	}
+
+	if ( buf[0] == '.' && buf[1] == '\0' ) { buf[0] = '0'; len=1; }
+	if ( buf[0] == '\0' || len==0 ) {  buf[0] = '0'; buf[1] = '\0'; len=1; }
 
 	free( buf_ );
 	buf_ = buf;

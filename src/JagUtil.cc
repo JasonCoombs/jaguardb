@@ -1016,7 +1016,7 @@ AbaxDataString doubleToStr( double f )
 	char buf[48];
 	memset(buf, 0, 48 );
 	sprintf(buf, "%.10f", f );
-	return AbaxDataString(buf);
+	return AbaxDataString(buf).trim0();
 }
 
 AbaxDataString doubleToStr( double f, int maxlen, int sig )
@@ -1024,7 +1024,7 @@ AbaxDataString doubleToStr( double f, int maxlen, int sig )
 	char buf[64];
 	memset(buf, 0, 64 );
 	snprintf( buf, 64, "%0*.*f", maxlen, sig, f);
-	return AbaxDataString(buf);
+	return AbaxDataString(buf).trim0();
 }
 
 
@@ -1037,7 +1037,7 @@ AbaxDataString longDoubleToStr( abaxdouble f )
 	#else
 	sprintf(buf, "%Lf", f );
 	#endif
-	return AbaxDataString(buf);
+	return AbaxDataString(buf).trim0();
 }
 
 // mode 0: use sprintf, 1 use snprintf
