@@ -1526,6 +1526,7 @@ class JagGeo
 	static int numberOfSegments( const JagStrSplit &sp );
 	static bool isPolygonCCW( const JagStrSplit &sp );
 	static bool isPolygonCW( const JagStrSplit &sp );
+	static void multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, AbaxDataString &wkt );
 
 
 
@@ -1751,6 +1752,7 @@ class JagGeo
 												JagVector<JagPoint3D> &vec ); 
 
 	static void splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<AbaxDataString> &svec );
+
 
 };  // end of class JagGeo
 

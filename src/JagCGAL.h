@@ -111,7 +111,8 @@ class JagCGAL
     static void getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, 
 							   bool is3D, int N, AbaxDataString &value );
     static void getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
-	static int unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, std::vector<std::string> &vec );
+	static int unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &wkt );
+	static int unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &wkt );
 	static bool hasIntersection( const JagLine2D &line1, const JagLine2D &line2, JagVector<JagPoint2D> &res ); 
 	static bool hasIntersection( const JagLine3D &line1, const JagLine3D &line2, JagVector<JagPoint3D> &res ); 
 	static void split2DSPToVector( const JagStrSplit &sp, JagVector<JagPoint2D> &vec1 );

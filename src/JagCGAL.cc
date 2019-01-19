@@ -1030,9 +1030,8 @@ void JagCGAL::getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, co
 	}
 }
 
-
-// return: 0 OK,  <0 error
-int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, std::vector<std::string> &vec )
+// 2D
+int JagCGAL::unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &unionWKT )
 {
  	JagPolygon pgon1;
     int rc = JagParser::addPolygonData( pgon1, sp1, false );
@@ -1040,23 +1039,46 @@ int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2,
 	BoostPolygon2D  bgon1;
 	if ( ! convertPolygonJ2B( pgon1, bgon1 ) ) return -1;
 
+	JagVector<JagPolygon> pgvec;
+	rc = JagParser::addMultiPolygonData( pgvec, sp2, false, false );
+	if ( rc <= 0 ) { return -2;}
+
+	AbaxDataString wkt;
+	JagGeo::multiPolygonToWKT( pgvec, false, wkt );
+
+	boost::geometry::model::multi_polygon<BoostPolygon2D> mgon;
+	std::string ss = std::string( wkt.c_str(), wkt.size() );
+	boost::geometry::read_wkt( ss, mgon );
+
+	//std::vector<BoostPolygon2D> outputvec;
+	boost::geometry::model::multi_polygon<BoostPolygon2D> output;
+	boost::geometry::union_( bgon1, mgon, output );
+
+	std::stringstream ifs;
+	ifs << boost::geometry::wkt(output);
+	unionWKT = ifs.str().c_str();
+	return 0;
+}
+
+// return: 0 OK,  <0 error
+int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &unionWKT )
+{
+ 	JagPolygon pgon1;
+    int rc = JagParser::addPolygonData( pgon1, sp1, false );
+	if ( rc < 0 ) { return -1;}
+	BoostPolygon2D  bgon1;
+	if ( ! convertPolygonJ2B( pgon1, bgon1 ) ) return -1;
 
  	JagPolygon pgon2;
     rc = JagParser::addPolygonData( pgon2, sp2, false );
 	if ( rc < 0 ) return -2;
 	BoostPolygon2D  bgon2;
 	if ( ! convertPolygonJ2B( pgon2, bgon2 ) ) return -2;
-
-	std::vector<BoostPolygon2D> outputvec;
-	boost::geometry::union_( bgon1, bgon2, outputvec );
-	prt(("s1023 union_ outputvec.size=%d\n", outputvec.size() ));
-	for ( int i=0; i < outputvec.size(); ++i ) {
-		std::stringstream ifs;
-		ifs << boost::geometry::wkt(outputvec[i]);
-		vec.push_back( ifs.str() );
-		prt(("s1823 i=%d str=[%s]\n", i, ifs.str().c_str() ));
-	}
-
+	boost::geometry::model::multi_polygon<BoostPolygon2D> output;
+	boost::geometry::union_( bgon1, bgon2, output );
+	std::stringstream ifs;
+	ifs << boost::geometry::wkt(output);
+	unionWKT = ifs.str().c_str();
 	return 0;
 }
 
@@ -1172,7 +1194,7 @@ int JagCGAL::getTwoPolygonIntersection( const JagPolygon &pgon1, const JagPolygo
 bool JagCGAL::convertPolygonJ2B( const JagPolygon &pgon, BoostPolygon2D &bgon )
 {
 	AbaxDataString wkt;
-	pgon.toWKT(false, wkt);
+	pgon.toWKT(false, true, wkt);
 	if ( wkt.size() < 1 ) return false;
 	std::string ss = std::string( wkt.c_str(), wkt.size() );
 	boost::geometry::read_wkt( ss, bgon );

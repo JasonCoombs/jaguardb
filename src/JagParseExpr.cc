@@ -4879,8 +4879,8 @@ AbaxDataString  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inls
 	//sp1.shift();	
 	//sp2.shift();	
 	prt(("s1021 sp1.print sp2.print \n" ));
-	sp1.print();
-	sp2.print();
+	//sp1.print();
+	//sp2.print();
 
 	return doTwoStrOp( op, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg );
 }

@@ -20844,10 +20844,14 @@ double JagPolygon::lineLength( bool removeLast, bool is3D )
 	return sum;
 }
 
-void JagPolygon::toWKT( bool is3D, AbaxDataString &str ) const
+void JagPolygon::toWKT( bool is3D, bool hasHdr, AbaxDataString &str ) const
 {
 	if ( linestr.size() < 1 ) { str=""; return; }
-	str = "polygon(";
+	if ( hasHdr ) {
+		str = "polygon(";
+	} else {
+		str = "(";
+	}
 
 	for ( int i=0; i < linestr.size(); ++i ) {
 		if ( i==0 ) {
@@ -20866,6 +20870,32 @@ void JagPolygon::toWKT( bool is3D, AbaxDataString &str ) const
 	
 	str += ")";
 }
+
+void JagGeo::multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, AbaxDataString &str )
+{
+	if ( pgvec.size() < 1 ) { str=""; return; }
+	str = "multipolygon(";
+
+	for ( int k=0; k < pgvec.size(); ++k ) {
+    	if ( k==0 ) { str += "("; } else { str += ",("; }
+		const JagPolygon &pgon = pgvec[k];
+    	for ( int i=0; i < pgon.linestr.size(); ++i ) {
+    		if ( i==0 ) { str += "("; } else { str += ",("; }
+    		const JagLineString3D &lstr = pgon.linestr[i];
+    		for (  int j=0; j< lstr.size(); ++j ) {
+    			if ( j>0) { str += AbaxDataString(","); }
+    			str += doubleToStr(lstr.point[j].x) + " " +  doubleToStr(lstr.point[j].y);
+    			if ( is3D ) { str += AbaxDataString(" ") + doubleToStr(lstr.point[j].z); }
+    		}
+    		str += ")";
+    	}
+    	
+    	str += ")";
+	}
+   	str += ")";
+}
+
+
 
 void JagGeo::center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy )
 {
@@ -22503,42 +22533,30 @@ AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, con
 	AbaxDataString t;
 	AbaxFixString txt;
 	std::vector< std::string> vec;
+	AbaxDataString uwkt;
 	char *p;
 	int rc;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
-		rc = JagCGAL::unionOfTwoPolygons( sp1, sp2, vec );
+		rc = JagCGAL::unionOfTwoPolygons( sp1, sp2, uwkt );
 		if ( rc < 0 ) {
 			prt(("s2038 error unionOfTwoPolygons rc=%d\n", rc ));
 			return "";
 		}
-
-		prt(("s8621 vec.size=%d\n", vec.size() ));
-		if ( vec.size() == 1 ) {
-			// polygon
-			rc = convertConstantObjToJAG( AbaxFixString(vec[0].c_str()), val );
-			if ( rc < 0 ) { val = ""; }
-		} else if ( vec.size() > 1 ) {
-			// multipolygon
-			val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
-			for ( int i=0; i < vec.size(); ++i ) {
-				if ( i>0 ) {
-					val += AbaxDataString(" !");
-				}
-				rc = convertConstantObjToJAG( AbaxFixString(vec[i].c_str()), t );
-				if ( rc >= 0 ) {
-					p = (char*)t.c_str();
-					while ( *p != ' ' && *p != '\0' ) ++p;
-					if ( *p == '\0' ) continue;
-					while ( *p == ' ' ) ++p;
-					while ( *p != ' ' && *p != '\0' ) ++p;
-					if ( *p == '\0' ) continue;
-					while ( *p == ' ' ) ++p;
-					val += AbaxDataString(" ") + AbaxDataString(p);  // "hdr bbx (p)data ..." 
-				}
-			}
-		} else {
+		rc = convertConstantObjToJAG( AbaxFixString(uwkt.c_str()), val );
+		if ( rc < 0 ) { val = ""; }
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		AbaxDataString res;
+		rc = JagCGAL::unionOfPolygonAndMultiPolygons( sp1, sp2, res );
+		// res is WKT
+		if ( rc < 0 ) {
+			prt(("s2038 error unionOfPolygonAndMultiPolygons rc=%d\n", rc ));
+			return "";
 		}
-	} else { 
+		rc = convertConstantObjToJAG( AbaxFixString(res.c_str()), val );
+		if ( rc < 0 ) {
+			prt(("s2038 error convertConstantObjToJAG rc=%d\n", rc ));
+			return "";
+		}
 	} 
 	return val;
 
@@ -23021,8 +23039,8 @@ AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,co
                                                const AbaxDataString &colType2,const JagStrSplit &sp2 )
 {
 	prt(("s1029 doPolygonIntersection sp1: sp2:\n" ));
-	sp1.print();
-	sp2.print();
+	//sp1.print();
+	//sp2.print();
 
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
