@@ -2543,7 +2543,6 @@ bool JagGeo::pointWithinPolygon( double x, double y,
 {
     const char *str;
     char *p;
-	//JagLineString3D linestr;
 	JagPolygon pgon;
 	int rc;
 	rc = JagParser::addPolygonData( pgon, sp2, false );
@@ -20871,6 +20870,33 @@ void JagPolygon::toWKT( bool is3D, bool hasHdr, AbaxDataString &str ) const
 	str += ")";
 }
 
+void JagPolygon::toJAG( bool is3D, bool hasHdr, int srid, AbaxDataString &str ) const
+{
+	if ( linestr.size() < 1 ) { str=""; return; }
+	if ( hasHdr ) {
+		AbaxDataString srids = intToStr( srid );
+		if ( is3D ) {
+			str = AbaxDataString("CJAG=") + srids + "=0=PL3=d 0:0:0:0:0:0";
+		} else {
+			str = AbaxDataString("CJAG=") + srids + "=0=PL=d 0:0:0:0";
+		}
+	} else {
+	}
+
+	for ( int i=0; i < linestr.size(); ++i ) {
+		if ( i>0 ) {
+			str += " |";
+		}
+		const JagLineString3D &lstr = linestr[i];
+		prt(("s1127 JagPolygon::toJAG i=%d lstr.size=%d\n", i, lstr.size() ));
+		for (  int j=0; j< lstr.size(); ++j ) {
+			str += AbaxDataString(" ") + doubleToStr(lstr.point[j].x) + ":" +  doubleToStr(lstr.point[j].y);
+			if ( is3D ) { str += AbaxDataString(":") + doubleToStr(lstr.point[j].z); }
+		}
+	}
+	
+}
+
 void JagGeo::multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, AbaxDataString &str )
 {
 	if ( pgvec.size() < 1 ) { str=""; return; }
@@ -21560,9 +21586,11 @@ JagPolygon::JagPolygon( const JagRectangle2D &rect )
 
 JagPolygon::JagPolygon( const JagCircle2D &cir, int samples )
 {
+	prt(("s0125 JagPolygon JagCircle2D samples=%d cir.r=%f\n", samples, cir.r ));
 	JagLineString3D ls;
 	JagVector<JagPoint2D> vec;
 	JagGeo::samplesOn2DCircle( cir.x0, cir.y0, cir.r, samples, vec );
+	prt(("s0123 vec.size=%d\n", vec.size() ));
 	for ( int i=0; i < vec.size(); ++i ) {
 		ls.add( vec[i].x, vec[i].y );
 	}

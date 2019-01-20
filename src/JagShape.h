@@ -46,43 +46,59 @@ class JagPoint2D
 class JagSquare2D
 {
   public:
-  	JagSquare2D(){};
-  	JagSquare2D( double inx, double iny, double ina, double innx );
+  	JagSquare2D(){ srid = 0; }
+  	JagSquare2D( double inx, double iny, double ina, double innx, int srid=0 );
+  	void init( double inx, double iny, double ina, double innx, int srid );
+  	JagSquare2D( const JagStrSplit &sp, int srid=0 );
 	double x0, y0, a, nx; 
+	int srid;
 	JagPoint2D point[4];  // counter-clockwise polygon points
 };
 
 class JagRectangle2D
 {
   public:
-  	JagRectangle2D(){};
-  	JagRectangle2D( double inx, double iny, double ina, double inb, double innx );
+  	JagRectangle2D(){ srid=0;};
+  	JagRectangle2D( double inx, double iny, double ina, double inb, double innx, int srid=0 );
+  	JagRectangle2D( const JagStrSplit &sp, int srid=0 );
+  	void init( double inx, double iny, double ina, double inb, double innx, int srid );
+	static void setPoint( double x0, double y0, double a, double b, double nx, JagPoint2D point[] );
 	double x0, y0, a, b, nx; 
+	int srid;
 	JagPoint2D point[4];  // counter-clockwise polygon points
 };
 
 class JagCircle2D
 {
   public:
-  	JagCircle2D(){};
-  	JagCircle2D( double inx, double iny, double inr );
+  	JagCircle2D(){ srid=0;};
+  	JagCircle2D( double inx, double iny, double inr, int srid=0 );
+  	void init( double inx, double iny, double inr, int srid );
+  	JagCircle2D( const JagStrSplit &sp, int srid=0 );
+	int srid;
 	double x0, y0, r;
 };
 
 class JagEllipse2D
 {
   public:
-  	JagEllipse2D(){};
-  	JagEllipse2D( double inx, double iny, double ina, double inb, double innx );
+  	JagEllipse2D(){ srid = 0;};
+  	JagEllipse2D( double inx, double iny, double ina, double inb, double innx, int srid=0 );
+  	void init( double inx, double iny, double ina, double inb, double innx, int srid );
+  	JagEllipse2D( const JagStrSplit &sp, int srid=0 );
 	double x0, y0, a, b, nx; 
+	int srid;
 };
 
 class JagTriangle2D
 {
   public:
-  	JagTriangle2D(){};
-  	JagTriangle2D( double inx1, double iny1, double inx2, double iny2, double inx3, double iny3 );
+  	JagTriangle2D(){ srid=0;};
+  	JagTriangle2D( double inx1, double iny1, double inx2, double iny2, double inx3, double iny3, int srid=0 );
+  	void init( double inx1, double iny1, double inx2, double iny2, double inx3, double iny3, int srid );
+  	JagTriangle2D( const JagStrSplit &sp, int srid=0 );
 	double x1,y1, x2,y2, x3,y3;
+	int srid;
 };
 
 
@@ -432,6 +448,7 @@ class JagPolygon
 		void print() const { linestr.print(); }
 		double lineLength( bool removeLast, bool is3D );
 		void toWKT( bool is3D, bool hasHdr, AbaxDataString &str ) const;
+		void toJAG( bool is3D, bool hasHdr, int srid, AbaxDataString &str ) const;
 
 		JagPolygon( const JagSquare2D &sq );
 		JagPolygon( const JagRectangle2D &rect );

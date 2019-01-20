@@ -1527,6 +1527,8 @@ class JagGeo
 	static bool isPolygonCCW( const JagStrSplit &sp );
 	static bool isPolygonCW( const JagStrSplit &sp );
 	static void multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, AbaxDataString &wkt );
+    static double meterToLon( int srid, double meter, double lon, double lat);
+    static double meterToLat( int srid, double meter, double lon, double lat);
 
 
 
@@ -1707,8 +1709,6 @@ class JagGeo
 										 const JagPoint3D &p1, const JagPoint3D &p2, const JagPoint3D &p3 );
 
 
-    static double meterToLon( int srid, double meter, double lon, double lat);
-    static double meterToLat( int srid, double meter, double lon, double lat);
 	static double computePolygonArea( const JagVector<std::pair<double,double>> &vec );
 	static double computePolygonPerimeter( const JagVector<std::pair<double,double>> &vec, int srid );
 	static double computePolygon3DPerimeter( const JagVector<JagPoint3D> &vec, int srid );

@@ -280,7 +280,13 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 			//prt(("s3770 isPolyType getPolyDataString  ...\n" ));
 			getPolyDataString( ntr, _type, maps, attrs, buffers, str );
 		} else if ( JagParser::isGeoType( _type ) ) {
-			colobjstr += "=0";
+			//colobjstr += "=0";
+			int dim = JagGeo::getDimension(_type);
+			if ( 2 == dim ) {
+				colobjstr += "=0 0:0:0:0";
+			} else {
+				colobjstr += "=0 0:0:0:0:0:0";
+			}
 			makeDataString( attrs, buffers, colobjstr, str );
 		} else if (  _type == JAG_C_COL_TYPE_RANGE  ) {
 			makeRangeDataString( attrs, buffers, colobjstr, str );
@@ -1068,6 +1074,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_BBOX ) str = "bbox";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
+	else if ( binaryOp == JAG_FUNC_TOPOLYGON ) str = "topolygon";
 	else if ( binaryOp == JAG_FUNC_UNION ) str = "union";
 	else if ( binaryOp == JAG_FUNC_INTERSECTION ) str = "intersection";
 	else if ( binaryOp == JAG_FUNC_COLLECT ) str = "collect";
@@ -1146,7 +1153,12 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		type = JAG_C_COL_TYPE_STR;
 		collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN + 2;
 		siglen = 0;
-		// todo qwer can we get number of points of lstr?
+		// todo can we get number of points of lstr?
+	} else if ( _binaryOp == JAG_FUNC_TOPOLYGON ) {
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN/3 + 2;
+		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_POINTN ||  _binaryOp == JAG_FUNC_STARTPOINT || _binaryOp == JAG_FUNC_ENDPOINT
                 || _binaryOp == JAG_FUNC_CENTROID || _binaryOp == JAG_FUNC_CLOSESTPOINT ) {
 		ltmode = 0;
@@ -3098,6 +3110,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
 				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
+				 || _binaryOp == JAG_FUNC_TOPOLYGON 
 				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS
 				 ||  _binaryOp == JAG_FUNC_INNERRINGS || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
@@ -3914,20 +3927,27 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 	} else if ( funcHasTwoChildren(op) ) {
 		// right child
-		if ( operandStack.empty() ) {
-			// printf("s5301 throw here\n");
-			throw 1434;
-		} else right = operandStack.top();
-		operandStack.pop();
-		//prt(("s3308 operandStack.pop()\n"));
+    	//operandStack.print();
+		int nargs = operandStack.size();
+		prt(("s1026 operandStack.size=%d\n", nargs ));
+    	if ( operandStack.empty() ) { throw 1434; } 
 
-		// left child
-		if ( operandStack.empty() ) {
-			// printf("s5302 throw here\n");
-			throw 1435;
-		} else left = operandStack.top();
-		operandStack.pop();
-		//prt(("s3309 operandStack.pop()\n"));
+		if ( 2 == nargs ) { 
+			// right child
+    		right = operandStack.top();
+    		operandStack.pop();
+    
+    		// left child
+    		if ( operandStack.empty() ) { throw 1435; } 
+    		left = operandStack.top();
+    		operandStack.pop();
+		} else if ( 1 == nargs ) {
+			right = NULL; // no right child(arg)
+    		left = operandStack.top();
+    		operandStack.pop();
+		} else {
+			throw 9280;
+		}
 
 		// if datediff, pop and process third top operand as diff type
 		if ( op == JAG_FUNC_DATEDIFF ) {
@@ -3949,10 +3969,22 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		}  else if ( op == JAG_FUNC_POINTN || op == JAG_FUNC_BUFFER || op == JAG_FUNC_POLYGONN
 		             || op == JAG_FUNC_RINGN || op == JAG_FUNC_INNERRINGN ) {
 			const char *p = NULL;
+			if ( ! right ) throw 2810;
 			if ( right->getValue(p) ) {
 				carg1 = p;
 				// prt(("s3388 JAG_FUNC_POINTN p=[%s]\n", p ));
 			} else throw 1448;
+			operandStack.pop();
+		} else if ( op == JAG_FUNC_TOPOLYGON ) {
+			if ( ! right ) {
+				// ommited second arg
+				carg1 = "30";
+			} else {
+				const char *p = NULL;
+				if ( right->getValue(p) ) {
+					carg1 = p;
+				} else throw 2932;
+			}
 			operandStack.pop();
 		}
 
@@ -4145,6 +4177,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_UNION 
 		 || fop == JAG_FUNC_INTERSECTION 
 		 || fop == JAG_FUNC_COLLECT
+		 || fop == JAG_FUNC_TOPOLYGON
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
 	}
@@ -4198,6 +4231,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_STARTPOINT || 
 		fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
+		fop == JAG_FUNC_TOPOLYGON || 
 		fop == JAG_FUNC_UNION || 
 		fop == JAG_FUNC_INTERSECTION || 
 		fop == JAG_FUNC_COLLECT || 
@@ -4467,6 +4501,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "convexhull", 10 ) ) {
 		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "topolygon", 9 ) ) {
+		fop = JAG_FUNC_TOPOLYGON; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "union", 5 ) ) {
 		fop = JAG_FUNC_UNION; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "collect", 7 ) ) {
@@ -5102,7 +5138,7 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const AbaxDataString& mark1, const 
 bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString& hdr, const AbaxDataString &colType1, int srid1, 
 										const JagStrSplit &sp1, const AbaxDataString &carg, AbaxDataString &value )
 {
-	prt(("s2232 doSingleStrOp  sp1:\n" ));
+	prt(("s2232 doSingleStrOp srid1=%d  sp1:\n", srid1 ));
 	//sp1.print();
 
 	bool rc = false;
@@ -5162,6 +5198,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllBuffer( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_CENTROID ) {
 		rc = doAllCentroid( mark1, hdr, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_TOPOLYGON ) {
+		rc = doAllToPolygon( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else {
 	}
 	//prt(("s2337 rc=%d\n", rc ));
@@ -5939,6 +5977,44 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 			JagCGAL::getConvexHull3DStr( line, hdr, bbox, value );
 		} else  {
 		}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllToPolygon( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    int srid, const JagStrSplit &sp, const AbaxDataString& carg, AbaxDataString &value )
+{
+	prt(("s3420 doAllToPolygon() srid=%d mk=[%s] colType=[%s] sp1.print(): \n", srid, mk.c_str(), colType.c_str() ));
+	//sp.print();
+	if ( ! JagParser::isVectorGeoType( colType ) ) {
+		value = sp.c_str();
+		return true;
+	}
+
+	value = "";
+
+	double px, py;
+    if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+		JagSquare2D sq( sp, srid );
+		JagPolygon pgon( sq );
+		pgon.toJAG( false, true, srid, value );
+    } else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
+		JagRectangle2D rect( sp, srid );
+		JagPolygon pgon( rect );
+		pgon.toJAG( false, true, srid, value );
+    } else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+		JagCircle2D cir( sp, srid );
+		JagPolygon pgon( cir, jagatoi( carg.c_str()) );
+		pgon.toJAG( false, true, srid, value );
+    } else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+		JagEllipse2D e( sp, srid );
+		JagPolygon pgon( e, jagatoi( carg.c_str()) );
+		pgon.toJAG( false, true, srid, value );
+    } else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		JagTriangle2D t( sp, srid );
+		JagPolygon pgon( t );
+		pgon.toJAG( false, true, srid, value );
+	}
 
 	return true;
 }
