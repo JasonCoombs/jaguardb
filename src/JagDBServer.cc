@@ -2737,6 +2737,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    unique(geom)            -- geom with consecutive duplicate points removed\n";
 		str += "    union(geom1,geom2)      -- union of two geoms. Polygon outer ring should be counter-clock-wise\n";
 		str += "    collect(geom1,geom2)    -- collection of two geoms\n";
+		str += "    topolygon(geom)         -- converting square, rectangle, circle, ellipse, triangle to polygon\n";
+		str += "    astext(geom)            -- text string of a geometry shape\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

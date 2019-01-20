@@ -1083,6 +1083,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_INNERRINGS ) str = "innerrings";
 	else if ( binaryOp == JAG_FUNC_RINGN ) str = "ringn";
 	else if ( binaryOp == JAG_FUNC_POLYGONN ) str = "polygonn";
+	else if ( binaryOp == JAG_FUNC_ASTEXT ) str = "astext";
 	else if ( binaryOp == JAG_FUNC_UNIQUE ) str = "unique";
 	else if ( binaryOp == JAG_FUNC_BUFFER ) str = "buffer";
 	else if ( binaryOp == JAG_FUNC_ENDPOINT ) str = "endpoint";
@@ -1148,6 +1149,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER || _binaryOp == JAG_FUNC_UNIQUE
 	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
 		 || _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT || _binaryOp == JAG_FUNC_INTERSECTION
+		 || _binaryOp == JAG_FUNC_ASTEXT
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3110,7 +3112,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		}
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_BBOX || _binaryOp == JAG_FUNC_STARTPOINT
 				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
-				 || _binaryOp == JAG_FUNC_TOPOLYGON 
+				 || _binaryOp == JAG_FUNC_TOPOLYGON  || _binaryOp == JAG_FUNC_ASTEXT
 				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS
 				 ||  _binaryOp == JAG_FUNC_INNERRINGS || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
@@ -4242,6 +4244,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_RINGN || 
 		fop == JAG_FUNC_UNIQUE || 
 		fop == JAG_FUNC_INNERRINGN || 
+		fop == JAG_FUNC_ASTEXT || 
 		fop == JAG_FUNC_BUFFER || 
 		fop == JAG_FUNC_CENTROID || 
 		fop == JAG_FUNC_ISCLOSED || 
@@ -4517,6 +4520,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_OUTERRING; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "ringn", 5 ) ) {
 		fop = JAG_FUNC_RINGN; len = 5; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "astext", 6 ) ) {
+		fop = JAG_FUNC_ASTEXT; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "unique", 6 ) ) {
 		fop = JAG_FUNC_UNIQUE; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "innerringn", 10 ) ) {
@@ -5200,6 +5205,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const AbaxDataString& mark1, const Aba
 		rc = doAllCentroid( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_TOPOLYGON ) {
 		rc = doAllToPolygon( mark1, hdr, colType1, srid1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_ASTEXT ) {
+		rc = doAllAsText( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else {
 	}
 	//prt(("s2337 rc=%d\n", rc ));
@@ -5978,6 +5985,15 @@ bool BinaryOpNode::doAllConvexHull( const AbaxDataString& mk, const AbaxDataStri
 		} else  {
 		}
 
+	return true;
+}
+
+bool BinaryOpNode::doAllAsText( const AbaxDataString& mk, const AbaxDataString& hdr, const AbaxDataString &colType, 
+								    int srid, const JagStrSplit &sp, const AbaxDataString& carg, AbaxDataString &value )
+{
+	prt(("s3420 doAllToPolygon() srid=%d mk=[%s] colType=[%s] sp1.print(): \n", srid, mk.c_str(), colType.c_str() ));
+	//sp.print();
+	value = sp.c_str();
 	return true;
 }
 

@@ -467,6 +467,7 @@
 #define JAG_FUNC_COLLECT        277  // collection (addition) of two geoms to forma a new geom
 #define JAG_FUNC_INTERSECTION   278  // intersection (geo) of two geoms
 #define JAG_FUNC_TOPOLYGON      279  // convert vector 2D shapes to 2d polygon
+#define JAG_FUNC_ASTEXT         280  // sent to client as text of geom
 
 
 // multi-line data ( string functions )
