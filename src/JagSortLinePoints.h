@@ -95,4 +95,14 @@ int JagGeo::JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, J
 			++j;
 		}
 	}
+	return 0;
+}
+
+
+template <class POINT>
+int JagGeo::JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec )
+{
+	sortLinePoints( arr1, len1 );
+	sortLinePoints( arr2, len2 );
+	JagSortedSetJoin( arr1, len1,  arr2, len2, vec );
 }

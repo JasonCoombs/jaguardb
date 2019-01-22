@@ -128,6 +128,9 @@ class JagPoint3D
      JagPoint3D( double inx, double iny, double inz );
 	 void transform( double x0, double y0, double z0, double nx0, double ny0 );
 	 void print() const { printf("x=%.1f y=%.1f z=%.1f ", x, y, z ); }
+	 AbaxDataString hashString() const;
+	 AbaxDataString str3D() const { return d2s(x) + ":" + d2s(y) + ":" + d2s(z); }
+	 AbaxDataString str2D() const { return d2s(x) + ":" + d2s(y); }
      double x;
 	 double y;
 	 double z;
@@ -447,7 +450,7 @@ class JagPolygon
 		JagVector<JagLineString3D> linestr;
 		void print() const { linestr.print(); }
 		double lineLength( bool removeLast, bool is3D );
-		void toWKT( bool is3D, bool hasHdr, AbaxDataString &str ) const;
+		void toWKT( bool is3D, bool hasHdr, const AbaxDataString &objname, AbaxDataString &str ) const;
 		void toJAG( bool is3D, bool hasHdr, int srid, AbaxDataString &str ) const;
 
 		JagPolygon( const JagSquare2D &sq );

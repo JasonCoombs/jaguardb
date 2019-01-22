@@ -406,7 +406,7 @@
 #define JAG_FUNC_RADIANS		134 // degrees to radians
 #define JAG_FUNC_EXP			136 // exp(a) is a raised to the power of e. inverse of ln()
 #define JAG_FUNC_ALL			138 // all(a) all row data for poly data
-#define JAG_FUNC_DIFF			140 // diff( str1, str2)  // levinshtein distance between two strs or (col, str)
+#define JAG_FUNC_STRDIFF		140 // diff( str1, str2)  // levinshtein distance between two strs or (col, str)
 
 #define JAG_FUNC_DISTANCE		200  // double
 #define JAG_FUNC_WITHIN		    202  // T or F
@@ -468,6 +468,7 @@
 #define JAG_FUNC_INTERSECTION   278  // intersection (geo) of two geoms
 #define JAG_FUNC_TOPOLYGON      279  // convert vector 2D shapes to 2d polygon
 #define JAG_FUNC_ASTEXT         280  // sent to client as text of geom
+#define JAG_FUNC_DIFFERENCE     281  // diffeence of two geoms
 
 
 // multi-line data ( string functions )

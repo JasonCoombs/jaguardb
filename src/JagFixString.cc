@@ -23,19 +23,30 @@
 
 AbaxFixString::AbaxFixString() 
 {
-		_buf = NULL;
-		_length = 0;
-		_readOnly = false;
+	_buf = NULL;
+	_length = 0;
+	_readOnly = false;
+}
+
+AbaxFixString::AbaxFixString( const char *str ) 
+{
+	unsigned int len = strlen( str );
+	_readOnly = false;
+
+	_buf = (char*)jagmalloc(len+1);
+	memcpy( _buf, str, len );
+	_buf[len] = '\0';
+	_length = len;
 }
 
 AbaxFixString::AbaxFixString( const char *str, unsigned int len ) 
 { 
-		_readOnly = false;
+	_readOnly = false;
 
-		_buf = (char*)jagmalloc(len+1);
-		memcpy( _buf, str, len );
-		_buf[len] = '\0';
-		_length = len;
+	_buf = (char*)jagmalloc(len+1);
+	memcpy( _buf, str, len );
+	_buf[len] = '\0';
+	_length = len;
 }
 
 /***
@@ -70,7 +81,26 @@ AbaxFixString::AbaxFixString( const AbaxDataString &str )
 		// printf("s3929 AbaxFixString(int) called\n"); fflush( stdout );
 }
 
-AbaxFixString& AbaxFixString:: operator=( const AbaxFixString &str ) 
+AbaxFixString& AbaxFixString::operator=( const char *str ) 
+{ 
+		if ( _buf == str ) {
+			return *this;
+		}
+
+		if ( _buf && ! _readOnly ) {
+			free ( _buf );
+		}
+
+		int len = strlen(str);
+		_buf = (char*)jagmalloc(len+1);
+		memcpy( _buf, str, len );
+		_length = len;
+		_buf[len] = '\0';
+		_readOnly = false;
+		return *this;
+}
+
+AbaxFixString& AbaxFixString::operator=( const AbaxFixString &str ) 
 { 
 		if ( _buf == str._buf ) {
 			return *this;

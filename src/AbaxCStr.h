@@ -42,6 +42,7 @@ class AbaxCStr
 		inline size_t  size() const { return length_; }
 		inline size_t  length() const { return length_; }
 		size_t find( int c) const;
+		double tof() const;
 
 		//AbaxCStr operator +( const AbaxCStr & cpstr) const;
 		AbaxCStr& operator +=( const AbaxCStr & cpstr);

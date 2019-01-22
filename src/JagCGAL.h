@@ -36,16 +36,9 @@ typedef boost::geometry::model::polygon<BoostPoint2D,true> BoostPolygon2DCW; // 
 typedef boost::geometry::ring_type<BoostPolygon2D>::type BoostRing2D; // counter-clock-wise
 typedef boost::geometry::ring_type<BoostPolygon2DCW>::type BoostRing2DCW; // clock-wise
 
-//typedef boost::geometry::interior_type<BoostPolygon2DCW>::type BoostInnerRing2D;
-
-//typedef boost::geometry::ring_type<BoostPolygon2D,false>::type BoostRing2DCCW; // counter-clock-wise
-//typedef boost::geometry::ring_type<BoostPoint2D>::type BoostRing2D; // clock-wise
-//typedef boost::geometry::ring_type<BoostPoint2D,false>::type BoostRing2DCCW; // counter-clock-wise
-
-//typedef bg::model::ring<DPoint, false> DRing;
-//typedef bg::model::ring<BoostPoint2D, true>  BoostRing2D;
-//typedef bg::model::ring<BoostPoint2D, false> BoostRing2DCCW;
-
+typedef boost::geometry::model::multi_polygon<BoostPolygon2D> BoostMultiPolygon2D; 
+typedef boost::geometry::model::multi_polygon<BoostPolygon2DCW> BoostMultiPolygon2DCW; 
+typedef boost::geometry::model::multi_linestring<BoostLineString2D> BoostMultiLineString2D;
 
 typedef boost::geometry::strategy::buffer::distance_symmetric<double> JagDistanceSymmetric;
 typedef boost::geometry::strategy::buffer::distance_asymmetric<double> JagDistanceASymmetric;
@@ -120,6 +113,9 @@ class JagCGAL
 	static int  getTwoPolygonIntersection( const JagPolygon &pgon1, const JagPolygon &pgon2, JagVector<JagPolygon> &vec );
 	static bool convertPolygonJ2B( const JagPolygon &pgon1, BoostPolygon2D &bgon );
 
+	template <class GEOM1, class GEOM2, class RESULT> 
+	static void getTwoGeomDifference( const AbaxDataString &wkt1, const AbaxDataString &wkt2, AbaxDataString &reswkt );
+
 
   protected:
   	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );
@@ -173,5 +169,19 @@ class JagIntersectionVisitor3D
 	JagVector<JagPoint3D> &_res;
 };
 
+
+template <class GEOM1, class GEOM2, class RESULT>
+void JagCGAL::getTwoGeomDifference( const AbaxDataString &wkt1, const AbaxDataString &wkt2, AbaxDataString &reswkt )
+{
+	RESULT result;
+	GEOM1 geom1;
+	boost::geometry::read_wkt( wkt1.c_str(), geom1 );
+	GEOM1 geom2;
+	boost::geometry::read_wkt( wkt2.c_str(), geom2 );
+	boost::geometry::difference( geom1, geom2, result );
+	std::stringstream ifs;
+	ifs << boost::geometry::wkt(result);
+	reswkt = ifs.str().c_str();
+}
 
 #endif

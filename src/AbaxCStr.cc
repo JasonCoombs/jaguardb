@@ -685,3 +685,9 @@ bool AbaxCStr::containsChar( char c )
 	return false;
 }
 
+double AbaxCStr::tof() const
+{
+	if ( ! buf_ || buf_[0] == '\0' ) return 0.0;
+	return atof( buf_ );
+}
+

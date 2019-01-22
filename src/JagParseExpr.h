@@ -319,6 +319,9 @@ class BinaryOpNode: public ExpressionElementNode
     AbaxDataString doAllIntersection( const AbaxDataString& mark1, const AbaxDataString &colType1,
 				               const JagStrSplit &sp1, const AbaxDataString& mark2,
 				               const AbaxDataString &colType2, const JagStrSplit &sp2 );
+    AbaxDataString doAllDifference( const AbaxDataString& mark1, const AbaxDataString &colType1,
+				               const JagStrSplit &sp1, const AbaxDataString& mark2,
+				               const AbaxDataString &colType2, const JagStrSplit &sp2 );
 
 
 

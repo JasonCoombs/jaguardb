@@ -30,6 +30,7 @@ class JagGeo
   public:
 	template <class POINT> static int sortLinePoints( POINT arr[], int elements );
 	template <class POINT> static int JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
+	template <class POINT> static int JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
 
 	/////////////////////////////////////// Within function ////////////////////////////////////////////////////
    	static bool doPointWithin(  const JagStrSplit &sp1, const AbaxDataString &mk2, 
@@ -560,6 +561,20 @@ class JagGeo
 											   const AbaxDataString &type2,const JagStrSplit &sp2 );
    	static AbaxDataString doPolygonIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
 											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+
+   	static AbaxDataString doPointDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doLineDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doLineStringDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doMultiLineStringDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doPolygonDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static AbaxDataString doMultiPolygonDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
+											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+
 
 
 	// 2D circle
@@ -1752,6 +1767,18 @@ class JagGeo
 												JagVector<JagPoint3D> &vec ); 
 
 	static void splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<AbaxDataString> &svec );
+	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagVector<JagPoint3D> &vec2, 
+									   JagVector<JagPoint3D> &resvec );
+	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagStrSplit &sp,
+									   bool is3D, JagVector<JagPoint3D> &resvec );
+	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagVector<JagPoint3D> &vec2, 
+									   JagHashStrStr &hashset );
+	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagStrSplit &sp,
+									   bool is3D, JagHashStrStr &hashset );
+
+	static void vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashStrStr &hashset );
+
+	static void getVectorPoints( const JagStrSplit &sp, bool is3D, JagVector<JagPoint3D> &resvec );
 
 
 };  // end of class JagGeo

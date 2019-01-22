@@ -1021,7 +1021,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_ASIN ) str = "asin";
 	else if ( binaryOp == JAG_FUNC_ATAN ) str = "atan";
 	else if ( binaryOp == JAG_FUNC_COS ) str = "cos";
-	else if ( binaryOp == JAG_FUNC_DIFF ) str = "diff";
+	else if ( binaryOp == JAG_FUNC_STRDIFF ) str = "strdiff";
 	else if ( binaryOp == JAG_FUNC_SIN ) str = "sin";
 	else if ( binaryOp == JAG_FUNC_TAN ) str = "tan";
 	else if ( binaryOp == JAG_FUNC_COT ) str = "cot";
@@ -1077,6 +1077,7 @@ AbaxDataString BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_TOPOLYGON ) str = "topolygon";
 	else if ( binaryOp == JAG_FUNC_UNION ) str = "union";
 	else if ( binaryOp == JAG_FUNC_INTERSECTION ) str = "intersection";
+	else if ( binaryOp == JAG_FUNC_DIFFERENCE ) str = "difference";
 	else if ( binaryOp == JAG_FUNC_COLLECT ) str = "collect";
 	else if ( binaryOp == JAG_FUNC_OUTERRING ) str = "outerring";
 	else if ( binaryOp == JAG_FUNC_OUTERRINGS ) str = "outerrings";
@@ -1149,7 +1150,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER || _binaryOp == JAG_FUNC_UNIQUE
 	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
 		 || _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT || _binaryOp == JAG_FUNC_INTERSECTION
-		 || _binaryOp == JAG_FUNC_ASTEXT
+		 || _binaryOp == JAG_FUNC_ASTEXT ||  _binaryOp == JAG_FUNC_DIFFERENCE
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -1694,7 +1695,7 @@ int BinaryOpNode::formatAggregateParts( AbaxDataString &parts, AbaxDataString &l
 		parts = AbaxDataString("cos(") + lparts + ")";
 	}		
 	// DIFF
-	else if ( _binaryOp == JAG_FUNC_DIFF ) {
+	else if ( _binaryOp == JAG_FUNC_STRDIFF ) {
 		parts = AbaxDataString("diff(") + lparts + "," + rparts + ")";
 	}		
 	// SIN
@@ -2223,11 +2224,11 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 		return 1;
 	}
 	// DIFF
-	else if ( _binaryOp == JAG_FUNC_DIFF ) {
-		//prt(("s2031 JAG_FUNC_DIFF lstr=[%s]\n", lstr.c_str() ));
-		//prt(("s2031 JAG_FUNC_DIFF rstr=[%s]\n", rstr.c_str() ));
+	else if ( _binaryOp == JAG_FUNC_STRDIFF ) {
+		//prt(("s2031 JAG_FUNC_STRDIFF lstr=[%s]\n", lstr.c_str() ));
+		//prt(("s2031 JAG_FUNC_STRDIFF rstr=[%s]\n", rstr.c_str() ));
 		int diff = levenshtein( lstr.c_str(), rstr.c_str() );
-		//prt(("s2031 JAG_FUNC_DIFF diff=%d\n", diff ));
+		//prt(("s2031 JAG_FUNC_STRDIFF diff=%d\n", diff ));
 		str = intToStr( diff );
 		return 1;
 	}		
@@ -2868,12 +2869,12 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		return 1;
 	}
 	// DIFF
-	else if ( _binaryOp == JAG_FUNC_DIFF ) {
+	else if ( _binaryOp == JAG_FUNC_STRDIFF ) {
 		ltmode = 0; // string
-		//prt(("s2431 JAG_FUNC_DIFF lstr=[%s]\n", lstr.c_str() ));
-		//prt(("s2431 JAG_FUNC_DIFF rstr=[%s]\n", rstr.c_str() ));
+		//prt(("s2431 JAG_FUNC_STRDIFF lstr=[%s]\n", lstr.c_str() ));
+		//prt(("s2431 JAG_FUNC_STRDIFF rstr=[%s]\n", rstr.c_str() ));
 		int diff = levenshtein( lstr.c_str(), rstr.c_str() );
-		//prt(("s2431 JAG_FUNC_DIFF diff=%d\n", diff ));
+		//prt(("s2431 JAG_FUNC_STRDIFF diff=%d\n", diff ));
 		lstr = intToStr( diff );
 		return 1;
 	}		
@@ -3205,7 +3206,8 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			lstr = "0";
 			return 0;
 		}
-	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT || _binaryOp == JAG_FUNC_INTERSECTION ) {
+	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT 
+	             || _binaryOp == JAG_FUNC_INTERSECTION || _binaryOp == JAG_FUNC_DIFFERENCE ) {
 		prt(("s7140 before processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
 		prt(("s7140 before processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
 		try {
@@ -4163,7 +4165,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_WITHIN 
 		 || fop == JAG_FUNC_COVEREDBY 
 		 || fop == JAG_FUNC_COVER
-		 || fop == JAG_FUNC_DIFF
+		 || fop == JAG_FUNC_STRDIFF
 		 || fop == JAG_FUNC_CONTAIN 
 		 || fop == JAG_FUNC_SAME 
 		 || fop == JAG_FUNC_INTERSECT 
@@ -4177,6 +4179,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_INNERRINGN 
 		 || fop == JAG_FUNC_BUFFER 
 		 || fop == JAG_FUNC_UNION 
+		 || fop == JAG_FUNC_DIFFERENCE
 		 || fop == JAG_FUNC_INTERSECTION 
 		 || fop == JAG_FUNC_COLLECT
 		 || fop == JAG_FUNC_TOPOLYGON
@@ -4235,6 +4238,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_CONVEXHULL || 
 		fop == JAG_FUNC_TOPOLYGON || 
 		fop == JAG_FUNC_UNION || 
+		fop == JAG_FUNC_DIFFERENCE || 
 		fop == JAG_FUNC_INTERSECTION || 
 		fop == JAG_FUNC_COLLECT || 
 		fop == JAG_FUNC_POLYGONN || 
@@ -4266,7 +4270,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_XMAX || 
 		fop == JAG_FUNC_YMAX || 
 		fop == JAG_FUNC_ZMAX || 
-		fop == JAG_FUNC_DIFF || 
+		fop == JAG_FUNC_STRDIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
 		fop == JAG_FUNC_TOMICROSECOND || 
@@ -4369,8 +4373,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_CEIL; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "cos", 3 ) ) {
 		fop = JAG_FUNC_COS; len = 3; ctype = 2;
-	} else if ( 0 == strncasecmp(p, "diff", 4 ) ) {
-		fop = JAG_FUNC_DIFF; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "strdiff", 7 ) ) {
+		fop = JAG_FUNC_STRDIFF; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "cot", 3 ) ) {
 		fop = JAG_FUNC_COT; len = 3; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "floor", 5 ) ) {
@@ -4508,6 +4512,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_TOPOLYGON; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "union", 5 ) ) {
 		fop = JAG_FUNC_UNION; len = 5; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "difference", 10 ) ) {
+		fop = JAG_FUNC_DIFFERENCE; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "collect", 7 ) ) {
 		fop = JAG_FUNC_COLLECT; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "polygonn", 8 ) ) {
@@ -5305,6 +5311,8 @@ AbaxDataString BinaryOpNode::doTwoStrOp( int op, const AbaxDataString& mark1, co
 		return doAllCollect( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( op == JAG_FUNC_INTERSECTION ) {
 		return doAllIntersection( mark1, colType1, sp1, mark2, colType2, sp2 );
+	} else if ( op == JAG_FUNC_DIFFERENCE ) {
+		return doAllDifference( mark1, colType1, sp1, mark2, colType2, sp2 );
 	} else {
 		return "";
 	}
@@ -7202,6 +7210,29 @@ AbaxDataString BinaryOpNode::doAllIntersection( const AbaxDataString& mark1, con
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		prt(("s2231 colType2 == JAG_C_COL_TYPE_POLYGON doPolygonIntersection ...\n" ));
 		return JagGeo::doPolygonIntersection( colType2,sp2, colType1,sp1 );
+	} else {
+		return "";
+	}
+}
+
+AbaxDataString BinaryOpNode::doAllDifference( const AbaxDataString& mark1, const AbaxDataString &colType1, 
+										const JagStrSplit &sp1, const AbaxDataString& mark2, 
+										const AbaxDataString &colType2, const JagStrSplit &sp2 )
+{
+	prt(("s2410 doAllDifference colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPointDifference(  colType1,sp1, colType2,sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE || colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLineDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING || colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineStringDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING || colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doMultiLineStringDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return JagGeo::doMultiPolygonDifference( colType1,sp1, colType2,sp2 );
 	} else {
 		return "";
 	}

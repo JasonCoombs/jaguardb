@@ -23,8 +23,6 @@
 JagTableOrIndexAttrs::JagTableOrIndexAttrs() 
 {
 	schAttr = NULL;
-	uuidarr = NULL;
-	deftimestamparr = NULL;
 	keylen = vallen = numKeys = numCols = 0;
 	dbobjnum = 0;
 	defUpdDatetime = defDatetime = updDatetime = JAG_S_COL_SPARE_DEFAULT;

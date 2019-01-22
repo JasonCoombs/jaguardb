@@ -91,6 +91,7 @@ char *ltostr( abaxint i, char *buf );
 AbaxDataString intToStr( int i );
 AbaxDataString longToStr( abaxint i );
 AbaxDataString doubleToStr( double f );
+AbaxDataString d2s( double f );
 AbaxDataString doubleToStr( double f, int maxlen, int sig );
 AbaxDataString longDoubleToStr( abaxdouble f );
 int jagsprintfLongDouble( int mode, bool fill, char *buf, abaxdouble i, abaxint maxlen );

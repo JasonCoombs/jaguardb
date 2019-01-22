@@ -1196,11 +1196,10 @@ int JagCGAL::getTwoPolygonIntersection( const JagPolygon &pgon1, const JagPolygo
 bool JagCGAL::convertPolygonJ2B( const JagPolygon &pgon, BoostPolygon2D &bgon )
 {
 	AbaxDataString wkt;
-	pgon.toWKT(false, true, wkt);
+	pgon.toWKT(false, true, "polygon", wkt);
 	if ( wkt.size() < 1 ) return false;
 	std::string ss = std::string( wkt.c_str(), wkt.size() );
 	boost::geometry::read_wkt( ss, bgon );
 	return true;
 }
-
 

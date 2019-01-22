@@ -2653,7 +2653,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "                                      ENCODING: 'UTF8', 'GBK', 'GB2312', 'GB10830'\n";
 		str += "    substring( EXPR(COL), start, length)             -- same as substr() above\n";
 		str += "    substring( EXPR(COL), start, length, ENCODING )  -- same as substr() with encoding\n";
-		str += "    diff( EXPR(COL), EXPR(COL) )  -- Levenshtein (or edit) distance between two strings (or columns)\n";
+		str += "    strdiff( EXPR(COL), EXPR(COL) )  -- Levenshtein (or edit) distance between two strings\n";
 		str += "    upper( EXPR(COL) )  -- upper case string of column expression\n";
 		str += "    lower( EXPR(COL) )  -- lower case string of column expression\n";
 		str += "    ltrim( EXPR(COL) )  -- remove leading white spaces of string column expression\n";

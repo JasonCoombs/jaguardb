@@ -1019,6 +1019,14 @@ AbaxDataString doubleToStr( double f )
 	return AbaxDataString(buf).trim0();
 }
 
+AbaxDataString d2s( double f )
+{
+	char buf[48];
+	memset(buf, 0, 48 );
+	sprintf(buf, "%.10f", f );
+	return AbaxDataString(buf).trim0();
+}
+
 AbaxDataString doubleToStr( double f, int maxlen, int sig )
 {
 	char buf[64];

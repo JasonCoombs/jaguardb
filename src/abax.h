@@ -45,6 +45,7 @@
 
 typedef long long abaxint;
 typedef unsigned long long uabaxint;
+typedef AbaxCStr AbaxDataString;
 
 /////////////// Enum Types //////////////////
 enum AbaxType { ABAX_STATIC = 10, ABAX_DYNAMIC = 20 };
@@ -73,7 +74,6 @@ class abaxstream
 };
 extern abaxstream abaxcout;
 extern const char* abaxendl; 
-typedef AbaxCStr AbaxDataString;
 
 // Basic numerical types
 template <class DataType>
@@ -270,9 +270,11 @@ class AbaxFixString
 		static AbaxFixString NULLVALUE; 
         AbaxFixString();
         AbaxFixString( const char *str, unsigned int len ); 
+        AbaxFixString( const char *str ); 
         // AbaxFixString( unsigned int len );
         AbaxFixString( const AbaxFixString &str ); 
 		AbaxFixString( const AbaxDataString &str );
+        AbaxFixString& operator=( const char *str );
         AbaxFixString& operator=( const AbaxFixString &str );
 		AbaxFixString& operator=( const AbaxDataString &str ); 
         int operator== ( const AbaxFixString &s2 )  const;
