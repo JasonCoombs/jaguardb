@@ -99,13 +99,13 @@ pthread_mutex_t JagDBServer::g_dlogmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_dinsertmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_datacentermutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_selectmutex = PTHREAD_MUTEX_INITIALIZER;
-AbaxDataString  JagDBServer::_allLockToken = "-1";
+Jstr  JagDBServer::_allLockToken = "-1";
 
 // ctor
 JagDBServer::JagDBServer() 
 {
-	AbaxDataString fpath = jaguarHome() + "/conf/host.conf";
-	AbaxDataString fpathnew = jaguarHome() + "/conf/cluster.conf";
+	Jstr fpath = jaguarHome() + "/conf/host.conf";
+	Jstr fpathnew = jaguarHome() + "/conf/cluster.conf";
 	if ( JagFileMgr::exist( fpath ) && ( ! JagFileMgr::exist( fpathnew ) )  ) {
 		jagrename( fpath.c_str(), fpathnew.c_str() );
 	}
@@ -171,7 +171,7 @@ JagDBServer::JagDBServer()
 	_internalHostNum = new JagHashMap<AbaxString, abaxint>();
 
 	// also, get other databases name
-	AbaxDataString dblist, dbpath;
+	Jstr dblist, dbpath;
 	dbpath = _cfg->getJDBDataHOME( 0 );
 	dblist = JagFileMgr::listObjects( dbpath );
 	_objectLock->setInitDatabases( dblist, 0 );
@@ -257,8 +257,8 @@ JagDBServer::JagDBServer()
 	bf.openAppend();
 	bf.close();
 
-	AbaxDataString dologmsg = makeLowerString(_cfg->getValue("DO_DBLOG_MSG", "no"));
-	AbaxDataString dologerr = makeLowerString(_cfg->getValue("DO_DBLOG_ERR", "yes"));
+	Jstr dologmsg = makeLowerString(_cfg->getValue("DO_DBLOG_MSG", "no"));
+	Jstr dologerr = makeLowerString(_cfg->getValue("DO_DBLOG_ERR", "yes"));
 	int logdays = atoi(_cfg->getValue("DBLOG_DAYS", "3").c_str());
 	int logmsg=0, logerr=0;
 	if ( dologmsg == "yes" ) { logmsg = 1; raydebug( stdout, JAG_LOG_LOW, "DB logging message is enabled.\n" ); } 
@@ -583,7 +583,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 	int rc;
 	bool sucsync = true;
 	JagParseAttribute jpa( servobj, req.session->timediff, servobj->servtimediff, req.session->dbname, servobj->_cfg );
-	AbaxDataString reterr, rowFilter;
+	Jstr reterr, rowFilter;
 		
 	if ( req.batchReply ) {
         abaxint callCounts = -1, lastBytes = 0;
@@ -666,7 +666,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 			threadHostTime = g_lastHostTime;
 		}
 
-		AbaxDataString endmsg = AbaxDataString("_END_[T=20|E=|]");
+		Jstr endmsg = Jstr("_END_[T=20|E=|]");
 		if ( req.hasReply && !redoOnly ) {
 			// prt(("s7736 sendMessageLength ED endmsg=[%s]\n", endmsg.c_str() ));
 			JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), "ED" );
@@ -774,29 +774,29 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 					threadHostTime = g_lastHostTime;
 				}
 				
-				AbaxDataString resstr = "ED", endmsg = AbaxDataString("_END_[T=20|E=");
-				if ( sucsync ) endmsg = AbaxDataString("_END_[T=777|E=");
+				Jstr resstr = "ED", endmsg = Jstr("_END_[T=20|E=");
+				if ( sucsync ) endmsg = Jstr("_END_[T=777|E=");
 				// prt(("s7721 reterr=[%s]\n", reterr.c_str() ));
 				if ( reterr.length() > 0 ) {
 					endmsg += reterr;
 					resstr = "ER";
 				}
-				endmsg += AbaxDataString("|]");
+				endmsg += Jstr("|]");
 				// prt(("s0293 sendMessageLength endmsg=[%s] ...\n",  endmsg.c_str() ));
 				JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
 				// prt(("s0239 sendMessageLength endmsg=[%s] done\n",  endmsg.c_str() ));
 			} else {
 				// prt(("s7378 no sendMessageLength req.hasReply=%d redoOnly=%d ************** \n", req.hasReply, redoOnly ));
-				// AbaxDataString resstr = "ED", endmsg = AbaxDataString("_END_[T=20|E=");
+				// Jstr resstr = "ED", endmsg = Jstr("_END_[T=20|E=");
 				// JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
 			}
 		} else {
 			//prt(("E8383 parse error mesg=[%s] reterr=[%s]\n", mesg, reterr.c_str() ));
 			if ( req.hasReply && !redoOnly ) {
-				// AbaxDataString resstr = "ER", endmsg = AbaxDataString("_END_[T=20|E=E3018 Syntax error: ");
-				AbaxDataString resstr = "ER", endmsg = AbaxDataString("_END_[T=20|E=");
-				// endmsg += AbaxDataString(mesg) + " ";
-				endmsg += reterr + AbaxDataString("|]");
+				// Jstr resstr = "ER", endmsg = Jstr("_END_[T=20|E=E3018 Syntax error: ");
+				Jstr resstr = "ER", endmsg = Jstr("_END_[T=20|E=");
+				// endmsg += Jstr(mesg) + " ";
+				endmsg += reterr + Jstr("|]");
 				// prt(("s02939 sendMessageLength endmsg=[%s] ...\n",  endmsg.c_str() ));
 				JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
 				// prt(("s02939 sendMessageLength endmsg=[%s] done\n",  endmsg.c_str() ));
@@ -813,7 +813,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 // static
 // Process commands in one thread
 abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const char *cmd, 
-								 JagParseParam &parseParam, AbaxDataString &reterr, abaxint threadQueryTime, 
+								 JagParseParam &parseParam, Jstr &reterr, abaxint threadQueryTime, 
 								 abaxint &threadSchemaTime )
 {
 	// prt(("s4839 processCmd cmd=[%s] reterr=[%s] parseParam.opcode=%d ...\n", cmd, reterr.c_str(), parseParam.opcode ));
@@ -830,8 +830,8 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
 	// prt(("s3392 got getTableIndexSchema\n" ));
-	AbaxDataString errmsg, dbtable, rowFilter; 
-	AbaxDataString dbname = makeLowerString(req.session->dbname);
+	Jstr errmsg, dbtable, rowFilter; 
+	Jstr dbname = makeLowerString(req.session->dbname);
 	JagIndex *pindex = NULL;
 	JagTable *ptab = NULL;
 
@@ -863,7 +863,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		}
 
 
-		AbaxDataString dbidx, tabName, idxName; 
+		Jstr dbidx, tabName, idxName; 
 		JagDataAggregate *jda = NULL; int pos = 0;
 			if ( JAG_INSERTSELECT_OP == parseParam.opcode && parseParam.objectVec.size() > 1 ) {
 				// insert into ... select ... from syntax, select part as objectVec[1]
@@ -900,15 +900,15 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			
 			if ( !ptab && !pindex ) {
 				if ( parseParam.objectVec[pos].colName.length() > 0 ) {
-					reterr = AbaxDataString("E1120 Unable to select for ") + 
+					reterr = Jstr("E1120 Unable to select for ") + 
 								parseParam.objectVec[pos].colName + "." + parseParam.objectVec[pos].tableName +
 								" session.dbname=[" + req.session->dbname + "]"; 
 				} else {
-					reterr = AbaxDataString("E1121 Unable to select for ") + 
+					reterr = Jstr("E1121 Unable to select for ") + 
 							parseParam.objectVec[pos].dbName + "." + parseParam.objectVec[pos].tableName;
 				}
 				if ( parseParam.objectVec[pos].indexName.size() > 0 ) {
-					reterr += AbaxDataString(".") + parseParam.objectVec[pos].indexName;
+					reterr += Jstr(".") + parseParam.objectVec[pos].indexName;
 				}
 				//prt(("s3009 reterr=[%s]\n", reterr.c_str() ));
 				return 0;
@@ -919,7 +919,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 				rc = checkUserCommandPermission( servobj, &ptab->_tableRecord, req, parseParam, 0, rowFilter, errmsg );
 				//prt(("s3044 checkUserCommandPermission parseParam.opcode=%d rc=%d\n", parseParam.opcode, rc ));
 				if ( rc ) {
-					AbaxDataString newcmd;
+					Jstr newcmd;
 					if ( rowFilter.size() > 0 ) {
 						parseParam.resetSelectWhere( rowFilter );
 						//prt(("s4031 parseParam.selectWhereCluase=[%s]\n", parseParam.selectWhereClause.c_str() ));
@@ -989,7 +989,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			if ( !ptab ) {
 				reterr = "E4283 Update can only been applied to tables";
 			} else {
-				AbaxDataString dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
+				Jstr dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
 				servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
 				cnt = ptab->update( req, &parseParam, errmsg, insertCode );
 				servobj->_objectLock->readUnlockTable( parseParam.opcode, dbname, 
@@ -1038,7 +1038,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			if ( !ptab ) {
 				reterr = "E0238 Delete can only be applied to tables";
 			} else {
-                AbaxDataString dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
+                Jstr dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
                 servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
                 cnt = ptab->remove( req, &parseParam, errmsg );
                 servobj->_objectLock->readUnlockTable( parseParam.opcode, dbname, 
@@ -1076,7 +1076,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			cnt = 100;  // temp fix
 		}
 	} else if ( JAG_COUNT_OP == parseParam.opcode ) {
-		AbaxDataString dbidx, tabName, idxName; abaxint keyCheckerCnt = 0;
+		Jstr dbidx, tabName, idxName; abaxint keyCheckerCnt = 0;
 		if ( parseParam.objectVec[0].indexName.length() > 0 ) {
 			// known index
 			pindex = servobj->_objectLock->readLockIndex( parseParam.opcode, dbname, tabName, parseParam.objectVec[0].indexName,
@@ -1104,14 +1104,14 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			
 		if ( !ptab && !pindex ) {
 				if ( parseParam.objectVec[0].colName.length() > 0 ) {
-					reterr = AbaxDataString("E1023 Unable to select count(*) for ") + 
+					reterr = Jstr("E1023 Unable to select count(*) for ") + 
 							 parseParam.objectVec[0].colName + "." + parseParam.objectVec[0].tableName;
 				} else {
-					reterr = AbaxDataString("E1024  Unable to select count(*) for ") + 
+					reterr = Jstr("E1024  Unable to select count(*) for ") + 
 							 parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
 				}
 				if ( parseParam.objectVec[0].indexName.size() > 0 ) {
-					reterr += AbaxDataString(".") + parseParam.objectVec[0].indexName;
+					reterr += Jstr(".") + parseParam.objectVec[0].indexName;
 				}
 				return 0;
 		}
@@ -1226,7 +1226,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			describeIndex( parseParam, req, servobj, indexschema, parseParam.objectVec[0].dbName, 
 							parseParam.objectVec[0].indexName, reterr );
 		} else {
-			AbaxDataString dbtable = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
+			Jstr dbtable = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
 			// prt(("s0293 dbtable=[%s]\n", dbtable.c_str() ));
 			if ( tableschema->existAttr ( dbtable ) ) {
 				describeTable( JAG_ANY_TYPE, req, servobj, ptab, tableschema, dbtable, parseParam );
@@ -1248,28 +1248,28 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			}
 		}
 	} else if ( JAG_SHOW_CREATE_TABLE_OP == parseParam.opcode ) {
-		AbaxDataString dbtable = dbname + "." + parseParam.objectVec[0].tableName;
+		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		if ( tableschema->existAttr ( dbtable ) ) {
 			describeTable( JAG_TABLE_TYPE, req, servobj, ptab, tableschema, dbtable, parseParam, 1 );
 		} else {
 			reterr = "Table " + dbtable + " does not exist";
 		}
 	} else if ( JAG_SHOW_CREATE_CHAIN_OP == parseParam.opcode ) {
-		AbaxDataString dbtable = dbname + "." + parseParam.objectVec[0].tableName;
+		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		if ( tableschema->existAttr ( dbtable ) ) {
 			describeTable( JAG_CHAINTABLE_TYPE, req, servobj, ptab, tableschema, dbtable, parseParam, 1 );
 		} else {
 			reterr = "Chain " + dbtable + " does not exist";
 		}
 	} else if ( JAG_EXEC_DESC_OP == parseParam.opcode ) {
-		AbaxDataString dbtable = dbname + "." + parseParam.objectVec[0].tableName;
+		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		if ( tableschema->existAttr ( dbtable ) ) {
 			_describeTable( req, ptab, servobj, dbtable, 0 );
 		} else {
 			reterr = "Table " + dbtable + " does not exist";
 		}
 	} else if ( JAG_EXEC_PKEY_OP == parseParam.opcode ) {
-		AbaxDataString dbtable = dbname + "." + parseParam.objectVec[0].tableName;
+		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		if ( tableschema->existAttr ( dbtable ) ) {
 			_describeTable( req, ptab, servobj, dbtable, 1 );
 		} else {
@@ -1297,7 +1297,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		if ( parseParam.objectVec.size() < 1 ) {
 			showAllIndexes( req, parseParam, indexschema, dbname );
 		} else {
-			AbaxDataString dbtable = dbname + "." + parseParam.objectVec[0].tableName;
+			Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 			showIndexes( req, parseParam, indexschema, dbtable );
 		}
 	} else if ( JAG_SHOWTASK_OP == parseParam.opcode ) {
@@ -1307,7 +1307,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 	} else if ( JAG_EXEC_SHOWTABLE_OP == parseParam.opcode ) {
 		_showTables( req, tableschema, dbname );
 	} else if ( JAG_EXEC_SHOWINDEX_OP == parseParam.opcode ) {
-		AbaxDataString dbtable = dbname + "." + parseParam.objectVec[0].tableName;
+		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		_showIndexes( req, indexschema, dbtable );
 	}
 
@@ -1534,7 +1534,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 		}
 
 		pmesg = newbuf;
-		AbaxDataString us;
+		Jstr us;
 		if ( req.doCompress ) {
 			JagFastCompress::uncompress( newbuf, len, us );
 			pmesg = (char*)us.c_str();
@@ -2017,15 +2017,15 @@ int JagDBServer::getReplicateStatusMode( char *pmesg, int replicateType )
 // return 0: error with reterr
 //        1: success
 int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj, JagTable* ptab, 
-									const AbaxDataString &dbname, JagParseParam *parseParam, AbaxDataString &reterr )
+									const Jstr &dbname, JagParseParam *parseParam, Jstr &reterr )
 {	
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
 
 	bool found = false, found2 = false;
-	AbaxDataString dbtable = dbname + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString dbindex = dbname + "." + parseParam->objectVec[0].tableName + 
+	Jstr dbtable = dbname + "." + parseParam->objectVec[0].tableName;
+	Jstr dbindex = dbname + "." + parseParam->objectVec[0].tableName + 
 							 "." + parseParam->objectVec[1].indexName;
 	parseParam->isMemTable = tableschema->isMemTable( dbtable );
 	found = indexschema->indexExist( dbname, parseParam );
@@ -2035,9 +2035,9 @@ int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj,
 	}
 
 	abaxint getpos;
-	AbaxDataString errmsg;
-	AbaxDataString dbcol;
-	AbaxDataString defvalStr;
+	Jstr errmsg;
+	Jstr dbcol;
+	Jstr defvalStr;
 	int keylen = 0, vallen = 0;
 	CreateAttribute createTemp;
 	createTemp.init();
@@ -2143,8 +2143,8 @@ int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj,
 	return rc;
 }
 
-int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname,
-	JagParseParam *parseParam, AbaxDataString &reterr )
+int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname,
+	JagParseParam *parseParam, Jstr &reterr )
 {
 	JagTable *ptab = NULL;
 	char cond[3] = { 'O', 'K', '\0' };
@@ -2165,10 +2165,10 @@ int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const AbaxD
 	}
 	if ( newbuf ) free( newbuf );
 
-	AbaxDataString dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbtab + "." + intToStr( req.session->replicateType );
+	Jstr dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbtab + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
-	AbaxDataString dirpath = jaguarHome() + "/export/" + dbtab;
+	Jstr dirpath = jaguarHome() + "/export/" + dbtab;
 	if ( parseParam->impComplete ) {
 		JagFileMgr::rmdir( dirpath );
 		// prt(("s3418 return 1\n"));
@@ -2178,11 +2178,11 @@ int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const AbaxD
 	}
 	ptab = servobj->_objectLock->readLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 		parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
-	AbaxDataString host = "localhost", objname = dbtab + ".sql", fpath;
+	Jstr host = "localhost", objname = dbtab + ".sql", fpath;
 	fpath = JagFileMgr::getFileFamily( dirpath, objname );
 	if ( servobj->_listenIP.size() > 0 ) { host = servobj->_listenIP; }
 	JaguarCPPClient pcli;
-	AbaxDataString unixSocket = AbaxDataString("/TOKEN=") + servobj->_servToken;
+	Jstr unixSocket = Jstr("/TOKEN=") + servobj->_servToken;
 	while ( !pcli.connect( host.c_str(), servobj->_port, "admin", "dummy", "test", unixSocket.c_str(), 0 ) ) {
 		raydebug( stdout, JAG_LOG_LOW, "s4022 Connect (%s:%s) (%s:%d) error [%s], retry ...\n", 
 				  "admin", "dummy", host.c_str(), servobj->_port, pcli.error() );
@@ -2211,10 +2211,10 @@ int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const AbaxD
 void JagDBServer::init( JagCfg *cfg )
 {
 
-	AbaxDataString jagdatahome = cfg->getJDBDataHOME( 0 );
+	Jstr jagdatahome = cfg->getJDBDataHOME( 0 );
 
-    AbaxDataString sysdir = jagdatahome + "/system";
-    AbaxDataString newdir;
+    Jstr sysdir = jagdatahome + "/system";
+    Jstr newdir;
    	jagmkdir( sysdir.c_str(), 0700 );
 
     sysdir = jagdatahome + "/test";
@@ -2252,7 +2252,7 @@ void JagDBServer::init( JagCfg *cfg )
     newdir = sysdir + "/monthly";
     jagmkdir( newdir.c_str(), 0700 );
 
-	AbaxDataString cs;
+	Jstr cs;
 	/***
 	cs = cfg->getValue("STORAGE_TYPE", "HDD");
 	if ( cs == "SSD" ) {
@@ -2278,7 +2278,7 @@ void JagDBServer::init( JagCfg *cfg )
 
 void JagDBServer::helpPrintTopic( const JagRequest &req )
 {
-	AbaxDataString str;
+	Jstr str;
 	str += "You can enter the following commands:\n\n";
 
 
@@ -2325,7 +2325,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 {
 	// prt(("s3384 cmd=[%s]\n", cmd ));
 
-	AbaxDataString str;
+	Jstr str;
 	str += "\n";
 
 	if ( 0 == strncasecmp( cmd, "use", 3 ) ) {
@@ -2739,6 +2739,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    collect(geom1,geom2)    -- collection of two geoms\n";
 		str += "    topolygon(geom)         -- converting square, rectangle, circle, ellipse, triangle to polygon\n";
 		str += "    astext(geom)            -- text string of a geometry shape\n";
+		str += "    difference(g1,g2)       -- g1 minus the common part of g1 and g2\n";
+		str += "    symdifference(g1,g2)    -- g1+g2 minus the common part of g1 and g2\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
@@ -2955,7 +2957,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "(The above command will cat my.sql file and display its content.)\n";
 		str += "\n";
 	} else {
-		str += AbaxDataString("Command not supported [") + cmd + "]\n";
+		str += Jstr("Command not supported [") + cmd + "]\n";
 	}
 
 	// str += "\n";
@@ -2963,22 +2965,22 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 	JagTable::sendMessageLength( req, str.c_str(), str.size(), "I_" );
 }
 
-void JagDBServer::showCurrentDatabase( JagCfg *cfg, const JagRequest &req, const AbaxDataString &dbname )
+void JagDBServer::showCurrentDatabase( JagCfg *cfg, const JagRequest &req, const Jstr &dbname )
 {
-	AbaxDataString res = dbname;
+	Jstr res = dbname;
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showDatabases( JagCfg *cfg, const JagRequest &req )
 {
-	AbaxDataString res;
+	Jstr res;
 	res = JagSchema::getDatabases( cfg, req.session->replicateType );
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showCurrentUser( JagCfg *cfg, const JagRequest &req )
 {
-	AbaxDataString res = req.session->uid;
+	Jstr res = req.session->uid;
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
@@ -2986,7 +2988,7 @@ void JagDBServer::showClusterStatus( const JagRequest &req, JagDBServer *servobj
 {
 	// client expects: "numservs|numDBs|numTables|selects|inserts|updates|deletes|usersessions"
 	char buf[1024];
-	AbaxDataString res = getClusterOpInfo( req, servobj);
+	Jstr res = getClusterOpInfo( req, servobj);
 	JagStrSplit sp( res, '|' );
 	res = "Servers   Databases   Tables  Connections      Selects      Inserts      Updates      Deletes\n";
 	res += "---------------------------------------------------------------------------------------------\n";
@@ -3006,7 +3008,7 @@ void JagDBServer::showClusterStatus( const JagRequest &req, JagDBServer *servobj
 
 void JagDBServer::showTools( const JagRequest &req, JagDBServer *servobj )
 {
-	AbaxDataString res;
+	Jstr res;
 	res += "Scripts in $JAGUAR_HOME/bin/tools/: \n";
 	res += "\n";
 	res += "check_servers_on_all_hosts.sh     -- check if server.conf is same on all hosts\n";
@@ -3033,15 +3035,15 @@ void JagDBServer::showTools( const JagRequest &req, JagDBServer *servobj )
 void JagDBServer::showDatacenter( const JagRequest &req, JagDBServer *servobj )
 {
 	// prt(("s7374 showDatacenter ...\n" ));
-	AbaxDataString fpath = jaguarHome() + "/conf/datacenter.conf";
+	Jstr fpath = jaguarHome() + "/conf/datacenter.conf";
 	if ( ! JagFileMgr::exist( fpath ) ) {
 		return;
 	}
 
-	AbaxDataString res, cont;
+	Jstr res, cont;
 	JagFileMgr::readTextFile( fpath, cont );
 	/*******
-	AbaxDataString line, line2, uphost, host, port, destType;
+	Jstr line, line2, uphost, host, port, destType;
 	int rc;
 	res = "Data Center Queries\n";
 	res += "--------------------------------------------------\n";
@@ -3068,7 +3070,7 @@ void JagDBServer::showDatacenter( const JagRequest &req, JagDBServer *servobj )
 
 void JagDBServer::_showDatabases( JagCfg *cfg, const JagRequest &req )
 {
-	AbaxDataString res;
+	Jstr res;
 	res = JagSchema::getDatabases( cfg, req.session->replicateType );
 	JagStrSplit sp(res, '\n', true);
 	if ( sp.length() < 1 ) {
@@ -3085,7 +3087,7 @@ void JagDBServer::_showDatabases( JagCfg *cfg, const JagRequest &req )
 
 void JagDBServer::showTables( const JagRequest &req, const JagParseParam &pparam, 
 							  const JagTableSchema *tableschema, 
-							  const AbaxDataString &dbname, int objType )
+							  const Jstr &dbname, int objType )
 {
 	JagVector<AbaxString> *vec = tableschema->getAllTablesOrIndexesLabel( objType, dbname, pparam.like );
 	int i;
@@ -3101,7 +3103,7 @@ void JagDBServer::showTables( const JagRequest &req, const JagParseParam &pparam
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
-void JagDBServer::_showTables( const JagRequest &req, const JagTableSchema *tableschema, const AbaxDataString &dbname )
+void JagDBServer::_showTables( const JagRequest &req, const JagTableSchema *tableschema, const Jstr &dbname )
 {
 	/***
 	TABLE_CAT String => table catalog (may be null)
@@ -3149,7 +3151,7 @@ void JagDBServer::_showTables( const JagRequest &req, const JagTableSchema *tabl
 }
 
 void JagDBServer::showIndexes( const JagRequest &req, const JagParseParam &pparam, 
-							   const JagIndexSchema *indexschema, const AbaxDataString &dbtable )
+							   const JagIndexSchema *indexschema, const Jstr &dbtable )
 {
 	JagVector<AbaxString> *vec = indexschema->getAllTablesOrIndexes( dbtable, pparam.like );
 	int i;
@@ -3164,7 +3166,7 @@ void JagDBServer::showIndexes( const JagRequest &req, const JagParseParam &ppara
 }
 
 void JagDBServer::showAllIndexes( const JagRequest &req,  const JagParseParam &pparam, const JagIndexSchema *indexschema, 
-								const AbaxDataString &dbname )
+								const Jstr &dbname )
 {
 	JagVector<AbaxString> *vec = indexschema->getAllIndexes( dbname, pparam.like );
 	int i;
@@ -3178,21 +3180,21 @@ void JagDBServer::showAllIndexes( const JagRequest &req,  const JagParseParam &p
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
-void JagDBServer::_showIndexes( const JagRequest &req, const JagIndexSchema *indexschema, const AbaxDataString &dbtable )
+void JagDBServer::_showIndexes( const JagRequest &req, const JagIndexSchema *indexschema, const Jstr &dbtable )
 {
 	JagTable::sendMessageLength( req, " ", 1, "KV" );
 }
 
 void JagDBServer::showTask( const JagRequest &req, JagDBServer *servobj )
 {
-	AbaxDataString str;
+	Jstr str;
 	char buf[1024];
 	const AbaxPair<AbaxLong,AbaxString> *arr = servobj->_taskMap->array();
 	abaxint len = servobj->_taskMap->arrayLength();
 	sprintf( buf, "%14s  %20s  %16s  %16s  %16s %s\n", "TaskID", "ThreadID", "User", "Database", "StartTime", "Command");
-	str += AbaxDataString( buf );
+	str += Jstr( buf );
 	sprintf( buf, "------------------------------------------------------------------------------------------------------------\n");
-	str += AbaxDataString( buf );
+	str += Jstr( buf );
 
 	for ( abaxint i = 0; i < len; ++i ) {
 		if ( ! servobj->_taskMap->isNull( i ) ) {
@@ -3201,7 +3203,7 @@ void JagDBServer::showTask( const JagRequest &req, JagDBServer *servobj )
 			// "threadID|userid|dbname|timestamp|query"
 			sprintf( buf, "%14lu  %20s  %16s  %16s  %16s %s\n", 
 				pair.key, sp[0].c_str(), sp[1].c_str(), sp[2].c_str(), sp[3].c_str(), sp[4].c_str() );
-			str += AbaxDataString( buf );
+			str += Jstr( buf );
 		}
 	}
 
@@ -3212,7 +3214,7 @@ void JagDBServer::showTask( const JagRequest &req, JagDBServer *servobj )
 // 0: error
 // 1: OK
 int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagDBServer *servobj, JagTable *ptab, 
-								const JagTableSchema *tableschema, const AbaxDataString &dbtable, 
+								const JagTableSchema *tableschema, const Jstr &dbtable, 
 								const JagParseParam &pparam, bool showCreate )
 {
 	const JagSchemaRecord *record = tableschema->getAttr( dbtable );
@@ -3220,7 +3222,7 @@ int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagD
 
 	prt(("s5080 describeTable dbtable=[%s]\n", dbtable.c_str() ));
 	AbaxString res;
-	AbaxDataString type, dbcol, defvalStr;
+	Jstr type, dbcol, defvalStr;
 	char buf[16];
 	char spare4;
 	int offset, len, sig, srid;
@@ -3316,19 +3318,19 @@ int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagD
 			tableschema->getAttrDefVal( dbcol, defvalStr );
 			//prt(("s5301 dbcol=[%s] defvalStr=[%s]\n", dbcol.c_str(), defvalStr.c_str() ));
 			if ( type == JAG_C_COL_TYPE_DBIT ) {
-				res += AbaxDataString(" DEFAULT b") + defvalStr.c_str();
+				res += Jstr(" DEFAULT b") + defvalStr.c_str();
 			} else {
 				if ( *((*(record->columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM_CHAR ) {
 					JagStrSplitWithQuote sp( defvalStr.c_str(), '|' );
-					res += AbaxDataString(" DEFAULT ") + sp[sp.length()-1].c_str();
+					res += Jstr(" DEFAULT ") + sp[sp.length()-1].c_str();
 				} else {
-					res += AbaxDataString(" DEFAULT ") + defvalStr.c_str();
+					res += Jstr(" DEFAULT ") + defvalStr.c_str();
 				}
 			}
 		}
 
 		if ( pparam.detail ) {
-			res += AbaxDataString(" ") + intToStr(offset) + ":" + intToStr(len);
+			res += Jstr(" ") + intToStr(offset) + ":" + intToStr(len);
 			#if 1
 			sprintf(buf, "  %03d", i+1 );
 			//res += AbaxString(buf) + " ";
@@ -3355,8 +3357,8 @@ void JagDBServer::sendValueData( const JagParseParam &pparm, const JagRequest &r
 	}
 
 	// get colnames
-	//AbaxDataString dbtabname, value, res, json, colobj;
-	AbaxDataString line;
+	//Jstr dbtabname, value, res, json, colobj;
+	Jstr line;
 	pparm._lineFile->startRead();
 
 	while ( pparm._lineFile->getLine( line ) ) {
@@ -3366,7 +3368,7 @@ void JagDBServer::sendValueData( const JagParseParam &pparm, const JagRequest &r
 }
 
 void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const JagDBServer *servobj, 
-								  const AbaxDataString &dbtable, int keyOnly )
+								  const Jstr &dbtable, int keyOnly )
 {
 	/******
 	TABLE_CAT String => table catalog (may be null)
@@ -3381,7 +3383,7 @@ void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const J
 	KEY_SEQ // 
 	********/
 	JagTableSchema *tableschema =  servobj->getTableSchema( req.session->replicateType );
-	AbaxDataString cols = "TABLE_CAT|TABLE_SCHEM|TABLE_NAME|COLUMN_NAME|COLUMN_NAME|DATA_TYPE|TYPE_NAME|COLUMN_SIZE|DECIMAL_DIGITS|NULLABLE|KEY_SEQ";
+	Jstr cols = "TABLE_CAT|TABLE_SCHEM|TABLE_NAME|COLUMN_NAME|COLUMN_NAME|DATA_TYPE|TYPE_NAME|COLUMN_SIZE|DECIMAL_DIGITS|NULLABLE|KEY_SEQ";
 	JagStrSplit sp( cols, '|' );
 
 	JagRecord rrec;
@@ -3404,10 +3406,10 @@ void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const J
 	const JagSchemaRecord *record = tableschema->getAttr( dbtable );
 	if ( ! record ) return;
 	char buf[128];
-	AbaxDataString  type;
+	Jstr  type;
 	JagStrSplit split( dbtable, '.' );
-	AbaxDataString dbname = split[0];
-	AbaxDataString tabname = split[1];
+	Jstr dbname = split[0];
+	Jstr tabname = split[1];
 	int seq = 1;
 	int iskey;
 	char sig;
@@ -3499,22 +3501,22 @@ void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const J
 
 void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &req, const JagDBServer *servobj, 
 							     const JagIndexSchema *indexschema, 
-								 const AbaxDataString &dbname, const AbaxDataString &indexName, AbaxDataString &reterr )
+								 const Jstr &dbname, const Jstr &indexName, Jstr &reterr )
 {
-	AbaxDataString tab = indexschema->getTableName( dbname, indexName );
+	Jstr tab = indexschema->getTableName( dbname, indexName );
 	if ( tab.size() < 1 ) {
-		reterr = AbaxDataString("E2380 Index ") + indexName + " does not exist";
+		reterr = Jstr("E2380 Index ") + indexName + " does not exist";
 		return;
 	}
 
-	AbaxDataString dbtabidx = dbname + "." + tab + "." + indexName, dbcol;
+	Jstr dbtabidx = dbname + "." + tab + "." + indexName, dbcol;
 	prt(("s2098 describeIndex dbtabidx=[%s]\n", dbtabidx.c_str() ));
-	AbaxDataString schemaText = indexschema->readSchemaText( dbtabidx );
-	AbaxDataString defvalStr;
+	Jstr schemaText = indexschema->readSchemaText( dbtabidx );
+	Jstr defvalStr;
 
 	// prt(("s2838 describeIndex dbtabidx=[%s]\n", dbtabidx.c_str() ));
 	if ( schemaText.size() < 1 ) {
-		reterr = AbaxDataString("E2080 Index ") + indexName + " does not exist";
+		reterr = Jstr("E2080 Index ") + indexName + " does not exist";
 		return;
 	}
 
@@ -3522,7 +3524,7 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 	record.parseRecord( schemaText.c_str() );
 
 	AbaxString res;
-	AbaxDataString type;
+	Jstr type;
 	int len, sig, srid, offset;
 	bool enterValue = false;
 
@@ -3575,19 +3577,19 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 			defvalStr = "";
 			indexschema->getAttrDefVal( dbcol, defvalStr );
 			if ( type == JAG_C_COL_TYPE_DBIT ) {
-				res += AbaxDataString(" DEFAULT b") + defvalStr.c_str();
+				res += Jstr(" DEFAULT b") + defvalStr.c_str();
 			} else {
 				if ( *((*(record.columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM_CHAR ) {
 					JagStrSplitWithQuote sp( defvalStr.c_str(), '|' );
-					res += AbaxDataString(" DEFAULT ") + sp[sp.length()-1].c_str();
+					res += Jstr(" DEFAULT ") + sp[sp.length()-1].c_str();
 				} else {
-					res += AbaxDataString(" DEFAULT ") + defvalStr.c_str();
+					res += Jstr(" DEFAULT ") + defvalStr.c_str();
 				}
 			}
 		}
 
 		if ( pparam.detail ) {
-			res += AbaxDataString(" ") + intToStr(offset) + ":" + intToStr(len);
+			res += Jstr(" ") + intToStr(offset) + ":" + intToStr(len);
 		}
 		
 		if ( i < sz-1 ) {
@@ -3685,7 +3687,7 @@ void *JagDBServer::monitorRemoteBackup( void *ptr )
 {
 	JagPass *jp = (JagPass*)ptr;
 	int period;
-	AbaxDataString bcastCmd;
+	Jstr bcastCmd;
 	AbaxFixString data;
 	JagRequest req;
 
@@ -3704,7 +3706,7 @@ void *JagDBServer::monitorRemoteBackup( void *ptr )
 void * JagDBServer::threadRemoteBackup( void *ptr )
 {
 	JagPass *jp = (JagPass*)ptr;
-	AbaxDataString rmsg = AbaxDataString("_serv_doremotebackup|") + jp->ip + "|" + jp->passwd;
+	Jstr rmsg = Jstr("_serv_doremotebackup|") + jp->ip + "|" + jp->passwd;
 	JagRequest req;
 	jp->servobj->doRemoteBackup( rmsg.c_str(), req );
 	delete jp;
@@ -3714,9 +3716,9 @@ void * JagDBServer::threadRemoteBackup( void *ptr )
 // static
 // Get localhost IP address. In case there are N IP for this host (many ether cards)
 // it matches the right one in the primary host list
-AbaxDataString JagDBServer::getLocalHostIP( JagDBServer *servobj, const AbaxDataString &hostips )
+Jstr JagDBServer::getLocalHostIP( JagDBServer *servobj, const Jstr &hostips )
 {
-	JagVector<AbaxDataString> vec;
+	JagVector<Jstr> vec;
 	JagNet::getLocalIPs( vec );
 	
 	//printf("s4931 local host IPs:\n");
@@ -3741,9 +3743,9 @@ AbaxDataString JagDBServer::getLocalHostIP( JagDBServer *servobj, const AbaxData
 	return "";
 }
 
-AbaxDataString JagDBServer::getBroadCastRecoverHosts( int replicateCopy )
+Jstr JagDBServer::getBroadCastRecoverHosts( int replicateCopy )
 {
-	AbaxDataString hosts;
+	Jstr hosts;
 	int pos1, pos2, pos3, pos4;
 	JagStrSplit sp( _dbConnector->_nodeMgr->_curClusterNodes, '|' );
 	if ( _nthServer == 0 ) {
@@ -3775,12 +3777,12 @@ AbaxDataString JagDBServer::getBroadCastRecoverHosts( int replicateCopy )
 
 	hosts = sp[_nthServer];
 	if ( 2 == replicateCopy ) { // one replicate copy, broadcast to self and right one server
-		if ( pos1 >= 0 ) hosts += AbaxDataString("|") + sp[pos1];
+		if ( pos1 >= 0 ) hosts += Jstr("|") + sp[pos1];
 	} else if ( 3 == replicateCopy ) { 
-		if ( pos1 >= 0 ) hosts += AbaxDataString("|") + sp[pos1];
-		if ( pos2 >= 0 ) hosts += AbaxDataString("|") + sp[pos2];
-		if ( pos3 >= 0 ) hosts += AbaxDataString("|") + sp[pos3];
-		if ( pos4 >= 0 ) hosts += AbaxDataString("|") + sp[pos4];
+		if ( pos1 >= 0 ) hosts += Jstr("|") + sp[pos1];
+		if ( pos2 >= 0 ) hosts += Jstr("|") + sp[pos2];
+		if ( pos3 >= 0 ) hosts += Jstr("|") + sp[pos3];
+		if ( pos4 >= 0 ) hosts += Jstr("|") + sp[pos4];
 	}
 
 	raydebug(stdout, JAG_LOG_LOW, "BroadCastRecoverHosts [%s]\n", hosts.c_str() );
@@ -3828,7 +3830,7 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 	// recover un-flushed insert data
 	if ( rp ) {
 		raydebug(stdout, JAG_LOG_LOW, "begin recover wallog ...\n");
-		AbaxDataString walpath = JagFileMgr::getLocalLogDir("cmd") + "/walactive.log";
+		Jstr walpath = JagFileMgr::getLocalLogDir("cmd") + "/walactive.log";
 		recoverWalLog( walpath );
 		walpath = JagFileMgr::getLocalLogDir("cmd") + "/walbackup.log";
 		recoverWalLog( walpath );
@@ -3839,7 +3841,7 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 	// recover un-flushed dinsert data
 	if ( rp ) {
 		raydebug(stdout, JAG_LOG_LOW, "begin recover dinsertlog ...\n");
-		AbaxDataString dinpath = JagFileMgr::getLocalLogDir("delta") + "/dinsertactive.log";
+		Jstr dinpath = JagFileMgr::getLocalLogDir("delta") + "/dinsertactive.log";
 		recoverDinsertLog( dinpath );
 		dinpath = JagFileMgr::getLocalLogDir("delta") + "/dinsertbackup.log";
 		recoverDinsertLog( dinpath );
@@ -3849,7 +3851,7 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 
 	// set recover flag, check to see if need to do drecover ( delta log recovery, if hard disk is ok )
 	// or do crecover ( tar copy file, if hard disk is brand new )
-	AbaxDataString recoverCmd, bcasthosts = getBroadCastRecoverHosts( _faultToleranceCopy );
+	Jstr recoverCmd, bcasthosts = getBroadCastRecoverHosts( _faultToleranceCopy );
 	_crecoverFpath = "";
 	_prevcrecoverFpath = "";
 	_nextcrecoverFpath = "";
@@ -3913,8 +3915,8 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 	}
 	***/
 
-	AbaxDataString cs1 = _cfg->getValue("REMOTE_BACKUP_SERVER", "" );
-	AbaxDataString cs2 = _cfg->getValue("REMOTE_BACKUP_INTERVAL", "0" );
+	Jstr cs1 = _cfg->getValue("REMOTE_BACKUP_SERVER", "" );
+	Jstr cs2 = _cfg->getValue("REMOTE_BACKUP_INTERVAL", "0" );
 	int interval = atoi( cs2.c_str() );
 	if ( interval > 0 && interval < 10 ) interval = 10;
 	int ishost0 = _dbConnector->_nodeMgr->_isHost0OfCluster0;
@@ -4090,9 +4092,9 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 		return false;
 	}
 
-	AbaxDataString uid = sp[1];
-	AbaxDataString encpass = sp[2];
-	AbaxDataString pass = JagDecryptStr( servobj->_privateKey, encpass );
+	Jstr uid = sp[1];
+	Jstr encpass = sp[2];
+	Jstr pass = JagDecryptStr( servobj->_privateKey, encpass );
 	session.timediff = atoi( sp[3].c_str() );
 	session.origserv = atoi( sp[4].c_str() );
 	session.replicateType = atoi( sp[5].c_str() );
@@ -4221,16 +4223,16 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 
 
 	// prt(("s5091 sending client OK ...\n"));
-	AbaxDataString oksid = "OK ";
+	Jstr oksid = "OK ";
 	oksid += longToStr(  pthread_self() );
-	oksid += AbaxDataString(" 1 ") + servobj->_dbConnector->_nodeMgr->_sendNodes + " ";
+	oksid += Jstr(" 1 ") + servobj->_dbConnector->_nodeMgr->_sendNodes + " ";
    	// raydebug( stdout, JAG_LOG_LOW, "sendNodes(%s)\n", servobj->_dbConnector->_nodeMgr->_sendNodes.c_str() );
 	oksid += longToStr( servobj->_nthServer ) + " " + longToStr( servobj->_faultToleranceCopy );
-	if ( session.samePID ) oksid += AbaxDataString(" 1 ");
-	else oksid += AbaxDataString(" 0 ");
+	if ( session.samePID ) oksid += Jstr(" 1 ");
+	else oksid += Jstr(" 0 ");
 	oksid += longToStr( session.exclusiveLogin );
-	oksid += AbaxDataString(" ") + servobj->_cfg->getValue("HASHJOIN_TABLE_MAX_RECORDS", "500000");
-	oksid += AbaxDataString(" ") + intToStr( servobj->_isGate );
+	oksid += Jstr(" ") + servobj->_cfg->getValue("HASHJOIN_TABLE_MAX_RECORDS", "500000");
+	oksid += Jstr(" ") + intToStr( servobj->_isGate );
 
 	JagTable::sendMessageLength( req, oksid.c_str(), oksid.size(), "CD" );
 	JagTable::sendMessage( req, "_END_[T=20|E=]", "ED" );
@@ -4282,8 +4284,8 @@ bool JagDBServer::useDB( const JagRequest &req, JagDBServer *servobj, char *pmes
 					JagTable::sendMessage( req, "_END_[T=20|E=]", "ED" );
 					return true;
 				}
-    			AbaxDataString jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
-    			AbaxDataString fpath = jagdatahome + "/" + dbname;
+    			Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
+    			Jstr fpath = jagdatahome + "/" + dbname;
 				// prt(("s8189 usedb(%s) fpath=[%s]\n", dbname, fpath.c_str() ));
     			if ( 0 == jagaccess( fpath.c_str(), X_OK )  ) {
 					// prt(("s9999 usedb9\n"));
@@ -4307,12 +4309,12 @@ bool JagDBServer::useDB( const JagRequest &req, JagDBServer *servobj, char *pmes
 // method to refresh schemaMap and schematime for dbConnector
 void JagDBServer::refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj, abaxint &schtime )
 {
-	AbaxDataString schemaInfo;
+	Jstr schemaInfo;
 
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
-	AbaxDataString obj;
+	Jstr obj;
 	AbaxString recstr;
 
 	// tables
@@ -4321,7 +4323,7 @@ void JagDBServer::refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj
     	for ( int i = 0; i < vec->size(); ++i ) {
     		obj = (*vec)[i].c_str();
     		if ( tableschema->getAttr( obj, recstr ) ) {
-    			schemaInfo += AbaxDataString( obj.c_str() ) + ":" + recstr.c_str() + "\n";
+    			schemaInfo += Jstr( obj.c_str() ) + ":" + recstr.c_str() + "\n";
 				// prt(("s3901 tableschema  %s:%s\n",  obj.c_str(), recstr.c_str() ));
     		} 
     	}
@@ -4335,7 +4337,7 @@ void JagDBServer::refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj
     	for ( int i = 0; i < vec->size(); ++i ) {
     		obj = (*vec)[i].c_str();
     		if ( indexschema->getAttr( obj, recstr ) ) {
-    			schemaInfo += AbaxDataString( obj.c_str() ) + ":" + recstr.c_str() + "\n"; 
+    			schemaInfo += Jstr( obj.c_str() ) + ":" + recstr.c_str() + "\n"; 
 				// prt(("s3902 indexschema  %s:%s\n",  obj.c_str(), recstr.c_str() ));
     		}
     	}
@@ -4374,7 +4376,7 @@ void JagDBServer::refreshACL( int bcast )
 	loadACL();
 
 	if ( bcast ) {
-		AbaxDataString bcastCmd = "_serv_refreshacl|" + _whiteIPList->_data+ "|" + _blackIPList->_data;
+		Jstr bcastCmd = "_serv_refreshacl|" + _whiteIPList->_data+ "|" + _blackIPList->_data;
 		_dbConnector->broadCastSignal( bcastCmd, "" );
 	}
 }
@@ -4382,7 +4384,7 @@ void JagDBServer::refreshACL( int bcast )
 // Load ACL list
 void JagDBServer::loadACL()
 {
-	AbaxDataString fpath = jaguarHome() + "/conf/whitelist.conf";
+	Jstr fpath = jaguarHome() + "/conf/whitelist.conf";
 	//raydebug( stdout, JAG_LOG_LOW, "Check %s\n", fpath.c_str() );
 	pthread_rwlock_wrlock(&_aclrwlock);
 	if ( _whiteIPList ) delete _whiteIPList;
@@ -4401,7 +4403,7 @@ void JagDBServer::loadACL()
 void JagDBServer::doBackup( uabaxint seq )
 {
 	// use _cfg
-	AbaxDataString cs = _cfg->getValue("LOCAL_BACKUP_PLAN", "" );
+	Jstr cs = _cfg->getValue("LOCAL_BACKUP_PLAN", "" );
 	// prt(("s3748 _cfg=%0x BACKUP_PLAN=[%s] seq=%lld\n", _cfg, cs.c_str(), seq ));
 	if ( cs.length() < 1 ) {
 		return;
@@ -4416,8 +4418,8 @@ void JagDBServer::doBackup( uabaxint seq )
 	}
 
 	JagStrSplit sp( cs, '|' );
-	AbaxDataString  rec;
-	AbaxDataString  bcastCmd, bcasthosts;
+	Jstr  rec;
+	Jstr  bcastCmd, bcasthosts;
 
 	// copy meta data to 15min directory
 	if ( ( seq%15 ) == 0 && sp.contains( "15MIN", rec ) ) {
@@ -4470,34 +4472,34 @@ void JagDBServer::writeLoad( uabaxint seq )
 	abaxint usercpu, syscpu, idle;
 	_jagSystem.getCPUStat( usercpu, syscpu, idle );
 
-	AbaxDataString userCPU = ulongToString( usercpu );
-	AbaxDataString sysCPU = ulongToString( syscpu );
+	Jstr userCPU = ulongToString( usercpu );
+	Jstr sysCPU = ulongToString( syscpu );
 
-	AbaxDataString totrams = ulongToString( info.totalram / ONE_GIGA_BYTES );
-	AbaxDataString freerams = ulongToString( info.freeram / ONE_GIGA_BYTES );
-	AbaxDataString totswaps = ulongToString( info.totalswap / ONE_GIGA_BYTES );
-	AbaxDataString freeswaps = ulongToString( info.freeswap / ONE_GIGA_BYTES );
-	AbaxDataString procs = intToString( info.procs );
+	Jstr totrams = ulongToString( info.totalram / ONE_GIGA_BYTES );
+	Jstr freerams = ulongToString( info.freeram / ONE_GIGA_BYTES );
+	Jstr totswaps = ulongToString( info.totalswap / ONE_GIGA_BYTES );
+	Jstr freeswaps = ulongToString( info.freeswap / ONE_GIGA_BYTES );
+	Jstr procs = intToString( info.procs );
 
 	uabaxint diskread, diskwrite, netread, netwrite;
 	JagNet::getNetStat( netread, netwrite );
 	JagFileMgr::getIOStat( diskread, diskwrite );
-	AbaxDataString netReads = ulongToString( netread /ONE_GIGA_BYTES );
-	AbaxDataString netWrites = ulongToString( netwrite /ONE_GIGA_BYTES );
-	AbaxDataString diskReads = ulongToString( diskread  );
-	AbaxDataString diskWrites = ulongToString( diskwrite  );
+	Jstr netReads = ulongToString( netread /ONE_GIGA_BYTES );
+	Jstr netWrites = ulongToString( netwrite /ONE_GIGA_BYTES );
+	Jstr diskReads = ulongToString( diskread  );
+	Jstr diskWrites = ulongToString( diskwrite  );
 
-	AbaxDataString nselects = ulongToString( numSelects );
-	AbaxDataString ninserts = ulongToString( numInserts );
-	AbaxDataString nupdates = ulongToString( numUpdates );
-	AbaxDataString ndeletes = ulongToString( numDeletes );
+	Jstr nselects = ulongToString( numSelects );
+	Jstr ninserts = ulongToString( numInserts );
+	Jstr nupdates = ulongToString( numUpdates );
+	Jstr ndeletes = ulongToString( numDeletes );
 
 	// printf("s3104 diskread=%lu diskwrite=%lu netread=%lu netwrite=%lu\n", diskread, diskwrite, netread, netwrite );
 
-	AbaxDataString rec = ulongToString( time(NULL) ) + "|" + AbaxDataString(userCPU) + "|" + sysCPU;
-	rec += AbaxDataString("|") + totrams + "|" + freerams + "|" + totswaps + "|" + freeswaps + "|" + procs; 
-	rec += AbaxDataString("|") + diskReads + "|" + diskWrites + "|" + netReads + "|" + netWrites;
-	rec += AbaxDataString("|") + nselects + "|" + ninserts + "|" + nupdates + "|" + ndeletes;
+	Jstr rec = ulongToString( time(NULL) ) + "|" + Jstr(userCPU) + "|" + sysCPU;
+	rec += Jstr("|") + totrams + "|" + freerams + "|" + totswaps + "|" + freeswaps + "|" + procs; 
+	rec += Jstr("|") + diskReads + "|" + diskWrites + "|" + netReads + "|" + netWrites;
+	rec += Jstr("|") + nselects + "|" + ninserts + "|" + nupdates + "|" + ndeletes;
 	JagBoundFile bf( _perfFile.c_str(), 96 ); // 24 hours
 	bf.openAppend();
 	bf.appendLine( rec.c_str() );
@@ -4513,36 +4515,36 @@ void JagDBServer::writeLoad( uabaxint seq )
 
 	abaxint usercpu, syscpu, idlecpu;
 	_jagSystem.getCPUStat( usercpu, syscpu, idlecpu );
-	AbaxDataString userCPU = ulongToString( usercpu );
-	AbaxDataString sysCPU = ulongToString( syscpu );
+	Jstr userCPU = ulongToString( usercpu );
+	Jstr sysCPU = ulongToString( syscpu );
 
 	abaxint totm, freem, used; //GB
 	JagSystem::getMemInfo( totm, freem, used );
-	AbaxDataString totrams = ulongToString( totm );
-	AbaxDataString freerams = ulongToString( freem );
+	Jstr totrams = ulongToString( totm );
+	Jstr freerams = ulongToString( freem );
 
 	MEMORYSTATUSEX statex;
-	AbaxDataString totswaps = intToString( statex.ullTotalPageFile/ ONE_GIGA_BYTES );
-	AbaxDataString freeswaps = intToString( statex.ullAvailPageFile / ONE_GIGA_BYTES );
-	AbaxDataString procs = intToString( _jagSystem.getNumProcs() );
+	Jstr totswaps = intToString( statex.ullTotalPageFile/ ONE_GIGA_BYTES );
+	Jstr freeswaps = intToString( statex.ullAvailPageFile / ONE_GIGA_BYTES );
+	Jstr procs = intToString( _jagSystem.getNumProcs() );
 
-	AbaxDataString nselects = ulongToString( numSelects );
-	AbaxDataString ninserts = ulongToString( numInserts );
-	AbaxDataString nupdates = ulongToString( numUpdates );
-	AbaxDataString ndeletes = ulongToString( numDeletes );
+	Jstr nselects = ulongToString( numSelects );
+	Jstr ninserts = ulongToString( numInserts );
+	Jstr nupdates = ulongToString( numUpdates );
+	Jstr ndeletes = ulongToString( numDeletes );
 
 	uabaxint diskread, diskwrite, netread, netwrite;
 	JagNet::getNetStat( netread, netwrite );
 	JagFileMgr::getIOStat( diskread, diskwrite );
-	AbaxDataString netReads = ulongToString( netread / ONE_GIGA_BYTES );
-	AbaxDataString netWrites = ulongToString( netwrite / ONE_GIGA_BYTES );
-	AbaxDataString diskReads = ulongToString( diskread  );
-	AbaxDataString diskWrites = ulongToString( diskwrite  );
+	Jstr netReads = ulongToString( netread / ONE_GIGA_BYTES );
+	Jstr netWrites = ulongToString( netwrite / ONE_GIGA_BYTES );
+	Jstr diskReads = ulongToString( diskread  );
+	Jstr diskWrites = ulongToString( diskwrite  );
 
-	AbaxDataString rec = ulongToString( time(NULL) ) + "|" + AbaxDataString(userCPU) + "|" + sysCPU;
-	rec += AbaxDataString("|") + totrams + "|" + freerams + "|" + totswaps + "|" + freeswaps + "|" + procs; 
-	rec += AbaxDataString("|") + diskReads + "|" + diskWrites + "|" + netReads + "|" + netWrites;
-	rec += AbaxDataString("|") + nselects + "|" + ninserts + "|" + nupdates + "|" + ndeletes;
+	Jstr rec = ulongToString( time(NULL) ) + "|" + Jstr(userCPU) + "|" + sysCPU;
+	rec += Jstr("|") + totrams + "|" + freerams + "|" + totswaps + "|" + freeswaps + "|" + procs; 
+	rec += Jstr("|") + diskReads + "|" + diskWrites + "|" + netReads + "|" + netWrites;
+	rec += Jstr("|") + nselects + "|" + ninserts + "|" + nupdates + "|" + ndeletes;
 	JagBoundFile bf( _perfFile.c_str(), 96 ); // 24 hours
 	bf.openAppend();
 	bf.appendLine( rec.c_str() );
@@ -4553,7 +4555,7 @@ void JagDBServer::writeLoad( uabaxint seq )
 #endif
 
 // rec:  15MIN:OVERWRITE
-void JagDBServer::copyData( const AbaxDataString &rec, bool show )
+void JagDBServer::copyData( const Jstr &rec, bool show )
 {
 	if ( rec.length() < 1 ) {
 		return;
@@ -4564,11 +4566,11 @@ void JagDBServer::copyData( const AbaxDataString &rec, bool show )
 		return;
 	}
 
-	AbaxDataString dirname = makeLowerString( sp[0] );
-	AbaxDataString policy;
+	Jstr dirname = makeLowerString( sp[0] );
+	Jstr policy;
 	policy = sp[1];
 
-	AbaxDataString tmstr = JagTime::YYYYMMDDHHMM();
+	Jstr tmstr = JagTime::YYYYMMDDHHMM();
 	int rc = copyLocalData( dirname, policy, tmstr, show );
 	if ( rc < 0 ) {
 		// do not comment out
@@ -4580,7 +4582,7 @@ void JagDBServer::copyData( const AbaxDataString &rec, bool show )
 		return;
 	}
 
-    AbaxDataString srcdir = jaguarHome() + "/data";
+    Jstr srcdir = jaguarHome() + "/data";
 	if ( JagFileMgr::dirEmpty( srcdir ) ) {
 		prt(("s7372 srcdir=[%s] is empty. copyData returns\n", srcdir.c_str() ));
 		return;
@@ -4589,9 +4591,9 @@ void JagDBServer::copyData( const AbaxDataString &rec, bool show )
 	char hname[80];
 	gethostname( hname, 80 );
 
-    AbaxDataString fileName = JagTime::YYYYMMDDHHMM() + "-" + hname;
-    AbaxDataString destdir = jaguarHome() + "/backup";
-	destdir += AbaxDataString("/") + dirname + "/" + fileName;
+    Jstr fileName = JagTime::YYYYMMDDHHMM() + "-" + hname;
+    Jstr destdir = jaguarHome() + "/backup";
+	destdir += Jstr("/") + dirname + "/" + fileName;
 
 	JagFileMgr::makedirPath( destdir, 0700 );
 	
@@ -4603,13 +4605,13 @@ void JagDBServer::copyData( const AbaxDataString &rec, bool show )
 	}
 
 	// prt(("s3081 policy=[%s]\n", policy.c_str() ));
-	AbaxDataString lastPath = jaguarHome() + "/backup/" + dirname + "/.lastFileName.txt";
+	Jstr lastPath = jaguarHome() + "/backup/" + dirname + "/.lastFileName.txt";
 	if ( policy == "OVERWRITE" ) {
-		AbaxDataString lastFileName;
+		Jstr lastFileName;
 		JagFileMgr::readTextFile( lastPath, lastFileName );
 		if (  lastFileName.length() > 0 ) {
-    		AbaxDataString destdir = jaguarHome() + "/backup";
-			destdir += AbaxDataString("/") + dirname + "/" + lastFileName;
+    		Jstr destdir = jaguarHome() + "/backup";
+			destdir += Jstr("/") + dirname + "/" + lastFileName;
 			sprintf( cmd, "/bin/rm -rf %s", destdir.c_str() );
 			system( cmd );
 		}
@@ -4626,13 +4628,13 @@ void JagDBServer::copyData( const AbaxDataString &rec, bool show )
 // < 0: error
 // 0: OK
 // dirname: 15min/hourly/daily/weekly/monthly or last   policy: "OVERWRITE" or "SNAPSHOT"
-int JagDBServer::copyLocalData( const AbaxDataString &dirname, const AbaxDataString &policy, const AbaxDataString &tmstr, bool show )
+int JagDBServer::copyLocalData( const Jstr &dirname, const Jstr &policy, const Jstr &tmstr, bool show )
 {
 	if ( policy != "OVERWRITE" && policy != "SNAPSHOT" ) {
 		return -1;
 	}
 
-    AbaxDataString srcdir = jaguarHome() + "/data";
+    Jstr srcdir = jaguarHome() + "/data";
 	if ( JagFileMgr::dirEmpty( srcdir ) ) {
 		prt(("s7372 srcdir=[%s] is empty. copyData returns\n", srcdir.c_str() ));
 		return -2;
@@ -4641,10 +4643,10 @@ int JagDBServer::copyLocalData( const AbaxDataString &dirname, const AbaxDataStr
 	char hname[80];
 	gethostname( hname, 80 );
 
-    // AbaxDataString fileName = JagTime::YYYYMMDDHHMM() + "-" + hname;
-    AbaxDataString fileName = tmstr + "-" + hname;
-    AbaxDataString destdir = jaguarHome() + "/backup";
-	destdir += AbaxDataString("/") + dirname + "/" + fileName;
+    // Jstr fileName = JagTime::YYYYMMDDHHMM() + "-" + hname;
+    Jstr fileName = tmstr + "-" + hname;
+    Jstr destdir = jaguarHome() + "/backup";
+	destdir += Jstr("/") + dirname + "/" + fileName;
 
 	JagFileMgr::makedirPath( destdir, 0700 );
 	
@@ -4655,13 +4657,13 @@ int JagDBServer::copyLocalData( const AbaxDataString &dirname, const AbaxDataStr
 		raydebug( stdout, JAG_LOG_LOW, "Backup data from %s to %s\n", srcdir.c_str(), destdir.c_str() );
 	}
 
-	AbaxDataString lastPath = jaguarHome() + "/backup/" + dirname + "/.lastFileName.txt";
+	Jstr lastPath = jaguarHome() + "/backup/" + dirname + "/.lastFileName.txt";
 	if ( policy == "OVERWRITE" ) {
-		AbaxDataString lastFileName;
+		Jstr lastFileName;
 		JagFileMgr::readTextFile( lastPath, lastFileName );
 		if (  lastFileName.length() > 0 ) {
-    		AbaxDataString destdir = jaguarHome() + "/backup";
-			destdir += AbaxDataString("/") + dirname + "/" + lastFileName;
+    		Jstr destdir = jaguarHome() + "/backup";
+			destdir += Jstr("/") + dirname + "/" + lastFileName;
 			sprintf( cmd, "/bin/rm -rf %s", destdir.c_str() );
 			system( cmd );
 		}
@@ -4685,10 +4687,10 @@ void JagDBServer::doCreateIndex( JagTable *ptab, JagIndex *pindex, JagDBServer *
 
 // method to drop all tables and indexs under database "dbname"
 void JagDBServer::dropAllTablesAndIndexUnderDatabase( const JagRequest &req, JagDBServer *servobj, 
-	JagTableSchema *schema, const AbaxDataString &dbname )
+	JagTableSchema *schema, const Jstr &dbname )
 {	
 	JagTable *ptab;
-	AbaxDataString dbobj, errmsg;
+	Jstr dbobj, errmsg;
 	JagVector<AbaxString> *vec = schema->getAllTablesOrIndexes( dbname, "" );
 	if ( vec ) {
     	for ( int i = 0; i < vec->size(); ++i ) {
@@ -4727,7 +4729,7 @@ void JagDBServer::dropAllTablesAndIndex( const JagRequest &req, JagDBServer *ser
 	JagTableSchema *schema )
 {	
 	JagTable *ptab;
-	AbaxDataString dbobj, errmsg;
+	Jstr dbobj, errmsg;
 	JagVector<AbaxString> *vec = schema->getAllTablesOrIndexes( "", "" );
 	if ( vec ) {
     	for ( int i = 0; i < vec->size(); ++i ) {
@@ -4773,7 +4775,7 @@ void JagDBServer::showUsers( const JagRequest &req, JagDBServer *servobj )
 	if ( req.session->replicateType == 0 ) uiddb = servobj->_userDB;
 	else if ( req.session->replicateType == 1 ) uiddb = servobj->_prevuserDB;
 	else if ( req.session->replicateType == 2 ) uiddb = servobj->_nextuserDB;
-	AbaxDataString users;
+	Jstr users;
 	if ( uiddb ) {
 		users = uiddb->getListUsers();
 	}
@@ -4796,15 +4798,15 @@ void JagDBServer::createAdmin()
 void JagDBServer::makeAdmin( JagUserID *uiddb )
 {
 	// default admin password
-	AbaxDataString uid = "admin";
-	AbaxDataString pass = "jaguarjaguarjaguar";
+	Jstr uid = "admin";
+	Jstr pass = "jaguarjaguarjaguar";
 	AbaxString dbpass = uiddb->getValue(uid, JAG_PASS );
 	if ( dbpass.size() > 0 ) {
 		return;
 	}
 
 	char *md5 = MDString( pass.c_str() );
-	AbaxDataString mdpass = md5;
+	Jstr mdpass = md5;
 	if ( md5 ) free( md5 );
 	md5 = NULL;
 
@@ -4814,7 +4816,7 @@ void JagDBServer::makeAdmin( JagUserID *uiddb )
 
 // static  
 // client expects: "numservs|numDBs|numTables|selects|inserts|updates|deletes|usersessions"
-AbaxDataString JagDBServer::getClusterOpInfo( const JagRequest &req, JagDBServer *servobj)
+Jstr JagDBServer::getClusterOpInfo( const JagRequest &req, JagDBServer *servobj)
 {
 	JagStrSplit srv( servobj->_dbConnector->_nodeMgr->_allNodes, '|' );
 	int nsrv = srv.length(); 
@@ -4822,7 +4824,7 @@ AbaxDataString JagDBServer::getClusterOpInfo( const JagRequest &req, JagDBServer
 	servobj->numDBTables( dbs, tabs );
 
 	// get opinfo on this server
-	AbaxDataString res;
+	Jstr res;
 	char buf[1024];
 	sprintf( buf, "%d|%d|%d|%lld|%lld|%lld|%lld|%lld", nsrv, dbs, tabs, 
 			(abaxint)servobj->numSelects, (abaxint)servobj->numInserts, 
@@ -4831,7 +4833,7 @@ AbaxDataString JagDBServer::getClusterOpInfo( const JagRequest &req, JagDBServer
 	res = buf;
 
 	// broadcast other server request info
-	AbaxDataString resp, bcasthosts;
+	Jstr resp, bcasthosts;
 	resp = servobj->_dbConnector->broadCastGet( "_serv_opinfo", bcasthosts ); 
 	resp += res + "\n";
 	//printf("s4820 broadCastGet(_serv_opinfo)  resp=[%s]\n", resp.c_str() );
@@ -4860,7 +4862,7 @@ AbaxDataString JagDBServer::getClusterOpInfo( const JagRequest &req, JagDBServer
 void JagDBServer::numDBTables( int &databases, int &tables )
 {
 	databases = tables = 0;
-	AbaxDataString dbs = JagSchema::getDatabases( _cfg, 0 );
+	Jstr dbs = JagSchema::getDatabases( _cfg, 0 );
 	JagStrSplit sp(dbs, '\n', true );
 	databases = sp.length();
 	for ( int i = 0; i < sp.length(); ++i ) {
@@ -4937,7 +4939,7 @@ int JagDBServer::createSocket( int argc, char *argv[] )
 
 int JagDBServer::initConfigs()
 {
-	AbaxDataString cs;
+	Jstr cs;
 	cs = _cfg->getValue("IS_GATE", "no");
 	if ( cs == "yes" || cs == "YES" || cs == "Yes" || cs == "Y" || cs == "true" ) {
 		_isGate = 1;
@@ -4960,7 +4962,7 @@ int JagDBServer::initConfigs()
 	if ( JAG_LOG_LEVEL <= 0 ) JAG_LOG_LEVEL = 1;
 	raydebug( stdout, JAG_LOG_LOW, "JAG_LOG_LEVEL=%d\n", JAG_LOG_LEVEL );
 
-	_version = AbaxDataString(JAG_VERSION);
+	_version = Jstr(JAG_VERSION);
 	raydebug( stdout, JAG_LOG_LOW, "Server version is %s\n", _version.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "Server license is %s\n", PRODUCT_VERSION );
 
@@ -4979,7 +4981,7 @@ int JagDBServer::initConfigs()
 	raydebug( stdout, JAG_LOG_LOW, "Init Extra Threads = %d\n", _initExtraThreads );
 
 	/***
-	AbaxDataString schmpath = jaguarHome() + "/data/system/schema";
+	Jstr schmpath = jaguarHome() + "/data/system/schema";
 	abaxint numtabs = JagFileMgr::numObjects( schmpath );
 	if ( numtabs < 1 ) numtabs = 4;
 	abaxint grpsz = _dbConnector->_nodeMgr->_numNodes * numtabs;
@@ -4993,7 +4995,7 @@ int JagDBServer::initConfigs()
 	// _connMax = _threadGroups * _threadGroupSize;
 
 	// write process ID
-	AbaxDataString logpath = jaguarHome() + "/log/" + JAG_BRAND + ".pid";
+	Jstr logpath = jaguarHome() + "/log/" + JAG_BRAND + ".pid";
 	FILE *pidf = loopOpen( logpath.c_str(), "wb" );
 	fprintf( pidf, "%d\n", getpid() );
 	fflush( pidf ); jagfclose( pidf );
@@ -5029,7 +5031,7 @@ int JagDBServer::initConfigs()
 
 	// read public and private keys
 	int keyExists = 0;
-	AbaxDataString keyFile = jaguarHome() + "/conf/public.key";
+	Jstr keyFile = jaguarHome() + "/conf/public.key";
 	while ( ! keyExists ) {
 		JagFileMgr::readTextFile( keyFile, _publicKey );
 		if ( _publicKey.size() < 1 ) {
@@ -5118,12 +5120,12 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 {	
 	JAG_BLURT jaguar_mutex_lock ( &g_dlogmutex ); JAG_OVER;
 	int rc, needSync = 0;
-	AbaxDataString cmd;
+	Jstr cmd;
 	FILE *f1 = NULL;
 	FILE *f2 = NULL;
 	
 	if ( !isBatch ) { // not batch command, parse and rebuild cmd with dbname inside
-		AbaxDataString reterr;
+		Jstr reterr;
 		JagParseAttribute jpa( session->servobj, session->timediff, session->servobj->servtimediff, 
 							   session->dbname, session->servobj->_cfg );
 		// prt(("s2230 parseCommand...\n" ));
@@ -5212,11 +5214,11 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 void JagDBServer::onlineRecoverDeltaLog()
 {
 	if ( _faultToleranceCopy <= 1 ) return; // no replicate
-	AbaxDataString fpaths;
+	Jstr fpaths;
 	// use client to recover delta log
 	if ( _delPrevOriCommand && JagFileMgr::fileSize(_actdelPOpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelPOpath;
-		else fpaths += AbaxDataString("|") + _actdelPOpath;
+		else fpaths += Jstr("|") + _actdelPOpath;
 		// fflush( _delPrevOriCommand );
 		// jagfdatasync( fileno( _delPrevOriCommand ) );
 		jagfclose( _delPrevOriCommand );
@@ -5224,7 +5226,7 @@ void JagDBServer::onlineRecoverDeltaLog()
 	}
 	if ( _delPrevRepCommand && JagFileMgr::fileSize(_actdelPRpath) > 0 ) { 
 		if ( fpaths.size() < 1 ) fpaths = _actdelPRpath;
-		else fpaths += AbaxDataString("|") + _actdelPRpath;
+		else fpaths += Jstr("|") + _actdelPRpath;
 		// fflush( _delPrevRepCommand );
 		// jagfdatasync( fileno( _delPrevRepCommand ) );
 		jagfclose( _delPrevRepCommand );
@@ -5232,7 +5234,7 @@ void JagDBServer::onlineRecoverDeltaLog()
 	}
 	if ( _delPrevOriRepCommand && JagFileMgr::fileSize(_actdelPORpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelPORpath;
-		else fpaths += AbaxDataString("|") + _actdelPORpath;
+		else fpaths += Jstr("|") + _actdelPORpath;
 		// fflush( _delPrevOriRepCommand );
 		// jagfdatasync( fileno( _delPrevOriRepCommand ) );
 		jagfclose( _delPrevOriRepCommand );
@@ -5240,7 +5242,7 @@ void JagDBServer::onlineRecoverDeltaLog()
 	}
 	if ( _delNextOriCommand && JagFileMgr::fileSize(_actdelNOpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelNOpath;
-		else fpaths += AbaxDataString("|") + _actdelNOpath;
+		else fpaths += Jstr("|") + _actdelNOpath;
 		// fflush( _delNextOriCommand );
 		// jagfdatasync( fileno( _delNextOriCommand ) );
 		jagfclose( _delNextOriCommand );
@@ -5248,7 +5250,7 @@ void JagDBServer::onlineRecoverDeltaLog()
 	}
 	if ( _delNextRepCommand && JagFileMgr::fileSize(_actdelNRpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelNRpath;
-		else fpaths += AbaxDataString("|") + _actdelNRpath;
+		else fpaths += Jstr("|") + _actdelNRpath;
 		// fflush( _delNextRepCommand );
 		// jagfdatasync( fileno( _delNextRepCommand ) );
 		jagfclose( _delNextRepCommand );
@@ -5256,7 +5258,7 @@ void JagDBServer::onlineRecoverDeltaLog()
 	}
 	if ( _delNextOriRepCommand && JagFileMgr::fileSize(_actdelNORpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelNORpath;
-		else fpaths += AbaxDataString("|") + _actdelNORpath;
+		else fpaths += Jstr("|") + _actdelNORpath;
 		// fflush( _delNextOriRepCommand );
 		// jagfdatasync( fileno( _delNextOriRepCommand ) );
 		jagfclose( _delNextOriRepCommand );
@@ -5298,7 +5300,7 @@ void JagDBServer::resetDeltaLog()
 
 	raydebug( stdout, JAG_LOG_LOW, "begin resetDeltaLog ...\n");
 
-	AbaxDataString deltahome = JagFileMgr::getLocalLogDir("delta"), fpath, host0, host1, host2, host3, host4;
+	Jstr deltahome = JagFileMgr::getLocalLogDir("delta"), fpath, host0, host1, host2, host3, host4;
 	int pos1, pos2, pos3, pos4;
 	JagStrSplit sp( _dbConnector->_nodeMgr->_curClusterNodes, '|' );
 	// set pos1: _nthServer+1; pos2: _nthServer-1
@@ -5409,12 +5411,12 @@ int JagDBServer::checkDeltaFileStatus()
 
 // orginize and tar dir to be transmitted later
 // mode 0: data; mode 1: pdata; mode 2: ndata
-void JagDBServer::organizeCompressDir( int mode, AbaxDataString &fpath )
+void JagDBServer::organizeCompressDir( int mode, Jstr &fpath )
 {
-	AbaxDataString spath = _cfg->getJDBDataHOME( mode );
+	Jstr spath = _cfg->getJDBDataHOME( mode );
 	fpath = _cfg->getTEMPDataHOME( mode ) + "/" + longToStr(THREADID) + ".tar.gz";
 	// cd /home/$USER/$BRAND/$DATA; tar -zcf /home/$USER/$BRAND/tmp/$DATA/tid.tar.gz *
-	AbaxDataString cmd = AbaxDataString("cd ") + spath + "; " + "tar -zcf " + fpath + " *";
+	Jstr cmd = Jstr("cd ") + spath + "; " + "tar -zcf " + fpath + " *";
 	system(cmd.c_str());
 	raydebug( stdout, JAG_LOG_LOW, "s6107 [%s]\n", cmd.c_str() );
 }
@@ -5422,8 +5424,8 @@ void JagDBServer::organizeCompressDir( int mode, AbaxDataString &fpath )
 // file open a.tar.gz and send to another server
 // mode 0: data; mode 1: pdata; mode 2: ndata  
 // mode 10: transmit wallog file
-int JagDBServer::fileTransmit( const AbaxDataString &host, unsigned int port, const AbaxDataString &passwd, 
-	const AbaxDataString &unixSocket, int mode, const AbaxDataString &fpath, int isAddCluster )
+int JagDBServer::fileTransmit( const Jstr &host, unsigned int port, const Jstr &passwd, 
+	const Jstr &unixSocket, int mode, const Jstr &fpath, int isAddCluster )
 {
 	prt(("s3082 fileTransmit host=[%s] mode=%d fath=[%s] isAddCluster=%d\n", host.c_str(), mode, fpath.c_str(), isAddCluster ));
 	if ( fpath.size() < 1 ) {
@@ -5445,7 +5447,7 @@ int JagDBServer::fileTransmit( const AbaxDataString &host, unsigned int port, co
 		abaxint rc;
 		ssize_t rlen;
 		struct stat sbuf;
-		AbaxDataString cmd;
+		Jstr cmd;
 		if ( 0 == stat(fpath.c_str(), &sbuf) && sbuf.st_size > 0 ) {
 			int fd = jagopen( fpath.c_str(), O_RDONLY, S_IRWXU);
 			if ( fd < 0 ) {
@@ -5511,7 +5513,7 @@ void JagDBServer::recoveryFromTransferredFile()
 {
 	if ( _faultToleranceCopy <= 1 ) return; // no replicate
 	raydebug( stdout, JAG_LOG_LOW, "begin redo xfer data ...\n" );
-	AbaxDataString cmd, datapath, tmppath, fpath;
+	Jstr cmd, datapath, tmppath, fpath;
 	bool isdo = false;
 
 	// first, need to drop all current tables and indexs if untar needed
@@ -5534,7 +5536,7 @@ void JagDBServer::recoveryFromTransferredFile()
 		dropAllTablesAndIndex( req, this, _tableschema );
 		JagFileMgr::rmdir( datapath, false );
 		fpath = tmppath + "/" + sp[0];
-		cmd = AbaxDataString("tar -zxf ") + fpath + " --directory=" + datapath;
+		cmd = Jstr("tar -zxf ") + fpath + " --directory=" + datapath;
 		system( cmd.c_str() );
 		raydebug( stdout, JAG_LOG_LOW, "s6100 crecover system cmd[%s]\n", cmd.c_str() );
 
@@ -5559,7 +5561,7 @@ void JagDBServer::recoveryFromTransferredFile()
 			dropAllTablesAndIndex( req, this, _prevtableschema );
 			JagFileMgr::rmdir( datapath, false );
 			fpath = tmppath + "/" + sp[0];
-			cmd = AbaxDataString("tar -zxf ") + fpath + " --directory=" + datapath;
+			cmd = Jstr("tar -zxf ") + fpath + " --directory=" + datapath;
 			system( cmd.c_str() );
 			raydebug( stdout, JAG_LOG_LOW, "s6102 crecover system cmd[%s]\n", cmd.c_str() );
 
@@ -5585,7 +5587,7 @@ void JagDBServer::recoveryFromTransferredFile()
 			dropAllTablesAndIndex( req, this, _nexttableschema );
 			JagFileMgr::rmdir( datapath, false );
 			fpath = tmppath + "/" + sp[0];
-			cmd = AbaxDataString("tar -zxf ") + fpath + " --directory=" + datapath;
+			cmd = Jstr("tar -zxf ") + fpath + " --directory=" + datapath;
 			system( cmd.c_str() );
 			raydebug( stdout, JAG_LOG_LOW, "s6104 crecover system cmd[%s]\n", cmd.c_str() );
 
@@ -5678,7 +5680,7 @@ void JagDBServer::crecoverRefreshSchema( int mode )
 		_objectLock->rebuildObjects();
 
 		// also, get other databases name
-		AbaxDataString dblist, dbpath;
+		Jstr dblist, dbpath;
 		dbpath = _cfg->getJDBDataHOME( 0 );
 		dblist = JagFileMgr::listObjects( dbpath );
 		_objectLock->setInitDatabases( dblist, 0 );
@@ -5710,8 +5712,8 @@ void JagDBServer::resetRegSpLog()
 {
 	raydebug( stdout, JAG_LOG_LOW, "begin reset data/schema log\n" );
 	
-    AbaxDataString deltahome = JagFileMgr::getLocalLogDir("delta");
-    AbaxDataString fpath = deltahome + "/redodata.log";
+    Jstr deltahome = JagFileMgr::getLocalLogDir("delta");
+    Jstr fpath = deltahome + "/redodata.log";
     if ( _recoveryRegCommand ) {
         jagfclose( _recoveryRegCommand );
     }
@@ -5772,7 +5774,7 @@ void JagDBServer::recoverRegSpLog()
 // open new dinsert active log
 void JagDBServer::resetDinsertLog()
 {
-	AbaxDataString fpath = JagFileMgr::getLocalLogDir("delta") + "/dinsertactive.log";
+	Jstr fpath = JagFileMgr::getLocalLogDir("delta") + "/dinsertactive.log";
 	if ( _dinsertCommand ) {
 		jagfclose( _dinsertCommand );
 	}
@@ -5784,7 +5786,7 @@ void JagDBServer::resetDinsertLog()
 // do dinsertbackup if not empty, and then rename dinsertactive to dinsertbackup
 void JagDBServer::rotateDinsertLog()
 {
-	AbaxDataString backupDinPath = JagFileMgr::getLocalLogDir("delta") + "/dinsertbackup.log";
+	Jstr backupDinPath = JagFileMgr::getLocalLogDir("delta") + "/dinsertbackup.log";
 	recoverDinsertLog( backupDinPath );
 	// JAG_BLURT jaguar_mutex_lock ( &g_dinsertmutex ); JAG_OVER;
 	jaguar_mutex_lock ( &g_dinsertmutex ); 
@@ -5799,7 +5801,7 @@ void JagDBServer::rotateDinsertLog()
 }
 
 // read uncommited logs in dinsert/ dir and execute them
-void JagDBServer::recoverDinsertLog( const AbaxDataString &fpath )
+void JagDBServer::recoverDinsertLog( const Jstr &fpath )
 {
 	if ( JagFileMgr::fileSize( fpath ) < 1 ) return;
 	raydebug( stdout, JAG_LOG_LOW, "begin redo %s ...\n",  fpath.c_str() );
@@ -5811,7 +5813,7 @@ void JagDBServer::recoverDinsertLog( const AbaxDataString &fpath )
 
 // process commands in fpath one by one and send them to corresponding servers
 // client_timediff;ddddddddddddddddstrclient_timediff;ddddddddddddddddstr
-abaxint JagDBServer::redoDinsertLog( const AbaxDataString &fpath )
+abaxint JagDBServer::redoDinsertLog( const Jstr &fpath )
 {
 	if ( JagFileMgr::fileSize( fpath ) <= 0 ) {
 		return 0;
@@ -5827,7 +5829,7 @@ abaxint JagDBServer::redoDinsertLog( const AbaxDataString &fpath )
 	prt(("s3950 redoDinsertLog [%s]\n", fpath.c_str() ));
 
 	abaxint cnt = 0, onecnt = 0;
-	AbaxDataString cmd;
+	Jstr cmd;
 	_dbConnector->_parentCliNonRecover->_servCurrentCluster = _dbConnector->_nodeMgr->_curClusterNumber;
 	JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer>> qmap;
 	while ( 1 ) {
@@ -5859,7 +5861,7 @@ abaxint JagDBServer::redoDinsertLog( const AbaxDataString &fpath )
 		buf = (char*)jagmalloc(len+1);
 		memset(buf, 0, len+1);
 		read( fd, buf, len );
-		cmd = AbaxDataString( buf, len );
+		cmd = Jstr( buf, len );
 		onecnt += _dbConnector->_parentCliNonRecover->oneCmdInsertPool( qmap, cmd );
 		if ( onecnt > 99999 ) {
 			_dbConnector->_parentCliNonRecover->flushQMap( qmap );
@@ -5880,7 +5882,7 @@ void JagDBServer::resetWalLog()
 {
 	if ( ! _walLog ) return;
 	
-    AbaxDataString fpath = JagFileMgr::getLocalLogDir("cmd") + "/walactive.log";
+    Jstr fpath = JagFileMgr::getLocalLogDir("cmd") + "/walactive.log";
     if ( _fpCommand ) {
         jagfclose( _fpCommand );
     }
@@ -5895,7 +5897,7 @@ void JagDBServer::resetWalLog()
 void JagDBServer::rotateWalLog()
 {
 	if ( ! _walLog ) return;
-	AbaxDataString backupWalPath = JagFileMgr::getLocalLogDir("cmd") + "/walbackup.log";
+	Jstr backupWalPath = JagFileMgr::getLocalLogDir("cmd") + "/walbackup.log";
 	// JAG_BLURT jaguar_mutex_lock ( &g_logmutex ); JAG_OVER;
 	jaguar_mutex_lock ( &g_logmutex ); 
     if ( _fpCommand ) {
@@ -5904,7 +5906,7 @@ void JagDBServer::rotateWalLog()
 	// jagsync();
 
 	// find a remote Data-center and fileTransmit to a random server in that data-center
-	// AbaxDataString host = findHostInOtherDataCenter();
+	// Jstr host = findHostInOtherDataCenter();
 	// if ( host.size() > 0 ) {
 		// fileTransmit( host, 10,  _activeWalFpath, 0 );
 	// }
@@ -5916,7 +5918,7 @@ void JagDBServer::rotateWalLog()
 
 
 // read uncommited logs in cmd/ dir and execute them
-void JagDBServer::recoverWalLog( const AbaxDataString &fpath )
+void JagDBServer::recoverWalLog( const Jstr &fpath )
 {
 	if ( ! _walLog ) return;
 	
@@ -5933,12 +5935,12 @@ void JagDBServer::syncLogs()
 {
 	if ( ! _walLog ) return;
 
-    AbaxDataString fullpath = JagFileMgr::getLocalLogDir("cmd");
+    Jstr fullpath = JagFileMgr::getLocalLogDir("cmd");
 
 	struct stat   	statbuf;
 	DIR 			*dp;
 	struct dirent  	*dirp;
-	AbaxDataString  fpath;
+	Jstr  fpath;
 	abaxint cnt = 0;
 	int  fd;
 
@@ -5984,7 +5986,7 @@ void JagDBServer::syncLogs()
 
 // execute commands in fpath one by one
 // replicateType;client_timediff;isBatch;ddddddddddddddddqstrreplicateType;client_timediff;isBatch;ddddddddddddddddqstr
-abaxint JagDBServer::redoLog( const AbaxDataString &fpath )
+abaxint JagDBServer::redoLog( const Jstr &fpath )
 {
 	if ( JagFileMgr::fileSize( fpath ) <= 0 ) {
 		return 0;
@@ -6105,7 +6107,7 @@ void JagDBServer::flushAllBlockIndexToDisk()
 {
 	// raydebug( stdout, JAG_LOG_LOW, "Flush block index to disk ...\n" );
 	// indexs will be flushed inside table object
-	JagTable *ptab; AbaxDataString str;
+	JagTable *ptab; Jstr str;
 	for ( int i = 0; i < _faultToleranceCopy; ++i ) {
 		raydebug( stdout, JAG_LOG_LOW, "Copy %d/%d:\n", i, _faultToleranceCopy );
 		str = _objectLock->getAllTableNames( i );
@@ -6134,7 +6136,7 @@ void JagDBServer::removeAllBlockIndexInDisk()
 void JagDBServer::removeAllBlockIndexInDiskAll( const JagTableSchema *tableschema, const char *datapath )
 {
 	if ( ! tableschema ) return;
-	AbaxDataString dbtab, db, tab, idx, fpath;
+	Jstr dbtab, db, tab, idx, fpath;
 	JagVector<AbaxString> *vec = tableschema->getAllTablesOrIndexes( "", "" );
 	for ( int i = 0; i < vec->size(); ++i ) {
 		dbtab = (*vec)[i].c_str();
@@ -6156,9 +6158,9 @@ void JagDBServer::removeAllBlockIndexInDiskAll( const JagTableSchema *tableschem
 
 // obj method
 // look at _taskMap and get all TaskIDs with the same threadID
-AbaxDataString JagDBServer::getTaskIDsByThreadID( abaxint threadID )
+Jstr JagDBServer::getTaskIDsByThreadID( abaxint threadID )
 {
-	AbaxDataString taskIDs;
+	Jstr taskIDs;
 	const AbaxPair<AbaxLong,AbaxString> *arr = _taskMap->array();
 	abaxint len = _taskMap->arrayLength();
 	// sprintf( buf, "%14s  %20s  %16s  %16s  %16s %s\n", "TaskID", "ThreadID", "User", "Database", "StartTime", "Command");
@@ -6171,14 +6173,14 @@ AbaxDataString JagDBServer::getTaskIDsByThreadID( abaxint threadID )
 			if ( taskIDs.size() < 1 ) {
 				taskIDs = sp[0];
 			} else {
-				taskIDs += AbaxDataString("|") + sp[0];
+				taskIDs += Jstr("|") + sp[0];
 			}
 		}
 	}
 	return taskIDs;
 }
 
-int JagDBServer::schemaChangeCommandSyncRemove( const AbaxDataString & dbobj )
+int JagDBServer::schemaChangeCommandSyncRemove( const Jstr & dbobj )
 {
 	_scMap->removeKey( dbobj );
 	return 1;
@@ -6186,7 +6188,7 @@ int JagDBServer::schemaChangeCommandSyncRemove( const AbaxDataString & dbobj )
 
 // method to make sure schema change command, such as drop/create table etc, is synchronized among servers using hashmap before actually lock it
 // isRemove 0: addKeyValue; isRemove 1: removeKey from hashMap
-int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const AbaxDataString &dbobj, abaxint opcode, int isRemove )
+int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr &dbobj, abaxint opcode, int isRemove )
 {
 	// disable for now
 	// return 1;
@@ -6242,12 +6244,12 @@ int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Abax
 
 // only flush one table ( and related indexs ) insert buffer or one index insert buffer
 // dbobj must be db.tab or db.idx
-void JagDBServer::flushOneTableAndRelatedIndexsInsertBuffer( const AbaxDataString &dbobj, int replicateType, int isTable, 
+void JagDBServer::flushOneTableAndRelatedIndexsInsertBuffer( const Jstr &dbobj, int replicateType, int isTable, 
 	JagTable *iptab, JagIndex *ipindex )
 {
 	// prt(("s6630 JagDBServer::flushOneTableAndRelatedIndexsInsertBuffer() _faultToleranceCopy=%d ...\n", _faultToleranceCopy ));
 	// indexs will be flushed inside table object
-	JagTable *ptab; JagIndex *pindex; AbaxDataString tabName;
+	JagTable *ptab; JagIndex *pindex; Jstr tabName;
 	JagTableSchema *tableschema; JagIndexSchema *indexschema;
 	getTableIndexSchema( replicateType, tableschema, indexschema );
 	JagStrSplit sp( dbobj, '.', true );
@@ -6283,7 +6285,7 @@ void JagDBServer::flushAllTableAndRelatedIndexsInsertBuffer()
 {
 	// prt(("s6630 JagDBServer::flushAllTableAndRelatedIndexsInsertBuffer() _faultToleranceCopy=%d ...\n", _faultToleranceCopy ));
 	// indexs will be flushed inside table object
-	JagTable *ptab; AbaxDataString str;
+	JagTable *ptab; Jstr str;
 	for ( int i = 0; i < _faultToleranceCopy; ++i ) {
 		str = _objectLock->getAllTableNames( i );
 		JagStrSplit sp( str, '|', true );
@@ -6299,12 +6301,12 @@ void JagDBServer::flushAllTableAndRelatedIndexsInsertBuffer()
 }
 
 int JagDBServer::doInsert( JagDBServer *servobj, JagRequest &req, JagParseParam &parseParam, 
-							AbaxDataString &reterr, const AbaxDataString &oricmd )
+							Jstr &reterr, const Jstr &oricmd )
 {
 	abaxint cnt = 0;
 	int insertCode = 0, rc;
 	JagTableSchema *tableschema = servobj->getTableSchema( req.session->replicateType );
-	AbaxDataString dbobj;
+	Jstr dbobj;
 	JagTable *ptab = NULL;
 	if ( parseParam.objectVec.size() > 0 ) {
 		ptab = servobj->_objectLock->readLockTable( parseParam.opcode, parseParam.objectVec[0].dbName, 
@@ -6397,7 +6399,7 @@ int JagDBServer::processSignal( int sig )
 #endif
 
 
-bool JagDBServer::isInteralIP( const AbaxDataString &ip )
+bool JagDBServer::isInteralIP( const Jstr &ip )
 {
 	bool rc = false;
 	JagStrSplit spp( _dbConnector->_nodeMgr->_curClusterNodes, '|' );
@@ -6410,14 +6412,14 @@ bool JagDBServer::isInteralIP( const AbaxDataString &ip )
 	return rc;
 }
 
-bool JagDBServer::existInAllHosts( const AbaxDataString &ip )
+bool JagDBServer::existInAllHosts( const Jstr &ip )
 {
 	return isInteralIP( ip );
 }
 
 void JagDBServer::initDirs()
 {
-	AbaxDataString fpath = jaguarHome() + "/data/system/schema";
+	Jstr fpath = jaguarHome() + "/data/system/schema";
 	JagFileMgr::makedirPath( fpath, 0700 );
 
 	fpath = jaguarHome() + "/pdata/system/schema";
@@ -6436,7 +6438,7 @@ void JagDBServer::initDirs()
 	JagFileMgr::makedirPath( fpath, 0700 );
 
 	fpath = jaguarHome() + "/tmp/*";
-	AbaxDataString cmd = AbaxDataString("/bin/rm -rf ") + fpath;
+	Jstr cmd = Jstr("/bin/rm -rf ") + fpath;
 	system( cmd.c_str() );
 
 	fpath = jaguarHome() + "/tmp/data";
@@ -6467,8 +6469,8 @@ void JagDBServer::noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 
-	AbaxDataString uid = parseParam.uid;
-	AbaxDataString scdbobj = uid + "." + intToStr( req.session->replicateType );
+	Jstr uid = parseParam.uid;
+	Jstr scdbobj = uid + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) {
 		prt(("s1004 return\n" ));
 		return;
@@ -6512,13 +6514,13 @@ void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj,
 	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString uid = parseParam.uid;
-	AbaxDataString pass = parseParam.passwd;
+	Jstr uid = parseParam.uid;
+	Jstr pass = parseParam.passwd;
 	JagUserID *uiddb = NULL;
 	if ( req.session->replicateType == 0 ) uiddb = servobj->_userDB;
 	else if ( req.session->replicateType == 1 ) uiddb = servobj->_prevuserDB;
 	else if ( req.session->replicateType == 2 ) uiddb = servobj->_nextuserDB;
-	AbaxDataString scdbobj = uid + "." + intToStr( req.session->replicateType );
+	Jstr scdbobj = uid + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) {
 		prt(("s4004 return\n" ));
 		return;
@@ -6560,7 +6562,7 @@ void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj,
 	}
 	req.session->spCommandReject = 0;
 	char *md5 = MDString( pass.c_str() );
-	AbaxDataString mdpass = md5;
+	Jstr mdpass = md5;
 	if ( md5 ) free( md5 );
 	md5 = NULL;
 
@@ -6582,12 +6584,12 @@ void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj,
 	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString uid = parseParam.uid;
+	Jstr uid = parseParam.uid;
 	JagUserID *uiddb = NULL;
 	if ( req.session->replicateType == 0 ) uiddb = servobj->_userDB;
 	else if ( req.session->replicateType == 1 ) uiddb = servobj->_prevuserDB;
 	else if ( req.session->replicateType == 2 ) uiddb = servobj->_nextuserDB;
-	AbaxDataString scdbobj = uid + "." + intToStr( req.session->replicateType );
+	Jstr scdbobj = uid + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) return;
 	servobj->_objectLock->writeLockSchema( req.session->replicateType );
 	AbaxString dbpass = uiddb->getValue( uid, JAG_PASS );
@@ -6643,13 +6645,13 @@ void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj,
 	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString uid = parseParam.uid;
-	AbaxDataString pass = parseParam.passwd;
+	Jstr uid = parseParam.uid;
+	Jstr pass = parseParam.passwd;
 	JagUserID *uiddb = NULL;
 	if ( req.session->replicateType == 0 ) uiddb = servobj->_userDB;
 	else if ( req.session->replicateType == 1 ) uiddb = servobj->_prevuserDB;
 	else if ( req.session->replicateType == 2 ) uiddb = servobj->_nextuserDB;
-	AbaxDataString scdbobj = uid + "." + intToStr( req.session->replicateType );
+	Jstr scdbobj = uid + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) {
 		prt(("s3257 changePass return\n"));
 		return;
@@ -6692,7 +6694,7 @@ void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj,
 	}
 	req.session->spCommandReject = 0;
 	char *md5 = MDString( pass.c_str() );
-	AbaxDataString mdpass = md5;
+	Jstr mdpass = md5;
 	if ( md5 ) free( md5 );
 	md5 = NULL;
 	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
@@ -6717,9 +6719,9 @@ void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj,
 	abaxint len, rc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
-    AbaxDataString sysdir = jagdatahome + "/" + parseParam.dbName;
-	AbaxDataString scdbobj = sysdir + "." + intToStr( req.session->replicateType );
+	Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
+    Jstr sysdir = jagdatahome + "/" + parseParam.dbName;
+	Jstr scdbobj = sysdir + "." + intToStr( req.session->replicateType );
 	prt(("s2238 schemaChangeCommandSyncCheck scdbobj=[%s] parseParam.opcode=%d ...\n", scdbobj.c_str(), parseParam.opcode ));
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) return;
 	prt(("s2238 schemaChangeCommandSyncCheck scdbobj=[%s] parseParam.opcode=%d done ...\n", scdbobj.c_str(), parseParam.opcode ));
@@ -6784,9 +6786,9 @@ void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj,
 	abaxint len, rc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
-    AbaxDataString sysdir = jagdatahome + "/" + parseParam.dbName;
-	AbaxDataString scdbobj = sysdir + "." + intToStr( req.session->replicateType );
+	Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
+    Jstr sysdir = jagdatahome + "/" + parseParam.dbName;
+	Jstr scdbobj = sysdir + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) return;
 	rc = servobj->_objectLock->writeLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 	if ( JagFileMgr::isDir( sysdir ) < 1 && rc ) {
@@ -6838,9 +6840,9 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 	abaxint len, rc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
-    AbaxDataString sysdir = jagdatahome + "/" + parseParam.dbName;
-	AbaxDataString scdbobj = sysdir + "." + intToStr( req.session->replicateType );
+	Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
+    Jstr sysdir = jagdatahome + "/" + parseParam.dbName;
+	Jstr scdbobj = sysdir + "." + intToStr( req.session->replicateType );
 
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) return;
 	rc = servobj->_objectLock->writeLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
@@ -6898,8 +6900,8 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 }
 
 // create table schema
-int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-		JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime )
+int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
 {
 	bool found = false, found2 = false;
 	int repType =  req.session->replicateType;
@@ -6916,8 +6918,8 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const AbaxD
 	abaxint len, len2, rc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString dbtable = dbname + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbtable + "." + intToStr( req.session->replicateType );
+	Jstr dbtable = dbname + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbtable + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) {
 		prt(("s4982 createTable return 0 %s reptype=%d\n", scdbobj.c_str(), repType ));
 		return 0;
@@ -7001,8 +7003,8 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const AbaxD
 }
 
 // create memtable schema
-int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-							     JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime )
+int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+							     JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
 {
 	bool found = false, found2 = false;
 	JagTableSchema *tableschema;
@@ -7012,8 +7014,8 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Ab
 	int repType = req.session->replicateType;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString dbtable = dbname + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbtable + "." + intToStr( req.session->replicateType );
+	Jstr dbtable = dbname + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbtable + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
 	parseParam->isMemTable = 1;
 	prt(("s3523 writeLockDatabase %s is being locked reptype=%da ...\n", dbname.c_str(), repType )); 
@@ -7077,17 +7079,17 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Ab
 // static method
 // new method for createIndex to deal with asc index keys
 //  return 0: error with reterr;  1: success
-int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, JagParseParam *parseParam,
-							   JagTable *&ptab, JagIndex *&pindex, AbaxDataString &reterr, abaxint threadQueryTime )
+int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam,
+							   JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, abaxint threadQueryTime )
 {
 	// create index on schema or get errmsg
 	// prt(("s1206 create index on schema\n"));
 	JagIndexSchema *indexschema; JagTableSchema *tableschema;
 	servobj->getTableIndexSchema(  req.session->replicateType, tableschema, indexschema );
-	AbaxDataString dbindex = dbname + "." + parseParam->objectVec[0].tableName + 
+	Jstr dbindex = dbname + "." + parseParam->objectVec[0].tableName + 
 							 "." + parseParam->objectVec[1].indexName;
 
-	AbaxDataString tgttab = indexschema->getTableNameScan( dbname, parseParam->objectVec[1].indexName );
+	Jstr tgttab = indexschema->getTableNameScan( dbname, parseParam->objectVec[1].indexName );
 	if ( tgttab.size() > 0 ) {
 		servobj->noGood( req, servobj, *parseParam );
 		prt(("E2033 index [%s] already exists in database [%s]\n", parseParam->objectVec[1].indexName.c_str(), dbname.c_str() ));
@@ -7098,8 +7100,8 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const AbaxD
 	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbobj + "." + intToStr( req.session->replicateType );
+	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbobj + "." + intToStr( req.session->replicateType );
 
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) {
 		prt(("s4983 createIndex return 0 scdbobj=[%s]\n", scdbobj.c_str() ));
@@ -7214,8 +7216,8 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const AbaxD
 	return rc;
 }
 
-int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname,
-							   const JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime, 
+int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr &dbname,
+							   const JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime, 
 							   abaxint &threadSchemaTime )
 {
 	// prt(("s6028 renameColumn...\n"));
@@ -7225,8 +7227,8 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Abax
 	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString dbtable = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbtable + "." + intToStr( req.session->replicateType );
+	Jstr dbtable = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbtable + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
 	ptab = servobj->_objectLock->writeLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
@@ -7303,11 +7305,11 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Abax
 }
 
 // return 1: OK  0: error
-int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-							JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime )
+int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+							JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
 {
-	AbaxDataString dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbobj + "." + intToStr( req.session->replicateType );
+	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbobj + "." + intToStr( req.session->replicateType );
 
 	prt(("s0236 dropTable dbobj=[%s] scdbobj=[%s] ...\n", dbobj.c_str(), scdbobj.c_str() ));
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) {
@@ -7369,7 +7371,7 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const AbaxDat
 	}
 
 	req.session->spCommandReject = 0;
-	AbaxDataString dbtabidx;
+	Jstr dbtabidx;
 	if ( ptab ) {
 		servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
 		// prt(("s4941 ptab->drop() ...\n"));
@@ -7404,11 +7406,11 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const AbaxDat
 }
 
 // return 1: OK  0: error
-int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-							JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime )
+int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+							JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
 {
-	AbaxDataString dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbobj + "." + intToStr( req.session->replicateType );
+	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbobj + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
 	JagTable *ptab = NULL;
 	JagIndex *pindex = NULL;
@@ -7482,7 +7484,7 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const AbaxDat
 	}
 
 	req.session->spCommandReject = 0;
-	AbaxDataString dbtabidx;
+	Jstr dbtabidx;
 	servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 0, ptab, pindex );
 	pindex->drop();
 	dbtabidx = dbname + "." + parseParam->objectVec[0].tableName + "." + parseParam->objectVec[1].indexName;
@@ -7506,12 +7508,12 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const AbaxDat
 	return 1;
 }
 
-int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-							JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime )
+int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+							JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
 {
-	AbaxDataString dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
-	AbaxDataString scdbobj = dbobj + "." + intToStr( req.session->replicateType );
-	AbaxDataString indexNames;
+	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
+	Jstr scdbobj = dbobj + "." + intToStr( req.session->replicateType );
+	Jstr indexNames;
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
 	JagTable *ptab = NULL;
 	JagIndex *pindex = NULL;
@@ -7590,7 +7592,7 @@ int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Aba
 			servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
 		}
-		AbaxDataString dbtab = dbname + "." + parseParam->objectVec[0].tableName;
+		Jstr dbtab = dbname + "." + parseParam->objectVec[0].tableName;
 		raydebug( stdout, JAG_LOG_LOW, "user [%s] truncate table [%s]\n", req.session->uid.c_str(), dbtab.c_str() );
 	}
 	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
@@ -7608,7 +7610,7 @@ void JagDBServer::sendMapInfo( const char *mesg, const JagRequest &req )
 {	
 	//if ( 0==strcmp(mesg, "_cschema") ) {
 		if ( !req.session->origserv && !_restartRecover ) {	
-			AbaxDataString schemaInfo;
+			Jstr schemaInfo;
 			_dbConnector->_broadCastCli->getSchemaMapInfo( schemaInfo );
 			// prt(("send map info=[%s]\n", schemaInfo.c_str()));
 			if ( schemaInfo.size() > 0 ) {
@@ -7622,7 +7624,7 @@ void JagDBServer::sendMapInfo( const char *mesg, const JagRequest &req )
 	/***
 	if ( 0==strcmp(mesg, "_cdefval") ) {
 		if ( !req.session->origserv && !_restartRecover ) {	
-			AbaxDataString info = _tableschema->getAllDefVals(); 
+			Jstr info = _tableschema->getAllDefVals(); 
 			// "db.tab.col1=kkdkddk|db.tab.col2=kdkfkdfkd|..."
 			// prt(("send map info=[%s]\n", schemaInfo.c_str()));
 			if ( info.size() > 0 ) {
@@ -7641,7 +7643,7 @@ void JagDBServer::sendMapInfo( const char *mesg, const JagRequest &req )
 void JagDBServer::sendHostInfo( const char *mesg, const JagRequest &req )
 {	
 	if ( !req.session->origserv && !_restartRecover ) {	
-		AbaxDataString snodes = _dbConnector->_nodeMgr->_sendNodes;
+		Jstr snodes = _dbConnector->_nodeMgr->_sendNodes;
 		JagTable::sendMessageLength( req, snodes.c_str(), snodes.size(), "HL" );
 	}
 }
@@ -7650,7 +7652,7 @@ void JagDBServer::sendHostInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_serv_checkdelta"
 void JagDBServer::checkDeltaFiles( const char *mesg, const JagRequest &req )
 {
-	AbaxDataString str;
+	Jstr str;
 	if ( _actdelPOhost == req.session->ip && JagFileMgr::fileSize(_actdelPOpath) > 0 ) {
 		// prt(("checkdelta error 1=[%s]\n", req.session->ip.c_str()));
 		str = _actdelPOpath + " not empty";
@@ -7691,7 +7693,7 @@ void JagDBServer::cleanRecovery( const char *mesg, const JagRequest &req )
 	if ( _faultToleranceCopy <= 1 ) return; // no replicate
 
 	// first, ask other servers to see if current server has delta recover file; if yes, return ( not up-to-date files )
-	AbaxDataString unixSocket = AbaxDataString("/TOKEN=") + _servToken;
+	Jstr unixSocket = Jstr("/TOKEN=") + _servToken;
 	JaguarCPPClient reqcli;
 	if ( !reqcli.connect( _dbConnector->_nodeMgr->_selfIP.c_str(), _port, "admin", "dummy", "test", unixSocket.c_str(), JAG_SERV_PARENT ) ) {
 		raydebug( stdout, JAG_LOG_LOW, "s4058 crecover check failure, unable to make connection ...\n" );
@@ -7699,9 +7701,9 @@ void JagDBServer::cleanRecovery( const char *mesg, const JagRequest &req )
 		return;
 	}
 
-	AbaxDataString bcasthosts = getBroadCastRecoverHosts( _faultToleranceCopy );
+	Jstr bcasthosts = getBroadCastRecoverHosts( _faultToleranceCopy );
 	prt(("s8120 bcasthosts=[%s]\n", bcasthosts.c_str() ));
-	AbaxDataString resp = _dbConnector->broadCastGet( "_serv_checkdelta", bcasthosts, &reqcli );
+	Jstr resp = _dbConnector->broadCastGet( "_serv_checkdelta", bcasthosts, &reqcli );
 	JagStrSplit checksp( resp, '\n', true );
 	if ( checksp.length() > 1 || checksp[0].length() > 0 ) {
 		// prt(("request clean recover, but not done=[%s]\n", req.session->ip.c_str()));
@@ -7720,7 +7722,7 @@ void JagDBServer::cleanRecovery( const char *mesg, const JagRequest &req )
 	abaxint reqservi;
 	req.session->servobj->_internalHostNum->getValue(req.session->ip, reqservi);
 	int pos1, pos2, pos3, pos4, rc;
-	AbaxDataString filePath, passwd = "dummy";
+	Jstr filePath, passwd = "dummy";
 	unsigned int uport = _port;
 	if ( _faultToleranceCopy == 2 ) {
 		if ( reqservi == 0 ) {
@@ -7836,7 +7838,7 @@ void JagDBServer::recoveryFileReceiver( const char *mesg, const JagRequest &req 
 	abaxint memsize = 128*1024*1024;
 	abaxint totlen = 0;
 	abaxint recvlen = 0;
-	AbaxDataString recvpath = req.session->servobj->_cfg->getTEMPDataHOME( fpos ) + "/" + req.session->ip + "_" + sp[3] + ".tar.gz";
+	Jstr recvpath = req.session->servobj->_cfg->getTEMPDataHOME( fpos ) + "/" + req.session->ip + "_" + sp[3] + ".tar.gz";
 	int fd = jagopen( recvpath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRWXU);
 	raydebug( stdout, JAG_LOG_LOW, "s6207 open recvpath=[%s]\n", recvpath.c_str() );
 	if ( fd < 0 ) {
@@ -7892,19 +7894,19 @@ void JagDBServer::recoveryFileReceiver( const char *mesg, const JagRequest &req 
 			if ( _crecoverFpath.size() < 1 ) {
 				_crecoverFpath = req.session->ip + "_" + sp[3] + ".tar.gz";
 			} else {
-				_crecoverFpath += AbaxDataString("|") + req.session->ip + "_" + sp[3] + ".tar.gz";
+				_crecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".tar.gz";
 			}
 		} else if ( 1 == fpos ) {
 			if ( _prevcrecoverFpath.size() < 1 ) {
 				_prevcrecoverFpath = req.session->ip + "_" + sp[3] + ".tar.gz";
 			} else {
-				_prevcrecoverFpath += AbaxDataString("|") + req.session->ip + "_" + sp[3] + ".tar.gz";
+				_prevcrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".tar.gz";
 			}
 		} else if ( 2 == fpos ) {
 			if ( _nextcrecoverFpath.size() < 1 ) {
 				_nextcrecoverFpath = req.session->ip + "_" + sp[3] + ".tar.gz";
 			} else {
-				_nextcrecoverFpath += AbaxDataString("|") + req.session->ip + "_" + sp[3] + ".tar.gz";
+				_nextcrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".tar.gz";
 			}
 		}
 		jaguar_mutex_unlock ( &g_dlogmutex );
@@ -7933,7 +7935,7 @@ void JagDBServer::walFileReceiver( const char *mesg, const JagRequest &req )
 	abaxint memsize = 128*1024*1024;
 	abaxint totlen = 0;
 	abaxint recvlen = 0;
-	AbaxDataString recvpath = req.session->servobj->_cfg->getTEMPDataHOME( fpos ) + "/" + req.session->ip + "_" + sp[3] + ".wal";
+	Jstr recvpath = req.session->servobj->_cfg->getTEMPDataHOME( fpos ) + "/" + req.session->ip + "_" + sp[3] + ".wal";
 	int fd = jagopen( recvpath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRWXU);
 	raydebug( stdout, JAG_LOG_LOW, "s6217 open recvpath=[%s]\n", recvpath.c_str() );
 	if ( fd < 0 ) {
@@ -7989,19 +7991,19 @@ void JagDBServer::walFileReceiver( const char *mesg, const JagRequest &req )
 			if ( _walrecoverFpath.size() < 1 ) {
 				_walrecoverFpath = req.session->ip + "_" + sp[3] + ".wal";
 			} else {
-				_walrecoverFpath += AbaxDataString("|") + req.session->ip + "_" + sp[3] + ".wal";
+				_walrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".wal";
 			}
 		} else if ( 11 == fpos ) {
 			if ( _prevwalrecoverFpath.size() < 1 ) {
 				_prevwalrecoverFpath = req.session->ip + "_" + sp[3] + ".wal";
 			} else {
-				_prevwalrecoverFpath += AbaxDataString("|") + req.session->ip + "_" + sp[3] + ".wal";
+				_prevwalrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".wal";
 			}
 		} else if ( 12 == fpos ) {
 			if ( _nextwalrecoverFpath.size() < 1 ) {
 				_nextwalrecoverFpath = req.session->ip + "_" + sp[3] + ".wal";
 			} else {
-				_nextwalrecoverFpath += AbaxDataString("|") + req.session->ip + "_" + sp[3] + ".wal";
+				_nextwalrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".wal";
 			}
 		}
 		// jaguar_mutex_unlock ( &g_dlogmutex );
@@ -8030,7 +8032,7 @@ void JagDBServer::sendOpInfo( const char *mesg, const JagRequest &req )
 	int dbs, tabs;
 	numDBTables( dbs, tabs );
 
-	AbaxDataString res;
+	Jstr res;
 	char buf[1024];
 	sprintf( buf, "%d|%d|%d|%lld|%lld|%lld|%lld|%lld", nsrv, dbs, tabs, 
 			(abaxint)numSelects, (abaxint)numInserts, 
@@ -8051,7 +8053,7 @@ void JagDBServer::doCopyData( const char *mesg, const JagRequest &req )
 		raydebug( stdout, JAG_LOG_LOW, "s8035 doCopyData error [%s]\n", mesg );
 		return;
 	}
-	AbaxDataString rec = sp[1];
+	Jstr rec = sp[1];
 	int show = atoi(sp[2].c_str());
 	copyData( rec, show );
 }
@@ -8086,14 +8088,14 @@ void JagDBServer::doRemoteBackup( const char *mesg, const JagRequest &req )
 	raydebug( stdout, JAG_LOG_LOW, "doremotebackup ...\n" );	
 	_doingRemoteBackup = 1;
 
-	AbaxDataString passwdfile = _cfg->getConfHOME() + "/tmpsyncpass.txt";
+	Jstr passwdfile = _cfg->getConfHOME() + "/tmpsyncpass.txt";
 	JagFileMgr::writeTextFile( passwdfile, sp[2] );
-	AbaxDataString cmd;
+	Jstr cmd;
 	chmod( passwdfile.c_str(), 0600 );
 
-	AbaxDataString intip = _localInternalIP;
-	AbaxDataString jagdatahome = _cfg->getJDBDataHOME( 0 ); // /home/jaguar/data
-	AbaxDataString backupdir = jaguarHome() + "/tmp/remotebackup";
+	Jstr intip = _localInternalIP;
+	Jstr jagdatahome = _cfg->getJDBDataHOME( 0 ); // /home/jaguar/data
+	Jstr backupdir = jaguarHome() + "/tmp/remotebackup";
 	JagFileMgr::rmdir( backupdir );
 	JagFileMgr::makedirPath( backupdir );
 	char buf[2048];
@@ -8104,7 +8106,7 @@ void JagDBServer::doRemoteBackup( const char *mesg, const JagRequest &req )
 	// then copy from /home/jaguar/data/remotebackup/* to remotehost::jaguardata/192.183.2.120
 	// do not comment out
 	prt(("s1829 [%s]\n", cmd.c_str() ));
-	AbaxDataString res = psystem( cmd.c_str() );
+	Jstr res = psystem( cmd.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "doRemoteBackup done %s\n", res.c_str() );
 	_doingRemoteBackup = 0;
 	// jagunlink( passwdfile.c_str() );
@@ -8134,11 +8136,11 @@ void JagDBServer::doRestoreRemote( const char *mesg, const JagRequest &req )
 	_doingRestoreRemote = 1;
 
 	char buf[2048];
-    AbaxDataString cmd = jaguarHome() + "/bin/restorefromremote.sh";
-	AbaxDataString logf = jaguarHome() + "/log/restorefromremote.log";
+    Jstr cmd = jaguarHome() + "/bin/restorefromremote.sh";
+	Jstr logf = jaguarHome() + "/log/restorefromremote.log";
 	sprintf( buf, "%s %s %s > %s 2>&1", cmd.c_str(), sp[1].c_str(), sp[2].c_str(), logf.c_str() );
 
-	AbaxDataString res = psystem( buf ); 
+	Jstr res = psystem( buf ); 
 	raydebug( stdout, JAG_LOG_LOW, "doRestoreRemote %s\n", res.c_str() );
 	_doingRestoreRemote = 0;
 	raydebug( stdout, JAG_LOG_LOW, "exit. Please restart jaguar after restore completes\n", res.c_str() );
@@ -8156,8 +8158,8 @@ void JagDBServer::doRefreshACL( const char *mesg, const JagRequest &req )
 		return;
 	}
 
-	AbaxDataString whitelist = sp[1];  // ip1\nip2\nip3\n
-	AbaxDataString blacklist = sp[2];  // ip4\nip5\ip6\n
+	Jstr whitelist = sp[1];  // ip1\nip2\nip3\n
+	Jstr blacklist = sp[2];  // ip4\nip5\ip6\n
 	// prt(("s1209 doRefreshACL whitelist=[%s] blacklist=[%s]\n", whitelist.c_str(), blacklist.c_str() ));
 	pthread_rwlock_wrlock( &_aclrwlock);
 	_whiteIPList->refresh( whitelist );
@@ -8172,18 +8174,18 @@ void JagDBServer::dbtabInfo( const char *mesg, const JagRequest &req )
 {
 	// "db1:t1:t2|db2:t1:t2|db3:t1:t3"
 	JagTableSchema *tableschema = getTableSchema( req.session->replicateType );
-	AbaxDataString res;
-	AbaxDataString dbs = JagSchema::getDatabases( _cfg, req.session->replicateType );
+	Jstr res;
+	Jstr dbs = JagSchema::getDatabases( _cfg, req.session->replicateType );
 	JagStrSplit sp(dbs, '\n', true );
 	for ( int i = 0; i < sp.length(); ++i ) {
 		JagVector<AbaxString> *vec = tableschema->getAllTablesOrIndexes( sp[i], "" );
 		res += sp[i];
 		for ( int j =0; j < vec->size(); ++j ) {
-			res += AbaxDataString(":") + (*vec)[j].c_str();
+			res += Jstr(":") + (*vec)[j].c_str();
 		}
 		if ( vec ) delete vec;
 		vec = NULL;
-		res += AbaxDataString("|");
+		res += Jstr("|");
 	}
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
@@ -8192,8 +8194,8 @@ void JagDBServer::dbtabInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_mon_info"
 void JagDBServer::sendInfo( const char *mesg, const JagRequest &req )
 {
-	AbaxDataString res;
-	JagVector<AbaxDataString> vec;
+	Jstr res;
+	JagVector<Jstr> vec;
 	JagBoundFile bf( _perfFile.c_str(), 96 );
 	bf.openRead();
 	bf.readLines( 96, vec );
@@ -8215,7 +8217,7 @@ void JagDBServer::sendInfo( const char *mesg, const JagRequest &req )
 void JagDBServer::sendResourceInfo( const char *mesg, const JagRequest &req )
 {
 	int rc = 0;
-	AbaxDataString res;
+	Jstr res;
 	abaxint usedDisk, freeDisk;
 	abaxint usercpu, syscpu, idle;
 	_jagSystem.getCPUStat( usercpu, syscpu, idle );
@@ -8223,7 +8225,7 @@ void JagDBServer::sendResourceInfo( const char *mesg, const JagRequest &req )
 	rc = _jagSystem.getMemInfo( totm, freem, used );
 	// prt(("s0394 _jagSystem.getMemInfo rc=%d totm=%d freem=%d used=%d\n", rc, totm, freem, used ));
 
-	AbaxDataString jaghome= jaguarHome();
+	Jstr jaghome= jaguarHome();
 	JagFileMgr::getPathUsage( jaghome.c_str(), usedDisk, freeDisk );
 
 	char buf[1024];
@@ -8238,7 +8240,7 @@ void JagDBServer::sendResourceInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_mon_clusteropinfo"
 void JagDBServer::sendClusterOpInfo( const char *mesg, const JagRequest &req )
 {
-	AbaxDataString res = getClusterOpInfo( req, this );
+	Jstr res = getClusterOpInfo( req, this );
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
@@ -8246,7 +8248,7 @@ void JagDBServer::sendClusterOpInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_mon_hosts"
 void JagDBServer::sendHostsInfo( const char *mesg, const JagRequest &req )
 {
-	AbaxDataString res;
+	Jstr res;
 	res = _dbConnector->_nodeMgr->_allNodes;
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
@@ -8255,7 +8257,7 @@ void JagDBServer::sendHostsInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_mon_remote_backuphosts"
 void JagDBServer::sendRemoteHostsInfo( const char *mesg, const JagRequest &req )
 {
-	AbaxDataString res = _cfg->getValue("REMOTE_BACKUP_SERVER", "0" );
+	Jstr res = _cfg->getValue("REMOTE_BACKUP_SERVER", "0" );
 	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
@@ -8282,9 +8284,9 @@ void JagDBServer::sendClusterStat6( const char *mesg, const JagRequest &req )
 	_jagSystem.getStat6( totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp );
 	char line[256];
 	sprintf(line, "%lld|%lld|%lld|%lld|%.2f|%lld", totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp );
-	AbaxDataString self = line;
+	Jstr self = line;
 
-	AbaxDataString resp, bcasthosts;
+	Jstr resp, bcasthosts;
 	resp = _dbConnector->broadCastGet( "_mon_local_stat6", bcasthosts ); 
 	// \n separated data from all nodes
 
@@ -8333,12 +8335,12 @@ void JagDBServer::processLocalBackup( const char *mesg, const JagRequest &req )
 	JagTable::sendMessage( req, "localbackup started...", "OK" );
 	
 	// copy local data
-	AbaxDataString tmstr = JagTime::YYYYMMDDHHMM();
+	Jstr tmstr = JagTime::YYYYMMDDHHMM();
 	copyLocalData("last", "OVERWRITE", tmstr, true );
 
 	// bcast to other servers
-	AbaxDataString bcastCmd, bcasthosts;
-	bcastCmd = AbaxDataString("_serv_dolocalbackup|") + tmstr;
+	Jstr bcastCmd, bcasthosts;
+	bcastCmd = Jstr("_serv_dolocalbackup|") + tmstr;
 	raydebug( stdout, JAG_LOG_LOW, "broadcast localbackup to all servers ...\n" ); 
 	_dbConnector->broadCastSignal( bcastCmd, bcasthosts );
 	raydebug( stdout, JAG_LOG_LOW, "localbackup finished\n" );
@@ -8378,10 +8380,10 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
 		return;
 	}
 
-	AbaxDataString rs = _cfg->getValue("REMOTE_BACKUP_SERVER", "" );
-	AbaxDataString passwdfile = _cfg->getConfHOME() + "/syncpass.txt";
+	Jstr rs = _cfg->getValue("REMOTE_BACKUP_SERVER", "" );
+	Jstr passwdfile = _cfg->getConfHOME() + "/syncpass.txt";
 	chmod( passwdfile.c_str(), 0600 );
-	AbaxDataString passwd;
+	Jstr passwd;
 	JagFileMgr::readTextFile( passwdfile, passwd );
 	passwd = trimChar( passwd, '\n');
 	if ( rs.size() < 1 || passwd.size() < 1 ) {
@@ -8397,7 +8399,7 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
 	if ( req.session ) JagTable::sendMessage( req, "remotebackup started...", "OK" );
 	
 	JagStrSplit sp (rs, '|');
-	AbaxDataString remthost;
+	Jstr remthost;
 	for ( int i = 0; i < sp.length(); ++i ) {
 		// multiple remote backup servers
 		remthost = sp[i];
@@ -8412,8 +8414,8 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
        	pthread_detach( threadmo );
     
     	// bcast to other servers
-    	AbaxDataString bcastCmd, bcasthosts;
-    	bcastCmd = AbaxDataString("_serv_doremotebackup|") + remthost +"|" + passwd;
+    	Jstr bcastCmd, bcasthosts;
+    	bcastCmd = Jstr("_serv_doremotebackup|") + remthost +"|" + passwd;
     	raydebug( stdout, JAG_LOG_LOW, "broadcast remotebackup to all servers ...\n" ); 
     	_dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
 
@@ -8464,8 +8466,8 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 		return;
 	}
 
-	AbaxDataString remthost  = sp[1];
-	AbaxDataString passwd  = sp[2];
+	Jstr remthost  = sp[1];
+	Jstr passwd  = sp[2];
 	if ( remthost.size() < 1 ) {
 		raydebug( stdout, JAG_LOG_LOW, "processRestoreRemote IP empty, skip\n" ); 
 		raydebug( stdout, JAG_LOG_LOW, "restorefromremote not processed\n" );
@@ -8479,14 +8481,14 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 	JagTable::sendMessage( req, "restorefromremote started... please restart jaguar after completion", "OK" );
 
     // bcast to other servers
-    AbaxDataString bcastCmd, bcasthosts;
-    bcastCmd = AbaxDataString("_serv_dorestoreremote|") + remthost +"|" + passwd;
+    Jstr bcastCmd, bcasthosts;
+    bcastCmd = Jstr("_serv_dorestoreremote|") + remthost +"|" + passwd;
     raydebug( stdout, JAG_LOG_LOW, "broadcast restoreremote to all servers ...\n" ); 
     _dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
 
 	jagsleep(3, JAG_SEC);
 
-	AbaxDataString rmsg = AbaxDataString("_serv_dorestoreremote|") + remthost + "|" + passwd;
+	Jstr rmsg = Jstr("_serv_dorestoreremote|") + remthost + "|" + passwd;
 	doRestoreRemote( rmsg.c_str(), req );
 	// doRestoreRemote( remthost, passwd );
 	raydebug( stdout, JAG_LOG_LOW, "restorefromremote finished\n" );
@@ -8509,9 +8511,9 @@ void JagDBServer::repairCheck( const char *mesg, const JagRequest &req )
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	getTableIndexSchema(  req.session->replicateType, tableschema, indexschema );
-	AbaxDataString dbobj = mesg+17, gettab;
+	Jstr dbobj = mesg+17, gettab;
 	abaxint rc = 0, elem = 1;
-	AbaxDataString msg;
+	Jstr msg;
 	JagParseParam pparam;
 	ObjectNameAttribute objNameTemp;
 	JagStrSplit sp( dbobj.c_str(), '.' );
@@ -8596,7 +8598,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	const char *end = strchr( mesg+16, '|' );
 	if ( !end ) end = strchr( mesg+16, '!' );
 	if ( !end ) end = mesg+16;
-	AbaxDataString hstr = mesg+15, absfirst( mesg+16, end-mesg-16 );
+	Jstr hstr = mesg+15, absfirst( mesg+16, end-mesg-16 );
 	// split to get original cluster(s) and new added cluster
 	JagStrSplit sp( hstr, '!', true );
 	JagStrSplit sp2( sp[1], '|', true );
@@ -8605,10 +8607,10 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	
 	// form new cluster.conf string as the form of: #\nip1\nip2\n#\nip3\nip4...
 	int clusternum = 1;
-	AbaxDataString nhstr, ip, err, clustname;
+	Jstr nhstr, ip, err, clustname;
 	JagStrSplit sp3( sp[0], '#', true );
 	for ( int i = 0; i < sp3.length(); ++i ) {
-		clustname = AbaxDataString("# Subcluster ") + intToStr(clusternum) + " (Do not delete this line)";
+		clustname = Jstr("# Subcluster ") + intToStr(clusternum) + " (Do not delete this line)";
 		nhstr += clustname + "\n";
 		++ clusternum;
 		JagStrSplit sp4( sp3[i], '|', true );
@@ -8616,7 +8618,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 			ip = JagNet::getIPFromHostName( sp4[j] );
 			// nhstr += sp4[j] + "\n";
 			if ( ip.length() < 2 ) {
-				err = AbaxDataString( "_END_[T=130|E=Command Failed. Unable to resolve IP address of " ) +  sp4[j] ;
+				err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of " ) +  sp4[j] ;
 				raydebug( stdout, JAG_LOG_LOW, "E1300 addcluster error %s \n", err.c_str() );
 				JagTable::sendMessage( req, err.c_str(), "ER" );
 				return;
@@ -8630,13 +8632,13 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	}
 
 	// nhstr += "# Do not delete this line\n";
-	clustname = AbaxDataString("# Subcluster ") + intToStr(clusternum) + " (New. Do not delete this line)";
+	clustname = Jstr("# Subcluster ") + intToStr(clusternum) + " (New. Do not delete this line)";
 	nhstr += clustname + "\n";
 	for ( int i = 0; i < sp2.length(); ++i ) {
 		// nhstr += sp2[i] + "\n";
 		ip = JagNet::getIPFromHostName( sp2[i] );
 		if ( ip.length() < 2 ) {
-			err = AbaxDataString( "_END_[T=130|E=Command Failed. Unable to resolve IP address of newhost " ) +  sp2[i] ;
+			err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of newhost " ) +  sp2[i] ;
 			raydebug( stdout, JAG_LOG_LOW, "E1301 addcluster error %s \n", err.c_str() );
 			JagTable::sendMessage( req, err.c_str(), "ER" );
 			return;
@@ -8649,7 +8651,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	}
 	raydebug( stdout, JAG_LOG_LOW, "addcluster newhosts:\n%s\n", nhstr.c_str() );
 
-	AbaxDataString fpath, cmd, dirpath, tmppath, passwd = "dummy", unixSocket = AbaxDataString("/TOKEN=") + _servToken;
+	Jstr fpath, cmd, dirpath, tmppath, passwd = "dummy", unixSocket = Jstr("/TOKEN=") + _servToken;
 	unsigned int uport = _port;
 	// first, let host0 of cluster0 send schema info to new server(s)
 	if ( _dbConnector->_nodeMgr->_selfIP == absfirst ) {
@@ -8658,14 +8660,14 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 		// make schema package -- empty database dirs and full system dir
 		// cd /home/$USER/$BRAND/$DATA; tar -zcf /home/$USER/$BRAND/tmp/$DATA/a.tar.gz --no-recursion *;
 		// tar -zcf /home/$USER/$BRAND/tmp/$DATA/b.tar.gz system
-		cmd = AbaxDataString("cd ") + dirpath + "; tar -zcf " + tmppath + "/a.tar.gz --no-recursion *; tar -zcf ";
+		cmd = Jstr("cd ") + dirpath + "; tar -zcf " + tmppath + "/a.tar.gz --no-recursion *; tar -zcf ";
 		cmd += tmppath + "/b.tar.gz system";
 		system(cmd.c_str());
 		raydebug( stdout, JAG_LOG_LOW, "s6300 [%s]\n", cmd.c_str() );
 		
 		// untar the above two tar.gzs, remove them and remake a new tar.gz
 		// cd /home/$USER/$BRAND/tmp/$DATA; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm a.tar.gz; b.tar.gz; tar -zcf a.tar.gz *
-		cmd = AbaxDataString("cd ") + tmppath + "; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm -f a.tar.gz b.tar.gz; tar -zcf c.tar.gz *";
+		cmd = Jstr("cd ") + tmppath + "; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm -f a.tar.gz b.tar.gz; tar -zcf c.tar.gz *";
 		system(cmd.c_str());
 		raydebug( stdout, JAG_LOG_LOW, "s6302 [%s]\n", cmd.c_str() );
 		fpath = tmppath + "/c.tar.gz";
@@ -8702,7 +8704,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 			dropAllTablesAndIndex( req, this, _tableschema );
 			JagFileMgr::rmdir( dirpath, false );
 			fpath = _cfg->getTEMPDataHOME( 0 ) + "/" + _crecoverFpath;
-			cmd = AbaxDataString("tar -zxf ") + fpath + " --directory=" + dirpath;
+			cmd = Jstr("tar -zxf ") + fpath + " --directory=" + dirpath;
 			system( cmd.c_str() );
 			raydebug( stdout, JAG_LOG_LOW, "s6304 [%s]\n", cmd.c_str() );
 			jagunlink(fpath.c_str());
@@ -8714,7 +8716,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 				session.replicateType = 1;
 				dropAllTablesAndIndex( req, this, _prevtableschema );
 				JagFileMgr::rmdir( dirpath, false );
-				cmd = AbaxDataString("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+				cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
 				system( cmd.c_str() );
 				raydebug( stdout, JAG_LOG_LOW, "s6307 [%s]\n", cmd.c_str() );
 			}
@@ -8725,7 +8727,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 				session.replicateType = 2;
 				dropAllTablesAndIndex( req, this, _nexttableschema );
 				JagFileMgr::rmdir( dirpath, false );
-				cmd = AbaxDataString("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+				cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
 				system( cmd.c_str() );
 				raydebug( stdout, JAG_LOG_LOW, "s6308 [%s]\n", cmd.c_str() );
 			}
@@ -8779,28 +8781,28 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	_objectLock->writeUnlockSchema( -1 );
 
 	// remove $HOME/.jagsetupssh
-	AbaxDataString setup = AbaxDataString( getenv("HOME") ) + "/.jagsetupssh";
+	Jstr setup = Jstr( getenv("HOME") ) + "/.jagsetupssh";
 	jagunlink( setup.c_str() );
 }
 
 // method to request schema info from old datacenter to current one
 void JagDBServer::requestSchemaFromDataCenter()
 {
-	AbaxDataString fpath = jaguarHome() + "/conf/datacenter.conf";
+	Jstr fpath = jaguarHome() + "/conf/datacenter.conf";
 	if ( ! JagFileMgr::exist( fpath ) || !_isGate ) {
 		// no datacenter file exists, or requested server is not GATE, return
 		return;
 	}
 	
 	int rc = 0, succ = 0, MAXTRY = 12, trynum;
-	AbaxDataString adminpass = "dummy";
-	JagVector<AbaxDataString> vec;
-	JagVector<AbaxDataString> vecip;
-	JagVector<AbaxDataString> vecdc; // vector of GATE hosts
-	JagVector<AbaxDataString> dcport; // vector of GATE hosts' port
-	JagVector<AbaxDataString> vecinnerdc; // vector of HOST hosts
-	JagVector<AbaxDataString> innerdcport; // vector of HOST hosts' port
-	AbaxDataString ip;
+	Jstr adminpass = "dummy";
+	JagVector<Jstr> vec;
+	JagVector<Jstr> vecip;
+	JagVector<Jstr> vecdc; // vector of GATE hosts
+	JagVector<Jstr> dcport; // vector of GATE hosts' port
+	JagVector<Jstr> vecinnerdc; // vector of HOST hosts
+	JagVector<Jstr> innerdcport; // vector of HOST hosts' port
+	Jstr ip;
 	JagStrSplit ipsp( _dbConnector->_nodeMgr->_allNodes, '|' );
 	for ( int i=0; i < ipsp.length(); ++i ) {
 		vec.append( makeUpperString( ipsp[i] ) );
@@ -8810,10 +8812,10 @@ void JagDBServer::requestSchemaFromDataCenter()
 		}
 	}
 		
-	AbaxDataString seeds, host, port, dcmd = "_serv_reqschemafromdc|", dcmd2 = "_serv_askdatafromdc|";
+	Jstr seeds, host, port, dcmd = "_serv_reqschemafromdc|", dcmd2 = "_serv_askdatafromdc|";
 	JagFileMgr::readTextFile( fpath, seeds );
 	JagStrSplit sp( seeds, '\n', true );
-	AbaxDataString bcasthosts, destType, uphost;
+	Jstr bcasthosts, destType, uphost;
 	
 	for ( int i = 0; i < sp.length(); ++i ) {
 		if ( sp[i].size()< 2 ) continue;
@@ -8850,8 +8852,8 @@ void JagDBServer::requestSchemaFromDataCenter()
 	}
 	succ = 0;
 	destType = "GATE";
-	AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + srcDestType( _isGate, destType ) +
-	      						AbaxDataString("/TOKEN=") + _servToken;
+	Jstr unixSocket = Jstr("/DATACENTER=1") + srcDestType( _isGate, destType ) +
+	      						Jstr("/TOKEN=") + _servToken;
 
 	// make connection to first not self datacenter, and request schema
 	//JaguarCPPClient *pcli = new JaguarCPPClient();
@@ -8898,10 +8900,10 @@ void JagDBServer::requestSchemaFromDataCenter()
 		jagsleep(1, JAG_SEC);
 	}
 	destType = "HOST";
-	unixSocket = AbaxDataString("/DATACENTER=1") + srcDestType( _isGate, destType ) +
-	 				AbaxDataString("/TOKEN=") + _servToken;
+	unixSocket = Jstr("/DATACENTER=1") + srcDestType( _isGate, destType ) +
+	 				Jstr("/TOKEN=") + _servToken;
 	// then, send package to all other servers -- inner datacenter
-	AbaxDataString bcmd = "_serv_unpackschinfo"; JagRequest req;
+	Jstr bcmd = "_serv_unpackschinfo"; JagRequest req;
 	fpath = _cfg->getTEMPDataHOME( 0 ) + "/" + _crecoverFpath;
 	for ( int i = 0; i < vecinnerdc.length(); ++i ) {
 		JaguarCPPClient pcli2;
@@ -8926,7 +8928,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 			// when connect success, get the host lists and send schema info to all inner datacenter hosts
 			JagStrSplit sp2( pcli2._primaryHostString, '#', true );			
 			for ( int i = 0; i < sp2.length(); ++i ) {
-				JagVector<AbaxDataString> chosts;
+				JagVector<Jstr> chosts;
 				JagStrSplit sp3( sp2[i], '|', true );
 				for ( int j = 0; j < sp3.length(); ++j ) {
 					fileTransmit( sp3[j], atoi( innerdcport[i].c_str() ), "dummy", unixSocket, 0, fpath, 1 );
@@ -8974,17 +8976,17 @@ void *JagDBServer::copyDataToNewDCStatic( void *ptr )
 // pmesg: "_serv_reqschemafromdc|newdc_host|newdc_port"
 void JagDBServer::sendSchemaToDataCenter( const char *mesg, const JagRequest &req )
 {
-	AbaxDataString hstr = mesg+22;
+	Jstr hstr = mesg+22;
 	// split to get original cluster(s) and new added cluster
 	JagStrSplit sp( hstr, '|', true );
 	if ( sp.length() < 2 ) {
 		return;
 	}
-	AbaxDataString host = sp[0];
+	Jstr host = sp[0];
 	unsigned int port = atoi ( sp[1].c_str() );
-	AbaxDataString adminpass = "dummy";
-	AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + AbaxDataString("/TOKEN=") + _servToken;
-	AbaxDataString fpath, cmd, dirpath, tmppath;
+	Jstr adminpass = "dummy";
+	Jstr unixSocket = Jstr("/DATACENTER=1") + Jstr("/TOKEN=") + _servToken;
+	Jstr fpath, cmd, dirpath, tmppath;
 	_objectLock->writeLockSchema( -1 );
 	flushAllTableAndRelatedIndexsInsertBuffer();	
 
@@ -8993,14 +8995,14 @@ void JagDBServer::sendSchemaToDataCenter( const char *mesg, const JagRequest &re
 	// make schema package -- empty database dirs and full system dir
 	// cd /home/$USER/$BRAND/$DATA; tar -zcf /home/$USER/$BRAND/tmp/$DATA/a.tar.gz --no-recursion *;
 	// tar -zcf /home/$USER/$BRAND/tmp/$DATA/b.tar.gz system
-	cmd = AbaxDataString("cd ") + dirpath + "; tar -zcf " + tmppath + "/a.tar.gz --no-recursion *; tar -zcf ";
+	cmd = Jstr("cd ") + dirpath + "; tar -zcf " + tmppath + "/a.tar.gz --no-recursion *; tar -zcf ";
 	cmd += tmppath + "/b.tar.gz system";
 	system(cmd.c_str());
 	raydebug( stdout, JAG_LOG_LOW, "s6300 [%s]\n", cmd.c_str() );
 	
 	// untar the above two tar.gzs, remove them and remake a new tar.gz
 	// cd /home/$USER/$BRAND/tmp/$DATA; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm a.tar.gz; b.tar.gz; tar -zcf a.tar.gz *
-	cmd = AbaxDataString("cd ") + tmppath + "; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm -f a.tar.gz b.tar.gz; tar -zcf c.tar.gz *";
+	cmd = Jstr("cd ") + tmppath + "; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm -f a.tar.gz b.tar.gz; tar -zcf c.tar.gz *";
 	system(cmd.c_str());
 	raydebug( stdout, JAG_LOG_LOW, "s6302 [%s]\n", cmd.c_str() );
 	fpath = tmppath + "/c.tar.gz";
@@ -9032,12 +9034,12 @@ void JagDBServer::unpackSchemaInfo( const char *mesg, const JagRequest &req )
 	session.servobj = this;
 
 	// for data dir
-	AbaxDataString dirpath = _cfg->getJDBDataHOME( 0 );
+	Jstr dirpath = _cfg->getJDBDataHOME( 0 );
 	session.replicateType = 0;
 	dropAllTablesAndIndex( req2, this, _tableschema );
 	JagFileMgr::rmdir( dirpath, false );
-	AbaxDataString fpath = _cfg->getTEMPDataHOME( 0 ) + "/" + _crecoverFpath;
-	AbaxDataString cmd = AbaxDataString("tar -zxf ") + fpath + " --directory=" + dirpath;
+	Jstr fpath = _cfg->getTEMPDataHOME( 0 ) + "/" + _crecoverFpath;
+	Jstr cmd = Jstr("tar -zxf ") + fpath + " --directory=" + dirpath;
 	system( cmd.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "s6304 [%s]\n", cmd.c_str() );
 	jagunlink(fpath.c_str());
@@ -9049,7 +9051,7 @@ void JagDBServer::unpackSchemaInfo( const char *mesg, const JagRequest &req )
 		session.replicateType = 1;
 		dropAllTablesAndIndex( req2, this, _prevtableschema );
 		JagFileMgr::rmdir( dirpath, false );
-		cmd = AbaxDataString("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+		cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
 		system( cmd.c_str() );
 		raydebug( stdout, JAG_LOG_LOW, "s6307 [%s]\n", cmd.c_str() );
 	}
@@ -9060,7 +9062,7 @@ void JagDBServer::unpackSchemaInfo( const char *mesg, const JagRequest &req )
 		session.replicateType = 2;
 		dropAllTablesAndIndex( req2, this, _nexttableschema );
 		JagFileMgr::rmdir( dirpath, false );
-		cmd = AbaxDataString("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+		cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
 		system( cmd.c_str() );
 		raydebug( stdout, JAG_LOG_LOW, "s6308 [%s]\n", cmd.c_str() );
 	}
@@ -9109,19 +9111,19 @@ void JagDBServer::unpackSchemaInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_serv_askdatafromdc|newdc_host|newdc_port"
 void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 {
-	AbaxDataString bcmd = AbaxDataString("_serv_preparedatafromdc|") + _dbConnector->_nodeMgr->_selfIP.c_str() + "|" 
+	Jstr bcmd = Jstr("_serv_preparedatafromdc|") + _dbConnector->_nodeMgr->_selfIP.c_str() + "|" 
 		+ intToStr(_port) + "|" + (mesg+20);
 	
-	AbaxDataString fpath = jaguarHome() + "/conf/datacenter.conf";
+	Jstr fpath = jaguarHome() + "/conf/datacenter.conf";
 	if ( ! JagFileMgr::exist( fpath ) || !_isGate ) {
 		// no datacenter file exists, or is not GATE, return
 		return;
 	}
 	
 	int rc = 0, succ = 0, MAXTRY = 12, trynum;
-	AbaxDataString adminpass = "dummy";
+	Jstr adminpass = "dummy";
 		
-	AbaxDataString uphost, seeds, host, port, destType;
+	Jstr uphost, seeds, host, port, destType;
 	JagFileMgr::readTextFile( fpath, seeds );
 	JagStrSplit sp( seeds, '\n', true );
 	
@@ -9138,8 +9140,8 @@ void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 	}
 	
 	JaguarCPPClient pcli;
-	AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + srcDestType( _isGate, destType ) + 
-								AbaxDataString("/TOKEN=") + _servToken;	
+	Jstr unixSocket = Jstr("/DATACENTER=1") + srcDestType( _isGate, destType ) + 
+								Jstr("/TOKEN=") + _servToken;	
 	pcli._datcSrcType = JAG_DATACENTER_GATE;
 	pcli._datcDestType = JAG_DATACENTER_HOST;
 	rc = 0; trynum = 0;
@@ -9162,7 +9164,7 @@ void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 		JagStrSplit sp2( pcli._primaryHostString, '#', true );			
 		// send query to each server
 		for ( int i = 0; i < sp2.length(); ++i ) {
-			JagVector<AbaxDataString> chosts;
+			JagVector<Jstr> chosts;
 			JagStrSplit sp3( sp2[i], '|', true );
 			for ( int j = 0; j < sp3.length(); ++j ) {
 				JaguarCPPClient* jcli = (JaguarCPPClient*) jag_hash_lookup ( &pcli._connMap, sp3[j].c_str() );
@@ -9190,11 +9192,11 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 		prt(("prepareDataFromDC return 0\n"));
 		return;
 	}
-	AbaxDataString host = sp[0], destType = "GATE", spstr = "insertsyncdconly|" + sp[2] + "|" + sp[3] + " ";
+	Jstr host = sp[0], destType = "GATE", spstr = "insertsyncdconly|" + sp[2] + "|" + sp[3] + " ";
 	unsigned int port = atoi ( sp[1].c_str() );
-	AbaxDataString adminpass =  "dummy";
-	AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + srcDestType( _isGate, destType ) +
-					AbaxDataString("/TOKEN=") + _servToken;
+	Jstr adminpass =  "dummy";
+	Jstr unixSocket = Jstr("/DATACENTER=1") + srcDestType( _isGate, destType ) +
+					Jstr("/TOKEN=") + _servToken;
 	_objectLock->writeLockSchema( -1 );
 	flushAllTableAndRelatedIndexsInsertBuffer();	
 	_objectLock->writeUnlockSchema( -1 );
@@ -9224,11 +9226,11 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 	session.timediff = servtimediff;
 	session.servobj = this;
 	req2.session = &session;
-	AbaxDataString str = _objectLock->getAllTableNames( 0 ), cmd, reterr, dbtab, dirpath, objname, fpath;
+	Jstr str = _objectLock->getAllTableNames( 0 ), cmd, reterr, dbtab, dirpath, objname, fpath;
 	JagStrSplit sp2( str, '|', true );
 	abaxint threadSchemaTime = 0, threadQueryTime = 0;
 	for ( int i = 0; i < sp2.length(); ++i ) {
-		cmd = AbaxDataString("select * from ") + sp2[i] + " export;";
+		cmd = Jstr("select * from ") + sp2[i] + " export;";
 		JagParseAttribute jpa( this, servtimediff, servtimediff, req2.session->dbname, _cfg );
 		prt(("s4071 parseCommand cmd=[%s]\n", cmd.c_str() ));
 		JagParser parser( this, NULL );
@@ -9262,7 +9264,7 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 		return;
 	}
 	
-	AbaxDataString stopPath = jaguarHome() + "/log/shutdown.cmd";
+	Jstr stopPath = jaguarHome() + "/log/shutdown.cmd";
 	JagFileMgr::writeTextFile(stopPath, "WIP");
 	_shutDownInProgress = 1;
 	
@@ -9289,7 +9291,7 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 
 	/***
 	// remove all WAL logs
-	AbaxDataString cmdpath = JagFileMgr::getLocalLogDir("cmd");
+	Jstr cmdpath = JagFileMgr::getLocalLogDir("cmd");
 	raydebug( stdout, JAG_LOG_LOW, "Remove %s ...\n", cmdpath.c_str() );
 	JagFileMgr::rmdir( cmdpath, false );
 	***/
@@ -9313,7 +9315,7 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 void JagDBServer::objectCountTesting( JagParseParam &parseParam )
 {
 	const char *cmd = NULL;
-	AbaxDataString errmsg, dbidx, tabName, idxName;
+	Jstr errmsg, dbidx, tabName, idxName;
 	abaxint cnt, keyCheckerCnt;
 	JagTable *ptab; JagIndex *pindex;
 	JagRequest req; JagSession session;
@@ -9368,7 +9370,7 @@ void JagDBServer::objectCountTesting( JagParseParam &parseParam )
 }
 
 // method to do inner/outer join for multiple tables/indexs
-int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagParseParam *parseParam, AbaxDataString &reterr )
+int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagParseParam *parseParam, Jstr &reterr )
 {
 	//prt(("s2051 joinObjects ...\n" ));
 
@@ -9392,12 +9394,12 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	int pos;
 	abaxint offset = 0, objelem[num], jlen[num], sklen[num];
 	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
-	AbaxDataString ttype = " ";
+	Jstr ttype = " ";
 	char *newbuf = NULL;
 	bool hasValCol = 0, needInit = 1, timeout = 0, isagg, hasagg = 0, dfSorted[num];
 	AbaxFixString rstr, tstr, fkey, fval;
-	AbaxDataString jname, jpath, jdapath, jdapath2, sigpath, sigpath2, sigpath3, newhdr, gbvhdr;
-	AbaxDataString unixSocket = AbaxDataString("/TOKEN=") + servobj->_servToken;
+	Jstr jname, jpath, jdapath, jdapath2, sigpath, sigpath2, sigpath3, newhdr, gbvhdr;
+	Jstr unixSocket = Jstr("/TOKEN=") + servobj->_servToken;
 	ExpressionElementNode *root = NULL;
 	JagDataAggregate *jda = NULL;
 	JagVector<abaxint> jsvec[num];
@@ -9411,8 +9413,8 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	const JagSchemaAttribute *attrs[num]; 
 	const JagSchemaRecord *rec[num];
 	JagDiskArrayFamily *df[num]; JagMinMax minmax[num];
-	AbaxDataString dbidx[num], tabName[num], idxName[num];
-	AbaxDataString dbName, colName, tableName, oneFilter, rowFilter;
+	Jstr dbidx[num], tabName[num], idxName[num];
+	Jstr dbName, colName, tableName, oneFilter, rowFilter;
 
 	// prt(("s4202 selectWhereClause=[%s]\n", parseParam->selectWhereClause.c_str() ));
 
@@ -9454,13 +9456,13 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		
 		if ( !ptab[i] && !pindex[i] ) {
 			if ( colName.length() > 0 ) {
-				reterr = AbaxDataString("E4023 Unable to select for ") + tableName + "." + colName;
+				reterr = Jstr("E4023 Unable to select for ") + tableName + "." + colName;
 			} else {
-				reterr = AbaxDataString("E4024 Unable to select for ") + dbName + "." + tableName;
+				reterr = Jstr("E4024 Unable to select for ") + dbName + "." + tableName;
 			}
 
 			if ( parseParam->objectVec[i].indexName.size() > 0 ) {
-				reterr += AbaxDataString(".") + parseParam->objectVec[i].indexName;
+				reterr += Jstr(".") + parseParam->objectVec[i].indexName;
 			}
 			break;
 		}
@@ -9469,7 +9471,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		if ( ptab[i] ) {
 			rc = checkUserCommandPermission( servobj, &ptab[i]->_tableRecord, req, *parseParam, i, oneFilter, reterr );
 			if ( ! rc ) {
-				reterr = AbaxDataString("E4524 No permission for table");
+				reterr = Jstr("E4524 No permission for table");
 				return 0;
 			}
 			// prt(("s2039 tab i=%d oneFilter=[%s]\n", i, oneFilter.c_str() ));
@@ -9490,7 +9492,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		} else {
 			rc = checkUserCommandPermission( servobj, &pindex[i]->_indexRecord, req, *parseParam, i, oneFilter, reterr );
 			if ( ! rc ) {
-				reterr = AbaxDataString("E4525 No permission for index");
+				reterr = Jstr("E4525 No permission for index");
 				return 0;
 			}
 
@@ -9513,7 +9515,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	}
 
 	// send all table elements info to client
-	AbaxDataString elemInfo = longToStr( objelem[0] ) + "|" + longToStr( objelem[1] );
+	Jstr elemInfo = longToStr( objelem[0] ) + "|" + longToStr( objelem[1] );
 
 	JagTable::sendMessage( req, elemInfo.c_str(), "OK" );
 
@@ -9656,8 +9658,8 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	JagArray<AbaxPair<AbaxLong, abaxint>> *sarr[num];
 	for ( i = 0; i < num; ++i ) { sarr[i] = NULL; }
 
-	JagVector<AbaxPair<AbaxDataString,abaxint>> jmarr = parseParam->joincolmap.getStrIntVector();
-	AbaxDataString kstr;
+	JagVector<AbaxPair<Jstr,abaxint>> jmarr = parseParam->joincolmap.getStrIntVector();
+	Jstr kstr;
 	for ( i = 0; i < jmarr.length(); ++i ) {
 		if( jmarr[i].key.size() > 0 ) {
 			kstr = jmarr[i].key;
@@ -10358,7 +10360,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 void *JagDBServer::joinSortStatic( void *ptr )
 {
 	ParallelJoinPass *pass = (ParallelJoinPass*)ptr;
-	AbaxDataString fpath; 
+	Jstr fpath; 
 	abaxint i;
 	
 	if ( pass->ptab ) {
@@ -10432,7 +10434,7 @@ void *JagDBServer::joinSortStatic( void *ptr )
 			if ( pjp[i].timeout ) pass->timeout = 1;
 		}
 		if ( pass->timeout ) {
-			AbaxDataString sigpath = pass->jpath + "/fprep/" + intToStr( pass->tabnum );
+			Jstr sigpath = pass->jpath + "/fprep/" + intToStr( pass->tabnum );
 			JagFileMgr::makedirPath( sigpath );
 			pass->dfSorted = 0;
 			return NULL;
@@ -10440,15 +10442,15 @@ void *JagDBServer::joinSortStatic( void *ptr )
 		
 		// after get each file, make new darrfamily to use later
 		abaxint aoffset = 0;
-		AbaxDataString nhdr;
+		Jstr nhdr;
 		if ( pass->ptab ) {
-			fpath += AbaxDataString("/") + pass->ptab->getTableName();
+			fpath += Jstr("/") + pass->ptab->getTableName();
 		} else {
-			fpath += AbaxDataString("/") + pass->pindex->getTableName() + "." + pass->pindex->getIndexName();
+			fpath += Jstr("/") + pass->pindex->getTableName() + "." + pass->pindex->getIndexName();
 		}
 
-		// nhdr = AbaxDataString("NN|") + longToStr( pass->sklen ) + "|" + longToStr( pass->kvlen ) + "|{";
-		nhdr = fpath + AbaxDataString(":NN|") + longToStr( pass->sklen ) + "|" + longToStr( pass->kvlen ) + "|{";
+		// nhdr = Jstr("NN|") + longToStr( pass->sklen ) + "|" + longToStr( pass->kvlen ) + "|{";
+		nhdr = fpath + Jstr(":NN|") + longToStr( pass->sklen ) + "|" + longToStr( pass->kvlen ) + "|{";
 		for ( i = 0; i < (*pass->jsvec).length(); ++i ) {
 			nhdr += pass->rec->formatColumnRecord( pass->attrs[(*pass->jsvec)[i]].colname.c_str(), 
 												   pass->attrs[(*pass->jsvec)[i]].type.c_str(), aoffset,
@@ -10491,7 +10493,7 @@ void *JagDBServer::joinSortStatic( void *ptr )
 	// prt(("s2850 insert joinmap elem=%lld name=[%s] sortkeylen=%lld, kvlen=%lld, numKeys=%lld, minbuf=[%s] maxbuf=[%s] dfamily=[%0x] attrs=[%0x] pparam=[%0x]\n", 
 	// pass->req.session->servobj->_joinMap->size(), jmkey.c_str(), pass->sklen, pass->kvlen, pass->numKeys, 
 	// pass->minbuf, pass->maxbuf, pass->df, pass->attrs, pass->parseParam));
-	AbaxDataString sigpath = pass->jpath + "/fprep/" + intToStr( pass->tabnum );
+	Jstr sigpath = pass->jpath + "/fprep/" + intToStr( pass->tabnum );
 	JagFileMgr::makedirPath( sigpath );
 	
 	
@@ -10514,7 +10516,7 @@ void *JagDBServer::joinSortStatic( void *ptr )
 	// after prepare data, parallel send data to each other server for join
 	// for each table, get how many servers to be sent for data
 	JagStrSplit srv( pass->req.session->servobj->_dbConnector->_nodeMgr->_allNodes, '|' );
-	JagVector<AbaxDataString> svec[2];
+	JagVector<Jstr> svec[2];
 	int totnum = srv.length(), isOdd = totnum%2, isOddTable = pass->tabnum%2, selfIsOdd = 0, snum = 0, pos = 0;
 	for ( i = 0; i < totnum; ++i ) {
 		if ( srv[i] == pass->req.session->servobj->_dbConnector->_nodeMgr->_selfIP ) {
@@ -10620,7 +10622,7 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 	ParallelJoinPass *pass = (ParallelJoinPass*)ptr;
 	int rc, tmode = 0, tlength = 0;
 	bool needInit = 1;
-	AbaxDataString ttype = " ";
+	Jstr ttype = " ";
 	abaxint i, j, k, aoffset, deach = pass->df->_darrlistlen/pass->numCPUs+1;
 	abaxint dstart = deach*pass->tabnum;
 	abaxint dend = dstart+deach;
@@ -10629,7 +10631,7 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 	abaxint pairmapMemLimit = jagatoll(pass->req.session->servobj->_cfg->getValue("JOIN_BUFFER_SIZE_MB", "100").c_str())*1024*1024;
 	if ( mlimit <= 0 ) mlimit = 1;
 	if ( dend > pass->df->_darrlistlen ) dend = pass->df->_darrlistlen;
-	AbaxDataString fpath, tpath; 
+	Jstr fpath, tpath; 
 	AbaxFixString sres, value;
 	ExpressionElementNode *root;
 	JagDataAggregate jda;
@@ -10704,7 +10706,7 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 					jda.flushwrite();
 					++tmpcnt;
 					fpath = pass->jpath + "/" + longToStr( THREADID ) + "_" + longToStr( tmpcnt );
-					tpath += AbaxDataString("|") + fpath;
+					tpath += Jstr("|") + fpath;
 					jda.setwrite( fpath, fpath, 3 );
 					pairmap.clean();
 				}
@@ -10789,11 +10791,11 @@ void *JagDBServer::joinHashStatic( void *ptr )
 	abaxint i, aoffset = 0, alen = 0, callCounts = -1, lastBytes = 0, mlimit, slimit = 0, rlimit = darr->_arrlen;
 	ExpressionElementNode *root;
 	AbaxFixString sres;
-	AbaxDataString jdapath = pass->jpath + "/alldata";
+	Jstr jdapath = pass->jpath + "/alldata";
 	int rc, tmode = 0, tlength = 0, insertCode;
 	bool needInit = 1;
 	const char *buffers[2], *buffers2[2];
-	AbaxDataString ttype = " ";
+	Jstr ttype = " ";
     char jbuf[pass->jlen+1], *buf = (char*)jagmalloc(pass->kvlen+1), *tbuf = (char*)jagmalloc(pass->totlen+1);
     memset(buf, 0, pass->kvlen+1);
 	memset(jbuf, 0, pass->jlen+1);
@@ -10902,7 +10904,7 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 	JaguarCPPClient* jcli = (JaguarCPPClient*) jag_hash_lookup ( &pass->hcli->_connMap, pass->uhost.c_str() );
 	int useHash = 0;
 	if ( pass->hmaps ) useHash = 1;
-	AbaxDataString rcmd = AbaxDataString("_serv_reqdatajoin|") + intToStr( useHash ) + "|" + intToStr( pass->tabnum2 ) + "|" + pass->jname;
+	Jstr rcmd = Jstr("_serv_reqdatajoin|") + intToStr( useHash ) + "|" + intToStr( pass->tabnum2 ) + "|" + pass->jname;
 	char jbuf[pass->jlen+1];
 	const char *p = NULL;
 	memset( jbuf, 0, pass->jlen+1 );
@@ -10926,7 +10928,7 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 				bool needInit = 1;
 				char *buf = (char*)jagmalloc( pass->kvlen2+1 );
 				const char *buffers[2];
-				AbaxDataString ttype= " ";
+				Jstr ttype= " ";
 				memset( buf, 0, pass->kvlen2+1 );
 				// prt(("s5982 pass->tabnum2=%d\n", pass->tabnum2 ));
 				if ( pass->tabnum2 ) {
@@ -11010,12 +11012,12 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 			pass->df->setFamilyRead( jntr, pass->minbuf, pass->maxbuf );
 		}
 		if ( jntr ) {
-			AbaxDataString jdapath = pass->jpath + "/alldata"; AbaxFixString sres;
+			Jstr jdapath = pass->jpath + "/alldata"; AbaxFixString sres;
 			int wrc, rc, tmode = 0, tlength = 0, hostLeft = pass->tabnum, vnumKeys[2];
 			bool needInit = 1;
 			const char *buffers[2], *buffers2[2];
 			char cmpbuf[pass->jlen+1];
-			AbaxDataString ttype = " ";
+			Jstr ttype = " ";
 			const JagSchemaAttribute *vattrs[2];
 			int goNext[2] = {1, 1};
 			char *jbuf = (char*)jagmalloc( pass->kvlen+pass->sklen+1 ), *buf = (char*)jagmalloc( pass->totlen+1 );	
@@ -11264,7 +11266,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 {
 	JagStrSplitWithQuote sp( mesg, '|' );
 	int useHash = atoi( sp[1].c_str() ), rtabnum = atoi( sp[2].c_str() );
-	AbaxDataString jpath = _cfg->getTEMPJoinHOME() + "/" + sp[3], cpath = jpath + "/fprep";
+	Jstr jpath = _cfg->getTEMPJoinHOME() + "/" + sp[3], cpath = jpath + "/fprep";
 	// check fprep file exist, if use hash, check only 1, otherwise check 2
 	if ( useHash ) {
 		while ( JagFileMgr::numObjects( cpath ) < 1 ) {
@@ -11312,7 +11314,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 		bool needInit = 1;
 		char *bbuf = (char*)jagmalloc( totbytes+1 ), *buf = (char*)jagmalloc( totlen+1 );
 		const char *buffers[2];
-		AbaxDataString ttype = " ";
+		Jstr ttype = " ";
 		memset( bbuf, 0, totbytes+1 );
 		memset( buf, 0, totlen+1 );
 		if ( rtabnum ) {
@@ -11444,11 +11446,11 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 	// prt(("s6380 synchToOtherDataCenters begin _numDataCenter=%d mesg=[%s]\n", _numDataCenter, mesg ));
 	// need to check if mesg is insertsyncdconly, if yes, sync only to requested datacenter; otherwise, sync all
 	const char *pp, *qq;
-	AbaxDataString host;
+	Jstr host;
     if ( 0 == strncasecmp( mesg, "insertsyncdconly|", 17 ) ) {
 		pp = mesg+17;
 		qq = strchr( pp, '|' );
-		host = AbaxDataString( pp, qq-pp );
+		host = Jstr( pp, qq-pp );
 		pp = strchr( pp, ' ' );
 		while ( *pp == ' ' ) ++pp;
 		host = JagNet::getIPFromHostName( host );
@@ -11626,7 +11628,7 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 			}
 		}
 		for ( int i = 0; i < useindex.size(); ++i ) {
-			// q = AbaxDataString("[N] ") + pp; 
+			// q = Jstr("[N] ") + pp; 
 			// prt(("s7752 query(%s) host=[%s] ...\n",  pp, _dataCenter[useindex[i]]->getHost() ));
 			_dataCenter[useindex[i]]->setDataCenterSync();
 			// prt(("s7753 datc query(%s) ...\n", pp ));
@@ -11671,7 +11673,7 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 	const char *pmsg;
 	abaxint msglen;
 	JagDataAggregate *jda = NULL;
-	AbaxDataString dbobj = longToStr( THREADID ) + ".tmp";
+	Jstr dbobj = longToStr( THREADID ) + ".tmp";
 	
 	abaxint rc = 0, cnt = 0, useindex = -1, hasX1 = false;
 	raydebug( stdout, JAG_LOG_HIGH, "s6380 synchFromOtherDataCenters begin _numDataCenter=%d mesg=[%s]\n", _numDataCenter, mesg );
@@ -11824,7 +11826,7 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 				//JagTable::sendMessageLength( req, pmsg, msglen, "OK" );
 				if ( pparam.opcode == JAG_COUNT_OP ) {
 					pmsg = strcasestrskipquote( pmsg, " contains " );
-					AbaxDataString cntstr = longToStr(jagatoll(pmsg+10));
+					Jstr cntstr = longToStr(jagatoll(pmsg+10));
 					// prt(("sendback to origclient select count() [%s] ...\n", cntstr.c_str() ));
 					JagTable::sendMessageLength( req, cntstr.c_str(), cntstr.size(), "OK" );
 				} else {
@@ -11871,7 +11873,7 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 
 void JagDBServer::openDataCenterConnection()
 {
-	AbaxDataString fpath = jaguarHome() + "/conf/datacenter.conf";
+	Jstr fpath = jaguarHome() + "/conf/datacenter.conf";
 	if ( ! JagFileMgr::exist( fpath ) ) {
 	    _numDataCenter = 0;
 		return;
@@ -11879,10 +11881,10 @@ void JagDBServer::openDataCenterConnection()
 	int trynum;
 	int  MAXTRY = 12;
 
-	AbaxDataString adminpass = "dummy";
-	JagVector<AbaxDataString> vec;
-	JagVector<AbaxDataString> vecip;
-	AbaxDataString ip;
+	Jstr adminpass = "dummy";
+	JagVector<Jstr> vec;
+	JagVector<Jstr> vecip;
+	Jstr ip;
 	// JagNet::getLocalIPs( vec );
 	// _dbConnector->_nodeMgr->_allNodes "ip1|ip2|ip3" of current cluster
 	JagStrSplit ipsp( _dbConnector->_nodeMgr->_allNodes, '|' );
@@ -11895,12 +11897,12 @@ void JagDBServer::openDataCenterConnection()
 		}
 	}
 
-	AbaxDataString uphost, line, line2, seeds, host, port, destType;
+	Jstr uphost, line, line2, seeds, host, port, destType;
 	JagFileMgr::readTextFile( fpath, seeds );
 	JagStrSplit sp( seeds, '\n', true );
 	int rc = 0;
 	int stype, dtype;
-	// AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + AbaxDataString("/TOKEN=") + _servToken;
+	// Jstr unixSocket = Jstr("/DATACENTER=1") + Jstr("/TOKEN=") + _servToken;
 	JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
 	_numDataCenter = 0;
 	for ( int i = 0; i < JAG_DATACENTER_MAX; ++i ) {
@@ -11937,7 +11939,7 @@ void JagDBServer::openDataCenterConnection()
 		// prt(("s9494 isGate=%d dt=[%s] stype=%d dtype=%d\n", _isGate, destType.c_str(), stype, dtype));
 		
 		_dataCenter[_numDataCenter]->setDatcType( stype, dtype );
-		AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + AbaxDataString("/TOKEN=") + _servToken;
+		Jstr unixSocket = Jstr("/DATACENTER=1") + Jstr("/TOKEN=") + _servToken;
 		unixSocket += srcDestType( _isGate, destType );
 		rc = 0;
 		trynum = 0;
@@ -11979,7 +11981,7 @@ void JagDBServer::closeDataCenterConnection()
 	JAG_BLURT jaguar_mutex_unlock ( &g_datacentermutex ); JAG_OVER;
 }
 
-long JagDBServer::getDataCenterQueryCount( const AbaxDataString &ip, bool doLock )
+long JagDBServer::getDataCenterQueryCount( const Jstr &ip, bool doLock )
 {
 	if ( ip.size() < 1 ) return 0;
 
@@ -11987,7 +11989,7 @@ long JagDBServer::getDataCenterQueryCount( const AbaxDataString &ip, bool doLock
 		JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
 	}
 	long cnt = 0;
-	AbaxDataString host, port, destType;
+	Jstr host, port, destType;
 	prt(("s8383 _numDataCenter=%d\n", _numDataCenter ));
 	for ( int i = 0; i < _numDataCenter; ++i ) {
 		getDestHostPortType( _centerHostPort[i], host, port, destType );
@@ -12016,13 +12018,13 @@ long JagDBServer::getDataCenterQueryCount( const AbaxDataString &ip, bool doLock
 
 // reconnect to one data center ip : is one of peerip from peer datacenter
 // is from datacenter.conf one line host
-void JagDBServer::reconnectDataCenter( const AbaxDataString &ip, bool doLock )
+void JagDBServer::reconnectDataCenter( const Jstr &ip, bool doLock )
 {
 	int rc = 0;
 	int stype, dtype, trynum;
 	int  MAXTRY = 12;
-	AbaxDataString host, port, destType;
-	AbaxDataString adminpass = "dummy";
+	Jstr host, port, destType;
+	Jstr adminpass = "dummy";
 	if ( doLock ) {
 		JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
 	}
@@ -12049,7 +12051,7 @@ void JagDBServer::reconnectDataCenter( const AbaxDataString &ip, bool doLock )
 
 		if ( _isGate ) { stype = JAG_DATACENTER_GATE; } else { stype = JAG_DATACENTER_HOST; }
 		_dataCenter[i]->setDatcType( stype, dtype );
-		AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + AbaxDataString("/TOKEN=") + _servToken;
+		Jstr unixSocket = Jstr("/DATACENTER=1") + Jstr("/TOKEN=") + _servToken;
 		unixSocket += srcDestType( _isGate, destType );
 		rc = 0;
 		trynum = 0;
@@ -12084,14 +12086,14 @@ void JagDBServer::reconnectDataCenter( const AbaxDataString &ip, bool doLock )
 
 int JagDBServer::countOtherDataCenters()
 {
-	AbaxDataString fpath = jaguarHome() + "/conf/datacenter.conf";
+	Jstr fpath = jaguarHome() + "/conf/datacenter.conf";
 	if ( ! JagFileMgr::exist( fpath ) ) {
 		return 0;
 	}
 
-	JagVector<AbaxDataString> vec;
-	JagVector<AbaxDataString> vecip;
-	AbaxDataString ip;
+	JagVector<Jstr> vec;
+	JagVector<Jstr> vecip;
+	Jstr ip;
 	// prt(("s2039 countOtherDataCenters _allNodes=[%s]\n", _dbConnector->_nodeMgr->_allNodes.c_str() ));
 	JagStrSplit ipsp( _dbConnector->_nodeMgr->_allNodes, '|' );
 	for ( int i=0; i < ipsp.length(); ++i ) {
@@ -12103,7 +12105,7 @@ int JagDBServer::countOtherDataCenters()
 		}
 	}
 
-	AbaxDataString seeds, hostport, upphost;
+	Jstr seeds, hostport, upphost;
 	JagFileMgr::readTextFile( fpath, seeds );
 	JagStrSplit sp( seeds, '\n', true );
 	int cnt = 0;
@@ -12131,8 +12133,8 @@ void JagDBServer::refreshDataCenterConnections( abaxint seq )
 {
 	int rc;
 	int newCnt = countOtherDataCenters();
-	AbaxDataString h, p, destType;
-	AbaxDataString adminpass = "dummy";
+	Jstr h, p, destType;
+	Jstr adminpass = "dummy";
 	if ( newCnt == _numDataCenter ) {
 		// prt(("s2396 refreshDataCenterConnections newCnt=%d _numDataCenter=%d same, noop\n", newCnt, _numDataCenter ));
 		if ( ( seq % 5 ) == 0 ) {
@@ -12145,7 +12147,7 @@ void JagDBServer::refreshDataCenterConnections( abaxint seq )
 				 	_dataCenter[i]->setDebug( true );
 				 }
 				getDestHostPortType( _centerHostPort[i], h, p, destType );
-				AbaxDataString unixSocket = AbaxDataString("/DATACENTER=1") + AbaxDataString("/TOKEN=") + _servToken;
+				Jstr unixSocket = Jstr("/DATACENTER=1") + Jstr("/TOKEN=") + _servToken;
 				unixSocket += srcDestType( _isGate, destType );
 				rc = _dataCenter[i]->connect( h.c_str(), atoi( p.c_str() ), 
 					  "admin", adminpass.c_str(), "test", unixSocket.c_str() );
@@ -12185,14 +12187,14 @@ void JagDBServer::checkAndCreateThreadGroups()
 
 // line: "ip:port:HOST|ip:host:GATE|ip:port|ip"
 // return host, port, type parts
-void JagDBServer::getDestHostPortType( const AbaxDataString &inLine, 
-			AbaxDataString& host, AbaxDataString& port, AbaxDataString& destType )
+void JagDBServer::getDestHostPortType( const Jstr &inLine, 
+			Jstr& host, Jstr& port, Jstr& destType )
 {
-	AbaxDataString line = trimTailChar( inLine, '\r' );
+	Jstr line = trimTailChar( inLine, '\r' );
 	JagStrSplit sp(line, '|', true );
 	int len = sp.length();
 	int i = rand() % len;
-	AbaxDataString seg = sp[i];
+	Jstr seg = sp[i];
 	JagStrSplit sp2( seg, ':', true );
 	if ( sp2.length() > 2 ) {
 		host = sp2[0];
@@ -12209,9 +12211,9 @@ void JagDBServer::getDestHostPortType( const AbaxDataString &inLine,
 	}
 }
 
-AbaxDataString JagDBServer::srcDestType( int isGate, const AbaxDataString &destType )
+Jstr JagDBServer::srcDestType( int isGate, const Jstr &destType )
 {
-	AbaxDataString conn = "/";
+	Jstr conn = "/";
 	if ( isGate ) {
 		conn += "DATC_FROM=GATE";
 	} else {
@@ -12274,13 +12276,13 @@ void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj,
 	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString uid  = parseParam.grantUser;
+	Jstr uid  = parseParam.grantUser;
 	JagStrSplit sp( parseParam.grantObj, '.' );
 	JagUserRole *uidrole = NULL;
 	if ( req.session->replicateType == 0 ) uidrole = servobj->_userRole;
 	else if ( req.session->replicateType == 1 ) uidrole = servobj->_prevuserRole;
 	else if ( req.session->replicateType == 2 ) uidrole = servobj->_nextuserRole;
-	AbaxDataString scdbobj = uid + "." + intToStr( req.session->replicateType );
+	Jstr scdbobj = uid + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) {
 		 prt(("s5002 grantPerm return\n"));
 	    return;
@@ -12367,13 +12369,13 @@ void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj,
 	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
-	AbaxDataString uid = parseParam.grantUser;
+	Jstr uid = parseParam.grantUser;
 	JagStrSplit sp( parseParam.grantObj, '.' );
 	JagUserRole *uidrole = NULL;
 	if ( req.session->replicateType == 0 ) uidrole = servobj->_userRole;
 	else if ( req.session->replicateType == 1 ) uidrole = servobj->_prevuserRole;
 	else if ( req.session->replicateType == 2 ) uidrole = servobj->_nextuserRole;
-	AbaxDataString scdbobj = uid + "." + intToStr( req.session->replicateType );
+	Jstr scdbobj = uid + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) {
 		prt(("s3108 revokePerm return\n" ));
 		return;
@@ -12442,13 +12444,13 @@ void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj,
 	const JagParseParam &parseParam, abaxint threadQueryTime )
 {
 	//prt(("s3722 showPerm ...\n" ));
-	AbaxDataString uid  = parseParam.grantUser;
+	Jstr uid  = parseParam.grantUser;
 	if ( uid.size() < 1 ) {
 		uid = req.session->uid;
 	}
 
 	if ( req.session->uid != "admin" && uid != req.session->uid ) {
-		AbaxDataString err = AbaxDataString("E5082 error show grants for user ") + uid;
+		Jstr err = Jstr("E5082 error show grants for user ") + uid;
 		JagTable::sendMessageLength( req, err.c_str(), err.length(), "OK" );
 		return;
 	}
@@ -12462,11 +12464,11 @@ void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj,
 
 
 	// JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
-	AbaxDataString perms;
+	Jstr perms;
 	if ( uidrole ) {
 		perms = uidrole->showRole( uid );
 	} else {
-		perms = AbaxDataString("E4024 error show grants for ") + uid;
+		perms = Jstr("E4024 error show grants for ") + uid;
 	}
 
 	// prt(("s2473 perms=[%s] send to cleint\n", perms.c_str() ));
@@ -12475,7 +12477,7 @@ void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj,
 }
 
 bool JagDBServer::checkUserCommandPermission( JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
-	const JagParseParam &parseParam, int i, AbaxDataString &rowFilter, AbaxDataString &reterr )
+	const JagParseParam &parseParam, int i, Jstr &rowFilter, Jstr &reterr )
 {
 	// For admin user, all true
 	if ( req.session->uid == "admin" ) return true;
@@ -12488,10 +12490,10 @@ bool JagDBServer::checkUserCommandPermission( JagDBServer *servobj, const JagSch
 
 // object method
 // if dbExist  
-bool JagDBServer::dbExist( const AbaxDataString &dbName, int replicateType )
+bool JagDBServer::dbExist( const Jstr &dbName, int replicateType )
 {
-	AbaxDataString jagdatahome = _cfg->getJDBDataHOME( replicateType );
-    AbaxDataString sysdir = jagdatahome + "/" + dbName;
+	Jstr jagdatahome = _cfg->getJDBDataHOME( replicateType );
+    Jstr sysdir = jagdatahome + "/" + dbName;
 	if ( JagFileMgr::isDir( sysdir ) > 0 ) {
 		return true;
 	} else {
@@ -12500,7 +12502,7 @@ bool JagDBServer::dbExist( const AbaxDataString &dbName, int replicateType )
 }
 
 // obj: table name or index name
-bool JagDBServer::objExist( const AbaxDataString &dbname, const AbaxDataString &objName, int replicateType )
+bool JagDBServer::objExist( const Jstr &dbname, const Jstr &objName, int replicateType )
 {
 	JagTableSchema *tableschema = NULL;
 	JagIndexSchema *indexschema = NULL;
@@ -12520,19 +12522,19 @@ bool JagDBServer::objExist( const AbaxDataString &dbname, const AbaxDataString &
 
 }
 
-AbaxDataString JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column, 
-										 const AbaxDataString &dbtable ) const
+Jstr JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column, 
+										 const Jstr &dbtable ) const
 {
 	char buf[512];
-	AbaxDataString type = column.type;
+	Jstr type = column.type;
 	int  offset = column.length;
 	int  len = column.length;
 	int  sig = column.sig;
 	int  srid = column.srid;
-	AbaxDataString dbcol = dbtable + "." + column.name.c_str();
+	Jstr dbcol = dbtable + "." + column.name.c_str();
 	//prt(("s5041 fillDescBuf type=[%s]\n", type.c_str() ));
 
-	AbaxDataString res;
+	Jstr res;
 		if ( type == JAG_C_COL_TYPE_DBOOLEAN ) {
 			sprintf( buf, "boolean" );
 			res += buf;
@@ -12790,7 +12792,7 @@ AbaxDataString JagDBServer::fillDescBuf( const JagSchema *schema, const JagColum
 			res += buf;
 		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
 			if ( srid > 0 ) {
-				AbaxDataString s = JagParser::getFieldTypeString( srid );
+				Jstr s = JagParser::getFieldTypeString( srid );
 				sprintf( buf, "range(%s)", s.c_str() );
 			} else {
 				sprintf( buf, "range" );
@@ -12803,21 +12805,21 @@ AbaxDataString JagDBServer::fillDescBuf( const JagSchema *schema, const JagColum
 			sprintf( buf, "file" );
 			res += buf;
 		} else if ( column.spare[1] == JAG_C_COL_TYPE_ENUM_CHAR ) {
-			AbaxDataString defvalStr;
-			AbaxDataString enumstr =  "enum(";
+			Jstr defvalStr;
+			Jstr enumstr =  "enum(";
 			schema->getAttrDefVal( dbcol, defvalStr );
 			JagStrSplitWithQuote sp( defvalStr.c_str(), '|' );
 			for ( int k = 0; k < sp.length()-1; ++k ) {
 				if ( 0 == k ) {
 					enumstr += sp[k];
 				} else {
-					enumstr += AbaxDataString(",") + sp[k];
+					enumstr += Jstr(",") + sp[k];
 				}
 			}
 			if ( *(column.spare+4) == JAG_CREATE_DEFINSERTVALUE ) {
 				enumstr += ")";
 			} else {
-				enumstr += AbaxDataString(",") + sp[sp.length()-1] + ")";;
+				enumstr += Jstr(",") + sp[sp.length()-1] + ")";;
 			}
 			res += enumstr;
 		} else if ( type == JAG_C_COL_TYPE_STR ) {
@@ -12834,9 +12836,9 @@ AbaxDataString JagDBServer::fillDescBuf( const JagSchema *schema, const JagColum
 int JagDBServer::processSelectConstData( const JagRequest &req, const JagParseParam *parseParam )
 {
         JagRecord rec;
-		AbaxDataString asName;
+		Jstr asName;
     	int  typeMode;
-    	AbaxDataString type;
+    	Jstr type;
     	int length;
     	ExpressionElementNode *root; 
 		int cnt = 0;

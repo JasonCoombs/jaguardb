@@ -429,9 +429,9 @@ void testrayrecord()
 	rec2.print();
 	**/
 	JagRecord rec;
-	AbaxDataString n = "innerrings(polygon((0 0, 22 44, 98 12, 0 0), (9 3 , 9 0, 82 83, 9 3 ))) dkdjdjdd djdd jdkdjkdjkdjkd djkdjdk djdjd jdkdjdkj";
-	//AbaxDataString n = "innerrings(polygon((0 0, 22 44,";
-	AbaxDataString v = "CJAG=0=0=PL=d 9.0:0.0:82.0:83.0 9.0:3.0 9.0:0.0 82.0:83.0 9.0:3.0 03jejde9 jdkv njvneje fj vvj eij ehehfnffffffffffff jeihej ee ene eeneddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd==";
+	Jstr n = "innerrings(polygon((0 0, 22 44, 98 12, 0 0), (9 3 , 9 0, 82 83, 9 3 ))) dkdjdjdd djdd jdkdjkdjkdjkd djkdjdk djdjd jdkdjdkj";
+	//Jstr n = "innerrings(polygon((0 0, 22 44,";
+	Jstr v = "CJAG=0=0=PL=d 9.0:0.0:82.0:83.0 9.0:3.0 9.0:0.0 82.0:83.0 9.0:3.0 03jejde9 jdkv njvneje fj vvj eij ehehfnffffffffffff jeihej ee ene eeneddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd==";
 	int nc = rec.addNameValue( n.c_str(), v.c_str() );
 	prt(("s1728 nc=%d\n",  nc ));
 	prt(("s1728 src=[%s]\n", rec.getSource() ));
@@ -448,7 +448,7 @@ void testrayrecord()
 	/***
 	std::stringstream ifs;
 	ifs << boost::geometry::wkt(output);
-	AbaxDataString out;
+	Jstr out;
 	out = ifs.str().c_str();
 	***/
 }
@@ -458,7 +458,7 @@ void testwheretree()
 	/**
     BinaryOpNode *root;
     BinaryExpressionBuilder b;
-    AbaxDataString expression = "1=1 and f=2 or ( 2=2 and f=3) or ( b in ( 1,2) )";
+    Jstr expression = "1=1 and f=2 or ( 2=2 and f=3) or ( b in ( 1,2) )";
 	cout << expression << endl;
     try {
 		JagVector<OneNameAttribute> onetable;
@@ -547,9 +547,9 @@ time_t my_convert_utc_tm_to_time_t (struct tm *tm)
 void testlaststr()
 {
 	bool rc;
-	AbaxDataString s1 = "hello world";
-	AbaxDataString s2 = "world";
-	AbaxDataString s3 = "World";
+	Jstr s1 = "hello world";
+	Jstr s2 = "world";
+	Jstr s3 = "World";
 
 	rc = lastStrEqual(s1.c_str(), s2.c_str(), 12, 4 );
 	if ( rc ) {
@@ -562,7 +562,7 @@ void testlaststr()
 #if 0
 void testjaguarreader()
 {
-    AbaxDataString getstr = "";
+    Jstr getstr = "";
     int getint = 0;
     abaxint getlong = 0;
     float getfloat = 0.0;
@@ -597,7 +597,7 @@ void testjaguarreader()
 
 void testjaguarreader2()
 {
-    AbaxDataString getstr;
+    Jstr getstr;
     int getint = 0;
     abaxint getlong = 0;
     float getfloat = 0.0;
@@ -621,25 +621,25 @@ void testjaguarreader2()
 void testUUID()
 {
 	JagUUID uuid;
-	AbaxDataString getstr = uuid.getString();
+	Jstr getstr = uuid.getString();
 	printf("get uuid string [%s] length [%d]\n", getstr.c_str(), strlen(getstr.c_str()));
 }
 
 void testStrSplitWQuote()
 {
-	AbaxDataString teststr("select * from u1 where (uid = 10 or uid=20); insert into u1 ( uid, addr ) values ( '12435', 'hello;world' ) ; select * from u1 where uid > 100;");
+	Jstr teststr("select * from u1 where (uid = 10 or uid=20); insert into u1 ( uid, addr ) values ( '12435', 'hello;world' ) ; select * from u1 where uid > 100;");
 	printf("str [%s]\n", teststr.c_str());
 	JagStrSplitWithQuote splitwq(teststr.c_str(), ';');
 	splitwq.print();
 	printf("len [%d]\n\n", splitwq.length());
 
-	AbaxDataString teststr2("   select * from u1 where uid = 10; ; select * from u1 where uid > 100 or ( uid < 20)");
+	Jstr teststr2("   select * from u1 where uid = 10; ; select * from u1 where uid > 100 or ( uid < 20)");
 	printf("str [%s]\n", teststr2.c_str());
 	JagStrSplitWithQuote splitwq2(teststr2.c_str(), ';');
 	splitwq2.print();
 	printf("len [%d]\n\n", splitwq2.length());
 
-	AbaxDataString teststr3(" create table t123 (key: a int, value: b int, c linestring(43), d polygon, e enum('a', 'b', 'c'), f point3d, ); ");
+	Jstr teststr3(" create table t123 (key: a int, value: b int, c linestring(43), d polygon, e enum('a', 'b', 'c'), f point3d, ); ");
 	printf("str [%s]\n", teststr3.c_str());
 	JagStrSplitWithQuote splitwq3(teststr3.c_str(), ',');
 	splitwq3.print();
@@ -688,10 +688,10 @@ int test_obj( int N)
 
 	clock.start();
 	for ( int i = 0; i < N; ++i ) {
-		AbaxDataString s(buf);
+		Jstr s(buf);
 	}
 	clock.stop();
-	printf("%d  AbaxDataString=%d usec \n", N,  clock.elapsedusec() );
+	printf("%d  Jstr=%d usec \n", N,  clock.elapsedusec() );
 
 
 	srand(10);
@@ -985,7 +985,7 @@ int test_time( )
 int test_vec( int max )
 {
 	for ( int i = 0; i < max; ++i ) {
-		JagVector<AbaxDataString> vec;
+		JagVector<Jstr> vec;
 		vec.append( "jkjdkjdjkdjfdf d" );
 	}
 }
@@ -1240,10 +1240,10 @@ int test_misc()
 
 	char onemax = 255;
 	printf("%c %d  %d  %d  %d %d\n", *buf, *buf, *buf == 255, *buf == '\255', *buf == onemax , *buf == -1 );
-	AbaxDataString s = "\"thisifdkfd\"";
-	AbaxDataString s2 = trimHeadChar(s, '"');
-	AbaxDataString s1 = trimTailChar(s, '"');
-	AbaxDataString s3 = trimChar(s, '"');
+	Jstr s = "\"thisifdkfd\"";
+	Jstr s2 = trimHeadChar(s, '"');
+	Jstr s1 = trimTailChar(s, '"');
+	Jstr s3 = trimChar(s, '"');
 	printf("s=[%s]  nohead=[%s]  notail=[%s]  noheadtail=[%s]\n", s.c_str(), s2.c_str(), s1.c_str(), s3.c_str() );
 
 	s = "\"\"\"";
@@ -1253,11 +1253,11 @@ int test_misc()
 	printf("s=[%s]  nohead=[%s]  notail=[%s]  noheadtail=[%s]\n", s.c_str(), s2.c_str(), s1.c_str(), s3.c_str() );
 
 	JagUUID uuid;
-	AbaxDataString str1 = uuid.getString();
+	Jstr str1 = uuid.getString();
 	printf("uuid=%s\n", str1.c_str() );
 
 
-	AbaxDataString str = "||a||b|c||";
+	Jstr str = "||a||b|c||";
 	JagStrSplit split( str, '|', true );
 	for ( int i =0 ; i < split.length(); ++i ) {
 		printf("i=%d  strplit=[%s]\n", i, split[i].c_str() );
@@ -1284,7 +1284,7 @@ int test_misc()
 	free( md5 );
 
 
-	AbaxDataString fdir = "/tmp/a/b/c/d";
+	Jstr fdir = "/tmp/a/b/c/d";
 	JagFileMgr::makedirPath ( fdir );
 	printf("mkdir %s \n", fdir.c_str() );
 
@@ -1445,14 +1445,14 @@ void test_fixblockindex()
 
 void test_compress()
 {
-	AbaxDataString src = "insert into jbench values ( kkkkk1, 2vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv2 )";
-	// AbaxDataString src = "desc t1";
+	Jstr src = "insert into jbench values ( kkkkk1, 2vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv2 )";
+	// Jstr src = "desc t1";
 
 	JagClock clock;
 	clock.start();
 	int n = 10000;
 
-	AbaxDataString comp, dest;
+	Jstr comp, dest;
 	for ( int i = 0; i < n; ++i ) {
 		JagFastCompress::compress( src, comp );
     	JagFastCompress::uncompress( comp, dest );
@@ -1479,12 +1479,12 @@ void test_compress()
 
 	src="PYOrg4qTQIbymMSjmQDB4hMRcNQqRwxG,\0sl7GqwxecGMzsCQM,\0stnxK8oVTcjKGQo6,cuMA0hMcXyJn8z9A";
 	JagFastCompress::compress( src, comp );
-	AbaxDataString uncomp;
+	Jstr uncomp;
 	JagFastCompress::uncompress( comp, uncomp );
 	printf(" src=[%s] uncomp=[%s]\n", src.c_str(), uncomp.c_str() );
 	printf("srclen=%d   --> compressed len=%d  ucomlen=%d\n", src.size(), comp.size(), uncomp.size() );
 
-	src=AbaxDataString("PYOrg4qTQIbymMSjmQDB4hMRcNQqRwxG,NULL...\0sl7GqwxecGMzsCQM,\0stnxK8oVTcjKGQo6,cuMA0hMcXyJn8z9A", 80 );
+	src=Jstr("PYOrg4qTQIbymMSjmQDB4hMRcNQqRwxG,NULL...\0sl7GqwxecGMzsCQM,\0stnxK8oVTcjKGQo6,cuMA0hMcXyJn8z9A", 80 );
 	JagFastCompress::compress( src, comp );
 	JagFastCompress::uncompress( comp, uncomp );
 	printf(" src=[%s] uncomp=[%s]\n", src.c_str(), uncomp.c_str() );
@@ -1512,8 +1512,8 @@ void test_compress()
 	printf("srclen=%d   --> compressed len=%d  ucomlen=%d\n", src.size(), comp.size(), uncomp.size() );
 
 
-	AbaxDataString instr;
-	AbaxDataString outstr;
+	Jstr instr;
+	Jstr outstr;
 
 	AbaxString rd;
 	int len = 10000;
@@ -1634,7 +1634,7 @@ void test_boundfile()
 	bf.close();
 	
 	bf.openRead();
-	JagVector<AbaxDataString> vec;
+	JagVector<Jstr> vec;
 	bf.readLines( 20, vec );
 	for ( int i = 0; i < vec.length(); ++ i ) {
 		printf("s1922 line=[%s]\n", vec[i].c_str() );
@@ -1734,11 +1734,11 @@ void test_localdiskhash( int N )
 /*****
 void test_diskarrayclient( int N )
 {
-	AbaxDataString fpath = AbaxDataString(getenv("HOME")) + "/commit/DiskArrayClient";
+	Jstr fpath = Jstr(getenv("HOME")) + "/commit/DiskArrayClient";
 	JagSchemaRecord record;
 	int KLEN = 16;
 	int VLEN = 32;
-	AbaxDataString s = record.makeSimpleSchema( "uid", 16, "addr", 32 );
+	Jstr s = record.makeSimpleSchema( "uid", 16, "addr", 32 );
 	record.parseRecord( s.c_str() );
 	JagDiskArrayClient *darr = new JagDiskArrayClient( fpath, &record);
 
@@ -1774,7 +1774,7 @@ void test_diskarrayclient( int N )
 
 void test_jagarray( int N )
 {
-	AbaxDataString s1, s2;
+	Jstr s1, s2;
 
 	printf("test_jagarray N=%d\n", N );
 	JagArray<AbaxPair<AbaxInt, AbaxInt> > jar;
@@ -1833,8 +1833,8 @@ void test_malloc( int N )
 
 void test_filefamily()
 {
-	AbaxDataString fullpath = "/tmp";
-	AbaxDataString fam = JagFileMgr::getFileFamily( fullpath, "t123.jdb" );
+	Jstr fullpath = "/tmp";
+	Jstr fam = JagFileMgr::getFileFamily( fullpath, "t123.jdb" );
 	prt(("fam=[%s]\n", fam.c_str() ));
 
 	fam = JagFileMgr::getFileFamily( fullpath, "t123.idx.jdb" );
@@ -1844,9 +1844,9 @@ void test_filefamily()
 
 void test_sqlmerge_reader()
 {
-	AbaxDataString files = "a1.sql|a2.sql|a3.sql";
+	Jstr files = "a1.sql|a2.sql|a3.sql";
 	JagSQLMergeReader mrdr( files );
-	AbaxDataString sql;
+	Jstr sql;
 
 	while ( mrdr.getNextSQL( sql ) ) {
 		prt(("sql=[%s]\n", sql.c_str() ));
@@ -1855,8 +1855,8 @@ void test_sqlmerge_reader()
 
 void test_escape()
 {
-	AbaxDataString instr = "hihi\n2222\n333\n\n";
-	AbaxDataString out;
+	Jstr instr = "hihi\n2222\n333\n\n";
+	Jstr out;
 	escapeNewline( instr, out );
 	printf("instr=[%s]\n", instr.c_str() );
 	printf("out=[%s]\n", out.c_str() );
@@ -1875,7 +1875,7 @@ void test_keychecker( int N )
    	JagKeyChecker * _keyChecker = new JagKeyChecker();
    	for ( int i = 0; i < N; ++i ) {
    		AbaxString str  = AbaxString::randomValue(30);
-   		AbaxFixString k  = AbaxDataString( str.c_str() );
+   		AbaxFixString k  = Jstr( str.c_str() );
    		_keyChecker->addKeyValue( k, vstr );
    	}
 
@@ -2234,9 +2234,9 @@ void test_jaghashmap_nofix ( int N )
 {
 	JagClock clock;
 	clock.start();
-	JagHashMap<AbaxString, AbaxDataString> *map = new JagHashMap<AbaxString,AbaxDataString>();
+	JagHashMap<AbaxString, Jstr> *map = new JagHashMap<AbaxString,Jstr>();
 	AbaxString rs;
-	AbaxDataString v("aa");
+	Jstr v("aa");
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(20);
 		map->addKeyValue(rs, v );
@@ -2256,7 +2256,7 @@ void test_jagunordmap ( int N )
 {
 	JagClock clock;
 	clock.start();
-	JagUnordMap<AbaxDataString, AbaxFixString> *map = new JagUnordMap<AbaxDataString, AbaxFixString>();
+	JagUnordMap<Jstr, AbaxFixString> *map = new JagUnordMap<Jstr, AbaxFixString>();
 	AbaxString rs;
 	AbaxFixString v("aa", 2, 1 );
 	for ( int i = 0; i < N; ++i ) {
@@ -2277,9 +2277,9 @@ void test_jagunordmap_nofix ( int N )
 {
 	JagClock clock;
 	clock.start();
-	JagUnordMap<AbaxDataString, AbaxDataString> *map = new JagUnordMap<AbaxDataString, AbaxDataString>();
+	JagUnordMap<Jstr, Jstr> *map = new JagUnordMap<Jstr, Jstr>();
 	AbaxString rs;
-	AbaxDataString v("aa");
+	Jstr v("aa");
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(20);
 		map->addKeyValue( rs.c_str(), v );
@@ -2301,12 +2301,12 @@ void test_stdhashmap ( int N )
 {
 	JagClock clock;
 	clock.start();
-	std::unordered_map<AbaxDataString,AbaxFixString> *map = new std::unordered_map< AbaxDataString,AbaxFixString>();
+	std::unordered_map<Jstr,AbaxFixString> *map = new std::unordered_map< Jstr,AbaxFixString>();
 	AbaxString rs;
 	AbaxFixString v("aa", 2, 1 );
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(20);
-		map->insert( std::make_pair<AbaxDataString,AbaxFixString>( AbaxDataString(rs.c_str()), v) );
+		map->insert( std::make_pair<Jstr,AbaxFixString>( Jstr(rs.c_str()), v) );
 	}
 	clock.stop();
 	printf("%d  StdHashMap(addKeyValue)=%d msec \n", N,  clock.elapsed() );
@@ -2353,7 +2353,7 @@ void test_stdmap ( int N )
 void test_jagfixhasharray ( int N )
 {
 	JagFixHashArray *map = new JagFixHashArray(20, 2);
-	AbaxDataString save[N];
+	Jstr save[N];
 
 	JagClock clock;
 	clock.start();
@@ -2533,8 +2533,8 @@ void test_jag_getline()
 void test_reply ( const char *inputFile )
 {
 	/***
-	JagVector<AbaxDataString> xvec, yvec;
-	AbaxDataString xname, yname;
+	JagVector<Jstr> xvec, yvec;
+	Jstr xname, yname;
 	bool xisvalue;
 	readInputFile( inputFile, xname, yname, xvec, yvec, xisvalue );
 	for ( int i = 0; i < xvec.length(); ++i ) {
@@ -2568,9 +2568,9 @@ void test_str( int N )
 	}
 	printf("\n" );
 
-	AbaxDataString ss = "hello worldidifjdjdjfjd 0jjfdjfd hahah";
-	AbaxDataString enc1 =  abaxEncodeBase64( ss );
-	AbaxDataString ss2 =  abaxDecodeBase64( enc1 );
+	Jstr ss = "hello worldidifjdjdjfjd 0jjfdjfd hahah";
+	Jstr enc1 =  abaxEncodeBase64( ss );
+	Jstr ss2 =  abaxDecodeBase64( enc1 );
 	prt(("ss=[%s]\n", ss.c_str() ));
 	prt(("base64 enc-dec: ss2=[%s]\n", ss2.c_str() ));
 
@@ -2601,22 +2601,22 @@ void test_str( int N )
 	p = KMPstrstr("come", "come" );
 	prt(("come=[%s]\n", p ));
 
-	AbaxDataString h1= "jaaj ";
-	AbaxDataString h2= "xxxxx ";
-	AbaxDataString h3 = h1 + "|" + h2;
+	Jstr h1= "jaaj ";
+	Jstr h2= "xxxxx ";
+	Jstr h3 = h1 + "|" + h2;
 	prt(("h3=[%s]\n", h3.c_str() ));
 
 	JagClock clock;
 	clock.start();
 	for ( int i=0; i < N; ++i ) {
-		AbaxDataString h = "903jjfkdjf kfdjfjd fdjf94jff jjfk djf df fjdjfdjf djf dj  fjd fjdkkfjdjf9rjfkdjfdk fjdkfjdf df d";
-		AbaxDataString d = "jdjdjfkd fjdkfjdjfdkfjdkjfd jkfdfjdjfdjfkdjfk djfdkjfkdjkfdjkfjdkjf djfkdjkf dkfjdk fkdjfkdj fdj fd";
-		AbaxDataString s = h + d;
-		AbaxDataString g;
+		Jstr h = "903jjfkdjf kfdjfjd fdjf94jff jjfk djf df fjdjfdjf djf dj  fjd fjdkkfjdjf9rjfkdjfdk fjdkfjdf df d";
+		Jstr d = "jdjdjfkd fjdkfjdjfdkfjdkjfd jkfdfjdjfdjfkdjfk djfdkjfkdjkfdjkfjdkjf djfkdjkf dkfjdk fkdjfkdj fdj fd";
+		Jstr s = h + d;
+		Jstr g;
 		g = h;
 	}
 	clock.stop();
-	prt(("AbaxDataString init + = took %d millisec\n", clock.elapsed() ));
+	prt(("Jstr init + = took %d millisec\n", clock.elapsed() ));
 
 	clock.start();
 	for ( int i=0; i < N; ++i ) {
@@ -2630,17 +2630,17 @@ void test_str( int N )
 	prt(("std::string init + = took %d millisec\n", clock.elapsed() ));
 
 
-	AbaxDataString  c1 = "0000000000003.45000000000";
-	AbaxDataString  a2 = "3.0";
-	AbaxDataString  a3 = "4";
+	Jstr  c1 = "0000000000003.45000000000";
+	Jstr  a2 = "3.0";
+	Jstr  a3 = "4";
 	prt(("a1=[%s] a1len=%d a2=[%s] a3=[%s]\n", c1.c_str(), c1.size(), a2.c_str(), a3.c_str() ));
 	c1.trimEndZeros();
 	a2.trimEndZeros();
 	a3.trimEndZeros();
 	prt(("after trimend0 a1=[%s] a1len=%d a2=[%s] a3=[%s]\n", c1.c_str(), c1.size(), a2.c_str(), a3.c_str() ));
 
-	AbaxDataString q1 = "all(ls )";
-	AbaxDataString nm = q1.substr('(', ')');
+	Jstr q1 = "all(ls )";
+	Jstr nm = q1.substr('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
@@ -2691,16 +2691,16 @@ void test_str( int N )
 		prt(("hi=[%s]\n", ps ));
 	}
 
-	AbaxDataString s3[3];
+	Jstr s3[3];
 	s3[0] = "OJAG=0=test.pol2.ls=LS 0.0:0.0:500.0:600.0 ";
 	prt(("before s3=[%s]\n", s3[0].c_str() ));
 	char bf[234];
 	sprintf(bf, " 500.0:600.0" );
 	//s3 += bf; 
-	s3[0]  += AbaxDataString(bf);
+	s3[0]  += Jstr(bf);
 	prt(("after s3=[%s]\n", s3[0].c_str() ));
 
-	AbaxDataString a1 = "00000000.2222000000";
+	Jstr a1 = "00000000.2222000000";
 	prt(("old a1=%s\n", a1.c_str() ));
 	a1.trimEndZeros();
 	prt(("a1=%s\n", a1.c_str() ));
@@ -2849,7 +2849,7 @@ void writefloat( const char *str, abaxint len, FILE *outf )
 
 void test_split( int n )
 {
-	AbaxDataString s= "1234:93939";
+	Jstr s= "1234:93939";
 	double x,y;
 	char *p;
 	const char *str;
@@ -3151,7 +3151,7 @@ void test_json( int N )
 		prt(("LEN123 is null\n" ));
 	}
 
-	AbaxDataString obj="OJAG=0=test.pol2.po2";
+	Jstr obj="OJAG=0=test.pol2.po2";
 	JagStrSplit sp(obj, '=');
 
 	//const char *sstr = "0.0:0.0:500.0:600.0 0.0:0.0 20.0:0.0 8.0:9.0 0.0:0.0| 1.0:2.0 2.0:3.0 1.0:2.0";
@@ -3159,8 +3159,8 @@ void test_json( int N )
 
 	const char *str = "0.0:0.0:500.0:600.0 0.0:0.0 20.0:0.0 8.0:9.0 0.0:0.0| 1.0:2.0 2.0:3.0 1.0:2.0|2:3 9:0 2:4 20:399";
 
-	//AbaxDataString json= JagGeo::makeJsonPolygon("Polygon", sp, str, true );
-	AbaxDataString json= JagGeo::makeJsonPolygon("Polygon", sp, str, false );
+	//Jstr json= JagGeo::makeJsonPolygon("Polygon", sp, str, true );
+	Jstr json= JagGeo::makeJsonPolygon("Polygon", sp, str, false );
 	prt(("json=[%s]\n", json.c_str() ));
 
 	const char *js = "{\"type\":\"Polygon\",\"coordinates\":[[[0.0,0.0],[\"20.0\",\"0.0\"],[\"8.0\",\"9.0\"],[\"0.0\",\"0.0\"]],[[\"1.0\",\"2.0\"],[\"2.0\",\"3.0\"],[\"1.0\",\"2.0\"]],[[\"2\",\"3\"],[\"9\",\"0\"],[\"2\",\"4\"],[\"20\",\"399\"]]]}";
@@ -3227,7 +3227,7 @@ void test_linefile( int n )
 	ff.startRead();
 
 	int cnt = 0;
-	AbaxDataString line;
+	Jstr line;
 	while ( ff.getLine( line ) ) {
 		prt(("line=[%s]\n", line.c_str() ));
 		++ cnt;

@@ -468,7 +468,8 @@
 #define JAG_FUNC_INTERSECTION   278  // intersection (geo) of two geoms
 #define JAG_FUNC_TOPOLYGON      279  // convert vector 2D shapes to 2d polygon
 #define JAG_FUNC_ASTEXT         280  // sent to client as text of geom
-#define JAG_FUNC_DIFFERENCE     281  // diffeence of two geoms
+#define JAG_FUNC_DIFFERENCE     281  // diffeence of two geoms  g1 - (g1 common g2)
+#define JAG_FUNC_SYMDIFFERENCE  282  // g1+g2 - (g1 common g2)
 
 
 // multi-line data ( string functions )

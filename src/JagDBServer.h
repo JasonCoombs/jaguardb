@@ -72,15 +72,15 @@ class JagDBServer
 
 	int processSignal( int signal );
 	int getReplicateStatusMode( char *pmesg, int replicateType=-1 );
-	int fileTransmit( const AbaxDataString &host, unsigned int port, const AbaxDataString &passwd, 
-		const AbaxDataString &unixSocket, int mode, const AbaxDataString &fpath, int isAddCluster );
+	int fileTransmit( const Jstr &host, unsigned int port, const Jstr &passwd, 
+		const Jstr &unixSocket, int mode, const Jstr &fpath, int isAddCluster );
 	int checkDeltaFileStatus();	
-	void organizeCompressDir( int mode, AbaxDataString &fpath );
+	void organizeCompressDir( int mode, Jstr &fpath );
 	void crecoverRefreshSchema( int mode );
 	void recoveryFromTransferredFile();
 	void onlineRecoverDeltaLog();
 	void requestSchemaFromDataCenter();
-	AbaxDataString getBroadCastRecoverHosts( int replicateCopy );
+	Jstr getBroadCastRecoverHosts( int replicateCopy );
 
 	
 	// "_" server cmds
@@ -116,9 +116,9 @@ class JagDBServer
 	void shutDown( const char *pmesg, const JagRequest &req );
 
 	void joinRequestSend( const char *pmesg, const JagRequest &req );
-	void reconnectDataCenter( const AbaxDataString &ip, bool doLock = true );
-	bool dbExist( const AbaxDataString &dbName, int replicateType );
-	bool objExist( const AbaxDataString &dbname, const AbaxDataString &objName, int replicateType );
+	void reconnectDataCenter( const Jstr &ip, bool doLock = true );
+	bool dbExist( const Jstr &dbName, int replicateType );
+	bool objExist( const Jstr &dbname, const Jstr &objName, int replicateType );
 	
 
 
@@ -172,12 +172,12 @@ class JagDBServer
 	abaxint		_jdbMonitorTimedoutPeriod;
 	abaxint		_hashRebalanceLen;
 	uabaxint		_xferInsert;
-	AbaxDataString		_version;
-	AbaxDataString		_localInternalIP;
-	AbaxDataString	    _listenIP;
-	AbaxDataString      _perfFile;
-	AbaxDataString      _servToken;
-	static  AbaxDataString	_allLockToken;
+	Jstr		_version;
+	Jstr		_localInternalIP;
+	Jstr	    _listenIP;
+	Jstr      _perfFile;
+	Jstr      _servToken;
+	static  Jstr	_allLockToken;
 	// other members
 	JagCfg				*_cfg;
 	JDFSMgr				*jdfsMgr;
@@ -209,30 +209,30 @@ class JagDBServer
 	// static methods		
 	static int checkNonStandardCommandValidation( const char *mesg );
 	static int checkSimpleCommandValidation( const char *mesg );
-	static int createTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, JagParseParam *parseParam, 
-		AbaxDataString &reterr, abaxint threadQueryTime );
-    static int createMemTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, JagParseParam *parseParam, 
-		AbaxDataString &reterr, abaxint threadQueryTime );
-	static int createIndex( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, JagParseParam *parseParam, 
-		JagTable *&ptab, JagIndex *&pindex, AbaxDataString &reterr, abaxint threadQueryTime );
-    static int createIndexSchema( const JagRequest &req, JagDBServer *servobj, JagTable* ptab, const AbaxDataString &dbname, 
-		JagParseParam *parseParam, AbaxDataString &reterr );
-	static int dropTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-		JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime );
-	static int dropIndex( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-		JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime );
-	static int truncateTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-		JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime );
-    static int renameColumn( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname, 
-		const JagParseParam *parseParam, AbaxDataString &reterr, abaxint threadQueryTime, abaxint &thrdSchemaTime );
-	static int importTable( JagRequest &req, JagDBServer *servobj, const AbaxDataString &dbname,
-		JagParseParam *parseParam, AbaxDataString &reterr );
-	static int doInsert( JagDBServer *servobj, JagRequest &req, JagParseParam &parseParam, AbaxDataString &reterr, const AbaxDataString &oricmd );
+	static int createTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
+		Jstr &reterr, abaxint threadQueryTime );
+    static int createMemTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
+		Jstr &reterr, abaxint threadQueryTime );
+	static int createIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
+		JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, abaxint threadQueryTime );
+    static int createIndexSchema( const JagRequest &req, JagDBServer *servobj, JagTable* ptab, const Jstr &dbname, 
+		JagParseParam *parseParam, Jstr &reterr );
+	static int dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime );
+	static int dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime );
+	static int truncateTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime );
+    static int renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
+		const JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime, abaxint &thrdSchemaTime );
+	static int importTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname,
+		JagParseParam *parseParam, Jstr &reterr );
+	static int doInsert( JagDBServer *servobj, JagRequest &req, JagParseParam &parseParam, Jstr &reterr, const Jstr &oricmd );
 	static int processMultiCmd( JagRequest &req, const char *mesg, abaxint msglen, JagDBServer *servobj, 
 		abaxint &threadSchemaTime, abaxint &threadHostTime, abaxint threadQueryTime, bool redoOnly, int isReadOrWriteCommand );
-	static int joinObjects( const JagRequest &req, JagDBServer *servobj, JagParseParam *parseParam, AbaxDataString &reterr );
+	static int joinObjects( const JagRequest &req, JagDBServer *servobj, JagParseParam *parseParam, Jstr &reterr );
 	static abaxint processCmd( JagRequest &req, JagDBServer *servobj, const char *cmd, 
-		JagParseParam &parseParam, AbaxDataString &rr, abaxint threadQueryTime, abaxint &threadSchemaTime );
+		JagParseParam &parseParam, Jstr &rr, abaxint threadQueryTime, abaxint &threadSchemaTime );
 	static bool doAuth ( const JagRequest &req, JagDBServer *servobj, char *pmesg, char *&saveptr, 
 		JagSession &session );
 	static bool useDB( const JagRequest &req, JagDBServer *servobj, char *pmesg, char *&saveptr );
@@ -240,30 +240,30 @@ class JagDBServer
     static void helpTopic( const JagRequest &req, const char *topic );
     static void showDatabases(JagCfg *cfg, const JagRequest &req );
     static void showCurrentUser(JagCfg *cfg, const JagRequest &req );
-    static void showCurrentDatabase(JagCfg *cfg, const JagRequest &req, const AbaxDataString &dbname );
+    static void showCurrentDatabase(JagCfg *cfg, const JagRequest &req, const Jstr &dbname );
     static void _showDatabases(JagCfg *cfg, const JagRequest &req );
     static void showTables( const JagRequest &req, const JagParseParam &pparm, const JagTableSchema *tableschema, 
-						    const AbaxDataString &dbname, int objtype );
-    static void _showTables( const JagRequest &req, const JagTableSchema *tableschema, const AbaxDataString &dbname );
+						    const Jstr &dbname, int objtype );
+    static void _showTables( const JagRequest &req, const JagTableSchema *tableschema, const Jstr &dbname );
     static void showIndexes( const JagRequest &req, const JagParseParam &pparm, const JagIndexSchema *indexschema, 
-								const AbaxDataString &dbtable );
+								const Jstr &dbtable );
     static void showAllIndexes( const JagRequest &req, const JagParseParam &pparm, const JagIndexSchema *indexschema, 
-								const AbaxDataString &dbname );
-    static void _showIndexes( const JagRequest &req, const JagIndexSchema *indexschema, const AbaxDataString &dbtable );
+								const Jstr &dbname );
+    static void _showIndexes( const JagRequest &req, const JagIndexSchema *indexschema, const Jstr &dbtable );
     static int  describeTable( int obType, const JagRequest &req, const JagDBServer *servobj, JagTable *ptab, 
 								const JagTableSchema *tableschema, 
-		const AbaxDataString &dbtable, const JagParseParam &parseParam, bool showCreate=false );
+		const Jstr &dbtable, const JagParseParam &parseParam, bool showCreate=false );
     static void _describeTable( const JagRequest &req, JagTable *ptab, const JagDBServer *servobj, 
-								const AbaxDataString &dbtable, int keyOnly );
-    static void sendNameValueData( const JagRequest &req, const AbaxDataString &name, const AbaxDataString &value );
+								const Jstr &dbtable, int keyOnly );
+    static void sendNameValueData( const JagRequest &req, const Jstr &name, const Jstr &value );
     static void sendValueData( const JagParseParam &parseParam, const JagRequest &req );
     static void describeIndex( const JagParseParam &parseParam, const JagRequest &req, const JagDBServer *servobj, 
 								const JagIndexSchema *indexschema, 
-								const AbaxDataString &dbname, const AbaxDataString &indexName, AbaxDataString &reterr );
+								const Jstr &dbname, const Jstr &indexName, Jstr &reterr );
 	static void refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj, abaxint &schtime );
-	static void sendUpDown( const JagRequest &req, JagDBServer* servobj, const AbaxDataString &dbtab );
+	static void sendUpDown( const JagRequest &req, JagDBServer* servobj, const Jstr &dbtab );
 	static void dropAllTablesAndIndexUnderDatabase( const JagRequest &req, JagDBServer* servobj,
-												    JagTableSchema *schema, const AbaxDataString &dbname );
+												    JagTableSchema *schema, const Jstr &dbname );
 	static void dropAllTablesAndIndex( const JagRequest &req, JagDBServer* servobj,
 										JagTableSchema *schema );
 	static void addTask(  uabaxint taskID, JagSession *session, const char *mesg );
@@ -299,18 +299,18 @@ class JagDBServer
 	static void *joinHashStatic( void *ptr );
 	static void *joinRequestStatic( void * ptr );
 	static void *copyDataToNewDCStatic( void * ptr );
-	static AbaxDataString getLocalHostIP( JagDBServer *servobj, const AbaxDataString &allhosts );
-	static AbaxDataString getClusterOpInfo( const JagRequest &req, JagDBServer *servobj);
-	static AbaxDataString srcDestType( int isGate, const AbaxDataString &destType );
-	void   getDestHostPortType( const AbaxDataString &inLine, AbaxDataString& host, AbaxDataString& port, 
-								AbaxDataString& destType );
+	static Jstr getLocalHostIP( JagDBServer *servobj, const Jstr &allhosts );
+	static Jstr getClusterOpInfo( const JagRequest &req, JagDBServer *servobj);
+	static Jstr srcDestType( int isGate, const Jstr &destType );
+	void   getDestHostPortType( const Jstr &inLine, Jstr& host, Jstr& port, 
+								Jstr& destType );
 	void printResources();
 	static void grantPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, abaxint threadQueryTime );
 	static void revokePerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parsParam, abaxint thrdQueryTime );
 	static void showPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, abaxint thrdQueryTime );
 	static bool checkUserCommandPermission( JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
-											const JagParseParam &parseParam, int i, AbaxDataString &rowFilter, 
-											AbaxDataString &reterr );
+											const JagParseParam &parseParam, int i, Jstr &rowFilter, 
+											Jstr &reterr );
 	static void noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam );
 
 
@@ -322,12 +322,12 @@ class JagDBServer
 	int initConfigs(); 
 	int makeThreadGroups( int grps, int grpseq );
 	int eventLoop( const char *port );
-	int copyLocalData( const AbaxDataString &dirname, const AbaxDataString &policy, const AbaxDataString &tmstr, bool show );
-	int schemaChangeCommandSyncCheck( const JagRequest &req, const AbaxDataString &dbobj, abaxint opcode, int isRemove );
-	int schemaChangeCommandSyncRemove( const AbaxDataString &dbobj );
+	int copyLocalData( const Jstr &dirname, const Jstr &policy, const Jstr &tmstr, bool show );
+	int schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr &dbobj, abaxint opcode, int isRemove );
+	int schemaChangeCommandSyncRemove( const Jstr &dbobj );
 	
-	bool isInteralIP( const AbaxDataString &ip );
-	bool existInAllHosts( const AbaxDataString &ip );	
+	bool isInteralIP( const Jstr &ip );
+	bool existInAllHosts( const Jstr &ip );	
 	void initDirs();
 	void checkLicense();
 	void createAdmin();
@@ -336,16 +336,16 @@ class JagDBServer
 	void refreshACL( int bcast );
 	void loadACL( );
 	void checkPoint( uabaxint  seq);
-	void copyData( const AbaxDataString &dirname, bool show=true );
+	void copyData( const Jstr &dirname, bool show=true );
 	void writeLoad( uabaxint  seq );
 	void numDBTables( int &databases, int &tables );
 
 	void resetWalLog();
 	void rotateWalLog();
-	void recoverWalLog( const AbaxDataString &fpath );
+	void recoverWalLog( const Jstr &fpath );
 	void resetDinsertLog();
 	void rotateDinsertLog();
-	void recoverDinsertLog( const AbaxDataString &fpath );
+	void recoverDinsertLog( const Jstr &fpath );
 	void resetDeltaLog();
 	void recoverDeltaLog( JagSession *session, bool force=false );
 	void resetRegSpLog();
@@ -354,12 +354,12 @@ class JagDBServer
 	void flushAllBlockIndexToDisk();
 	void removeAllBlockIndexInDisk();
 	void removeAllBlockIndexInDiskAll( const JagTableSchema *tableschema, const char *datapath );
-	void flushOneTableAndRelatedIndexsInsertBuffer( const AbaxDataString &dbobj, int replicateType, int isTable, 
+	void flushOneTableAndRelatedIndexsInsertBuffer( const Jstr &dbobj, int replicateType, int isTable, 
 		JagTable *iptab, JagIndex *ipindex );
 	void flushAllTableAndRelatedIndexsInsertBuffer();
-	abaxint redoDinsertLog( const AbaxDataString &fpath );
-	abaxint redoLog( const AbaxDataString &fpath );
-	AbaxDataString getTaskIDsByThreadID( abaxint threadID );
+	abaxint redoDinsertLog( const Jstr &fpath );
+	abaxint redoLog( const Jstr &fpath );
+	Jstr getTaskIDsByThreadID( abaxint threadID );
 	JagTableSchema *getTableSchema( int replicateType ) const;
 	void getTableIndexSchema( int replicateType, JagTableSchema *& tableschema, JagIndexSchema *&indexschema );
 	void openDataCenterConnection();
@@ -369,10 +369,10 @@ class JagDBServer
 	int countOtherDataCenters();
 	void refreshDataCenterConnections( abaxint seq );
 	void checkAndCreateThreadGroups();
-	long getDataCenterQueryCount( const AbaxDataString &ip, bool doLock );
+	long getDataCenterQueryCount( const Jstr &ip, bool doLock );
 	void refreshUserDB( abaxint seq );
 	void refreshUserRole( abaxint seq );
-	AbaxDataString  fillDescBuf( const JagSchema *schema, const JagColumn &column, const AbaxDataString &dbobj ) const;
+	Jstr  fillDescBuf( const JagSchema *schema, const JagColumn &column, const Jstr &dbobj ) const;
 	int processSelectConstData( const JagRequest &req, const JagParseParam *parseParam );
 
 
@@ -413,11 +413,11 @@ class JagDBServer
 	
 	// wallog
 	FILE *_fpCommand;
-	AbaxDataString _activeWalFpath;
+	Jstr _activeWalFpath;
 
 	// dinsertlog
 	FILE *_dinsertCommand;
-	AbaxDataString _activeDinFpath;
+	Jstr _activeDinFpath;
 	
 	// replicate delta files
 	// e.g. serv 0,1,2,3,4
@@ -427,42 +427,42 @@ class JagDBServer
 	FILE *_delNextOriCommand; // 3 original on 2 for original delta
 	FILE *_delNextRepCommand; // 2 original to 3 on 2 for replicate delta
 	FILE *_delNextOriRepCommand; // 3 original to 4 on 2 for replicate delta
-	AbaxDataString _actdelPOpath;
-	AbaxDataString _actdelPRpath;
-	AbaxDataString _actdelPORpath;
-	AbaxDataString _actdelNOpath;
-	AbaxDataString _actdelNRpath;
-	AbaxDataString _actdelNORpath;
-	AbaxDataString _actdelPOhost;
-	AbaxDataString _actdelPRhost;
-	AbaxDataString _actdelPORhost;
-	AbaxDataString _actdelNOhost;
-	AbaxDataString _actdelNRhost;
-	AbaxDataString _actdelNORhost;
+	Jstr _actdelPOpath;
+	Jstr _actdelPRpath;
+	Jstr _actdelPORpath;
+	Jstr _actdelNOpath;
+	Jstr _actdelNRpath;
+	Jstr _actdelNORpath;
+	Jstr _actdelPOhost;
+	Jstr _actdelPRhost;
+	Jstr _actdelPORhost;
+	Jstr _actdelNOhost;
+	Jstr _actdelNRhost;
+	Jstr _actdelNORhost;
 
 	// recovery commands log
 	FILE *_recoveryRegCommand;
 	FILE *_recoverySpCommand; 
-	AbaxDataString _recoveryRegCmdPath;
-	AbaxDataString _recoverySpCmdPath;
-	AbaxDataString _crecoverFpath;
-	AbaxDataString _prevcrecoverFpath;
-	AbaxDataString _nextcrecoverFpath;	
+	Jstr _recoveryRegCmdPath;
+	Jstr _recoverySpCmdPath;
+	Jstr _crecoverFpath;
+	Jstr _prevcrecoverFpath;
+	Jstr _nextcrecoverFpath;	
 
-	AbaxDataString _walrecoverFpath;
-	AbaxDataString _prevwalrecoverFpath;
-	AbaxDataString _nextwalrecoverFpath;	
+	Jstr _walrecoverFpath;
+	Jstr _prevwalrecoverFpath;
+	Jstr _nextwalrecoverFpath;	
 
 	JagIPACL       *_blackIPList;
 	JagIPACL       *_whiteIPList;
 	JagDBLogger	   *_dbLogger;
 	pthread_rwlock_t       _aclrwlock;
 
-	AbaxDataString _publicKey;
-	AbaxDataString _privateKey;
+	Jstr _publicKey;
+	Jstr _privateKey;
 	JaguarAPI      *_dataCenter[JAG_DATACENTER_MAX];
 	int			    _numDataCenter;
-	AbaxDataString  _centerHostPort[JAG_DATACENTER_MAX];
+	Jstr  _centerHostPort[JAG_DATACENTER_MAX];
 	bool            _debugClient;
 
 };

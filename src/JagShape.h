@@ -39,6 +39,10 @@ class JagPoint2D
 	 { 
 	 	return ( fabs(x-p2.x) < 0.0000001 && fabs(y - p2.y) < 0.0000001 );
 	 }
+	 int operator!= ( const JagPoint2D &p2 ) const 
+	 { 
+	 	return ( fabs(x-p2.x) > 0.0000001 || fabs(y - p2.y) > 0.0000001 );
+	 }
 
 };
 
@@ -149,6 +153,10 @@ class JagPoint3D
 	 int operator== ( const JagPoint3D &p2 ) const 
 	 { 
 	 	return ( fabs(x-p2.x) < 0.0000001 && fabs(y - p2.y) < 0.0000001 && fabs(z - p2.z ) < 0.0000001 );
+	 }
+	 int operator!= ( const JagPoint3D &p2 ) const 
+	 { 
+	 	return ( fabs(x-p2.x) > 0.0000001 || fabs(y - p2.y) > 0.0000001 || fabs(z - p2.z ) > 0.0000001 );
 	 }
 };
 

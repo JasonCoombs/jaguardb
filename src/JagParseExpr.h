@@ -82,31 +82,31 @@ class ExpressionElementNode
 								const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
 								JagMinMax *minmaxbuf, AbaxFixString &str, int &typeMode, int &tabnum ) = 0;
 	virtual int setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-									int &constMode, int &typeMode, bool &isAggregate, AbaxDataString &type, 
+									int &constMode, int &typeMode, bool &isAggregate, Jstr &type, 
 									int &collen, int &siglen ) = 0;
-	virtual int getFuncAggregate( JagVector<AbaxDataString> &selectParts, JagVector<int> &selectPartsOpcode,
+	virtual int getFuncAggregate( JagVector<Jstr> &selectParts, JagVector<int> &selectPartsOpcode,
 									JagVector<int> &selColSetAggParts, JagHashMap<AbaxInt, AbaxInt> &selColToselParts, 
 									int &nodenum, int treenum ) = 0;
-	virtual int getAggregateParts( AbaxDataString &parts, int &nodenum ) = 0;
+	virtual int getAggregateParts( Jstr &parts, int &nodenum ) = 0;
 	virtual int setAggregateValue( int nodenum, const char *buf, int length ) = 0;
 	virtual int checkFuncValid( JagMergeReaderBase *ntr,  const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-								const char *buffers[], AbaxFixString &str, int &typeMode, AbaxDataString &type, 
+								const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
 								int &length, bool &first, bool useZero, bool setGlobal ) = 0;
-	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length ) = 0;
+	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length ) = 0;
 
 	JagParseAttribute   		_jpa;
 	BinaryExpressionBuilder* 	_builder;
 	bool            			_isElement;
-	AbaxDataString				_name;
+	Jstr				_name;
 	unsigned int				_srid;
-	AbaxDataString				_type;
+	Jstr				_type;
 };
 
 class StringElementNode: public ExpressionElementNode
 {
   public:
 	StringElementNode();
-	StringElementNode( BinaryExpressionBuilder* builder,  const AbaxDataString &name, const AbaxFixString &value, 
+	StringElementNode( BinaryExpressionBuilder* builder,  const Jstr &name, const AbaxFixString &value, 
 					   const JagParseAttribute &jpa, int tabnum, int typeMode=0 ) ;
 	virtual ~StringElementNode();
 	virtual int getBinaryOp() { return 0; }
@@ -120,32 +120,32 @@ class StringElementNode: public ExpressionElementNode
 								const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
 								JagMinMax *minmaxbuf, AbaxFixString &str, int &typeMode, int &tabnum );
 	virtual int setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-								  int &constMode, int &typeMode, bool &isAggregate, AbaxDataString &type, int &collen, int &siglen );
-	virtual int getFuncAggregate( JagVector<AbaxDataString> &selectParts, JagVector<int> &selectPartsOpcode, 
+								  int &constMode, int &typeMode, bool &isAggregate, Jstr &type, int &collen, int &siglen );
+	virtual int getFuncAggregate( JagVector<Jstr> &selectParts, JagVector<int> &selectPartsOpcode, 
 								  JagVector<int> &selColSetAggParts, JagHashMap<AbaxInt, AbaxInt> &selColToselParts, 
 								  int &nodenum, int treenum );
-	virtual int getAggregateParts( AbaxDataString &parts, int &nodenum );
+	virtual int getAggregateParts( Jstr &parts, int &nodenum );
 	virtual int setAggregateValue( int nodenum, const char *buf, int length );
 	virtual int checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-								const char *buffers[], AbaxFixString &str, int &typeMode, AbaxDataString &type, 
+								const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
 								int &length, bool &first, bool useZero, bool setGlobal );
-	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length );
+	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length );
 	void makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[], 
-						 const AbaxDataString &colobjstr, AbaxFixString &str );
+						 const Jstr &colobjstr, AbaxFixString &str );
 	void makeRangeDataString( const JagSchemaAttribute *attrs[], const char *buffers[], 
-						 const AbaxDataString &colobjstr, AbaxFixString &str );
-    void getPolyDataString( JagMergeReaderBase *ntr, const AbaxDataString &polyType, const JagHashStrInt *maps[],
+						 const Jstr &colobjstr, AbaxFixString &str );
+    void getPolyDataString( JagMergeReaderBase *ntr, const Jstr &polyType, const JagHashStrInt *maps[],
 							 const JagSchemaAttribute *attrs[],
 	                         const char *buffers[], AbaxFixString &str );
-    void getPolyData( const AbaxDataString &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
+    void getPolyData( const Jstr &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
 							 const JagSchemaAttribute *attrs[],
 	                         const char *buffers[], AbaxFixString &str, bool is3D );
-    void savePolyData( const AbaxDataString &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
+    void savePolyData( const Jstr &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
 							 const JagSchemaAttribute *attrs[],
-	                         const char *buffers[], const AbaxDataString &uuid, const AbaxDataString &db, const AbaxDataString &tab, 
-							 const AbaxDataString &col, bool isBoundBox3D, bool is3D=false );
+	                         const char *buffers[], const Jstr &uuid, const Jstr &db, const Jstr &tab, 
+							 const Jstr &col, bool isBoundBox3D, bool is3D=false );
 
-	//AbaxDataString		_columns;
+	//Jstr		_columns;
 	AbaxFixString		_value;
 	unsigned int		_tabnum;
 	int					_typeMode;
@@ -157,7 +157,7 @@ class StringElementNode: public ExpressionElementNode
 	unsigned int	_length;
 	unsigned int	_sig;
 
-	// AbaxDataString  _rowUUID;
+	// Jstr  _rowUUID;
 
 };  // end StringElementNode
 
@@ -165,7 +165,7 @@ class BinaryOpNode: public ExpressionElementNode
 {
   public:
 	BinaryOpNode( BinaryExpressionBuilder* builder, short op, ExpressionElementNode *l, ExpressionElementNode *r, 
-					    const JagParseAttribute &jpa, int arg1=0, int arg2=0, AbaxDataString carg1="" );
+					    const JagParseAttribute &jpa, int arg1=0, int arg2=0, Jstr carg1="" );
 	virtual ~BinaryOpNode() {}
 	BinaryOpNode &operator=(const BinaryOpNode& n) {}
 	virtual int getBinaryOp() { return _binaryOp; }
@@ -179,18 +179,18 @@ class BinaryOpNode: public ExpressionElementNode
 								const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
 								JagMinMax *minmaxbuf, AbaxFixString &str, int &typeMode, int &tabnum );
 	virtual int setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-									int &constMode, int &typeMode, bool &isAggregate, AbaxDataString &type, 
+									int &constMode, int &typeMode, bool &isAggregate, Jstr &type, 
 									int &collen, int &siglen );
-	virtual int getFuncAggregate( JagVector<AbaxDataString> &selectParts, JagVector<int> &selectPartsOpcode, 
+	virtual int getFuncAggregate( JagVector<Jstr> &selectParts, JagVector<int> &selectPartsOpcode, 
 									JagVector<int> &selColSetAggParts, JagHashMap<AbaxInt, AbaxInt> &selColToselParts, 
 									int &nodenum, int treenum );
-	virtual int getAggregateParts( AbaxDataString &parts, int &nodenum );
+	virtual int getAggregateParts( Jstr &parts, int &nodenum );
 	virtual int setAggregateValue( int nodenum, const char *buf, int length );
 	virtual int checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-							    const char *buffers[], AbaxFixString &str, int &typeMode, AbaxDataString &type, 
+							    const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
 								int &length, bool &first, bool useZero, bool setGlobal );
-	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, AbaxDataString &type, int &length );
-	static AbaxDataString binaryOpStr( short binaryOp );
+	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length );
+	static Jstr binaryOpStr( short binaryOp );
 	static bool isAggregateOp( short op );
 	static bool isMathOp( short op );
 	static bool isCompareOp( short op );
@@ -203,7 +203,7 @@ class BinaryOpNode: public ExpressionElementNode
 	short					_binaryOp;
 	int						_arg1; // use for substr and datediff (for now)
 	int						_arg2; // use for substr and datediff (for now)
-	AbaxDataString			_carg1; // use for substr and datediff (for now)
+	Jstr			_carg1; // use for substr and datediff (for now)
 	ExpressionElementNode	*_left;
 	ExpressionElementNode	*_right;
 	int						_nodenum; // a number set to distinguish each node of the tree
@@ -216,112 +216,115 @@ class BinaryOpNode: public ExpressionElementNode
 						const JagSchemaAttribute *attrs[], const int numTabs, const int numKeys[] );
 	bool formatColumnData( JagMinMax *minmaxbuf, JagMinMax *iminmaxbuf, const AbaxFixString &value, int tabnum, int minOrMax );
 	bool checkAggregateValid( int lcmode, int rcmode, bool laggr, bool raggr );
-	int formatAggregateParts( AbaxDataString &parts, AbaxDataString &lparts, AbaxDataString &rparts );
+	int formatAggregateParts( Jstr &parts, Jstr &lparts, Jstr &rparts );
 	int _doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, int ltmode, int rtmode, int ltabnum, int rtabnum,
 						JagMinMax *minmaxbuf, JagMinMax *lminmaxbuf, JagMinMax *rminmaxbuf, 
 						AbaxFixString &str, AbaxFixString &lstr, AbaxFixString &rstr );
 	int _doCalculation( AbaxFixString &lstr, AbaxFixString &rstr, 
-						int &ltmode, int &rtmode, const AbaxDataString& ltype,  const AbaxDataString& rtype, 
+						int &ltmode, int &rtmode, const Jstr& ltype,  const Jstr& rtype, 
 						int llength, int rlength, bool &first );	
 
-	bool processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &carg );
-	AbaxDataString  processTwoStrOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &carg );
-	bool processStringOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &carg, AbaxDataString &res );
-	bool processSingleDoubleOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, double &val );
-	bool processSingleStrOp( int op, const AbaxFixString &lstr, const AbaxDataString &carg, AbaxDataString &val );
-	bool doBooleanOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, 
-							 const JagStrSplit &sp2, const AbaxDataString &carg );
-	AbaxDataString doTwoStrOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, 
-							 const JagStrSplit &sp2, const AbaxDataString &carg );
-	bool doStringOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, 
-							 const JagStrSplit &sp2, const AbaxDataString &carg, AbaxDataString &res );
-	bool doSingleDoubleOp( int op, const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString &carg, double &val );
-	bool doSingleStrOp( int op, const AbaxDataString& mark1, const AbaxDataString& hdr, const AbaxDataString &colType1, int srid1, 
-						const JagStrSplit &sp1, const AbaxDataString &carg, AbaxDataString &val );
+	bool processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg );
+	Jstr  processTwoStrOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg );
+	bool processStringOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg, Jstr &res );
+	bool processSingleDoubleOp( int op, const AbaxFixString &lstr, const Jstr &carg, double &val );
+	bool processSingleStrOp( int op, const AbaxFixString &lstr, const Jstr &carg, Jstr &val );
+	bool doBooleanOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, 
+							 const JagStrSplit &sp2, const Jstr &carg );
+	Jstr doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, 
+							 const JagStrSplit &sp2, const Jstr &carg );
+	bool doStringOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, 
+							 const JagStrSplit &sp2, const Jstr &carg, Jstr &res );
+	bool doSingleDoubleOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr &carg, double &val );
+	bool doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, const Jstr &colType1, int srid1, 
+						const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 
-	bool doAllWithin( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+	bool doAllWithin( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
 							 bool strict=true );
-	bool doAllSame( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-	bool doAllClosestPoint( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
-							 AbaxDataString &res );
-	bool doAllAngle2D( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
-							 AbaxDataString &res );
-	bool doAllAngle3D( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
-							 AbaxDataString &res );
-	bool doAllIntersect( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+	bool doAllSame( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+	bool doAllClosestPoint( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+							 Jstr &res );
+	bool doAllAngle2D( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+							 Jstr &res );
+	bool doAllAngle3D( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+							 Jstr &res );
+	bool doAllIntersect( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
 							 bool strict=true );
-	bool doAllNearby( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-							 const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
-							 const AbaxDataString &carg );
-	bool doAllArea( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
-	bool doAllPerimeter( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
-	bool doAllVolume( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, double &val );
-	bool doAllMinMax( int op, const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, double &val );
-	bool doAllPointN( const AbaxDataString& mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, 
-					  const AbaxDataString &carg, AbaxDataString &val );
-	bool doAllBBox( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllStartPoint( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllEndPoint( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllConvexHull( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllToPolygon( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg, AbaxDataString &val );
-	bool doAllAsText( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg, AbaxDataString &val );
-	bool doAllOuterRing( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllOuterRings( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllInnerRings( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllBuffer( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg, AbaxDataString &val );
-	bool doAllCentroid( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllIsClosed( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllIsSimple( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllIsValid( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllIsRing( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllIsPolygonCCW( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllIsPolygonCW( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllNumPoints( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllNumSegments( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllNumRings( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllNumInnerRings( const AbaxDataString& mk1, const AbaxDataString &colType1, const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllPolygonN( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-					   const JagStrSplit &sp1, const AbaxDataString& carg, AbaxDataString &val );
-	bool doAllNumPolygons( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-					   const JagStrSplit &sp1, AbaxDataString &val );
-	bool doAllSummary( const AbaxDataString& mk, const AbaxDataString &colType, int srid, const JagStrSplit &sp, AbaxDataString &val );
-	bool doAllInnerRingN( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg,  AbaxDataString &val );
-	bool doAllRingN( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-						  int srid, const JagStrSplit &sp1, const AbaxDataString& carg,  AbaxDataString &val );
-	bool doAllUnique( const AbaxDataString& mk1, const AbaxDataString& hdr, const AbaxDataString &colType1, 
-					   const JagStrSplit &sp1, AbaxDataString &val );
-    AbaxDataString doAllUnion( const AbaxDataString& mark1, const AbaxDataString &colType1,
-				               int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2,
-				               const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-    AbaxDataString doAllCollect( const AbaxDataString& mark1, const AbaxDataString &colType1,
-				               int srid1, const JagStrSplit &sp1, const AbaxDataString& mark2,
-				               const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-    AbaxDataString doAllIntersection( const AbaxDataString& mark1, const AbaxDataString &colType1,
-				               const JagStrSplit &sp1, const AbaxDataString& mark2,
-				               const AbaxDataString &colType2, const JagStrSplit &sp2 );
-    AbaxDataString doAllDifference( const AbaxDataString& mark1, const AbaxDataString &colType1,
-				               const JagStrSplit &sp1, const AbaxDataString& mark2,
-				               const AbaxDataString &colType2, const JagStrSplit &sp2 );
+	bool doAllNearby( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+							 const Jstr &carg );
+	bool doAllArea( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
+	bool doAllPerimeter( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
+	bool doAllVolume( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
+	bool doAllMinMax( int op, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, double &val );
+	bool doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, 
+					  const Jstr &carg, Jstr &val );
+	bool doAllBBox( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllStartPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllEndPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllConvexHull( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, Jstr &val );
+	bool doAllToPolygon( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
+	bool doAllAsText( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
+	bool doAllOuterRing( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, Jstr &val );
+	bool doAllOuterRings( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, Jstr &val );
+	bool doAllInnerRings( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, Jstr &val );
+	bool doAllBuffer( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
+	bool doAllCentroid( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, Jstr &val );
+	bool doAllIsClosed( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllIsSimple( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllIsValid( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllIsRing( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllIsPolygonCCW( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllIsPolygonCW( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllNumPoints( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllNumSegments( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllNumRings( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllNumInnerRings( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllPolygonN( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+					   const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
+	bool doAllNumPolygons( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+					   const JagStrSplit &sp1, Jstr &val );
+	bool doAllSummary( const Jstr& mk, const Jstr &colType, int srid, const JagStrSplit &sp, Jstr &val );
+	bool doAllInnerRingN( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
+	bool doAllRingN( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
+	bool doAllUnique( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+					   const JagStrSplit &sp1, Jstr &val );
+    Jstr doAllUnion( const Jstr& mark1, const Jstr &colType1,
+				               int srid1, const JagStrSplit &sp1, const Jstr& mark2,
+				               const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+    Jstr doAllCollect( const Jstr& mark1, const Jstr &colType1,
+				               int srid1, const JagStrSplit &sp1, const Jstr& mark2,
+				               const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+    Jstr doAllIntersection( const Jstr& mark1, const Jstr &colType1,
+				               const JagStrSplit &sp1, const Jstr& mark2,
+				               const Jstr &colType2, const JagStrSplit &sp2 );
+    Jstr doAllDifference( const Jstr& mark1, const Jstr &colType1,
+				               const JagStrSplit &sp1, const Jstr& mark2,
+				               const Jstr &colType2, const JagStrSplit &sp2 );
+    Jstr doAllSymDifference( const Jstr& mark1, const Jstr &colType1,
+				               const JagStrSplit &sp1, const Jstr& mark2,
+				               const Jstr &colType2, const JagStrSplit &sp2 );
 
 
 
@@ -345,7 +348,7 @@ class BinaryExpressionBuilder
 
 	BinaryOpNode *parse( const JagParser *jagParser, const char* str, int type,
 								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
-								AbaxDataString &colList );
+								Jstr &colList );
 	ExpressionElementNode *getRoot() const;
 	
 	JagParseAttribute _jpa;
@@ -366,12 +369,12 @@ class BinaryExpressionBuilder
 	// methods
 	void processBetween( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
 						const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
-						AbaxDataString &colList );
+						Jstr &colList );
 	void processIn( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
 					const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
-					AbaxDataString &colList );
+					Jstr &colList );
 	void processOperand( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
-						const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, AbaxDataString &colList );
+						const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, Jstr &colList );
 
 	void processOperator( short op, JagHashStrInt &jmap );
 	void processRightParenthesis( JagHashStrInt &jmap );
@@ -383,10 +386,10 @@ class BinaryExpressionBuilder
 	bool funcHasThreeChildren( short fop );
 	bool checkFuncType( short fop );
 	bool getCalculationType( const char *p, short &fop, short &len, short &ctype );
-	bool nameConvertionCheck( AbaxDataString &name, int &tabnum,
+	bool nameConvertionCheck( Jstr &name, int &tabnum,
 								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, 
-								AbaxDataString &colList );
-    bool nameAndOpGood( const JagParser *jpsr, const AbaxDataString &fullname, const StringElementNode &lastNode );
+								Jstr &colList );
+    bool nameAndOpGood( const JagParser *jpsr, const Jstr &fullname, const StringElementNode &lastNode );
 };
 
 #endif

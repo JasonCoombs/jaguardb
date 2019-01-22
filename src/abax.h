@@ -46,6 +46,7 @@
 typedef long long abaxint;
 typedef unsigned long long uabaxint;
 typedef AbaxCStr AbaxDataString;
+typedef AbaxCStr Jstr;
 
 /////////////// Enum Types //////////////////
 enum AbaxType { ABAX_STATIC = 10, ABAX_DYNAMIC = 20 };

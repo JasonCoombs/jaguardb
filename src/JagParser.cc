@@ -37,12 +37,12 @@ JagParser::JagParser( const JagDBServer *srv, const JaguarCPPClient *cli )
 
 
 // return 0: for error, 1: OK
-bool JagParser::parseCommand( const JagParseAttribute &jpa, const AbaxDataString &cmd, JagParseParam *parseParam, 
-							  AbaxDataString &errmsg )
+bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, 
+							  Jstr &errmsg )
 {
 	//prt(("\n**************** parseCommand *****************\n"));
 	int cmdcheck;
-	AbaxDataString em;
+	Jstr em;
 	char *pcmd = strdup(cmd.c_str());
 
 	// prt(("s0823 parseSQL(%s) ...\n", pcmd ));
@@ -50,11 +50,11 @@ bool JagParser::parseCommand( const JagParseAttribute &jpa, const AbaxDataString
 		//cmdcheck = parseSQL( jpa, parseParam, pcmd );
 		cmdcheck = parseSQL( jpa, parseParam, pcmd, cmd.size() );
 	} catch ( int a ) {
-		em = AbaxDataString("Parser exception ") + intToStr( a ) ;
+		em = Jstr("Parser exception ") + intToStr( a ) ;
         cmdcheck = 0;
 		parseParam->parseError = a;
 	} catch ( ... ) {
-		em = AbaxDataString("Parser unknown exception");
+		em = Jstr("Parser unknown exception");
 		cmdcheck = 0;
 		parseParam->parseError = -1000;
 	}
@@ -64,7 +64,7 @@ bool JagParser::parseCommand( const JagParseAttribute &jpa, const AbaxDataString
 	free( pcmd );
 
 	if ( cmdcheck <= 0 ) {
-		errmsg = AbaxDataString("E2028 Error command [") + cmd + "] " + em + " " + intToStr(cmdcheck);
+		errmsg = Jstr("E2028 Error command [") + cmd + "] " + em + " " + intToStr(cmdcheck);
 		parseParam->parseError = cmdcheck;
 		return 0;
 	}
@@ -91,7 +91,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 	init( jpa, parseParam );
 	_cfg = (JagCfg *)jpa.cfg;
 	// abaxint len = strlen(cmd);
-	_ptrParam->origCmd = AbaxDataString(cmd, len);
+	_ptrParam->origCmd = Jstr(cmd, len);
 	_ptrParam->origpos = cmd;
 
 	// remove last whitespace and ; from sql command
@@ -382,7 +382,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 			} else rc = -360;
 		} else rc = -370;
 	} else if ( strcasecmp(_gettok, "alter") == 0 ) {
-		AbaxDataString tabname;
+		Jstr tabname;
 		_ptrParam->opcode = JAG_ALTER_OP;
 		_ptrParam->optype = 'C';
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr); 
@@ -437,7 +437,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 		if ( _gettok ) {
 			_ptrParam->dbName = makeLowerString(_gettok);
-			_ptrParam->dbNameCmd = AbaxDataString("changedb ") + _ptrParam->dbName;
+			_ptrParam->dbNameCmd = Jstr("changedb ") + _ptrParam->dbName;
 			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);		
 			if ( !_gettok ) rc = 1;
 			else rc = -450;
@@ -448,7 +448,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 		if ( _gettok ) {
 			_ptrParam->dbName = makeLowerString(_gettok);
-			_ptrParam->dbNameCmd = AbaxDataString("changedb ") + _ptrParam->dbName;
+			_ptrParam->dbNameCmd = Jstr("changedb ") + _ptrParam->dbName;
 			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 			if ( !_gettok ) rc = 1;
 			else rc = -470;
@@ -459,7 +459,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 		if ( _gettok ) {
 			_ptrParam->dbName = makeLowerString(_gettok);
-			_ptrParam->dbNameCmd = AbaxDataString("createdb ") + _ptrParam->dbName;
+			_ptrParam->dbNameCmd = Jstr("createdb ") + _ptrParam->dbName;
 			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 			if ( !_gettok ) rc = 1;
 			else rc = -490;
@@ -496,7 +496,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
     			if ( _gettok ) {
     				_ptrParam->passwd = _gettok;
 					if ( _ptrParam->passwd.size() <= JAG_PASSWD_LEN ) {
-						_ptrParam->dbNameCmd = AbaxDataString("createuser ") + _ptrParam->uid + ":" + _ptrParam->passwd;
+						_ptrParam->dbNameCmd = Jstr("createuser ") + _ptrParam->uid + ":" + _ptrParam->passwd;
     					_gettok = jag_strtok_r(NULL, " :\t\r\n", &_saveptr);
     					if ( !_gettok ) rc = 1;
     					else rc = -530;
@@ -512,7 +512,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 		if ( _gettok ) {
 			_ptrParam->uid = _gettok;
-			_ptrParam->dbNameCmd = AbaxDataString("dropuser ") + _ptrParam->uid;
+			_ptrParam->dbNameCmd = Jstr("dropuser ") + _ptrParam->uid;
 			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 			if ( !_gettok ) rc = 1;
 			else rc = -560;
@@ -526,7 +526,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 			_gettok = jag_strtok_r(NULL, " :\t\r\n", &_saveptr);
 			if ( _gettok ) {
 				_ptrParam->passwd = _gettok;
-				_ptrParam->dbNameCmd = AbaxDataString("changepass ") + _ptrParam->uid + ":" + _ptrParam->passwd;
+				_ptrParam->dbNameCmd = Jstr("changepass ") + _ptrParam->uid + ":" + _ptrParam->passwd;
 				_gettok = jag_strtok_r(NULL, " :\t\r\n", &_saveptr);
 				if ( !_gettok ) rc = 1;
 				else rc = -580;
@@ -795,7 +795,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		if ( !_gettok ) { rc = -900; }
 		else {
 			// _ptrParam->grantPerm = _gettok;
-			_ptrParam->grantPerm = AbaxDataString( _saveptr, _gettok-_saveptr-1);
+			_ptrParam->grantPerm = Jstr( _saveptr, _gettok-_saveptr-1);
 			// prt(("s2139 grantPerm=[%s]\n", _ptrParam->grantPerm.c_str() ));
 			if ( ! isValidGrantPerm( _ptrParam->grantPerm ) ) {
 				rc = -902;
@@ -911,7 +911,7 @@ int JagParser::setTableIndexList( short setType )
 			//prt(("s3003 oname.tableName=[%s]\n", oname.tableName.c_str() ));
 			oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
 			// rebuild query with dbname 
-			_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos);
+			_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos);
 			_ptrParam->dbNameCmd +=	" " + oname.dbName + "." + oname.tableName + " " 
 				+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			//prt(("s0233 rebuild hasExist=%d dbNameCmd=[%s]\n", _ptrParam->hasExist, _ptrParam->dbNameCmd.c_str() ));
@@ -924,11 +924,11 @@ int JagParser::setTableIndexList( short setType )
 			oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
 			// rebuild query with dbname 
 			if ( 1 || oname.dbName == oname.colName ) {				
-				_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			} else {
-				_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.colName + "." + oname.dbName + "." + oname.tableName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			}
@@ -940,7 +940,7 @@ int JagParser::setTableIndexList( short setType )
 				//prt(("s3005 oname.tableName=[%s]\n", oname.tableName.c_str() ));
 				oname.indexName = _split[2];
 				// rebuild query with dbname 
-				_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + "." + oname.indexName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			} else return -2010;
@@ -984,7 +984,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				// rebuild query with dbname 
-				_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			} else if ( _split.length() == 2 ) {
@@ -995,11 +995,11 @@ int JagParser::setTableIndexList( short setType )
 				_ptrParam->objectVec.append(oname);
 				// rebuild query with dbname 
 				if ( 1 || oname.dbName == oname.colName ) {				
-					_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+					_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 						+ " " + oname.dbName + "." + oname.tableName + " " 
 						+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 				} else {
-					_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+					_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 						+ " " + oname.colName + "." + oname.dbName + "." + oname.tableName + " " 
 						+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 				}
@@ -1010,7 +1010,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				// rebuild query with dbname 
-				_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + "." + oname.indexName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			// } else return -2080;
@@ -1027,7 +1027,7 @@ int JagParser::setTableIndexList( short setType )
 			}
 		} else if ( pmultab && !pjoin && !pon ) {
 			// multiple tables or indexs select -> regard as inner join
-			AbaxDataString oneobj, ttlist;
+			Jstr oneobj, ttlist;
 			_splitwq.init( _ptrParam->selectTablistClause.c_str(), ',' );
 			for ( int i = 0; i < _splitwq.length(); ++i ) {
 				if ( i != 0 ) ttlist += ",";
@@ -1063,17 +1063,17 @@ int JagParser::setTableIndexList( short setType )
 			}
 			_ptrParam->opcode = JAG_INNERJOIN_OP;
 			// rebuild query with dbname 
-			_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+			_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 				+ " " + ttlist + " " + (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			// prt(("s5109  JAG_INNERJOIN_OP dbNameCmd=[%s]\n", _ptrParam->dbNameCmd.c_str() ));
 		} else if ( !pmultab && pjoin && pon ) {
 			// multiple tables or indexs join
 			// currently, we only support two tables/indexs join, no loop join for now
 			// set first table/index
-			AbaxDataString ttlist;
+			Jstr ttlist;
 			q = p = _ptrParam->selectTablistClause.c_str();
 			while ( isValidNameChar(*q) || *q == ':' || *q == '.' ) ++q;
-			AbaxDataString str = AbaxDataString( p, q-p ), str1, str2;
+			Jstr str = Jstr( p, q-p ), str1, str2;
 			//prt(("s2828 str=[%s] p=[%s] q=[%s]\n", str.c_str(), p, q ));
 			_split.init( str.c_str(), '.' );
 			oname.init();
@@ -1108,7 +1108,7 @@ int JagParser::setTableIndexList( short setType )
 			// get to know what type of join ( innerjoin, leftjoin, rightjoin, fulljoin )
 			p = q;
 			while ( isspace(*p) ) ++p;
-			str = AbaxDataString( p, pjoin+5-p );
+			str = Jstr( p, pjoin+5-p );
 			_split.init( str.c_str(), ' ', true );
 			// split should be [LEFT/RIGHT/FULL] [INNER/OUTER] JOIN
 			if ( _split.length() == 1 && makeUpperString(_split[0]) == "JOIN" ) {
@@ -1155,7 +1155,7 @@ int JagParser::setTableIndexList( short setType )
 			while ( isspace(*p) ) ++p;
 			q = p;
 			while ( isValidNameChar(*q) || *q == ':' || *q == '.' ) ++q;
-			str = AbaxDataString( p, q-p );
+			str = Jstr( p, q-p );
 			_split.init( str.c_str(), '.' );
 			oname.init();
 			//prt(("s4129 str=[%s]\n", str.c_str() ));
@@ -1189,7 +1189,7 @@ int JagParser::setTableIndexList( short setType )
 
 			// rebuild query with dbname 
 			while ( isspace(*p) ) ++p;
-			_ptrParam->dbNameCmd = AbaxDataString(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
+			_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 				+ " " + ttlist + " " + p + " " + (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 
 			// prt(("s5120 dbNameCmd=[%s] ttlist=[%s] p=[%s] q=[%s] \n", _ptrParam->dbNameCmd.c_str(), ttlist.c_str(), p, q ));
@@ -1725,12 +1725,12 @@ int JagParser::setSelectColumn()
 			if ( *p == '\'' || *p == '"' ) {
 				if ( (q = (char*)jumptoEndQuote(q)) && *q == '\0' ) return -2470;
 				++p;
-				_ptrParam->selColVec[i].asName = AbaxDataString(p, q-p);
+				_ptrParam->selColVec[i].asName = Jstr(p, q-p);
 				_ptrParam->selColVec[i].givenAsName = 1;
 				++q;
 			} else {
 				while ( *q != ' ' && *q != '\0' ) ++q;
-				_ptrParam->selColVec[i].asName = AbaxDataString(p, q-p);
+				_ptrParam->selColVec[i].asName = Jstr(p, q-p);
 				_ptrParam->selColVec[i].givenAsName = 1;
 			}
 			while ( isspace(*q) ) ++q;
@@ -1741,7 +1741,7 @@ int JagParser::setSelectColumn()
 		}
 
 		if ( 0==strncasecmp(_ptrParam->selColVec[i].name.c_str(), "all(", 4) ) {
-			AbaxDataString nm = _ptrParam->objectVec[0].dbName + "." + _ptrParam->objectVec[0].tableName 
+			Jstr nm = _ptrParam->objectVec[0].dbName + "." + _ptrParam->objectVec[0].tableName 
 			                    + "." + trimChar(_ptrParam->selColVec[i].name.substr( '(', ')' ), ' ');
 			// _ptrParam->parent->selAllColVec.append( nm );
 			_ptrParam->selAllColVec.append( nm );
@@ -1802,7 +1802,7 @@ int JagParser::setGetfileColumn()
 		q = p;
 		while ( isspace(*r) ) ++r;
 		while ( isspace(*q) && q-r > 0 ) --q; ++q;
-		_ptrParam->selColVec[i].getfileCol = AbaxDataString(r, q-r);
+		_ptrParam->selColVec[i].getfileCol = Jstr(r, q-r);
 		if ( strchr(_ptrParam->selColVec[i].getfileCol.c_str(), '.') ) return -2483;
 		// store attributes or outpath
 		if ( 1 == getAttributeOrData ) {
@@ -1826,12 +1826,12 @@ int JagParser::setGetfileColumn()
 			if ( *p == '\'' || *p == '"' ) {
 				if ( (q = (char*)jumptoEndQuote(p)) && *q == '\0' ) return -2484;
 				++p;
-				_ptrParam->selColVec[i].getfilePath = expandEnvPath( AbaxDataString(p, q-p));
+				_ptrParam->selColVec[i].getfilePath = expandEnvPath( Jstr(p, q-p));
 				++q;
 			} else {
 				q = (char*)(_splitwq[i].c_str()+_splitwq[i].length()); --q;
 				while ( isspace(*q) && q-p > 0 ) --q; ++q;
-				_ptrParam->selColVec[i].getfilePath = expandEnvPath( AbaxDataString(p, q-p));
+				_ptrParam->selColVec[i].getfilePath = expandEnvPath( Jstr(p, q-p));
 			}
 		}
 		while ( isspace(*q) ) ++q;
@@ -1895,7 +1895,7 @@ int JagParser::setSelectOrderBy()
 	const char *p = _ptrParam->selectOrderClause.c_str();
 	while ( isspace(*p) ) ++p;
 	_splitwq.init( p, ',' );
-	AbaxDataString upper;
+	Jstr upper;
 	GroupOrderVecAttribute gov;
 	for ( int i = 0; i < _splitwq.length(); ++i ) {
 		gov.name = trimChar( _splitwq[i], ' ' );
@@ -2087,7 +2087,7 @@ int JagParser::setInsertVector()
 	// c1 relates to first parenthesis: insert into t (c1) values (c2), c2 relates to second 
 	ObjectNameAttribute oname;
 	OtherAttribute other;
-	AbaxDataString outStr;
+	Jstr outStr;
 	p = _saveptr;
 	while ( isspace(*p) ) ++p;
 	q = p;
@@ -2278,8 +2278,8 @@ int JagParser::setInsertVector()
 				stripEndSpace(p, ')' );
 				JagStrSplit sp(p, '(');
 				if ( sp.length() > 1 ) {
-					AbaxDataString envfpath = trimChar(sp[1], ' ');
-					AbaxDataString fpath = expandEnvPath( envfpath );
+					Jstr envfpath = trimChar(sp[1], ' ');
+					Jstr fpath = expandEnvPath( envfpath );
 					FILE *inf = fopen( fpath.c_str(), "r" );
 					if ( inf ) {
 						base64EncodeFile2String( inf, outStr );
@@ -2943,7 +2943,7 @@ int JagParser::setCreateVector( short setType )
 	if ( !q ) return -2931;
 	_ptrParam->endtabidxpos = q; // command position after table/index name
 	*q = '\0';
-	AbaxDataString tabstr = _saveptr, defValue;
+	Jstr tabstr = _saveptr, defValue;
 	*q = '(';
 	_saveptr = q;
 	//prt(("s2038 tabstr=[%s]\n", tabstr.c_str() ));
@@ -3247,8 +3247,8 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 {
 	// prt(("\ns10282 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
 	//prt(("s1082 setOneCreateColumnAttribute\n"));
-	int rc, collen; char *p; AbaxDataString defValue;
-	AbaxDataString s, rcs, colType, typeArg;
+	int rc, collen; char *p; Jstr defValue;
+	Jstr s, rcs, colType, typeArg;
 	int srid = JAG_DEFAULT_SRID;
 	int  argcollen=0, argsig = 0;
 	bool isEnum = false;
@@ -3328,12 +3328,12 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 			if ( ! strchr( sp[i].c_str(), '\'' ) ) return -8030;
 			s = trimChar( sp[i], ' ');
 			s = trimChar( s, '\'');
-			defValue = AbaxDataString("'") + s + "'";
+			defValue = Jstr("'") + s + "'";
 			if ( s.size() > collen ) collen = s.size();
 			if ( 0==i ) {
 				cattr.defValues = defValue;
 			} else {
-				cattr.defValues += AbaxDataString("|") + defValue;
+				cattr.defValues += Jstr("|") + defValue;
 			}
 		}
 		//prt(("s5605 enum cattr.defValues=[%s]\n", cattr.defValues.c_str() ));
@@ -3434,7 +3434,7 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 					}
 					*(cattr.spare+4) = JAG_CREATE_DEFINSERTVALUE;
 					if ( isEnum ) {
-						cattr.defValues += AbaxDataString("|") + defValue;
+						cattr.defValues += Jstr("|") + defValue;
 					} else {
 						cattr.defValues = defValue;
 					}
@@ -3457,7 +3457,7 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 								if ( defValue == sp[i] ) { ok = true; break; }
 							}
 							if ( ! ok ) return -9148;
-							cattr.defValues += AbaxDataString("|") + defValue;
+							cattr.defValues += Jstr("|") + defValue;
 							// previous ones are choices; last one is default value;
 						} else {
 							cattr.defValues = defValue;
@@ -3503,9 +3503,9 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 
 // method to get column type
 // return type as an int, 0 for error
-AbaxDataString JagParser::fillDataType( const char* gettok )
+Jstr JagParser::fillDataType( const char* gettok )
 {
-	AbaxDataString rc;
+	Jstr rc;
 	if (strcasecmp(gettok, "char") == 0) {
 		rc = JAG_C_COL_TYPE_STR;
 	} else if (strcasecmp(gettok, "varchar") == 0 || strcasecmp(gettok, "varchar2") == 0) {
@@ -3633,7 +3633,7 @@ AbaxDataString JagParser::fillDataType( const char* gettok )
 
 // method to get column length
 // return length as an int
-int JagParser::getColumnLength( const AbaxDataString &colType )
+int JagParser::getColumnLength( const Jstr &colType )
 {
 	int onelen;
 	if ( colType == JAG_C_COL_TYPE_DATETIME ) {
@@ -3685,9 +3685,9 @@ int JagParser::getColumnLength( const AbaxDataString &colType )
 	return onelen;
 }
 
-bool JagParser::isValidGrantPerm( AbaxDataString &perm )
+bool JagParser::isValidGrantPerm( Jstr &perm )
 {
-	AbaxDataString newperm, str, lperm;
+	Jstr newperm, str, lperm;
 	JagStrSplit sp( perm, ',', true );
 	for ( int i = 0; i < sp.length(); ++i ) {
 		str = trimChar(sp[i], ' ');
@@ -3698,23 +3698,23 @@ bool JagParser::isValidGrantPerm( AbaxDataString &perm )
 		}
 
     	if ( lperm == "select" ) {
-    		newperm += AbaxDataString(JAG_ROLE_SELECT) + ",";
+    		newperm += Jstr(JAG_ROLE_SELECT) + ",";
     	} else if ( lperm == "insert" ) {
-    		newperm += AbaxDataString(JAG_ROLE_INSERT) + ",";
+    		newperm += Jstr(JAG_ROLE_INSERT) + ",";
     	} else if ( lperm == "update" ) {
-    		newperm += AbaxDataString(JAG_ROLE_UPDATE) + ",";
+    		newperm += Jstr(JAG_ROLE_UPDATE) + ",";
     	} else if ( lperm == "delete" ) {
-    		newperm += AbaxDataString(JAG_ROLE_DELETE) + ",";
+    		newperm += Jstr(JAG_ROLE_DELETE) + ",";
     	} else if ( lperm == "create" ) {
-    		newperm += AbaxDataString(JAG_ROLE_CREATE) + ",";
+    		newperm += Jstr(JAG_ROLE_CREATE) + ",";
     	} else if ( lperm == "drop" ) {
-    		newperm += AbaxDataString(JAG_ROLE_DROP) + ",";
+    		newperm += Jstr(JAG_ROLE_DROP) + ",";
     	} else if ( lperm == "alter" ) {
-    		newperm += AbaxDataString(JAG_ROLE_ALTER) + ",";
+    		newperm += Jstr(JAG_ROLE_ALTER) + ",";
     	} else if ( lperm == "truncate" ) {
-    		newperm += AbaxDataString(JAG_ROLE_TRUNCATE) + ",";
+    		newperm += Jstr(JAG_ROLE_TRUNCATE) + ",";
     	} else {
-			// errmsg = AbaxDataString(lperm) + " is not a valid permission";
+			// errmsg = Jstr(lperm) + " is not a valid permission";
 			return false;
     	}
 	}
@@ -3727,7 +3727,7 @@ bool JagParser::isValidGrantPerm( AbaxDataString &perm )
 // Obj: "db"
 // Obj: "db.tab"
 // Obj: "db.tab.col123"
-bool JagParser::isValidGrantObj( AbaxDataString &obj )
+bool JagParser::isValidGrantObj( Jstr &obj )
 {
 	bool rc;
 	JagStrSplit sp(obj, '.' );
@@ -3750,7 +3750,7 @@ bool JagParser::isValidGrantObj( AbaxDataString &obj )
 }
 
 // get JaColumn object reference give a colName
-const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const AbaxDataString &colName  ) const
+const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const Jstr &colName  ) const
 {
 	if ( ! pparam ) return NULL;
 	if (  pparam->objectVec.size() < 1 ) {
@@ -3758,8 +3758,8 @@ const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const AbaxDa
 	 	return NULL;
 	}
 
-	AbaxDataString db = pparam->objectVec[0].dbName;
-	AbaxDataString objcol = pparam->objectVec[0].colName;
+	Jstr db = pparam->objectVec[0].dbName;
+	Jstr objcol = pparam->objectVec[0].colName;
 	if ( db != objcol && objcol.size()>0 ) db = objcol;
 	if ( db.size() < 1 ) {
 		prt(("s0294 tmp9999 db.size() < 1\n" ));
@@ -3773,7 +3773,7 @@ const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const AbaxDa
 	// select * from t1.t1idx1; i=0 dbname=[t1] tableName=[t1idx1] indexName=[] colName=[test]
 	// select * from test.t1.t1idx1; i=0 dbname=[test] tableName=[t1] indexName=[t1idx1] colName=[]
 
-	AbaxDataString objname = pparam->objectVec[0].tableName;
+	Jstr objname = pparam->objectVec[0].tableName;
 	if ( pparam->objectVec[0].indexName.size() > 0 ) {
 		objname = pparam->objectVec[0].indexName;
 	}
@@ -3781,8 +3781,8 @@ const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const AbaxDa
 	return getColumn( db, objname, colName );
 }
 
-const JagColumn* JagParser::getColumn( const AbaxDataString &db, const AbaxDataString &objname, 
-							const AbaxDataString &colName ) const
+const JagColumn* JagParser::getColumn( const Jstr &db, const Jstr &objname, 
+							const Jstr &colName ) const
 {
 	// prt(("s7383 _srv=%0x\n", _srv ));
 	if ( _srv ) {
@@ -3830,7 +3830,7 @@ const JagColumn* JagParser::getColumn( const AbaxDataString &db, const AbaxDataS
 	return NULL; // rc is false
 }
 
-bool JagParser::isPolyType( const AbaxDataString &rcs )
+bool JagParser::isPolyType( const Jstr &rcs )
 {
 	if ( rcs.size() < 1 ) return false;
 	if ( rcs == JAG_C_COL_TYPE_LINESTRING || rcs == JAG_C_COL_TYPE_LINESTRING3D
@@ -3843,7 +3843,7 @@ bool JagParser::isPolyType( const AbaxDataString &rcs )
 	return false;
 }
 
-bool JagParser::isVectorGeoType( const AbaxDataString &rcs )
+bool JagParser::isVectorGeoType( const Jstr &rcs )
 {
 	if ( rcs.size() < 1 ) return false;
 
@@ -3870,7 +3870,7 @@ bool JagParser::isVectorGeoType( const AbaxDataString &rcs )
 
 
 // complex types: point, point3d, ciurcle, sphere, square, cube, ...
-bool JagParser::isGeoType( const AbaxDataString &rcs ) 
+bool JagParser::isGeoType( const Jstr &rcs ) 
 {
 	if ( rcs.size() < 1 ) return false;
 
@@ -3903,7 +3903,7 @@ bool JagParser::isGeoType( const AbaxDataString &rcs )
 }
 
 // complex types:  geo type, other
-bool JagParser::isComplexType( const AbaxDataString &rcs ) 
+bool JagParser::isComplexType( const Jstr &rcs ) 
 {
 	if ( rcs.size() < 1 ) return false;
 	bool rc = isGeoType( rcs );
@@ -3912,7 +3912,7 @@ bool JagParser::isComplexType( const AbaxDataString &rcs )
 	return false;
 }
 
-bool JagParser::isIndexCol( const AbaxDataString &db, const AbaxDataString &colName ) const
+bool JagParser::isIndexCol( const Jstr &db, const Jstr &colName ) const
 {
 	if ( _srv ) {
 		JagIndexSchema *schema = _srv->_indexschema;
@@ -4169,7 +4169,7 @@ void JagParser::addCreateAttrAndColumn(bool isValue, CreateAttribute &cattr, int
 //
 void JagParser::addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other, int &numCols )
 {
-	AbaxDataString on;
+	Jstr on;
 
 	//prt(("s9283 pcol->type=[%s]\n", pcol->type.c_str() ));
 
@@ -4491,7 +4491,7 @@ void JagParser::addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other,
 	}
 }
 
-void JagParser::setToRealType( const AbaxDataString &rcs, CreateAttribute &cattr )
+void JagParser::setToRealType( const Jstr &rcs, CreateAttribute &cattr )
 {
 	if ( rcs == JAG_C_COL_TEMPTYPE_TEXT  ) cattr.type = JAG_C_COL_TYPE_STR;
 	else if ( rcs == JAG_C_COL_TEMPTYPE_LONGTEXT  ) cattr.type = JAG_C_COL_TYPE_STR;
@@ -4513,7 +4513,7 @@ void JagParser::setToRealType( const AbaxDataString &rcs, CreateAttribute &cattr
 // gettok: "line(2020)"  
 // gettok: "int default '1'"  
 // gettok: "enum('a','b', 'c', 'd') default 'b'"
-int JagParser::getTypeNameArg( const char *gettok, AbaxDataString &tname, AbaxDataString &targ, int &collen, int &sig )
+int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig )
 {
 	//prt(("s5503 getTypeNameArg gettok=[%s]\n", gettok ));
 	char save;
@@ -4545,7 +4545,7 @@ int JagParser::getTypeNameArg( const char *gettok, AbaxDataString &tname, AbaxDa
 	if ( ! p2 ) {
 		p2 = p1; while (*p2) ++p2;
 	} 
-	targ = AbaxDataString( p1, p2-p1);
+	targ = Jstr( p1, p2-p1);
 	//prt(("s0238 typeArg=[%s]\n", targ.c_str() ));
 	if ( strchr(targ.c_str(), ',' ) ) {
 		JagStrSplit sp( targ, ',', true );
@@ -4712,10 +4712,10 @@ void JagParser::addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool
 
 
 // str: "intersect( ls1, linestring(1 2 , 3 4 )) && intersect(ls2, linestring(11 22, 33 44))"
-AbaxDataString JagParser::getColumns( const char *str )
+Jstr JagParser::getColumns( const char *str )
 {
 	//prt(("s2728 JagParser::getColumns str=[%s]\n", str ));
-	AbaxDataString s, res;
+	Jstr s, res;
 	JagStrSplitWithQuote spq(str, ' ' );
 	char *p, *q;
 	for ( int i=0; i < spq.length(); ++i ) {
@@ -4743,11 +4743,11 @@ AbaxDataString JagParser::getColumns( const char *str )
 				if ( q ) {
 					--q; while ( isspace(*q) ) --q;
 					if ( p == q) continue;
-					s = AbaxDataString(p, q-p+1);  // (p)col1(q) 
+					s = Jstr(p, q-p+1);  // (p)col1(q) 
 					if ( res.size() < 1 ) {
 						res = s;
 					} else {
-						res += AbaxDataString("|") + s;
+						res += Jstr("|") + s;
 					}
 					//prt(("s2094 res=[%s]\n", res.c_str() ));
 				} 
@@ -4767,7 +4767,7 @@ AbaxDataString JagParser::getColumns( const char *str )
 			if ( res.size() < 1 ) {
 				res = s;
 			} else {
-				res += AbaxDataString("|") + s;
+				res += Jstr("|") + s;
 			}
 		}
 	}
@@ -4970,7 +4970,7 @@ int JagParser::checkPolygonData( const char *p, bool mustClose )
 		//  // (  (p...q), (...) )
 		if ( q == p ) return -4518;
 		while ( *p == '(' ) ++p;
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		//prt(("s7062 one polygon=[%s]\n", polygon.c_str() ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
@@ -5039,7 +5039,7 @@ int JagParser::checkMultiPolygonData( const char *p, bool mustClose, bool is3D )
 				} else if ( *q == ')' ) {
 					-- bracketCount;
 					if ( 1 == bracketCount ) {
-						AbaxDataString s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
+						Jstr s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
 						//prt(("s3701 checking polygon=[%s] ...\n", s.c_str() ));
 						if ( is3D ) {
 							rc = checkPolygon3DData( s.c_str(), mustClose );
@@ -5066,7 +5066,7 @@ int JagParser::checkMultiPolygonData( const char *p, bool mustClose, bool is3D )
 // return 1: OK,  < 0 error , 0: no data ignore
 // p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
 // pgvec: " x:y:z x:y:z ...| ... ! ... | ... | ..."
-int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p, 
+int JagParser::addMultiPolygonData( Jstr &pgvec, const char *p, 
 								    bool eachFirstOnly, bool mustClose, bool is3D )
 {
 	prt(("s3524 multipolygon p=[%s]\n", p ));
@@ -5094,10 +5094,10 @@ int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p,
 				} else if ( *q == ')' ) {
 					-- bracketCount;
 					if ( 1 == bracketCount ) {
-						AbaxDataString s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
+						Jstr s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
 						//prt(("s3701 add polygon=[%s] ...\n", s.c_str() ));
 						// JagPolygon pgon;
-						AbaxDataString pgon;
+						Jstr pgon;
 						if ( is3D ) {
 							rc = addPolygon3DData(pgon, s.c_str(), eachFirstOnly, mustClose );
 						} else {
@@ -5108,7 +5108,7 @@ int JagParser::addMultiPolygonData( AbaxDataString &pgvec, const char *p,
 						if ( pgvec.size() < 1 ) {
 							pgvec = pgon;
 						} else {
-							pgvec += AbaxDataString("! ") + pgon;
+							pgvec += Jstr("! ") + pgon;
 						}
 						p = q;
 						break;
@@ -5156,7 +5156,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p,
 				} else if ( *q == ')' ) {
 					-- bracketCount;
 					if ( 1 == bracketCount ) {
-						AbaxDataString s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
+						Jstr s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
 						//prt(("s3701 add polygon=[%s] ...\n", s.c_str() ));
 						JagPolygon pgon;
 						if ( is3D ) {
@@ -5268,7 +5268,7 @@ int JagParser::getPolygonMinMax( const char *p,  double &xmin, double &ymin, dou
 		if ( *q == '\0' ) break;
 		//  // (  (p...q), (...) )
 		while ( *p == '(' ) ++p;
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		if ( q == p ) { return -4524; }
 		//prt(("s5262 one polygon=[%s]\n", polygon.c_str() ));
 		JagStrSplit sp( polygon, ',', true );
@@ -5303,7 +5303,7 @@ int JagParser::getPolygonMinMax( const char *p,  double &xmin, double &ymin, dou
 // return 0: no data, ignore,  < 0 error
 // return 1: OK
 // pgon returns "x:y x:y ...|x:y x:y ..."
-int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose )
+int JagParser::addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose )
 {
 	//prt(("s3538 addPolygonData( p=[%s]\n", p ));
 	int len, j;
@@ -5327,12 +5327,12 @@ int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOn
 		if ( *q == '\0' ) break;
 		//  // (  (p...q), (...) )
 		while ( *p == '(' ) ++p;
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		//prt(("s7252 one polygon=[%s] q=[%s] p=[%s]\n", polygon.c_str(), q, p ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
 		//JagLineString3D linestr3d;
-		AbaxDataString linestr3d;
+		Jstr linestr3d;
 		for ( int i = 0; i < len; ++i ) {
 			JagStrSplit ss( sp[i], ' ', true );
 			//prt(("s2038 sp[i=%d]=[%s]\n", i, sp[i].c_str() ));
@@ -5369,7 +5369,7 @@ int JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOn
 		if ( pgon.size() < 1 ) {
 			pgon = linestr3d; // first ring
 		} else {
-			pgon += AbaxDataString("| ") + linestr3d; // more rings
+			pgon += Jstr("| ") + linestr3d; // more rings
 		}
 
 		if ( firstOnly ) break;
@@ -5411,7 +5411,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 		if ( *q == '\0' ) break;
 		//  // (  (p...q), (...) )
 		while ( *p == '(' ) ++p;
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		//prt(("s7252 one polygon=[%s] q=[%s] p=[%s]\n", polygon.c_str(), q, p ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
@@ -5482,7 +5482,7 @@ int JagParser::checkPolygon3DData( const char *p, bool mustClose )
 		if ( q == p ) return -4623;
 
 		while ( *p == '(' ) ++p;
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		//prt(("s7362 one polygon=[%s]\n", polygon.c_str() ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
@@ -5553,7 +5553,7 @@ int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, d
 		while ( *q != ')' && *q != '\0' ) ++q; 
 		if ( *q == '\0' ) break;
 		//  // (  (p...q), (...) )
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		//prt(("s7462 one polygon=[%s]\n", polygon.c_str() ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
@@ -5591,7 +5591,7 @@ int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, d
 // p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
 // return 0: no data ignore,  < 0 error  1: OK
 // pgon: "x:y:z x:y:z ...| x:y:z x:y:z ... | x:y:z x:y:z ..."
-int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose )
+int JagParser::addPolygon3DData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose )
 {
 	if ( *p == 0 ) { return 0; }
 	if ( 0==strcmp(p, "()") ) return -1;
@@ -5609,12 +5609,12 @@ int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool first
 		while ( *q != ')' && *q != '\0' ) ++q; 
 		if ( *q == '\0' ) break;
 		//  // (  (p...q), (...) )
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		//prt(("s8262 one polygon=[%s]\n", polygon.c_str() ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
 		//JagLineString3D linestr3d;
-		AbaxDataString linestr3d;
+		Jstr linestr3d;
 		for ( int i = 0; i < len; ++i ) {
 			JagStrSplit ss( sp[i], ' ', true );
 			// if ( ss.length() < 3 ) { return -4533; }
@@ -5651,7 +5651,7 @@ int JagParser::addPolygon3DData( AbaxDataString &pgon, const char *p, bool first
 		if ( pgon.size() < 1 ) {
 			pgon = linestr3d;
 		} else {
-			pgon += AbaxDataString(" | ") + linestr3d;
+			pgon += Jstr(" | ") + linestr3d;
 		}
 		if ( firstOnly ) break;
 		
@@ -5698,7 +5698,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 		while ( *q != ')' && *q != '\0' ) ++q; 
 		if ( *q == '\0' ) break;
 		//  // (  (p...q), (...) )
-		AbaxDataString polygon(p, q-p);
+		Jstr polygon(p, q-p);
 		//prt(("s8262 one polygon=[%s]\n", polygon.c_str() ));
 		JagStrSplit sp( polygon, ',', true );
 		len = sp.length();
@@ -5931,7 +5931,7 @@ int JagParser::getMultiPolygonMinMax( const char *p, double &xmin, double &ymin,
 				} else if ( *q == ')' ) {
 					-- bracketCount;
 					if ( 1 == bracketCount ) {
-						AbaxDataString s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
+						Jstr s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
 						rc = getPolygonMinMax( s.c_str(), xmin, ymin, xmax, ymax );
 						if ( rc < 0 ) { return rc; }
 						p = q;
@@ -5978,7 +5978,7 @@ int JagParser::getMultiPolygon3DMinMax( const char *p, double &xmin, double &ymi
 				} else if ( *q == ')' ) {
 					-- bracketCount;
 					if ( 1 == bracketCount ) {
-						AbaxDataString s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
+						Jstr s(p+1, q-p-1); // p: "p ( ) ( ) ( ) q
 						rc = getPolygon3DMinMax( s.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
 						if ( rc < 0 ) { return rc; }
 						p = q;
@@ -6055,7 +6055,7 @@ int JagParser::convertJsonToOther( OtherAttribute &other, const char *json, int 
 int JagParser::convertJsonToPoint( const rapidjson::Document &dom, OtherAttribute &other )
 {
 	bool is3D = false;
-	AbaxDataString vs;
+	Jstr vs;
 
 	const rapidjson::Value& cd = dom["coordinates"];
 	if ( ! cd.IsArray() ) { return -3200; }
@@ -6107,12 +6107,12 @@ int JagParser::convertJsonToPoint( const rapidjson::Document &dom, OtherAttribut
 int JagParser::convertJsonToLineString( const rapidjson::Document &dom, OtherAttribute &other )
 {
 	bool is3D = false;
-	AbaxDataString vs;
+	Jstr vs;
 
 	const rapidjson::Value& cdc = dom["coordinates"];
 	if ( ! cdc.IsArray() ) { return -3230; }
 
-	AbaxDataString valueData = "(";
+	Jstr valueData = "(";
 	bool first = true;
 
 	for ( rapidjson::SizeType i = 0; i < cdc.Size(); i++) { 
@@ -6124,7 +6124,7 @@ int JagParser::convertJsonToLineString( const rapidjson::Document &dom, OtherAtt
 		//prt(("s7421 cd.Size()=%d is3D=%d\n",  cd.Size(), is3D ));
     	if ( cd[0].IsString() ) {
     		if ( cd[0].GetStringLength() > JAG_POINT_LEN ) return -3236;
-			vs = AbaxDataString(cd[0].GetString());
+			vs = Jstr(cd[0].GetString());
     	} else if ( cd[0].IsNumber() ) {
     		vs = doubleToStr(cd[0].GetDouble() ).trimEndZeros();
     		if ( vs.size() > JAG_POINT_LEN ) return -3237;
@@ -6134,30 +6134,30 @@ int JagParser::convertJsonToLineString( const rapidjson::Document &dom, OtherAtt
 			valueData += vs;
 			first = false;
 		} else {
-			valueData += AbaxDataString(",") + vs;
+			valueData += Jstr(",") + vs;
 		}
     
     	if ( cd[1].IsString() ) {
     		if ( cd[1].GetStringLength() > JAG_POINT_LEN ) return -3241;
-			vs = AbaxDataString(cd[1].GetString());
+			vs = Jstr(cd[1].GetString());
     	} else if ( cd[1].IsNumber() ) {
     		vs = doubleToStr(cd[1].GetDouble() ).trimEndZeros();
     		if ( vs.size() > JAG_POINT_LEN ) return -3243;
     	} else return -3245;
-		valueData += AbaxDataString(" ") + vs;
+		valueData += Jstr(" ") + vs;
     
     	if ( is3D ) {
         	if ( cd[2].IsString() ) {
     			if ( cd[2].GetStringLength() > JAG_POINT_LEN ) return -3247;
-				vs = AbaxDataString(cd[2].GetString());
+				vs = Jstr(cd[2].GetString());
         	} else if ( cd[2].IsNumber() ) {
         		vs = doubleToStr(cd[2].GetDouble() ).trimEndZeros();
         		if ( vs.size() > JAG_POINT_LEN ) return -3250;
         	} else return -3252;
-			valueData += AbaxDataString(" ") + vs;
+			valueData += Jstr(" ") + vs;
     	}
 	}
-	valueData += AbaxDataString(")");
+	valueData += Jstr(")");
 
 	if ( is3D ) {
 		other.type =  JAG_C_COL_TYPE_LINESTRING3D;
@@ -6177,12 +6177,12 @@ int JagParser::convertJsonToLineString( const rapidjson::Document &dom, OtherAtt
 int JagParser::convertJsonToPolygon( const rapidjson::Document &dom, OtherAttribute &other )
 {
 	bool is3D = false;
-	AbaxDataString vs;
+	Jstr vs;
 
 	const rapidjson::Value& cdc = dom["coordinates"];
 	if ( ! cdc.IsArray() ) { return -3240; }
 
-	AbaxDataString valueData = "(";
+	Jstr valueData = "(";
 	bool first1 = true;
 	bool first2 = true;
 
@@ -6206,7 +6206,7 @@ int JagParser::convertJsonToPolygon( const rapidjson::Document &dom, OtherAttrib
 
         	if ( cd[0].IsString() ) {
         		if ( cd[0].GetStringLength() > JAG_POINT_LEN ) return -3246;
-    			vs = AbaxDataString(cd[0].GetString());
+    			vs = Jstr(cd[0].GetString());
         	} else if ( cd[0].IsNumber() ) {
         		vs = doubleToStr(cd[0].GetDouble() ).trimEndZeros();
         		if ( vs.size() > JAG_POINT_LEN ) return -3247;
@@ -6217,33 +6217,33 @@ int JagParser::convertJsonToPolygon( const rapidjson::Document &dom, OtherAttrib
     			valueData += vs;
     			first2 = false;
     		} else {
-    			valueData += AbaxDataString(",") + vs;
+    			valueData += Jstr(",") + vs;
     		}
         
         	if ( cd[1].IsString() ) {
         		if ( cd[1].GetStringLength() > JAG_POINT_LEN ) return -3251;
-    			vs = AbaxDataString(cd[1].GetString());
+    			vs = Jstr(cd[1].GetString());
         	} else if ( cd[1].IsNumber() ) {
         		vs = doubleToStr(cd[1].GetDouble() ).trimEndZeros();
         		if ( vs.size() > JAG_POINT_LEN ) return -3253;
         	} else return -3255;
-    		valueData += AbaxDataString(" ") + vs;
+    		valueData += Jstr(" ") + vs;
         
         	if ( is3D ) {
             	if ( cd[2].IsString() ) {
         			if ( cd[2].GetStringLength() > JAG_POINT_LEN ) return -3257;
-    				vs = AbaxDataString(cd[2].GetString());
+    				vs = Jstr(cd[2].GetString());
             	} else if ( cd[2].IsNumber() ) {
             		vs = doubleToStr(cd[2].GetDouble() ).trimEndZeros();
             		if ( vs.size() > JAG_POINT_LEN ) return -3260;
             	} else return -3262;
-    			valueData += AbaxDataString(" ") + vs;
+    			valueData += Jstr(" ") + vs;
         	}
 		}
 
 		valueData += ")";
 	}
-	valueData += AbaxDataString(")");
+	valueData += Jstr(")");
 
 	if ( is3D ) {
 		other.type =  JAG_C_COL_TYPE_POLYGON3D;
@@ -6263,12 +6263,12 @@ int JagParser::convertJsonToPolygon( const rapidjson::Document &dom, OtherAttrib
 int JagParser::convertJsonToMultiPolygon( const rapidjson::Document &dom, OtherAttribute &other )
 {
 	bool is3D = false;
-	AbaxDataString vs;
+	Jstr vs;
 
 	const rapidjson::Value& cdc = dom["coordinates"];
 	if ( ! cdc.IsArray() ) { return -3250; }
 
-	AbaxDataString valueData = "(";
+	Jstr valueData = "(";
 	bool first1 = true;
 	bool first2 = true;
 	bool first3 = true;
@@ -6306,7 +6306,7 @@ int JagParser::convertJsonToMultiPolygon( const rapidjson::Document &dom, OtherA
     
             	if ( cd[0].IsString() ) {
             		if ( cd[0].GetStringLength() > JAG_POINT_LEN ) return -3256;
-        			vs = AbaxDataString(cd[0].GetString());
+        			vs = Jstr(cd[0].GetString());
             	} else if ( cd[0].IsNumber() ) {
             		vs = doubleToStr(cd[0].GetDouble() ).trimEndZeros();
             		if ( vs.size() > JAG_POINT_LEN ) return -3257;
@@ -6317,27 +6317,27 @@ int JagParser::convertJsonToMultiPolygon( const rapidjson::Document &dom, OtherA
         			valueData += vs;
         			first3 = false;
         		} else {
-        			valueData += AbaxDataString(",") + vs;
+        			valueData += Jstr(",") + vs;
         		}
             
             	if ( cd[1].IsString() ) {
             		if ( cd[1].GetStringLength() > JAG_POINT_LEN ) return -3261;
-        			vs = AbaxDataString(cd[1].GetString());
+        			vs = Jstr(cd[1].GetString());
             	} else if ( cd[1].IsNumber() ) {
             		vs = doubleToStr(cd[1].GetDouble() ).trimEndZeros();
             		if ( vs.size() > JAG_POINT_LEN ) return -3262;
             	} else return -3264;
-        		valueData += AbaxDataString(" ") + vs;
+        		valueData += Jstr(" ") + vs;
             
             	if ( is3D ) {
                 	if ( cd[2].IsString() ) {
             			if ( cd[2].GetStringLength() > JAG_POINT_LEN ) return -3265;
-        				vs = AbaxDataString(cd[2].GetString());
+        				vs = Jstr(cd[2].GetString());
                 	} else if ( cd[2].IsNumber() ) {
                 		vs = doubleToStr(cd[2].GetDouble() ).trimEndZeros();
                 		if ( vs.size() > JAG_POINT_LEN ) return -3266;
                 	} else return -3267;
-        			valueData += AbaxDataString(" ") + vs;
+        			valueData += Jstr(" ") + vs;
             	}
 
 			}
@@ -6346,7 +6346,7 @@ int JagParser::convertJsonToMultiPolygon( const rapidjson::Document &dom, OtherA
 
 		valueData += ")";
 	}
-	valueData += AbaxDataString(")");
+	valueData += Jstr(")");
 
 	if ( is3D ) {
 		other.type =  JAG_C_COL_TYPE_MULTIPOLYGON3D;
@@ -6384,9 +6384,9 @@ int JagParser::getEachRangeFieldLength( int srid ) const
 	return len;
 }
 
-AbaxDataString JagParser::getFieldType( int srid ) 
+Jstr JagParser::getFieldType( int srid ) 
 {
-	AbaxDataString ctype = JAG_C_COL_TYPE_DATETIME;
+	Jstr ctype = JAG_C_COL_TYPE_DATETIME;
 	if ( JAG_RANGE_DATE == srid )  {
 		ctype = JAG_C_COL_TYPE_DATE;
 	} else if ( JAG_RANGE_TIME == srid ) {
@@ -6408,9 +6408,9 @@ AbaxDataString JagParser::getFieldType( int srid )
 	return ctype;
 }
 
-AbaxDataString JagParser::getFieldTypeString( int srid ) 
+Jstr JagParser::getFieldTypeString( int srid ) 
 {
-	AbaxDataString ctype = "datetime";
+	Jstr ctype = "datetime";
 	if ( JAG_RANGE_DATE == srid )  {
 		ctype = "date";
 	} else if ( JAG_RANGE_TIME == srid ) {

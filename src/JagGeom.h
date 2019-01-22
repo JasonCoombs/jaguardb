@@ -33,64 +33,64 @@ class JagGeo
 	template <class POINT> static int JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
 
 	/////////////////////////////////////// Within function ////////////////////////////////////////////////////
-   	static bool doPointWithin(  const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								const AbaxDataString &colType2, int srid2, 
+   	static bool doPointWithin(  const JagStrSplit &sp1, const Jstr &mk2, 
+								const Jstr &colType2, int srid2, 
 								const JagStrSplit &sp2, bool strict=true );
-   	static bool doPoint3DWithin( const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								const AbaxDataString &colType2, int srid2, 
+   	static bool doPoint3DWithin( const JagStrSplit &sp1, const Jstr &mk2, 
+								const Jstr &colType2, int srid2, 
 								const JagStrSplit &sp2, bool strict=true );
-   	static bool doTriangleWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doTriangleWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doTriangle3DWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doTriangle3DWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doCircleWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doCircleWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doCircle3DWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doCircle3DWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doSphereWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSphereWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doBoxWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doBoxWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doRectangleWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doRectangleWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doRectangle3DWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doRectangle3DWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doSquareWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSquareWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doSquare3DWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSquare3DWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doCubeWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doCubeWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									 int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doCylinderWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doCylinderWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									 int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doConeWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doConeWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doEllipseWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doEllipseWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doEllipsoidWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doEllipsoidWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLineWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doLineWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLine3DWithin(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doLine3DWithin(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLineStringWithin(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLineString3DWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									  const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doPolygonWithin(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doPolygon3DWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									  const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doMultiPolygonWithin(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doMultiPolygon3DWithin(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doLineStringWithin(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doLineString3DWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									  const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doPolygonWithin(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doPolygon3DWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									  const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doMultiPolygonWithin(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doMultiPolygon3DWithin(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
 
 
 	// 2D point
 	static bool pointWithinPoint( double px, double py, double x1, double y1, bool strict );
 	static bool pointWithinLine( double px, double py, double x1, double y1, double x2, double y2, bool strict );
-	static bool pointWithinLineString(  double x, double y, const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+	static bool pointWithinLineString(  double x, double y, const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 	//static bool pointWithinSquare( double px, double py, double x0, double y0, double r, double nx, bool strict );
 	static bool pointWithinCircle( double px, double py, double x0, double y0, double r, bool strict );
 	static bool pointWithinRectangle( double px, double py, double x, double y, double a, double b, double nx, bool strict );
@@ -101,7 +101,7 @@ class JagGeo
 	static bool pointInTriangle( double px, double py, double x1, double y1,
 									  double x2, double y2, double x3, double y3,
 					 				  bool strict = false, bool boundcheck = true );
-	static bool pointWithinPolygon( double x, double y, const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+	static bool pointWithinPolygon( double x, double y, const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 	static bool pointWithinPolygon( double x, double y, const JagLineString3D &linestr );
 	static bool pointWithinPolygon( double x, double y, const JagPolygon &pgon );
 
@@ -109,7 +109,7 @@ class JagGeo
 	static bool point3DWithinPoint3D( double px, double py, double pz, double x1, double y1, double z1, bool strict );
 	static bool point3DWithinLine3D( double px, double py, double pz, double x1, double y1, double z1, 
 									double x2, double y2, double z2, bool strict );
-	static bool point3DWithinLineString3D(  double x, double y, double z, const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+	static bool point3DWithinLineString3D(  double x, double y, double z, const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 	static bool point3DWithinBox( double px, double py, double pz,  
 									  double x, double y, double z, double a, double b, double c, double nx, double ny, 
 									  bool strict );
@@ -141,7 +141,7 @@ class JagGeo
 	static bool circleWithinTriangle( double px, double py, double pr, double x1, double y1, 
 									  double x2, double y2, double x3, double y3, bool strict=true, bool bound = true );
 	static bool circleWithinPolygon( double px0, double py0, double pr, 
-									 const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+									 const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 
 	// 3D circle
 	static bool circle3DWithinCube( double px0, double py0, double pz0, double pr0,  double nx0, double ny0,
@@ -186,7 +186,7 @@ class JagGeo
  	static bool rectangleWithinCircle( double px0, double py0, double a0, double b0, double nx0, 
 									    double x0, double y0, double r, double nx, bool strict );
  	static bool rectangleWithinPolygon( double px0, double py0, double a0, double b0, double nx0, 
-										const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+										const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 
 	// 2D triangle
 	static bool triangleWithinTriangle( double x10, double y10, double x20, double y20, double x30, double y30,
@@ -202,7 +202,7 @@ class JagGeo
  	static bool triangleWithinCircle( double x10, double y10, double x20, double y20, double x30, double y30,
 									    double x0, double y0, double r, double nx, bool strict );
  	static bool triangleWithinPolygon( double x10, double y10, double x20, double y20, double x30, double y30,
-									    const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+									    const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 										
 	// 2D ellipse
 	static bool ellipseWithinTriangle( double px0, double py0, double a0, double b0, double nx0, 
@@ -216,7 +216,7 @@ class JagGeo
  	static bool ellipseWithinCircle( double px0, double py0, double a0, double b0, double nx0, 
 									    double x0, double y0, double r, double nx, bool strict );
  	static bool ellipseWithinPolygon( double px0, double py0, double a0, double b0, double nx0, 
-									    const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+									    const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 
 	// rect 3D
 	static bool rectangle3DWithinCube(  double px0, double py0, double pz0, double a0, double b0, double nx0, double ny0,
@@ -331,7 +331,7 @@ class JagGeo
 	static bool lineWithinTriangle( double x10, double y10, double x20, double y20, 
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
 	static bool lineWithinLineString( double x10, double y10, double x20, double y20, 
-		                              const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+		                              const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 	static bool lineWithinSquare( double x10, double y10, double x20, double y20, 
 		                                double x0, double y0, double r, double nx, bool strict );
 	static bool lineWithinRectangle( double x10, double y10, double x20, double y20, 
@@ -341,12 +341,12 @@ class JagGeo
  	static bool lineWithinCircle( double x10, double y10, double x20, double y20, 
 									    double x0, double y0, double r, double nx, bool strict );
 	static bool lineWithinPolygon( double x10, double y10, double x20, double y20, 
-									const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+									const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 
 
 	// line 3D
 	static bool line3DWithinLineString3D( double x10, double y10, double z10, double x20, double y20, double z20, 
-		                              const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+		                              const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 	static bool line3DWithinCube(  double x10, double y10, double z10, double x20, double y20, double z20,
 									double x0, double y0, double z0, double r, double nx, double ny, bool strict );
 
@@ -365,98 +365,98 @@ class JagGeo
 
 
 	// linestring 2d
-	static bool lineStringWithinLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2,  bool strict );
-	static bool lineStringWithinTriangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineStringWithinLineString( const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2,  bool strict );
+	static bool lineStringWithinTriangle( const Jstr &mk1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
-	static bool lineStringWithinSquare( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineStringWithinSquare( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double r, double nx, bool strict );
-	static bool lineStringWithinRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineStringWithinRectangle( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
-	static bool lineStringWithinEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineStringWithinEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
- 	static bool lineStringWithinCircle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+ 	static bool lineStringWithinCircle( const Jstr &mk1, const JagStrSplit &sp1,
 									    double x0, double y0, double r, double nx, bool strict );
- 	static bool lineStringWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1,
-									     const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+ 	static bool lineStringWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1,
+									     const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 
 	// linestring3d
-	static bool lineString3DWithinLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											    const AbaxDataString &mk2, const JagStrSplit &sp2,  bool strict );
-	static bool lineString3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineString3DWithinLineString3D( const Jstr &mk1, const JagStrSplit &sp1,
+											    const Jstr &mk2, const JagStrSplit &sp2,  bool strict );
+	static bool lineString3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0, double r, double nx, double ny, bool strict );
 
-	static bool lineString3DWithinBox(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineString3DWithinBox(  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, bool strict );
-	static bool lineString3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineString3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, bool strict );
-	static bool lineString3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineString3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, bool strict );
-	static bool lineString3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineString3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, bool strict );
 
 
 	// polygon
-	static bool polygonWithinTriangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygonWithinTriangle( const Jstr &mk1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
-	static bool polygonWithinSquare( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygonWithinSquare( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double r, double nx, bool strict );
-	static bool polygonWithinRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygonWithinRectangle( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
-	static bool polygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygonWithinEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
- 	static bool polygonWithinCircle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+ 	static bool polygonWithinCircle( const Jstr &mk1, const JagStrSplit &sp1,
 									    double x0, double y0, double r, double nx, bool strict );
- 	static bool polygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1,
-										const AbaxDataString &mk2, const JagStrSplit &sp2 );
+ 	static bool polygonWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1,
+										const Jstr &mk2, const JagStrSplit &sp2 );
 
 	// polygon3d within
-	static bool polygon3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygon3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0, double r, double nx, double ny, bool strict );
 
-	static bool polygon3DWithinBox(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygon3DWithinBox(  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, bool strict );
-	static bool polygon3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygon3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, bool strict );
-	static bool polygon3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygon3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, bool strict );
-	static bool polygon3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygon3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, bool strict );
 
 
 	// multipolygon
-	static bool multiPolygonWithinTriangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygonWithinTriangle( const Jstr &mk1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
-	static bool multiPolygonWithinSquare( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygonWithinSquare( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double r, double nx, bool strict );
-	static bool multiPolygonWithinRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygonWithinRectangle( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
-	static bool multiPolygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygonWithinEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
- 	static bool multiPolygonWithinCircle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+ 	static bool multiPolygonWithinCircle( const Jstr &mk1, const JagStrSplit &sp1,
 									    double x0, double y0, double r, double nx, bool strict );
- 	static bool multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1,
-										const AbaxDataString &mk2, const JagStrSplit &sp2 );
+ 	static bool multiPolygonWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1,
+										const Jstr &mk2, const JagStrSplit &sp2 );
 
 	// multipolygon3d within
-	static bool multiPolygon3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygon3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0, double r, double nx, double ny, bool strict );
 
-	static bool multiPolygon3DWithinBox(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygon3DWithinBox(  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, bool strict );
-	static bool multiPolygon3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygon3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, bool strict );
-	static bool multiPolygon3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygon3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, bool strict );
-	static bool multiPolygon3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygon3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, bool strict );
 
@@ -469,112 +469,124 @@ class JagGeo
 										 double r, double h, bool strict );
 
 	/////////////////////////////////////// Intersect function ////////////////////////////////////////////////////
-   	static bool doPointIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doPointIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2, bool strict=true );
-   	static bool doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 								const JagStrSplit &sp2, bool strict=true );
-   	static bool doTriangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doTriangleIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doTriangle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doTriangle3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doCircleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doCircleIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2,  bool strict=true );
-   	static bool doSphereIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSphereIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doBoxIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doBoxIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doRectangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doRectangleIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doRectangle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doRectangle3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doSquareIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSquareIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doSquare3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSquare3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doCubeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doCubeIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									 int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doCylinderIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doCylinderIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									 int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doConeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doConeIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doEllipseIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doEllipseIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doEllipsoidIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doEllipsoidIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLineIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doLineIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLine3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doLine3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLineStringIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doLineString3DIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doPolygonIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doPolygon3DIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doMultiPolygonIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
-   	static bool doMultiPolygon3DIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doLineStringIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doLineString3DIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doPolygonIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doPolygon3DIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doMultiPolygonIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
+   	static bool doMultiPolygon3DIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict=true );
 
 	// addtion or collection/concatenation
-   	static AbaxDataString doPointAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static Jstr doPointAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2 );
-   	static AbaxDataString doPoint3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static Jstr doPoint3DAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 								const JagStrSplit &sp2 );
-   	static AbaxDataString doLineAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static Jstr doLineAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doLine3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static Jstr doLine3DAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doLineStringAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doLineString3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doMultiPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doMultiPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static AbaxDataString doPolygonUnion( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-										const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static Jstr doLineStringAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static Jstr doLineString3DAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static Jstr doPolygonAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static Jstr doPolygon3DAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static Jstr doMultiPolygonAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static Jstr doMultiPolygon3DAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static Jstr doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+										const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
 
-	static AbaxDataString lineAdditionLineString( double x10, double y10, double x20, double y20, 
-													const AbaxDataString &mk2, const JagStrSplit &sp2 );
-	static AbaxDataString line3DAdditionLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
-	                                      const AbaxDataString &mk2, const JagStrSplit &sp2);
-	static AbaxDataString lineString3DAdditionLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-                                            const AbaxDataString &mk2, const JagStrSplit &sp2 );
+	static Jstr lineAdditionLineString( double x10, double y10, double x20, double y20, 
+													const Jstr &mk2, const JagStrSplit &sp2 );
+	static Jstr line3DAdditionLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
+	                                      const Jstr &mk2, const JagStrSplit &sp2);
+	static Jstr lineString3DAdditionLineString3D( const Jstr &mk1, const JagStrSplit &sp1,
+                                            const Jstr &mk2, const JagStrSplit &sp2 );
 
-   	static AbaxDataString doPointIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doLineIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doLineStringIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doMultiLineStringIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doPolygonIntersection( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static Jstr doPointIntersection( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doLineIntersection( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doLineStringIntersection( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doMultiLineStringIntersection( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doPolygonIntersection( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
 
-   	static AbaxDataString doPointDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doLineDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doLineStringDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doMultiLineStringDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doPolygonDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
-   	static AbaxDataString doMultiPolygonDifference( const AbaxDataString &type1,const JagStrSplit &sp1, 
-											   const AbaxDataString &type2,const JagStrSplit &sp2 );
+   	static Jstr doPointDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doLineDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doLineStringDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doMultiLineStringDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doPolygonDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doMultiPolygonDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
 
+   	static Jstr doPointSymDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doLineSymDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doLineStringSymDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doMultiLineStringSymDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doPolygonSymDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doMultiPolygonSymDifference( const Jstr &type1,const JagStrSplit &sp1, 
+											   const Jstr &type2,const JagStrSplit &sp2 );
 
 
 	// 2D circle
@@ -586,7 +598,7 @@ class JagGeo
 										  double w, double h, double nx,  bool strict );
 	static bool circleIntersectTriangle( double px, double py, double pr, double x1, double y1, 
 									  double x2, double y2, double x3, double y3, bool strict=true, bool bound = true );
-	static bool circleIntersectPolygon( double px, double py, double pr, const AbaxDataString &mk2, const JagStrSplit &sp2,
+	static bool circleIntersectPolygon( double px, double py, double pr, const Jstr &mk2, const JagStrSplit &sp2,
 									   bool strict=true );
 
 	// 3D circle
@@ -623,7 +635,7 @@ class JagGeo
 	static bool rectangleIntersectEllipse( double px0, double py0, double a0, double b0, double nx0,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
 	static bool rectangleIntersectPolygon( double px0, double py0, double a0, double b0, double nx0,
-										   const AbaxDataString &mk2, const JagStrSplit &sp2 );
+										   const Jstr &mk2, const JagStrSplit &sp2 );
 
 	// 2D triangle
 	static bool triangleIntersectTriangle( double x10, double y10, double x20, double y20, double x30, double y30,
@@ -635,11 +647,11 @@ class JagGeo
  	static bool triangleIntersectCircle( double x10, double y10, double x20, double y20, double x30, double y30,
 									    double x0, double y0, double r, double nx, bool strict );
  	static bool triangleIntersectPolygon( double x10, double y10, double x20, double y20, double x30, double y30,
-										  const AbaxDataString &mk2, const JagStrSplit &sp2 );
+										  const Jstr &mk2, const JagStrSplit &sp2 );
 	static bool triangleIntersectLine( double x10, double y10, double x20, double y20, double x30, double y30,
 										 double x1, double y1, double x2, double y2 );
  	static bool triangleIntersectLineString( double x10, double y10, double x20, double y20, double x30, double y30,
-										  const AbaxDataString &mk2, const JagStrSplit &sp2 );
+										  const Jstr &mk2, const JagStrSplit &sp2 );
 										
 	// 2D ellipse
 	static bool ellipseIntersectTriangle( double px0, double py0, double a0, double b0, double nx0, 
@@ -649,7 +661,7 @@ class JagGeo
 	static bool ellipseIntersectEllipse( double px0, double py0, double a0, double b0, double nx0,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
 	static bool ellipseIntersectPolygon( double px0, double py0, double a0, double b0, double nx0,
-										 const AbaxDataString &mk2, const JagStrSplit &sp2 );
+										 const Jstr &mk2, const JagStrSplit &sp2 );
 
 	// rect 3D
 
@@ -732,7 +744,7 @@ class JagGeo
 	static bool lineIntersectTriangle( double x10, double y10, double x20, double y20, 
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
 	static bool lineIntersectLineString( double x10, double y10, double x20, double y20, 
-		                              const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+		                              const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 	static bool lineIntersectRectangle( double x10, double y10, double x20, double y20, 
 		                                double x0, double y0, double a, double b, double nx, bool strict );
 	static bool lineIntersectEllipse( double x10, double y10, double x20, double y20, 
@@ -740,11 +752,11 @@ class JagGeo
 	static bool lineIntersectLine(  double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4 );
 	static bool lineIntersectLine(  const JagLine2D &line1, const JagLine2D &line2 );
 	static bool lineIntersectPolygon( double x10, double y10, double x20, double y20, 
-		                              const AbaxDataString &mk2, const JagStrSplit &sp2 );
+		                              const Jstr &mk2, const JagStrSplit &sp2 );
 
 
 	static bool line3DIntersectLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
-		                              const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict );
+		                              const Jstr &mk2, const JagStrSplit &sp2, bool strict );
 	static bool line3DIntersectBox( const JagLine3D &line, double x0, double y0, double z0,
 
 									double w, double d, double h, double nx, double ny, bool strict );
@@ -764,70 +776,70 @@ class JagGeo
                                     double a, double b, double c, double nx, double ny, bool strict );
 
 	// linestring intersect
-	static bool lineStringIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2, bool doRes, JagVector<JagPoint2D> &vec );
-	static bool lineStringIntersectTriangle( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2, bool doRes, JagVector<JagPoint2D> &vec );
+	static bool lineStringIntersectTriangle( const Jstr &m1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
-	static bool lineStringIntersectRectangle( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineStringIntersectRectangle( const Jstr &m1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
-	static bool lineStringIntersectEllipse( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineStringIntersectEllipse( const Jstr &m1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
 
 
 
-	static bool lineString3DIntersectLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2, bool doRes, JagVector<JagPoint3D> &vec  );
+	static bool lineString3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2, bool doRes, JagVector<JagPoint3D> &vec  );
 
-	static bool lineString3DIntersectBox(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineString3DIntersectBox(  const Jstr &m1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, bool strict );
-	static bool lineString3DIntersectSphere(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineString3DIntersectSphere(  const Jstr &m1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, bool strict );
-	static bool lineString3DIntersectEllipsoid(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineString3DIntersectEllipsoid(  const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, bool strict );
-	static bool lineString3DIntersectCone(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineString3DIntersectCone(  const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, bool strict );
-	static bool lineString3DIntersectCylinder( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool lineString3DIntersectCylinder( const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double a, double b, double c, double nx, double ny, bool strict );
-	static bool lineString3DIntersectTriangle3D( const AbaxDataString &m1, const JagStrSplit &sp1,
-												 const AbaxDataString &m2, const JagStrSplit &sp2 );
-	static bool lineString3DIntersectSquare3D( const AbaxDataString &m1, const JagStrSplit &sp1,
-												 const AbaxDataString &m2, const JagStrSplit &sp2 );
-	static bool lineString3DIntersectRectangle3D( const AbaxDataString &m1, const JagStrSplit &sp1,
-												 const AbaxDataString &m2, const JagStrSplit &sp2 );
+	static bool lineString3DIntersectTriangle3D( const Jstr &m1, const JagStrSplit &sp1,
+												 const Jstr &m2, const JagStrSplit &sp2 );
+	static bool lineString3DIntersectSquare3D( const Jstr &m1, const JagStrSplit &sp1,
+												 const Jstr &m2, const JagStrSplit &sp2 );
+	static bool lineString3DIntersectRectangle3D( const Jstr &m1, const JagStrSplit &sp1,
+												 const Jstr &m2, const JagStrSplit &sp2 );
 
 
 	// polygon intersect
-	static bool polygonIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2  );
-	static bool polygonIntersectTriangle( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2  );
+	static bool polygonIntersectTriangle( const Jstr &m1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
-	static bool polygonIntersectRectangle( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygonIntersectRectangle( const Jstr &m1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
-	static bool polygonIntersectEllipse( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygonIntersectEllipse( const Jstr &m1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
-	static bool polygonIntersectLine( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygonIntersectLine( const Jstr &m1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2 );
 
 	// polygon3d intersect
-	static bool polygon3DIntersectLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2  );
+	static bool polygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2  );
 
-	static bool polygon3DIntersectBox(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygon3DIntersectBox(  const Jstr &m1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, bool strict );
-	static bool polygon3DIntersectSphere(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygon3DIntersectSphere(  const Jstr &m1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, bool strict );
-	static bool polygon3DIntersectEllipsoid(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygon3DIntersectEllipsoid(  const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, bool strict );
-	static bool polygon3DIntersectCone(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygon3DIntersectCone(  const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, bool strict );
-	static bool polygon3DIntersectCylinder( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool polygon3DIntersectCylinder( const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double a, double b, double c, double nx, double ny, bool strict );
 
@@ -854,8 +866,8 @@ class JagGeo
    	static double doEllipse3DArea(  int srid1, const JagStrSplit &sp1 );
    	static double doEllipsoidArea(  int srid1, const JagStrSplit &sp1 );
    	static double doEllipsoidVolume(  int srid1, const JagStrSplit &sp1 );
-   	static double doPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
-   	static double doMultiPolygonArea(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doPolygonArea(  const Jstr &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doMultiPolygonArea(  const Jstr &mk1, int srid1, const JagStrSplit &sp1 );
 
 	// 2D area or 3D perimeter
    	static double doCirclePerimeter(  int srid1, const JagStrSplit &sp1 );
@@ -871,91 +883,91 @@ class JagGeo
    	static double doEllipsePerimeter(  int srid1, const JagStrSplit &sp1 );
    	static double doEllipse3DPerimeter(  int srid1, const JagStrSplit &sp1 );
    	static double doEllipsoidPerimeter(  int srid1, const JagStrSplit &sp1 );
-   	static double doPolygonPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
-   	static double doPolygon3DPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
-   	static double doMultiPolygonPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
-   	static double doMultiPolygon3DPerimeter(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doPolygonPerimeter(  const Jstr &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doPolygon3DPerimeter(  const Jstr &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doMultiPolygonPerimeter(  const Jstr &mk1, int srid1, const JagStrSplit &sp1 );
+   	static double doMultiPolygon3DPerimeter(  const Jstr &mk1, int srid1, const JagStrSplit &sp1 );
 
 	/////////////////////////////////////// same(equal) function ///////////////////////////////////////////
-   	static bool doPointSame(  const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static bool doPoint3DSame( const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static bool doTriangleSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doPointSame(  const JagStrSplit &sp1, const Jstr &mk2, 
+								const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doPoint3DSame( const JagStrSplit &sp1, const Jstr &mk2, 
+								const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doTriangleSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2 );
-   	static bool doTriangle3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doTriangle3DSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2 );
-   	static bool doCircleSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doCircleSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2 );
-   	static bool doCircle3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, 
+   	static bool doCircle3DSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, int srid2, 
 									const JagStrSplit &sp2 );
-   	static bool doSphereSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSphereSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doBoxSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doBoxSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doRectangleSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doRectangleSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doRectangle3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doRectangle3DSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doSquareSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSquareSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doSquare3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doSquare3DSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2 );
-   	static bool doCubeSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doCubeSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									 int srid2, const JagStrSplit &sp2 );
-   	static bool doCylinderSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doCylinderSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									 int srid2, const JagStrSplit &sp2 );
-   	static bool doConeSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doConeSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doEllipseSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doEllipseSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doEllipsoidSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doEllipsoidSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doLineSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doLineSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doLine3DSame(  int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+   	static bool doLine3DSame(  int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 									int srid2, const JagStrSplit &sp2 );
-   	static bool doLineStringSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static bool doLineString3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									  const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static bool doPolygonSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static bool doPolygon3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									  const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static bool doMultiPolygonSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
-   	static bool doMultiPolygon3DSame(  const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doLineStringSame(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doLineString3DSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									  const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doPolygonSame(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doPolygon3DSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									  const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doMultiPolygonSame(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
+   	static bool doMultiPolygon3DSame(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
 
-	static bool sequenceSame( const AbaxDataString &mk1, const JagStrSplit &sp1, const AbaxDataString &mk2, const JagStrSplit &sp2  );
+	static bool sequenceSame( const Jstr &mk1, const JagStrSplit &sp1, const Jstr &mk2, const JagStrSplit &sp2  );
 	/*****
 	// polygon intersect
-	static bool multiPolygonIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2  );
-	static bool multiPolygonIntersectTriangle( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2  );
+	static bool multiPolygonIntersectTriangle( const Jstr &m1, const JagStrSplit &sp1,
 										 double x1, double y1, double x2, double y2, double x3, double y3,  bool strict );
-	static bool multiPolygonIntersectRectangle( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygonIntersectRectangle( const Jstr &m1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
-	static bool multiPolygonIntersectEllipse( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygonIntersectEllipse( const Jstr &m1, const JagStrSplit &sp1,
 		                                double x0, double y0, double a, double b, double nx, bool strict );
 
 	// multiPolygon3d intersect
-	static bool multiPolygon3DIntersectLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2  );
+	static bool multiPolygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2  );
 
-	static bool multiPolygon3DIntersectBox(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygon3DIntersectBox(  const Jstr &m1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, bool strict );
-	static bool multiPolygon3DIntersectSphere(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygon3DIntersectSphere(  const Jstr &m1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, bool strict );
-	static bool multiPolygon3DIntersectEllipsoid(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygon3DIntersectEllipsoid(  const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, bool strict );
-	static bool multiPolygon3DIntersectCone(  const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygon3DIntersectCone(  const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, bool strict );
-	static bool multiPolygon3DIntersectCylinder( const AbaxDataString &m1, const JagStrSplit &sp1,
+	static bool multiPolygon3DIntersectCylinder( const Jstr &m1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
                                     double a, double b, double c, double nx, double ny, bool strict );
 	*********/
@@ -1004,7 +1016,7 @@ class JagGeo
 	static void sampleLinesOnCylinder( double x0, double y0, double z0, double r, double h,
 									   double nx, double ny, int num2, JagVector<JagLine3D> &samples );
 
-	static AbaxDataString convertType2Short( const AbaxDataString &geotypeLong );
+	static Jstr convertType2Short( const Jstr &geotypeLong );
 	static bool jagLE (double f1, double f2 );
 	static bool jagGE (double f1, double f2 );
 	static bool jagEQ (double f1, double f2 );
@@ -1026,13 +1038,13 @@ class JagGeo
 								    double &outx, double &outy, double &outz );
     static void transform3DCoordLocal2Global( double inx0, double iny0, double inz0, double inx, double iny, double inz,
 									  double nx,  double ny, double &outx, double &outy, double &outz );
-   static bool doAllNearby( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-                             const AbaxDataString& mark2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
-							 const AbaxDataString &carg );
+   static bool doAllNearby( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+                             const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+							 const Jstr &carg );
 
-    static int getDimension( const AbaxDataString& colType );
-    static AbaxDataString getTypeStr( const AbaxDataString& colType );
-    static int getPolyDimension( const AbaxDataString& colType );
+    static int getDimension( const Jstr& colType );
+    static Jstr getTypeStr( const Jstr& colType );
+    static int getPolyDimension( const Jstr& colType );
 	static bool above(double x, double y, double x2, double y2, double x3, double y3 );
 	static bool above(double x, double y, double z, double x2, double y2, double z2, double x3, double y3, double z3 );
 	static bool aboveOrSame(double x, double y, double x2, double y2, double x3, double y3 );
@@ -1047,262 +1059,262 @@ class JagGeo
 	static bool isNull( double x, double y, double z );
 	static bool isNull(double x1, double y1, double x2, double y2 );
 	static bool isNull(double x1, double y1, double z1, double x2, double y2, double z2 );
-	static AbaxDataString makeGeoJson( const JagStrSplit &sp, const char *str );
-	static AbaxDataString makeJsonLineString( const AbaxDataString &title, const JagStrSplit &sp, const char *str );
-	static AbaxDataString makeJsonLineString3D( const AbaxDataString &title, const JagStrSplit &sp, const char *str );
-	static AbaxDataString makeJsonPolygon( const AbaxDataString &title, const JagStrSplit &sp, const char *str, bool is3D );
-	static AbaxDataString makeJsonMultiPolygon( const AbaxDataString &title, const JagStrSplit &sp, const char *str, bool is3D );
-	static AbaxDataString makeJsonDefault( const JagStrSplit &sp, const char *str );
-	static bool distance( const AbaxFixString &lstr, const AbaxFixString &rstr, const AbaxDataString &arg, double &dist );
+	static Jstr makeGeoJson( const JagStrSplit &sp, const char *str );
+	static Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *str );
+	static Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char *str );
+	static Jstr makeJsonPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
+	static Jstr makeJsonMultiPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
+	static Jstr makeJsonDefault( const JagStrSplit &sp, const char *str );
+	static bool distance( const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &arg, double &dist );
 
 
 	////////////// distance //////////////////
 
-	static bool doPointDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist );
-	static bool doPoint3DDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doCircleDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doCircle3DDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doSphereDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doSquareDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doSquare3DDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doCubeDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doRectangleDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doRectangle3DDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doBoxDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doTriangleDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doTriangle3DDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doCylinderDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doConeDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doEllipseDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doEllipsoidDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doLineDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doLine3DDistance( const AbaxDataString& mark1,  const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doLineStringDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doLineString3DDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doPolygonDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doPolygon3DDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doMultiPolygonDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
-	static bool doMultiPolygon3DDistance( const AbaxDataString& mark1, const JagStrSplit& sp1, const AbaxDataString& mark2,
-										 const AbaxDataString& colType2,
-								 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist);
+	static bool doPointDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist );
+	static bool doPoint3DDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doCircleDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doCircle3DDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doSphereDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doSquareDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doSquare3DDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doCubeDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doRectangleDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doRectangle3DDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doBoxDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doTriangleDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doTriangle3DDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doCylinderDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doConeDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doEllipseDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doEllipsoidDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doLineDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doLine3DDistance( const Jstr& mark1,  const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doLineStringDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doLineString3DDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doPolygonDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doPolygon3DDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doMultiPolygonDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
+	static bool doMultiPolygon3DDistance( const Jstr& mark1, const JagStrSplit& sp1, const Jstr& mark2,
+										 const Jstr& colType2,
+								 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist);
 	
 	// 2D point
-	static bool pointDistancePoint( int srid, double px, double py, double x1, double y1, const AbaxDataString& arg, double &dist );
-	static bool pointDistanceLine( int srid, double px, double py, double x1, double y1, double x2, double y2, const AbaxDataString& arg, double &dist );
-	static bool pointDistanceLineString( int srid,  double x, double y, const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
-	static bool pointDistanceSquare( int srid, double px, double py, double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
-	static bool pointDistanceCircle( int srid, double px, double py, double x0, double y0, double r, const AbaxDataString& arg, double &dist );
-	static bool pointDistanceRectangle( int srid, double px, double py, double x, double y, double a, double b, double nx, const AbaxDataString& arg, double &dist );
-	static bool pointDistanceEllipse( int srid, double px, double py, double x, double y, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+	static bool pointDistancePoint( int srid, double px, double py, double x1, double y1, const Jstr& arg, double &dist );
+	static bool pointDistanceLine( int srid, double px, double py, double x1, double y1, double x2, double y2, const Jstr& arg, double &dist );
+	static bool pointDistanceLineString( int srid,  double x, double y, const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
+	static bool pointDistanceSquare( int srid, double px, double py, double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
+	static bool pointDistanceCircle( int srid, double px, double py, double x0, double y0, double r, const Jstr& arg, double &dist );
+	static bool pointDistanceRectangle( int srid, double px, double py, double x, double y, double a, double b, double nx, const Jstr& arg, double &dist );
+	static bool pointDistanceEllipse( int srid, double px, double py, double x, double y, double a, double b, double nx, const Jstr& arg, double &dist );
 	static bool pointDistanceTriangle( int srid, double px, double py, double x1, double y1,
 									  double x2, double y2, double x3, double y3,
-					 				  const AbaxDataString& arg, double &dist ); 
-	static bool pointDistancePolygon( int srid, double x, double y, const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+					 				  const Jstr& arg, double &dist ); 
+	static bool pointDistancePolygon( int srid, double x, double y, const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 	static bool pointDistancePolygon( int srid, double x, double y, const JagLineString3D &linestr );
 	static bool pointDistancePolygon( int srid, double x, double y, const JagPolygon &pgon );
 
 	// 3D point
-	static bool point3DDistancePoint3D( int srid, double px, double py, double pz, double x1, double y1, double z1, const AbaxDataString& arg, double &dist );
+	static bool point3DDistancePoint3D( int srid, double px, double py, double pz, double x1, double y1, double z1, const Jstr& arg, double &dist );
 	static bool point3DDistanceLine3D( int srid, double px, double py, double pz, double x1, double y1, double z1, 
-									double x2, double y2, double z2, const AbaxDataString& arg, double &dist );
-	static bool point3DDistanceLineString3D( int srid,  double x, double y, double z, const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+									double x2, double y2, double z2, const Jstr& arg, double &dist );
+	static bool point3DDistanceLineString3D( int srid,  double x, double y, double z, const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 	static bool point3DDistanceBox( int srid, double px, double py, double pz,  
 									  double x, double y, double z, double a, double b, double c, double nx, double ny, 
-									  const AbaxDataString& arg, double &dist );
-    static bool point3DDistanceSphere( int srid, double px, double py, double pz, double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+									  const Jstr& arg, double &dist );
+    static bool point3DDistanceSphere( int srid, double px, double py, double pz, double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool point3DDistanceEllipsoid( int srid, double px, double py, double pz,  
 									  double x, double y, double z, double a, double b, double c, double nx, double ny, 
-									  const AbaxDataString& arg, double &dist );
+									  const Jstr& arg, double &dist );
 
 	static bool point3DDistanceCone( int srid, double px, double py, double pz, 
 									double x0, double y0, double z0,
-									 double r, double h,  double nx, double ny, const AbaxDataString& arg, double &dist );
+									 double r, double h,  double nx, double ny, const Jstr& arg, double &dist );
 	static bool point3DDistanceSquare3D( int srid, double px, double py, double pz, 
 									double x0, double y0, double z0,
-									 double a, double nx, double ny, const AbaxDataString& arg, double &dist );
+									 double a, double nx, double ny, const Jstr& arg, double &dist );
 	static bool point3DDistanceCylinder( int srid,  double x, double y, double z,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool point3DDistanceNormalCylinder( int srid,  double x, double y, double z,
-                                    double r, double h, const AbaxDataString& arg, double &dist );
+                                    double r, double h, const Jstr& arg, double &dist );
 
 	// 2D circle
-	static bool circleDistanceCircle( int srid, double px, double py, double pr, double x, double y, double r, const AbaxDataString& arg, double &dist );
-	static bool circleDistanceSquare( int srid, double px0, double py0, double pr, double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+	static bool circleDistanceCircle( int srid, double px, double py, double pr, double x, double y, double r, const Jstr& arg, double &dist );
+	static bool circleDistanceSquare( int srid, double px0, double py0, double pr, double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
 	static bool circleDistanceEllipse( int srid, double px, double py, double pr, 
 									 	 double x, double y, double w, double h, double nx, 
-									 	 const AbaxDataString& arg, double &dist );
+									 	 const Jstr& arg, double &dist );
 	static bool circleDistanceRectangle( int srid, double px0, double py0, double pr, double x0, double y0,
-										  double w, double h, double nx,  const AbaxDataString& arg, double &dist );
+										  double w, double h, double nx,  const Jstr& arg, double &dist );
 	static bool circleDistanceTriangle( int srid, double px, double py, double pr, double x1, double y1, 
-									  double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist );
+									  double x2, double y2, double x3, double y3, const Jstr& arg, double &dist );
 	static bool circleDistancePolygon( int srid, double px0, double py0, double pr, 
-									 const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+									 const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 
 	// 3D circle
 	static bool circle3DDistanceCube( int srid, double px0, double py0, double pz0, double pr0,  double nx0, double ny0,
-										double x0, double y0, double z0,  double r, double nx, double ny, const AbaxDataString& arg, 
+										double x0, double y0, double z0,  double r, double nx, double ny, const Jstr& arg, 
 										double &dist );
 
 	static bool circle3DDistanceBox( int srid, double px0, double py0, double pz0, double pr0,  double nx0, double ny0,
 					                   double x0, double y0, double z0,  double a, double b, double c,
-					                   double nx, double ny, const AbaxDataString& arg, double &dist );
+					                   double nx, double ny, const Jstr& arg, double &dist );
    	static bool circle3DDistanceSphere( int srid, double px0, double py0, double pz0, double pr0,   double nx0, double ny0,
-	   									 double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+	   									 double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool circle3DDistanceEllipsoid( int srid, double px0, double py0, double pz0, double pr0,  double nx0, double ny0,
 										  double x0, double y0, double z0, 
-									 	   double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+									 	   double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool circle3DDistanceCone( int srid, double px0, double py0, double pz0, double pr0, double nx0, double ny0,
 										  double x0, double y0, double z0, 
-									 	   double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+									 	   double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 
 	// 3D sphere
 	static bool sphereDistanceCube( int srid,  double px0, double py0, double pz0, double pr0,
 		                               double x0, double y0, double z0, double r, double nx, double ny, 
-										const AbaxDataString& arg, double &dist );
+										const Jstr& arg, double &dist );
 	static bool sphereDistanceBox( int srid,  double px0, double py0, double pz0, double r,
 		                                double x0, double y0, double z0, double w, double d, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist );
+										double nx, double ny, const Jstr& arg, double &dist );
 	static bool sphereDistanceSphere( int srid,  double px, double py, double pz, double pr, 
-										double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+										double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool sphereDistanceEllipsoid( int srid,  double px0, double py0, double pz0, double pr,
 		                                    double x0, double y0, double z0, double w, double d, double h, 
-											double nx, double ny, const AbaxDataString& arg, double &dist );
+											double nx, double ny, const Jstr& arg, double &dist );
 	static bool sphereDistanceCone( int srid,  double px0, double py0, double pz0, double pr,
 		                                    double x0, double y0, double z0, double r, double h, 
-											double nx, double ny, const AbaxDataString& arg, double &dist );
+											double nx, double ny, const Jstr& arg, double &dist );
 
 	// 2D rectangle
 	static bool rectangleDistanceTriangle( int srid, double px0, double py0, double a0, double b0, double nx0, 
-										 double x1, double y1, double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist );
+										 double x1, double y1, double x2, double y2, double x3, double y3, const Jstr& arg, double &dist );
 	static bool rectangleDistanceSquare( int srid, double px0, double py0, double a0, double b0, double nx0,
-		                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
 	static bool rectangleDistanceRectangle( int srid, double px0, double py0, double a0, double b0, double nx0,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
 	static bool rectangleDistanceEllipse( int srid, double px0, double py0, double a0, double b0, double nx0,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
  	static bool rectangleDistanceCircle( int srid, double px0, double py0, double a0, double b0, double nx0, 
-									    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+									    double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
  	static bool rectangleDistancePolygon( int srid, double px0, double py0, double a0, double b0, double nx0, 
-										const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+										const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 
 	// 2D triangle
 	static bool triangleDistanceTriangle( int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-										 double x1, double y1, double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist );
+										 double x1, double y1, double x2, double y2, double x3, double y3, const Jstr& arg, double &dist );
 	static bool triangleDistanceSquare( int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-		                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
 	static bool triangleDistanceRectangle( int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
 	static bool triangleDistanceEllipse( int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
  	static bool triangleDistanceCircle( int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-									    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+									    double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
  	static bool triangleDistancePolygon( int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-									    const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+									    const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 										
 	// 2D ellipse
 	static bool ellipseDistanceTriangle( int srid, double px0, double py0, double a0, double b0, double nx0, 
-										 double x1, double y1, double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist );
+										 double x1, double y1, double x2, double y2, double x3, double y3, const Jstr& arg, double &dist );
 	static bool ellipseDistanceSquare( int srid, double px0, double py0, double a0, double b0, double nx0,
-		                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
 	static bool ellipseDistanceRectangle( int srid, double px0, double py0, double a0, double b0, double nx0,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
 	static bool ellipseDistanceEllipse( int srid, double px0, double py0, double a0, double b0, double nx0,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
  	static bool ellipseDistanceCircle( int srid, double px0, double py0, double a0, double b0, double nx0, 
-									    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+									    double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
  	static bool ellipseDistancePolygon( int srid, double px0, double py0, double a0, double b0, double nx0, 
-									    const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+									    const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 
 	// rect 3D
 	static bool rectangle3DDistanceCube( int srid,  double px0, double py0, double pz0, double a0, double b0, double nx0, double ny0,
-                                double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 
 	static bool rectangle3DDistanceBox( int srid,  double px0, double py0, double pz0, double a0, double b0,
                                 double nx0, double ny0,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool rectangle3DDistanceSphere( int srid,  double px0, double py0, double pz0, double a0, double b0,
                                        double nx0, double ny0,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool rectangle3DDistanceEllipsoid( int srid,  double px0, double py0, double pz0, double a0, double b0,
                                     double nx0, double ny0,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool rectangle3DDistanceCone( int srid,  double px0, double py0, double pz0, double a0, double b0,
                                     double nx0, double ny0,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 
 
 	// triangle 3D
 	static bool triangle3DDistanceCube( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 									double x30, double y30,  double z30,
-									double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+									double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 
 	static bool triangle3DDistanceBox( int srid,  double x10, double y10, double z10, double x20, double y20, double z20, 
 									double x30, double y30, double z30,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool triangle3DDistanceSphere( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 									   double x30, double y30, double z30,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool triangle3DDistanceEllipsoid( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 											double x30, double y30, double z30,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool triangle3DDistanceCone( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 											double x30, double y30, double z30,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 
 
 
@@ -1310,211 +1322,211 @@ class JagGeo
 
 	// 3D box
 	static bool boxDistanceCube( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0,
-	                            double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+	                            double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 	static bool boxDistanceBox( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
 						       double x0, double y0, double z0, double w, double d, double h, double nx, double ny, 
-								const AbaxDataString& arg, double &dist );
+								const Jstr& arg, double &dist );
 	static bool boxDistanceSphere( int srid, double px0, double py0, double pz0, double a0, double b0, double c0,
                                  double nx0, double ny0, double x, double y, double z, double r,
-								 const AbaxDataString& arg, double &dist );
+								 const Jstr& arg, double &dist );
     static bool boxDistanceEllipsoid( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double w, double d, double h, 
-									double nx, double ny, const AbaxDataString& arg, double &dist );
+									double nx, double ny, const Jstr& arg, double &dist );
     static bool boxDistanceCone( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double r, double h, 
-									double nx, double ny, const AbaxDataString& arg, double &dist );
+									double nx, double ny, const Jstr& arg, double &dist );
 	
 	// ellipsoid
 	static bool ellipsoidDistanceCube( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0,
-	                            double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+	                            double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 	static bool ellipsoidDistanceBox( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
 						       double x0, double y0, double z0, double w, double d, double h, double nx, double ny, 
-							   const AbaxDataString& arg, double &dist );
+							   const Jstr& arg, double &dist );
 	static bool ellipsoidDistanceSphere( int srid, double px0, double py0, double pz0, double a0, double b0, double c0,
                                  double nx0, double ny0, double x, double y, double z, double r,
-								 const AbaxDataString& arg, double &dist );
+								 const Jstr& arg, double &dist );
     static bool ellipsoidDistanceEllipsoid( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double w, double d, double h, 
-									double nx, double ny, const AbaxDataString& arg, double &dist );
+									double nx, double ny, const Jstr& arg, double &dist );
     static bool ellipsoidDistanceCone( int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double r, double h, 
-									double nx, double ny, const AbaxDataString& arg, double &dist );
+									double nx, double ny, const Jstr& arg, double &dist );
 
 	// 3D cyliner
 	static bool cylinderDistanceCube( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
-		                               double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+		                               double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 	static bool cylinderDistanceBox( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 		                                double x0, double y0, double z0, double w, double d, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist );
+										double nx, double ny, const Jstr& arg, double &dist );
 	static bool cylinderDistanceSphere( int srid,  double px, double py, double pz, double pr0, double c0,  double nx0, double ny0,
-										double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+										double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool cylinderDistanceEllipsoid( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 		                                    double x0, double y0, double z0, double w, double d, double h, 
-											double nx, double ny, const AbaxDataString& arg, double &dist );
+											double nx, double ny, const Jstr& arg, double &dist );
 	static bool cylinderDistanceCone( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 		                                    double x0, double y0, double z0, double r, double h, 
-											double nx, double ny, const AbaxDataString& arg, double &dist );
+											double nx, double ny, const Jstr& arg, double &dist );
 
 	// 3D cone
 	static bool coneDistanceCube( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
-		                               double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+		                               double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 	static bool coneDistanceCube_test( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
-		                               double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+		                               double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 	static bool coneDistanceBox( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 		                                double x0, double y0, double z0, double w, double d, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist );
+										double nx, double ny, const Jstr& arg, double &dist );
 	static bool coneDistanceSphere( int srid,  double px, double py, double pz, double pr0, double c0,  double nx0, double ny0,
-										double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+										double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool coneDistanceEllipsoid( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 		                                    double x0, double y0, double z0, double w, double d, double h, 
-											double nx, double ny, const AbaxDataString& arg, double &dist );
+											double nx, double ny, const Jstr& arg, double &dist );
 	static bool coneDistanceCone( int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 		                                    double x0, double y0, double z0, double r, double h, 
-											double nx, double ny, const AbaxDataString& arg, double &dist );
+											double nx, double ny, const Jstr& arg, double &dist );
 
 
 	// 2D line
 	static bool lineDistanceTriangle( int srid, double x10, double y10, double x20, double y20, 
-										 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist );
+										 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist );
 	static bool lineDistanceLineString( int srid, double x10, double y10, double x20, double y20, 
-		                              const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+		                              const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 	static bool lineDistanceSquare( int srid, double x10, double y10, double x20, double y20, 
-		                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
 	static bool lineDistanceRectangle( int srid, double x10, double y10, double x20, double y20, 
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
 	static bool lineDistanceEllipse( int srid, double x10, double y10, double x20, double y20, 
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
  	static bool lineDistanceCircle( int srid, double x10, double y10, double x20, double y20, 
-									    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
+									    double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
 	static bool lineDistancePolygon( int srid, double x10, double y10, double x20, double y20, 
-									const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+									const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 
 
 	// line 3D
 	static bool line3DDistanceLineString3D( int srid, double x10, double y10, double z10, double x20, double y20, double z20, 
-		                              const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+		                              const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 	static bool line3DDistanceCube( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
-									double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+									double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 
 	static bool line3DDistanceBox( int srid,  double x10, double y10, double z10, double x20, double y20, double z20, 
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool line3DDistanceSphere( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist );
 	static bool line3DDistanceEllipsoid( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
 	static bool line3DDistanceCone( int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 
 
 
 	// linestring 2d
-	static bool lineStringDistanceLineString( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2,  const AbaxDataString& arg, double &dist );
-	static bool lineStringDistanceTriangle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-										 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist );
-	static bool lineStringDistanceSquare( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
-	static bool lineStringDistanceRectangle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
-	static bool lineStringDistanceEllipse( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
- 	static bool lineStringDistanceCircle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
- 	static bool lineStringDistancePolygon( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									     const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+	static bool lineStringDistanceLineString( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2,  const Jstr& arg, double &dist );
+	static bool lineStringDistanceTriangle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+										 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist );
+	static bool lineStringDistanceSquare( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
+	static bool lineStringDistanceRectangle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
+	static bool lineStringDistanceEllipse( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
+ 	static bool lineStringDistanceCircle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									    double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
+ 	static bool lineStringDistancePolygon( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									     const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 
 	// linestring3d
-	static bool lineString3DDistanceLineString3D( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-											    const AbaxDataString &mk2, const JagStrSplit &sp2,  const AbaxDataString& arg, double &dist );
-	static bool lineString3DDistanceCube( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+	static bool lineString3DDistanceLineString3D( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+											    const Jstr &mk2, const JagStrSplit &sp2,  const Jstr& arg, double &dist );
+	static bool lineString3DDistanceCube( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 
-	static bool lineString3DDistanceBox( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool lineString3DDistanceBox( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
-	static bool lineString3DDistanceSphere( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
-	static bool lineString3DDistanceEllipsoid( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
+	static bool lineString3DDistanceSphere( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist );
+	static bool lineString3DDistanceEllipsoid( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
-	static bool lineString3DDistanceCone( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
+	static bool lineString3DDistanceCone( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 
 
 	// polygon
-	static bool polygonDistanceTriangle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-										 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist );
-	static bool polygonDistanceSquare( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
-	static bool polygonDistanceRectangle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
-	static bool polygonDistanceEllipse( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
- 	static bool polygonDistanceCircle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
- 	static bool polygonDistancePolygon( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-										const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+	static bool polygonDistanceTriangle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+										 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist );
+	static bool polygonDistanceSquare( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
+	static bool polygonDistanceRectangle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
+	static bool polygonDistanceEllipse( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
+ 	static bool polygonDistanceCircle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									    double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
+ 	static bool polygonDistancePolygon( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+										const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 
 	// polygon3d Distance
-	static bool polygon3DDistanceCube( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+	static bool polygon3DDistanceCube( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 
-	static bool polygon3DDistanceBox( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool polygon3DDistanceBox( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
-	static bool polygon3DDistanceSphere( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
-	static bool polygon3DDistanceEllipsoid( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
+	static bool polygon3DDistanceSphere( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist );
+	static bool polygon3DDistanceEllipsoid( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
-	static bool polygon3DDistanceCone( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
+	static bool polygon3DDistanceCone( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 
 
 	// multipolygon
-	static bool multiPolygonDistanceTriangle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-										 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist );
-	static bool multiPolygonDistanceSquare( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
-	static bool multiPolygonDistanceRectangle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
-	static bool multiPolygonDistanceEllipse( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-		                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist );
- 	static bool multiPolygonDistanceCircle( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist );
- 	static bool multiPolygonDistancePolygon( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-										const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist );
+	static bool multiPolygonDistanceTriangle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+										 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist );
+	static bool multiPolygonDistanceSquare( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
+	static bool multiPolygonDistanceRectangle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
+	static bool multiPolygonDistanceEllipse( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+		                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist );
+ 	static bool multiPolygonDistanceCircle( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									    double x0, double y0, double r, double nx, const Jstr& arg, double &dist );
+ 	static bool multiPolygonDistancePolygon( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+										const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist );
 
 	// multipolygon3d Distance
-	static bool multiPolygon3DDistanceCube( int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist );
+	static bool multiPolygon3DDistanceCube( int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist );
 
-	static bool multiPolygon3DDistanceBox( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+	static bool multiPolygon3DDistanceBox( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
-	static bool multiPolygon3DDistanceSphere( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist );
-	static bool multiPolygon3DDistanceEllipsoid( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
+	static bool multiPolygon3DDistanceSphere( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist );
+	static bool multiPolygon3DDistanceEllipsoid( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
-	static bool multiPolygon3DDistanceCone( int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist );
+	static bool multiPolygon3DDistanceCone( int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist );
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist );
 
-	//static bool pointDistanceNormalEllipse( int srid, double px, double py, double w, double h, const AbaxDataString& arg, double &dist );
+	//static bool pointDistanceNormalEllipse( int srid, double px, double py, double w, double h, const Jstr& arg, double &dist );
 	static bool point3DDistanceNormalEllipsoid( int srid, double px, double py, double pz, 
-											   double w, double d, double h, const AbaxDataString& arg, double &dist );
+											   double w, double d, double h, const Jstr& arg, double &dist );
 	static bool point3DDistanceNormalCone( int srid, double px, double py, double pz, 
-										 double r, double h, const AbaxDataString& arg, double &dist );
+										 double r, double h, const Jstr& arg, double &dist );
 
 	static double pointToLineGeoDistance( double lata1, double lona1, double lata2, double lona2, double latb1, double lonb1 );
 	static double safeget( const JagStrSplit &sp, int arg );
-	static AbaxDataString safeGetStr( const JagStrSplit &sp, int arg );
+	static Jstr safeGetStr( const JagStrSplit &sp, int arg );
 	static void center2DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy );
 	static void center3DMultiPolygon( const JagVector<JagPolygon> &pgvec, double &cx, double &cy, double &cz );
 	static void fourthOrderEquation( double a, double b, double c, double d, double e, int &num, double *root );
@@ -1527,21 +1539,21 @@ class JagGeo
 	static double point3DDistanceToEllipsoid( int srid, double px, double py, double pz,
 											  double x0, double y0, double z0, 
 											  double a, double b, double c, double nx, double ny, bool isMin );
-	static bool doClosestPoint(  const AbaxDataString& colType1, int srid, double px, double py, double pz,
-									const AbaxDataString& mark2, const AbaxDataString &colType2, 
-									const JagStrSplit &sp2, AbaxDataString &res );
+	static bool doClosestPoint(  const Jstr& colType1, int srid, double px, double py, double pz,
+									const Jstr& mark2, const Jstr &colType2, 
+									const JagStrSplit &sp2, Jstr &res );
 
 	static bool getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 	static bool getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 	static bool getBBox2DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 	static bool getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
-	static double getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr );
-	static AbaxDataString bboxstr( const JagStrSplit &sp, bool skipRing );
-	static int convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr );
+	static double getGeoLength( const Jstr &mk, const AbaxFixString &lstr );
+	static Jstr bboxstr( const JagStrSplit &sp, bool skipRing );
+	static int convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr );
 	static int numberOfSegments( const JagStrSplit &sp );
 	static bool isPolygonCCW( const JagStrSplit &sp );
 	static bool isPolygonCW( const JagStrSplit &sp );
-	static void multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, AbaxDataString &wkt );
+	static void multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, Jstr &wkt );
     static double meterToLon( int srid, double meter, double lon, double lat);
     static double meterToLat( int srid, double meter, double lon, double lat);
 
@@ -1681,7 +1693,7 @@ class JagGeo
 										  double a,  double b,  double c );
 	static bool planeIntersectNormalCone( double A, double B, double C, double D,
 										  double R,  double h );
-	static void getCoordAvg( const AbaxDataString& colType, const JagStrSplit &sp, double &x, double &y, double &z, 
+	static void getCoordAvg( const Jstr& colType, const JagStrSplit &sp, double &x, double &y, double &z, 
 							double &Rx, double &Ry, double &Rz );
 
 	static void triangleRegion( double x1, double y1, double x2, double y2, double x3, double y3,
@@ -1691,17 +1703,17 @@ class JagGeo
 								  double x3, double y3, double z3,
 								double &x0, double &y0, double &z0, double &Rx, double &Ry, double &Rz );
 
-	static void boundingBoxRegion( const AbaxDataString &bbxstr, double &bbx, double &bby, double &brx, double &bry );
-	static void boundingBox3DRegion( const AbaxDataString &bbxstr, double &bbx, double &bby, double &bbz, 
+	static void boundingBoxRegion( const Jstr &bbxstr, double &bbx, double &bby, double &brx, double &bry );
+	static void boundingBox3DRegion( const Jstr &bbxstr, double &bbx, double &bby, double &bbz, 
 									double &brx, double &bry, double &brz );
 	static void prepareKMP( const JagStrSplit &sp, int start, int M, int *lps );
 	static int KMPPointsWithin( const JagStrSplit &sp1, int start1, const JagStrSplit &sp2, int start2 );
 	static short orientation(double x1, double y1, double x2, double y2, double x3, double y3 );
 	static short orientation(double x1, double y1, double z1, double x2, double y2, double z2, 
 							 double x3, double y3, double z3 );
-    static void getPolygonBound( const AbaxDataString &mk, const JagStrSplit &sp, double &bbx, double &bby, 
+    static void getPolygonBound( const Jstr &mk, const JagStrSplit &sp, double &bbx, double &bby, 
 								  double &rx, double &ry );
-    static void getLineStringBound( const AbaxDataString &mk, const JagStrSplit &sp, double &bbx, double &bby, 
+    static void getLineStringBound( const Jstr &mk, const JagStrSplit &sp, double &bbx, double &bby, 
 								  double &rx, double &ry );
 
 	static double dotProduct( const JagPoint2D &p1, const JagPoint2D &p2 ); 
@@ -1727,8 +1739,8 @@ class JagGeo
 	static double computePolygonArea( const JagVector<std::pair<double,double>> &vec );
 	static double computePolygonPerimeter( const JagVector<std::pair<double,double>> &vec, int srid );
 	static double computePolygon3DPerimeter( const JagVector<JagPoint3D> &vec, int srid );
-	static bool lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y );
-	static bool lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z );
+	static bool lineStringAverage( const Jstr &mk, const JagStrSplit &sp, double &x, double &y );
+	static bool lineString3DAverage( const Jstr &mk, const JagStrSplit &sp, double &x, double &y, double &z );
 	static void findMinBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy,
 	                              double &left, double &right, double &up, double &down );
 	static void findMaxBoundary( double d1,  double d2,  double d3,  double d4, double midx, double midy,
@@ -1741,21 +1753,26 @@ class JagGeo
 											   double x2, double y2, double z2, int srid,
 											   double &projx, double  &projy, double &projz);
 
-	static bool  closestPoint2DPolygon( int srid, double px, double py, const AbaxDataString &mk, 
-										const JagStrSplit &sp, AbaxDataString &res );
-	static bool  closestPoint3DPolygon( int srid, double px, double py, double pz, const AbaxDataString &mk, 
-										const JagStrSplit &sp, AbaxDataString &res );
-	static bool  closestPoint2DMultiPolygon( int srid, double px, double py, const AbaxDataString &mk, 
-										const JagStrSplit &sp, AbaxDataString &res );
-	static bool  closestPoint3DMultiPolygon( int srid, double px, double py, double pz, const AbaxDataString &mk, 
-										const JagStrSplit &sp, AbaxDataString &res );
+	static bool  closestPoint2DPolygon( int srid, double px, double py, const Jstr &mk, 
+										const JagStrSplit &sp, Jstr &res );
+	static bool  closestPoint3DPolygon( int srid, double px, double py, double pz, const Jstr &mk, 
+										const JagStrSplit &sp, Jstr &res );
+	static bool  closestPoint2DMultiPolygon( int srid, double px, double py, const Jstr &mk, 
+										const JagStrSplit &sp, Jstr &res );
+	static bool  closestPoint3DMultiPolygon( int srid, double px, double py, double pz, const Jstr &mk, 
+										const JagStrSplit &sp, Jstr &res );
 
 	static bool  closestPoint3DBox( int srid, double px, double py, double pz, double x0, double y0, double z0,
-								    double a, double b, double c, double nx, double ny, double &dist, AbaxDataString &res );
+								    double a, double b, double c, double nx, double ny, double &dist, Jstr &res );
 
-	static bool  matchPoint2D( double px, double py, const JagStrSplit &sp, AbaxDataString &xs, AbaxDataString &ys );
+	static bool  matchPoint2D( double px, double py, const JagStrSplit &sp, Jstr &xs, Jstr &ys );
 	static bool  matchPoint3D( double px, double py, double pz, const JagStrSplit &sp, 
-							   AbaxDataString &xs, AbaxDataString &ys, AbaxDataString &zs );
+							   Jstr &xs, Jstr &ys, Jstr &zs );
+	static void  nonMatchPoint2DVec( double px, double py, const JagStrSplit &sp, Jstr &vecs );
+	static void  nonMatchPoint3DVec( double px, double py, double pz, const JagStrSplit &sp, Jstr &vecs );
+	static void  nonMatchTwoPoint2DVec( double px1, double py1, double px2, double py2, const JagStrSplit &sp, Jstr &vecs );
+	static void  nonMatchTwoPoint3DVec( double px1, double py1, double pz1,  double px2, double py2, double pz2,
+										const JagStrSplit &sp, Jstr &vecs );
 
 	static bool  line2DLineStringIntersection( const JagLine2D &line1, const JagStrSplit &sp, JagVector<JagPoint2D> &vec );
 	static bool  line3DLineStringIntersection( const JagLine3D &line1, const JagStrSplit &sp, JagVector<JagPoint3D> &vec );
@@ -1766,7 +1783,7 @@ class JagGeo
 												double mx1, double my1, double mz1, double mx2, double my2, double mz2, 
 												JagVector<JagPoint3D> &vec ); 
 
-	static void splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<AbaxDataString> &svec );
+	static void splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<Jstr> &svec );
 	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagVector<JagPoint3D> &vec2, 
 									   JagVector<JagPoint3D> &resvec );
 	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagStrSplit &sp,

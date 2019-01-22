@@ -40,6 +40,7 @@ const double JagGeo::NUM_SAMPLE = 10;
 
 JagPoint2D::JagPoint2D()
 {
+	x = y = 0.0;
 }
 
 JagPoint2D::JagPoint2D( const char *sx, const char *sy)
@@ -54,6 +55,7 @@ JagPoint2D::JagPoint2D( double inx, double iny )
 
 JagPoint3D::JagPoint3D()
 {
+	x = y = z = 0.0;
 }
 
 JagPoint3D::JagPoint3D( const char *sx, const char *sy, const char *sz)
@@ -66,18 +68,18 @@ JagPoint3D::JagPoint3D( double inx, double iny, double inz )
 	x = inx; y = iny; z = inz;
 }
 
-AbaxDataString JagPoint3D::hashString() const
+Jstr JagPoint3D::hashString() const
 {
 	char buf[32];
-	AbaxDataString s;
+	Jstr s;
 	sprintf(buf, "%.6f", x );
 	s = buf;
 
 	sprintf(buf, "%.6f", y );
-	s += AbaxDataString(":") + buf;
+	s += Jstr(":") + buf;
 
 	sprintf(buf, "%.6f", z );
-	s += AbaxDataString(":") + buf;
+	s += Jstr(":") + buf;
 
 	return s;
 }
@@ -723,7 +725,7 @@ bool JagGeo::pointWithinTriangle( const JagPoint2D &point,
 	return false;
 }
 
-bool JagGeo::doPointWithin( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPointWithin( const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = sp1[JAG_SP_START+0].tof();
@@ -788,7 +790,7 @@ bool JagGeo::doPointWithin( const JagStrSplit &sp1, const AbaxDataString &mk2, c
 	return false;
 }
 
-bool JagGeo::doPoint3DWithin( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPoint3DWithin( const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	//prt(("s4409 doPoint3DWithin colType2=[%s]\n", colType2.c_str() ));
@@ -872,7 +874,7 @@ double JagGeo::doCirclePerimeter( int srid1, const JagStrSplit &sp1 )
 	return 2.0 * r * JAG_PI;
 }
 
-bool JagGeo::doCircleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCircleWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -926,7 +928,7 @@ bool JagGeo::doCircleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 }
 
 // circle surface with x y z and orientation
-bool JagGeo::doCircle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCircle3DWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -987,7 +989,7 @@ bool JagGeo::doCircle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 	return false;
 }
 
-bool JagGeo::doSphereWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSphereWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1043,7 +1045,7 @@ bool JagGeo::doSphereWithin( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 }
 
 // 2D
-bool JagGeo::doSquareWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSquareWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	//prt(("s3033 doSquareWithin colType2=[%s] \n", colType2.c_str() ));
@@ -1101,7 +1103,7 @@ bool JagGeo::doSquareWithin( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 	return false;
 }
 
-bool JagGeo::doSquare3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSquare3DWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1164,7 +1166,7 @@ bool JagGeo::doSquare3DWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 }
 
 
-bool JagGeo::doCubeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCubeWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1222,7 +1224,7 @@ bool JagGeo::doCubeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 }
 
 // 2D
-bool JagGeo::doRectangleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doRectangleWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1283,7 +1285,7 @@ bool JagGeo::doRectangleWithin( int srid1, const JagStrSplit &sp1, const AbaxDat
 }
 
 // 3D rectiangle
-bool JagGeo::doRectangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doRectangle3DWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1341,7 +1343,7 @@ bool JagGeo::doRectangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxD
 	return false;
 }
 
-bool JagGeo::doBoxWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doBoxWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1402,7 +1404,7 @@ bool JagGeo::doBoxWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStrin
 
 
 // 3D
-bool JagGeo::doCylinderWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCylinderWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1461,7 +1463,7 @@ bool JagGeo::doCylinderWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 	return false;
 }
 
-bool JagGeo::doConeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doConeWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1520,7 +1522,7 @@ bool JagGeo::doConeWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 }
 
 // 2D
-bool JagGeo::doEllipseWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doEllipseWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1583,7 +1585,7 @@ bool JagGeo::doEllipseWithin( int srid1, const JagStrSplit &sp1, const AbaxDataS
 }
 
 // 3D ellipsoid
-bool JagGeo::doEllipsoidWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doEllipsoidWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -1643,7 +1645,7 @@ bool JagGeo::doEllipsoidWithin( int srid1, const JagStrSplit &sp1, const AbaxDat
 }
 
 // 2D triangle within
-bool JagGeo::doTriangleWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doTriangleWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -1704,7 +1706,7 @@ bool JagGeo::doTriangleWithin( int srid1, const JagStrSplit &sp1, const AbaxData
 }
 
 // 3D  triangle
-bool JagGeo::doTriangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doTriangle3DWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -1765,7 +1767,7 @@ bool JagGeo::doTriangle3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDa
 }
 
 // 2D line
-bool JagGeo::doLineWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLineWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -1823,7 +1825,7 @@ bool JagGeo::doLineWithin( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 	return false;
 }
 
-bool JagGeo::doLine3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLine3DWithin( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -1883,8 +1885,8 @@ bool JagGeo::doLine3DWithin( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 }
 
 // 2D linestring
-bool JagGeo::doLineStringWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::doLineStringWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+								 const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	// like point within
 	//prt(("s6683 doLineStringWithin colType2=[%s]\n", colType2.c_str() ));
@@ -1938,8 +1940,8 @@ bool JagGeo::doLineStringWithin( const AbaxDataString &mk1, int srid1, const Jag
 	return false;
 }
 
-bool JagGeo::doLineString3DWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::doLineString3DWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -1990,8 +1992,8 @@ bool JagGeo::doLineString3DWithin( const AbaxDataString &mk1, int srid1, const J
 	return false;
 }
 
-bool JagGeo::doPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::doPolygonWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+								 const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	/***
 	//sp1.print();
@@ -2066,7 +2068,7 @@ bool JagGeo::doPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStr
 	return false;
 }
 
-double JagGeo::doMultiPolygonArea( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+double JagGeo::doMultiPolygonArea( const Jstr &mk1, int srid1, const JagStrSplit &sp1 )
 {
 	prt(("s7739 doMultiPolygonArea sp1.print():\n" ));
 	//sp1.print();
@@ -2145,7 +2147,7 @@ double JagGeo::doMultiPolygonArea( const AbaxDataString &mk1, int srid1, const J
 	return area;
 }
 
-double JagGeo::doMultiPolygonPerimeter( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+double JagGeo::doMultiPolygonPerimeter( const Jstr &mk1, int srid1, const JagStrSplit &sp1 )
 {
 	prt(("s7739 doMultiPolygonArea sp1.print():\n" ));
 	//sp1.print();
@@ -2175,7 +2177,7 @@ double JagGeo::doMultiPolygonPerimeter( const AbaxDataString &mk1, int srid1, co
 	return perim;
 }
 
-double JagGeo::doMultiPolygon3DPerimeter( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+double JagGeo::doMultiPolygon3DPerimeter( const Jstr &mk1, int srid1, const JagStrSplit &sp1 )
 {
 	prt(("s7739 doMultiPolygon3DPerimeter sp1.print():\n" ));
 	//sp1.print();
@@ -2205,8 +2207,8 @@ double JagGeo::doMultiPolygon3DPerimeter( const AbaxDataString &mk1, int srid1, 
 	return perim;
 }
 
-bool JagGeo::doMultiPolygonWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::doMultiPolygonWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+								 const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	// like point within
 	prt(("s6683 domultiPolygonWithin colType2=[%s]\n", colType2.c_str() ));
@@ -2257,8 +2259,8 @@ bool JagGeo::doMultiPolygonWithin( const AbaxDataString &mk1, int srid1, const J
 }
 
 
-bool JagGeo::doPolygon3DWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::doPolygon3DWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -2307,8 +2309,8 @@ bool JagGeo::doPolygon3DWithin( const AbaxDataString &mk1, int srid1, const JagS
 	return false;
 }
 
-bool JagGeo::doMultiPolygon3DWithin( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::doMultiPolygon3DWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2, bool strict )
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -2419,7 +2421,7 @@ bool JagGeo::circleWithinEllipse( double px0, double py0, double pr,
 }
 
 bool JagGeo::circleWithinPolygon( double px0, double py0, double pr, 
-							const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+							const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	double bbx, bby, rx, ry;
 	getPolygonBound( mk2, sp2, bbx, bby, rx, ry );
@@ -2489,7 +2491,7 @@ bool JagGeo::pointWithinLine( double px, double py, double x1, double y1, double
 }
 
 bool JagGeo::pointWithinLineString( double x, double y, 
-									const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+									const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	int start = JAG_SP_START;
     double dx1, dy1, dx2, dy2;
@@ -2556,7 +2558,7 @@ bool JagGeo::pointWithinEllipse( double px0, double py0, double x0, double y0,
 }
 
 bool JagGeo::pointWithinPolygon( double x, double y, 
-								const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+								const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
     const char *str;
     char *p;
@@ -2585,7 +2587,7 @@ bool JagGeo::pointWithinPolygon( double x, double y,
 }
 
 bool JagGeo::point3DWithinLineString3D( double x, double y, double z, 
-									const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+									const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	int start = JAG_SP_START;
     double dx1, dy1, dz1, dx2, dy2, dz2;
@@ -3001,7 +3003,7 @@ bool JagGeo::rectangleWithinEllipse( double px0, double py0, double a0, double b
 }
 
 bool JagGeo::rectangleWithinPolygon( double px0, double py0, double a0, double b0, double nx0,
-				const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+				const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	if ( ! validDirection(nx0) ) return false;
 	if ( jagIsZero(a0) || jagIsZero(b0) ) return false;
@@ -3047,7 +3049,7 @@ bool JagGeo::lineWithinTriangle( double x10, double y10, double x20, double y20,
 }
 
 bool JagGeo::lineWithinLineString( double x10, double y10, double x20, double y20,
- 								   const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+ 								   const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
 	int start = JAG_SP_START;
@@ -3140,7 +3142,7 @@ bool JagGeo::lineWithinEllipse( double x10, double y10, double x20, double y20,
 }
 
 bool JagGeo::lineWithinPolygon( double x10, double y10, double x20, double y20,
-								const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+								const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	double bbx, bby, rx, ry;
 	getPolygonBound( mk2, sp2, bbx, bby, rx, ry );
@@ -3181,7 +3183,7 @@ bool JagGeo::lineWithinPolygon( double x10, double y10, double x20, double y20,
 
 
 //////////////////////////// 2D linestring  //////////////////////////////////////////////////
-bool JagGeo::lineStringWithinTriangle(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringWithinTriangle(  const Jstr &mk1, const JagStrSplit &sp1,
 			                         double x1, double y1, double x2, double y2, double x3, double y3, bool strict )
 
 {
@@ -3216,8 +3218,8 @@ bool JagGeo::lineStringWithinTriangle(  const AbaxDataString &mk1, const JagStrS
 	return true;
 }
 
-bool JagGeo::lineStringWithinLineString(  const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::lineStringWithinLineString(  const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	int start1 = JAG_SP_START;
 	double bbx1, bby1, brx1, bry1;
@@ -3249,8 +3251,8 @@ bool JagGeo::lineStringWithinLineString(  const AbaxDataString &mk1, const JagSt
 	return true;
 }
 
-bool JagGeo::sequenceSame(  const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::sequenceSame(  const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	int start1 = JAG_SP_START;
 	int start2 = JAG_SP_START;
@@ -3266,7 +3268,7 @@ bool JagGeo::sequenceSame(  const AbaxDataString &mk1, const JagStrSplit &sp1,
 	return true;
 }
 
-bool JagGeo::lineStringWithinSquare( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringWithinSquare( const Jstr &mk1, const JagStrSplit &sp1,
                            			 double x0, double y0, double r, double nx, bool strict )
 {
 	prt(("s6724 lineStringWithinSquare nx=%f ...\n", nx ));
@@ -3301,7 +3303,7 @@ bool JagGeo::lineStringWithinSquare( const AbaxDataString &mk1, const JagStrSpli
 	return true;
 }
 
-bool JagGeo::lineStringWithinRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringWithinRectangle( const Jstr &mk1, const JagStrSplit &sp1,
                                         double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
@@ -3330,7 +3332,7 @@ bool JagGeo::lineStringWithinRectangle( const AbaxDataString &mk1, const JagStrS
 
 }
 
-bool JagGeo::lineStringWithinCircle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringWithinCircle( const Jstr &mk1, const JagStrSplit &sp1,
 								     double x0, double y0, double r, double nx, bool strict )
 
 {
@@ -3360,7 +3362,7 @@ bool JagGeo::lineStringWithinCircle( const AbaxDataString &mk1, const JagStrSpli
 }
 
 
-bool JagGeo::lineStringWithinEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringWithinEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double a, double b, double nx, bool strict )
 
 {
@@ -3390,8 +3392,8 @@ bool JagGeo::lineStringWithinEllipse( const AbaxDataString &mk1, const JagStrSpl
 	return true;
 }
 
-bool JagGeo::lineStringWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1,
-									  const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::lineStringWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1,
+									  const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 
 	int start = JAG_SP_START;
@@ -3427,7 +3429,7 @@ bool JagGeo::lineStringWithinPolygon( const AbaxDataString &mk1, const JagStrSpl
 
 
 //////////////////////////// 2D polygon  //////////////////////////////////////////////////
-bool JagGeo::polygonWithinTriangle(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonWithinTriangle(  const Jstr &mk1, const JagStrSplit &sp1,
 			                         double x1, double y1, double x2, double y2, double x3, double y3, bool strict )
 
 {
@@ -3463,7 +3465,7 @@ bool JagGeo::polygonWithinTriangle(  const AbaxDataString &mk1, const JagStrSpli
 	return true;
 }
 
-bool JagGeo::polygonWithinSquare( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonWithinSquare( const Jstr &mk1, const JagStrSplit &sp1,
                            			 double x0, double y0, double r, double nx, bool strict )
 {
 	prt(("s6724 polygonWithinSquare nx=%f ...\n", nx ));
@@ -3501,7 +3503,7 @@ bool JagGeo::polygonWithinSquare( const AbaxDataString &mk1, const JagStrSplit &
 	return true;
 }
 
-bool JagGeo::polygonWithinRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonWithinRectangle( const Jstr &mk1, const JagStrSplit &sp1,
                                         double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
@@ -3531,7 +3533,7 @@ bool JagGeo::polygonWithinRectangle( const AbaxDataString &mk1, const JagStrSpli
 
 }
 
-bool JagGeo::polygonWithinCircle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonWithinCircle( const Jstr &mk1, const JagStrSplit &sp1,
 								     double x0, double y0, double r, double nx, bool strict )
 
 {
@@ -3562,7 +3564,7 @@ bool JagGeo::polygonWithinCircle( const AbaxDataString &mk1, const JagStrSplit &
 }
 
 
-bool JagGeo::polygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonWithinEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double a, double b, double nx, bool strict )
 
 {
@@ -3594,8 +3596,8 @@ bool JagGeo::polygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit 
 }
 
 
-bool JagGeo::polygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
-								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::polygonWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1, 
+								   const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	double bbx1, bby1, brx1, bry1;
 	double bbx2, bby2, brx2, bry2;
@@ -3643,7 +3645,7 @@ bool JagGeo::polygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit 
 
 
 //////////////////////////// 2D multipolygon  //////////////////////////////////////////////////
-bool JagGeo::multiPolygonWithinTriangle(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygonWithinTriangle(  const Jstr &mk1, const JagStrSplit &sp1,
 			                         double x1, double y1, double x2, double y2, double x3, double y3, bool strict )
 
 {
@@ -3682,7 +3684,7 @@ bool JagGeo::multiPolygonWithinTriangle(  const AbaxDataString &mk1, const JagSt
    	return true;
 }
     
-bool JagGeo::multiPolygonWithinSquare( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygonWithinSquare( const Jstr &mk1, const JagStrSplit &sp1,
                                			 double x0, double y0, double r, double nx, bool strict )
 {
    	prt(("s6724 multiPolygonWithinSquare nx=%f ...\n", nx ));
@@ -3722,7 +3724,7 @@ bool JagGeo::multiPolygonWithinSquare( const AbaxDataString &mk1, const JagStrSp
 	return true;
 }
 
-bool JagGeo::multiPolygonWithinRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygonWithinRectangle( const Jstr &mk1, const JagStrSplit &sp1,
                                         double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
@@ -3756,7 +3758,7 @@ bool JagGeo::multiPolygonWithinRectangle( const AbaxDataString &mk1, const JagSt
 	return true;
 }
 
-bool JagGeo::multiPolygonWithinCircle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygonWithinCircle( const Jstr &mk1, const JagStrSplit &sp1,
 								     double x0, double y0, double r, double nx, bool strict )
 
 {
@@ -3792,7 +3794,7 @@ bool JagGeo::multiPolygonWithinCircle( const AbaxDataString &mk1, const JagStrSp
 }
 
 
-bool JagGeo::multiPolygonWithinEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygonWithinEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double a, double b, double nx, bool strict )
 
 {
@@ -3828,8 +3830,8 @@ bool JagGeo::multiPolygonWithinEllipse( const AbaxDataString &mk1, const JagStrS
 	return true;
 }
 
-bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrSplit &sp1, 
-								   const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::multiPolygonWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1, 
+								   const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	double bbx1, bby1, brx1, bry1;
 	double bbx2, bby2, brx2, bry2;
@@ -3875,8 +3877,8 @@ bool JagGeo::multiPolygonWithinPolygon( const AbaxDataString &mk1, const JagStrS
 
 
 //////////////////////////// 2D linestring intersect  //////////////////////////////////////////////////
-bool JagGeo::lineStringIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-			                                const AbaxDataString &mk2, const JagStrSplit &sp2,
+bool JagGeo::lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1,
+			                                const Jstr &mk2, const JagStrSplit &sp2,
 											bool doRes, JagVector<JagPoint2D> &retVec )
 {
 	// sweepline algo
@@ -4147,7 +4149,7 @@ bool JagGeo::lineStringIntersectLineString( const AbaxDataString &mk1, const Jag
 }
 
 
-bool JagGeo::lineStringIntersectTriangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringIntersectTriangle( const Jstr &mk1, const JagStrSplit &sp1,
 			                         double x1, double y1, double x2, double y2, double x3, double y3, bool strict )
 
 {
@@ -4190,7 +4192,7 @@ bool JagGeo::lineStringIntersectTriangle( const AbaxDataString &mk1, const JagSt
 	return false;
 }
 
-bool JagGeo::lineStringIntersectRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringIntersectRectangle( const Jstr &mk1, const JagStrSplit &sp1,
                                          double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
@@ -4236,7 +4238,7 @@ bool JagGeo::lineStringIntersectRectangle( const AbaxDataString &mk1, const JagS
 	return false;
 }
 
-bool JagGeo::lineStringIntersectEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineStringIntersectEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
@@ -4276,8 +4278,8 @@ bool JagGeo::lineStringIntersectEllipse( const AbaxDataString &mk1, const JagStr
 
 
 //////////////////////////// 2D polygon intersect  //////////////////////////////////////////////////
-bool JagGeo::polygonIntersectLineString( const AbaxDataString &mk1, const JagStrSplit &sp1,
-			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::polygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1,
+			                                const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	// sweepline algo
 	int start1 = JAG_SP_START;
@@ -4500,7 +4502,7 @@ bool JagGeo::polygonIntersectLineString( const AbaxDataString &mk1, const JagStr
 	return false;
 }
 
-bool JagGeo::polygonIntersectTriangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonIntersectTriangle( const Jstr &mk1, const JagStrSplit &sp1,
 			                         double x1, double y1, double x2, double y2, double x3, double y3, bool strict )
 {
 	double trix, triy, rx, ry;
@@ -4544,7 +4546,7 @@ bool JagGeo::polygonIntersectTriangle( const AbaxDataString &mk1, const JagStrSp
 }
 
 
-bool JagGeo::polygonIntersectLine( const AbaxDataString &mk1, const JagStrSplit &sp1, 
+bool JagGeo::polygonIntersectLine( const Jstr &mk1, const JagStrSplit &sp1, 
 								   double x1, double y1, double x2, double y2 )
 {
 	double trix, triy, rx, ry;
@@ -4605,7 +4607,7 @@ bool JagGeo::polygonIntersectLine( const AbaxDataString &mk1, const JagStrSplit 
 	return false;
 }
 
-bool JagGeo::polygonIntersectRectangle( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonIntersectRectangle( const Jstr &mk1, const JagStrSplit &sp1,
                                          double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
@@ -4655,7 +4657,7 @@ bool JagGeo::polygonIntersectRectangle( const AbaxDataString &mk1, const JagStrS
 	return false;
 }
 
-bool JagGeo::polygonIntersectEllipse( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygonIntersectEllipse( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double a, double b, double nx, bool strict )
 {
 	if ( ! validDirection(nx) ) return false;
@@ -4798,7 +4800,7 @@ bool JagGeo::triangleWithinEllipse( double x10, double y10, double x20, double y
 }
 
 bool JagGeo::triangleWithinPolygon( double x10, double y10, double x20, double y20, double x30, double y30,
-									const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+									const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 
 {
 	double bbx, bby, rx, ry;
@@ -4917,7 +4919,7 @@ bool JagGeo::ellipseWithinEllipse( double px0, double py0, double a0, double b0,
 }
 
 bool JagGeo::ellipseWithinPolygon( double px0, double py0, double a0, double b0, double nx0,
-                                	const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+                                	const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	if ( ! validDirection(nx0) ) return false;
 	double bbx, bby, rx, ry;
@@ -5059,7 +5061,7 @@ bool JagGeo::rectangle3DWithinCone(  double px0, double py0, double pz0, double 
 
 ///////////////////////////////////// line 3D /////////////////////////////////
 bool JagGeo::line3DWithinLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
- 								   const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+ 								   const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
 	int start = JAG_SP_START;
@@ -5182,8 +5184,8 @@ bool JagGeo::line3DWithinCone(  double x10, double y10, double z10, double x20, 
 
 
 ///////////////////////////////////// linestring 3D /////////////////////////////////
-bool JagGeo::lineString3DWithinLineString3D(  const AbaxDataString &mk1, const JagStrSplit &sp1,
-											const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+bool JagGeo::lineString3DWithinLineString3D(  const Jstr &mk1, const JagStrSplit &sp1,
+											const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 
 {
 	int start1 = JAG_SP_START;
@@ -5214,7 +5216,7 @@ bool JagGeo::lineString3DWithinLineString3D(  const AbaxDataString &mk1, const J
 	return true;
 }
 
-bool JagGeo::lineString3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
  								    double x0, double y0, double z0, double r, double nx, double ny, bool strict )
 
 {
@@ -5244,7 +5246,7 @@ bool JagGeo::lineString3DWithinCube( const AbaxDataString &mk1, const JagStrSpli
 }
 
 
-bool JagGeo::lineString3DWithinBox( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DWithinBox( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0,
 									double w, double d, double h, 
 									double nx, double ny, bool strict )
@@ -5275,7 +5277,7 @@ bool JagGeo::lineString3DWithinBox( const AbaxDataString &mk1, const JagStrSplit
 
 }
 
-bool JagGeo::lineString3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
 	int start = JAG_SP_START;
@@ -5301,7 +5303,7 @@ bool JagGeo::lineString3DWithinSphere(  const AbaxDataString &mk1, const JagStrS
 }
 
 
-bool JagGeo::lineString3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double w, double d, double h, double nx, double ny, bool strict )
 {
@@ -5330,7 +5332,7 @@ bool JagGeo::lineString3DWithinEllipsoid(  const AbaxDataString &mk1, const JagS
 	return true;
 }
 
-bool JagGeo::lineString3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double r, double h, double nx, double ny, bool strict )
 {
@@ -5360,7 +5362,7 @@ bool JagGeo::lineString3DWithinCone(  const AbaxDataString &mk1, const JagStrSpl
 
 ///////////////////////////////////// polygon 3D /////////////////////////////////
 
-bool JagGeo::polygon3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
  								    double x0, double y0, double z0, double r, double nx, double ny, bool strict )
 
 {
@@ -5394,7 +5396,7 @@ bool JagGeo::polygon3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &
 }
 
 
-bool JagGeo::polygon3DWithinBox( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DWithinBox( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0,
 									double w, double d, double h, 
 									double nx, double ny, bool strict )
@@ -5426,7 +5428,7 @@ bool JagGeo::polygon3DWithinBox( const AbaxDataString &mk1, const JagStrSplit &s
 
 }
 
-bool JagGeo::polygon3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
 	int start = JAG_SP_START;
@@ -5453,7 +5455,7 @@ bool JagGeo::polygon3DWithinSphere(  const AbaxDataString &mk1, const JagStrSpli
 }
 
 
-bool JagGeo::polygon3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double w, double d, double h, double nx, double ny, bool strict )
 {
@@ -5483,7 +5485,7 @@ bool JagGeo::polygon3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrS
 	return true;
 }
 
-bool JagGeo::polygon3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double r, double h, double nx, double ny, bool strict )
 {
@@ -5513,7 +5515,7 @@ bool JagGeo::polygon3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit 
 
 
 ///////////////////////// multiPolygon3DWithin /////////////////////////////////////////////////
-bool JagGeo::multiPolygon3DWithinCube( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
  								    double x0, double y0, double z0, double r, double nx, double ny, bool strict )
 
 {
@@ -5549,7 +5551,7 @@ bool JagGeo::multiPolygon3DWithinCube( const AbaxDataString &mk1, const JagStrSp
 }
 
 
-bool JagGeo::multiPolygon3DWithinBox( const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DWithinBox( const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0,
 									double w, double d, double h, 
 									double nx, double ny, bool strict )
@@ -5586,7 +5588,7 @@ bool JagGeo::multiPolygon3DWithinBox( const AbaxDataString &mk1, const JagStrSpl
 
 }
 
-bool JagGeo::multiPolygon3DWithinSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
 	int start = JAG_SP_START;
@@ -5619,7 +5621,7 @@ bool JagGeo::multiPolygon3DWithinSphere(  const AbaxDataString &mk1, const JagSt
 }
 
 
-bool JagGeo::multiPolygon3DWithinEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double w, double d, double h, double nx, double ny, bool strict )
 {
@@ -5655,7 +5657,7 @@ bool JagGeo::multiPolygon3DWithinEllipsoid(  const AbaxDataString &mk1, const Ja
 	return true;
 }
 
-bool JagGeo::multiPolygon3DWithinCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double r, double h, double nx, double ny, bool strict )
 {
@@ -6730,7 +6732,7 @@ bool JagGeo::point3DWithinCylinder( double px, double py, double pz,
 
 
 /////////////////////////////// start intersect methods //////////////////////////////////////////////
-bool JagGeo::doPointIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPointIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -6785,7 +6787,7 @@ bool JagGeo::doPointIntersect( int srid1, const JagStrSplit &sp1, const AbaxData
 	return false;
 }
 
-bool JagGeo::doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -6851,7 +6853,7 @@ bool JagGeo::doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDa
 	return false;
 }
 
-bool JagGeo::doCircleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCircleIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -6909,7 +6911,7 @@ double JagGeo::doCircle3DPerimeter( int srid1, const JagStrSplit &sp1 )
 }
 
 // circle surface with x y z and orientation
-bool JagGeo::doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -6970,7 +6972,7 @@ bool JagGeo::doCircle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 	return false;
 }
 
-bool JagGeo::doSphereIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSphereIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7049,7 +7051,7 @@ double JagGeo::doSquare3DPerimeter( int srid1, const JagStrSplit &sp1 )
 	return (a*8.0);
 }
 // 2D
-bool JagGeo::doSquareIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSquareIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	//prt(("s3033 doSquareIntersect colType2=[%s] \n", colType2.c_str() ));
@@ -7102,7 +7104,7 @@ bool JagGeo::doSquareIntersect( int srid1, const JagStrSplit &sp1, const AbaxDat
 	return false;
 }
 
-bool JagGeo::doSquare3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSquare3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7161,7 +7163,7 @@ bool JagGeo::doSquare3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 }
 
 
-bool JagGeo::doCubeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCubeIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7219,7 +7221,7 @@ bool JagGeo::doCubeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataS
 }
 
 // 2D
-bool JagGeo::doRectangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doRectangleIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7271,7 +7273,7 @@ bool JagGeo::doRectangleIntersect( int srid1, const JagStrSplit &sp1, const Abax
 }
 
 // 3D rectiangle
-bool JagGeo::doRectangle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doRectangle3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7330,7 +7332,7 @@ bool JagGeo::doRectangle3DIntersect( int srid1, const JagStrSplit &sp1, const Ab
 	return false;
 }
 
-bool JagGeo::doBoxIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doBoxIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7391,7 +7393,7 @@ bool JagGeo::doBoxIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 
 
 // 3D
-bool JagGeo::doCylinderIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCylinderIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	// not supported for now
@@ -7451,7 +7453,7 @@ bool JagGeo::doCylinderIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 	return false;
 }
 
-bool JagGeo::doConeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doConeIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7512,7 +7514,7 @@ bool JagGeo::doConeIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataS
 }
 
 // 2D
-bool JagGeo::doEllipseIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doEllipseIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7564,7 +7566,7 @@ bool JagGeo::doEllipseIntersect( int srid1, const JagStrSplit &sp1, const AbaxDa
 }
 
 // 3D ellipsoid
-bool JagGeo::doEllipsoidIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doEllipsoidIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -7624,7 +7626,7 @@ bool JagGeo::doEllipsoidIntersect( int srid1, const JagStrSplit &sp1, const Abax
 }
 
 // 2D triangle within
-bool JagGeo::doTriangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doTriangleIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -7685,7 +7687,7 @@ bool JagGeo::doTriangleIntersect( int srid1, const JagStrSplit &sp1, const AbaxD
 }
 
 // 3D  triangle
-bool JagGeo::doTriangle3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doTriangle3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -7746,7 +7748,7 @@ bool JagGeo::doTriangle3DIntersect( int srid1, const JagStrSplit &sp1, const Aba
 }
 
 // 2D line
-bool JagGeo::doLineIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLineIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -7798,7 +7800,7 @@ bool JagGeo::doLineIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataS
 	return false;
 }
 
-bool JagGeo::doLine3DIntersect( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLine3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2, bool strict )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -8039,7 +8041,7 @@ bool JagGeo::circleIntersectEllipse( double px0, double py0, double pr,
 
 
 bool JagGeo::circleIntersectPolygon( double px0, double py0, double pr, 
-							  const AbaxDataString &mk2, const JagStrSplit &sp2,
+							  const Jstr &mk2, const JagStrSplit &sp2,
 							  bool strict )
 {
 	double bbx, bby, rx, ry;
@@ -8238,7 +8240,7 @@ bool JagGeo::rectangleIntersectEllipse( double px0, double py0, double a0, doubl
 
 
 bool JagGeo::rectangleIntersectPolygon( double px0, double py0, double a0, double b0, double nx0,
-							  const AbaxDataString &mk2, const JagStrSplit &sp2 )
+							  const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	double bbx, bby, rx, ry;
 	getPolygonBound( mk2, sp2, bbx, bby, rx, ry );
@@ -8296,7 +8298,7 @@ bool JagGeo::lineIntersectTriangle( double x10, double y10, double x20, double y
 }
 
 bool JagGeo::lineIntersectLineString( double x10, double y10, double x20, double y20,
-							          const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+							          const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
 	int start = JAG_SP_START;
@@ -8357,7 +8359,7 @@ bool JagGeo::lineIntersectEllipse( double x10, double y10, double x20, double y2
 }
 
 bool JagGeo::lineIntersectPolygon( double x10, double y10, double x20, double y20, 
-										const AbaxDataString &mk2, const JagStrSplit &sp2 ) 
+										const Jstr &mk2, const JagStrSplit &sp2 ) 
 {
 	double X1, Y1, R1x, R1y;
 	X1 = ( x10+x20)/2.0; R1x = fabs(x10-x20)/2.0;
@@ -8478,7 +8480,7 @@ bool JagGeo::triangleIntersectEllipse( double x10, double y10, double x20, doubl
 }
 
 bool JagGeo::triangleIntersectPolygon( double x10, double y10, double x20, double y20, double x30, double y30,
-										const AbaxDataString &mk2, const JagStrSplit &sp2 ) 
+										const Jstr &mk2, const JagStrSplit &sp2 ) 
 {
 	double X1, Y1, R1x, R1y;
 	triangleRegion( x10, y10, x20, y20, x30, y30, X1, Y1, R1x, R1y );
@@ -8521,7 +8523,7 @@ bool JagGeo::triangleIntersectPolygon( double x10, double y10, double x20, doubl
 }
 
 bool JagGeo::triangleIntersectLineString( double x10, double y10, double x20, double y20, double x30, double y30,
-										const AbaxDataString &mk2, const JagStrSplit &sp2 ) 
+										const Jstr &mk2, const JagStrSplit &sp2 ) 
 {
 	double X1, Y1, R1x, R1y;
 	triangleRegion( x10, y10, x20, y20, x30, y30, X1, Y1, R1x, R1y );
@@ -8600,7 +8602,7 @@ bool JagGeo::ellipseIntersectEllipse( double px0, double py0, double a0, double 
 }
 
 bool JagGeo::ellipseIntersectPolygon( double px0, double py0, double a0, double b0, double nx0,
-									  const AbaxDataString &mk2, const JagStrSplit &sp2 )
+									  const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	if ( ! validDirection(nx0) ) return false;
 	double bbx, bby, rx, ry;
@@ -8715,7 +8717,7 @@ bool JagGeo::rectangle3DIntersectCone(  double px0, double py0, double pz0, doub
 
 ///////////////////////////////////// line 3D /////////////////////////////////
 bool JagGeo::line3DIntersectLineString3D( double x10, double y10, double z10, double x20, double y20, double z20,
-							          const AbaxDataString &mk2, const JagStrSplit &sp2, bool strict )
+							          const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
 	// 2 points are some two neighbor points in sp2
 	int start = JAG_SP_START;
@@ -8818,8 +8820,8 @@ bool JagGeo::line3DIntersectCylinder(  double x10, double y10, double z10, doubl
 
 
 // lineString3D intersect
-bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-			                                const AbaxDataString &mk2, const JagStrSplit &sp2,
+bool JagGeo::lineString3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit &sp1,
+			                                const Jstr &mk2, const JagStrSplit &sp2,
 											bool doRes, JagVector<JagPoint3D> &retVec )
 {
 	// sweepline algo
@@ -9095,7 +9097,7 @@ bool JagGeo::lineString3DIntersectLineString3D( const AbaxDataString &mk1, const
 	return found;
 }
 
-bool JagGeo::lineString3DIntersectBox(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DIntersectBox(  const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0,
 									double w, double d, double h, 
 									double nx, double ny, bool strict )
@@ -9152,7 +9154,7 @@ bool JagGeo::lineString3DIntersectBox(  const AbaxDataString &mk1, const JagStrS
 	return false;
 }
 
-bool JagGeo::lineString3DIntersectSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DIntersectSphere(  const Jstr &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
 	int start = JAG_SP_START;
@@ -9188,7 +9190,7 @@ bool JagGeo::lineString3DIntersectSphere(  const AbaxDataString &mk1, const JagS
 }
 
 
-bool JagGeo::lineString3DIntersectEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DIntersectEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double w, double d, double h, double nx, double ny, bool strict )
 {
@@ -9234,7 +9236,7 @@ bool JagGeo::lineString3DIntersectEllipsoid(  const AbaxDataString &mk1, const J
 	return false;
 }
 
-bool JagGeo::lineString3DIntersectCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DIntersectCone(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double r, double h, double nx, double ny, bool strict )
 {
@@ -9269,7 +9271,7 @@ bool JagGeo::lineString3DIntersectCone(  const AbaxDataString &mk1, const JagStr
 	return false;
 }
 
-bool JagGeo::lineString3DIntersectCylinder(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DIntersectCylinder(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double a, double b, double c, double nx, double ny, bool strict )
 {
@@ -9304,8 +9306,8 @@ bool JagGeo::lineString3DIntersectCylinder(  const AbaxDataString &mk1, const Ja
 	return false;
 }
 
-bool JagGeo::lineString3DIntersectTriangle3D(  const AbaxDataString &mk1, const JagStrSplit &sp1,
-											   const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::lineString3DIntersectTriangle3D(  const Jstr &mk1, const JagStrSplit &sp1,
+											   const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	if ( sp2.length() < 9 ) return false;
 	double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -9355,8 +9357,8 @@ bool JagGeo::lineString3DIntersectTriangle3D(  const AbaxDataString &mk1, const 
 	return false;
 }
 
-bool JagGeo::lineString3DIntersectSquare3D(  const AbaxDataString &mk1, const JagStrSplit &sp1,
-											   const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::lineString3DIntersectSquare3D(  const Jstr &mk1, const JagStrSplit &sp1,
+											   const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	if ( sp2.length() < 4 ) return false;
 	double px0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -9398,8 +9400,8 @@ bool JagGeo::lineString3DIntersectSquare3D(  const AbaxDataString &mk1, const Ja
 	return false;
 }
 
-bool JagGeo::lineString3DIntersectRectangle3D(  const AbaxDataString &mk1, const JagStrSplit &sp1,
-											   const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::lineString3DIntersectRectangle3D(  const Jstr &mk1, const JagStrSplit &sp1,
+											   const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	if ( sp2.length() < 4 ) return false;
 	double px0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -9444,8 +9446,8 @@ bool JagGeo::lineString3DIntersectRectangle3D(  const AbaxDataString &mk1, const
 
 
 // Polygon3D intersect
-bool JagGeo::polygon3DIntersectLineString3D( const AbaxDataString &mk1, const JagStrSplit &sp1,
-			                                const AbaxDataString &mk2, const JagStrSplit &sp2 )
+bool JagGeo::polygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit &sp1,
+			                                const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	// sweepline algo
 	int start1 = JAG_SP_START;
@@ -9680,7 +9682,7 @@ bool JagGeo::polygon3DIntersectLineString3D( const AbaxDataString &mk1, const Ja
 	return false;
 }
 
-bool JagGeo::polygon3DIntersectBox(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DIntersectBox(  const Jstr &mk1, const JagStrSplit &sp1,
 									double x0, double y0, double z0,
 									double w, double d, double h, 
 									double nx, double ny, bool strict )
@@ -9737,7 +9739,7 @@ bool JagGeo::polygon3DIntersectBox(  const AbaxDataString &mk1, const JagStrSpli
 	return false;
 }
 
-bool JagGeo::polygon3DIntersectSphere(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DIntersectSphere(  const Jstr &mk1, const JagStrSplit &sp1,
  									  double x0, double y0, double z0, double r, bool strict )
 {
 	int start = JAG_SP_START;
@@ -9776,7 +9778,7 @@ bool JagGeo::polygon3DIntersectSphere(  const AbaxDataString &mk1, const JagStrS
 }
 
 
-bool JagGeo::polygon3DIntersectEllipsoid(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DIntersectEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double w, double d, double h, double nx, double ny, bool strict )
 {
@@ -9812,7 +9814,7 @@ bool JagGeo::polygon3DIntersectEllipsoid(  const AbaxDataString &mk1, const JagS
 	return false;
 }
 
-bool JagGeo::polygon3DIntersectCone(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DIntersectCone(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double r, double h, double nx, double ny, bool strict )
 {
@@ -9847,7 +9849,7 @@ bool JagGeo::polygon3DIntersectCone(  const AbaxDataString &mk1, const JagStrSpl
 	return false;
 }
 
-bool JagGeo::polygon3DIntersectCylinder(  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DIntersectCylinder(  const Jstr &mk1, const JagStrSplit &sp1,
 								 double x0, double y0, double z0,
 								double a, double b, double c, double nx, double ny, bool strict )
 {
@@ -9884,8 +9886,8 @@ bool JagGeo::polygon3DIntersectCylinder(  const AbaxDataString &mk1, const JagSt
 
 
 // 2D linestring
-bool JagGeo::doLineStringIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLineStringIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+								    const Jstr &mk2, const Jstr &colType2, 
 								    int srid2, const JagStrSplit &sp2, bool strict )
 {
 	// like point within
@@ -9933,8 +9935,8 @@ bool JagGeo::doLineStringIntersect( const AbaxDataString &mk1, int srid1, const 
 	return false;
 }
 
-bool JagGeo::doLineString3DIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLineString3DIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+									  const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2, bool strict )
 {
 	prt(("s8761 doLineString3DIntersect colType2=[%s]\n", colType2.c_str() ));
@@ -10004,7 +10006,7 @@ bool JagGeo::doLineString3DIntersect( const AbaxDataString &mk1, int srid1, cons
 	return false;
 }
 
-double JagGeo::doPolygonArea( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+double JagGeo::doPolygonArea( const Jstr &mk1, int srid1, const JagStrSplit &sp1 )
 {
 	int start = JAG_SP_START;
 	double dx, dy;
@@ -10076,7 +10078,7 @@ double JagGeo::doPolygonArea( const AbaxDataString &mk1, int srid1, const JagStr
 	return area;
 }
 
-double JagGeo::doPolygonPerimeter( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+double JagGeo::doPolygonPerimeter( const Jstr &mk1, int srid1, const JagStrSplit &sp1 )
 {
 	int start = JAG_SP_START;
 	double dx, dy;
@@ -10116,7 +10118,7 @@ double JagGeo::doPolygonPerimeter( const AbaxDataString &mk1, int srid1, const J
 	return perim;
 }
 
-double JagGeo::doPolygon3DPerimeter( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1 )
+double JagGeo::doPolygon3DPerimeter( const Jstr &mk1, int srid1, const JagStrSplit &sp1 )
 {
 	int start = JAG_SP_START;
 	double dx, dy, dz;
@@ -10197,8 +10199,8 @@ double JagGeo::computePolygon3DPerimeter( const JagVector<JagPoint3D> &vec, int 
 }
 
 
-bool JagGeo::doPolygonIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPolygonIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+								    const Jstr &mk2, const Jstr &colType2, 
 								    int srid2, const JagStrSplit &sp2, bool strict )
 {
 	//prt(("s2268 doPolygonIntersect ...\n" ));
@@ -10257,8 +10259,8 @@ bool JagGeo::doPolygonIntersect( const AbaxDataString &mk1, int srid1, const Jag
 	return false;
 }
 
-bool JagGeo::doPolygon3DIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPolygon3DIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+									  const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2, bool strict )
 {
 	prt(("s8761 dopolygon3DIntersect colType2=[%s]\n", colType2.c_str() ));
@@ -10321,8 +10323,8 @@ bool JagGeo::doPolygon3DIntersect( const AbaxDataString &mk1, int srid1, const J
 	return false;
 }
 
-bool JagGeo::doMultiPolygonIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doMultiPolygonIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+								    const Jstr &mk2, const Jstr &colType2, 
 								    int srid2, const JagStrSplit &sp2, bool strict )
 {
 	// like point within
@@ -10367,8 +10369,8 @@ bool JagGeo::doMultiPolygonIntersect( const AbaxDataString &mk1, int srid1, cons
 	return false;
 }
 
-bool JagGeo::doMultiPolygon3DIntersect( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doMultiPolygon3DIntersect( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+									  const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2, bool strict )
 {
 	prt(("s8761 domultiPolygon3DIntersect colType2=[%s]\n", colType2.c_str() ));
@@ -10964,9 +10966,9 @@ bool JagGeo::circle3DIntersectCone( double px0, double py0, double pz0, double p
 }
 
 /////////////////////////////// end intersect methods //////////////////////////////////////////////
-bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double px, double py, double pz,
-                                 const AbaxDataString& mark2, const AbaxDataString &colType2, 
-			                     const JagStrSplit &sp2, AbaxDataString &res )
+bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double py, double pz,
+                                 const Jstr& mark2, const Jstr &colType2, 
+			                     const JagStrSplit &sp2, Jstr &res )
 {
 	prt(("s1102 doAllClosestPoint sp2:\n" ));
 	//sp2.print();
@@ -10987,7 +10989,7 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 			res = d2s(projx) + " " + d2s(projy);
     	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
 			double mind = LONG_MAX, d;
-			AbaxDataString xs, ys;
+			Jstr xs, ys;
 			int imin = -1;
 			const char *str;
 			char *p;
@@ -11106,7 +11108,7 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 			res = d2s(projx) + " " + d2s(projy) + " " + d2s(projz);;
     	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
             double mind = LONG_MAX, d;
-            AbaxDataString xs, ys, zs;
+            Jstr xs, ys, zs;
             int imin = -1;
             const char *str;
             char *p;
@@ -11228,7 +11230,7 @@ bool JagGeo::doClosestPoint(  const AbaxDataString& colType1, int srid, double p
 }
 
 ////////////////// same(equal) methods
-bool JagGeo::doPointSame( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPointSame( const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11242,7 +11244,7 @@ bool JagGeo::doPointSame( const JagStrSplit &sp1, const AbaxDataString &mk2, con
 	} 
 }
 
-bool JagGeo::doPoint3DSame( const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doPoint3DSame( const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	//prt(("s4409 doPoint3DSame colType2=[%s]\n", colType2.c_str() ));
@@ -11259,7 +11261,7 @@ bool JagGeo::doPoint3DSame( const JagStrSplit &sp1, const AbaxDataString &mk2, c
 	}
 }
 
-bool JagGeo::doCircleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCircleSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11279,7 +11281,7 @@ bool JagGeo::doCircleSame( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 }
 
 // circle surface with x y z and orientation
-bool JagGeo::doCircle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCircle3DSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11308,7 +11310,7 @@ bool JagGeo::doCircle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 
 }
 
-bool JagGeo::doSphereSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSphereSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11328,7 +11330,7 @@ bool JagGeo::doSphereSame( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 }
 
 // 2D
-bool JagGeo::doSquareSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSquareSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	//prt(("s3033 doSquareSame colType2=[%s] \n", colType2.c_str() ));
@@ -11350,7 +11352,7 @@ bool JagGeo::doSquareSame( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 	}
 }
 
-bool JagGeo::doSquare3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doSquare3DSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11375,7 +11377,7 @@ bool JagGeo::doSquare3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 }
 
 
-bool JagGeo::doCubeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCubeSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11399,7 +11401,7 @@ bool JagGeo::doCubeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString
 }
 
 // 2D
-bool JagGeo::doRectangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doRectangleSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11426,7 +11428,7 @@ bool JagGeo::doRectangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataS
 }
 
 // 3D rectiangle
-bool JagGeo::doRectangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doRectangle3DSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11452,7 +11454,7 @@ bool JagGeo::doRectangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDat
 
 }
 
-bool JagGeo::doBoxSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doBoxSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11481,7 +11483,7 @@ bool JagGeo::doBoxSame( int srid1, const JagStrSplit &sp1, const AbaxDataString 
 }
 
 // 3D
-bool JagGeo::doCylinderSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doCylinderSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11509,7 +11511,7 @@ bool JagGeo::doCylinderSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 	
 }
 
-bool JagGeo::doConeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doConeSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11536,7 +11538,7 @@ bool JagGeo::doConeSame( int srid1, const JagStrSplit &sp1, const AbaxDataString
 }
 
 // 2D
-bool JagGeo::doEllipseSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doEllipseSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11563,7 +11565,7 @@ bool JagGeo::doEllipseSame( int srid1, const JagStrSplit &sp1, const AbaxDataStr
 }
 
 // 3D ellipsoid
-bool JagGeo::doEllipsoidSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doEllipsoidSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
@@ -11592,7 +11594,7 @@ bool JagGeo::doEllipsoidSame( int srid1, const JagStrSplit &sp1, const AbaxDataS
 }
 
 // 2D triangle within
-bool JagGeo::doTriangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doTriangleSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -11623,7 +11625,7 @@ bool JagGeo::doTriangleSame( int srid1, const JagStrSplit &sp1, const AbaxDataSt
 }
 
 // 3D  triangle
-bool JagGeo::doTriangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doTriangle3DSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -11661,7 +11663,7 @@ bool JagGeo::doTriangle3DSame( int srid1, const JagStrSplit &sp1, const AbaxData
 }
 
 // 2D line
-bool JagGeo::doLineSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLineSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -11684,7 +11686,7 @@ bool JagGeo::doLineSame( int srid1, const JagStrSplit &sp1, const AbaxDataString
 	}
 }
 
-bool JagGeo::doLine3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+bool JagGeo::doLine3DSame( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -11713,8 +11715,8 @@ bool JagGeo::doLine3DSame( int srid1, const JagStrSplit &sp1, const AbaxDataStri
 }
 
 // 2D linestring
-bool JagGeo::doLineStringSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+bool JagGeo::doLineStringSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+								 const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	// like point within
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
@@ -11724,8 +11726,8 @@ bool JagGeo::doLineStringSame( const AbaxDataString &mk1, int srid1, const JagSt
 	}
 }
 
-bool JagGeo::doLineString3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+bool JagGeo::doLineString3DSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return sequenceSame( mk1, sp1, mk2, sp2 );
@@ -11734,8 +11736,8 @@ bool JagGeo::doLineString3DSame( const AbaxDataString &mk1, int srid1, const Jag
 	}
 }
 
-bool JagGeo::doPolygonSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+bool JagGeo::doPolygonSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+								 const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	/***
 	//sp1.print();
@@ -11758,8 +11760,8 @@ bool JagGeo::doPolygonSame( const AbaxDataString &mk1, int srid1, const JagStrSp
 	return sequenceSame( mk1, sp1, mk2, sp2 );
 }
 
-bool JagGeo::doMultiPolygonSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-								 const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+bool JagGeo::doMultiPolygonSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+								 const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	if ( colType2 != JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		return false;
@@ -11769,8 +11771,8 @@ bool JagGeo::doMultiPolygonSame( const AbaxDataString &mk1, int srid1, const Jag
 }
 
 
-bool JagGeo::doPolygon3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+bool JagGeo::doPolygon3DSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	if ( colType2 != JAG_C_COL_TYPE_POLYGON ) {
 		return false;
@@ -11778,8 +11780,8 @@ bool JagGeo::doPolygon3DSame( const AbaxDataString &mk1, int srid1, const JagStr
 	return sequenceSame( mk1, sp1, mk2, sp2 );
 }
 
-bool JagGeo::doMultiPolygon3DSame( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, 
-									const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+bool JagGeo::doMultiPolygon3DSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
+									const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		return false;
@@ -12082,7 +12084,7 @@ void JagGeo::sampleLinesOnCylinder( double x0, double y0, double z0, double r, d
 }
 
 
-AbaxDataString JagGeo::convertType2Short( const AbaxDataString &geotypeLong )
+Jstr JagGeo::convertType2Short( const Jstr &geotypeLong )
 {
 	const char *p = geotypeLong.c_str();
     if ( 0==strcasecmp(p, "point" ) ) {
@@ -12163,9 +12165,9 @@ double JagGeo::safeget( const JagStrSplit &sp, int arg )
 }
 
 // sp was shifted
-AbaxDataString JagGeo::safeGetStr( const JagStrSplit &sp, int arg )
+Jstr JagGeo::safeGetStr( const JagStrSplit &sp, int arg )
 {
-	AbaxDataString res;
+	Jstr res;
 	if ( sp.slength() >= arg+1 ) {
 		res = sp[arg];
 	}
@@ -13776,9 +13778,9 @@ bool JagGeo::planeIntersectNormalCone( double A, double B, double C, double D, d
 	return true;
 }
 
-bool JagGeo::doAllNearby( const AbaxDataString& mark1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1,
-                         const AbaxDataString& mark2,  const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
-						 const AbaxDataString &carg )
+bool JagGeo::doAllNearby( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+                         const Jstr& mark2,  const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+						 const Jstr &carg )
 {
 	prt(("s0233 doAllNearby srid1=%d srid2=%d carg=[%s]\n", srid1, srid2, carg.c_str() ));
 
@@ -13840,9 +13842,9 @@ bool JagGeo::doAllNearby( const AbaxDataString& mark1, const AbaxDataString &col
 	return false;
 }
 
-AbaxDataString JagGeo::getTypeStr( const AbaxDataString& colType )
+Jstr JagGeo::getTypeStr( const Jstr& colType )
 {
-	AbaxDataString t;
+	Jstr t;
 	if ( colType == JAG_C_COL_TYPE_POINT ) {
 		t = "Point";
 	} else if ( colType == JAG_C_COL_TYPE_LINE ) {
@@ -13909,7 +13911,7 @@ AbaxDataString JagGeo::getTypeStr( const AbaxDataString& colType )
 	return t;
 }
 
-int JagGeo::getDimension( const AbaxDataString& colType )
+int JagGeo::getDimension( const Jstr& colType )
 {
 	if ( colType == JAG_C_COL_TYPE_POINT 
 		|| colType == JAG_C_COL_TYPE_LINE 
@@ -13951,7 +13953,7 @@ int JagGeo::getDimension( const AbaxDataString& colType )
 }
 
 
-int JagGeo::getPolyDimension( const AbaxDataString& colType )
+int JagGeo::getPolyDimension( const Jstr& colType )
 {
 	if ( colType == JAG_C_COL_TYPE_LINESTRING
 	     || colType == JAG_C_COL_TYPE_MULTILINESTRING
@@ -13972,7 +13974,7 @@ int JagGeo::getPolyDimension( const AbaxDataString& colType )
 	 }
 }
 
-void JagGeo::getCoordAvg( const AbaxDataString &colType, const JagStrSplit &sp, double &x, double &y, double &z, 
+void JagGeo::getCoordAvg( const Jstr &colType, const JagStrSplit &sp, double &x, double &y, double &z, 
 							double &Rx, double &Ry, double &Rz )
 {
 	double px1 = jagatof( sp[0].c_str() );
@@ -14143,7 +14145,7 @@ void JagGeo::triangle3DRegion( double x1, double y1, double z1,
 
 }
 
-void JagGeo::boundingBoxRegion( const AbaxDataString &bbxstr, double &bbx, double &bby, double &brx, double &bry )
+void JagGeo::boundingBoxRegion( const Jstr &bbxstr, double &bbx, double &bby, double &brx, double &bry )
 {
 	// "xmin:ymin:zmin:xmax:ymax:zmax"
 	double xmin, ymin, xmax, ymax;
@@ -14170,7 +14172,7 @@ void JagGeo::boundingBoxRegion( const AbaxDataString &bbxstr, double &bbx, doubl
 }
 
 
-void JagGeo::boundingBox3DRegion( const AbaxDataString &bbxstr, double &bbx, double &bby, double &bbz,
+void JagGeo::boundingBox3DRegion( const Jstr &bbxstr, double &bbx, double &bby, double &bbz,
 								  double &brx, double &bry, double &brz )
 {
 	// "xmin:ymin:xmax:ymax"
@@ -14558,7 +14560,7 @@ bool JagGeo::isNull( double x1, double y1, double z1, double x2, double y2, doub
 
 // sp: OJAG=0=test.lstr.ls=LS guarantee 3 '=' signs
 // str: "x:y x:y x:y ..." or "x:y:z x:y:z x:y:z ..."
-AbaxDataString JagGeo::makeGeoJson( const JagStrSplit &sp, const char *str )
+Jstr JagGeo::makeGeoJson( const JagStrSplit &sp, const char *str )
 {
 	//prt(("s3391 makeGeoJson sp[3]=[%s]\n", sp[3].c_str() ));
 	//prt(("s3392 sp.print: \n" ));
@@ -14632,21 +14634,21 @@ AbaxDataString JagGeo::makeGeoJson( const JagStrSplit &sp, const char *str )
        //...
     }
 ****************/
-AbaxDataString JagGeo::makeJsonLineString( const AbaxDataString &title, const JagStrSplit &sp, const char *str )
+Jstr JagGeo::makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *str )
 {
 	//prt(("s2980 makeJsonLineString str=[%s]\n", str ));
 	const char *p = str;
 	while ( *p != ' ' && *p != '\0' ) ++p;
 	if ( *p == '\0' ) return "";
 
-	AbaxDataString s;
+	Jstr s;
 	rapidjson::StringBuffer bs;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
 	writer.StartObject();
 	writer.Key("type");
 	writer.String("Feature");
 
-	JagStrSplit bsp( AbaxDataString(str, p-str), ':' );
+	JagStrSplit bsp( Jstr(str, p-str), ':' );
 	if ( bsp.length() == 4 ) {
 		writer.Key("bbox");
 		writer.StartArray();
@@ -14685,7 +14687,7 @@ AbaxDataString JagGeo::makeJsonLineString( const AbaxDataString &title, const Ja
 				break;
 			}
 			//*q = '\0';
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -14703,7 +14705,7 @@ AbaxDataString JagGeo::makeJsonLineString( const AbaxDataString &title, const Ja
 			}
 
 			//*q = '\0';
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 			//prt(("s2339 q=[%s]\n", q ));
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
@@ -14735,7 +14737,7 @@ AbaxDataString JagGeo::makeJsonLineString( const AbaxDataString &title, const Ja
 	return (char*)bs.GetString();
 }
 
-AbaxDataString JagGeo::makeJsonLineString3D( const AbaxDataString &title, const JagStrSplit &sp, const char *str )
+Jstr JagGeo::makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char *str )
 {
 	//prt(("s0823 makeJsonLineString3D str=[%s]\n", str ));
 
@@ -14743,14 +14745,14 @@ AbaxDataString JagGeo::makeJsonLineString3D( const AbaxDataString &title, const 
 	while ( *p != ' ' && *p != '\0' ) ++p;
 	if ( *p == '\0' ) return "";
 
-	AbaxDataString s;
+	Jstr s;
 	rapidjson::StringBuffer bs;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
 	writer.StartObject();
 	writer.Key("type");
 	writer.String("Feature");
 
-	JagStrSplit bsp( AbaxDataString(str, p-str), ':' );
+	JagStrSplit bsp( Jstr(str, p-str), ':' );
 	if ( bsp.length() >= 6 ) {
 		writer.Key("bbox");
 		writer.StartArray();
@@ -14783,7 +14785,7 @@ AbaxDataString JagGeo::makeJsonLineString3D( const AbaxDataString &title, const 
 				break;
 			}
 			//*q = '\0';
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -14798,7 +14800,7 @@ AbaxDataString JagGeo::makeJsonLineString3D( const AbaxDataString &title, const 
 				break;
 			}
 			//*q = '\0';
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -14816,7 +14818,7 @@ AbaxDataString JagGeo::makeJsonLineString3D( const AbaxDataString &title, const 
 			}
 
 			//*q = '\0';
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 			// writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -14854,7 +14856,7 @@ AbaxDataString JagGeo::makeJsonLineString3D( const AbaxDataString &title, const 
    ]
 }
 ********************************************************/
-AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagStrSplit &sp, const char *str, bool is3D )
+Jstr JagGeo::makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str, bool is3D )
 {
 	//prt(("s7081 makeJsonPolygon str=[%s] is3D=%d\n", str, is3D ));
 
@@ -14868,7 +14870,7 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
 	writer.Key("type");
 	writer.String("Feature");
 
-	AbaxDataString bbox(str, p-str);
+	Jstr bbox(str, p-str);
 	//prt(("s5640 bbox=[%s]\n", bbox.c_str() ));
 	JagStrSplit bsp( bbox, ':' );
 	//prt(("s5732 bsp.len=%d\n", bsp.length() ));
@@ -14894,7 +14896,7 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
 
 	while ( isspace(*p) ) ++p; //  "x:y x:y x:y ..."
 	char *q = (char*)p;
-	AbaxDataString s;
+	Jstr s;
 	//int level = 0;
 
 	writer.Key("geometry");
@@ -14925,7 +14927,7 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
 				break;
 			}
 			//*q = '\0';
-			//s = AbaxDataString(p, q-p);
+			//s = Jstr(p, q-p);
 
 			if ( *q == '|' ) {
 				writer.EndArray(); // outeraray
@@ -14937,7 +14939,7 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
 				continue;
 			}
 
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 
 			writer.StartArray(); 
 			//++level;
@@ -14956,7 +14958,7 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
 				while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
 			}
 
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 			//prt(("s6302 write ycoord s=[%s]\n", s.c_str() ));
 			//writer.String( s.c_str(), s.size() );   // y-coord
 			writer.Double( jagatof(s.c_str()) );
@@ -14967,7 +14969,7 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
 				//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
 				while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
 				//prt(("s6303 write zcoord s=[%s]\n", s.c_str() ));
-				s = AbaxDataString(p, q-p);
+				s = Jstr(p, q-p);
 				//writer.String( s.c_str(), s.size() );   // z-coord
 				writer.Double( jagatof(s.c_str()) );
 			}
@@ -15044,7 +15046,7 @@ AbaxDataString JagGeo::makeJsonPolygon( const AbaxDataString &title,  const JagS
    ]
 }
 ***********************************************************************************/
-AbaxDataString JagGeo::makeJsonMultiPolygon( const AbaxDataString &title,  const JagStrSplit &sp, const char *str, bool is3D )
+Jstr JagGeo::makeJsonMultiPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str, bool is3D )
 {
 	//prt(("s7084 makeJsonMultiPolygon str=[%s] is3D=%d\n", str, is3D ));
 
@@ -15058,7 +15060,7 @@ AbaxDataString JagGeo::makeJsonMultiPolygon( const AbaxDataString &title,  const
 	writer.Key("type");
 	writer.String("Feature");
 
-	AbaxDataString bbox(str, p-str);
+	Jstr bbox(str, p-str);
 	//prt(("s5640 bbox=[%s]\n", bbox.c_str() ));
 	JagStrSplit bsp( bbox, ':' );
 	//prt(("s5732 bsp.len=%d\n", bsp.length() ));
@@ -15084,7 +15086,7 @@ AbaxDataString JagGeo::makeJsonMultiPolygon( const AbaxDataString &title,  const
 
 	while ( isspace(*p) ) ++p; //  "x:y x:y x:y ..."
 	char *q = (char*)p;
-	AbaxDataString s;
+	Jstr s;
 	//int level = 0;
 
 	writer.Key("geometry");
@@ -15147,7 +15149,7 @@ AbaxDataString JagGeo::makeJsonMultiPolygon( const AbaxDataString &title,  const
 				continue;
 			}
 
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 
 			writer.StartArray(); 
 			//++level;
@@ -15164,7 +15166,7 @@ AbaxDataString JagGeo::makeJsonMultiPolygon( const AbaxDataString &title,  const
 				while ( *q != ' ' && *q != '\0' && *q != '|' && *q != '!' ) ++q;
 			}
 
-			s = AbaxDataString(p, q-p);
+			s = Jstr(p, q-p);
 			//writer.String( s.c_str(), s.size() );   // y-coord
 			writer.Double( jagatof(s.c_str()) );
 
@@ -15173,7 +15175,7 @@ AbaxDataString JagGeo::makeJsonMultiPolygon( const AbaxDataString &title,  const
 				p = q;
 				//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
 				while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
-				s = AbaxDataString(p, q-p);
+				s = Jstr(p, q-p);
 				//writer.String( s.c_str(), s.size() );   // z-coord
 				writer.Double( jagatof(s.c_str()) );
 			}
@@ -15253,7 +15255,7 @@ AbaxDataString JagGeo::makeJsonMultiPolygon( const AbaxDataString &title,  const
 	return (char*)bs.GetString();
 }
 
-AbaxDataString JagGeo::makeJsonDefault( const JagStrSplit &sp, const char *str )
+Jstr JagGeo::makeJsonDefault( const JagStrSplit &sp, const char *str )
 {
 	return "";
 }
@@ -15289,7 +15291,7 @@ bool JagGeo::pointWithinPolygon( double x, double y, const JagLineString3D &line
 
 }
 
-void JagGeo::getPolygonBound( const AbaxDataString &mk, const JagStrSplit &sp, 
+void JagGeo::getPolygonBound( const Jstr &mk, const JagStrSplit &sp, 
 							  double &bbx, double &bby, double &rx, double &ry )
 {
     if ( mk == JAG_OJAG ) {
@@ -15313,7 +15315,7 @@ void JagGeo::getPolygonBound( const AbaxDataString &mk, const JagStrSplit &sp,
     }
 }
 
-void JagGeo::getLineStringBound( const AbaxDataString &mk, const JagStrSplit &sp, 
+void JagGeo::getLineStringBound( const Jstr &mk, const JagStrSplit &sp, 
 							  double &bbx, double &bby, double &rx, double &ry )
 {
     if ( mk == JAG_OJAG ) {
@@ -15509,12 +15511,12 @@ double JagGeo::dotProduct( const JagPoint2D &p1, const JagPoint2D &p2 )
 }
 
 
-bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr, const AbaxDataString &arg, double &dist )
+bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr, const Jstr &arg, double &dist )
 {
 	prt(("s3083 JagGeo::distance inlstr=[%s] arg=[%s]\n", inlstr.c_str(), arg.c_str() ));
 	prt(("s3083 JagGeo::distance inrstr=[%s] arg=[%s]\n", inrstr.c_str(), arg.c_str() ));
 
-	AbaxDataString lstr;
+	Jstr lstr;
 	int rc = 0;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		prt(("s5510 convertConstantObjToJAG ...\n" ));
@@ -15526,7 +15528,7 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 		lstr = inlstr.c_str();
 	}
 
-	AbaxDataString rstr;
+	Jstr rstr;
 	if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
 		rc = convertConstantObjToJAG( inrstr, rstr );
 		if ( rc <= 0 ) return false;
@@ -15544,11 +15546,11 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 	if ( co1.length() < 4 ) return 0;
 	JagStrSplit co2( sp2[JAG_SP_START+0], '=' );
 	if ( co2.length() < 4 ) return 0;
-	AbaxDataString mark1 = co1[0]; // CJAG or OJAG
-	AbaxDataString mark2 = co2[0];
+	Jstr mark1 = co1[0]; // CJAG or OJAG
+	Jstr mark2 = co2[0];
 
-	AbaxDataString colType1 = co1[3];
-	AbaxDataString colType2 = co2[3];
+	Jstr colType1 = co1[3];
+	Jstr colType2 = co2[3];
 	int dim1 = JagGeo::getDimension( colType1 );
 	int dim2 = JagGeo::getDimension( colType2 );
 	if ( dim1 != dim2 ) { return 0; }
@@ -15635,8 +15637,8 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 
 		
 /////////////////////////// distance ///////////////////////////////////////////////////////		
-bool JagGeo::doPointDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doPointDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -15690,9 +15692,9 @@ bool JagGeo::doPointDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, 
 	return false;
 }
 
-bool JagGeo::doPoint3DDistance( const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, 
-							    const AbaxDataString& colType2,
-							    const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doPoint3DDistance( const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, 
+							    const Jstr& colType2,
+							    const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	prt(("s7730 mk1=[%s] mk2=[%s] sp1:sp2:\n", mk1.c_str(), mk2.c_str() ));
 	//sp1.print();
@@ -15763,8 +15765,8 @@ bool JagGeo::doPoint3DDistance( const AbaxDataString& mk1, const JagStrSplit& sp
 	return false;
 }
 
-bool JagGeo::doCircleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doCircleDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -15809,8 +15811,8 @@ bool JagGeo::doCircleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1
 	return false;
 }
 
-bool JagGeo::doCircle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
-								const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doCircle3DDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, 
+								const Jstr& colType2, const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -15882,8 +15884,8 @@ double JagGeo::doSphereVolume( int srid1, const JagStrSplit& sp1 )
 	return r * r * r * 4.0 * JAG_PI/3.0;
 }
 
-bool JagGeo::doSphereDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doSphereDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -15937,8 +15939,8 @@ bool JagGeo::doSphereDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1
 	return false;
 }
 
-bool JagGeo::doSquareDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
-							const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doSquareDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, 
+							const Jstr& colType2, const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -15988,8 +15990,8 @@ bool JagGeo::doSquareDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1
 	return false;
 }
 
-bool JagGeo::doSquare3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
-							const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doSquare3DDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, 
+							const Jstr& colType2, const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16064,8 +16066,8 @@ double JagGeo::doCubeVolume( int srid1, const JagStrSplit& sp1 )
 	return (r*r*r*8.0);  // 2r*2r*2r
 }
 
-bool JagGeo::doCubeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doCubeDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16147,8 +16149,8 @@ double JagGeo::doRectangle3DPerimeter( int srid1, const JagStrSplit& sp1 )
 	return (a+b)* 4.0;
 }
 
-bool JagGeo::doRectangleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
-						const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doRectangleDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, 
+						const Jstr& colType2, const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16197,8 +16199,8 @@ bool JagGeo::doRectangleDistance(const AbaxDataString& mk1,  const JagStrSplit& 
 	return false;
 }
 
-bool JagGeo::doRectangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
-						const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doRectangle3DDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, 
+						const Jstr& colType2, const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16280,8 +16282,8 @@ double JagGeo::doBoxVolume( int srid1, const JagStrSplit& sp1 )
 	// ( 2a*2b*2c )
 }
 
-bool JagGeo::doBoxDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doBoxDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16374,8 +16376,8 @@ double JagGeo::doTriangle3DPerimeter( int srid1, const JagStrSplit& sp1 )
 	return distance(Ax,Ay,Az, Bx,By,Bz, srid1) + distance(Ax,Ay,Az, Cx,Cy,Cz, srid1) + distance(Cx,Cy,Cz, Bx,By,Bz, srid1);
 }
 
-bool JagGeo::doTriangleDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doTriangleDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
 	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
@@ -16440,8 +16442,8 @@ double JagGeo::doTriangle3DArea( int srid1, const JagStrSplit& sp1 )
 	return sqrt( jagsq2(x2*y3-x3*y2) + jagsq2(x3*y1-x1*y3) + jagsq2(x1*y2-x2*y1) )/2.0;
 }
 
-bool JagGeo::doTriangle3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, 
-						const AbaxDataString& colType2, const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doTriangle3DDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, 
+						const Jstr& colType2, const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
 	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
@@ -16514,8 +16516,8 @@ double JagGeo::doCylinderVolume( int srid1, const JagStrSplit& sp1 )
 	return r*r*JAG_PI *c*2.0;
 }
 
-bool JagGeo::doCylinderDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doCylinderDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16591,8 +16593,8 @@ double JagGeo::doConeVolume( int srid1, const JagStrSplit& sp1 )
 	return JAG_PI*R*R*h/3.0; 
 }
 
-bool JagGeo::doConeDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doConeDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16678,8 +16680,8 @@ double JagGeo::doEllipse3DPerimeter( int srid1, const JagStrSplit& sp1 )
 	return JAG_PI*( 3.0*(a+b) - sqrt( (3.0*a+b)*(a+3.0*b) ) );
 }
 
-bool JagGeo::doEllipseDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doEllipseDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16751,8 +16753,8 @@ double JagGeo::doEllipsoidVolume( int srid1, const JagStrSplit& sp1 )
 	return 4.0*JAG_PI*a*b*c/3.0;
 }
 
-bool JagGeo::doEllipsoidDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doEllipsoidDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -16810,8 +16812,8 @@ bool JagGeo::doEllipsoidDistance(const AbaxDataString& mk1,  const JagStrSplit& 
 	return false;
 }
 
-bool JagGeo::doLineDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doLineDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
 	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
@@ -16862,8 +16864,8 @@ bool JagGeo::doLineDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, 
 	return false;
 }
 
-bool JagGeo::doLine3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doLine3DDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	double x10 = jagatof( sp1[JAG_SP_START+0].c_str() );
 	double y10 = jagatof( sp1[JAG_SP_START+1].c_str() );
@@ -16921,8 +16923,8 @@ bool JagGeo::doLine3DDistance(const AbaxDataString& mk1,  const JagStrSplit& sp1
 	return false;
 }
 
-bool JagGeo::doLineStringDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doLineStringDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
@@ -16969,8 +16971,8 @@ bool JagGeo::doLineStringDistance(const AbaxDataString& mk1, const JagStrSplit& 
 	return false;
 }
 
-bool JagGeo::doLineString3DDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doLineString3DDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
 		return doPoint3DDistance( mk2, sp2, mk1, JAG_C_COL_TYPE_LINESTRING3D, sp1, srid,  arg, dist);
@@ -17023,8 +17025,8 @@ bool JagGeo::doLineString3DDistance(const AbaxDataString& mk1, const JagStrSplit
 	return false;
 }
 
-bool JagGeo::doPolygonDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doPolygonDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
@@ -17066,8 +17068,8 @@ bool JagGeo::doPolygonDistance(const AbaxDataString& mk1, const JagStrSplit& sp1
 	return false;
 }
 
-bool JagGeo::doPolygon3DDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doPolygon3DDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -17116,8 +17118,8 @@ bool JagGeo::doPolygon3DDistance(const AbaxDataString& mk1, const JagStrSplit& s
 	return false;
 }
 
-bool JagGeo::doMultiPolygonDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doMultiPolygonDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
@@ -17162,8 +17164,8 @@ bool JagGeo::doMultiPolygonDistance(const AbaxDataString& mk1, const JagStrSplit
 	return false;
 }
 
-bool JagGeo::doMultiPolygon3DDistance(const AbaxDataString& mk1, const JagStrSplit& sp1, const AbaxDataString& mk2, const AbaxDataString& colType2,
-										 const JagStrSplit& sp2, int srid, const AbaxDataString& arg, double &dist)
+bool JagGeo::doMultiPolygon3DDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
+										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
@@ -17215,14 +17217,14 @@ bool JagGeo::doMultiPolygon3DDistance(const AbaxDataString& mk1, const JagStrSpl
 
 
 // 2D point
-bool JagGeo::pointDistancePoint( int srid, double px, double py, double x1, double y1, const AbaxDataString& arg, double &dist )
+bool JagGeo::pointDistancePoint( int srid, double px, double py, double x1, double y1, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, x1, y1, srid );
     return true;
 }
 
 bool JagGeo::pointDistanceLine( int srid, double px, double py, double x1, double y1, double x2, double y2, 
-								const AbaxDataString& arg, double &dist )
+								const Jstr& arg, double &dist )
 {
 	bool rc = true;
 	double projx, projy;
@@ -17251,8 +17253,8 @@ bool JagGeo::pointDistanceLine( int srid, double px, double py, double x1, doubl
 
 // arg: "min" "max"
 // dist in number or meters
-bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const AbaxDataString &mk2, const JagStrSplit &sp2, 
-									  const AbaxDataString& arg, double &dist )
+bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const Jstr &mk2, const JagStrSplit &sp2, 
+									  const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
 	if ( arg.caseEqual( "center" ) ) {
@@ -17293,13 +17295,13 @@ bool JagGeo::pointDistanceLineString( int srid,  double x, double y, const AbaxD
 
 // min max center
 bool JagGeo::pointDistanceSquare( int srid, double x, double y, double px0, double py0, double r, double nx, 
-								  const AbaxDataString& arg, double &dist )
+								  const Jstr& arg, double &dist )
 {
     return pointDistanceRectangle( srid, x, y, px0, py0, r, r, nx, arg, dist );
 }
 
 // min max center
-bool JagGeo::pointDistanceCircle(int srid, double px, double py, double x0, double y0, double r, const AbaxDataString& arg, double &dist )
+bool JagGeo::pointDistanceCircle(int srid, double px, double py, double x0, double y0, double r, const Jstr& arg, double &dist )
 {
 	double d;
 	d = JagGeo::distance( px, py, x0, y0, srid );
@@ -17319,7 +17321,7 @@ bool JagGeo::pointDistanceCircle(int srid, double px, double py, double x0, doub
 
 // min max center
 bool JagGeo::pointDistanceRectangle( int srid, double x, double y, double px0, double py0, double a0, double b0, double nx0, 
-									 const AbaxDataString& arg, double &dist )
+									 const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		dist = JagGeo::distance( x, y, px0, py0, srid );
@@ -17396,7 +17398,7 @@ bool JagGeo::pointDistanceRectangle( int srid, double x, double y, double px0, d
 
 // x y is center of ellipse. px py is the external point
 bool JagGeo::pointDistanceEllipse( int srid, double px, double py, double x0, double y0, double a, double b, double nx, 
-								   const AbaxDataString& arg, double &dist )
+								   const Jstr& arg, double &dist )
 {
 
     if ( arg.caseEqual("center") ) {
@@ -17447,7 +17449,7 @@ double JagGeo::point3DDistanceToEllipsoid( int srid, double px, double py, doubl
 // min max
 bool JagGeo::pointDistanceTriangle(int srid, double px, double py, double x1, double y1,
 								  double x2, double y2, double x3, double y3,
-				 				  const AbaxDataString& arg, double &dist )
+				 				  const Jstr& arg, double &dist )
 {
 	double d1, d2, d3;
 	d1 = JagGeo::distance( x1, y1, px, py, srid );
@@ -17462,8 +17464,8 @@ bool JagGeo::pointDistanceTriangle(int srid, double px, double py, double x1, do
     return true;
 }
 
-bool JagGeo::pointDistancePolygon( int srid, double x, double y, const AbaxDataString &mk2, const JagStrSplit &sp2, 
-								   const AbaxDataString& arg, double &dist )
+bool JagGeo::pointDistancePolygon( int srid, double x, double y, const Jstr &mk2, const JagStrSplit &sp2, 
+								   const Jstr& arg, double &dist )
 {
     const char *str;
     //char *p;
@@ -17494,7 +17496,7 @@ bool JagGeo::pointDistancePolygon( int srid, double x, double y, const AbaxDataS
 
 // 3D point
 bool JagGeo::point3DDistancePoint3D( int srid, double px, double py, double pz, double x1, double y1, double z1, 
-									 const AbaxDataString& arg, double &dist )
+									 const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, pz, x1, y1, z1, srid );
 	prt(("s2083 px=%f py=%f pz=%f srid=%d\n", px, py, pz, srid ));
@@ -17502,7 +17504,7 @@ bool JagGeo::point3DDistancePoint3D( int srid, double px, double py, double pz, 
     return true;
 }
 bool JagGeo::point3DDistanceLine3D(int srid, double px, double py, double pz, double x1, double y1, double z1, 
-								double x2, double y2, double z2, const AbaxDataString& arg, double &dist )
+								double x2, double y2, double z2, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, pz, x1, y1, z1, srid );
 	double dist2 = JagGeo::distance( px, py, pz, x2, y2, z2, srid );
@@ -17515,8 +17517,8 @@ bool JagGeo::point3DDistanceLine3D(int srid, double px, double py, double pz, do
 
     return true;
 }
-bool JagGeo::point3DDistanceLineString3D(int srid,  double x, double y, double z, const AbaxDataString &mk2, 
-										const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+bool JagGeo::point3DDistanceLineString3D(int srid,  double x, double y, double z, const Jstr &mk2, 
+										const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
 	prt(("s2038 srid=%d x y z = %f %f %f\n", srid, x, y, z ));
 	//prt(("s5780 sp2:\n" ));
@@ -17550,7 +17552,7 @@ bool JagGeo::point3DDistanceLineString3D(int srid,  double x, double y, double z
 //d == a; w == b; h == c;
 bool JagGeo::point3DDistanceBox(int srid, double dx, double dy, double dz,
 								  double x0, double y0, double z0, double d, double w, double h, double nx, double ny,
-								  const AbaxDataString& arg, double &dist )
+								  const Jstr& arg, double &dist )
 {
     double px, py, pz, maxd1, maxd2, maxd3, mind1;
     double xsum = 0, ysum = 0, zsum = 0;
@@ -17616,7 +17618,7 @@ bool JagGeo::point3DDistanceBox(int srid, double dx, double dy, double dz,
 }
 
 bool JagGeo::point3DDistanceSphere(int srid, double px, double py, double pz, double x, double y, double z, double r, 
-									const AbaxDataString& arg, double &dist )
+									const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, pz, x, y, z, srid );
     if ( arg.caseEqual( "max" ) ) { return true; }
@@ -17626,7 +17628,7 @@ bool JagGeo::point3DDistanceSphere(int srid, double px, double py, double pz, do
 
 bool JagGeo::point3DDistanceEllipsoid(int srid, double px, double py, double pz,  
 								  double x0, double y0, double z0, double a, double b, double c, double nx, double ny, 
-								  const AbaxDataString& arg, double &dist )
+								  const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		dist = JagGeo::distance( px, py, pz, x0, y0, z0, srid );
@@ -17644,7 +17646,7 @@ bool JagGeo::point3DDistanceEllipsoid(int srid, double px, double py, double pz,
 
 bool JagGeo::point3DDistanceCone(int srid, double px, double py, double pz, 
 								double x, double y, double z,
-								 double r, double h,  double nx, double ny, const AbaxDataString& arg, double &dist )
+								 double r, double h,  double nx, double ny, const Jstr& arg, double &dist )
 {
 	// transform px py pz to local normal cone
 	double lx, ly, lz; // x y z is coord of cone's center
@@ -17656,7 +17658,7 @@ bool JagGeo::point3DDistanceCone(int srid, double px, double py, double pz,
 
 bool JagGeo::point3DDistanceSquare3D(int srid, double px, double py, double pz, 
 								double x, double y, double z,
-								 double a, double nx, double ny, const AbaxDataString& arg, double &dist )
+								 double a, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, pz, x, y, z, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17671,7 +17673,7 @@ bool JagGeo::point3DDistanceSquare3D(int srid, double px, double py, double pz,
 }
 bool JagGeo::point3DDistanceCylinder(int srid,  double px, double py, double pz,
                                     double x, double y, double z,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, pz, x, y, z, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17685,7 +17687,7 @@ bool JagGeo::point3DDistanceCylinder(int srid,  double px, double py, double pz,
 }
 
 // 2D circle
-bool JagGeo::circleDistanceCircle(int srid, double px, double py, double pr, double x, double y, double r, const AbaxDataString& arg, double &dist )
+bool JagGeo::circleDistanceCircle(int srid, double px, double py, double pr, double x, double y, double r, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, x, y, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17699,7 +17701,7 @@ bool JagGeo::circleDistanceCircle(int srid, double px, double py, double pr, dou
 }
 
 bool JagGeo::circleDistanceSquare( int srid, double px0, double py0, double pr, double x0, double y0, double r, 
-								   double nx, const AbaxDataString& arg, double &dist )
+								   double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17714,7 +17716,7 @@ bool JagGeo::circleDistanceSquare( int srid, double px0, double py0, double pr, 
 
 bool JagGeo::circleDistanceEllipse(int srid, double px, double py, double pr, 
 								 	 double x, double y, double w, double h, double nx, 
-								 	 const AbaxDataString& arg, double &dist )
+								 	 const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, x, y, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17728,7 +17730,7 @@ bool JagGeo::circleDistanceEllipse(int srid, double px, double py, double pr,
 }
 
 bool JagGeo::circleDistanceRectangle(int srid, double px0, double py0, double pr, double x0, double y0,
-									  double w, double h, double nx,  const AbaxDataString& arg, double &dist )
+									  double w, double h, double nx,  const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17742,7 +17744,7 @@ bool JagGeo::circleDistanceRectangle(int srid, double px0, double py0, double pr
 }
 
 bool JagGeo::circleDistanceTriangle(int srid, double px, double py, double pr, double x1, double y1, 
-								  double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist ) 
+								  double x2, double y2, double x3, double y3, const Jstr& arg, double &dist ) 
 {
 	dist = JagGeo::distance( px, py, x1, y1, srid );
 	double dist2 = JagGeo::distance( px, py, x2, y2, srid );
@@ -17756,7 +17758,7 @@ bool JagGeo::circleDistanceTriangle(int srid, double px, double py, double pr, d
 }
 
 bool JagGeo::circleDistancePolygon(int srid, double px0, double py0, double pr, 
-								 const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+								 const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
 	prt(("s2030 sp2:\n" ));
 	// sp2.print();
@@ -17788,7 +17790,7 @@ bool JagGeo::circleDistancePolygon(int srid, double px0, double py0, double pr,
 
 // 3D circle
 bool JagGeo::circle3DDistanceCube(int srid, double px0, double py0, double pz0, double pr0,  double nx0, double ny0,
-									double x0, double y0, double z0,  double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+									double x0, double y0, double z0,  double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17803,7 +17805,7 @@ bool JagGeo::circle3DDistanceCube(int srid, double px0, double py0, double pz0, 
 
 bool JagGeo::circle3DDistanceBox(int srid, double px0, double py0, double pz0, double pr0,  double nx0, double ny0,
 				                   double x0, double y0, double z0,  double a, double b, double c,
-				                   double nx, double ny, const AbaxDataString& arg, double &dist )
+				                   double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17817,7 +17819,7 @@ bool JagGeo::circle3DDistanceBox(int srid, double px0, double py0, double pz0, d
 }
 
 bool JagGeo::circle3DDistanceSphere(int srid, double px0, double py0, double pz0, double pr0,   double nx0, double ny0,
-   									 double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
+   									 double x, double y, double z, double r, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x, y, z, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17832,7 +17834,7 @@ bool JagGeo::circle3DDistanceSphere(int srid, double px0, double py0, double pz0
 
 bool JagGeo::circle3DDistanceEllipsoid(int srid, double px0, double py0, double pz0, double pr0,  double nx0, double ny0,
 									  double x0, double y0, double z0, 
-								 	   double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+								 	   double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
 	if ( arg.caseEqual("center") ) { return true; }
@@ -17846,7 +17848,7 @@ bool JagGeo::circle3DDistanceEllipsoid(int srid, double px0, double py0, double 
 }
 bool JagGeo::circle3DDistanceCone(int srid, double px0, double py0, double pz0, double pr0, double nx0, double ny0,
 									  double x0, double y0, double z0, 
-								 	   double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+								 	   double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
@@ -17865,7 +17867,7 @@ bool JagGeo::circle3DDistanceCone(int srid, double px0, double py0, double pz0, 
 
 // 3D sphere
 bool JagGeo::sphereDistanceCube(int srid,  double px0, double py0, double pz0, double pr0,
-	                               double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+	                               double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17879,7 +17881,7 @@ bool JagGeo::sphereDistanceCube(int srid,  double px0, double py0, double pz0, d
 
 bool JagGeo::sphereDistanceBox(int srid,  double px0, double py0, double pz0, double r,
 	                                double x0, double y0, double z0, double w, double d, double h, 
-									double nx, double ny, const AbaxDataString& arg, double &dist )
+									double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17892,7 +17894,7 @@ bool JagGeo::sphereDistanceBox(int srid,  double px0, double py0, double pz0, do
 }
 
 bool JagGeo::sphereDistanceSphere(int srid,  double px0, double py0, double pz0, double pr, 
-									double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
+									double x, double y, double z, double r, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x, y, z, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17906,7 +17908,7 @@ bool JagGeo::sphereDistanceSphere(int srid,  double px0, double py0, double pz0,
 
 bool JagGeo::sphereDistanceEllipsoid(int srid,  double px0, double py0, double pz0, double pr,
 	                                    double x0, double y0, double z0, double w, double d, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist )
+										double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, pz0, x0, y0, z0, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17920,7 +17922,7 @@ bool JagGeo::sphereDistanceEllipsoid(int srid,  double px0, double py0, double p
 
 bool JagGeo::sphereDistanceCone(int srid,  double px0, double py0, double pz0, double pr,
 	                                    double x0, double y0, double z0, double r, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist )
+										double nx, double ny, const Jstr& arg, double &dist )
 {
 	point3DDistanceCone(srid, px0, py0, pz0, x0, y0, z0, r, h, nx, ny,  arg, dist );
 	if ( arg.caseEqual("min") ) {
@@ -17934,7 +17936,7 @@ bool JagGeo::sphereDistanceCone(int srid,  double px0, double py0, double pz0, d
 
 // 2D rectangle
 bool JagGeo::rectangleDistanceTriangle(int srid, double px, double py, double a0, double b0, double nx0, 
-									 double x1, double y1, double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist )
+									 double x1, double y1, double x2, double y2, double x3, double y3, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px, py, x1, y1, srid );
 	double dist2 = JagGeo::distance( px, py, x2, y2, srid );
@@ -17948,7 +17950,7 @@ bool JagGeo::rectangleDistanceTriangle(int srid, double px, double py, double a0
 }
 
 bool JagGeo::rectangleDistanceSquare(int srid, double px0, double py0, double a0, double b0, double nx0,
-	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17960,7 +17962,7 @@ bool JagGeo::rectangleDistanceSquare(int srid, double px0, double py0, double a0
     return true;
 }
 bool JagGeo::rectangleDistanceRectangle(int srid, double px0, double py0, double a0, double b0, double nx0,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17973,7 +17975,7 @@ bool JagGeo::rectangleDistanceRectangle(int srid, double px0, double py0, double
 }
 
 bool JagGeo::rectangleDistanceEllipse(int srid, double px0, double py0, double a0, double b0, double nx0,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17986,7 +17988,7 @@ bool JagGeo::rectangleDistanceEllipse(int srid, double px0, double py0, double a
 }
 
 bool JagGeo::rectangleDistanceCircle(int srid, double px0, double py0, double a0, double b0, double nx0, 
-								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+								    double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( px0, py0, x0, y0, srid );
 	if ( arg.caseEqual("min") ) {
@@ -17999,7 +18001,7 @@ bool JagGeo::rectangleDistanceCircle(int srid, double px0, double py0, double a0
 }
 
 bool JagGeo::rectangleDistancePolygon(int srid, double px0, double py0, double a0, double b0, double nx0, 
-									const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+									const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
 	dist = 0.0;
 	if ( sp2.length() < 1 ) { return false; }
@@ -18043,7 +18045,7 @@ bool JagGeo::rectangleDistancePolygon(int srid, double px0, double py0, double a
 
 // 2D triangle
 bool JagGeo::triangleDistanceTriangle(int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-									 double x1, double y1, double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist )
+									 double x1, double y1, double x2, double y2, double x3, double y3, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, x1, y1, srid );
 	double dist2 = JagGeo::distance( x20, y20, x2, y2, srid );
@@ -18057,7 +18059,7 @@ bool JagGeo::triangleDistanceTriangle(int srid, double x10, double y10, double x
 }
 
 bool JagGeo::triangleDistanceSquare(int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, x0, y0, srid );
 	double dist2 = JagGeo::distance( x20, y20, x0, y0, srid );
@@ -18070,7 +18072,7 @@ bool JagGeo::triangleDistanceSquare(int srid, double x10, double y10, double x20
     return true;
 }
 bool JagGeo::triangleDistanceRectangle(int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, x0, y0, srid );
 	double dist2 = JagGeo::distance( x20, y20, x0, y0, srid );
@@ -18083,7 +18085,7 @@ bool JagGeo::triangleDistanceRectangle(int srid, double x10, double y10, double 
     return true;
 }
 bool JagGeo::triangleDistanceEllipse(int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, x0, y0, srid );
 	double dist2 = JagGeo::distance( x20, y20, x0, y0, srid );
@@ -18097,7 +18099,7 @@ bool JagGeo::triangleDistanceEllipse(int srid, double x10, double y10, double x2
 }
 
 bool JagGeo::triangleDistanceCircle(int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+								    double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, x0, y0, srid );
 	double dist2 = JagGeo::distance( x20, y20, x0, y0, srid );
@@ -18111,7 +18113,7 @@ bool JagGeo::triangleDistanceCircle(int srid, double x10, double y10, double x20
 }
 
 bool JagGeo::triangleDistancePolygon(int srid, double x10, double y10, double x20, double y20, double x30, double y30,
-								    const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+								    const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
     double dx, dy;
     const char *str;
@@ -18144,7 +18146,7 @@ bool JagGeo::triangleDistancePolygon(int srid, double x10, double y10, double x2
 									
 // 2D ellipse
 bool JagGeo::ellipseDistanceTriangle(int srid, double px0, double py0, double a0, double b0, double nx0, 
-									 double x1, double y1, double x2, double y2, double x3, double y3, const AbaxDataString& arg, double &dist )
+									 double x1, double y1, double x2, double y2, double x3, double y3, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x1, y1, px0, py0, srid );
 	double dist2 = JagGeo::distance( x2, y2, px0, py0, srid );
@@ -18158,7 +18160,7 @@ bool JagGeo::ellipseDistanceTriangle(int srid, double px0, double py0, double a0
 }
 
 bool JagGeo::ellipseDistanceSquare(int srid, double px0, double py0, double a0, double b0, double nx0,
-	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, px0, py0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18171,7 +18173,7 @@ bool JagGeo::ellipseDistanceSquare(int srid, double px0, double py0, double a0, 
 }
 
 bool JagGeo::ellipseDistanceRectangle(int srid, double px0, double py0, double a0, double b0, double nx0,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, px0, py0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18184,7 +18186,7 @@ bool JagGeo::ellipseDistanceRectangle(int srid, double px0, double py0, double a
 }
 
 bool JagGeo::ellipseDistanceEllipse(int srid, double px0, double py0, double a0, double b0, double nx0,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, px0, py0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18197,7 +18199,7 @@ bool JagGeo::ellipseDistanceEllipse(int srid, double px0, double py0, double a0,
 }
 
 bool JagGeo::ellipseDistanceCircle(int srid, double px0, double py0, double a0, double b0, double nx0, 
-								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+								    double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, px0, py0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18210,7 +18212,7 @@ bool JagGeo::ellipseDistanceCircle(int srid, double px0, double py0, double a0, 
 }
 
 bool JagGeo::ellipseDistancePolygon(int srid, double px0, double py0, double a0, double b0, double nx0, 
-								    const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+								    const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
 	dist = 0.0;
     double dx, dy;
@@ -18254,7 +18256,7 @@ bool JagGeo::ellipseDistancePolygon(int srid, double px0, double py0, double a0,
 
 // rect 3D
 bool JagGeo::rectangle3DDistanceCube(int srid,  double px0, double py0, double pz0, double a0, double b0, double nx0, double ny0,
-                                double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18269,7 +18271,7 @@ bool JagGeo::rectangle3DDistanceCube(int srid,  double px0, double py0, double p
 bool JagGeo::rectangle3DDistanceBox(int srid,  double px0, double py0, double pz0, double a0, double b0,
                                 double nx0, double ny0,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18282,7 +18284,7 @@ bool JagGeo::rectangle3DDistanceBox(int srid,  double px0, double py0, double pz
 }
 bool JagGeo::rectangle3DDistanceSphere(int srid,  double px0, double py0, double pz0, double a0, double b0,
                                        double nx0, double ny0,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x, y, z, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18296,7 +18298,7 @@ bool JagGeo::rectangle3DDistanceSphere(int srid,  double px0, double py0, double
 bool JagGeo::rectangle3DDistanceEllipsoid(int srid,  double px0, double py0, double pz0, double a0, double b0,
                                     double nx0, double ny0,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18310,7 +18312,7 @@ bool JagGeo::rectangle3DDistanceEllipsoid(int srid,  double px0, double py0, dou
 bool JagGeo::rectangle3DDistanceCone(int srid,  double px0, double py0, double pz0, double a0, double b0,
                                     double nx0, double ny0,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18326,7 +18328,7 @@ bool JagGeo::rectangle3DDistanceCone(int srid,  double px0, double py0, double p
 // triangle 3D
 bool JagGeo::triangle3DDistanceCube(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 								double x30, double y30,  double z30,
-								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+								double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, z10, x0, y0, z0, srid );
 	double dist2 = JagGeo::distance( x20, y20, z20, x0, y0, z0, srid );
@@ -18342,7 +18344,7 @@ bool JagGeo::triangle3DDistanceCube(int srid,  double x10, double y10, double z1
 bool JagGeo::triangle3DDistanceBox(int srid,  double x10, double y10, double z10, double x20, double y20, double z20, 
 								double x30, double y30, double z30,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, z10, x0, y0, z0, srid );
 	double dist2 = JagGeo::distance( x20, y20, z20, x0, y0, z0, srid );
@@ -18356,7 +18358,7 @@ bool JagGeo::triangle3DDistanceBox(int srid,  double x10, double y10, double z10
 }
 bool JagGeo::triangle3DDistanceSphere(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 								   double x30, double y30, double z30,
-                                       double x0, double y0, double z0, double r, const AbaxDataString& arg, double &dist )
+                                       double x0, double y0, double z0, double r, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, z10, x0, y0, z0, srid );
 	double dist2 = JagGeo::distance( x20, y20, z20, x0, y0, z0, srid );
@@ -18371,7 +18373,7 @@ bool JagGeo::triangle3DDistanceSphere(int srid,  double x10, double y10, double 
 bool JagGeo::triangle3DDistanceEllipsoid(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 										double x30, double y30, double z30,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, z10, x0, y0, z0, srid );
 	double dist2 = JagGeo::distance( x20, y20, z20, x0, y0, z0, srid );
@@ -18386,7 +18388,7 @@ bool JagGeo::triangle3DDistanceEllipsoid(int srid,  double x10, double y10, doub
 bool JagGeo::triangle3DDistanceCone(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
 										double x30, double y30, double z30,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x10, y10, z10, x0, y0, z0, srid );
 	double dist2 = JagGeo::distance( x20, y20, z20, x0, y0, z0, srid );
@@ -18403,7 +18405,7 @@ bool JagGeo::triangle3DDistanceCone(int srid,  double x10, double y10, double z1
 
 // 3D box
 bool JagGeo::boxDistanceCube(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0,
-                            double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+                            double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18416,7 +18418,7 @@ bool JagGeo::boxDistanceCube(int srid,  double px0, double py0, double pz0, doub
 }
 bool JagGeo::boxDistanceBox(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
 					       double x0, double y0, double z0, double w, double d, double h, double nx, double ny, 
-						   const AbaxDataString& arg, double &dist )
+						   const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18429,7 +18431,7 @@ bool JagGeo::boxDistanceBox(int srid,  double px0, double py0, double pz0, doubl
 }
 bool JagGeo::boxDistanceSphere(int srid, double px0, double py0, double pz0, double a0, double b0, double c0,
                                  double nx0, double ny0, double x, double y, double z, double r,
-							 const AbaxDataString& arg, double &dist )
+							 const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x, y, z, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18443,7 +18445,7 @@ bool JagGeo::boxDistanceSphere(int srid, double px0, double py0, double pz0, dou
 
 bool JagGeo::boxDistanceEllipsoid(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double w, double d, double h, 
-								double nx, double ny, const AbaxDataString& arg, double &dist )
+								double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18457,7 +18459,7 @@ bool JagGeo::boxDistanceEllipsoid(int srid,  double px0, double py0, double pz0,
 
 bool JagGeo::boxDistanceCone(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double r, double h, 
-								double nx, double ny, const AbaxDataString& arg, double &dist )
+								double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18471,7 +18473,7 @@ bool JagGeo::boxDistanceCone(int srid,  double px0, double py0, double pz0, doub
 
 // ellipsoid
 bool JagGeo::ellipsoidDistanceCube(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0,
-                            double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+                            double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18483,7 +18485,7 @@ bool JagGeo::ellipsoidDistanceCube(int srid,  double px0, double py0, double pz0
     return true;
 }
 bool JagGeo::ellipsoidDistanceBox(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
-					       double x0, double y0, double z0, double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+					       double x0, double y0, double z0, double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18496,7 +18498,7 @@ bool JagGeo::ellipsoidDistanceBox(int srid,  double px0, double py0, double pz0,
 }
 bool JagGeo::ellipsoidDistanceSphere(int srid, double px0, double py0, double pz0, double a0, double b0, double c0,
                                  double nx0, double ny0, double x0, double y0, double z0, double r,
-							 const AbaxDataString& arg, double &dist )
+							 const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18509,7 +18511,7 @@ bool JagGeo::ellipsoidDistanceSphere(int srid, double px0, double py0, double pz
 }
 bool JagGeo::ellipsoidDistanceEllipsoid(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double w, double d, double h, 
-								double nx, double ny, const AbaxDataString& arg, double &dist )
+								double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18523,7 +18525,7 @@ bool JagGeo::ellipsoidDistanceEllipsoid(int srid,  double px0, double py0, doubl
 
 bool JagGeo::ellipsoidDistanceCone(int srid,  double px0, double py0, double pz0, double a0, double b0, double c0, double nx0, double ny0, 
                                     double x0, double y0, double z0, double r, double h, 
-								double nx, double ny, const AbaxDataString& arg, double &dist )
+								double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18537,7 +18539,7 @@ bool JagGeo::ellipsoidDistanceCone(int srid,  double px0, double py0, double pz0
 
 // 3D cyliner
 bool JagGeo::cylinderDistanceCube(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
-	                               double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+	                               double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18550,7 +18552,7 @@ bool JagGeo::cylinderDistanceCube(int srid,  double px0, double py0, double pz0,
 }
 bool JagGeo::cylinderDistanceBox(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 	                                double x0, double y0, double z0, double w, double d, double h, 
-									double nx, double ny, const AbaxDataString& arg, double &dist )
+									double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18563,7 +18565,7 @@ bool JagGeo::cylinderDistanceBox(int srid,  double px0, double py0, double pz0, 
 }
 
 bool JagGeo::cylinderDistanceSphere(int srid,  double px, double py, double pz, double pr0, double c0,  double nx0, double ny0,
-									double x0, double y0, double z0, double r, const AbaxDataString& arg, double &dist )
+									double x0, double y0, double z0, double r, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px, py, pz, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18576,7 +18578,7 @@ bool JagGeo::cylinderDistanceSphere(int srid,  double px, double py, double pz, 
 }
 bool JagGeo::cylinderDistanceEllipsoid(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 	                                    double x0, double y0, double z0, double w, double d, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist )
+										double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18590,7 +18592,7 @@ bool JagGeo::cylinderDistanceEllipsoid(int srid,  double px0, double py0, double
 
 bool JagGeo::cylinderDistanceCone(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 	                                    double x0, double y0, double z0, double r, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist )
+										double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18604,7 +18606,7 @@ bool JagGeo::cylinderDistanceCone(int srid,  double px0, double py0, double pz0,
 
 // 3D cone
 bool JagGeo::coneDistanceCube(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
-	                               double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+	                               double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18618,7 +18620,7 @@ bool JagGeo::coneDistanceCube(int srid,  double px0, double py0, double pz0, dou
 
 bool JagGeo::coneDistanceBox(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 	                                double x0, double y0, double z0, double w, double d, double h, 
-									double nx, double ny, const AbaxDataString& arg, double &dist )
+									double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18631,7 +18633,7 @@ bool JagGeo::coneDistanceBox(int srid,  double px0, double py0, double pz0, doub
 }
 
 bool JagGeo::coneDistanceSphere(int srid,  double px, double py, double pz, double pr0, double c0,  double nx0, double ny0,
-									double x0, double y0, double z0, double r, const AbaxDataString& arg, double &dist )
+									double x0, double y0, double z0, double r, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px, py, pz, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18645,7 +18647,7 @@ bool JagGeo::coneDistanceSphere(int srid,  double px, double py, double pz, doub
 
 bool JagGeo::coneDistanceEllipsoid(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 	                                    double x0, double y0, double z0, double w, double d, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist )
+										double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18658,7 +18660,7 @@ bool JagGeo::coneDistanceEllipsoid(int srid,  double px0, double py0, double pz0
 }
 bool JagGeo::coneDistanceCone(int srid,  double px0, double py0, double pz0, double pr0, double c0, double nx0, double ny0,
 	                                    double x0, double y0, double z0, double r, double h, 
-										double nx, double ny, const AbaxDataString& arg, double &dist )
+										double nx, double ny, const Jstr& arg, double &dist )
 {
 	dist = JagGeo::distance( x0, y0, z0, px0, py0, pz0, srid );
 	if ( arg.caseEqual("min") ) { 
@@ -18673,7 +18675,7 @@ bool JagGeo::coneDistanceCone(int srid,  double px0, double py0, double pz0, dou
 
 // 2D line
 bool JagGeo::lineDistanceTriangle(int srid, double x10, double y10, double x20, double y20, 
-									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
+									 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18696,7 +18698,7 @@ bool JagGeo::lineDistanceTriangle(int srid, double x10, double y10, double x20, 
 }
 
 bool JagGeo::lineDistanceLineString(int srid, double x10, double y10, double x20, double y20, 
-	                              const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+	                              const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
 	if ( sp2.length() < 3 ) { dist = 0.0; return false; }
 
@@ -18719,7 +18721,7 @@ bool JagGeo::lineDistanceLineString(int srid, double x10, double y10, double x20
 }
 
 bool JagGeo::lineDistanceSquare(int srid, double x10, double y10, double x20, double y20, 
-	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18740,7 +18742,7 @@ bool JagGeo::lineDistanceSquare(int srid, double x10, double y10, double x20, do
 }
 
 bool JagGeo::lineDistanceRectangle(int srid, double x10, double y10, double x20, double y20, 
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18760,7 +18762,7 @@ bool JagGeo::lineDistanceRectangle(int srid, double x10, double y10, double x20,
 }
 
 bool JagGeo::lineDistanceEllipse(int srid, double x10, double y10, double x20, double y20, 
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18780,7 +18782,7 @@ bool JagGeo::lineDistanceEllipse(int srid, double x10, double y10, double x20, d
 }
 
 bool JagGeo::lineDistanceCircle(int srid, double x10, double y10, double x20, double y20, 
-								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+								    double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18800,7 +18802,7 @@ bool JagGeo::lineDistanceCircle(int srid, double x10, double y10, double x20, do
 }
 
 bool JagGeo::lineDistancePolygon(int srid, double x10, double y10, double x20, double y20, 
-								const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+								const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
 	if ( sp2.length() < 3 ) { dist = 0.0; return false; }
 	const char *str = sp2[JAG_SP_START+2].c_str();
@@ -18820,7 +18822,7 @@ bool JagGeo::lineDistancePolygon(int srid, double x10, double y10, double x20, d
 
 // line 3D
 bool JagGeo::line3DDistanceLineString3D(int srid, double x10, double y10, double z10, double x20, double y20, double z20, 
-	                              const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+	                              const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
 	if ( sp2.length() < 3 ) { dist = 0.0; return false; }
 	const char *str = sp2[JAG_SP_START+2].c_str();
@@ -18838,7 +18840,7 @@ bool JagGeo::line3DDistanceLineString3D(int srid, double x10, double y10, double
 }
 
 bool JagGeo::line3DDistanceCube(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
-								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+								double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18860,7 +18862,7 @@ bool JagGeo::line3DDistanceCube(int srid,  double x10, double y10, double z10, d
 
 bool JagGeo::line3DDistanceBox(int srid,  double x10, double y10, double z10, double x20, double y20, double z20, 
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18881,7 +18883,7 @@ bool JagGeo::line3DDistanceBox(int srid,  double x10, double y10, double z10, do
 }
 
 bool JagGeo::line3DDistanceSphere(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
-                                       double x0, double y0, double z0, double r, const AbaxDataString& arg, double &dist )
+                                       double x0, double y0, double z0, double r, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18902,7 +18904,7 @@ bool JagGeo::line3DDistanceSphere(int srid,  double x10, double y10, double z10,
 }
 bool JagGeo::line3DDistanceEllipsoid(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18923,7 +18925,7 @@ bool JagGeo::line3DDistanceEllipsoid(int srid,  double x10, double y10, double z
 }
 bool JagGeo::line3DDistanceCone(int srid,  double x10, double y10, double z10, double x20, double y20, double z20,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual("center") ) {
 		double midx = (x10+x20)/2.0;
@@ -18946,8 +18948,8 @@ bool JagGeo::line3DDistanceCone(int srid,  double x10, double y10, double z10, d
 
 
 // linestring 2d
-bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-										const AbaxDataString &mk2, const JagStrSplit &sp2,  const AbaxDataString& arg, double &dist )
+bool JagGeo::lineStringDistanceLineString(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+										const Jstr &mk2, const JagStrSplit &sp2,  const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
 	int start2 = JAG_SP_START;
@@ -18993,8 +18995,8 @@ bool JagGeo::lineStringDistanceLineString(int srid, const AbaxDataString &mk1, c
 }
 
 
-bool JagGeo::lineStringDistanceTriangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
+bool JagGeo::lineStringDistanceTriangle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
     double dx, dy, min, max, d1, d2, d3;
@@ -19032,8 +19034,8 @@ bool JagGeo::lineStringDistanceTriangle(int srid, const AbaxDataString &mk1, con
     return true;
 
 }
-bool JagGeo::lineStringDistanceSquare(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::lineStringDistanceSquare(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
 
@@ -19069,8 +19071,8 @@ bool JagGeo::lineStringDistanceSquare(int srid, const AbaxDataString &mk1, const
 
 
 
-bool JagGeo::lineStringDistanceRectangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::lineStringDistanceRectangle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
 
@@ -19134,8 +19136,8 @@ bool JagGeo::lineStringDistanceRectangle(int srid, const AbaxDataString &mk1, co
 
     return true;
 }
-bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::lineStringDistanceEllipse(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
 
@@ -19181,8 +19183,8 @@ bool JagGeo::lineStringDistanceEllipse(int srid, const AbaxDataString &mk1, cons
     return true;
 }
 
-bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::lineStringDistanceCircle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+								    double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
     double dx, dy, d;
@@ -19217,8 +19219,8 @@ bool JagGeo::lineStringDistanceCircle(int srid, const AbaxDataString &mk1, const
     return true;
 }
 
-bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								     const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+bool JagGeo::lineStringDistancePolygon(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+								     const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
     JagPolygon pgon;
     int rc;
@@ -19279,8 +19281,8 @@ bool JagGeo::lineStringDistancePolygon(int srid, const AbaxDataString &mk1, cons
 
 
 // linestring3d
-bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-										    const AbaxDataString &mk2, const JagStrSplit &sp2,  const AbaxDataString& arg, double &dist )
+bool JagGeo::lineString3DDistanceLineString3D(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+										    const Jstr &mk2, const JagStrSplit &sp2,  const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
 	int start2 = JAG_SP_START;
@@ -19327,8 +19329,8 @@ bool JagGeo::lineString3DDistanceLineString3D(int srid, const AbaxDataString &mk
 
     return true;
 }
-bool JagGeo::lineString3DDistanceCube(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+bool JagGeo::lineString3DDistanceCube(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+								double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
     lineString3DDistanceBox(srid, mk1, sp1, x0, y0, z0, r, r, r, nx, ny, arg, dist);
     return true;
@@ -19344,9 +19346,9 @@ double JagGeo::DistanceOfPointToLine(double x0 ,double y0 ,double z0 ,double x1 
     return as*sin_A;
 }
 
-bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DDistanceBox(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     // sp1.print();
     // sp2.print();
@@ -19433,8 +19435,8 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const AbaxDataString &mk1, const
     }
     return true;
 }
-bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
+bool JagGeo::lineString3DDistanceSphere(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist )
 {
 	int start = JAG_SP_START;
 
@@ -19475,9 +19477,9 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const AbaxDataString &mk1, co
     return true;
 
 }
-bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     if  (arg.caseEqual("center" )){
 		// get center average of linestring3d
@@ -19521,9 +19523,9 @@ bool JagGeo::lineString3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1,
     return true;
 }
 
-bool JagGeo::lineString3DDistanceCone(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::lineString3DDistanceCone(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     if  (arg.caseEqual("center" )){
 		// get center average of linestring3d
@@ -19566,8 +19568,8 @@ bool JagGeo::lineString3DDistanceCone(int srid,  const AbaxDataString &mk1, cons
 
 
 // polygon
-bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
+bool JagGeo::polygonDistanceTriangle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist )
 {
 
     JagPolygon pgon;
@@ -19619,14 +19621,14 @@ bool JagGeo::polygonDistanceTriangle(int srid, const AbaxDataString &mk1, const 
     }
     return true;
 }
-bool JagGeo::polygonDistanceSquare(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::polygonDistanceSquare(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
     polygonDistanceRectangle(srid, mk1, sp1, x0, y0, r, r, nx, arg, dist);
     return true;
 }
-bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::polygonDistanceRectangle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
     JagPolygon pgon;
     int rc;
@@ -19661,8 +19663,8 @@ bool JagGeo::polygonDistanceRectangle(int srid, const AbaxDataString &mk1, const
     return true;
 }
 
-bool JagGeo::polygonDistanceEllipse(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::polygonDistanceEllipse(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
     JagPolygon pgon;
     int rc;
@@ -19700,8 +19702,8 @@ bool JagGeo::polygonDistanceEllipse(int srid, const AbaxDataString &mk1, const J
 
 }
 
-bool JagGeo::polygonDistanceCircle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::polygonDistanceCircle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+								    double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
     JagPolygon pgon;
     int rc;
@@ -19735,8 +19737,8 @@ bool JagGeo::polygonDistanceCircle(int srid, const AbaxDataString &mk1, const Ja
 
     return true;
 }
-bool JagGeo::polygonDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+bool JagGeo::polygonDistancePolygon(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
     JagPolygon pgon1;
     JagPolygon pgon2;
@@ -19784,16 +19786,16 @@ bool JagGeo::polygonDistancePolygon(int srid, const AbaxDataString &mk1, const J
 }
 
 // polygon3d Distance
-bool JagGeo::polygon3DDistanceCube(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+bool JagGeo::polygon3DDistanceCube(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+								double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
     polygon3DDistanceBox(srid, mk1, sp1, x0, y0, z0, r, r, r, nx, ny, arg, dist);
     return true;
 }
 
-bool JagGeo::polygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DDistanceBox(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     JagPolygon pgon;
     int rc;
@@ -19839,8 +19841,8 @@ bool JagGeo::polygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const Ja
 
     return true;
 }
-bool JagGeo::polygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
+bool JagGeo::polygon3DDistanceSphere(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist )
 {
 	JagPolygon pgon;
     int rc;
@@ -19885,9 +19887,9 @@ bool JagGeo::polygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const
 
     return true;
 }
-bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     JagPolygon pgon;
     int rc;
@@ -19934,9 +19936,9 @@ bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, co
     return true;
 }
 
-bool JagGeo::polygon3DDistanceCone(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::polygon3DDistanceCone(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     JagPolygon pgon;
     int rc;
@@ -19984,8 +19986,8 @@ bool JagGeo::polygon3DDistanceCone(int srid,  const AbaxDataString &mk1, const J
 
 
 // multipolygon -- 2D
-bool JagGeo::multiPolygonDistanceTriangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									 double x1, double y1, double x2, double y2, double x3, double y3,  const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygonDistanceTriangle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									 double x1, double y1, double x2, double y2, double x3, double y3,  const Jstr& arg, double &dist )
 {
     int rc;
     JagVector<JagPolygon> pgvec;
@@ -20034,14 +20036,14 @@ bool JagGeo::multiPolygonDistanceTriangle(int srid, const AbaxDataString &mk1, c
     return true;
 }
 
-bool JagGeo::multiPolygonDistanceSquare(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygonDistanceSquare(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
     multiPolygonDistanceRectangle(srid, mk1, sp1, x0, y0,r, r, nx, arg, dist);
     return true;
 }
-bool JagGeo::multiPolygonDistanceRectangle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygonDistanceRectangle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
     int rc;
     JagVector<JagPolygon> pgvec;
@@ -20089,8 +20091,8 @@ bool JagGeo::multiPolygonDistanceRectangle(int srid, const AbaxDataString &mk1, 
     return true;
     }
 
-bool JagGeo::multiPolygonDistanceEllipse(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-	                                double x0, double y0, double a, double b, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygonDistanceEllipse(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+	                                double x0, double y0, double a, double b, double nx, const Jstr& arg, double &dist )
 {
     int rc;
     JagVector<JagPolygon> pgvec;
@@ -20130,8 +20132,8 @@ bool JagGeo::multiPolygonDistanceEllipse(int srid, const AbaxDataString &mk1, co
 
     return true;
 }
-bool JagGeo::multiPolygonDistanceCircle(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								    double x0, double y0, double r, double nx, const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygonDistanceCircle(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+								    double x0, double y0, double r, double nx, const Jstr& arg, double &dist )
 {
     int rc;
     JagVector<JagPolygon> pgvec;
@@ -20174,8 +20176,8 @@ bool JagGeo::multiPolygonDistanceCircle(int srid, const AbaxDataString &mk1, con
     return true;
 }
 
-bool JagGeo::multiPolygonDistancePolygon(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-									const AbaxDataString &mk2, const JagStrSplit &sp2, const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygonDistancePolygon(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+									const Jstr &mk2, const JagStrSplit &sp2, const Jstr& arg, double &dist )
 {
     int rc1, rc2;
     JagVector<JagPolygon> pgvec;
@@ -20230,8 +20232,8 @@ bool JagGeo::multiPolygonDistancePolygon(int srid, const AbaxDataString &mk1, co
 }
 
 // multipolygon3d Distance
-bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, const JagStrSplit &sp1,
-								double x0, double y0, double z0, double r, double nx, double ny, const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygon3DDistanceCube(int srid, const Jstr &mk1, const JagStrSplit &sp1,
+								double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
     int rc;
     double d;
@@ -20276,9 +20278,9 @@ bool JagGeo::multiPolygon3DDistanceCube(int srid, const AbaxDataString &mk1, con
     return true;
 }
 
-bool JagGeo::multiPolygon3DDistanceBox(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DDistanceBox(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                 double x0, double y0, double z0,
-                                double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     int rc;
     int rc1;
@@ -20322,8 +20324,8 @@ bool JagGeo::multiPolygon3DDistanceBox(int srid,  const AbaxDataString &mk1, con
     }
     return true;
 }
-bool JagGeo::multiPolygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
-                                       double x, double y, double z, double r, const AbaxDataString& arg, double &dist )
+bool JagGeo::multiPolygon3DDistanceSphere(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
+                                       double x, double y, double z, double r, const Jstr& arg, double &dist )
 {
     int rc;
     int rc1;
@@ -20367,9 +20369,9 @@ bool JagGeo::multiPolygon3DDistanceSphere(int srid,  const AbaxDataString &mk1, 
     }
     return true;
 }
-bool JagGeo::multiPolygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DDistanceEllipsoid(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double w, double d, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     int rc;
     int rc1;
@@ -20411,9 +20413,9 @@ bool JagGeo::multiPolygon3DDistanceEllipsoid(int srid,  const AbaxDataString &mk
     }
     return true;
 }
-bool JagGeo::multiPolygon3DDistanceCone(int srid,  const AbaxDataString &mk1, const JagStrSplit &sp1,
+bool JagGeo::multiPolygon3DDistanceCone(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                     double x0, double y0, double z0,
-                                    double r, double h, double nx, double ny, const AbaxDataString& arg, double &dist )
+                                    double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
     int rc;
     int rc1;
@@ -20456,7 +20458,7 @@ bool JagGeo::multiPolygon3DDistanceCone(int srid,  const AbaxDataString &mk1, co
 }
 
 bool JagGeo::point3DDistanceNormalCone(int srid, double px, double py, double pz, 
-									 double r, double h, const AbaxDataString& arg, double &dist )
+									 double r, double h, const Jstr& arg, double &dist )
 {
 	if ( arg.caseEqual( "center" ) ) {
 		dist = distance( px, py, pz, 0.0, 0.0, 0.0, srid );
@@ -20549,7 +20551,7 @@ double JagGeo::meterToLat( int srid, double meter, double lon, double lat)
 	return meter/s12;
 }
 
-bool JagGeo::lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y )
+bool JagGeo::lineStringAverage( const Jstr &mk, const JagStrSplit &sp, double &x, double &y )
 {
 	int start = JAG_SP_START;
 
@@ -20579,7 +20581,7 @@ bool JagGeo::lineStringAverage( const AbaxDataString &mk, const JagStrSplit &sp,
 }
 
 
-bool JagGeo::lineString3DAverage( const AbaxDataString &mk, const JagStrSplit &sp, double &x, double &y, double &z )
+bool JagGeo::lineString3DAverage( const Jstr &mk, const JagStrSplit &sp, double &x, double &y, double &z )
 {
 	int start = JAG_SP_START;
 
@@ -20700,7 +20702,7 @@ double JagPolygon::lineLength( bool removeLast, bool is3D )
 	return sum;
 }
 
-void JagPolygon::toWKT( bool is3D, bool hasHdr, const AbaxDataString &objname, AbaxDataString &str ) const
+void JagPolygon::toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const
 {
 	if ( linestr.size() < 1 ) { str=""; return; }
 	if ( hasHdr ) {
@@ -20717,9 +20719,9 @@ void JagPolygon::toWKT( bool is3D, bool hasHdr, const AbaxDataString &objname, A
 		}
 		const JagLineString3D &lstr = linestr[i];
 		for (  int j=0; j< lstr.size(); ++j ) {
-			if ( j>0) { str += AbaxDataString(","); }
+			if ( j>0) { str += Jstr(","); }
 			str += d2s(lstr.point[j].x) + " " +  d2s(lstr.point[j].y);
-			if ( is3D ) { str += AbaxDataString(" ") + d2s(lstr.point[j].z); }
+			if ( is3D ) { str += Jstr(" ") + d2s(lstr.point[j].z); }
 		}
 		str += ")";
 	}
@@ -20727,15 +20729,15 @@ void JagPolygon::toWKT( bool is3D, bool hasHdr, const AbaxDataString &objname, A
 	str += ")";
 }
 
-void JagPolygon::toJAG( bool is3D, bool hasHdr, int srid, AbaxDataString &str ) const
+void JagPolygon::toJAG( bool is3D, bool hasHdr, int srid, Jstr &str ) const
 {
 	if ( linestr.size() < 1 ) { str=""; return; }
 	if ( hasHdr ) {
-		AbaxDataString srids = intToStr( srid );
+		Jstr srids = intToStr( srid );
 		if ( is3D ) {
-			str = AbaxDataString("CJAG=") + srids + "=0=PL3=d 0:0:0:0:0:0";
+			str = Jstr("CJAG=") + srids + "=0=PL3=d 0:0:0:0:0:0";
 		} else {
-			str = AbaxDataString("CJAG=") + srids + "=0=PL=d 0:0:0:0";
+			str = Jstr("CJAG=") + srids + "=0=PL=d 0:0:0:0";
 		}
 	} else {
 	}
@@ -20747,14 +20749,14 @@ void JagPolygon::toJAG( bool is3D, bool hasHdr, int srid, AbaxDataString &str ) 
 		const JagLineString3D &lstr = linestr[i];
 		prt(("s1127 JagPolygon::toJAG i=%d lstr.size=%d\n", i, lstr.size() ));
 		for (  int j=0; j< lstr.size(); ++j ) {
-			str += AbaxDataString(" ") + d2s(lstr.point[j].x) + ":" +  d2s(lstr.point[j].y);
-			if ( is3D ) { str += AbaxDataString(":") + d2s(lstr.point[j].z); }
+			str += Jstr(" ") + d2s(lstr.point[j].x) + ":" +  d2s(lstr.point[j].y);
+			if ( is3D ) { str += Jstr(":") + d2s(lstr.point[j].z); }
 		}
 	}
 	
 }
 
-void JagGeo::multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, AbaxDataString &str )
+void JagGeo::multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, Jstr &str )
 {
 	if ( pgvec.size() < 1 ) { str=""; return; }
 	str = "multipolygon(";
@@ -20766,9 +20768,9 @@ void JagGeo::multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, A
     		if ( i==0 ) { str += "("; } else { str += ",("; }
     		const JagLineString3D &lstr = pgon.linestr[i];
     		for (  int j=0; j< lstr.size(); ++j ) {
-    			if ( j>0) { str += AbaxDataString(","); }
+    			if ( j>0) { str += Jstr(","); }
     			str += d2s(lstr.point[j].x) + " " +  d2s(lstr.point[j].y);
-    			if ( is3D ) { str += AbaxDataString(" ") + d2s(lstr.point[j].z); }
+    			if ( is3D ) { str += Jstr(" ") + d2s(lstr.point[j].z); }
     		}
     		str += ")";
     	}
@@ -21070,8 +21072,8 @@ double JagGeo::minPoint3DToLineSegDistance( double px, double py, double pz,
 }
 
 
-bool JagGeo::closestPoint2DPolygon( int srid, double px, double py, const AbaxDataString &mk,
-                                    const JagStrSplit &sp, AbaxDataString &res )
+bool JagGeo::closestPoint2DPolygon( int srid, double px, double py, const Jstr &mk,
+                                    const JagStrSplit &sp, Jstr &res )
 {
 	JagPolygon pgon;
 	bool rc;
@@ -21107,8 +21109,8 @@ bool JagGeo::closestPoint2DPolygon( int srid, double px, double py, const AbaxDa
 	return true;
 }
 
-bool JagGeo::closestPoint3DPolygon( int srid, double px, double pz, double py, const AbaxDataString &mk,
-                                    const JagStrSplit &sp, AbaxDataString &res )
+bool JagGeo::closestPoint3DPolygon( int srid, double px, double pz, double py, const Jstr &mk,
+                                    const JagStrSplit &sp, Jstr &res )
 {
 	JagPolygon pgon;
 	bool rc;
@@ -21145,8 +21147,8 @@ bool JagGeo::closestPoint3DPolygon( int srid, double px, double pz, double py, c
 	return true;
 }
 
-bool JagGeo::closestPoint2DMultiPolygon( int srid, double px, double py, const AbaxDataString &mk,
-                                    const JagStrSplit &sp, AbaxDataString &res )
+bool JagGeo::closestPoint2DMultiPolygon( int srid, double px, double py, const Jstr &mk,
+                                    const JagStrSplit &sp, Jstr &res )
 {
 	JagVector<JagPolygon> pgvec;
 	bool rc;
@@ -21188,8 +21190,8 @@ bool JagGeo::closestPoint2DMultiPolygon( int srid, double px, double py, const A
 	return true;
 }
 
-bool JagGeo::closestPoint3DMultiPolygon( int srid, double px, double py, double pz, const AbaxDataString &mk,
-                                    const JagStrSplit &sp, AbaxDataString &res )
+bool JagGeo::closestPoint3DMultiPolygon( int srid, double px, double py, double pz, const Jstr &mk,
+                                    const JagStrSplit &sp, Jstr &res )
 {
 	JagVector<JagPolygon> pgvec;
 	bool rc;
@@ -21232,7 +21234,7 @@ bool JagGeo::closestPoint3DMultiPolygon( int srid, double px, double py, double 
 }
 
 bool JagGeo::closestPoint3DBox( int srid, double px, double py, double pz, double x0, double y0, double z0, 
-									double a, double b, double c, double nx, double ny, double &dist, AbaxDataString &res )
+									double a, double b, double c, double nx, double ny, double &dist, Jstr &res )
 {
 	double locx, locy, locz;
 	transform3DCoordGlobal2Local( x0, y0, z0, px, py, pz, nx, ny, locx, locy, locz );
@@ -21480,10 +21482,10 @@ JagPolygon::JagPolygon( const JagTriangle2D &t )
 // return n>0: OK ,  <=0 error
 // instr: "point3d(...)"  "polygon((...),(...))"
 // outstr: "CJAG=0=0=type=subtype  bbox data1 data2 data3 ..."
-int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr )
+int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr )
 {
 	int cnt = 0;
-	AbaxDataString othertype;
+	Jstr othertype;
 	int rc = 0;
 	char *p = (char*)instr.c_str();
 	if ( ! p || *p == '\0' ) return -1;
@@ -21494,9 +21496,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -381; } }
 		if ( sp.length() == 3 ) {
-			outstr = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
+			outstr = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
 		} else if ( sp.length() == 2 ) {
-			outstr = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp[0] + " " + sp[1];
+			outstr = Jstr("CJAG=0=0=PT=d 0:0:0:0 ") + sp[0] + " " + sp[1];
 		} else {
 			outstr = "";
 			return -9;
@@ -21509,7 +21511,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 3 ) { return -30; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -382; } }
-		outstr = AbaxDataString("CJAG=0=0=CR=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
+		outstr = Jstr("CJAG=0=0=CR=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
 		++cnt;
 	} else if ( strncasecmp( p, "square(", 7 )==0 ) {
 		while ( *p != '(' ) ++p; ++p;  // (p
@@ -21519,9 +21521,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() < 3 ) { return -30; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -383; } }
 		if ( sp.length() <= 3 ) {
-			outstr = AbaxDataString("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " 0.0";
+			outstr = Jstr("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " 0.0";
 		} else {
-			outstr = AbaxDataString("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+			outstr = Jstr("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
 		}
 		++cnt;
 	} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
@@ -21538,10 +21540,10 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 4 ) { return -32; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -384; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		++cnt;
 		if ( othertype == JAG_C_COL_TYPE_CUBE ) {
-			AbaxDataString nx, ny;
+			Jstr nx, ny;
 			if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
 			if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
 			outstr += nx + " " + ny;
@@ -21561,8 +21563,8 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 4 ) { return -42; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -385; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
-		AbaxDataString nx, ny;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		Jstr nx, ny;
 		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
 		if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
@@ -21580,8 +21582,8 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 4 ) { return -46; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -386; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
-		AbaxDataString nx;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		Jstr nx;
 		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
 		outstr += nx;
 		++cnt;
@@ -21598,9 +21600,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 5 ) { return -48; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -387; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " ";
-		AbaxDataString nx, ny;
+		Jstr nx, ny;
 		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
 		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
@@ -21619,9 +21621,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 6 ) { return -49; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -388; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
-		AbaxDataString nx, ny;
+		Jstr nx, ny;
 		if ( sp.length() >= 7 ) { nx = sp[6]; } else { nx="0.0"; }
 		if ( sp.length() >= 8 ) { ny = sp[7]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
@@ -21640,9 +21642,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		JagStrSplit sp(p, ' ', true );
 		if (  sp.length() < 5 ) { return -52; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -390; } }
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4];
-		AbaxDataString nx, ny;
+		Jstr nx, ny;
 		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
 		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
 		outstr += nx + " " + ny;
@@ -21656,7 +21658,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 4 ) { return -55; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -391; } }
 		othertype =  JAG_C_COL_TYPE_LINE;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
 		++cnt;
 	} else if ( strncasecmp( p, "line3d(", 7 )==0 ) {
 		// line3d(x1 y1 z1 x2 y2 z2)
@@ -21667,20 +21669,20 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 6 ) { return -57; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -440; } }
 		othertype =  JAG_C_COL_TYPE_LINE3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
 		++cnt;
 	} else if ( strncasecmp( p, "linestring(", 11 )==0 ) {
 		while ( *p != '(' ) ++p;  ++p;
 		if ( *p == 0 ) return -64;
 		othertype =  JAG_C_COL_TYPE_LINESTRING;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
 			JagStrSplit ss( sp[i], ' ', true );
 			if ( ss.length() < 2 ) {  continue; }
-			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1];
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1];
 		}
 		++cnt;
 	} else if ( strncasecmp( p, "linestring3d(", 13 )==0 ) {
@@ -21689,13 +21691,13 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -65;
 		othertype =  JAG_C_COL_TYPE_LINESTRING3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
 			JagStrSplit ss( sp[i], ' ', true );
 			if ( ss.length() < 3 ) {  continue; }
-			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
 			++cnt;
 		}
 	} else if ( strncasecmp( p, "multipoint(", 11 )==0 ) {
@@ -21704,13 +21706,13 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p;  ++p;
 		if ( *p == 0 ) return -67;
 		othertype =  JAG_C_COL_TYPE_MULTIPOINT;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
 			JagStrSplit ss( sp[i], ' ', true );
 			if ( ss.length() < 2 ) {  continue; }
-			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1];
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1];
 			++cnt;
 		}
 	} else if ( strncasecmp( p, "multipoint3d(", 13 )==0 ) {
@@ -21719,13 +21721,13 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -68;
 		othertype =  JAG_C_COL_TYPE_MULTIPOINT3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
 		JagStrSplit sp(p, ',', true );
 		int len = sp.length();
 		for ( int i = 0; i < len; ++i ) {
 			JagStrSplit ss( sp[i], ' ', true );
 			if ( ss.length() < 3 ) {  continue; }
-			outstr += AbaxDataString(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
 			++cnt;
 		}
 	} else if ( strncasecmp( p, "polygon(", 8 )==0 ) {
@@ -21734,9 +21736,9 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -72;
 		othertype =  JAG_C_COL_TYPE_POLYGON;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
-		//rc = JagParser::addPolygonData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose );
-		AbaxDataString pgonstr;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		//rc = JagParser::addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose );
+		Jstr pgonstr;
 		rc = JagParser::addPolygonData( pgonstr, p, false, true );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
@@ -21747,8 +21749,8 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -73;
 		othertype =  JAG_C_COL_TYPE_POLYGON3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
-		AbaxDataString pgonstr;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		Jstr pgonstr;
 		rc = JagParser::addPolygon3DData( pgonstr, p, false, true );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
@@ -21758,8 +21760,8 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		prt(("s3834 multipolygon( p=[%s]\n", p ));
 		while ( *p != '(' ) ++p;  // p: "( ((...), (...), (...)), (...), ... )
 		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
-		AbaxDataString mgon;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		Jstr mgon;
 		rc = JagParser::addMultiPolygonData( mgon, p, false, false, false );
 		prt(("s3238 addMultiPolygonData mgon=[%s] rc=%d\n", mgon.c_str(), rc ));
 		if ( rc <= 0 ) return rc; 
@@ -21770,8 +21772,8 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
 		while ( *p != '(' ) ++p;  // "(p ((...), (...), (...)), (...), ... ) 
 		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
-		AbaxDataString mgon;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		Jstr mgon;
 		rc = JagParser::addMultiPolygonData( mgon, p, false, true, true );
 		if ( rc <= 0 ) return rc; 
 		outstr += mgon;
@@ -21782,8 +21784,8 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -74;
 		othertype =  JAG_C_COL_TYPE_MULTILINESTRING;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
-		AbaxDataString pgonstr;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		Jstr pgonstr;
 		rc = JagParser::addPolygonData( pgonstr, p, false, false );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
@@ -21794,8 +21796,8 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		while ( *p != '(' ) ++p; ++p;
 		if ( *p == 0 ) return -78;
 		othertype =  JAG_C_COL_TYPE_MULTILINESTRING3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
-		AbaxDataString pgonstr;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		Jstr pgonstr;
 		rc = JagParser::addPolygon3DData( pgonstr, p, false, false );
 		if ( rc <= 0 ) return rc; 
 		outstr += pgonstr;
@@ -21809,7 +21811,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 6 ) { return -387; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -318; } }
 		othertype =  JAG_C_COL_TYPE_TRIANGLE;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5];
 		++cnt;
 	} else if ( strncasecmp( p, "triangle3d(", 11 )==0 ) {
@@ -21821,7 +21823,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 		if (  sp.length() != 9 ) { return -390; }
 		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -3592; } }
 		othertype =  JAG_C_COL_TYPE_TRIANGLE3D;
-		outstr = AbaxDataString("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
 		outstr += sp[4] + " " + sp[5] + " " + sp[6] + " " + sp[7] + " " + sp[8];
 		++cnt;
 	}
@@ -21840,7 +21842,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString 
 // lstr: CJAG=0=0=ML=0 ( (0 0, 1 1, 4 6, 9 3, 0 0),( 3 4 , 2 1, 9 2, 3 4 ) )
 // lstr: OJAG=0=0=ML=0 1:2:3:4 x:y ...|x:y ...
 // type: line/3d, linestring/3d, multilinestring/3d
-double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr )
+double JagGeo::getGeoLength( const Jstr &mk, const AbaxFixString &lstr )
 {
 	double sum = 0.0;
 	char *p;
@@ -21848,11 +21850,11 @@ double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr
 	/*******
 	if ( mk == JAG_OJAG ) {
 		JagStrSplit sp( lstr.c_str(), ' ', true );
-		AbaxDataString hdr = sp[0];
+		Jstr hdr = sp[0];
 		JagStrSplit hsp(hdr, '=' );
 		if ( hsp.length() < 4 ) return 0.0;
 		int srid = jagatoi( hsp[1].c_str() );
-		AbaxDataString gtype = hsp[3];
+		Jstr gtype = hsp[3];
 		if ( gtype == JAG_C_COL_TYPE_LINE ) {
 			if ( sp.length() < 5 ) return 0.0;
 			return distance( jagatof( sp[1]), jagatof( sp[2]), jagatof( sp[3]), jagatof( sp[4]), srid );
@@ -21892,11 +21894,11 @@ double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr
 		char *p = (char*)start;
 		while ( *p != ' ' && *p != '\0' ) ++p;
 		if ( *p == '\0' ) return 0.0;
-		AbaxDataString hdr = AbaxDataString( start, p-start );
+		Jstr hdr = Jstr( start, p-start );
 		//prt(("s2431 hdr=[%s]\n", hdr.c_str() ));
 		JagStrSplit hsp(hdr, '=' );
 		if ( hsp.length() < 4 ) return 0.0;
-		AbaxDataString gtype = hsp[3];
+		Jstr gtype = hsp[3];
 		//prt(("s2031 gtype=[%s]\n", gtype.c_str() ));
 		if ( gtype == JAG_C_COL_TYPE_LINE ) {
 			JagStrSplit sp( lstr.c_str(), ' ', true );
@@ -21957,11 +21959,11 @@ double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr
 	*****/
 
 		JagStrSplit sp( lstr.c_str(), ' ', true );
-		AbaxDataString hdr = sp[0];
+		Jstr hdr = sp[0];
 		JagStrSplit hsp(hdr, '=' );
 		if ( hsp.length() < 4 ) return 0.0;
 		int srid = jagatoi( hsp[1].c_str() );
-		AbaxDataString gtype = hsp[3];
+		Jstr gtype = hsp[3];
 		if ( gtype == JAG_C_COL_TYPE_LINE ) {
 			if ( sp.length() < 5 ) return 0.0;
 			return distance( jagatof( sp[1]), jagatof( sp[2]), jagatof( sp[3]), jagatof( sp[4]), srid );
@@ -21999,7 +22001,7 @@ double JagGeo::getGeoLength( const AbaxDataString &mk, const AbaxFixString &lstr
 	return 0.0;
 }
 
-AbaxDataString JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing ) 
+Jstr JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing ) 
 {
 	prt(("s7330 JagGeo::bboxstr sp:\n" ));
 	//sp.print();
@@ -22040,7 +22042,7 @@ AbaxDataString JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing )
 		}
 	}
 
-	AbaxDataString res;
+	Jstr res;
 	if ( is3D ) {
 		res = d2s(xmin) + " " + d2s(ymin) + " " + d2s(zmin) 
 		      + " " + d2s(xmax) + " " + d2s(ymax) + " " + d2s(zmax)  ;
@@ -22193,25 +22195,25 @@ bool JagGeo::isPolygonCW( const JagStrSplit &sp )
 
 
 ///////// additon or union
-AbaxDataString JagGeo::doPointAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doPointAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		val = AbaxDataString("CJAG=0=0=LN=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " 
+		val = Jstr("CJAG=0=0=LN=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " 
 		        + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1]; 
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " 
+		val = Jstr("CJAG=0=0=LS=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " 
 		        + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3];
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
-		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1];
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1];
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
-		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1];
+		val = Jstr("CJAG=0=0=LS=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1];
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else {
 	}
@@ -22219,26 +22221,26 @@ AbaxDataString JagGeo::doPointAddition( int srid1, const JagStrSplit &sp1, const
 	return val;
 }
 
-AbaxDataString JagGeo::doPoint3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doPoint3DAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		val = AbaxDataString("CJAG=0=0=LN3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1]  +" " + sp1[JAG_SP_START+2]
+		val = Jstr("CJAG=0=0=LN3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1]  +" " + sp1[JAG_SP_START+2]
 					+ " " + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2] + " " 
+		val = Jstr("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2] + " " 
 		   + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2] + " "
 		   + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5];
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2];
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2];
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
-		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1]  + ":" + sp1[JAG_SP_START+2];
+		val = Jstr("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1]  + ":" + sp1[JAG_SP_START+2];
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else {
 	}
@@ -22247,42 +22249,42 @@ AbaxDataString JagGeo::doPoint3DAddition( int srid1, const JagStrSplit &sp1, con
 }
 
 // 2D line
-AbaxDataString JagGeo::doLineAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doLineAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
-	AbaxDataString p2 = sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2] + ":" + sp1[JAG_SP_START+3];
+	Jstr val;
+	Jstr p2 = sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2] + ":" + sp1[JAG_SP_START+3];
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
-		val = AbaxDataString("CJAG=0=0=ML=d 0:0:0:0 ") + p2 + " |"; 
+		val = Jstr("CJAG=0=0=ML=d 0:0:0:0 ") + p2 + " |"; 
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + p2 + " " + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1]; 
+		val = Jstr("CJAG=0=0=LS=d 0:0:0:0 ") + p2 + " " + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1]; 
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0 ") + p2 + " " + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1]
+		val = Jstr("CJAG=0=0=LS=d 0:0:0:0 ") + p2 + " " + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1]
 		        + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3]; 
 	} else {
 	}
 	return val;
 }
 
-AbaxDataString JagGeo::doLine3DAddition( int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doLine3DAddition( int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 										 int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
-	AbaxDataString p2 = sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2] 
+	Jstr val;
+	Jstr p2 = sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2] 
 	                    + " " + sp1[JAG_SP_START+3] + ":" + sp1[JAG_SP_START+4] + ":" + sp1[JAG_SP_START+5];
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-		val = AbaxDataString("CJAG=0=0=ML3=d 0:0:0:0:0:0 ") + p2 + " |"; 
+		val = Jstr("CJAG=0=0=ML3=d 0:0:0:0:0:0 ") + p2 + " |"; 
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + p2 + " " 
+		val = Jstr("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + p2 + " " 
 				+ sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2]; 
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + p2 + " " 
+		val = Jstr("CJAG=0=0=LS3=d 0:0:0:0:0:0 ") + p2 + " " 
 		        + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2]
 		        + " " + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5]; 
 	} else {
@@ -22291,142 +22293,142 @@ AbaxDataString JagGeo::doLine3DAddition( int srid1, const JagStrSplit &sp1, cons
 }
 
 // 2D linestring
-AbaxDataString JagGeo::doLineStringAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doLineStringAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+								    const Jstr &mk2, const Jstr &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
-		val = AbaxDataString("CJAG=0=0=ML=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=ML=d 0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" |");
+		val += Jstr(" |");
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=LS=d 0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1];
+		val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1];
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=LS=d 0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + " " 
+		val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + " " 
 		         + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3];
 	} else { 
 	}
 	return val;
 }
 
-AbaxDataString JagGeo::doLineString3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doLineString3DAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+									  const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-		val = AbaxDataString("CJAG=0=0=ML3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=ML3=d 0:0:0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" |");
+		val += Jstr(" |");
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-		val = AbaxDataString("CJAG=0=0=LS3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=LS3=d 0:0:0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2];
+		val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2];
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-		val = AbaxDataString("CJAG=0=0=LS=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=LS=d 0:0:0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2] 
+		val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2] 
 		         + " " + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5];
 	} else { 
 	}
 	return val;
 }
 
-AbaxDataString JagGeo::doPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doPolygonAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+								    const Jstr &mk2, const Jstr &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		// multipolygon
-		val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=MG=d 0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" !");
+		val += Jstr(" !");
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else {
 	} 
 	return val;
 }
 
-AbaxDataString JagGeo::doPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doPolygon3DAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+									  const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-		val = AbaxDataString("CJAG=0=0=MG3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=MG3=d 0:0:0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" !");
+		val += Jstr(" !");
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else {
 	} 
 	return val;
 }
 
-AbaxDataString JagGeo::doMultiPolygonAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doMultiPolygonAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+								    const Jstr &mk2, const Jstr &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		// multipolygon
-		val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=MG=d 0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" !");
+		val += Jstr(" !");
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else {
 	} 
 	return val;
 }
 
-AbaxDataString JagGeo::doMultiPolygon3DAddition( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-									  const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doMultiPolygon3DAddition( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+									  const Jstr &mk2, const Jstr &colType2, 
 									  int srid2, const JagStrSplit &sp2 )
 {
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON3D || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-		val = AbaxDataString("CJAG=0=0=MG3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=MG3=d 0:0:0:0:0:0");
 		for ( int i= JAG_SP_START; i < sp1.size(); ++i ) {
-			val += AbaxDataString(" ") + sp1[i];
+			val += Jstr(" ") + sp1[i];
 		}
-		val += AbaxDataString(" !");
+		val += Jstr(" !");
 		for ( int i= JAG_SP_START; i < sp2.size(); ++i ) {
-			val += AbaxDataString(" ") + sp2[i];
+			val += Jstr(" ") + sp2[i];
 		}
 	} else {
 	} 
@@ -22434,16 +22436,16 @@ AbaxDataString JagGeo::doMultiPolygon3DAddition( const AbaxDataString &mk1, int 
 }
 
 // Union of two polygons
-AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, const JagStrSplit &sp1, 
-								    const AbaxDataString &mk2, const AbaxDataString &colType2, 
+Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
+								    const Jstr &mk2, const Jstr &colType2, 
 								    int srid2, const JagStrSplit &sp2 )
 {
 	prt(("s4811 doPolygonUnion colType2=%s\n", colType2.c_str() ));
-	AbaxDataString val;
-	AbaxDataString t;
+	Jstr val;
+	Jstr t;
 	AbaxFixString txt;
 	std::vector< std::string> vec;
-	AbaxDataString uwkt;
+	Jstr uwkt;
 	char *p;
 	int rc;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
@@ -22455,7 +22457,7 @@ AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, con
 		rc = convertConstantObjToJAG( AbaxFixString(uwkt.c_str()), val );
 		if ( rc <= 0 ) { val = ""; }
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-		AbaxDataString res;
+		Jstr res;
 		rc = JagCGAL::unionOfPolygonAndMultiPolygons( sp1, sp2, res );
 		// res is WKT
 		if ( rc < 0 ) {
@@ -22473,13 +22475,13 @@ AbaxDataString JagGeo::doPolygonUnion( const AbaxDataString &mk1, int srid1, con
 	} 
 	return val;
 
-	// int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, AbaxDataString &outstr )
+	// int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr )
 
 }
 
 
-AbaxDataString JagGeo::doPointIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1, 
-											 const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr JagGeo::doPointIntersection( const Jstr &colType1,const JagStrSplit &sp1, 
+											 const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
@@ -22490,19 +22492,19 @@ AbaxDataString JagGeo::doPointIntersection( const AbaxDataString &colType1,const
 	double pz0;
 	if ( 3 == dim1 ) { pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); } 
 
-	AbaxDataString val;
+	Jstr val;
 	if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
 		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 		if ( 3 == dim2 ) { 
 			double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 			if ( jagEQ(px0,x0) && jagEQ(py0,y0) && jagEQ(pz0, z0) ) {
-				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
+				val = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
 				      + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2];
 			} 
 		} else {
 			if ( jagEQ(px0,x0) && jagEQ(py0,y0) ) {
-				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1];
+				val = Jstr("CJAG=0=0=PT=d 0:0:0:0 ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1];
 			} 
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
@@ -22514,10 +22516,10 @@ AbaxDataString JagGeo::doPointIntersection( const AbaxDataString &colType1,const
 			double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
 			double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 			if ( jagEQ(px0,x1) && jagEQ(py0,y1) && jagEQ(pz0, z1) ) {
-				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
+				val = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
 				      + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
 			} else if ( jagEQ(px0,x2) && jagEQ(py0,y2) && jagEQ(pz0, z2) ) {
-				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
+				val = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") 
 				      + sp2[JAG_SP_START+3] + " " + sp2[JAG_SP_START+4] + " " + sp2[JAG_SP_START+5];
 			}
 		} else {
@@ -22526,9 +22528,9 @@ AbaxDataString JagGeo::doPointIntersection( const AbaxDataString &colType1,const
 			double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 			if ( jagEQ(px0,x1) && jagEQ(py0,y1) ) {
-				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1];
+				val = Jstr("CJAG=0=0=PT=d 0:0:0:0 ") + sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1];
 			} else if ( jagEQ(px0,x2) && jagEQ(py0,y2) ) {
-				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + sp2[JAG_SP_START+2] + " " + sp2[JAG_SP_START+3];
+				val = Jstr("CJAG=0=0=PT=d 0:0:0:0 ") + sp2[JAG_SP_START+2] + " " + sp2[JAG_SP_START+3];
 			}
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D
@@ -22537,14 +22539,14 @@ AbaxDataString JagGeo::doPointIntersection( const AbaxDataString &colType1,const
 	            || colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		// point or point3d
 		if ( 2 == dim2 ) {
-			AbaxDataString xs, ys;
+			Jstr xs, ys;
 			if ( matchPoint2D( px0,py0, sp2, xs, ys ) ) {
-				val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ") + xs + " " + ys;
+				val = Jstr("CJAG=0=0=PT=d 0:0:0:0 ") + xs + " " + ys;
 			}
 		} else if ( 3 == dim2 ) {
-			AbaxDataString xs, ys, zs;
+			Jstr xs, ys, zs;
 			if ( matchPoint3D( px0,py0,pz0, sp2, xs, ys, zs ) ) {
-				val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") + xs + " " + ys + " " + zs;
+				val = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") + xs + " " + ys + " " + zs;
 			}
 		}
 	} 
@@ -22553,8 +22555,8 @@ AbaxDataString JagGeo::doPointIntersection( const AbaxDataString &colType1,const
 
 // No need to check points
 // output is multipoint MP/MP3
-AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doLineIntersection( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
@@ -22575,7 +22577,7 @@ AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const
 		py2 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	}
 
-	AbaxDataString val;
+	Jstr val;
 	int cnt = 0;
 	if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
 		if ( 3 == dim2 ) { 
@@ -22588,11 +22590,11 @@ AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const
 			JagLine3D line1(px1,py1,pz1, px2,py2,pz2);
 			JagLine3D line2(x1,y1,z1, x2,y2,z2);
 			JagVector<JagPoint3D> res;
-			val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0") ;
+			val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0") ;
 			bool sect = JagCGAL::hasIntersection( line1, line2, res );
 			if ( sect ) {
 				for ( int i=0; i < res.size(); ++i ) {
-					val += AbaxDataString(" ") + d2s(res[i].x) + ":" + d2s(res[i].y) + ":" + d2s(res[i].z);
+					val += Jstr(" ") + d2s(res[i].x) + ":" + d2s(res[i].y) + ":" + d2s(res[i].z);
 					++cnt;
 				}
 			}
@@ -22604,11 +22606,11 @@ AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const
 			JagLine2D line1(px1,py1,px2,py2);
 			JagLine2D line2(x1,y1, x2,y2);
 			JagVector<JagPoint2D> res;
-			val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+			val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
 			bool sect = JagCGAL::hasIntersection( line1, line2, res );
 			if ( sect ) {
 				for ( int i=0; i < res.size(); ++i ) {
-					val += AbaxDataString(" ") + d2s(res[i].x) + ":" + d2s(res[i].y);
+					val += Jstr(" ") + d2s(res[i].x) + ":" + d2s(res[i].y);
 					++cnt;
 				}
 			}
@@ -22619,22 +22621,22 @@ AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const
 	            || colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
 		// point or point3d
 		if ( 2 == dim2 ) {
-			val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+			val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
 			JagLine2D line1(px1,py1,px2,py2);
 			JagVector<JagPoint2D> vec;
 			if ( line2DLineStringIntersection( line1, sp2, vec )) {
 				for ( int i=0; i < vec.size(); ++i ) {
-					val += AbaxDataString(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y);
+					val += Jstr(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y);
 					++cnt;
 				}
 			}
 		} else if ( 3 == dim2 ) {
-			val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+			val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
 			JagLine3D line1(px1,py1,pz1, px2,py2,pz2);
 			JagVector<JagPoint3D> vec;
 			if ( line3DLineStringIntersection( line1, sp2, vec )) {
 				for ( int i=0; i < vec.size(); ++i ) {
-					val += AbaxDataString(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y) + ":" + d2s(vec[i].z);
+					val += Jstr(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y) + ":" + d2s(vec[i].z);
 					++cnt;
 				}
 			}
@@ -22642,26 +22644,26 @@ AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		// point or point3d
 		if ( 2 == dim2 ) {
-			val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
-			AbaxDataString xs, ys;
+			val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
+			Jstr xs, ys;
 			if ( matchPoint2D( px1,py1, sp2, xs, ys ) ) {
-				val += AbaxDataString(" ") + xs + ":" + ys;
+				val += Jstr(" ") + xs + ":" + ys;
 				++cnt;
 			}
 			if ( matchPoint2D( px2,py2, sp2, xs, ys ) ) {
-				val += AbaxDataString(" ") + xs + ":" + ys;
+				val += Jstr(" ") + xs + ":" + ys;
 				++cnt;
 			}
 
 		} else if ( 3 == dim2 ) {
-			val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
-			AbaxDataString xs, ys, zs;
+			val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+			Jstr xs, ys, zs;
 			if ( matchPoint3D( px1,py1,pz1, sp2, xs, ys, zs ) ) {
-				val += AbaxDataString(" ") + xs + ":" + ys + ":" + zs;
+				val += Jstr(" ") + xs + ":" + ys + ":" + zs;
 				++cnt;
 			}
 			if ( matchPoint3D( px2,py2,pz2, sp2, xs, ys, zs ) ) {
-				val += AbaxDataString(" ") + xs + ":" + ys + ":" + zs;
+				val += Jstr(" ") + xs + ":" + ys + ":" + zs;
 				++cnt;
 			}
 		}
@@ -22674,17 +22676,17 @@ AbaxDataString  JagGeo::doLineIntersection( const AbaxDataString &colType1,const
 	}
 }
 
-AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doLineStringIntersection( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";
-	AbaxDataString val;
+	Jstr val;
 	if ( 2 == dim2 ) {
-		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
 	} else {
-		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
 	}
 
 	const char *str; char *p;
@@ -22696,7 +22698,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 			bool intsect =  lineStringIntersectLineString( "",sp1, "", sp2, true, vec );
 			if ( intsect ) {
    				for ( int i=0; i < vec.size(); ++i ) {
-    				val += AbaxDataString(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y);
+    				val += Jstr(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y);
     				++cnt;
 				}
 			}
@@ -22705,7 +22707,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 			bool intsect =  lineString3DIntersectLineString3D( "",sp1, "", sp2, true, vec );
 			if ( intsect ) {
    				for ( int i=0; i < vec.size(); ++i ) {
-   					val += AbaxDataString(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y) + ":" + d2s(vec[i].z);
+   					val += Jstr(" ") + d2s(vec[i].x) + ":" + d2s(vec[i].y) + ":" + d2s(vec[i].z);
    					++cnt;
    				}
 			}
@@ -22716,7 +22718,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 			JagPolygon pgon;
 			int n = JagParser::addPolygonData( pgon, sp2, false );
 			if ( n <= 0 ) return "";
-			JagVector<AbaxDataString> svec;
+			JagVector<Jstr> svec;
 			splitPolygonToVector( pgon, false, svec );
 			bool intsect;
 			for ( int i=0; i < svec.size(); ++i ) {
@@ -22725,7 +22727,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 				intsect =  lineStringIntersectLineString( "",sp1, "", sp, true, pvec );
 				if ( intsect ) {
    					for ( int i=0; i < pvec.size(); ++i ) {
-   						val += AbaxDataString(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
+   						val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
    						++cnt;
    					}
 				}
@@ -22734,7 +22736,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 			JagPolygon pgon;
 			int n = JagParser::addPolygon3DData( pgon, sp2, false );
 			if ( n <= 0 ) return "";
-			JagVector<AbaxDataString> svec;
+			JagVector<Jstr> svec;
 			splitPolygonToVector( pgon, true, svec );
 			bool intsect;
 			for ( int i=0; i < svec.size(); ++i ) {
@@ -22743,7 +22745,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 				intsect =  lineString3DIntersectLineString3D( "",sp1, "", sp, true, pvec );
 				if ( intsect ) {
    					for ( int i=0; i < pvec.size(); ++i ) {
-   						val += AbaxDataString(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
+   						val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
    						++cnt;
    					}
 				}
@@ -22766,7 +22768,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 			JagVector<JagPoint2D> pvec;
 			JagSortedSetJoin( pt1, len1, pt2, len2, pvec );
 			for ( int i=0; i < pvec.size(); ++i ) {
-   				val += AbaxDataString(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
+   				val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
    				++cnt;
 			}
 			delete [] pt1;
@@ -22787,7 +22789,7 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 			JagVector<JagPoint3D> pvec;
 			JagSortedSetJoin( pt1, len1, pt2, len2, pvec );
 			for ( int i=0; i < pvec.size(); ++i ) {
-   				val += AbaxDataString(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
+   				val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
    				++cnt;
 			}
 			delete [] pt1;
@@ -22803,17 +22805,17 @@ AbaxDataString  JagGeo::doLineStringIntersection( const AbaxDataString &colType1
 }
 
 // sp1 is m-linestring;  sp2: m-linestring/polygon
-AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doMultiLineStringIntersection( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";
-	AbaxDataString val;
+	Jstr val;
 	if ( 2 == dim2 ) {
-		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
 	} else {
-		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
 	}
 
 	int cnt = 0;
@@ -22824,13 +22826,13 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         	JagPolygon pgon1;
         	int n = JagParser::addPolygonData( pgon1, sp1, false );
         	if ( n <= 0 ) return "";
-        	JagVector<AbaxDataString> svec1;
+        	JagVector<Jstr> svec1;
         	splitPolygonToVector( pgon1, false, svec1 );
         
         	JagPolygon pgon2;
         	n = JagParser::addPolygonData( pgon2, sp2, false );
         	if ( n <= 0 ) return "";
-        	JagVector<AbaxDataString> svec2;
+        	JagVector<Jstr> svec2;
         	splitPolygonToVector( pgon2, false, svec2 );
         
         	for ( int k=0; k < svec1.size(); ++k ) {
@@ -22841,7 +22843,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         			intsect = lineStringIntersectLineString( "",sp11, "", sp22, true, pvec );
         			if ( intsect ) {
            				for ( int i=0; i < pvec.size(); ++i ) {
-           					val += AbaxDataString(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
+           					val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
            					++cnt;
            				}
         			}
@@ -22851,13 +22853,13 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         	JagPolygon pgon1;
         	int n = JagParser::addPolygon3DData( pgon1, sp1, false );
         	if ( n <= 0 ) return "";
-        	JagVector<AbaxDataString> svec1;
+        	JagVector<Jstr> svec1;
         	splitPolygonToVector( pgon1, false, svec1 );
         
         	JagPolygon pgon2;
         	n = JagParser::addPolygon3DData( pgon2, sp2, false );
         	if ( n <= 0 ) return "";
-        	JagVector<AbaxDataString> svec2;
+        	JagVector<Jstr> svec2;
         	splitPolygonToVector( pgon2, false, svec2 );
         
         	for ( int k=0; k < svec1.size(); ++k ) {
@@ -22868,7 +22870,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         			intsect = lineString3DIntersectLineString3D( "",sp11, "", sp22, true, pvec );
         			if ( intsect ) {
            				for ( int i=0; i < pvec.size(); ++i ) {
-           					val += AbaxDataString(" ") + d2s(pvec[i].x) 
+           					val += Jstr(" ") + d2s(pvec[i].x) 
 							       + ":" + d2s(pvec[i].y) + ":" + d2s(pvec[i].z);
            					++cnt;
            				}
@@ -22881,7 +22883,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         	JagPolygon pgon1;
         	int n = JagParser::addPolygonData( pgon1, sp1, false );
         	if ( n <= 0 ) return "";
-        	JagVector<AbaxDataString> svec1;
+        	JagVector<Jstr> svec1;
         	splitPolygonToVector( pgon1, false, svec1 );
         
 			JagVector<JagPolygon> pgvec;
@@ -22891,7 +22893,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         		JagStrSplit sp11( svec1[m], ' ', true );
     			for ( int j=0; j < pgvec.size(); ++j ) {
                 	const JagPolygon &pgon2 = pgvec[j];
-                	JagVector<AbaxDataString> svec2;
+                	JagVector<Jstr> svec2;
                 	splitPolygonToVector( pgon2, false, svec2 );
                 	for ( int k=0; k < svec2.size(); ++k ) {
                 		JagStrSplit sp22( svec2[k], ' ', true );
@@ -22899,7 +22901,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
                 		intsect = lineStringIntersectLineString( "",sp11, "", sp22, true, pvec );
                 		if ( intsect ) {
                    			for ( int i=0; i < pvec.size(); ++i ) {
-                   				val += AbaxDataString(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
+                   				val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
                    				++cnt;
                    			}
                 		}
@@ -22910,7 +22912,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         	JagPolygon pgon1;
         	int n = JagParser::addPolygon3DData( pgon1, sp1, false );
         	if ( n <= 0 ) return "";
-        	JagVector<AbaxDataString> svec1;
+        	JagVector<Jstr> svec1;
         	splitPolygonToVector( pgon1, false, svec1 );
         
 			JagVector<JagPolygon> pgvec;
@@ -22920,7 +22922,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
         		JagStrSplit sp11( svec1[m], ' ', true );
     			for ( int j=0; j < pgvec.size(); ++j ) {
                 	const JagPolygon &pgon2 = pgvec[j];
-                	JagVector<AbaxDataString> svec2;
+                	JagVector<Jstr> svec2;
                 	splitPolygonToVector( pgon2, false, svec2 );
                 	for ( int k=0; k < svec2.size(); ++k ) {
                 		JagStrSplit sp22( svec2[k], ' ', true );
@@ -22928,7 +22930,7 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
                 		intsect = lineString3DIntersectLineString3D( "",sp11, "", sp22, true, pvec );
                 		if ( intsect ) {
                    			for ( int i=0; i < pvec.size(); ++i ) {
-                   				val += AbaxDataString(" ") + d2s(pvec[i].x) + ":" 
+                   				val += Jstr(" ") + d2s(pvec[i].x) + ":" 
 									+ d2s(pvec[i].y) + ":" + d2s(pvec[i].z);
                    				++cnt;
                    			}
@@ -22948,8 +22950,8 @@ AbaxDataString  JagGeo::doMultiLineStringIntersection( const AbaxDataString &col
 }
 
 // polygon intersect polygon? multi-polygon?
-AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doPolygonIntersection( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	prt(("s1029 doPolygonIntersection sp1: sp2:\n" ));
 	//sp1.print();
@@ -22959,11 +22961,11 @@ AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,co
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";
 	if ( 2 != dim2 ) return "";  // no 3D polygons
-	AbaxDataString val;
+	Jstr val;
 	if ( 2 == dim2 ) {
-		val = AbaxDataString("CJAG=0=0=MG=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=MG=d 0:0:0:0");
 	} else {
-		val = AbaxDataString("CJAG=0=0=MG3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=MG3=d 0:0:0:0:0:0");
 	}
 
 	int cnt = 0;
@@ -22986,7 +22988,7 @@ AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,co
 					if ( lstr.size() < 1 ) continue;
 			    	if ( k > 0 ) { val += " |"; }
 					for ( int j=0; j < lstr.size(); ++j ) {
-						val += AbaxDataString(" ") + d2s(lstr.point[j].x) + ":" + d2s(lstr.point[j].y);
+						val += Jstr(" ") + d2s(lstr.point[j].x) + ":" + d2s(lstr.point[j].y);
 						++cnt;
 					}
 			  	}
@@ -23015,7 +23017,7 @@ AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,co
 					if ( lstr.size() < 1 ) continue;
 			    	if ( k > 0 ) { val += " |"; }
 					for ( int j=0; j < lstr.size(); ++j ) {
-						val += AbaxDataString(" ") + d2s(lstr.point[j].x) + ":" + d2s(lstr.point[j].y);
+						val += Jstr(" ") + d2s(lstr.point[j].x) + ":" + d2s(lstr.point[j].y);
 						++cnt;
 					}
 			  	}
@@ -23032,8 +23034,8 @@ AbaxDataString  JagGeo::doPolygonIntersection( const AbaxDataString &colType1,co
 
 
 // geom difference = geom1 - geom1(intersection)geom2
-AbaxDataString JagGeo::doPointDifference( const AbaxDataString &colType1,const JagStrSplit &sp1, 
-											 const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr JagGeo::doPointDifference( const Jstr &colType1,const JagStrSplit &sp1, 
+											 const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
@@ -23042,12 +23044,13 @@ AbaxDataString JagGeo::doPointDifference( const AbaxDataString &colType1,const J
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
 	double pz0;
-	AbaxDataString val;
+	int cnt = 0;
+	Jstr val;
 	if ( 3 == dim1 ) {
 		pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
-		val = AbaxDataString("CJAG=0=0=PT3=d 0:0:0:0:0:0 ");
+		val = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ");
 	} else {
-		val = AbaxDataString("CJAG=0=0=PT=d 0:0:0:0 ");
+		val = Jstr("CJAG=0=0=PT=d 0:0:0:0 ");
 	}
 
 	if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
@@ -23057,10 +23060,12 @@ AbaxDataString JagGeo::doPointDifference( const AbaxDataString &colType1,const J
 			double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 			if ( ! (jagEQ(px0,x0) && jagEQ(py0,y0) && jagEQ(pz0, z0) ) ) {
 				val += sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2];
+				++cnt;
 			} 
 		} else {
 			if ( ! ( jagEQ(px0,x0) && jagEQ(py0,y0) ) ) {
 				val += sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1];
+				++cnt;
 			} 
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
@@ -23071,21 +23076,20 @@ AbaxDataString JagGeo::doPointDifference( const AbaxDataString &colType1,const J
 			double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 			double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
 			double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
-			if ( ! ( jagEQ(px0,x1) && jagEQ(py0,y1) && jagEQ(pz0, z1) ) ) {
+			if ( ! ( jagEQ(px0,x1) && jagEQ(py0,y1) && jagEQ(pz0, z1) ) &&
+			     ! ( jagEQ(px0,x2) && jagEQ(py0,y2) && jagEQ(pz0, z2) ) ) {
 				val += sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2];
-			} else if ( ! (jagEQ(px0,x2) && jagEQ(py0,y2) && jagEQ(pz0, z2) ) ) {
-				val += sp1[JAG_SP_START+3] + " " + sp1[JAG_SP_START+4] + " " + sp1[JAG_SP_START+5];
-			}
+				++cnt;
+			} 
 		} else {
 			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
 			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 			double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-			if ( ! (jagEQ(px0,x1) && jagEQ(py0,y1) ) ) {
+			if ( ! (jagEQ(px0,x1) && jagEQ(py0,y1) ) && ! ( jagEQ(px0,x2) && jagEQ(py0,y2) ) ) {
 				val += sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1];
-			} else if ( ! (jagEQ(px0,x2) && jagEQ(py0,y2) ) ) {
-				val += sp1[JAG_SP_START+2] + " " + sp1[JAG_SP_START+3];
-			}
+				++cnt;
+			} 
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D
 	            || colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
@@ -23093,17 +23097,21 @@ AbaxDataString JagGeo::doPointDifference( const AbaxDataString &colType1,const J
 	            || colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		// point or point3d
 		if ( 2 == dim2 ) {
-			AbaxDataString xs, ys;
+			Jstr xs, ys;
 			if ( ! matchPoint2D( px0,py0, sp2, xs, ys ) ) {
 				val += sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1];
+				++cnt;
 			}
 		} else if ( 3 == dim2 ) {
-			AbaxDataString xs, ys, zs;
-			if ( !matchPoint3D( px0,py0,pz0, sp2, xs, ys, zs ) ) {
+			Jstr xs, ys, zs;
+			if ( ! matchPoint3D( px0,py0,pz0, sp2, xs, ys, zs ) ) {
 				val += sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2];
+				++cnt;
 			}
 		}
 	} 
+
+	if ( cnt < 1) return "";
 	return val;
 }
 
@@ -23111,8 +23119,8 @@ AbaxDataString JagGeo::doPointDifference( const AbaxDataString &colType1,const J
 // geom difference = geom1 - geom1(intersection)geom2
 // No need to check points
 // output is multipoint MP/MP3
-AbaxDataString  JagGeo::doLineDifference( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doLineDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
@@ -23120,7 +23128,7 @@ AbaxDataString  JagGeo::doLineDifference( const AbaxDataString &colType1,const J
 
 	double px1,py1,pz1,px2,py2,pz2;
 	JagVector<JagPoint3D> vec1; 
-	AbaxDataString val;
+	Jstr val;
 	if ( 3 == dim1 ) { 
 		px1 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 		py1 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -23130,7 +23138,7 @@ AbaxDataString  JagGeo::doLineDifference( const AbaxDataString &colType1,const J
 		pz2 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
 		vec1.append(JagPoint3D(px1,py1,pz1) );
 		vec1.append(JagPoint3D(px2,py2,pz2) );
-		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0") ;
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0") ;
 	} else {
 		px1 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 		py1 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
@@ -23138,7 +23146,7 @@ AbaxDataString  JagGeo::doLineDifference( const AbaxDataString &colType1,const J
 		py2 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 		vec1.append(JagPoint3D(px1,py1,0) );
 		vec1.append(JagPoint3D(px2,py2,0) );
-		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0") ;
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0") ;
 	}
 
 	int cnt = 0;
@@ -23156,14 +23164,14 @@ AbaxDataString  JagGeo::doLineDifference( const AbaxDataString &colType1,const J
 
 			JagHashStrStr hash;
 			getIntersectionPoints( vec1, vec2, hash ); 
-			AbaxDataString hs = vec1[0].hashString();
+			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[0].str3D();
+				val += Jstr(" ") + vec1[0].str3D();
 				++cnt;
 			}
 			hs = vec1[1].hashString();
 			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[1].str3D();
+				val += Jstr(" ") + vec1[1].str3D();
 				++cnt;
 			}
 		} else {
@@ -23176,14 +23184,14 @@ AbaxDataString  JagGeo::doLineDifference( const AbaxDataString &colType1,const J
 			vec2.append(JagPoint3D(x2,y2,0) );
 			JagHashStrStr hash;
 			getIntersectionPoints( vec1, vec2, hash ); 
-			AbaxDataString hs = vec1[0].hashString();
+			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[0].str2D();
+				val += Jstr(" ") + vec1[0].str2D();
 				++cnt;
 			}
 			hs = vec1[1].hashString();
 			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[1].str2D();
+				val += Jstr(" ") + vec1[1].str2D();
 				++cnt;
 			}
 		}
@@ -23195,55 +23203,52 @@ AbaxDataString  JagGeo::doLineDifference( const AbaxDataString &colType1,const J
 		if ( 2 == dim2 ) {
 			JagHashStrStr hash;
 			getIntersectionPoints( vec1, sp2, false, hash );
-			AbaxDataString hs = vec1[0].hashString();
-			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[0].str2D();
+			Jstr hs1, hs2;
+			hs1 = vec1[0].hashString();
+			hs2 = vec1[1].hashString();
+			if ( ! hash.keyExist(hs1) ) {
+				val += Jstr(" ") + vec1[0].str2D();
 				++cnt;
 			}
-			hs = vec1[1].hashString();
-			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[1].str2D();
+			if ( ! hash.keyExist(hs2) ) {
+				val += Jstr(" ") + vec1[1].str2D();
 				++cnt;
 			}
 		} else if ( 3 == dim2 ) {
 			JagHashStrStr hash;
 			getIntersectionPoints( vec1, sp2, true, hash );
-			AbaxDataString hs = vec1[0].hashString();
+			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[0].str3D();
+				val += Jstr(" ") + vec1[0].str3D();
 				++cnt;
 			}
 			hs = vec1[1].hashString();
 			if ( ! hash.keyExist(hs) ) {
-				val += AbaxDataString(" ") + vec1[1].str3D();
+				val += Jstr(" ") + vec1[1].str3D();
 				++cnt;
 			}
 		}
 	} 
 
-	if ( cnt > 0 ) {
-		return val;
-	} else {
-		return "";
-	}
+	if ( cnt > 0 ) { return val; } else { return ""; }
 }
 
 // boost: pgon/pgon  pgon/mpgon  mpgon/mpgon ---> mpgon.  mpgon->toWKT-->convert to JAG
 // boost: linestr or m-linestr / pgon or m-pgon --> mlinestring. mlinestring->toWKT-->convert to JAG
 
-AbaxDataString  JagGeo::doLineStringDifference( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";
-	AbaxDataString val;
+	Jstr val;
 	JagVector<JagPoint3D> vec1;
 	if ( 2 == dim2 ) {
-		val = AbaxDataString("CJAG=0=0=MP=d 0:0:0:0");
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
 		getVectorPoints( sp1, false, vec1 );
 	} else {
-		val = AbaxDataString("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
 		getVectorPoints( sp1, true, vec1 );
 	}
 
@@ -23257,15 +23262,15 @@ AbaxDataString  JagGeo::doLineStringDifference( const AbaxDataString &colType1,c
 			pz1 = sp2[JAG_SP_START+2].tof();
 			JagPoint3D p3(px1,py1,pz1);
 			for ( int i=0; i < vec1.size(); ++i ) {
-				if ( p3 == vec1[i] ) {
-					val += AbaxDataString(" ") + vec1[i].str3D();
+				if ( p3 != vec1[i] ) {
+					val += Jstr(" ") + vec1[i].str3D(); ++cnt;
 				}
 			}
 		} else {
 			JagPoint3D p3(px1,py1,0.0);
 			for ( int i=0; i < vec1.size(); ++i ) {
-				if ( p3 == vec1[i] ) {
-					val += AbaxDataString(" ") + vec1[i].str2D();
+				if ( p3 != vec1[i] ) {
+					val += Jstr(" ") + vec1[i].str2D(); ++cnt;
 				}
 			}
 		}
@@ -23275,102 +23280,88 @@ AbaxDataString  JagGeo::doLineStringDifference( const AbaxDataString &colType1,c
 			py1 = sp2[JAG_SP_START+1].tof();
 			pz1 = sp2[JAG_SP_START+2].tof();
 			JagPoint3D p3(px1,py1,pz1);
-			for ( int i=0; i < vec1.size(); ++i ) {
-				if ( p3 == vec1[i] ) {
-					val += AbaxDataString(" ") + vec1[i].str3D();
-				}
-			}
-
 			px2 = sp2[JAG_SP_START+3].tof();
 			py2 = sp2[JAG_SP_START+4].tof();
 			pz2 = sp2[JAG_SP_START+5].tof();
 			JagPoint3D p4(px2,py2,pz2);
 			for ( int i=0; i < vec1.size(); ++i ) {
-				if ( p4 == vec1[i] ) {
-					val += AbaxDataString(" ") + vec1[i].str3D();
+				if ( p3 != vec1[i] && p4 != vec1[i] ) {
+					val += Jstr(" ") + vec1[i].str3D(); ++cnt;
 				}
 			}
-
-
 		} else {
 			px1 = sp2[JAG_SP_START+0].tof();
 			py1 = sp2[JAG_SP_START+1].tof();
 			JagPoint3D p3(px1,py1,0.0);
-			for ( int i=0; i < vec1.size(); ++i ) {
-				if ( p3 == vec1[i] ) {
-					val += AbaxDataString(" ") + vec1[i].str2D();
-				}
-			}
-
 			px2 = sp2[JAG_SP_START+2].tof();
 			py2 = sp2[JAG_SP_START+3].tof();
 			JagPoint3D p4(px2,py2,0.0);
 			for ( int i=0; i < vec1.size(); ++i ) {
-				if ( p4 == vec1[i] ) {
-					val += AbaxDataString(" ") + vec1[i].str2D();
+				if ( p3 != vec1[i] && p4 != vec1[i] ) {
+					val += Jstr(" ") + vec1[i].str2D(); ++cnt;
 				}
 			}
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		if ( 2 == dim2 ) {
-    		AbaxDataString wkt1 = "linestring(";
+    		Jstr wkt1 = "linestring(";
     		for ( int i=0;i<vec1.size(); ++i ) {
-    			if ( 0 != i ) { wkt1 += AbaxDataString(","); }
+    			if ( 0 != i ) { wkt1 += Jstr(","); }
     			wkt1 += vec1[i].str2D();
     		}
     		wkt1 += ")";
 
 			JagVector<JagPoint3D> vec2;
-			getVectorPoints( sp2, true, vec2 );
-    		AbaxDataString wkt2 = "linestring(";
+			getVectorPoints( sp2, false, vec2 );
+    		Jstr wkt2 = "linestring(";
     		for ( int i=0;i<vec2.size(); ++i ) {
-    			if ( 0 != i ) { wkt2 += AbaxDataString(","); }
+    			if ( 0 != i ) { wkt2 += Jstr(","); }
     			wkt2 += vec2[i].str2D();
     		}
     		wkt2 += ")";
     
-    		AbaxDataString reswkt;
+    		Jstr reswkt;
     		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
     		int n = convertConstantObjToJAG(reswkt.c_str(), val );
     		if ( n <= 0 ) return "";
+			++cnt;
 		} else if ( 3 == dim2 ) {
 			JagHashStrStr hash;
 			getIntersectionPoints( vec1, sp2, true, hash );
-			AbaxDataString hs;
+			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
 				hs = vec1[k].hashString();
 				if ( ! hash.keyExist(hs) ) {
-    				val += AbaxDataString(" ") + vec1[k].str3D();
-    				++cnt;
+    				val += Jstr(" ") + vec1[k].str3D(); ++cnt;
     			}
 			}
-			getIntersectionPoints( vec1, sp2, true, hash );
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
-    		AbaxDataString wkt1 = "linestring(";
+    		Jstr wkt1 = "linestring(";
     		for ( int i=0;i<vec1.size(); ++i ) {
-    			if ( 0 != i ) { wkt1 += AbaxDataString(","); }
+    			if ( 0 != i ) { wkt1 += Jstr(","); }
     			wkt1 += vec1[i].str2D();
     		}
     		wkt1 += ")";
 
 			JagPolygon pgon2;
-    		AbaxDataString wkt2;
+    		Jstr wkt2;
 			int n = JagParser::addPolygonData( pgon2, sp2, false );
 			if ( n <= 0 ) return "";
 			pgon2.toWKT( false, true, "multilinestring", wkt2 );
 
-    		AbaxDataString reswkt;
+    		Jstr reswkt;
     		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
     		n = convertConstantObjToJAG(reswkt.c_str(), val );
     		if ( n <= 0 ) return "";
+			++cnt;
 	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
 				|| colType2 == JAG_C_COL_TYPE_POLYGON3D || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 				// JAG_C_COL_TYPE_POLYGON is handled separately
 			JagPolygon pgon;
 			int n = JagParser::addPolygon3DData( pgon, sp2, false );
 			if ( n <= 0 ) return "";
-			JagVector<AbaxDataString> svec;
+			JagVector<Jstr> svec;
 			splitPolygonToVector( pgon, true, svec );
 			JagHashStrStr hash;
 			for ( int i=0; i < svec.size(); ++i ) {
@@ -23378,13 +23369,11 @@ AbaxDataString  JagGeo::doLineStringDifference( const AbaxDataString &colType1,c
     			getIntersectionPoints( vec1, sp2, true, hash );
 			}
 
-			AbaxDataString hs;
+			Jstr hs;
     		for ( int k=0; k < vec1.size(); ++k ) {
 				hs = vec1[k].hashString();
 				if ( ! hash.keyExist(hs) ) {
-					// not found
-        			val += AbaxDataString(" ") + vec1[k].str3D();
-        			++cnt;
+        			val += Jstr(" ") + vec1[k].str3D(); ++cnt;
         		}
     		}
 
@@ -23392,31 +23381,29 @@ AbaxDataString  JagGeo::doLineStringDifference( const AbaxDataString &colType1,c
 		if ( 2 == dim2 ) {
 			JagHashStrStr hash;
     		getIntersectionPoints( vec1, sp2, false, hash );
-			AbaxDataString hs;
+			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
 				hs = vec1[k].hashString();
 				if ( ! hash.keyExist(hs) ) {
-   				    val += AbaxDataString(" ") + vec1[k].str2D();
-   				    ++cnt;
+   				    val += Jstr(" ") + vec1[k].str2D(); ++cnt;
 				}
 			}
 		} else if ( 3 == dim2 ) {
 			JagHashStrStr hash;
     		getIntersectionPoints( vec1, sp2, true, hash );
-			AbaxDataString hs;
+			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
 				hs = vec1[k].hashString();
 				if ( ! hash.keyExist(hs) ) {
-   				    val += AbaxDataString(" ") + vec1[k].str3D();
-   				    ++cnt;
+   				    val += Jstr(" ") + vec1[k].str3D(); ++cnt;
 				}
 			}
 		}
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		// result is m-linestring
-		AbaxDataString wkt1 = "linestring(";
+		Jstr wkt1 = "linestring(";
 		for ( int i=0;i<vec1.size(); ++i ) {
-			if ( 0 != i ) { wkt1 += AbaxDataString(","); }
+			if ( 0 != i ) { wkt1 += Jstr(","); }
 			wkt1 += vec1[i].str2D();
 		}
 		wkt1 += ")";
@@ -23424,16 +23411,17 @@ AbaxDataString  JagGeo::doLineStringDifference( const AbaxDataString &colType1,c
 		JagPolygon pgon2;
 		int n = JagParser::addPolygonData( pgon2, sp2, false );
 		if ( n <= 0 ) return "";
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		pgon2.toWKT( false, true, "polygon", wkt2 );
-		AbaxDataString reswkt;
+		Jstr reswkt;
 		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
 		n = convertConstantObjToJAG(reswkt.c_str(), val );
 		if ( n <= 0 ) return "";
+		++cnt;
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-		AbaxDataString wkt1 = "linestring(";
+		Jstr wkt1 = "linestring(";
 		for ( int i=0;i<vec1.size(); ++i ) {
-			if ( 0 != i ) { wkt1 += AbaxDataString(","); }
+			if ( 0 != i ) { wkt1 += Jstr(","); }
 			wkt1 += vec1[i].str2D();
 		}
 		wkt1 += ")";
@@ -23441,29 +23429,26 @@ AbaxDataString  JagGeo::doLineStringDifference( const AbaxDataString &colType1,c
 		JagVector<JagPolygon> pgvec2;
 		int n = JagParser::addMultiPolygonData( pgvec2, sp2, false, false );
 		if ( n <= 0 ) return "";
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		multiPolygonToWKT( pgvec2, false, wkt2 );
-		AbaxDataString reswkt;
+		Jstr reswkt;
 		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostMultiPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
 		n = convertConstantObjToJAG(reswkt.c_str(), val );
 		if ( n <= 0 ) return "";
+		++cnt;
 	}
 
-	if ( cnt > 0 ) {
-		return val;
-	} else {
-		return "";
-	}
+	if ( cnt > 0 ) { return val; } else { return ""; }
 }
 
 // sp1 is m-linestring;  sp2: m-linestring/polygon
-AbaxDataString  JagGeo::doMultiLineStringDifference( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doMultiLineStringDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
 	int dim1 = getDimension( colType1 );
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";
-	AbaxDataString value;
+	Jstr value;
 
 	int cnt = 0;
     bool intsect;
@@ -23471,49 +23456,661 @@ AbaxDataString  JagGeo::doMultiLineStringDifference( const AbaxDataString &colTy
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	int n = JagParser::addPolygonData( pgon1, sp1, false );
        	if ( n <= 0 ) return "";
-		AbaxDataString wkt1;
+		Jstr wkt1;
 		pgon1.toWKT( false, true, "multilinestring", wkt1 );
 
 		JagPolygon pgon2;
 		n = JagParser::addPolygonData( pgon2, sp2, false );
 		if ( n <= 0 ) return "";
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		pgon1.toWKT( false, true, "linestring", wkt2 );
-		AbaxDataString reswkt;
+		Jstr reswkt;
 		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		if ( n <= 0 ) return "";
+		++cnt;
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+       	JagPolygon pgon1;  // use pgon to hold m-lines
+       	int n = JagParser::addPolygonData( pgon1, sp1, false );
+       	if ( n <= 0 ) return "";
+		Jstr wkt1;
+		pgon1.toWKT( false, true, "multilinestring", wkt1 );
+
+		JagPolygon pgon2;
+		n = JagParser::addPolygonData( pgon2, sp2, false );
+		if ( n <= 0 ) return "";
+		Jstr wkt2;
+		pgon1.toWKT( false, true, "multilinestring", wkt2 );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		if ( n <= 0 ) return "";
+		++cnt;
+	} else if (  colType2 == JAG_C_COL_TYPE_POLYGON ) {
+       	JagPolygon pgon1;  // use pgon to hold m-lines
+       	int n = JagParser::addPolygonData( pgon1, sp1, false );
+       	if ( n <= 0 ) return "";
+		Jstr wkt1;
+		pgon1.toWKT( false, true, "multilinestring", wkt1 );
+
+		JagPolygon pgon2;
+		n = JagParser::addPolygonData( pgon2, sp2, false );
+		if ( n <= 0 ) return "";
+		Jstr wkt2;
+		pgon1.toWKT( false, true, "polygon", wkt2 );
+		Jstr reswkt;
+		//JagCGAL::getMultiLineStringPolygonDifference( wkt1, wkt2, reswkt );
+		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		if ( n <= 0 ) return "";
+		++cnt;
+	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+		// hard to define
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		// hard to define
+	} 
+
+	if ( cnt > 0 ) { return value; } else { return ""; }
+}
+
+// polygon intersect polygon? multi-polygon?
+Jstr  JagGeo::doPolygonDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
+{
+	prt(("s1029 doPolygonDifference sp1: sp2:\n" ));
+	//sp1.print();
+	//sp2.print();
+
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+	if ( 2 != dim2 ) return "";  // no 3D polygons
+	Jstr value;
+	int cnt = 0;
+	int n;
+	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+       	JagPolygon pgon1;  // use pgon to hold m-lines
+       	n = JagParser::addPolygonData( pgon1, sp1, false );
+       	if ( n <= 0 ) return "";
+		Jstr wkt1;
+		pgon1.toWKT( false, true, "polygon", wkt1 );
+
+		JagPolygon pgon2;
+		n = JagParser::addPolygonData( pgon2, sp2, false );
+		if ( n <= 0 ) return "";
+		Jstr wkt2;
+		pgon2.toWKT( false, true, "polygon", wkt2 );
+		Jstr reswkt;
+		//JagCGAL::getPolygonPolygonDifference( wkt1, wkt2, reswkt );
+		JagCGAL::getTwoGeomDifference<BoostPolygon2D,BoostPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
+		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		if ( n <= 0 ) return "";
+		++cnt;
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+       	JagPolygon pgon1;  // use pgon to hold m-lines
+       	n = JagParser::addPolygonData( pgon1, sp1, false );
+       	if ( n <= 0 ) return "";
+		Jstr wkt1;
+		pgon1.toWKT( false, true, "polygon", wkt1 );
+
+		JagVector<JagPolygon> pgvec2;
+		Jstr wkt2;
+		n = JagParser::addMultiPolygonData( pgvec2, sp2, false, false );
+		if ( n <= 0 ) return "";
+		multiPolygonToWKT( pgvec2, false, wkt2 );
+		Jstr reswkt;
+		//JagCGAL::getPolygonMultiPolygonDifference( wkt1, wkt2, reswkt );
+		JagCGAL::getTwoGeomDifference<BoostPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
+		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		if ( n <= 0 ) return "";
+		++cnt;
+	}
+
+	if ( cnt > 0 ) {
+		return value;
+	} else {
+		return "";
+	}
+}
+
+// multipolygon multipolygon
+Jstr  JagGeo::doMultiPolygonDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
+{
+	prt(("s1029 doMultiPolygonDifference sp1: sp2:\n" ));
+	//sp1.print();
+	//sp2.print();
+
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+	if ( 2 != dim2 ) return "";  // no 3D polygons
+	Jstr value;
+	int cnt = 0;
+	int n;
+	if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+       	JagPolygon pgon1;  // use pgon to hold m-lines
+       	n = JagParser::addPolygonData( pgon1, sp1, false );
+       	if ( n <= 0 ) return "";
+		Jstr wkt1;
+		pgon1.toWKT( false, true, "polygon", wkt1 );
+
+		JagVector<JagPolygon> pgvec2;
+		Jstr wkt2;
+		n = JagParser::addMultiPolygonData( pgvec2, sp2, false, false );
+		if ( n <= 0 ) return "";
+		multiPolygonToWKT( pgvec2, false, wkt2 );
+		Jstr reswkt;
+
+		JagCGAL::getTwoGeomDifference<BoostMultiPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
+
+		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		if ( n <= 0 ) return "";
+		++cnt;
+	}
+
+	if ( cnt > 0 ) { return value; } else { return ""; }
+}
+
+//////////////////////////////////////////
+// geom symdifference = geom1+geom2 - geom1(intersection)geom2
+Jstr JagGeo::doPointSymDifference( const Jstr &colType1,const JagStrSplit &sp1, 
+											 const Jstr &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+
+	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+	double pz0;
+	Jstr val;
+	JagPoint3D p1;
+	int cnt = 0;
+	if ( 3 == dim1 ) {
+		pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+		p1.x = px0; p1.y = py0; p1.z = pz0;
+	} else {
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
+		p1.x = px0; p1.y = py0; p1.z = 0.0;
+	}
+
+	if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		if ( 3 == dim2 ) { 
+			val = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0");
+			double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			if ( ! (jagEQ(px0,x0) && jagEQ(py0,y0) && jagEQ(pz0, z0) ) ) {
+				val += Jstr(" ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1] + " " + sp1[JAG_SP_START+2];
+				++cnt;
+			} 
+		} else {
+			val = Jstr("CJAG=0=0=PT=d 0:0:0:0 ");
+			if ( ! ( jagEQ(px0,x0) && jagEQ(py0,y0) ) ) {
+				val += Jstr(" ") + sp1[JAG_SP_START+0] + " " + sp1[JAG_SP_START+1];
+				++cnt;
+			} 
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		//point1  <---> (p2, p3)
+		if ( 3 == dim2 ) { 
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			JagPoint3D p2(x1,y1,z1);
+
+			double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+			double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+			JagPoint3D p3(x1,y1,z1);
+
+			if ( p1 == p2 && p1 != p3 ) {
+				val += Jstr(" ") + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5];
+				++cnt;
+			} else if ( p1 == p3 && p1 != p2 ) {
+				val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2];
+				++cnt;
+			} else if ( p1 != p2 && p1 != p3 ) {
+				val += Jstr(" ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1] + ":" + sp1[JAG_SP_START+2];
+				val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1] + ":" + sp2[JAG_SP_START+2];
+				val += Jstr(" ") + sp2[JAG_SP_START+3] + ":" + sp2[JAG_SP_START+4] + ":" + sp2[JAG_SP_START+5];
+				++cnt;
+			} 
+		} else {
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			JagPoint3D p2(x1,y1,0.0);
+
+			double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			JagPoint3D p3(x1,y1,0.0);
+
+			if ( p1 == p2 && p1 != p3 ) {
+				val += Jstr(" ") + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3];
+				++cnt;
+			} else if ( p1 == p3 && p1 != p2 ) {
+				val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1];
+				++cnt;
+			} else if ( p1 != p2 && p1 != p3 ) {
+				val += Jstr(" ") + sp1[JAG_SP_START+0] + ":" + sp1[JAG_SP_START+1];
+				val += Jstr(" ") + sp2[JAG_SP_START+0] + ":" + sp2[JAG_SP_START+1];
+				val += Jstr(" ") + sp2[JAG_SP_START+2] + ":" + sp2[JAG_SP_START+3];
+				++cnt;
+			} 
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D
+	            || colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
+	            || colType2 == JAG_C_COL_TYPE_POLYGON || colType2 == JAG_C_COL_TYPE_POLYGON3D
+	            || colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		// point or point3d
+		if ( 2 == dim2 ) {
+			Jstr vecs;
+			nonMatchPoint2DVec( px0,py0, sp2, vecs );
+			if ( vecs.size() > 0 ) { val += vecs; ++cnt; }
+		} else if ( 3 == dim2 ) {
+			Jstr vecs;
+			nonMatchPoint3DVec( px0,py0,pz0, sp2, vecs );
+			if ( vecs.size() > 0 ) { val += vecs; ++cnt; }
+		}
+	} 
+
+	if ( cnt > 0 ) { return val; } else { return ""; }
+}   // end  doPointSymDifference()
+
+
+// geom difference = geom1 - geom1(intersection)geom2
+// No need to check points
+// output is multipoint MP/MP3
+Jstr  JagGeo::doLineSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+
+	double px1,py1,pz1,px2,py2,pz2;
+	JagVector<JagPoint3D> vec1; 
+	Jstr val;
+	if ( 3 == dim1 ) { 
+		px1 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+		py1 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+		pz1 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+		px2 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+		py2 = jagatof( sp1[JAG_SP_START+4].c_str() ); 
+		pz2 = jagatof( sp1[JAG_SP_START+5].c_str() ); 
+		vec1.append(JagPoint3D(px1,py1,pz1) );
+		vec1.append(JagPoint3D(px2,py2,pz2) );
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0") ;
+	} else {
+		px1 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
+		py1 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
+		px2 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+		py2 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
+		vec1.append(JagPoint3D(px1,py1,0) );
+		vec1.append(JagPoint3D(px2,py2,0) );
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0") ;
+	}
+
+	int cnt = 0;
+	if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		JagVector<JagPoint3D> vec2;  // line-line
+		if ( 3 == dim2 ) { 
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+			double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+			vec2.append(JagPoint3D(x1,y1,z1) );
+			vec2.append(JagPoint3D(x2,y2,z2) );
+
+			JagHashStrStr hash;
+			getIntersectionPoints( vec1, vec2, hash ); 
+			Jstr hs = vec1[0].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec1[0].str3D(); ++cnt;
+			}
+			hs = vec1[1].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec1[1].str3D(); ++cnt;
+			}
+
+			hs = vec2[0].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec2[0].str3D(); ++cnt;
+			}
+
+			hs = vec2[1].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec2[1].str3D(); ++cnt;
+			}
+		} else {
+			// 2D
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+			double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			vec2.append(JagPoint3D(x1,y1,0) );
+			vec2.append(JagPoint3D(x2,y2,0) );
+			JagHashStrStr hash;
+			getIntersectionPoints( vec1, vec2, hash ); 
+			Jstr hs = vec1[0].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec1[0].str2D(); ++cnt;
+			}
+			hs = vec1[1].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec1[1].str2D(); ++cnt;
+			}
+
+			hs = vec2[0].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec2[0].str2D(); ++cnt;
+			}
+			hs = vec2[1].hashString();
+			if ( ! hash.keyExist(hs) ) {
+				val += Jstr(" ") + vec2[1].str2D(); ++cnt;
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D
+				|| colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D
+				|| colType2 == JAG_C_COL_TYPE_POLYGON ||  colType2 == JAG_C_COL_TYPE_POLYGON3D
+	            || colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		// point or point3d
+		if ( 2 == dim2 ) {
+			Jstr vecs;
+			nonMatchTwoPoint2DVec( px1,py1,px2,py2, sp2, vecs );
+			if ( vecs.size() > 0 ) { val += vecs; ++cnt; }
+		} else if ( 3 == dim2 ) {
+			Jstr vecs;
+			nonMatchTwoPoint3DVec( px1,py1,pz1,px2,py2,pz2, sp2, vecs );
+			if ( vecs.size() > 0 ) { val += vecs; ++cnt; }
+		}
+	} 
+
+	if ( cnt > 0 ) { return val; } else { return ""; }
+}
+
+// boost: pgon/pgon  pgon/mpgon  mpgon/mpgon ---> mpgon.  mpgon->toWKT-->convert to JAG
+// boost: linestr or m-linestr / pgon or m-pgon --> mlinestring. mlinestring->toWKT-->convert to JAG
+
+Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+	Jstr val;
+	JagVector<JagPoint3D> vec1;
+	if ( 2 == dim2 ) {
+		val = Jstr("CJAG=0=0=MP=d 0:0:0:0");
+		getVectorPoints( sp1, false, vec1 );
+	} else {
+		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+		getVectorPoints( sp1, true, vec1 );
+	}
+
+	const char *str; char *p;
+	double px1,py1,pz1,px2,py2,pz2;
+	int cnt = 0;
+	if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		px1 = sp2[JAG_SP_START+0].tof();
+		py1 = sp2[JAG_SP_START+1].tof();
+		if ( 3 == dim2 ) {
+			pz1 = sp2[JAG_SP_START+2].tof();
+			JagPoint3D p3(px1,py1,pz1);
+			for ( int i=0; i < vec1.size(); ++i ) {
+				if ( p3 != vec1[i] ) {
+					val += Jstr(" ") + vec1[i].str3D(); ++cnt;
+				}
+			}
+		} else {
+			JagPoint3D p3(px1,py1,0.0);
+			for ( int i=0; i < vec1.size(); ++i ) {
+				if ( p3 != vec1[i] ) {
+					val += Jstr(" ") + vec1[i].str2D(); ++cnt;
+				}
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		if ( 3 == dim2 ) {
+			px1 = sp2[JAG_SP_START+0].tof();
+			py1 = sp2[JAG_SP_START+1].tof();
+			pz1 = sp2[JAG_SP_START+2].tof();
+
+			px2 = sp2[JAG_SP_START+3].tof();
+			py2 = sp2[JAG_SP_START+4].tof();
+			pz2 = sp2[JAG_SP_START+5].tof();
+
+			Jstr vecs;
+			nonMatchTwoPoint3DVec( px1,py1,pz1,px2,py2,pz2, sp1, vecs );
+			if ( vecs.size() > 0 ) { val += vecs; ++cnt; }
+		} else {
+			px1 = sp2[JAG_SP_START+0].tof();
+			py1 = sp2[JAG_SP_START+1].tof();
+			px2 = sp2[JAG_SP_START+2].tof();
+			py2 = sp2[JAG_SP_START+3].tof();
+			Jstr vecs;
+			nonMatchTwoPoint2DVec( px1,py1,px2,py2, sp1, vecs );
+			if ( vecs.size() > 0 ) { val += vecs; ++cnt; }
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		if ( 2 == dim2 ) {
+    		Jstr wkt1 = "linestring(";
+    		for ( int i=0;i<vec1.size(); ++i ) {
+    			if ( 0 != i ) { wkt1 += Jstr(","); }
+    			wkt1 += vec1[i].str2D();
+    		}
+    		wkt1 += ")";
+
+			JagVector<JagPoint3D> vec2;
+			getVectorPoints( sp2, false, vec2 );
+    		Jstr wkt2 = "linestring(";
+    		for ( int i=0;i<vec2.size(); ++i ) {
+    			if ( 0 != i ) { wkt2 += Jstr(","); }
+    			wkt2 += vec2[i].str2D();
+    		}
+    		wkt2 += ")";
+    
+    		Jstr reswkt;
+    		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+    		int n = convertConstantObjToJAG(reswkt.c_str(), val );
+    		if ( n <= 0 ) return "";
+		} else if ( 3 == dim2 ) {
+			JagVector<JagPoint3D> vec2;
+			getVectorPoints( sp2, true, vec2 );
+			JagHashStrStr hash;
+			getIntersectionPoints( vec1, vec2, hash );
+			Jstr hs;
+			for ( int k=0; k < vec1.size(); ++k ) {
+				hs = vec1[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+    				val += Jstr(" ") + vec1[k].str3D(); ++cnt;
+    			}
+			}
+			for ( int k=0; k < vec2.size(); ++k ) {
+				hs = vec2[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+    				val += Jstr(" ") + vec2[k].str3D(); ++cnt;
+    			}
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+    		Jstr wkt1 = "linestring(";
+    		for ( int i=0;i<vec1.size(); ++i ) {
+    			if ( 0 != i ) { wkt1 += Jstr(","); }
+    			wkt1 += vec1[i].str2D();
+    		}
+    		wkt1 += ")";
+
+			JagPolygon pgon2;
+    		Jstr wkt2;
+			int n = JagParser::addPolygonData( pgon2, sp2, false );
+			if ( n <= 0 ) return "";
+			pgon2.toWKT( false, true, "multilinestring", wkt2 );
+
+    		Jstr reswkt;
+    		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+    		n = convertConstantObjToJAG(reswkt.c_str(), val );
+    		if ( n <= 0 ) return "";
+			++cnt;
+	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
+				|| colType2 == JAG_C_COL_TYPE_POLYGON3D || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+				// JAG_C_COL_TYPE_POLYGON is handled separately
+			JagVector<JagPoint3D> vec2;
+			getVectorPoints( sp2, true, vec2 );
+			JagHashStrStr hash;
+    		getIntersectionPoints( vec1, vec2, hash );
+			Jstr hs;
+    		for ( int k=0; k < vec1.size(); ++k ) {
+				hs = vec1[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+        			val += Jstr(" ") + vec1[k].str3D(); ++cnt;
+        		}
+    		}
+    		for ( int k=0; k < vec2.size(); ++k ) {
+				hs = vec2[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+        			val += Jstr(" ") + vec2[k].str3D(); ++cnt;
+        		}
+    		}
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		if ( 2 == dim2 ) {
+			JagVector<JagPoint3D> vec2;
+			getVectorPoints( sp2, false, vec2 );
+			JagHashStrStr hash;
+    		getIntersectionPoints( vec1, vec2, hash );
+			Jstr hs;
+			for ( int k=0; k < vec1.size(); ++k ) {
+				hs = vec1[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+   				    val += Jstr(" ") + vec1[k].str2D(); ++cnt;
+				}
+			}
+			for ( int k=0; k < vec2.size(); ++k ) {
+				hs = vec2[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+   				    val += Jstr(" ") + vec2[k].str2D(); ++cnt;
+				}
+			}
+		} else if ( 3 == dim2 ) {
+			JagVector<JagPoint3D> vec2;
+			getVectorPoints( sp2, true, vec2 );
+			JagHashStrStr hash;
+    		getIntersectionPoints( vec1, vec2, hash );
+			Jstr hs;
+			for ( int k=0; k < vec1.size(); ++k ) {
+				hs = vec1[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+   				    val += Jstr(" ") + vec1[k].str3D(); ++cnt;
+				}
+			}
+			for ( int k=0; k < vec2.size(); ++k ) {
+				hs = vec2[k].hashString();
+				if ( ! hash.keyExist(hs) ) {
+   				    val += Jstr(" ") + vec2[k].str3D(); ++cnt;
+				}
+			}
+		}
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		// result is m-linestring
+		Jstr wkt1 = "linestring(";
+		for ( int i=0;i<vec1.size(); ++i ) {
+			if ( 0 != i ) { wkt1 += Jstr(","); }
+			wkt1 += vec1[i].str2D();
+		}
+		wkt1 += ")";
+
+		JagPolygon pgon2;
+		int n = JagParser::addPolygonData( pgon2, sp2, false );
+		if ( n <= 0 ) return "";
+		Jstr wkt2;
+		pgon2.toWKT( false, true, "polygon", wkt2 );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+		n = convertConstantObjToJAG(reswkt.c_str(), val );
+		if ( n <= 0 ) return "";
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		Jstr wkt1 = "linestring(";
+		for ( int i=0;i<vec1.size(); ++i ) {
+			if ( 0 != i ) { wkt1 += Jstr(","); }
+			wkt1 += vec1[i].str2D();
+		}
+		wkt1 += ")";
+
+		JagVector<JagPolygon> pgvec2;
+		int n = JagParser::addMultiPolygonData( pgvec2, sp2, false, false );
+		if ( n <= 0 ) return "";
+		Jstr wkt2;
+		multiPolygonToWKT( pgvec2, false, wkt2 );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostMultiPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+		n = convertConstantObjToJAG(reswkt.c_str(), val );
+		if ( n <= 0 ) return "";
+	}
+
+	if ( cnt > 0 ) { return val; } else { return ""; }
+}
+
+// sp1 is m-linestring;  sp2: m-linestring/polygon
+Jstr  JagGeo::doMultiLineStringSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
+{
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
+	if ( dim1 != dim2 ) return "";
+	Jstr value;
+
+	int cnt = 0;
+    bool intsect;
+	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+       	JagPolygon pgon1;  // use pgon to hold m-lines
+       	int n = JagParser::addPolygonData( pgon1, sp1, false );
+       	if ( n <= 0 ) return "";
+		Jstr wkt1;
+		pgon1.toWKT( false, true, "multilinestring", wkt1 );
+
+		JagPolygon pgon2;
+		n = JagParser::addPolygonData( pgon2, sp2, false );
+		if ( n <= 0 ) return "";
+		Jstr wkt2;
+		pgon1.toWKT( false, true, "linestring", wkt2 );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomSymDifference<BoostMultiLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
 		n = convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	int n = JagParser::addPolygonData( pgon1, sp1, false );
        	if ( n <= 0 ) return "";
-		AbaxDataString wkt1;
+		Jstr wkt1;
 		pgon1.toWKT( false, true, "multilinestring", wkt1 );
 
 		JagPolygon pgon2;
 		n = JagParser::addPolygonData( pgon2, sp2, false );
 		if ( n <= 0 ) return "";
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		pgon1.toWKT( false, true, "multilinestring", wkt2 );
-		AbaxDataString reswkt;
-		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomSymDifference<BoostMultiLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
 		n = convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 	} else if (  colType2 == JAG_C_COL_TYPE_POLYGON ) {
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	int n = JagParser::addPolygonData( pgon1, sp1, false );
        	if ( n <= 0 ) return "";
-		AbaxDataString wkt1;
+		Jstr wkt1;
 		pgon1.toWKT( false, true, "multilinestring", wkt1 );
 
 		JagPolygon pgon2;
 		n = JagParser::addPolygonData( pgon2, sp2, false );
 		if ( n <= 0 ) return "";
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		pgon1.toWKT( false, true, "polygon", wkt2 );
-		AbaxDataString reswkt;
-		//JagCGAL::getMultiLineStringPolygonDifference( wkt1, wkt2, reswkt );
-		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomSymDifference<BoostMultiLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
 		n = convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
@@ -23530,10 +24127,10 @@ AbaxDataString  JagGeo::doMultiLineStringDifference( const AbaxDataString &colTy
 }
 
 // polygon intersect polygon? multi-polygon?
-AbaxDataString  JagGeo::doPolygonDifference( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doPolygonSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
-	prt(("s1029 doPolygonDifference sp1: sp2:\n" ));
+	prt(("s1029 doPolygonSymDifference sp1: sp2:\n" ));
 	//sp1.print();
 	//sp2.print();
 
@@ -23541,41 +24138,39 @@ AbaxDataString  JagGeo::doPolygonDifference( const AbaxDataString &colType1,cons
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";
 	if ( 2 != dim2 ) return "";  // no 3D polygons
-	AbaxDataString value;
+	Jstr value;
 	int cnt = 0;
 	int n;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	n = JagParser::addPolygonData( pgon1, sp1, false );
        	if ( n <= 0 ) return "";
-		AbaxDataString wkt1;
+		Jstr wkt1;
 		pgon1.toWKT( false, true, "polygon", wkt1 );
 
 		JagPolygon pgon2;
 		n = JagParser::addPolygonData( pgon2, sp2, false );
 		if ( n <= 0 ) return "";
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		pgon2.toWKT( false, true, "polygon", wkt2 );
-		AbaxDataString reswkt;
-		//JagCGAL::getPolygonPolygonDifference( wkt1, wkt2, reswkt );
-		JagCGAL::getTwoGeomDifference<BoostPolygon2D,BoostPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomSymDifference<BoostPolygon2D,BoostPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
 		n = convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	n = JagParser::addPolygonData( pgon1, sp1, false );
        	if ( n <= 0 ) return "";
-		AbaxDataString wkt1;
+		Jstr wkt1;
 		pgon1.toWKT( false, true, "polygon", wkt1 );
 
 		JagVector<JagPolygon> pgvec2;
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		n = JagParser::addMultiPolygonData( pgvec2, sp2, false, false );
 		if ( n <= 0 ) return "";
 		multiPolygonToWKT( pgvec2, false, wkt2 );
-		AbaxDataString reswkt;
-		//JagCGAL::getPolygonMultiPolygonDifference( wkt1, wkt2, reswkt );
-		JagCGAL::getTwoGeomDifference<BoostPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
+		Jstr reswkt;
+		JagCGAL::getTwoGeomSymDifference<BoostPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
 		n = convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 	}
@@ -23588,10 +24183,10 @@ AbaxDataString  JagGeo::doPolygonDifference( const AbaxDataString &colType1,cons
 }
 
 // multipolygon multipolygon
-AbaxDataString  JagGeo::doMultiPolygonDifference( const AbaxDataString &colType1,const JagStrSplit &sp1,
-                                               const AbaxDataString &colType2,const JagStrSplit &sp2 )
+Jstr  JagGeo::doMultiPolygonSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
+                                               const Jstr &colType2,const JagStrSplit &sp2 )
 {
-	prt(("s1029 doMultiPolygonDifference sp1: sp2:\n" ));
+	prt(("s1029 doMultiPolygonSymDifference sp1: sp2:\n" ));
 	//sp1.print();
 	//sp2.print();
 
@@ -23599,38 +24194,35 @@ AbaxDataString  JagGeo::doMultiPolygonDifference( const AbaxDataString &colType1
 	int dim2 = getDimension( colType2 );
 	if ( dim1 != dim2 ) return "";
 	if ( 2 != dim2 ) return "";  // no 3D polygons
-	AbaxDataString value;
+	Jstr value;
 	int cnt = 0;
 	int n;
 	if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	n = JagParser::addPolygonData( pgon1, sp1, false );
        	if ( n <= 0 ) return "";
-		AbaxDataString wkt1;
+		Jstr wkt1;
 		pgon1.toWKT( false, true, "polygon", wkt1 );
 
 		JagVector<JagPolygon> pgvec2;
-		AbaxDataString wkt2;
+		Jstr wkt2;
 		int n = JagParser::addMultiPolygonData( pgvec2, sp2, false, false );
 		if ( n <= 0 ) return "";
 		multiPolygonToWKT( pgvec2, false, wkt2 );
-		AbaxDataString reswkt;
+		Jstr reswkt;
 
-		JagCGAL::getTwoGeomDifference<BoostMultiPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
+		JagCGAL::getTwoGeomSymDifference<BoostMultiPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
 
 		n = convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 	}
 
-	if ( cnt > 0 ) {
-		return value;
-	} else {
-		return "";
-	}
+	if ( cnt > 0 ) { return value; } else { return ""; }
 }
 
+
 // sp: linestring/m-linestring/polygon/m-polygon
-bool JagGeo::matchPoint2D( double px, double py, const JagStrSplit &sp, AbaxDataString &xs, AbaxDataString &ys )
+bool JagGeo::matchPoint2D( double px, double py, const JagStrSplit &sp, Jstr &xs, Jstr &ys )
 {
 	double x, y;
 	const char *str; char *p;
@@ -23653,7 +24245,7 @@ bool JagGeo::matchPoint2D( double px, double py, const JagStrSplit &sp, AbaxData
 
 // sp: linestring/m-linestring/polygon/m-polygon
 bool JagGeo::matchPoint3D( double px, double py, double pz, const JagStrSplit &sp, 
-							AbaxDataString &xs, AbaxDataString &ys, AbaxDataString &zs )
+							Jstr &xs, Jstr &ys, Jstr &zs )
 {
 	double x, y, z;
 	const char *str; char *p;
@@ -23671,6 +24263,66 @@ bool JagGeo::matchPoint3D( double px, double py, double pz, const JagStrSplit &s
 		}
 	}
 	return rc;
+}
+
+void JagGeo::nonMatchPoint2DVec( double px, double py, const JagStrSplit &sp, Jstr &vecs )
+{
+	double x, y;
+	const char *str; char *p;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':' ) != 1 ) continue;
+       	get2double(str, p, ':', x, y );
+		if ( ! (jagEQ(px,x) && jagEQ(py,y) ) ) {
+			vecs += Jstr(" ") + sp[i];
+		}
+	}
+}
+
+void JagGeo::nonMatchPoint3DVec( double px, double py, double pz, const JagStrSplit &sp, Jstr &vecs )
+{
+	double x, y, z;
+	const char *str; char *p;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':' ) != 2 ) continue;
+       	get3double(str, p, ':', x, y, z );
+		if ( ! (jagEQ(px,x) && jagEQ(py,y) && jagEQ(pz,z) ) ) {
+			vecs += Jstr(" ") + sp[i];
+		}
+	}
+}
+
+void JagGeo::nonMatchTwoPoint2DVec( double px1, double py1, double px2, double py2, const JagStrSplit &sp, Jstr &vecs )
+{
+	double x, y;
+	const char *str; char *p;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':' ) != 1 ) continue;
+       	get2double(str, p, ':', x, y );
+		if ( ! (jagEQ(px1,x) && jagEQ(py1,y) ) && ! ( jagEQ(px2,x) && jagEQ(py2,y)  ) ) {
+			vecs += Jstr(" ") + sp[i];
+		}
+	}
+}
+
+void JagGeo::nonMatchTwoPoint3DVec( double px1, double py1, double pz1, double px2, double py2, double pz2, const JagStrSplit &sp, Jstr &vecs )
+{
+	double x, y, z;
+	const char *str; char *p;
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':' ) != 2 ) continue;
+       	get3double(str, p, ':', x, y, z );
+		if ( ! (jagEQ(px1,x) && jagEQ(py1,y) && jagEQ(pz1,z) ) && ! ( jagEQ(px2,x) && jagEQ(py2,y) && jagEQ(pz2,z) ) ) {
+			vecs += Jstr(" ") + sp[i];
+		}
+	}
 }
 
 // sp is of linestring or multi-linestring
@@ -23732,16 +24384,16 @@ void JagGeo::appendLine3DLine3DIntersection(double x1, double y1, double z1, dou
 	JagCGAL::hasIntersection( line1, line2, vec );
 }
 
-void JagGeo::splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<AbaxDataString> &svec )
+void JagGeo::splitPolygonToVector( const JagPolygon &pgon, bool is3D, JagVector<Jstr> &svec )
 {
 	for ( int i=0; i < pgon.size(); ++i ) {
-		AbaxDataString str = "CJAG=0=0=XX=0 0:0:0:0";
+		Jstr str = "CJAG=0=0=XX=0 0:0:0:0";
 		const JagLineString3D &lstr = pgon.linestr[i];
 		for ( int j=0; j< lstr.size(); ++j ) {
 			if ( is3D ) {
-				str += AbaxDataString(" ") + lstr.point[j].str3D();
+				str += Jstr(" ") + lstr.point[j].str3D();
 			} else {
-				str += AbaxDataString(" ") + lstr.point[j].str2D();
+				str += Jstr(" ") + lstr.point[j].str2D();
 			}
 			svec.append( str );
 		}
@@ -23797,7 +24449,7 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 void JagGeo::vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashStrStr &hashset )
 {
 	char buf[32];
-	AbaxDataString s;
+	Jstr s;
 	for ( int i=0; i < resvec.size(); ++i ) {
 		s = resvec[i].hashString();
 		hashset.addKeyValue( s, "1" );

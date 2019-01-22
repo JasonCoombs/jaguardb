@@ -352,9 +352,9 @@ char *jumptoEndBracket(const char *p)
 
 // method to remove quote from given string; e.g. 'apple' -> apple ; "apple" -> apple ;
 // instr beginning with quote which you want to remove; e.g. ' or "
-AbaxDataString strRemoveQuote( const char *p )
+Jstr strRemoveQuote( const char *p )
 {
-	AbaxDataString str = p;
+	Jstr str = p;
 	if ( p == NULL || *p == '\0' ) {
 	} else if ( *p != '\'' && *p != '"' && *p != '`' ) {
 		str = p;
@@ -362,7 +362,7 @@ AbaxDataString strRemoveQuote( const char *p )
 		char *q = jumptoEndQuote( p ); ++p;
 		if ( *p == '\0' || *q == '\0' || q-p <= 0 ) {
 		} else {
-			str = AbaxDataString( p, q-p );
+			str = Jstr( p, q-p );
 		}
 	}
 	return str;
@@ -610,8 +610,8 @@ abaxdouble raystrtold( const char *buf, int length )
 
 //errcode:  0 success; 1 input format invalid; 2 input exceed length; 
 bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf, 
-				   AbaxDataString &errmsg, const AbaxDataString &name, 
-				   const int offset, const int length, const int sig, const AbaxDataString &type )
+				   Jstr &errmsg, const Jstr &name, 
+				   const int offset, const int length, const int sig, const Jstr &type )
 {	
 	// prt(("s3660 formatOneCol name=[%s] offset=%d length=%d type=[%s] inbuf=[%s]\n", name.c_str(), offset, length, type.c_str(), inbuf ));
 	if ( length < 1 ) {
@@ -663,7 +663,7 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 		}
 		// before get lonnum, change scientific notation ( if has ) to regular data string
 		// using atof and/or strtold to achieve
-		AbaxDataString actdata = trackpos;
+		Jstr actdata = trackpos;
 		if ( type == JAG_C_COL_TYPE_DOUBLE || type == JAG_C_COL_TYPE_FLOAT  ) {
 			writelen = isValidSciNotation(inbuf); // borrow writelen
 			//prt(("u2001 inbuf=[%s] writelen=%d\n", inbuf, writelen ));
@@ -741,7 +741,7 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 
 // dbformat <-> natural true format
 void dbNaturalFormatExchange( char *buffer, int numKeys, const JagSchemaAttribute *attrs, int offset, int length, 
-							  const AbaxDataString &type )
+							  const Jstr &type )
 {
 	rwnegConvertion( buffer, numKeys, attrs, offset, length, type );
 }
@@ -754,7 +754,7 @@ void dbNaturalFormatExchange( char *buffers[], int num, int numKeys[], const Jag
 }
 
 void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schAttr, int offset, int length, 
-					  const AbaxDataString &type )
+					  const Jstr &type )
 {	
 	if ( checkNum == 0 ) {
         if ( ( isInteger(type) || type == JAG_C_COL_TYPE_FLOAT
@@ -775,7 +775,7 @@ void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schA
 }
 
 #ifndef _WINDOWS64_
- AbaxDataString filePathFromFD( int fd )
+ Jstr filePathFromFD( int fd )
  {
 	char tmp[256];
 	char file[256];
@@ -787,7 +787,7 @@ void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schA
 #endif
 
 
-AbaxDataString removeCharFromString( const AbaxDataString &str, char dropc )
+Jstr removeCharFromString( const Jstr &str, char dropc )
 {
 	if ( str.length()<1) return "";
 
@@ -799,7 +799,7 @@ AbaxDataString removeCharFromString( const AbaxDataString &str, char dropc )
 			p[cnt++] = toupper( p[i] );
 		}
 	}
-	AbaxDataString res( p );
+	Jstr res( p );
 	if ( p ) free( p );
 	p = NULL;
 	return res;
@@ -807,7 +807,7 @@ AbaxDataString removeCharFromString( const AbaxDataString &str, char dropc )
 
 
 
-AbaxDataString makeUpperString( const AbaxDataString &str )
+Jstr makeUpperString( const Jstr &str )
 {
 	if ( str.length()<1) return "";
 
@@ -816,13 +816,13 @@ AbaxDataString makeUpperString( const AbaxDataString &str )
 	for ( int i = 0; i < str.length(); ++i ) {
 		p[i] = toupper( *(str.c_str()+i) );
 	}
-	AbaxDataString res( p );
+	Jstr res( p );
 	if ( p ) free( p );
 	p = NULL;
 	return res;
 }
 
-AbaxDataString makeLowerString( const AbaxDataString &str )
+Jstr makeLowerString( const Jstr &str )
 {
 	if ( str.length()<1) return "";
 
@@ -831,7 +831,7 @@ AbaxDataString makeLowerString( const AbaxDataString &str )
 	for ( int i = 0; i < str.length(); ++i ) {
 		p[i] = tolower( *(str.c_str()+i) );
 	}
-	AbaxDataString res( p );
+	Jstr res( p );
 	if ( p ) free( p );
 	p = NULL;
 	return res;
@@ -856,26 +856,26 @@ AbaxFixString makeUpperOrLowerFixString( const AbaxFixString &str, bool isUpper 
 	return res;
 }
 
-AbaxDataString trimChar( const AbaxDataString &str, char c )
+Jstr trimChar( const Jstr &str, char c )
 {
-	AbaxDataString s1 = trimHeadChar( str, c);
-	AbaxDataString s2 = trimTailChar( s1, c);
+	Jstr s1 = trimHeadChar( str, c);
+	Jstr s2 = trimTailChar( s1, c);
 	return s2;
 }
 
 // input: "ccxjfjdkjfkd"  out: "xjfjdkjfkd"
-AbaxDataString trimHeadChar( const AbaxDataString &str, char c )
+Jstr trimHeadChar( const Jstr &str, char c )
 {
 	if ( str.size() < 1 ) return str;
 	char *p = (char*)str.c_str();
 	if ( *p != c ) return str; 
 	while ( *p == c ) ++p;
 	if ( *p == '\0' ) return "";
-	return AbaxDataString(p);
+	return Jstr(p);
 }
 
 // input: "xjfjdkjfkdcc"  out: "xjfjdkjfkd"
-AbaxDataString trimTailChar( const AbaxDataString &str, char c )
+Jstr trimTailChar( const Jstr &str, char c )
 {
 	char r;
 	if ( str.size() < 1 ) return str;
@@ -886,12 +886,12 @@ AbaxDataString trimTailChar( const AbaxDataString &str, char c )
 
 	r = *(p+1);
 	*(p+1) = '\0';
-	AbaxDataString newstr = AbaxDataString( str.c_str() );
+	Jstr newstr = Jstr( str.c_str() );
 	*(p+1) = r;
 	return newstr;
 }
 
-AbaxDataString trimTailLF( const AbaxDataString &str )
+Jstr trimTailLF( const Jstr &str )
 {
 	char r;
 	if ( str.size() < 1 ) return str;
@@ -902,12 +902,12 @@ AbaxDataString trimTailLF( const AbaxDataString &str )
 
 	r = *(p+1);
 	*(p+1) = '\0';
-	AbaxDataString newstr = AbaxDataString( str.c_str() );
+	Jstr newstr = Jstr( str.c_str() );
 	*(p+1) = r;
 	return newstr;
 }
 
-bool beginWith( const AbaxDataString &str, char c )
+bool beginWith( const Jstr &str, char c )
 {
 	char *p = (char*)str.c_str();
 	if ( *p == c ) return true;
@@ -921,7 +921,7 @@ bool beginWith( const AbaxString &str, char c )
 	return false;
 }
 
-bool endWith( const AbaxDataString &str, char c )
+bool endWith( const Jstr &str, char c )
 {
 	if ( str.size() < 1 ) return false;
 	char *p = (char*)str.c_str() + str.size()-1;
@@ -929,7 +929,7 @@ bool endWith( const AbaxDataString &str, char c )
 	return false;
 }
 
-bool endWithStr( const AbaxDataString &str, const AbaxDataString &end )
+bool endWithStr( const Jstr &str, const Jstr &end )
 {
 	const char *p = jagstrrstr( str.c_str(), end.c_str() );
 	if ( ! p ) return false;
@@ -963,7 +963,7 @@ bool endWhiteWith( const AbaxString &str, char c )
 }
 
 // skip white spaces at end and check
-bool endWhiteWith( const AbaxDataString &str, char c )
+bool endWhiteWith( const Jstr &str, char c )
 {
 	if ( str.size() < 1 ) return false;
 	char *p = (char*)str.c_str() + str.size()-1;
@@ -995,48 +995,48 @@ const char *strcasestr(const char *s1, const char *s2)
 #endif
 
 
-AbaxDataString intToStr( int i )
+Jstr intToStr( int i )
 {
 	char buf[16];
 	memset(buf, 0, 16 );
 	sprintf(buf, "%d", i );
-	return AbaxDataString(buf);
+	return Jstr(buf);
 }
 
-AbaxDataString longToStr( abaxint i )
+Jstr longToStr( abaxint i )
 {
 	char buf[32];
 	memset(buf, 0, 32 );
 	sprintf(buf, "%lld", i );
-	return AbaxDataString(buf);
+	return Jstr(buf);
 }
 
-AbaxDataString doubleToStr( double f )
+Jstr doubleToStr( double f )
 {
 	char buf[48];
 	memset(buf, 0, 48 );
 	sprintf(buf, "%.10f", f );
-	return AbaxDataString(buf).trim0();
+	return Jstr(buf).trim0();
 }
 
-AbaxDataString d2s( double f )
+Jstr d2s( double f )
 {
 	char buf[48];
 	memset(buf, 0, 48 );
 	sprintf(buf, "%.10f", f );
-	return AbaxDataString(buf).trim0();
+	return Jstr(buf).trim0();
 }
 
-AbaxDataString doubleToStr( double f, int maxlen, int sig )
+Jstr doubleToStr( double f, int maxlen, int sig )
 {
 	char buf[64];
 	memset(buf, 0, 64 );
 	snprintf( buf, 64, "%0*.*f", maxlen, sig, f);
-	return AbaxDataString(buf).trim0();
+	return Jstr(buf).trim0();
 }
 
 
-AbaxDataString longDoubleToStr( abaxdouble f )
+Jstr longDoubleToStr( abaxdouble f )
 {
 	char buf[64];
 	memset(buf, 0, 64 );
@@ -1045,7 +1045,7 @@ AbaxDataString longDoubleToStr( abaxdouble f )
 	#else
 	sprintf(buf, "%Lf", f );
 	#endif
-	return AbaxDataString(buf).trim0();
+	return Jstr(buf).trim0();
 }
 
 // mode 0: use sprintf, 1 use snprintf
@@ -1095,7 +1095,7 @@ bool lastStrEqual( const char *bigstr, const char *smallstr, int lenbig, int len
 	}
 }
 
-bool isInteger( const AbaxDataString &dtype )
+bool isInteger( const Jstr &dtype )
 {
 	if ( dtype == JAG_C_COL_TYPE_DINT  ||
 		dtype == JAG_C_COL_TYPE_DBIGINT   ||
@@ -1110,7 +1110,7 @@ bool isInteger( const AbaxDataString &dtype )
 	 return false;
 }
 
-bool isDateTime( const AbaxDataString &dtype ) 
+bool isDateTime( const Jstr &dtype ) 
 {
 	if ( dtype == JAG_C_COL_TYPE_DATETIME  ||
 		 dtype == JAG_C_COL_TYPE_TIMESTAMP  ||
@@ -1230,23 +1230,23 @@ int trimEndWithCharKeepNewline ( char *msg, int len, char c )
 	return hasEndC;
 }
 
-AbaxDataString intToString( int i ) 
+Jstr intToString( int i ) 
 {
 	char buf[16];
 	sprintf(buf, "%d", i );
-	return AbaxDataString( buf );
+	return Jstr( buf );
 }
-AbaxDataString longToString( abaxint i ) 
+Jstr longToString( abaxint i ) 
 {
 	char buf[32];
 	sprintf(buf, "%lld", i );
-	return AbaxDataString( buf );
+	return Jstr( buf );
 }
-AbaxDataString ulongToString( uabaxint i ) 
+Jstr ulongToString( uabaxint i ) 
 {
 	char buf[32];
 	sprintf(buf, "%lu", i );
-	return AbaxDataString( buf );
+	return Jstr( buf );
 }
 
 abaxint strchrnum( const char *str, char ch )
@@ -1266,7 +1266,7 @@ abaxint strchrnum( const char *str, char ch )
     return cnt;
 }
 
-void escapeNewline( const AbaxDataString &instr, AbaxDataString &outstr )
+void escapeNewline( const Jstr &instr, Jstr &outstr )
 {
 	if ( instr.size() < 1 ) return;
 
@@ -1284,7 +1284,7 @@ void escapeNewline( const AbaxDataString &instr, AbaxDataString &outstr )
 		++p;
 	}
 	*q++ = '\0';
-	outstr = AbaxDataString(str);
+	outstr = Jstr(str);
 }
 
 
@@ -1322,7 +1322,7 @@ int strInStr( const char *str, int len, const char *str2 )
 
 // input fpath  /tmp/abc/fff.jdb
 // output: first=/tmp/abc/fff  last=jdb
-void splitFilePath( const char *fpath, AbaxDataString &first, AbaxDataString &last )
+void splitFilePath( const char *fpath, Jstr &first, Jstr &last )
 {
 	char *p = (char*)strrchr( fpath, '.' );
 	if ( !p ) {
@@ -1338,7 +1338,7 @@ void splitFilePath( const char *fpath, AbaxDataString &first, AbaxDataString &la
 
 // input fpath:  /tmp/abc/fff.jdb  newLast: "bid"
 // output: first=/tmp/abc/fff.bid
-AbaxDataString renameFilePath( const AbaxDataString& fpath, const AbaxDataString &newLast )
+Jstr renameFilePath( const Jstr& fpath, const Jstr &newLast )
 {
 	char *p = (char*)strrchr( fpath.c_str(), '.' );
 	if ( !p ) {
@@ -1346,14 +1346,14 @@ AbaxDataString renameFilePath( const AbaxDataString& fpath, const AbaxDataString
 	}
 	*p = '\0';
 	
-	AbaxDataString newPath = AbaxDataString(fpath.c_str()) + "." + newLast;
+	Jstr newPath = Jstr(fpath.c_str()) + "." + newLast;
 	*p = '.';
 	return newPath;
 }
 
-void stripeFilePath( const AbaxDataString &fpath, abaxint stripe, AbaxDataString &stripePath )
+void stripeFilePath( const Jstr &fpath, abaxint stripe, Jstr &stripePath )
 {
-	AbaxDataString first, last;
+	Jstr first, last;
 	splitFilePath( fpath.c_str(), first, last );
 	if ( last.size() < 1 ) {
 		printf("s5721 error in stripeFilePath fpath=[%s]\n", fpath.c_str() );
@@ -1363,28 +1363,28 @@ void stripeFilePath( const AbaxDataString &fpath, abaxint stripe, AbaxDataString
 	stripePath = first + "." + longToStr(stripe) + "." + last;
 }
 
-AbaxDataString makeDBObjName( JAGSOCK sock, const AbaxDataString &dbname, const AbaxDataString &objname )
+Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbname, const Jstr &objname )
 {
-	AbaxDataString dbobj;
+	Jstr dbobj;
 	dbobj = dbname + "." + objname;
 	return dbobj;
 }
 
-AbaxDataString makeDBObjName( JAGSOCK sock, const AbaxDataString &dbdotobj )
+Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbdotobj )
 {
 	JagStrSplit split( dbdotobj, '.' );
 	return makeDBObjName( sock, split[0], split[1] );
 }
 
 // /home/user1/jaguar  or /home/user2/brandx
-AbaxDataString jaguarHome()
+Jstr jaguarHome()
 {
-	AbaxDataString jaghm;
+	Jstr jaghm;
 	const char *p = getenv("JAGUAR_HOME");
 	if (  ! p ) {
 		p = getenv("HOME");
 		if ( p ) {
-			jaghm = AbaxDataString(p) + "/" + AbaxDataString(JAG_BRAND);
+			jaghm = Jstr(p) + "/" + Jstr(JAG_BRAND);
 		} else {
 			#ifdef _WINDOWS64_
 		       p = "/c/jaguar";
@@ -1393,18 +1393,18 @@ AbaxDataString jaguarHome()
 		  	  p = "/tmp/jaguar";
 		      ::mkdir( p, 0777 );
 		    #endif
-			jaghm = AbaxDataString(p);
+			jaghm = Jstr(p);
 		}
 	} else {
-		jaghm = AbaxDataString(p);
+		jaghm = Jstr(p);
 	}
 	
-	// return AbaxDataString(p) + "/" + AbaxDataString(JAG_BRAND);
+	// return Jstr(p) + "/" + Jstr(JAG_BRAND);
 	return jaghm;
 }
 
 // Used for  yes or nor tests.  a should be lowercase
-bool startWith( const AbaxDataString &str, char a )
+bool startWith( const Jstr &str, char a )
 {
 	if ( str.size() < 1 ) return false;
 	if ( *(str.c_str()) == a ) return true;
@@ -1578,7 +1578,7 @@ int checkReadOrWriteCommand( const char *pmesg )
 // return 4: abaxint type
 // return 5: float/double type
 // return 6: date/time type
-int checkColumnTypeMode( const AbaxDataString &type )
+int checkColumnTypeMode( const Jstr &type )
 {
 	if ( type == JAG_C_COL_TYPE_STR ) return 1;
 	else if ( type == JAG_C_COL_TYPE_DBOOLEAN || type == JAG_C_COL_TYPE_DBIT ) return 2;
@@ -1591,25 +1591,25 @@ int checkColumnTypeMode( const AbaxDataString &type )
 	return 0;
 }
 
-AbaxDataString formOneColumnNaturalData( const char *buf, abaxint offset, abaxint length, const AbaxDataString &type )
+Jstr formOneColumnNaturalData( const char *buf, abaxint offset, abaxint length, const Jstr &type )
 {
-	AbaxDataString instr, outstr;
+	Jstr instr, outstr;
 	int rc = checkColumnTypeMode( type );
 	if ( 6 == rc ) {
 		if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP ) {
-			instr = AbaxDataString( buf+offset, length );
+			instr = Jstr( buf+offset, length );
 			JagTime::convertDateTimeToLocalStr( instr, outstr );
 		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO ) {
-			instr = AbaxDataString( buf+offset, length );
+			instr = Jstr( buf+offset, length );
 			JagTime::convertDateTimeToLocalStr( instr, outstr, true );
 		} else if ( type == JAG_C_COL_TYPE_TIME ) {
-			instr = AbaxDataString( buf+offset, length );
+			instr = Jstr( buf+offset, length );
 			JagTime::convertTimeToStr( instr, outstr );
 		} else if ( type == JAG_C_COL_TYPE_TIMENANO ) {
-			instr = AbaxDataString( buf+offset, length );
+			instr = Jstr( buf+offset, length );
 			JagTime::convertTimeToStr( instr, outstr, 2 );
 		} else if ( type == JAG_C_COL_TYPE_DATE ) {
-			instr = AbaxDataString( buf+offset, length );
+			instr = Jstr( buf+offset, length );
 			JagTime::convertDateToStr( instr, outstr );
 		}
 	} else if ( 5 == rc ) {
@@ -1622,18 +1622,18 @@ AbaxDataString formOneColumnNaturalData( const char *buf, abaxint offset, abaxin
 		outstr = intToStr( rayatoi(buf+offset, length) != 0 );
 	} else if ( 1 == rc ) {
 		/**
-		AbaxDataString tmpstr = AbaxDataString(buf+offset, length);
+		Jstr tmpstr = Jstr(buf+offset, length);
 		outstr = tmpstr.c_str();
 		**/
-		outstr = AbaxDataString(buf+offset, length);
+		outstr = Jstr(buf+offset, length);
 	}
 	return outstr;
 }
 
 /***
-AbaxDataString printCharWithEscapeSequence( const char p )
+Jstr printCharWithEscapeSequence( const char p )
 {
-	AbaxDataString str;
+	Jstr str;
 	if ( p == '\a' ) str = "\\a";
 	else if ( p == '\b' ) str = "\\b"; 
 	else if ( p == '\t' ) str = "\\t";
@@ -1657,7 +1657,7 @@ AbaxDataString printCharWithEscapeSequence( const char p )
 // return 1: success
 // num is # of tables involved. normally num=1 for one table
 int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-					JagParseParam *parseParam, const JagVector<SetHdrAttr> &spa, AbaxDataString &newhdr, AbaxDataString &gbvhdr,
+					JagParseParam *parseParam, const JagVector<SetHdrAttr> &spa, Jstr &newhdr, Jstr &gbvhdr,
 					abaxint &finalsendlen, abaxint &gbvsendlen, bool needGbvs )
 {
 	//prt(("u2033 rearrangeHdr num=%d parseParam->hasColumn=%d ...\n", num, parseParam->hasColumn ));
@@ -1668,7 +1668,7 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 	abaxint offset = 0;
 	ExpressionElementNode *root;
 	const JagSchemaRecord *records[num];
-	AbaxDataString type, hdr, tname;
+	Jstr type, hdr, tname;
 	int groupnum = parseParam->groupVec.size();
 
 	if ( !parseParam->hasColumn && num == 1 ) {
@@ -1718,7 +1718,7 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 					if ( num == 1 ) {
 						hdr = (*(records[i]->columnVector))[j].name.c_str();
 					} else {	
-						hdr = spa[i].dbobj + "." + AbaxDataString((*(records[i]->columnVector))[j].name.c_str());
+						hdr = spa[i].dbobj + "." + Jstr((*(records[i]->columnVector))[j].name.c_str());
 					}
 
 					newhdr += records[i]->formatColumnRecord( hdr.c_str(), (*(records[i]->columnVector))[j].type.c_str(), offset, 
@@ -1817,7 +1817,7 @@ int checkGroupByValidation( const JagParseParam *parseParam )
 int checkAndReplaceGroupByAlias( JagParseParam *parseParam )
 {
 	bool found;
-	AbaxDataString gstr;
+	Jstr gstr;
 	for ( int i = 0; i < parseParam->groupVec.size(); ++i ) { 
 		found = false;
 		for ( int j = 0; j < parseParam->selColVec.size(); ++j ) {
@@ -1845,12 +1845,12 @@ int checkAndReplaceGroupByAlias( JagParseParam *parseParam )
 
 // str: "k=v/k=v/k=v"  ch:  '/'
 // output: hashmap
-void convertToHashMap( const AbaxDataString &kvstr, char sep,  JagHashMap<AbaxString, AbaxString> &hashmap )
+void convertToHashMap( const Jstr &kvstr, char sep,  JagHashMap<AbaxString, AbaxString> &hashmap )
 {
 	if ( kvstr.size()<1) return;
 	JagStrSplit sp( kvstr, sep, true );
 	if ( sp.length()<1) return;
-	AbaxDataString kv;
+	Jstr kv;
 	for ( int i=0; i < sp.length(); ++i ) {
 		kv = sp[i];
 		JagStrSplit p( kv, '=');
@@ -1861,7 +1861,7 @@ void convertToHashMap( const AbaxDataString &kvstr, char sep,  JagHashMap<AbaxSt
 }
 // /home/dev2/jaguar/data..  --> /home/dev3/jaguar/data...
 // if fpath=="/home/sssss/ffff", convert to /home/$HOME/ffff
-void changeHome( AbaxDataString &fpath )
+void changeHome( Jstr &fpath )
 {
 	//prt(("s5880 changeHome in=[%s]\n", fpath.c_str() ));
 	JagStrSplit oldsp( fpath, '/', true );
@@ -1882,7 +1882,7 @@ void changeHome( AbaxDataString &fpath )
 
 	fpath = home;
 	for ( int i = idx; i < oldsp.length(); ++i ) {
-		fpath += AbaxDataString("/") + oldsp[i];
+		fpath += Jstr("/") + oldsp[i];
 	}
 	//prt(("s5881 changeHome out=[%s]\n", fpath.c_str() ));
 
@@ -1945,7 +1945,7 @@ int jaguar_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const st
 
 // 0: failure
 // 1: OK
-int getPassword( AbaxDataString &outPassword )
+int getPassword( Jstr &outPassword )
 {
 	outPassword = "";
     char password[128];
@@ -2110,13 +2110,13 @@ void trimEndColonWhite( char *str )
 }
 
 
-void randDataStringSort( AbaxDataString *vec, int maxlen )
+void randDataStringSort( Jstr *vec, int maxlen )
 {
 	struct timeval now;
 	gettimeofday( &now, NULL );
 	abaxint microsec = now.tv_sec * (abaxint)1000000 + now.tv_usec;
 	srand( microsec );
-	AbaxDataString tmp;
+	Jstr tmp;
 	int i = maxlen-1, pivot = maxlen-1, radidx;
 	while ( i > 0 ) {
 		tmp = vec[pivot];
@@ -2853,12 +2853,12 @@ abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size )
 #endif
 
 
-AbaxDataString psystem( const char *command )
+Jstr psystem( const char *command )
 {
-	AbaxDataString res;
+	Jstr res;
 	FILE *fp = popen(command, "r" );
 	if ( ! fp ) {
-		res = AbaxDataString("Error execute ") + command; 
+		res = Jstr("Error execute ") + command; 
 		return res;
 	}
 
@@ -2919,7 +2919,7 @@ ssize_t jaggetline(char **lineptr, size_t *n, FILE *stream)
 	#else
     ssize_t count = 0;
     char c;
-	AbaxDataString out;
+	Jstr out;
     while ( 1) {
     	c = (char)getc(stream);
     	// if ( '\n' == c || EOF == c ) break;
@@ -2958,19 +2958,19 @@ int daemonInit()
 **/
 
 
-AbaxDataString expandEnvPath( const AbaxDataString &path )
+Jstr expandEnvPath( const Jstr &path )
 {
 	// prt(("s29393 expandEnvPath input=[%s]\n", path.c_str() ));
     if ( '$' != *(path.c_str()) ) return path;
 
     JagStrSplit sp( path, '/' );
-    AbaxDataString fs = sp[0];
+    Jstr fs = sp[0];
 	const char *p = fs.c_str() + 1;
 	// prt(("s2238 fs=[%s] p=[%s]\n", fs.c_str(), p ));
 	if ( getenv(p) ) {
-		return AbaxDataString(getenv(p)) + AbaxDataString(path.c_str() + fs.size());
+		return Jstr(getenv(p)) + Jstr(path.c_str() + fs.size());
 	} else {
-		return AbaxDataString(".") + AbaxDataString(path.c_str() + fs.size());
+		return Jstr(".") + Jstr(path.c_str() + fs.size());
 	}
 }
 
@@ -2998,7 +2998,7 @@ char *jag_ctime_r(const time_t *timep, char *result)
 
 #endif
 
-int formatInsertSelectCmdHeader( const JagParseParam *parseParam, AbaxDataString &str )
+int formatInsertSelectCmdHeader( const JagParseParam *parseParam, Jstr &str )
 {
 	if ( JAG_INSERTSELECT_OP == parseParam->opcode ) {
 		str = "insert into " + parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
@@ -3117,13 +3117,13 @@ void makeMapFromOpt( const char *options, JagHashMap<AbaxString, AbaxString> &om
 
 // if dquote is 1: return "a", "v", "xx"
 // else   1, 2, 3, 92
-AbaxDataString makeStringFromOneVec( const JagVector<AbaxDataString> &vec, int dquote )
+Jstr makeStringFromOneVec( const JagVector<Jstr> &vec, int dquote )
 {
-	AbaxDataString res;
+	Jstr res;
 	int len = vec.length();
 	for ( int i =0; i < len; ++i ) {
 		if ( dquote ) {
-			res += AbaxDataString("\"") + vec[i] + "\"";
+			res += Jstr("\"") + vec[i] + "\"";
 		} else {
 			res += vec[i];
 		}
@@ -3137,25 +3137,25 @@ AbaxDataString makeStringFromOneVec( const JagVector<AbaxDataString> &vec, int d
 
 
 // "[1.2], [2, 3] ..."
-AbaxDataString makeStringFromTwoVec( const JagVector<AbaxDataString> &xvec, const JagVector<AbaxDataString> &yvec )
+Jstr makeStringFromTwoVec( const JagVector<Jstr> &xvec, const JagVector<Jstr> &yvec )
 {
-	AbaxDataString res;
+	Jstr res;
 	int len = xvec.length();
 	if ( len != yvec.length() ) return "";
 	for ( int i =0; i < len; ++i ) {
-		res += AbaxDataString("[") + xvec[i] + "," + yvec[i] + "]";
+		res += Jstr("[") + xvec[i] + "," + yvec[i] + "]";
 		if ( i < len-1 ) { res += ","; } 
 	}
 	return res;
 }
 
-int oneFileSender( JAGSOCK sock, const AbaxDataString &inpath )
+int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 {
 	//prt(("\ns4009 oneFileSender sock=%d THRD=%lld inpath=[%s] ...\n", sock, THREADID, inpath.c_str() ));
 	int fileSuccess = 0; 
-	AbaxDataString filename;
+	Jstr filename;
 	char *newbuf = NULL; char hdr[JAG_SOCK_MSG_HDR_LEN+1];
-	ssize_t rlen = 0; struct stat sbuf; AbaxDataString cmd; int fd = -1;
+	ssize_t rlen = 0; struct stat sbuf; Jstr cmd; int fd = -1;
 	abaxint filelen;
 
 	//prt(("s2838 oneFileSender inpath=[%s]\n", inpath.c_str() ));
@@ -3224,12 +3224,12 @@ int oneFileSender( JAGSOCK sock, const AbaxDataString &inpath )
 //   -1: error not _onefile command
 //   -2: error invalid _onefile command
 //   -3: fake data  -4: file open error
-int oneFileReceiver( JAGSOCK sock, const AbaxDataString &outpath, bool isDirPath )
+int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 {	
 	// prt(("c0293 oneFileReceiver outpath=[%s]\n", outpath.c_str() ));
 	int fd = -1; 
 	abaxint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT;
-	AbaxDataString filename, senderID, recvpath;
+	Jstr filename, senderID, recvpath;
 	char *newbuf = NULL; 
 	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
 	ssize_t rlen = 0;
@@ -3352,7 +3352,7 @@ abaxint sendDirectToSockWithHdr( JAGSOCK sock, const char *hdr, const char *mesg
 {
 	const char *p = mesg;
 	abaxint rlen;
-	AbaxDataString comp;
+	Jstr comp;
 	if ( hdr[JAG_SOCK_MSG_HDR_LEN-4] == 'Z' ) {
 		JagFastCompress::compress( mesg, len, comp );
 		p = comp.c_str();
@@ -3383,7 +3383,7 @@ int isValidSciNotation(const char *str )
 }
 
 // hash fstr and return  "ddd/ddd"
-AbaxDataString fileHashDir( const AbaxFixString &fstr )
+Jstr fileHashDir( const AbaxFixString &fstr )
 {
 	abaxint hcode = fstr.hashCode();
 	char buf[8];
@@ -3427,7 +3427,7 @@ void jagfwritefloat( const char *str, abaxint len, FILE *outf )
 	}
 }
 
-void charFromStr( char *dest, const AbaxDataString &src )
+void charFromStr( char *dest, const Jstr &src )
 {
 	strcpy( dest, src.c_str() );
 }
@@ -3492,7 +3492,7 @@ double jagatof(const char *nptr)
 	return atof( nptr);
 }
 
-double jagatof(const AbaxDataString &str )
+double jagatof(const Jstr &str )
 {
 	return jagatof( str.c_str() );
 }
@@ -3558,10 +3558,10 @@ bool jagisspace( char c)
 #if 1
 // input: str: "00000034.200000"   "00003445.0000"
 // output:  "34.2"  "3445"
-AbaxDataString trimEndZeros( const AbaxDataString& str )
+Jstr trimEndZeros( const Jstr& str )
 {
 	if ( ! strchr( str.c_str(), '.') ) return str;
-	AbaxDataString res;
+	Jstr res;
 
 	// skip leading zeros
 	int len = str.size();
@@ -3672,9 +3672,9 @@ const char *KMPstrstr(const char *txt, const char *pat)
 	return NULL;
 }
 
-AbaxDataString replaceChar( const AbaxDataString& str, char oldc, char newc )
+Jstr replaceChar( const Jstr& str, char oldc, char newc )
 {
-	AbaxDataString res;
+	Jstr res;
 	for ( int i=0; i < str.size(); ++i ) {
 		if ( str[i] == oldc ) {
 			res += newc;
@@ -3684,7 +3684,7 @@ AbaxDataString replaceChar( const AbaxDataString& str, char oldc, char newc )
 	}
 }
 
-void printStr( const AbaxDataString &str )
+void printStr( const Jstr &str )
 {
 	printf("printStr size=%d: \n[", str.size() );
 	for ( int i=0; i < str.size(); ++i ) {
@@ -3748,7 +3748,7 @@ abaxint convertToMicroSecond( const char *p )
 
 // str: "jfkd jkfjdkjf djfkd"
 // like:  "pat"  "%pat"  "pat%"  "%pat%"
-bool likeMatch( const AbaxDataString& str, const AbaxDataString& like )
+bool likeMatch( const Jstr& str, const Jstr& like )
 {
 	//prt(("u2208 likeMatch str=[%s] like=[%s]\n", str.c_str(), like.c_str() ));
 	if ( like.size() < 1 ) {

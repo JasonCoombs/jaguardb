@@ -46,16 +46,16 @@ class JagParser
 {
   public:
     JagParser( const JagDBServer *srv = NULL, const JaguarCPPClient *cli = NULL );
-	bool parseCommand( const JagParseAttribute &jpa, const AbaxDataString &cmd, JagParseParam *parseParam, 
-						AbaxDataString &errmsg );
-	const JagColumn* getColumn( const JagParseParam *pparam, const AbaxDataString &colName ) const;
-	const JagColumn* getColumn( const AbaxDataString &db, const AbaxDataString &obj, const AbaxDataString &colName ) const;
-	static bool  isComplexType( const AbaxDataString &rcs );
-	static bool  isGeoType( const AbaxDataString &rcs );
-	static bool  isVectorGeoType( const AbaxDataString &rcs );
-	static bool  isPolyType( const AbaxDataString &rcs );
-	bool isIndexCol( const AbaxDataString &db, const AbaxDataString &colName ) const;
-	static AbaxDataString getColumns( const char *str );
+	bool parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, 
+						Jstr &errmsg );
+	const JagColumn* getColumn( const JagParseParam *pparam, const Jstr &colName ) const;
+	const JagColumn* getColumn( const Jstr &db, const Jstr &obj, const Jstr &colName ) const;
+	static bool  isComplexType( const Jstr &rcs );
+	static bool  isGeoType( const Jstr &rcs );
+	static bool  isVectorGeoType( const Jstr &rcs );
+	static bool  isPolyType( const Jstr &rcs );
+	bool isIndexCol( const Jstr &db, const Jstr &colName ) const;
+	static Jstr getColumns( const char *str );
 	static int  checkLineStringData( const char *p );
 	static int  checkLineString3DData( const char *p );
 	static int  checkPolygonData( const char *p, bool mustClose );
@@ -69,23 +69,23 @@ class JagParser
 	static void addLineStringData( JagLineString &linestr, const JagStrSplit &sp );
 	static void addLineString3DData( JagLineString3D &linestr, const JagStrSplit &sp );
 	static int  addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose );
-	static int  addPolygonData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose );
+	static int  addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose );
 	static int  getPolygonMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax );
 	static int  addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose );
-	static int  addPolygon3DData( AbaxDataString &pgon, const char *p, bool firstOnly, bool mustClose );
+	static int  addPolygon3DData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose );
 	static int  getPolygon3DMinMax( const char *p, double &xmin, double &ymin, double &zmin, 
 								    double &xmax, double &ymax, double &zmax );
 	static int  addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly );
 	static int  addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly );
 
 	static int  addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p, bool firstOnly, bool mustClose, bool is3D );
-	static int  addMultiPolygonData( AbaxDataString &pgs, const char *p, bool firstOnly, bool mustClose, bool is3D );
+	static int  addMultiPolygonData( Jstr &pgs, const char *p, bool firstOnly, bool mustClose, bool is3D );
 	static int  addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSplit &sp, bool firstOnly, bool is3D );
 	static int  getMultiPolygonMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax );
 	static int  getMultiPolygon3DMinMax( const char *p, double &xmin, double &ymin, double &zmin, 
 								         double &xmax, double &ymax, double &zmax );
-	static AbaxDataString getFieldType( int srid );
-	static AbaxDataString getFieldTypeString( int srid );
+	static Jstr getFieldType( int srid );
+	static Jstr getFieldTypeString( int srid );
 	static void removeEndUnevenBracket( char *str );
 	static void removeEndUnevenBracketAll( char *str );
 	static void replaceChar( char *start, char oldc, char newc, char stopchar );
@@ -113,16 +113,16 @@ class JagParser
 	int setUpdateVector();
 	int setCreateVector( short setType );
 	int setOneCreateColumnAttribute( CreateAttribute &cattr );
-	AbaxDataString fillDataType( const char *gettok );
-	int getColumnLength( const AbaxDataString &colType );
+	Jstr fillDataType( const char *gettok );
+	int getColumnLength( const Jstr &colType );
 	
 	// int setupCheckMap();
-	bool  isValidGrantPerm( AbaxDataString &perm );
-	bool  isValidGrantObj(  AbaxDataString &obj );
+	bool  isValidGrantPerm( Jstr &perm );
+	bool  isValidGrantObj(  Jstr &obj );
 	void addCreateAttrAndColumn( bool isValue, CreateAttribute &cattr, int &coloffset );
 	void addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other, int &numCols );
-	void setToRealType( const AbaxDataString &rcs, CreateAttribute &cattr );
-	int getTypeNameArg( const char *gettok, AbaxDataString &tname, AbaxDataString &targ, int &collen, int &sig );
+	void setToRealType( const Jstr &rcs, CreateAttribute &cattr );
+	int getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig );
 	bool hasPolyGeoType( const char *createSQL, int &dim );
 	void addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool lead, int &offset ); 
 	int convertJsonToOther( OtherAttribute &other, const char *json, int jsonlen ); 

@@ -54,10 +54,10 @@ typedef boost::geometry::strategy::buffer::point_square JagPointSquare;
 class JagStrategy
 {
   public:
-  	JagStrategy( const AbaxDataString &nm, double a1, double a2 );
+  	JagStrategy( const Jstr &nm, double a1, double a2 );
   	~JagStrategy();
 	void  *ptr;
-  	AbaxDataString name;
+  	Jstr name;
 	short  t;
   protected:
 	double f1, f2;
@@ -67,17 +67,17 @@ class JagStrategy
 class JagCGAL
 {
   public:
-    static void getConvexHull2DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
+    static void getConvexHull2DStr( const JagLineString &line, const Jstr &hdr, const Jstr &bbox, Jstr &value );
     static void getConvexHull2D( const JagLineString &line, JagLineString &hull );
 
-    static void getConvexHull3DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
+    static void getConvexHull3DStr( const JagLineString &line, const Jstr &hdr, const Jstr &bbox, Jstr &value );
     static void getConvexHull3D( const JagLineString &line, JagLineString &hull );
 
-    static bool getBufferLineString2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value );
-    static bool getBufferMultiPoint2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value );
-    static bool getBufferPolygon2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value );
-    static bool getBufferMultiLineString2DStr( const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value );
-    static bool getBufferMultiPolygon2DStr( const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &arg, AbaxDataString &value );
+    static bool getBufferLineString2DStr( const JagLineString &line, int srid, const Jstr &arg, Jstr &value );
+    static bool getBufferMultiPoint2DStr( const JagLineString &line, int srid, const Jstr &arg, Jstr &value );
+    static bool getBufferPolygon2DStr( const JagPolygon &pgon, int srid, const Jstr &arg, Jstr &value );
+    static bool getBufferMultiLineString2DStr( const JagPolygon &pgon, int srid, const Jstr &arg, Jstr &value );
+    static bool getBufferMultiPolygon2DStr( const JagVector<JagPolygon> &pgvec, int srid, const Jstr &arg, Jstr &value );
 
     static bool getIsSimpleLineString2DStr( const JagLineString &line );
     static bool getIsSimpleMultiLineString2DStr( const JagPolygon &pgon );
@@ -93,19 +93,19 @@ class JagCGAL
     static bool getIsRingLineString2DStr( const JagLineString &line );
 
 	template <class TGeo>
-    static bool getBuffer2D( const TGeo &obj, const AbaxDataString &arg, JagVector<JagPolygon> &pgvec );
+    static bool getBuffer2D( const TGeo &obj, const Jstr &arg, JagVector<JagPolygon> &pgvec );
 
-	static bool get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, AbaxDataString &value );
-    static void getRingStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, bool is3D, AbaxDataString &value );
-    static void getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, 
-									bool is3D, AbaxDataString &value );
-    static void getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, 
-									bool is3D, AbaxDataString &value );
-    static void getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &hdr, const AbaxDataString &bbox, 
-							   bool is3D, int N, AbaxDataString &value );
-    static void getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value );
-	static int unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &wkt );
-	static int unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &wkt );
+	static bool get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, Jstr &value );
+    static void getRingStr( const JagLineString &line, const Jstr &hdr, const Jstr &bbox, bool is3D, Jstr &value );
+    static void getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const Jstr &hdr, const Jstr &bbox, 
+									bool is3D, Jstr &value );
+    static void getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const Jstr &hdr, const Jstr &bbox, 
+									bool is3D, Jstr &value );
+    static void getPolygonNStr( const JagVector<JagPolygon> &pgvec, const Jstr &hdr, const Jstr &bbox, 
+							   bool is3D, int N, Jstr &value );
+    static void getUniqueStr( const JagStrSplit &sp, const Jstr &hdr, const Jstr &bbox, Jstr &value );
+	static int unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, Jstr &wkt );
+	static int unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, Jstr &wkt );
 	static bool hasIntersection( const JagLine2D &line1, const JagLine2D &line2, JagVector<JagPoint2D> &res ); 
 	static bool hasIntersection( const JagLine3D &line1, const JagLine3D &line2, JagVector<JagPoint3D> &res ); 
 	static void split2DSPToVector( const JagStrSplit &sp, JagVector<JagPoint2D> &vec1 );
@@ -114,11 +114,13 @@ class JagCGAL
 	static bool convertPolygonJ2B( const JagPolygon &pgon1, BoostPolygon2D &bgon );
 
 	template <class GEOM1, class GEOM2, class RESULT> 
-	static void getTwoGeomDifference( const AbaxDataString &wkt1, const AbaxDataString &wkt2, AbaxDataString &reswkt );
+	static void getTwoGeomDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt );
+	template <class GEOM1, class GEOM2, class RESULT> 
+	static void getTwoGeomSymDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt );
 
 
   protected:
-  	static bool createStrategies( JagStrategy *sptr[], const AbaxDataString &arg );
+  	static bool createStrategies( JagStrategy *sptr[], const Jstr &arg );
   	static void destroyStrategies( JagStrategy *sptr[] );
 
 
@@ -171,7 +173,7 @@ class JagIntersectionVisitor3D
 
 
 template <class GEOM1, class GEOM2, class RESULT>
-void JagCGAL::getTwoGeomDifference( const AbaxDataString &wkt1, const AbaxDataString &wkt2, AbaxDataString &reswkt )
+void JagCGAL::getTwoGeomDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt )
 {
 	RESULT result;
 	GEOM1 geom1;
@@ -179,6 +181,20 @@ void JagCGAL::getTwoGeomDifference( const AbaxDataString &wkt1, const AbaxDataSt
 	GEOM1 geom2;
 	boost::geometry::read_wkt( wkt2.c_str(), geom2 );
 	boost::geometry::difference( geom1, geom2, result );
+	std::stringstream ifs;
+	ifs << boost::geometry::wkt(result);
+	reswkt = ifs.str().c_str();
+}
+
+template <class GEOM1, class GEOM2, class RESULT>
+void JagCGAL::getTwoGeomSymDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt )
+{
+	RESULT result;
+	GEOM1 geom1;
+	boost::geometry::read_wkt( wkt1.c_str(), geom1 );
+	GEOM1 geom2;
+	boost::geometry::read_wkt( wkt2.c_str(), geom2 );
+	boost::geometry::sym_difference( geom1, geom2, result );
 	std::stringstream ifs;
 	ifs << boost::geometry::wkt(result);
 	reswkt = ifs.str().c_str();

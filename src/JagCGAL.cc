@@ -3,18 +3,18 @@
 #include <JagParser.h>
 
 
-void JagCGAL::getConvexHull2DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value )
+void JagCGAL::getConvexHull2DStr( const JagLineString &line, const Jstr &hdr, const Jstr &bbox, Jstr &value )
 {
 	JagLineString hull;
 	getConvexHull2D( line, hull );
 	const JagVector<JagPoint> &point = hull.point;
-	AbaxDataString sx, sy;
+	Jstr sx, sy;
 
 	if ( bbox.size() < 1 ) {
 		double xmin, ymin, xmax, ymax;
-		AbaxDataString s1, s2, s3, s4;
+		Jstr s1, s2, s3, s4;
 		hull.bbox2D( xmin, ymin, xmax, ymax );
-		AbaxDataString newbbox;
+		Jstr newbbox;
 		s1 = doubleToStr( xmin ).trimEndZeros();
 		s2 = doubleToStr( ymin ).trimEndZeros();
 		s3 = doubleToStr( xmax ).trimEndZeros();
@@ -28,7 +28,7 @@ void JagCGAL::getConvexHull2DStr( const JagLineString &line, const AbaxDataStrin
 	for ( int i = 0; i <  point.size(); ++i ) {
 		sx = point[i].x; sx.trimEndZeros();
 		sy = point[i].y; sy.trimEndZeros();
-		value += AbaxDataString(" ") + sx + ":" + sy;
+		value += Jstr(" ") + sx + ":" + sy;
 	}
 }
 
@@ -66,18 +66,18 @@ void JagCGAL::getConvexHull3D( const JagLineString &line, JagLineString &hull )
     }
 }
 
-void JagCGAL::getConvexHull3DStr( const JagLineString &line, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value )
+void JagCGAL::getConvexHull3DStr( const JagLineString &line, const Jstr &hdr, const Jstr &bbox, Jstr &value )
 {
 	JagLineString hull;
 	getConvexHull3D( line, hull );
 	const JagVector<JagPoint> &point = hull.point;
-	AbaxDataString sx, sy, sz;
+	Jstr sx, sy, sz;
 
 	if ( bbox.size() < 1 ) {
 		double xmin, ymin, zmin, xmax, ymax, zmax;
-		AbaxDataString s1, s2, s3, s4, s5, s6;
+		Jstr s1, s2, s3, s4, s5, s6;
 		hull.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
-		AbaxDataString newbbox;
+		Jstr newbbox;
 		s1 = doubleToStr( xmin ).trimEndZeros();
 		s2 = doubleToStr( ymin ).trimEndZeros();
 		s3 = doubleToStr( zmin ).trimEndZeros();
@@ -94,7 +94,7 @@ void JagCGAL::getConvexHull3DStr( const JagLineString &line, const AbaxDataStrin
 		sx = point[i].x; sx.trimEndZeros();
 		sy = point[i].y; sy.trimEndZeros();
 		sz = point[i].z; sz.trimEndZeros();
-		value += AbaxDataString(" ") + sx + ":" + sy + ":" + sz;
+		value += Jstr(" ") + sx + ":" + sy + ":" + sz;
 	}
 }
 
@@ -127,10 +127,10 @@ point_strategy : circular or square
 	JagPointCircle point_strategy(360);  // # of points
 ***/
 
-//bool JagCGAL::getBuffer2D( const JagLineString &line, const AbaxDataString &arg, bool isMultiPoint, JagVector<JagPolygon> &mpgon )
+//bool JagCGAL::getBuffer2D( const JagLineString &line, const Jstr &arg, bool isMultiPoint, JagVector<JagPolygon> &mpgon )
 
 template <class TGeo>
-bool JagCGAL::getBuffer2D( const TGeo &ls, const AbaxDataString &arg, JagVector<JagPolygon> &mpgon )
+bool JagCGAL::getBuffer2D( const TGeo &ls, const Jstr &arg, JagVector<JagPolygon> &mpgon )
 {
 	bool rc;
 	JagStrategy *sptr[5];
@@ -241,7 +241,7 @@ bool JagCGAL::getBuffer2D( const TGeo &ls, const AbaxDataString &arg, JagVector<
 	return true;
 }
 
-bool JagCGAL::getBufferLineString2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value )
+bool JagCGAL::getBufferLineString2DStr( const JagLineString &line, int srid, const Jstr &arg, Jstr &value )
 {
 	JagVector<JagPolygon> pgvec;
 	// bool rc = getBuffer2D( line, arg, false, pgvec );
@@ -262,7 +262,7 @@ bool JagCGAL::getBufferLineString2DStr( const JagLineString &line, int srid, con
 
 }
 
-bool JagCGAL::getBufferMultiPoint2DStr( const JagLineString &line, int srid, const AbaxDataString &arg, AbaxDataString &value )
+bool JagCGAL::getBufferMultiPoint2DStr( const JagLineString &line, int srid, const Jstr &arg, Jstr &value )
 {
 	boost::geometry::model::multi_point<BoostPoint2D> mpoint;
 	for ( int i=0; i < line.size(); ++i ) {
@@ -280,7 +280,7 @@ bool JagCGAL::getBufferMultiPoint2DStr( const JagLineString &line, int srid, con
 	return rc;
 }
 
-bool JagCGAL::getBufferPolygon2DStr(  const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value )
+bool JagCGAL::getBufferPolygon2DStr(  const JagPolygon &pgon, int srid, const Jstr &arg, Jstr &value )
 {
 	boost::geometry::model::polygon<BoostPoint2D,false> bgon;
 	convertPolygonJ2B( pgon,bgon);
@@ -295,7 +295,7 @@ bool JagCGAL::getBufferPolygon2DStr(  const JagPolygon &pgon, int srid, const Ab
 	return rc;
 }
 
-bool JagCGAL::getBufferMultiLineString2DStr(  const JagPolygon &pgon, int srid, const AbaxDataString &arg, AbaxDataString &value )
+bool JagCGAL::getBufferMultiLineString2DStr(  const JagPolygon &pgon, int srid, const Jstr &arg, Jstr &value )
 {
 	boost::geometry::model::multi_linestring<BoostLineString2D> mlstr;
 	for ( int i=0; i < pgon.size(); ++i ) {
@@ -322,7 +322,7 @@ bool JagCGAL::getBufferMultiLineString2DStr(  const JagPolygon &pgon, int srid, 
 	//return true;
 }
 
-bool JagCGAL::getBufferMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec, int srid, const AbaxDataString &arg, AbaxDataString &value )
+bool JagCGAL::getBufferMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec, int srid, const Jstr &arg, Jstr &value )
 {
 	boost::geometry::model::multi_polygon<BoostPolygon2D> mbgon;
 	std::string ss;
@@ -349,31 +349,31 @@ bool JagCGAL::getBufferMultiPolygon2DStr(  const JagVector<JagPolygon> &pgvec, i
 
 
 // common method
-bool JagCGAL::get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, AbaxDataString &value )
+bool JagCGAL::get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int srid, Jstr &value )
 {
 	if ( pgvec.size() < 1 ) {
 		return false;
 	}
 
 	double xmin, ymin, xmax, ymax;
-	AbaxDataString s1, s2, s3, s4;
+	Jstr s1, s2, s3, s4;
 	bool rc = JagGeo::getBBox2D( pgvec, xmin, ymin, xmax, ymax );
 	if ( ! rc ) return false;
-	AbaxDataString newbbox;
+	Jstr newbbox;
 	s1 = doubleToStr( xmin ).trimEndZeros();
 	s2 = doubleToStr( ymin ).trimEndZeros();
 	s3 = doubleToStr( xmax ).trimEndZeros();
 	s4 = doubleToStr( ymax ).trimEndZeros();
 	newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4;
-	AbaxDataString nhdr = AbaxDataString(JAG_OJAG) + "=" + intToStr(srid) + "=dummy.dummy.dummy=MG=d";
+	Jstr nhdr = Jstr(JAG_OJAG) + "=" + intToStr(srid) + "=dummy.dummy.dummy=MG=d";
 	value = nhdr + " " + newbbox;
-	AbaxDataString sx, sy;
+	Jstr sx, sy;
 
 	/***
 	const JagPolygon &pgon = pgvec[0];
 	const JagLineString3D &linestr = pgon.linestr[0];
 	for ( int i=0; i < linestr.size(); ++i ) {
-		value += AbaxDataString(" ") + doubleToStr(linestr.point[i].x) + ":" 
+		value += Jstr(" ") + doubleToStr(linestr.point[i].x) + ":" 
 			     +  doubleToStr(linestr.point[i].y);
 	}
 	***/
@@ -384,7 +384,7 @@ bool JagCGAL::get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int 
 			const JagLineString3D &linestr = pgon.linestr[j];
 			if ( j > 0 ) { value += "|"; }
 			for ( int k=0; k < linestr.size(); ++k ) {
-				value += AbaxDataString(" ") + doubleToStr(linestr.point[k].x) + ":" 
+				value += Jstr(" ") + doubleToStr(linestr.point[k].x) + ":" 
 			     		 +  doubleToStr(linestr.point[k].y);
 			}
 		}
@@ -396,10 +396,10 @@ bool JagCGAL::get2DStrFromMultiPolygon( const JagVector<JagPolygon> &pgvec, int 
 
 // arg: "distance=symmetric:20, side=side, join=round:5, end=round:90, point=circle:30
 // arg: "distance=asymmetric:20:30, side=side, join=miter:5, end=flat, point=square
-bool JagCGAL::createStrategies( JagStrategy *sptr[], const AbaxDataString &arg )
+bool JagCGAL::createStrategies( JagStrategy *sptr[], const Jstr &arg )
 {
 	JagStrSplit sp( arg, ',', true );
-	AbaxDataString eq;
+	Jstr eq;
 	int cnt = 0;
 	bool hasDistance = false;
 	bool hasSide = false;
@@ -510,7 +510,7 @@ void JagCGAL::destroyStrategies( JagStrategy *sptr[] )
 	}
 }
 
-JagStrategy::JagStrategy( const AbaxDataString &nm, double a1, double a2 )
+JagStrategy::JagStrategy( const Jstr &nm, double a1, double a2 )
 {
 	name = nm;
 	f1 = a1;
@@ -753,12 +753,12 @@ bool JagCGAL::getIsRingLineString2DStr( const JagLineString &line )
 	return true;
 }
 
-void JagCGAL::getRingStr( const JagLineString &line, const AbaxDataString &inhdr, const AbaxDataString &bbox, bool is3D,
-							   AbaxDataString &value )
+void JagCGAL::getRingStr( const JagLineString &line, const Jstr &inhdr, const Jstr &bbox, bool is3D,
+							   Jstr &value )
 {
 	const JagVector<JagPoint> &point = line.point;
-	AbaxDataString sx, sy, sz;
-	AbaxDataString hdr = inhdr;
+	Jstr sx, sy, sz;
+	Jstr hdr = inhdr;
 	if ( is3D ) {
 		hdr.replace("=PL3=", "=LS3=");
 	} else {
@@ -767,11 +767,11 @@ void JagCGAL::getRingStr( const JagLineString &line, const AbaxDataString &inhdr
 
 	if ( bbox.size() < 1 ) {
     	double xmin, ymin, xmax, ymax;
-    	AbaxDataString s1, s2, s3, s4;
-    	AbaxDataString newbbox;
+    	Jstr s1, s2, s3, s4;
+    	Jstr newbbox;
 		if ( is3D ) {
 			double zmin, zmax;
-    		AbaxDataString s5, s6;
+    		Jstr s5, s6;
     		line.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
     		s1 = doubleToStr( xmin ).trimEndZeros();
     		s2 = doubleToStr( ymin ).trimEndZeros();
@@ -798,18 +798,18 @@ void JagCGAL::getRingStr( const JagLineString &line, const AbaxDataString &inhdr
 		sy = point[i].y; sy.trimEndZeros();
 		if ( is3D ) {
 			sz = point[i].z; sz.trimEndZeros();
-			value += AbaxDataString(" ") + sx + ":" + sy + ":" + sz;
+			value += Jstr(" ") + sx + ":" + sy + ":" + sz;
 		} else {
-			value += AbaxDataString(" ") + sx + ":" + sy;
+			value += Jstr(" ") + sx + ":" + sy;
 		}
 	}
 }
 
-void JagCGAL::getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &inhdr, const AbaxDataString &bbox, 
-								bool is3D, AbaxDataString &value )
+void JagCGAL::getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const Jstr &inhdr, const Jstr &bbox, 
+								bool is3D, Jstr &value )
 {
-	AbaxDataString sx, sy, sz;
-	AbaxDataString hdr = inhdr;
+	Jstr sx, sy, sz;
+	Jstr hdr = inhdr;
 	if ( is3D ) {
 		hdr.replace("=MG3=", "=ML3=");
 	} else {
@@ -818,11 +818,11 @@ void JagCGAL::getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
 
 	if ( bbox.size() < 1 ) {
     	double xmin, ymin, xmax, ymax;
-    	AbaxDataString s1, s2, s3, s4;
-    	AbaxDataString newbbox;
+    	Jstr s1, s2, s3, s4;
+    	Jstr newbbox;
 		if ( is3D ) {
 			double zmin, zmax;
-    		AbaxDataString s5, s6;
+    		Jstr s5, s6;
     		JagGeo::getBBox3D( pgvec, xmin, ymin, zmin, xmax, ymax, zmax );
     		s1 = doubleToStr( xmin ).trimEndZeros();
     		s2 = doubleToStr( ymin ).trimEndZeros();
@@ -847,7 +847,7 @@ void JagCGAL::getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
 	for ( int i = 0; i <  pgvec.size(); ++i ) {
 		const JagLineString3D &line = pgvec[i].linestr[0];
 		if ( i > 0 && line.size() > 0 ) {
-			value += AbaxDataString(" |");
+			value += Jstr(" |");
 		}
 
 		for ( int j = 0; j < line.size(); ++j ) {
@@ -856,9 +856,9 @@ void JagCGAL::getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
     		sy = doubleToStr(point[j].y); sy.trimEndZeros();
     		if ( is3D ) {
     			sz = doubleToStr(point[j].z); sz.trimEndZeros();
-    			value += AbaxDataString(" ") + sx + ":" + sy + ":" + sz;
+    			value += Jstr(" ") + sx + ":" + sy + ":" + sz;
     		} else {
-    			value += AbaxDataString(" ") + sx + ":" + sy;
+    			value += Jstr(" ") + sx + ":" + sy;
     		}
 		}
 	}
@@ -866,12 +866,12 @@ void JagCGAL::getOuterRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
 }
 
 
-void JagCGAL::getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &inhdr, const AbaxDataString &bbox, 
-								bool is3D, AbaxDataString &value )
+void JagCGAL::getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const Jstr &inhdr, const Jstr &bbox, 
+								bool is3D, Jstr &value )
 {
 	prt(("s3381 getInnerRingsStr pgvec.size=%d\n", pgvec.size() ));
-	AbaxDataString sx, sy, sz;
-	AbaxDataString hdr = inhdr;
+	Jstr sx, sy, sz;
+	Jstr hdr = inhdr;
 	if ( is3D ) {
 		hdr.replace("=MG3=", "=ML3=");
 	} else {
@@ -880,11 +880,11 @@ void JagCGAL::getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
 
 	if ( bbox.size() < 1 ) {
     	double xmin, ymin, xmax, ymax;
-    	AbaxDataString s1, s2, s3, s4;
-    	AbaxDataString newbbox;
+    	Jstr s1, s2, s3, s4;
+    	Jstr newbbox;
 		if ( is3D ) {
 			double zmin, zmax;
-    		AbaxDataString s5, s6;
+    		Jstr s5, s6;
     		JagGeo::getBBox3DInner( pgvec, xmin, ymin, zmin, xmax, ymax, zmax );
     		s1 = doubleToStr( xmin ).trimEndZeros();
     		s2 = doubleToStr( ymin ).trimEndZeros();
@@ -913,7 +913,7 @@ void JagCGAL::getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
 		for ( int k = 1; k < numrings; ++k ) {
     		const JagLineString3D &line = pgvec[i].linestr[k];
     		if ( i > 0 && line.size() > 0 ) {
-    			value += AbaxDataString(" |");
+    			value += Jstr(" |");
     		}
     
     		for ( int j = 0; j < line.size(); ++j ) {
@@ -922,9 +922,9 @@ void JagCGAL::getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
         		sy = doubleToStr(point[j].y); sy.trimEndZeros();
         		if ( is3D ) {
         			sz = doubleToStr(point[j].z); sz.trimEndZeros();
-        			value += AbaxDataString(" ") + sx + ":" + sy + ":" + sz;
+        			value += Jstr(" ") + sx + ":" + sy + ":" + sz;
         		} else {
-        			value += AbaxDataString(" ") + sx + ":" + sy;
+        			value += Jstr(" ") + sx + ":" + sy;
         		}
     		}
 		}
@@ -932,16 +932,16 @@ void JagCGAL::getInnerRingsStr( const JagVector<JagPolygon> &pgvec, const AbaxDa
 }
 
 
-void JagCGAL::getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxDataString &inhdr, const AbaxDataString &bbox, 
-								bool is3D, int N, AbaxDataString &value )
+void JagCGAL::getPolygonNStr( const JagVector<JagPolygon> &pgvec, const Jstr &inhdr, const Jstr &bbox, 
+								bool is3D, int N, Jstr &value )
 {
 	prt(("s3381 getInnerRingsStr pgvec.size=%d\n", pgvec.size() ));
 	if ( N > pgvec.size() ) {
 		value = "";
 		return;
 	}
-	AbaxDataString sx, sy, sz;
-	AbaxDataString hdr = inhdr;
+	Jstr sx, sy, sz;
+	Jstr hdr = inhdr;
 	if ( is3D ) {
 		hdr.replace("=MG3=", "=PL3=");
 	} else {
@@ -952,11 +952,11 @@ void JagCGAL::getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxData
 
 	if ( bbox.size() < 1 ) {
     	double xmin, ymin, xmax, ymax;
-    	AbaxDataString s1, s2, s3, s4;
-    	AbaxDataString newbbox;
+    	Jstr s1, s2, s3, s4;
+    	Jstr newbbox;
 		if ( is3D ) {
 			double zmin, zmax;
-    		AbaxDataString s5, s6;
+    		Jstr s5, s6;
     		pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
     		s1 = doubleToStr( xmin ).trimEndZeros();
     		s2 = doubleToStr( ymin ).trimEndZeros();
@@ -981,7 +981,7 @@ void JagCGAL::getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxData
 	for ( int k = 0; k < pgon.size(); ++k ) {
     	const JagLineString3D &line = pgon.linestr[k];
     	if ( k > 0 && line.size() > 0 ) {
-    		value += AbaxDataString(" |");
+    		value += Jstr(" |");
     	}
    
    		for ( int j = 0; j < line.size(); ++j ) {
@@ -990,39 +990,39 @@ void JagCGAL::getPolygonNStr( const JagVector<JagPolygon> &pgvec, const AbaxData
        		sy = doubleToStr(point[j].y); sy.trimEndZeros();
        		if ( is3D ) {
        			sz = doubleToStr(point[j].z); sz.trimEndZeros();
-       			value += AbaxDataString(" ") + sx + ":" + sy + ":" + sz;
+       			value += Jstr(" ") + sx + ":" + sy + ":" + sz;
        		} else {
-       			value += AbaxDataString(" ") + sx + ":" + sy;
+       			value += Jstr(" ") + sx + ":" + sy;
       		}
    		}
 	}
 }
 
-void JagCGAL::getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, const AbaxDataString &bbox, AbaxDataString &value )
+void JagCGAL::getUniqueStr( const JagStrSplit &sp, const Jstr &hdr, const Jstr &bbox, Jstr &value )
 {
 	value = hdr;
 	if ( bbox.size() > 0 ) {
-		value += AbaxDataString(" ") + bbox;
+		value += Jstr(" ") + bbox;
 	}
 
 	bool firstPoint = true;
 	int num;
-	AbaxDataString lastP;
+	Jstr lastP;
 	const char *str;
 	for  ( int i=0; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) {
 			firstPoint = true;
-			value += AbaxDataString(" ") + sp[i];
+			value += Jstr(" ") + sp[i];
 		} else {
 			num = strchrnum( sp[i].c_str(), ':');
 			if ( num != 1 && num != 2 ) continue;
 			if ( ! firstPoint ) {
 				if ( sp[i] != lastP ) {
-					value += AbaxDataString(" ") + sp[i];
+					value += Jstr(" ") + sp[i];
 				} 
 			} else {
 				firstPoint = false;
-				value += AbaxDataString(" ") + sp[i];
+				value += Jstr(" ") + sp[i];
 			}
 
 			lastP = sp[i];
@@ -1031,7 +1031,7 @@ void JagCGAL::getUniqueStr( const JagStrSplit &sp, const AbaxDataString &hdr, co
 }
 
 // 2D
-int JagCGAL::unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &unionWKT )
+int JagCGAL::unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, Jstr &unionWKT )
 {
  	JagPolygon pgon1;
     int rc = JagParser::addPolygonData( pgon1, sp1, false );
@@ -1043,7 +1043,7 @@ int JagCGAL::unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagSt
 	rc = JagParser::addMultiPolygonData( pgvec, sp2, false, false );
 	if ( rc <= 0 ) { return -2;}
 
-	AbaxDataString wkt;
+	Jstr wkt;
 	JagGeo::multiPolygonToWKT( pgvec, false, wkt );
 
 	boost::geometry::model::multi_polygon<BoostPolygon2D> mgon;
@@ -1062,7 +1062,7 @@ int JagCGAL::unionOfPolygonAndMultiPolygons( const JagStrSplit &sp1, const JagSt
 }
 
 // return: 0 OK,  <0 error
-int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, AbaxDataString &unionWKT )
+int JagCGAL::unionOfTwoPolygons( const JagStrSplit &sp1, const JagStrSplit &sp2, Jstr &unionWKT )
 {
  	JagPolygon pgon1;
     int rc = JagParser::addPolygonData( pgon1, sp1, false );
@@ -1195,7 +1195,7 @@ int JagCGAL::getTwoPolygonIntersection( const JagPolygon &pgon1, const JagPolygo
 
 bool JagCGAL::convertPolygonJ2B( const JagPolygon &pgon, BoostPolygon2D &bgon )
 {
-	AbaxDataString wkt;
+	Jstr wkt;
 	pgon.toWKT(false, true, "polygon", wkt);
 	if ( wkt.size() < 1 ) return false;
 	std::string ss = std::string( wkt.c_str(), wkt.size() );
