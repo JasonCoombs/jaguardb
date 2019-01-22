@@ -329,8 +329,9 @@ int StringElementNode::checkFuncValidConstantOnly( AbaxFixString &str, int &type
 	return 1;
 }
 
-// return str:  "OJAG=srid=tab=TYPE  x y z"  3D
-// return str:  "OJAG=srid=tab=TYPE  x y"  2D
+#if 0
+// return str:  "OJAG=srid=tab=TYPE bbx  x y z"  3D
+// return str:  "OJAG=srid=tab=TYPE bbx  x y"  2D
 void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
 										const Jstr &colobjstr, AbaxFixString &str )
 {
@@ -367,6 +368,21 @@ void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const
 	free( buf );
 	//prt(("s0883 makeDataString str=[%s]\n", str.c_str() ));
 }
+#endif
+
+// return str:  "OJAG=srid=tab=TYPE bbx  x y z"  3D
+// return str:  "OJAG=srid=tab=TYPE bbx  x y"  2D
+void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
+										const Jstr &colobjstr, AbaxFixString &str )
+{
+	int  ncols = _endcol - _begincol +1;
+	Jstr bufstr = colobjstr;
+	for ( int i = 0; i < ncols; ++i ) {
+		bufstr += Jstr(" ") + Jstr(buffers[_tabnum]+attrs[_tabnum][_begincol+i].offset, attrs[_tabnum][_begincol+i].length ).trim0();
+	}
+
+	str = AbaxFixString( bufstr.c_str(), bufstr.size() );
+}
 
 // return str:  "OJAG=srid=tab=TYPE=subtype  x y z"  3D
 // return str:  "OJAG=srid=tab=TYPE=subtype  x y"  2D
@@ -374,45 +390,15 @@ void StringElementNode::makeRangeDataString( const JagSchemaAttribute *attrs[], 
 										const Jstr &incolobjstr, AbaxFixString &str )
 {
 	//prt(("makeRangeDataString...\n" ));
-	char *pbuf;
 	int  ncols = _endcol - _begincol +1;
-	int offset[ncols];
-	int collen[ncols];
-	int totlen = 0;
-	
 	Jstr subtype;
 	subtype = attrs[_tabnum][_begincol+0].type;
-	for ( int i=0; i < ncols; ++i )
-	{
-		offset[i] = attrs[_tabnum][_begincol+i].offset;
-		collen[i] = attrs[_tabnum][_begincol+i].length;
-		totlen += collen[i];
-	}
-
-	Jstr colobjstr = incolobjstr + "=" + subtype;
-	int colobjsize = colobjstr.size();
-	int extra = colobjsize + 24; // max 24 args on buffer 
-	totlen += extra;
-	const char *colobjptr = colobjstr.c_str();
-
-	char *buf = jagmalloc( totlen );
-	memset( buf, ' ', totlen );
-	pbuf = buf;
-
-	memcpy( pbuf, colobjptr, colobjsize );
-	pbuf += colobjsize+1;
-
+	Jstr bufstr = incolobjstr + "=" + subtype;
 	for ( int i = 0; i < ncols; ++i ) {
-		memcpy( pbuf, buffers[_tabnum]+offset[i], collen[i] );
-		pbuf += collen[i]+1;
+		bufstr += Jstr(" ") + Jstr( buffers[_tabnum]+attrs[_tabnum][_begincol+i].offset, attrs[_tabnum][_begincol+i].length ).trim0();
 	}
-
-	buf[totlen-1] = '\0';
-	str = AbaxFixString( buf, totlen-1 );
-	free( buf );
-	// prt(("s0883 makeDataString str=[%s]\n", str.c_str() ));
+	str = AbaxFixString( bufstr.c_str(), bufstr.size() );
 }
-
 
 void StringElementNode::getPolyDataString( JagMergeReaderBase *ntr, const Jstr &polyType, 
 											const JagHashStrInt *maps[],
@@ -606,7 +592,7 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 		fullname[k] = db + "." + tab + "." + psp[k];
 		if ( maps[_tabnum]->getValue( fullname[k], acqpos) ) {
 			colobjstr[k] = Jstr( JAG_OJAG ) + "=" + intToStr( attrs[_tabnum][acqpos].srid ) 
-			               + "=" + fullname[k] + "=" + attrs[_tabnum][acqpos].type + "=0";
+			               + "=" + fullname[k] + "=" + attrs[_tabnum][acqpos].type + "=d";
 		} else {
 			//prt(("s6751 return\n"));
 			return;
@@ -3936,8 +3922,11 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		int nargs = operandStack.size();
 		prt(("s1026 operandStack.size=%d\n", nargs ));
     	if ( operandStack.empty() ) { throw 1434; } 
-
-		if ( 2 == nargs ) { 
+		if ( 1 == nargs ) {
+			right = NULL; // no right child(arg)
+    		left = operandStack.top();
+    		operandStack.pop();
+		} else {
 			// right child
     		right = operandStack.top();
     		operandStack.pop();
@@ -3946,12 +3935,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     		if ( operandStack.empty() ) { throw 1435; } 
     		left = operandStack.top();
     		operandStack.pop();
-		} else if ( 1 == nargs ) {
-			right = NULL; // no right child(arg)
-    		left = operandStack.top();
-    		operandStack.pop();
-		} else {
-			throw 9280;
 		}
 
 		// if datediff, pop and process third top operand as diff type
@@ -4533,6 +4516,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_RINGN; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "astext", 6 ) ) {
 		fop = JAG_FUNC_ASTEXT; len = 6; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "text", 4 ) ) {
+		fop = JAG_FUNC_ASTEXT; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "unique", 6 ) ) {
 		fop = JAG_FUNC_UNIQUE; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "innerringn", 10 ) ) {
