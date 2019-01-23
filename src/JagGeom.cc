@@ -23248,7 +23248,7 @@ Jstr  JagGeo::doLineDifference( const Jstr &colType1,const JagStrSplit &sp1,
 			vec2.append(JagPoint3D(x1,y1,z1) );
 			vec2.append(JagPoint3D(x2,y2,z2) );
 
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, vec2, hash ); 
 			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
@@ -23266,7 +23266,7 @@ Jstr  JagGeo::doLineDifference( const Jstr &colType1,const JagStrSplit &sp1,
 			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 			vec2.append(JagPoint3D(x1,y1,0) );
 			vec2.append(JagPoint3D(x2,y2,0) );
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, vec2, hash ); 
 			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
@@ -23285,7 +23285,7 @@ Jstr  JagGeo::doLineDifference( const Jstr &colType1,const JagStrSplit &sp1,
 	            || colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 		// point or point3d
 		if ( 2 == dim2 ) {
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, sp2, false, hash );
 			Jstr hs1, hs2;
 			hs1 = vec1[0].hashString();
@@ -23299,7 +23299,7 @@ Jstr  JagGeo::doLineDifference( const Jstr &colType1,const JagStrSplit &sp1,
 				++cnt;
 			}
 		} else if ( 3 == dim2 ) {
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, sp2, true, hash );
 			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
@@ -23410,7 +23410,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
     		if ( n <= 0 ) return "";
 			++cnt;
 		} else if ( 3 == dim2 ) {
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, sp2, true, hash );
 			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
@@ -23447,7 +23447,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
 			if ( n <= 0 ) return "";
 			JagVector<Jstr> svec;
 			splitPolygonToVector( pgon, true, svec );
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			for ( int i=0; i < svec.size(); ++i ) {
 				JagStrSplit sp2( svec[i], ' ', true );
     			getIntersectionPoints( vec1, sp2, true, hash );
@@ -23463,7 +23463,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
 
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		if ( 2 == dim2 ) {
-			JagHashStrStr hash;
+			JagHashSetStr hash;
     		getIntersectionPoints( vec1, sp2, false, hash );
 			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
@@ -23473,7 +23473,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
 				}
 			}
 		} else if ( 3 == dim2 ) {
-			JagHashStrStr hash;
+			JagHashSetStr hash;
     		getIntersectionPoints( vec1, sp2, true, hash );
 			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
@@ -23893,7 +23893,7 @@ Jstr  JagGeo::doLineSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
 			vec2.append(JagPoint3D(x1,y1,z1) );
 			vec2.append(JagPoint3D(x2,y2,z2) );
 
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, vec2, hash ); 
 			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
@@ -23921,7 +23921,7 @@ Jstr  JagGeo::doLineSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
 			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 			vec2.append(JagPoint3D(x1,y1,0) );
 			vec2.append(JagPoint3D(x2,y2,0) );
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, vec2, hash ); 
 			Jstr hs = vec1[0].hashString();
 			if ( ! hash.keyExist(hs) ) {
@@ -24049,7 +24049,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 		} else if ( 3 == dim2 ) {
 			JagVector<JagPoint3D> vec2;
 			getVectorPoints( sp2, true, vec2 );
-			JagHashStrStr hash;
+			JagHashSetStr hash;
 			getIntersectionPoints( vec1, vec2, hash );
 			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
@@ -24089,7 +24089,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 				// JAG_C_COL_TYPE_POLYGON is handled separately
 			JagVector<JagPoint3D> vec2;
 			getVectorPoints( sp2, true, vec2 );
-			JagHashStrStr hash;
+			JagHashSetStr hash;
     		getIntersectionPoints( vec1, vec2, hash );
 			Jstr hs;
     		for ( int k=0; k < vec1.size(); ++k ) {
@@ -24108,7 +24108,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 		if ( 2 == dim2 ) {
 			JagVector<JagPoint3D> vec2;
 			getVectorPoints( sp2, false, vec2 );
-			JagHashStrStr hash;
+			JagHashSetStr hash;
     		getIntersectionPoints( vec1, vec2, hash );
 			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
@@ -24126,7 +24126,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 		} else if ( 3 == dim2 ) {
 			JagVector<JagPoint3D> vec2;
 			getVectorPoints( sp2, true, vec2 );
-			JagHashStrStr hash;
+			JagHashSetStr hash;
     		getIntersectionPoints( vec1, vec2, hash );
 			Jstr hs;
 			for ( int k=0; k < vec1.size(); ++k ) {
@@ -24551,7 +24551,7 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 }
 
 
-void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagVector<JagPoint3D> &vec2, JagHashStrStr &hashset )
+void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagVector<JagPoint3D> &vec2, JagHashSetStr &hashset )
 {
 	JagVector<JagPoint3D> resvec;
 	getIntersectionPoints( vec1, vec2, resvec ); 
@@ -24559,7 +24559,7 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 }
 
 void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagStrSplit &sp, 
-                                    bool is3D, JagHashStrStr &hashset )
+                                    bool is3D, JagHashSetStr &hashset )
 {
 	JagVector<JagPoint3D> resvec;
 	getIntersectionPoints( vec1, sp, is3D, resvec ); 
@@ -24582,13 +24582,13 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 	delete [] arr2;
 }
 
-void JagGeo::vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashStrStr &hashset )
+void JagGeo::vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashSetStr &hashset )
 {
 	char buf[32];
 	Jstr s;
 	for ( int i=0; i < resvec.size(); ++i ) {
 		s = resvec[i].hashString();
-		hashset.addKeyValue( s, "1" );
+		hashset.addKey( s );
 	}
 }
 

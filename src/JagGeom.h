@@ -23,6 +23,7 @@
 #include <JagVector.h>
 #include <JagUtil.h>
 #include <JagShape.h>
+#include <JagHashSetStr.h>
 
 
 class JagGeo
@@ -1789,11 +1790,11 @@ class JagGeo
 	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagStrSplit &sp,
 									   bool is3D, JagVector<JagPoint3D> &resvec );
 	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagVector<JagPoint3D> &vec2, 
-									   JagHashStrStr &hashset );
+									   JagHashSetStr &hashset );
 	static void getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagStrSplit &sp,
-									   bool is3D, JagHashStrStr &hashset );
+									   bool is3D, JagHashSetStr &hashset );
 
-	static void vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashStrStr &hashset );
+	static void vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashSetStr &hashset );
 
 	static void getVectorPoints( const JagStrSplit &sp, bool is3D, JagVector<JagPoint3D> &resvec );
 

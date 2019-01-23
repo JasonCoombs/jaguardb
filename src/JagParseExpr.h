@@ -287,6 +287,7 @@ class BinaryOpNode: public ExpressionElementNode
 						  int srid, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsClosed( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsSimple( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllIsConvex( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsValid( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsRing( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsPolygonCCW( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );

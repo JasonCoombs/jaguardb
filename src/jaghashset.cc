@@ -20,29 +20,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <limits.h>
-#include "jaghashtable.h"
+//#include <limits.h>
+#include "jaghashset.h"
 
-#define HASH_LIMIT 0.5
-
+#define HASH_SET_LIMIT 0.5
 
 /*
  *  Hash function returns a hash number for a given key.
  *  htabptr: Pointer to a hash table
  *  key: The key to create a hash number for
  */
-static int hashcode(const jag_hash_t *htabptr, const char *key) {
+static int sethashcode(const jag_hash_set_t *htabptr, const char *key) {
   int i=0;
   int hashvalue;
- 
-  while (*key != '\0')
-    i=(i<<3)+(*key++ - '0');
- 
+  while (*key != '\0') i=(i<<3)+(*key++ - '0');
   hashvalue = (((i*1103515249)>>htabptr->downshift) & htabptr->mask);
   if (hashvalue < 0) {
     hashvalue = 0;
   }    
-
   return hashvalue;
 }
 
@@ -51,11 +46,10 @@ static int hashcode(const jag_hash_t *htabptr, const char *key) {
  *  htabptr: Pointer to the hash table to initialize
  *  buckets: The number of initial buckets to create
  */
-void jag_hash_init(jag_hash_t *htabptr, int buckets) {
+void jag_hash_set_init(jag_hash_set_t *htabptr, int buckets) {
 
   /* make sure we allocate something */
-  if (buckets==0)
-    buckets=143;
+  if (buckets==0) buckets=143;
 
   /* initialize the table */
   htabptr->entries=0;
@@ -71,10 +65,8 @@ void jag_hash_init(jag_hash_t *htabptr, int buckets) {
   } /* while */
 
   /* allocate memory for table */
-  htabptr->bucket=(HashNodeT **) calloc(htabptr->size, sizeof(HashNodeT *));
-
+  htabptr->bucket=(HashSetNodeT **) calloc(htabptr->size, sizeof(HashSetNodeT *));
   htabptr->empty = 0;
-
   return;
 }
 
@@ -82,16 +74,16 @@ void jag_hash_init(jag_hash_t *htabptr, int buckets) {
  *  Create new hash table when old one fills up.
  *  htabptr: Pointer to a hash table
  */
-static void rebuild_table(jag_hash_t *htabptr) 
+static void rebuild_table(jag_hash_set_t *htabptr) 
 {
-  HashNodeT **old_bucket, *old_hash, *tmp;
+  HashSetNodeT **old_bucket, *old_hash, *tmp;
   int old_size, h, i;
 
   old_bucket=htabptr->bucket;
   old_size=htabptr->size;
 
   /* create a new table and rehash old buckets */
-  jag_hash_init(htabptr, old_size<<1);
+  jag_hash_set_init(htabptr, old_size<<1);
 
   for (i=0; i<old_size; i++) {
     old_hash=old_bucket[i];
@@ -99,18 +91,16 @@ static void rebuild_table(jag_hash_t *htabptr)
     while(old_hash) {
       tmp=old_hash;
       old_hash=old_hash->next;
-      h=hashcode(htabptr, tmp->key);
+      h=sethashcode(htabptr, tmp->key);
       tmp->next=htabptr->bucket[h];
       htabptr->bucket[h]=tmp;
       htabptr->entries++;
     }
-
   }
 
   /* free memory used by old table */
   if ( old_bucket ) free(old_bucket);
   old_bucket = NULL;
-
   return;
 }
 
@@ -120,21 +110,19 @@ static void rebuild_table(jag_hash_t *htabptr)
  *  htabptr: Pointer to the hash table
  *  key: The key to lookup
  */
-char * jag_hash_lookup(const jag_hash_t *htabptr, const char *key )
+bool jag_hash_set_lookup(const jag_hash_set_t *htabptr, const char *key )
 {
   int h;
-  HashNodeT *node;
-
+  HashSetNodeT *node;
 
   /* find the entry in the hash table */
-  h=hashcode(htabptr, key);
+  h=sethashcode(htabptr, key);
   for (node=htabptr->bucket[h]; node!=NULL; node=node->next) {
     if (!strcmp(node->key, key))
       break;
   }
 
-  /* return the entry if it exists, or NULL */
-  return(node ? node->value : NULL);
+  return(node ? true : false );
 }
 
 /*
@@ -145,53 +133,25 @@ char * jag_hash_lookup(const jag_hash_t *htabptr, const char *key )
  *  key: The key to insert into the hash table
  *  data: A pointer to the data to insert into the hash table
  */
-int jag_hash_insert(jag_hash_t *htabptr, const char *key, const char *value ) 
+int jag_hash_set_insert(jag_hash_set_t *htabptr, const char *key ) 
 {
   int tmp;
-  HashNodeT *node;
+  HashSetNodeT *node;
   int h;
 
   /* check to see if the entry exists */
-  if ( NULL != jag_hash_lookup(htabptr, key) ) {
+  if ( jag_hash_set_lookup(htabptr, key) ) {
       return 0; 
   }
 
   /* expand the table if needed */
-  while (htabptr->entries>=HASH_LIMIT*htabptr->size)
+  while (htabptr->entries>=HASH_SET_LIMIT*htabptr->size)
     rebuild_table(htabptr);
 
   /* insert the new entry */
-  h=hashcode(htabptr, key);
-  node=(struct HashNodeT *) malloc(sizeof(HashNodeT));
+  h=sethashcode(htabptr, key);
+  node=(struct HashSetNodeT *) malloc(sizeof(HashSetNodeT));
   node->key= strdup(key);
-  node->value= strdup(value); 
-  node->next=htabptr->bucket[h];
-  htabptr->bucket[h]=node;
-  htabptr->entries++;
-
-  return 1;
-}
-
-int jag_hash_insert_str_void(jag_hash_t *htabptr, const char *key, void *value ) 
-{
-  int tmp;
-  HashNodeT *node;
-  int h;
-
-  /* check to see if the entry exists */
-  if ( NULL != jag_hash_lookup(htabptr, key) ) {
-      return 0; 
-  }
-
-  /* expand the table if needed */
-  while (htabptr->entries>=HASH_LIMIT*htabptr->size)
-    rebuild_table(htabptr);
-
-  /* insert the new entry */
-  h=hashcode(htabptr, key);
-  node=(struct HashNodeT *) malloc(sizeof(HashNodeT));
-  node->key= strdup(key);
-  node->value= (char*)value; 
   node->next=htabptr->bucket[h];
   htabptr->bucket[h]=node;
   htabptr->entries++;
@@ -206,21 +166,20 @@ int jag_hash_insert_str_void(jag_hash_t *htabptr, const char *key, void *value )
  *  htabptr: A pointer to the hash table
  *  key: The key to remove from the hash table
  */
-int jag_hash_delete(jag_hash_t *htabptr, const char *key, bool freeval ) 
+int jag_hash_set_delete(jag_hash_set_t *htabptr, const char *key ) 
 {
-  HashNodeT *node, *last;
+  HashSetNodeT *node, *last;
   int h;
 
   /* find the node to remove */
-  h=hashcode(htabptr, key);
+  h=sethashcode(htabptr, key);
   for (node=htabptr->bucket[h]; node; node=node->next) {
     if (!strcmp(node->key, key))
       break;
   }
 
   /* Didn't find anything, return JAG_HASH_FAIL */
-  if (node==NULL)
-    return 0;
+  if (node==NULL) return 0;
 
   /* if node is at head of bucket, we have it easy */
   if (node==htabptr->bucket[h])
@@ -234,22 +193,18 @@ int jag_hash_delete(jag_hash_t *htabptr, const char *key, bool freeval )
   }
 
   if ( node->key ) free( node->key );
-  if ( freeval && node->value ) free( node->value );
   if ( node ) free(node);
   node = NULL;
-
   return 1; 
 }
-
-
 
 /*
  * Delete the entire table, and all remaining entries.
  * 
  */
-void jag_hash_destroy(jag_hash_t *htabptr, bool freeval ) 
+void jag_hash_set_destroy(jag_hash_set_t *htabptr ) 
 {
-  HashNodeT *node, *last;
+  HashSetNodeT *node, *last;
   int i;
 
   for (i=0; i<htabptr->size; i++) {
@@ -258,7 +213,6 @@ void jag_hash_destroy(jag_hash_t *htabptr, bool freeval )
       last = node;   
       node = node->next;
 	  if ( last->key ) free(last->key);
-      if ( freeval && last->value ) free(last->value);
       if ( last ) free(last);
 	  last = NULL;
     }
@@ -267,61 +221,26 @@ void jag_hash_destroy(jag_hash_t *htabptr, bool freeval )
   /* free the entire array of buckets */
   if (htabptr->bucket != NULL) {
     free(htabptr->bucket);
-    memset(htabptr, 0, sizeof(jag_hash_t));
+    memset(htabptr, 0, sizeof(jag_hash_set_t));
   }
 
   htabptr->empty = 1;
 
 }
 
-void jag_hash_print(jag_hash_t *htabptr) 
+void jag_hash_set_print(jag_hash_set_t *htabptr) 
 {
-  HashNodeT *node;
+  HashSetNodeT *node;
   int i;
 
   for (i=0; i<htabptr->size; i++) {
     node = htabptr->bucket[i];
     while (node != NULL) { 
-	  printf("bucket=%d key=[%s]  value=[%s]\n", i, node->key, node->value );
+	  printf("bucket=%d key=[%s]\n", i, node->key );
       node = node->next;
     }
   }     
 
-}
-
-
-int jag_hash_insert_int_int (jag_hash_t *t, int key, int val )
-{
-	char sk[16], sv[16];
-	sprintf(sk, "%d", key );
-	sprintf(sv, "%d", val );
-	return jag_hash_insert( t, sk, sv );
-}
-
-bool jag_hash_lookup_int_int (const jag_hash_t *t, int key, int *val )
-{
-	char sk[16];
-	sprintf(sk, "%d", key );
-	char *pval = jag_hash_lookup( t, sk );
-	if ( ! pval ) return false;
-	*val = atoi( pval );
-	return true;
-}
-
-
-int jag_hash_insert_str_int (jag_hash_t *t, const char *key, int val )
-{
-	char sv[16];
-	sprintf(sv, "%d", val );
-	return jag_hash_insert( t, key, sv );
-}
-
-bool jag_hash_lookup_str_int (const jag_hash_t *t, const char *key, int *val )
-{
-	char *pval = jag_hash_lookup( t, key );
-	if ( ! pval ) return false;
-	*val = atoi( pval );
-	return true;
 }
 
 

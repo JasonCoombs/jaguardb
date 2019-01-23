@@ -618,6 +618,14 @@ bool JagCGAL::getIsSimpleLineString2DStr( const JagLineString &line )
 	return rc;
 }
 
+bool JagCGAL::isPolygonConvex(  const JagPolygon &pgon ) 
+{
+	boost::geometry::model::polygon<BoostPoint2D,false> bgon;
+	if ( ! convertPolygonJ2B( pgon,bgon) ) return false;
+	bool rc = boost::geometry::is_convex( bgon.outer() );
+	return rc;
+}
+
 bool JagCGAL::getIsSimplePolygon2DStr(  const JagPolygon &pgon ) 
 {
 	boost::geometry::model::polygon<BoostPoint2D,false> bgon;

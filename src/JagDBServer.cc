@@ -2739,9 +2739,10 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    union(geom1,geom2)      -- union of two geoms. Polygon outer ring should be counter-clock-wise\n";
 		str += "    collect(geom1,geom2)    -- collection of two geoms\n";
 		str += "    topolygon(geom)         -- converting square, rectangle, circle, ellipse, triangle to polygon\n";
-		str += "    text(geom)            -- text string of a geometry shape\n";
+		str += "    text(geom)              -- text string of a geometry shape\n";
 		str += "    difference(g1,g2)       -- g1 minus the common part of g1 and g2\n";
 		str += "    symdifference(g1,g2)    -- g1+g2 minus the common part of g1 and g2\n";
+		str += "    isconvex(pgon)          -- check if the outer ring of a polygon is convex\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

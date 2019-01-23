@@ -83,6 +83,7 @@ class JagCGAL
     static bool getIsSimpleMultiLineString2DStr( const JagPolygon &pgon );
     static bool getIsSimplePolygon2DStr( const JagPolygon &pgon );
     static bool getIsSimpleMultiPolygon2DStr( const JagVector<JagPolygon> &pgvec );
+    static bool isPolygonConvex( const JagPolygon &pgon );
 
     static bool getIsValidLineString2DStr( const JagLineString &line );
     static bool getIsValidMultiLineString2DStr( const JagPolygon &pgon );

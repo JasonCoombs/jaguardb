@@ -1,0 +1,24 @@
+How to compile
+============================================
+
+For production environment:
+
+  make
+
+
+For testing and debugging:
+
+  make USER_DEFINE="-DJAGPRT=1"
+
+
+
+How to update the programs
+============================================
+
+After compiling, please copy the files on each host:
+
+   cp  libJaguarClient.so $JAGUAR_HOME/lib
+   cp  jaguar.bin jql.bin $JAGUAR_HOME/bin
+
+  and restart jaguar servers.
+

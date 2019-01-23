@@ -470,6 +470,7 @@
 #define JAG_FUNC_ASTEXT         280  // sent to client as text of geom
 #define JAG_FUNC_DIFFERENCE     281  // diffeence of two geoms  g1 - (g1 common g2)
 #define JAG_FUNC_SYMDIFFERENCE  282  // g1+g2 - (g1 common g2)
+#define JAG_FUNC_ISCONVEX       283  // if outer ring of polygon is convex
 
 
 // multi-line data ( string functions )
