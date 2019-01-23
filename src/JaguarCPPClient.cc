@@ -4938,7 +4938,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 						} else {
 							++q;
     						coldata = AbaxDataString(p, q-p);
-							//prt(("c2093 coldata=[%s]\n", coldata.c_str() ));
+							prt(("c2093 coldata=[%s]\n", coldata.c_str() ));
 						}
 						p = q;
     					while ( jagisspace(*p) ) ++p;
@@ -4964,7 +4964,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 					cmd += coldata;
 				}
 				gotonecol = true;
-				// prt(("c5034 running cmd=[%s]\n", cmd.c_str() ));
+				prt(("c5034 running cmd=[%s] coldata=[%s]\n", cmd.c_str(), coldata.c_str() ));
 				if (  0 == i && coldata == "''" ) {
 					firstKeyEmpty = true;
 					//prt(("c6201 firstKeyEmpty is true\n" ));
@@ -4972,7 +4972,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 		}
 		cmd += ")";
 		//prt(("c0182 firstKeyEmpty=%d\n", firstKeyEmpty ));
-		//prt(("c0183 cmd=[%s]\n", cmd.c_str() ));
+		prt(("c0183 cmd=[%s]\n", cmd.c_str() ));
 		if ( ! firstKeyEmpty ) {
 			//prt(("c4032 cmd=[%s]\n", cmd.c_str() ));
 			++ loadCount;
@@ -7087,10 +7087,12 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		spare1 = (*objAttr->schemaRecord.columnVector)[i].spare[1];
 
 		//prt(("s6591 i=%d numCols=%d colName2=[%s] type=[%s]\n", i, numCols, colName2.c_str(), type.c_str() ));
+		prt(("s1727 first=%d\n", first ));
 		if ( first ) {
 			first = false;
 		} else {
-			newquery += ",";
+			newquery += Jstr(",");
+			prt(("s1290 append , to newquery\n" ));
 		}
 
 		if ( type == JAG_C_COL_TYPE_POINT ) {
@@ -7209,18 +7211,22 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINE ) {
+			prt(("c1028 newquery=[%s]\n", newquery.c_str() ));
 			if ( colInOther ) {
 				newquery += getLineCoordStr( "line", parseParam, otherPos, 1, 1, 0, 1, 1, 0 );
 			} else {
 				newquery += "''";
 			}
+			prt(("c1029 newquery=[%s]\n", newquery.c_str() ));
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
+			prt(("c1528 newquery=[%s]\n", newquery.c_str() ));
 			if ( colInOther ) {
 				newquery += getLineCoordStr( "line3d", parseParam, otherPos, 1, 1, 1, 1, 1, 1 );
 			} else {
 				newquery += "''";
 			}
+			prt(("c1528 newquery=[%s]\n", newquery.c_str() ));
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
 			if ( colInOther ) {
@@ -7572,6 +7578,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 
 	int ii = -1;
 	char spare1, spare4;
+	bool first = true;
 	for ( int i = 0; i < numCols-1; ++i ) {
 		offset = objAttr->schAttr[i].offset;
 		length = objAttr->schAttr[i].length;
@@ -7598,15 +7605,9 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			++ii;
 		}
 
-		//prt(("c6592 i=%d numCols=%d ii=%d colName2=[%s] type=[%s]\n", i, numCols, ii, colName2.c_str(), type.c_str() ));
-		/***
-		if ( ii > 0 ) {
-			prt(("c2337 i=%d ii=%d added , col=[%s]\n", i, ii, colName2.c_str()  ));
-			newquery += AbaxDataString(",");
-		}
-		***/
-		//prt(("c3047 newquery=[%s]\n", newquery.c_str() ));
-		if ( lastIsGeo ) { 
+		if ( first ) {
+			first = false;
+		} else {
 			newquery += AbaxDataString(",");
 		}
 
@@ -7675,10 +7676,14 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINE ) {
+			prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
 			newquery += getLineCoordStr( "line", parseParam, ii, 1, 1, 0, 1, 1, 0 );
+			prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
+			prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
 			newquery += getLineCoordStr( "line3d", parseParam, ii, 1, 1, 1, 1, 1, 1 );
+			prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
@@ -7889,7 +7894,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			return 0;
 		}
 
-		newquery += AbaxDataString ( "'" ) + colData + "',";
+		newquery += AbaxDataString ( "'" ) + colData + "'";
 		//prt(("c3935 added i=%d colData=[%s]\n", i, colData.c_str() ));
 		//prt(("c3048 newquery=[%s]\n", newquery.c_str() ));
 
@@ -10077,7 +10082,7 @@ AbaxDataString JaguarCPPClient::getLineCoordStr( const AbaxDataString &shape, co
 
 	res +=  ")";
 
-	// prt(("s5041 getLineCoordStr(): res=[%s]\n", res.c_str() ));
+	prt(("s5041 getLineCoordStr(): res=[%s]\n", res.c_str() ));
 	return res;
 }
 
@@ -10129,7 +10134,7 @@ AbaxDataString JaguarCPPClient::getTriangleCoordStr( const AbaxDataString &shape
 
 	res +=  ")";
 
-	// prt(("s5041 getLineCoordStr(): res=[%s]\n", res.c_str() ));
+	// prt(("s5041 getTriCoordStr(): res=[%s]\n", res.c_str() ));
 	return res;
 }
 

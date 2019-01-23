@@ -181,8 +181,8 @@ int StringElementNode::setWhereRange( const JagHashStrInt *maps[], const JagSche
 int StringElementNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 	int &constMode, int &typeMode, bool &isAggregate, Jstr &type, int &collen, int &siglen )
 {	
-	int acqpos;
 	//prt(("s4029 StringElementNode::setFuncAttribute _name=[%s] _type=[%s]\n", _name.c_str(), _type.c_str() ));
+	int acqpos;
 
 	if ( _name.length() > 0 ) {
 		// must be column name
@@ -256,10 +256,7 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 					const char *buffers[], AbaxFixString &str, int &typeMode, 
 					Jstr &type, int &length, bool &first, bool useZero, bool setGlobal ) 
 {
-	#ifdef DEVDEBUG 
-	prt(( "s3039 tmp9999 StringElementNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s]\n", 
-		  _name.c_str(), _value.c_str(), _type.c_str() ));
-	#endif
+	prt(( "s3039 StEleNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s]\n", _name.c_str(), _value.c_str(), _type.c_str() ));
 
 	if ( _name.length() > 0 ) {
 		if (  ( buffers[_tabnum] == NULL || buffers[_tabnum][0] == '\0' ) ) {
@@ -283,9 +280,9 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 			//colobjstr += "=0";
 			int dim = JagGeo::getDimension(_type);
 			if ( 2 == dim ) {
-				colobjstr += "=0 0:0:0:0";
+				colobjstr += "=d 0:0:0:0";
 			} else {
-				colobjstr += "=0 0:0:0:0:0:0";
+				colobjstr += "=d 0:0:0:0:0:0";
 			}
 			makeDataString( attrs, buffers, colobjstr, str );
 		} else if (  _type == JAG_C_COL_TYPE_RANGE  ) {
@@ -1103,7 +1100,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 	int &constMode, int &typeMode, bool &isAggregate, Jstr &type, int &collen, int &siglen )
 {
-	//prt(("s5829 BinaryOpNode::setFuncAttribute ...\n" ));
+	prt(("s5829 setFuncAttr left=%0x right=%0x _binaryOp=%d ...\n", _left, _right, _binaryOp ));
 
 	if ( !_left && !_right ) {
 		// funcs without childs, e.g. NOW, CURTIME, CURDATE
@@ -1122,9 +1119,11 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		lcollen = 0, rcollen = 0, lsiglen = 0, rsiglen = 0;
     if ( _left ) leftVal = _left->setFuncAttribute( maps, attrs, lcmode, ltmode, laggr, ltype, lcollen, lsiglen );
 	if ( _right ) rightVal = _right->setFuncAttribute( maps, attrs, rcmode, rtmode, raggr, rtype, rcollen, rsiglen );
+	prt(("s1029 _left=%0x leftVal=%d rightVal=%d\n", _left, leftVal, rightVal ));
 
 	if ( !_left || !leftVal || !rightVal ) {
 		// invalid tree, error
+		prt(("s1026 Invalid tree error\n" ));
 		return 0;
 	}
 
@@ -1344,7 +1343,7 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 								         const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
 										 int &length, bool &first, bool useZero, bool setGlobal )
 {
-	prt(("s2301 tmp9999 BinaryOpNode::checkFuncValid _left=%0x _right=%0x _binaryOp=%d ...\n", _left, _right, _binaryOp ));
+	prt(("s2301 BinaryOpNode::checkFuncValid _left=%0x _right=%0x _binaryOp=%d ...\n", _left, _right, _binaryOp ));
 
 	AbaxFixString lstr, rstr;
 	Jstr ltype, rtype;
@@ -1420,7 +1419,7 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 // 1 OK and true ( e.g. 1 == 1 )
 int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length )
 {
-	prt(("s1128 BinaryOpNode::checkFuncValidConstantOnly _left=%0x _right=%0x\n", _left, _right ));
+	//prt(("s1128 BinaryOpNode::checkFuncValidConstantOnly _left=%0x _right=%0x\n", _left, _right ));
 
 	bool first = 0;
 	AbaxFixString lstr, rstr;
@@ -1429,11 +1428,11 @@ int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode,
 
 	if ( _left ) {
 		leftVal = _left->checkFuncValidConstantOnly( lstr, ltmode, ltype, llength );
-		prt(("s1177 leftVal=%d lstr=[%s]\n", leftVal, lstr.c_str() ));
+		//prt(("s1177 leftVal=%d lstr=[%s]\n", leftVal, lstr.c_str() ));
 	}
 	if ( _right ) {
 		rightVal = _right->checkFuncValidConstantOnly( rstr, rtmode, rtype, rlength );
-		prt(("s1178 rightVal=%d rstr=[%s]\n", rightVal, rstr.c_str() ));
+		//prt(("s1178 rightVal=%d rstr=[%s]\n", rightVal, rstr.c_str() ));
 	}
 
 	if ( leftVal < 0 || rightVal < 0 ) result = -1;
@@ -3149,20 +3148,6 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			lstr = "Primitive";
 		}
 		return 1;
-	} else if ( _binaryOp == JAG_FUNC_CLOSESTPOINT ||  _binaryOp == JAG_FUNC_ANGLE ) {
-		ltmode = 0; // string
-		bool brc;
-		Jstr res;
-		prt(("s7340 before processStringOp lstr=[%s]\n", lstr.c_str() ));
-		try {
-			brc = processStringOp( _binaryOp, lstr, rstr, _carg1, res );
-		} catch ( int e ) {
-			brc = 0;
-		} catch ( ... ) {
-			brc = 0;
-		}
-		lstr = res;
-		return brc;
 	} else if ( _binaryOp == JAG_FUNC_WITHIN || _binaryOp == JAG_FUNC_COVEREDBY
 	            || _binaryOp == JAG_FUNC_CONTAIN || _binaryOp == JAG_FUNC_COVER 
 	            || _binaryOp == JAG_FUNC_SAME
@@ -3194,6 +3179,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			return 0;
 		}
 	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT ||  _binaryOp == JAG_FUNC_SYMDIFFERENCE
+				 || _binaryOp == JAG_FUNC_CLOSESTPOINT ||  _binaryOp == JAG_FUNC_ANGLE
 	             || _binaryOp == JAG_FUNC_INTERSECTION || _binaryOp == JAG_FUNC_DIFFERENCE ) {
 		prt(("s7140 before processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
 		prt(("s7140 before processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
@@ -3331,7 +3317,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 				// no right parenthesis or "and/or" followed just after and/or
 				throw 2136;
 			}
-			prt(("s9012 processRightParenthesis \n" ));
+			//prt(("s9012 processRightParenthesis \n" ));
             processRightParenthesis( jmap );
             ++p;
 			isandor = 0;
@@ -3442,15 +3428,14 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 			_lastIsOperand = 0;
 		} else {
 			if ( _isNot ) throw 2225;
-			// prt(("s3063 processOperand p=[%s] q=[%s]\n", p, q ));
-			prt(("s3063 processOperand p=[%s]\n", p ));
+			//prt(("s3063 processOperand p=[%s]\n", p ));
 			processOperand(jagParser, p, q, lastNode, cmap, colList );
 			_lastIsOperand = 1;
 		}
 	}
 
     while (!operatorStack.empty()) {
-		prt(("s2030 doBinary( operator.top )\n" ));
+		//prt(("s2030 doBinary( operator.top )\n" ));
         doBinary( operatorStack.top(), jmap );
         operatorStack.pop();
     }
@@ -3556,7 +3541,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 	const char *r;
 	q = p;
 
-	prt(("\ns3830 enter processOperand p=[%s]\n", p ));
+	//prt(("\ns3830 enter processOperand p=[%s]\n", p ));
 	/**
 	// debug only
 	StringElementNode *topp = (StringElementNode*)getRoot();
@@ -3586,7 +3571,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		r = p+1;
 		value = Jstr(r, q-r);
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
+		//prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		// prt(("s0393  new StringElementNode name=[%s] value=[%s] typeMode=%d\n", name.c_str(), value.c_str(), typeMode ));
 		if ( _substrClause >= 0 ) ++_substrClause;
@@ -3728,17 +3713,17 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		// value = Jstr("CJAG=0=0=") + geotype + "=0 " + val;
 		if ( isRaw ) {
 			value = typeStr + val;
-			prt(("s3627 isRaw value=%s\n", value.c_str() ));
+			//prt(("s3627 isRaw value=%s\n", value.c_str() ));
 		} else {
-			value = Jstr("CJAG=0=0=") + geotype + "=0 0:0:0:0 " + val;
-			prt(("s3628 !isRaw value=%s\n", value.c_str() ));
+			value = Jstr("CJAG=0=0=") + geotype + "=d 0:0:0:0 " + val;
+			//prt(("s3628 !isRaw value=%s\n", value.c_str() ));
 		}
 
 		typeMode = 2;
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		prt(("s4502 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
+		//prt(("s4502 in procOpernd new StrElemNode nme=[%s] val=[%s] opedStk.push \n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		++q; p = q;
 	} else {
@@ -3877,7 +3862,7 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 {
 	Jstr opstr = BinaryOpNode::binaryOpStr(op);
-	prt(("s3376 doBinary op=[%s]\n", opstr.c_str() ));
+	//prt(("s3376 doBinary op=[%s]\n", opstr.c_str() ));
 
 	ExpressionElementNode *right = NULL;
 	ExpressionElementNode *left = NULL;
@@ -3920,7 +3905,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		// right child
     	//operandStack.print();
 		int nargs = operandStack.size();
-		prt(("s1026 operandStack.size=%d\n", nargs ));
+		prt(("s1026 funcHasTwoChildren operandStack.size=%d\n", nargs ));
     	if ( operandStack.empty() ) { throw 1434; } 
 		if ( 1 == nargs ) {
 			right = NULL; // no right child(arg)
@@ -4915,122 +4900,11 @@ Jstr  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inlstr, const 
 
 	//sp1.shift();	
 	//sp2.shift();	
-	prt(("s1021 sp1.print sp2.print \n" ));
+	//prt(("s1021 sp1.print sp2.print \n" ));
 	//sp1.print();
 	//sp2.print();
 
 	return doTwoStrOp( op, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg );
-}
-
-
-
-// return 0 for OK;  < 0 for error or false
-// lstr must be table/index column with its all internal data
-// rstr must be table/index column with all internal data or a const string "2 3 4"
-// op can be WITHIN, CONTAIN, COVER, COVERED, OVERLAP, INTERSECT
-// within: point-> line, linestring, triangle, square, cube, ...
-// within:  triangle -> triangle, square, cube, ...
-bool BinaryOpNode::processStringOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, 
-											const Jstr &carg, Jstr &res )
-{
-	prt(("s5481 do processStringOp lstr=[%s]\n", inlstr.c_str() ));
-	prt(("s5481 do processStringOp rstr=[%s]\n", inrstr.c_str() ));
-	prt(("s5481 do processStringOp carg=[%s]\n", carg.c_str() ));
-
-	if ( inlstr.size() < 1 ) return false;
-
-	Jstr lstr;
-	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
-		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
-		if ( rc1 <= 0 ) return false;
-	} else {
-		lstr = inlstr.c_str();
-	}
-
-    Jstr rstr;
-    if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
-        int rc2 = JagGeo::convertConstantObjToJAG( inrstr, rstr );
-        if ( rc2 <= 0 ) return false;
-    } else {
-        rstr = inrstr.c_str();
-    }
-
-	Jstr colobjstr1 = lstr.firstToken(' ');
-	Jstr colobjstr2 = rstr.firstToken(' ');
-	JagStrSplit spcol2(colobjstr2, '=');  
-	Jstr colType2;
-
-	Jstr colType1;
-	JagStrSplit spcol1(colobjstr1, '=');  // OJAG=srid=name=type
-	int srid1 = 0;
-	Jstr mark1, colName1;  // colname: "db.tab.col"
-	if ( spcol1.length() < 4 ) {
-		if ( spcol2.length() >= 4 ) {
-			colType2 = spcol2[3];
-			if ( colType2 == JAG_C_COL_TYPE_RANGE ) {
-				if (  _left && _left->_isElement ) {
-					mark1 = "OJAG";
-					srid1 = _left->_srid;
-					colName1 = _left->_name;
-					colType1 = _left->_type;
-					//prt(("s8273 left is element node. srid1=%d name=[%s] type=[%s]\n", srid1, colName1.c_str(), colType1.c_str() ));
-				} else {
-					//prt(("s7283 left is not element, use dummy" ));
-					mark1 = "OJAG";
-					srid1 = 0;
-					colName1 = "dummy";
-					colType1 = "dummy";
-				}
-			} else {
-				prt(("E4405 not enough header [%s] op=%d\n", lstr.c_str(), op ));
-				return false;
-			}
-		} else {
-			mark1 = "OJAG";
-			srid1 = 0;
-			colName1 = "dummy";
-			colType1 = "dummy";
-		}
-	}
-
-	if ( spcol1.length() >= 4 ) {
-		mark1 = spcol1[0];
-		srid1 = jagatoi( spcol1[1].c_str() );
-		colName1 = spcol1[2];
-		colType1 = spcol1[3];
-	}
-
-	int srid2 = 0;
-	Jstr mark2, colName2;  // colname: "db.tab.col"
-	if ( spcol2.length() < 4 ) {
-		prt(("E4416 not enough header [%s]\n", colobjstr2.c_str() ));
-		return false;
-	}
-
-	mark2 = spcol2[0];
-	srid2 = jagatoi( spcol2[1].c_str() );
-	colName2 = spcol2[2];
-	colType2 = spcol2[3];
-
-	if ( mark2 == "OJAG" && mark1  == "OJAG" && srid1 != srid2 ) {
-		prt(("E4418 two columns but sriddiff hdr1=[%s] hdr2=[%s]\n", colobjstr1.c_str(), colobjstr2.c_str() ));
-		return false;
-	}
-
-	if ( mark2 == JAG_OJAG && mark1 == JAG_CJAG ) {
-		srid1 = srid2;
-	} else if (  mark2 == JAG_CJAG && mark1 == JAG_OJAG ) {
-		srid2 = srid1;
-	}
-
-	JagStrSplit sp1( lstr.c_str(), ' ', true );
-	JagStrSplit sp2( rstr.c_str(), ' ', true );
-
-	//sp1.shift();	
-	//sp2.shift();	
-
-	bool rc = doStringOp( op, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, carg, res );
-	return rc;
 }
 
 // return 0 for OK;  < 0 for error or false
@@ -5044,11 +4918,11 @@ bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &inlstr, cons
 	if ( inlstr.size() < 1 ) return false;
 	Jstr lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
-		prt(("s1390 has no = sign in beginning\n" ));
+		//prt(("s1390 has no = sign in beginning\n" ));
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
 		if ( rc1 <= 0 ) return false;
 	} else {
-		prt(("s1029 has = sign\n" ));
+		//prt(("s1029 has = sign\n" ));
 		lstr = inlstr.c_str();
 	}
 
@@ -5137,7 +5011,7 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const Jstr& mark1, const Jstr &colT
 }
 
 bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, const Jstr &colType1, int srid1, 
-										const JagStrSplit &sp1, const Jstr &carg, Jstr &value )
+										JagStrSplit &sp1, const Jstr &carg, Jstr &value )
 {
 	prt(("s2232 doSingleStrOp srid1=%d  sp1:\n", srid1 ));
 	//sp1.print();
@@ -5209,42 +5083,6 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 	return rc;
 }
 
-bool BinaryOpNode::doStringOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, 
-										const JagStrSplit &sp1, const Jstr& mark2, 
-										const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
-										const Jstr &carg, Jstr &res )
-{
-	prt(("s8710 doStringOp op=%d\n", op ));
-	bool rc = false;
-	if ( srid1 != srid2 ) {
-		prt(("s0381 srid1=%d != srid2=%d\n", srid1, srid2 ));
-		return rc;
-	}
-
-	if ( op == JAG_FUNC_CLOSESTPOINT ) {
-		if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
-			rc = doAllClosestPoint( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
-		} else if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
-			rc = doAllClosestPoint( mark2, colType2, srid2, sp2, mark1, colType1, srid1, sp1, res );
-		} else {
-			return false;
-		}
-	} else if ( op == JAG_FUNC_ANGLE ) {
-		if ( colType1 == JAG_C_COL_TYPE_LINE && colType2 == JAG_C_COL_TYPE_LINE ) {
-			rc = doAllAngle2D( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
-		} else if ( colType1 == JAG_C_COL_TYPE_LINE3D && colType2 == JAG_C_COL_TYPE_LINE3D ) {
-			rc = doAllAngle3D( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
-		} else {
-			return false;
-		}
-	} else {
-		prt(("s6023 doStringOp op=%d\n", op ));
-	}
-	//prt(("s1102 doBooleanOp rc=%d\n", rc ));
-	return rc;
-}
-
-
 bool BinaryOpNode::doBooleanOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, 
 										const JagStrSplit &sp1, const Jstr& mark2, 
 										const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
@@ -5285,17 +5123,41 @@ bool BinaryOpNode::doBooleanOp( int op, const Jstr& mark1, const Jstr &colType1,
 }
 
 Jstr BinaryOpNode::doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, 
-										const JagStrSplit &sp1, const Jstr& mark2, 
-										const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+										JagStrSplit &sp1, const Jstr& mark2, 
+										const Jstr &colType2, int srid2, JagStrSplit &sp2, 
 										const Jstr &carg )
 {
-	prt(("s2271 doTwoStrOp \n" ));
+	prt(("s2271 doTwoStrOp colType1=%s colType2=%s \n", colType1.c_str(), colType2.c_str() ));
+	//sp1.print();
+	//sp2.print();
 	if ( srid1 != srid2 ) {
 		prt(("s0881 srid1=%d != srid2=%d\n", srid1, srid2 ));
 		return "";
 	}
 
-	if ( op == JAG_FUNC_UNION ) {
+	bool rc;
+	Jstr res;
+	if ( op == JAG_FUNC_CLOSESTPOINT ) {
+		if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
+			rc = doAllClosestPoint( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
+		} else if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+			rc = doAllClosestPoint( mark2, colType2, srid2, sp2, mark1, colType1, srid1, sp1, res );
+		} else {
+			return "";
+		}
+		prt(("s0192 JAG_FUNC_CLOSESTPOINT rc=%d\n", rc ));
+		if ( ! rc ) return ""; else return res;
+	} else if ( op == JAG_FUNC_ANGLE ) {
+		if ( colType1 == JAG_C_COL_TYPE_LINE && colType2 == JAG_C_COL_TYPE_LINE ) {
+			rc = doAllAngle2D( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
+		} else if ( colType1 == JAG_C_COL_TYPE_LINE3D && colType2 == JAG_C_COL_TYPE_LINE3D ) {
+			rc = doAllAngle3D( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2, res );
+		} else {
+			return "";
+		}
+		prt(("s0193 JAG_FUNC_ANGLE rc=%d\n", rc ));
+		if ( ! rc ) return ""; else return res;
+	} else if ( op == JAG_FUNC_UNION ) {
 		return doAllUnion( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( op == JAG_FUNC_COLLECT ) {
 		return doAllCollect( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
@@ -5312,12 +5174,12 @@ Jstr BinaryOpNode::doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, 
 
 // colType1 and colType2 must be LINE or LINE3D type
 bool BinaryOpNode::doAllAngle2D( const Jstr& mark1, const Jstr &colType1, int srid1, 
-								 const JagStrSplit &sp1, const Jstr& mark2, 
-								 const Jstr &colType2, int srid2, const JagStrSplit &sp2, Jstr &res )
+								 JagStrSplit &sp1, const Jstr& mark2, 
+								 const Jstr &colType2, int srid2, JagStrSplit &sp2, Jstr &res )
 {
-	prt(("s5887 doAllAngle2D mark1=%s colType1=%s srid1=%d sp1:\n", mark1.c_str(), colType1.c_str(), srid1 ));
+	//prt(("s5387 doAllAngle2D mark1=%s colType1=%s srid1=%d sp1:\n", mark1.c_str(), colType1.c_str(), srid1 ));
 	//sp1.print();
-	prt(("s5888 doAllAngle2D mark2=%s colType2=%s srid2=%d sp2:\n", mark2.c_str(), colType2.c_str(), srid2 ));
+	//prt(("s5388 doAllAngle2D mark2=%s colType2=%s srid2=%d sp2:\n", mark2.c_str(), colType2.c_str(), srid2 ));
 	//sp2.print();
 
 	double x1, y1, x2, y2;
@@ -5349,8 +5211,8 @@ bool BinaryOpNode::doAllAngle2D( const Jstr& mark1, const Jstr &colType1, int sr
 
 // colType1 and colType2 must be LINE or LINE3D type
 bool BinaryOpNode::doAllAngle3D( const Jstr& mark1, const Jstr &colType1, int srid1, 
-								 const JagStrSplit &sp1, const Jstr& mark2, 
-								 const Jstr &colType2, int srid2, const JagStrSplit &sp2, Jstr &res )
+								 JagStrSplit &sp1, const Jstr& mark2, 
+								 const Jstr &colType2, int srid2, JagStrSplit &sp2, Jstr &res )
 {
 	prt(("s5887 doAllAngle3D mark1=%s colType1=%s srid1=%d sp1:\n", mark1.c_str(), colType1.c_str(), srid1 ));
 	//sp1.print();
@@ -5589,7 +5451,7 @@ bool BinaryOpNode::doAllSame( const Jstr& mark1, const Jstr &colType1, int srid1
 }
 
 bool BinaryOpNode::doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1, 
-									 const JagStrSplit &sp1, const  Jstr &carg, Jstr &value )
+									 JagStrSplit &sp1, const  Jstr &carg, Jstr &value )
 {
 	//prt(("s3920 doAllPointN() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
 	// sp1.print();
@@ -5602,48 +5464,48 @@ bool BinaryOpNode::doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		//prt(("s2031 narg=%d sp1.length()=%d\n", narg, sp1.length() ));
 		if ( narg == 1 && sp1.length() >= 2 ) {
-			value = trimEndZeros(sp1[JAG_SP_START+0]) + " " + trimEndZeros(sp1[JAG_SP_START+1]);
+			value = sp1[JAG_SP_START+0].trim0() + " " + sp1[JAG_SP_START+1].trim0();
 			rc =  true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
 		if ( narg == 1 && sp1.length() >= 3 ) {
-			value = trimEndZeros(sp1[JAG_SP_START+0]) + " " + trimEndZeros(sp1[JAG_SP_START+1]) + " " + trimEndZeros(sp1[JAG_SP_START+2]);
+			value = sp1[JAG_SP_START+0].trim0() + " " + sp1[JAG_SP_START+1].trim0() + " " + sp1[JAG_SP_START+2].trim0();
 			rc  = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE ) {
 		if (  narg >= 1 && narg <= 3 && sp1.length() >= 6 ) {
-			value = trimEndZeros(sp1[JAG_SP_START+2*i]) + " " + trimEndZeros(sp1[JAG_SP_START+2*i+1]);
+			value = sp1[JAG_SP_START+2*i].trim0() + " " + sp1[JAG_SP_START+2*i+1].trim0();
 			// x0 y0 x1 y1 x2 y2
 			rc = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D ) {
 		if (  narg >= 1 && narg <= 3 && sp1.length() >= 9 ) {
-			value = trimEndZeros(sp1[JAG_SP_START+3*i]) + " " + trimEndZeros(sp1[JAG_SP_START+3*i+1]) + " " + trimEndZeros(sp1[JAG_SP_START+3*i+2]);
+			value = sp1[JAG_SP_START+3*i].trim0() + " " + sp1[JAG_SP_START+3*i+1].trim0() + " " + sp1[JAG_SP_START+3*i+2].trim0();
 			// x0 y0 z0 x1 y1 z1 x2 y2 z2
 			rc = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
 		if (  narg >= 1 && narg <= 2 && sp1.length() >= 4 ) {
-			value = trimEndZeros(sp1[JAG_SP_START+2*i]) + " " + trimEndZeros(sp1[JAG_SP_START+2*i+1]);
+			value = sp1[JAG_SP_START+2*i].trim0() + " " + sp1[JAG_SP_START+2*i+1].trim0();
 			// x0 y0 x1 y1
 			rc = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
 		if (  narg >= 1 && narg <= 2 && sp1.length() >= 6 ) {
-			value = trimEndZeros(sp1[JAG_SP_START+3*i]) + " " + trimEndZeros(sp1[JAG_SP_START+3*i+1]) + " " + trimEndZeros(sp1[JAG_SP_START+3*i+2]);
+			value = sp1[JAG_SP_START+3*i].trim0() + " " + sp1[JAG_SP_START+3*i+1].trim0() + " " + sp1[JAG_SP_START+3*i+2].trim0();
 			// x0 y0 z0 x1 y1 z1
 			rc = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING || colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
 		if (  narg >= 1 && narg <= sp1.length() ) {
-			value = sp1[JAG_SP_START+i+1];
+			value = sp1[JAG_SP_START+i];
 			value.replace( ':', ' ');
 			// x0 y0 x1 y1
 			rc = true;
 		} 
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D || colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		if (  narg >= 1 && narg <= sp1.length() ) {
-			value = sp1[JAG_SP_START+i+1];
+			value = sp1[JAG_SP_START+i];
 			value.replace( ':', ' ');
 			// x0 y0 z0  x1 y1 z1  x2 y2 z2
 			rc = true;
@@ -5991,7 +5853,7 @@ bool BinaryOpNode::doAllConvexHull( const Jstr& mk, const Jstr& hdr, const Jstr 
 bool BinaryOpNode::doAllAsText( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
 								    int srid, const JagStrSplit &sp, const Jstr& carg, Jstr &value )
 {
-	prt(("s3420 doAllToPolygon() srid=%d mk=[%s] colType=[%s] sp1.print(): \n", srid, mk.c_str(), colType.c_str() ));
+	prt(("s3420 doAllAsText() srid=%d mk=[%s] colType=[%s] sp1.print(): \n", srid, mk.c_str(), colType.c_str() ));
 	//sp.print();
 	value = sp.c_str();
 	return true;
@@ -6194,7 +6056,7 @@ bool BinaryOpNode::doAllInnerRingN( const Jstr& mk, const Jstr& hdr, const Jstr 
 bool BinaryOpNode::doAllPolygonN( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
 								    const JagStrSplit &sp, const Jstr &carg, Jstr &value )
 {
-	prt(("s3420 doAllPolygonN() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	prt(("s5420 doAllPolygonN() mk=[%s] colType=[%s] carg=[%s] sp1.print(): \n", mk.c_str(), carg.c_str(), colType.c_str() ));
 	//sp.print();
 
 	value = "";
@@ -7238,16 +7100,28 @@ Jstr BinaryOpNode::doAllSymDifference( const Jstr& mark1, const Jstr &colType1,
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
 		return JagGeo::doPointSymDifference(  colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPointSymDifference(  colType2,sp2, colType1,sp1 );
 	} else if ( colType1 == JAG_C_COL_TYPE_LINE || colType1 == JAG_C_COL_TYPE_LINE3D ) {
 		return JagGeo::doLineSymDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE || colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLineSymDifference( colType2,sp2, colType1,sp1 );
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING || colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return JagGeo::doLineStringSymDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineStringSymDifference( colType2,sp2, colType1,sp1 );
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING || colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 		return JagGeo::doMultiLineStringSymDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doMultiLineStringSymDifference( colType2,sp2, colType1,sp1 );
 	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
 		return JagGeo::doPolygonSymDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonSymDifference( colType2,sp2, colType1,sp1 );
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		return JagGeo::doMultiPolygonSymDifference( colType1,sp1, colType2,sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return JagGeo::doMultiPolygonSymDifference( colType2,sp2, colType1,sp1 );
 	} else {
 		return "";
 	}

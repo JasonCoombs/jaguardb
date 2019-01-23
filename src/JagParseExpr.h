@@ -227,22 +227,18 @@ class BinaryOpNode: public ExpressionElementNode
 
 	bool processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg );
 	Jstr  processTwoStrOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg );
-	bool processStringOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg, Jstr &res );
 	bool processSingleDoubleOp( int op, const AbaxFixString &lstr, const Jstr &carg, double &val );
 	bool processSingleStrOp( int op, const AbaxFixString &lstr, const Jstr &carg, Jstr &val );
 	bool doBooleanOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
 							 const Jstr& mark2, const Jstr &colType2, int srid2, 
 							 const JagStrSplit &sp2, const Jstr &carg );
-	Jstr doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
+	Jstr doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, JagStrSplit &sp1,
 							 const Jstr& mark2, const Jstr &colType2, int srid2, 
-							 const JagStrSplit &sp2, const Jstr &carg );
-	bool doStringOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
-							 const Jstr& mark2, const Jstr &colType2, int srid2, 
-							 const JagStrSplit &sp2, const Jstr &carg, Jstr &res );
+							 JagStrSplit &sp2, const Jstr &carg );
 	bool doSingleDoubleOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
 							 const Jstr &carg, double &val );
 	bool doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, const Jstr &colType1, int srid1, 
-						const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+						JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 
 	bool doAllWithin( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
 							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
@@ -252,11 +248,11 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllClosestPoint( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
 							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
 							 Jstr &res );
-	bool doAllAngle2D( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
-							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+	bool doAllAngle2D( const Jstr& mark1, const Jstr &colType1, int srid1, JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, JagStrSplit &sp2, 
 							 Jstr &res );
-	bool doAllAngle3D( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
-							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
+	bool doAllAngle3D( const Jstr& mark1, const Jstr &colType1, int srid1, JagStrSplit &sp1,
+							 const Jstr& mark2, const Jstr &colType2, int srid2, JagStrSplit &sp2, 
 							 Jstr &res );
 	bool doAllIntersect( const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
 							 const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
@@ -268,7 +264,7 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllPerimeter( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
 	bool doAllVolume( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
 	bool doAllMinMax( int op, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, double &val );
-	bool doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, 
+	bool doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1, JagStrSplit &sp1, 
 					  const Jstr &carg, Jstr &val );
 	bool doAllBBox( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllStartPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
