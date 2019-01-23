@@ -1,3 +1,39 @@
+JaguarDB 2.9.6 01/22/2019
+------------------------------------------------------------------
+Added:
+
+convexhull(geom)        -- get the convex hull of a shape with raster data
+centroid(geom)          -- get the centroid coordinates of a vector or raster shape
+volume(geom)            -- get the volume of a 3D shape
+closestpoint(point(x y), geom)   -- get the closest point on geom from point(x y)
+angle(line(x y), geom)    -- get the angle in degrees between two lines
+buffer(geom, 'STRATEGY')  -- get polygon buffer of a shape. The STRATEGY is:
+             distance=symmetric/asymmetric:RADIUS,join=round/miter:N,end=round/flat,point=circle/square:N
+length(geom)            -- get length of line/3d, linestring/3d, multilinestring/3d
+perimeter(geom)         -- get perimeter length of a closed shape (vector or raster)
+equal(geom1,geom2)      -- check if shape geom1 is exactly the same as shape geom2
+issimple(geom)          -- check if shape geom has no self-intersecting or tangent points
+isvalid(geom )          -- check if multipoint, linestring, polygon, multilinestring, multipolygon is valid
+isring(geom )           -- check if linestring is a ring
+ispolygonccw(geom )     -- check if the outer ring is counter-clock-wise, inner rings clock-wise
+ispolygoncw(geom  )     -- check if the outer ring is clock-wise, inner rings couter-clock-wise
+outerring(polygon)      -- the outer ring as linestring of a polygon
+outerrings(mpolygon)    -- the outer rings as multilinestring of a multipolygon
+innerrings(polygon)     -- the inner rings as multilinestring of a polygon or multipolygon
+ringn(polygon,n)        -- the n-th ring as linestring of a polygon. n is 1-based
+innerringn(polygon,n)   -- the n-th inner ring as linestring of a polygon. n is 1-based
+polygonn(multipgon,n)   -- the n-th polygon of a multipolygon. n is 1-based
+unique(geom)            -- geom with consecutive duplicate points removed
+union(geom1,geom2)      -- union of two geoms. Polygon outer ring should be counter-clock-wise
+collect(geom1,geom2)    -- collection of two geoms
+topolygon(geom)         -- converting square, rectangle, circle, ellipse, triangle to polygon
+text(geom)              -- text string of a geometry shape
+difference(g1,g2)       -- g1 minus the common part of g1 and g2
+symdifference(g1,g2)    -- g1+g2 minus the common part of g1 and g2
+
+Added: select expr;    // no from table
+Fixed bugs on insert line data
+
 
 Jaguar 2.9.5 11/30/2018
 --------------------------------------------------------------
