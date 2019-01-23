@@ -15536,15 +15536,15 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 		rstr = inrstr.c_str();
 	}
 
-
 	JagStrSplit sp1( lstr.c_str(), ' ', true );
 	if ( sp1.length() < 1 ) return 0;
 	JagStrSplit sp2( rstr.c_str(), ' ', true );
 	if ( sp2.length() < 1 ) return 0;
 
-	JagStrSplit co1( sp1[JAG_SP_START+0], '=' );
+	JagStrSplit co1( sp1[0], '=' );
 	if ( co1.length() < 4 ) return 0;
-	JagStrSplit co2( sp2[JAG_SP_START+0], '=' );
+	//JagStrSplit co2( sp2[JAG_SP_START+0], '=' );
+	JagStrSplit co2( sp2[0], '=' );
 	if ( co2.length() < 4 ) return 0;
 	Jstr mark1 = co1[0]; // CJAG or OJAG
 	Jstr mark2 = co2[0];
@@ -15553,6 +15553,7 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 	Jstr colType2 = co2[3];
 	int dim1 = JagGeo::getDimension( colType1 );
 	int dim2 = JagGeo::getDimension( colType2 );
+	prt(("s7231 dim1=%d dim2=%d\n", dim1, dim2 ));
 	if ( dim1 != dim2 ) { return 0; }
 
 	int srid1 = jagatoi( co1[1].c_str() );
@@ -15566,74 +15567,132 @@ bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr,
 		return 0;
 	}
 
-	sp1.shift();
-	sp2.shift();
+	//sp1.shift();
+	//sp2.shift();
+	// qwer
 	prt(("s4872 colType1=[%s]\n", colType1.c_str() ));
 	prt(("s4872 colType2=[%s]\n", colType2.c_str() ));
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return doPointDistance( mark1, sp1, mark2, colType2, sp2, srid, arg, dist );
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+		return doPointDistance( mark2, sp2, mark1, colType1, sp1, srid, arg, dist );
 	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
 		return doPoint3DDistance( mark1, sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		return doPoint3DDistance( mark2, sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE ) {
 		return doCircleDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
+		return doCircleDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE3D ) {
 		return doCircle3DDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE3D ) {
+		return doCircle3DDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_SPHERE ) {
 		return doSphereDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
+		return doSphereDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE ) {
 		return doSquareDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
+		return doSquareDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE3D ) {
 		return doSquare3DDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE3D ) {
+		return doSquare3DDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_CUBE ) {
 		return doCubeDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_CUBE ) {
+		return doCubeDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE ) {
 		return doRectangleDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
+		return doRectangleDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
 		return doRectangle3DDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		return doRectangle3DDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_BOX ) {
 		return doBoxDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
+		return doBoxDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE ) {
 		return doTriangleDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
+		return doTriangleDistance( mark2, sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D ) {
 		return doTriangle3DDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		return doTriangle3DDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_CYLINDER ) {
 		return doCylinderDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
+		return doCylinderDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_CONE ) {
 		return doConeDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
+		return doConeDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSE ) {
 		return doEllipseDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
+		return doEllipseDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSOID ) {
 		return doEllipsoidDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
+		return doEllipsoidDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
 		return doLineDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+		return doLineDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
 		return doLine3DDistance( mark1,  sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		return doLine3DDistance( mark2,  sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
 		return doLineStringDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+		return doLineStringDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return doLineString3DDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return doLineString3DDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
 		return doPolygonDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		return doPolygonDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
 		return doPolygon3DDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+		return doPolygon3DDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
 		return doLineStringDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
+		return doLineStringDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		return doLineString3DDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		return doLineString3DDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
 		return doPolygonDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return doPolygonDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 		return doPolygon3DDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return doPolygon3DDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		return doMultiPolygonDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return doMultiPolygonDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		return doMultiPolygon3DDistance( mark1,   sp1, mark2, colType2, sp2, srid,  arg, dist);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		return doMultiPolygon3DDistance( mark2,   sp2, mark1, colType1, sp1, srid,  arg, dist);
 	} 
 
 	return true;
 }
-
 
 		
 /////////////////////////// distance ///////////////////////////////////////////////////////		

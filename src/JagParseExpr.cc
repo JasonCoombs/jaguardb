@@ -3870,37 +3870,41 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 	Jstr carg1;
 
 	if ( funcHasThreeChildren(op) ) {
-		if ( op == JAG_FUNC_NEARBY ||  op == JAG_FUNC_DISTANCE ) {
+		if ( operandStack.empty() ) throw 1336;
+		if ( op == JAG_FUNC_NEARBY ) {
 			//operandStack.pop();
-			ExpressionElementNode *tdiff = NULL;
+			//if ( operandStack.empty() ) throw 1336;
 			const char *p = NULL;
-			if ( operandStack.empty() ) throw 1336;
-			else tdiff = operandStack.top();
-
-			//prt(("s3434 tdiff.print():\n" ));
-			//tdiff->print(1);
-
-			if ( tdiff->getValue(p) ) {
+			ExpressionElementNode *t3 = operandStack.top();
+			if ( t3->getValue(p) ) {
 				carg1 = p; 
 			} else throw 1318;
+			operandStack.pop();  // popped the third element
+		} else if ( op == JAG_FUNC_DISTANCE ) {
+			int nargs = operandStack.size();
+			if ( 2 == nargs ) {
+				carg1 = "center";  // default distance type
+			} else {
+				const char *p = NULL;
+				ExpressionElementNode *t3 = operandStack.top();
+				if ( t3->getValue(p) ) {
+					carg1 = p; 
+				} else throw 1319;
+				operandStack.pop();  // popped the third element
+			}
 		}
 
-		operandStack.pop();  // popped the third element
+		//operandStack.pop();  // popped the third element
 
 		// right child
-		if ( operandStack.empty() ) {
-			// printf("s5301 throw here\n");
-			throw 1334;
-		} else right = operandStack.top();
-
+		if ( operandStack.empty() ) { throw 1334; } 
+		right = operandStack.top();
 		operandStack.pop();
+
 		// left child
-		if ( operandStack.empty() ) {
-			// printf("s5302 throw here\n");
-			throw 1335;
-		} else left = operandStack.top();
+		if ( operandStack.empty() ) { throw 1335; } 
+		left = operandStack.top();
 		operandStack.pop();
-
 	} else if ( funcHasTwoChildren(op) ) {
 		// right child
     	//operandStack.print();
@@ -7135,58 +7139,112 @@ bool BinaryOpNode::doAllIntersect( const Jstr& mark1, const Jstr &colType1,
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return JagGeo::doPointIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+		return JagGeo::doPointIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
 		return JagGeo::doPoint3DIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		return JagGeo::doPoint3DIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE ) {
 		return JagGeo::doCircleIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
+		return JagGeo::doCircleIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE3D ) {
 		return JagGeo::doCircle3DIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE3D ) {
+		return JagGeo::doCircle3DIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_SPHERE ) {
 		return JagGeo::doSphereIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
+		return JagGeo::doSphereIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE ) {
 		return JagGeo::doSquareIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
+		return JagGeo::doSquareIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE3D ) {
 		return JagGeo::doSquare3DIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE3D ) {
+		return JagGeo::doSquare3DIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_CUBE ) {
 		return JagGeo::doCubeIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_CUBE ) {
+		return JagGeo::doCubeIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE ) {
 		return JagGeo::doRectangleIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
+		return JagGeo::doRectangleIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
 		return JagGeo::doRectangle3DIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		return JagGeo::doRectangle3DIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_BOX ) {
 		return JagGeo::doBoxIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
+		return JagGeo::doBoxIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE ) {
 		return JagGeo::doTriangleIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
+		return JagGeo::doTriangleIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D ) {
 		return JagGeo::doTriangle3DIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		return JagGeo::doTriangle3DIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_CYLINDER ) {
 		return JagGeo::doCylinderIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
+		return JagGeo::doCylinderIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_CONE ) {
 		return JagGeo::doConeIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
+		return JagGeo::doConeIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSE ) {
 		return JagGeo::doEllipseIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
+		return JagGeo::doEllipseIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSOID ) {
 		return JagGeo::doEllipsoidIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
+		return JagGeo::doEllipsoidIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINE ) {
 		return JagGeo::doLineIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+		return JagGeo::doLineIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
 		return JagGeo::doLine3DIntersect(  srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
+		return JagGeo::doLine3DIntersect(  srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
 		return JagGeo::doLineStringIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+		return JagGeo::doLineStringIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		return JagGeo::doLineString3DIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return JagGeo::doLineString3DIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
 		return JagGeo::doPolygonIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+		return JagGeo::doPolygonIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
 		return JagGeo::doPolygon3DIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+		return JagGeo::doPolygon3DIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING ) {
 		return JagGeo::doPolygonIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return JagGeo::doPolygonIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 		return JagGeo::doPolygon3DIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return JagGeo::doPolygon3DIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		return JagGeo::doMultiPolygonIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return JagGeo::doMultiPolygonIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		return JagGeo::doMultiPolygon3DIntersect( mark1, srid1, sp1, mark2, colType2, srid2, sp2, strict);
+	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		return JagGeo::doMultiPolygon3DIntersect( mark2, srid2, sp2, mark1, colType1, srid1, sp1, strict);
 	} else if ( colType1 == JAG_C_COL_TYPE_RANGE
 	             || colType1 == JAG_C_COL_TYPE_DOUBLE 
 	             || colType1 == JAG_C_COL_TYPE_FLOAT
@@ -7200,6 +7258,19 @@ bool BinaryOpNode::doAllIntersect( const Jstr& mark1, const Jstr &colType1,
 	             || colType1 == JAG_C_COL_TYPE_DMEDINT
 			  ) {
 		return JagRange::doRangeIntersect( _jpa, mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
+	} else if ( colType2 == JAG_C_COL_TYPE_RANGE
+	             || colType2 == JAG_C_COL_TYPE_DOUBLE 
+	             || colType2 == JAG_C_COL_TYPE_FLOAT
+	             || colType2 == JAG_C_COL_TYPE_DATETIME
+	             || colType2 == JAG_C_COL_TYPE_TIME
+	             || colType2 == JAG_C_COL_TYPE_DATE
+	             || colType2 == JAG_C_COL_TYPE_DINT
+	             || colType2 == JAG_C_COL_TYPE_DBIGINT
+	             || colType2 == JAG_C_COL_TYPE_DSMALLINT
+	             || colType2 == JAG_C_COL_TYPE_DTINYINT
+	             || colType2 == JAG_C_COL_TYPE_DMEDINT
+			  ) {
+		return JagRange::doRangeIntersect( _jpa, mark2, colType2, srid2, sp2, mark1, colType1, srid1, sp1 );
 	} else {
 		throw 2345;
 	}

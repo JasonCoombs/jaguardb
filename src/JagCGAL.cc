@@ -1145,9 +1145,9 @@ void JagCGAL::split3DSPToVector( const JagStrSplit &sp, JagVector<JagPoint3D> &v
 int JagCGAL::getTwoPolygonIntersection( const JagPolygon &pgon1, const JagPolygon &pgon2, JagVector<JagPolygon> &vec )
 {
 	prt(("s9172 getTwoPolygonIntersection pgon1:\n"));
-	pgon1.print();
+	//pgon1.print();
 	prt(("s9173 getTwoPolygonIntersection pgon2:\n"));
-	pgon2.print();
+	//pgon2.print();
 
 	if ( pgon1.size() < 1 || pgon2.size() < 1 ) return 0;
 

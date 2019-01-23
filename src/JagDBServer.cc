@@ -2691,9 +2691,10 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    cover(geom1, geom2 )           -- check if shape geom1 covers another shape geom2\n";
 		str += "    contain(geom1, geom2 )         -- check if shape geom1 contains another shape geom2\n";
 		str += "    disjoint(geom1, geom2 )        -- check if shape geom1 and geom2 are disjoint\n";
-		str += "    distance(geom1, geom2 )        -- compute distance between shape geom1 and geom2\n";
-		str += "    area(geom)                    -- compute area or surface area of 2D or 3D objects\n";
-		str += "    all(geom)                     -- get GeoJSON data of 2D or 3D objects\n";
+		str += "    distance(geom1, geom2, 'TYPE') -- compute distance between shape geom1 and geom2. TYPE: min, max, center\n";
+		str += "    distance(geom1, geom2 )        -- compute distance between shape geom1 and geom2. TYPE: center\n";
+		str += "    area(geom)                     -- compute area or surface area of 2D or 3D objects\n";
+		str += "    all(geom)                      -- get GeoJSON data of 2D or 3D objects\n";
 		str += "    dimension(geom)         -- get dimension as integer of a shape geomumn \n";
 		str += "    geotype(geom)           -- get type as string of a shape geomumn\n";
 		str += "    pointn(geom,n)          -- get n-th point (1-based) of a shape geomumn. (x y [z])\n";
