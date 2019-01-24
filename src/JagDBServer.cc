@@ -2721,7 +2721,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    angle(line(x y), geom)    -- get the angle in degrees between two lines\n";
 		str += "    buffer(geom, 'STRATEGY')  -- get polygon buffer of a shape. The STRATEGY is:\n";
 		str += "                 distance=symmetric/asymmetric:RADIUS,join=round/miter:N,end=round/flat,point=circle/square:N\n";
-		str += "    length(geom)            -- get length of line/3d, linestring/3d, multilinestring/3d\n";
+		str += "    linelength(geom)        -- get length of line/3d, linestring/3d, multilinestring/3d\n";
 		str += "    perimeter(geom)         -- get perimeter length of a closed shape (vector or raster)\n";
 		str += "    equal(geom1,geom2)      -- check if shape geom1 is exactly the same as shape geom2\n";
 		str += "    issimple(geom)          -- check if shape geom has no self-intersecting or tangent points\n";

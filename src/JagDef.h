@@ -471,6 +471,7 @@
 #define JAG_FUNC_DIFFERENCE     281  // diffeence of two geoms  g1 - (g1 common g2)
 #define JAG_FUNC_SYMDIFFERENCE  282  // g1+g2 - (g1 common g2)
 #define JAG_FUNC_ISCONVEX       283  // if outer ring of polygon is convex
+#define JAG_FUNC_INTERPOLATE    284  // find point on a linestring by fraction
 
 
 // multi-line data ( string functions )
@@ -481,6 +482,7 @@
 #define JAG_FUNC_RTRIM			354
 #define JAG_FUNC_TRIM			355
 #define JAG_FUNC_LENGTH			356
+#define JAG_FUNC_LINELENGTH		357
 
 // date and time
 #define JAG_FUNC_SECOND			400 // 0-59
@@ -681,7 +683,6 @@
 #define JAG_ELLIPSOID_DIM   8   // x y z  a b c nx ny
 #define JAG_TRIANGLE3D_DIM	9   // x1y1z1 x2y2z2  x3y3z3
 
-//#define JAG_POLY_HEADER_COLS 12   // geo:xmin geo:ymin geo:zmin geo:xmax geo:ymax geo:zmax geo:id geo:col geo:k geo:m geo:n geo:i 
 #define JAG_POLY_HEADER_COLS 11   // geo:xmin geo:ymin geo:zmin geo:xmax geo:ymax geo:zmax geo:id geo:col geo:m geo:n geo:i 
 
 // default value max length
@@ -730,5 +731,7 @@
 #define JAG_MAX_POINTS_SENT  3000
 
 #define  JAG_SP_START  2
+#define  JAG_3D        3
+#define  JAG_2D        2
 
 #endif

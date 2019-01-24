@@ -19,12 +19,22 @@
 #ifndef _jag_geom_h_
 #define _jag_geom_h_
 
+#include <GeographicLib/Gnomonic.hpp>
+#include <GeographicLib/Geodesic.hpp>
+#include <GeographicLib/Geocentric.hpp>
+#include <GeographicLib/PolygonArea.hpp>
+#include <GeographicLib/Constants.hpp>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 #include <JagDef.h>
 #include <JagVector.h>
 #include <JagUtil.h>
 #include <JagShape.h>
 #include <JagHashSetStr.h>
-
+#include <JaguarCPPClient.h>
+#include <JagParser.h>
+#include <JagCGAL.h>
+using namespace GeographicLib;
 
 class JagGeo
 {
@@ -1548,7 +1558,7 @@ class JagGeo
 	static bool getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 	static bool getBBox2DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 	static bool getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
-	static double getGeoLength( const Jstr &mk, const AbaxFixString &lstr );
+	static double getGeoLength( const AbaxFixString &lstr );
 	static Jstr bboxstr( const JagStrSplit &sp, bool skipRing );
 	static int convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr );
 	static int numberOfSegments( const JagStrSplit &sp );
@@ -1557,6 +1567,7 @@ class JagGeo
 	static void multiPolygonToWKT( const JagVector<JagPolygon> &pgvec, bool is3D, Jstr &wkt );
     static double meterToLon( int srid, double meter, double lon, double lat);
     static double meterToLat( int srid, double meter, double lon, double lat);
+	static bool interpolatePoint2D(double segdist, double segfrac, const JagPoint3D &p1, const JagPoint3D &p2, JagPoint3D &point );
 
 
 

@@ -1,6 +1,676 @@
 #include <JagGlobalDef.h>
 #include <JagGeom.h>
 
+JagPoint2D::JagPoint2D()
+{
+	x = y = 0.0;
+}
+
+JagPoint2D::JagPoint2D( const char *sx, const char *sy)
+{
+	x = jagatof(sx); y = jagatof( sy );
+}
+
+JagPoint2D::JagPoint2D( double inx, double iny )
+{
+	x = inx; y = iny;
+}
+
+JagPoint3D::JagPoint3D()
+{
+	x = y = z = 0.0;
+}
+
+JagPoint3D::JagPoint3D( const char *sx, const char *sy, const char *sz)
+{
+	x = jagatof(sx); y = jagatof( sy ); z = jagatof( sz );
+}
+
+JagPoint3D::JagPoint3D( double inx, double iny, double inz )
+{
+	x = inx; y = iny; z = inz;
+}
+
+Jstr JagPoint3D::hashString() const
+{
+	char buf[32];
+	Jstr s;
+	sprintf(buf, "%.6f", x );
+	s = buf;
+
+	sprintf(buf, "%.6f", y );
+	s += Jstr(":") + buf;
+
+	sprintf(buf, "%.6f", z );
+	s += Jstr(":") + buf;
+
+	return s;
+}
+
+
+bool JagSortPoint2D::operator<( const JagSortPoint2D &o) const
+{
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 < o.x1 ) return true;
+		} else {
+			if ( x1 < o.x2 ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 < o.x1 ) return true;
+		} else {
+			if ( x2 < o.x2 ) return true;
+		}
+	}
+
+	return false;
+}
+bool JagSortPoint2D::operator<=( const JagSortPoint2D &o) const
+{
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 < o.x1 ) return true;
+		} else {
+			if ( x1 < o.x2 ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 < o.x1 ) return true;
+		} else {
+			if ( x2 < o.x2 ) return true;
+		}
+	}
+
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x1, o.x1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x1, o.x2) ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x2, o.x1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x2, o.x2) ) return true;
+		}
+	}
+	return false;
+}
+
+bool JagSortPoint2D::operator>( const JagSortPoint2D &o) const
+{
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 > o.x1 ) return true;
+		} else {
+			if ( x1 > o.x2 ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 > o.x1 ) return true;
+		} else {
+			if ( x2 > o.x2 ) return true;
+		}
+	}
+	return false;
+}
+
+
+bool JagSortPoint2D::operator>=( const JagSortPoint2D &o) const
+{
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 > o.x1 ) return true;
+		} else {
+			if ( x1 > o.x2 ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 > o.x1 ) return true;
+		} else {
+			if ( x2 > o.x2 ) return true;
+		}
+	}
+
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x1, o.x1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x1, o.x2) ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x2, o.x1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x2, o.x2) ) return true;
+		}
+	}
+
+	return false;
+}
+
+
+bool JagSortPoint3D::operator<( const JagSortPoint3D &o) const
+{
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 < o.x1 ) return true;
+			if ( JagGeo::jagEQ( x1, o.x1) ) {
+				if ( y1 < o.y1 ) return true;
+			}
+		} else {
+			if ( x1 < o.x2 ) return true;
+			if ( JagGeo::jagEQ( x1, o.x2) ) {
+				if ( y1 < o.y2 ) return true;
+			}
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 < o.x1 ) return true;
+			if ( JagGeo::jagEQ( x2, o.x1) ) {
+				if ( y2 < o.y1 ) return true;
+			}
+		} else {
+			if ( x2 < o.x2 ) return true;
+			if ( JagGeo::jagEQ( x2, o.x2) ) {
+				if ( y2 < o.y2 ) return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool JagSortPoint3D::operator<=( const JagSortPoint3D &o) const
+{
+
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 < o.x1 ) return true;
+			if ( JagGeo::jagEQ( x1, o.x1) ) {
+				if ( y1 < o.y1 ) return true;
+			}
+		} else {
+			if ( x1 < o.x2 ) return true;
+			if ( JagGeo::jagEQ( x1, o.x2) ) {
+				if ( y1 < o.y2 ) return true;
+			}
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 < o.x1 ) return true;
+			if ( JagGeo::jagEQ( x2, o.x1) ) {
+				if ( y2 < o.y1 ) return true;
+			}
+		} else {
+			if ( x2 < o.x2 ) return true;
+			if ( JagGeo::jagEQ( x2, o.x2) ) {
+				if ( y2 < o.y2 ) return true;
+			}
+		}
+	}
+
+
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x1, o.x1) && JagGeo::jagEQ(y1, o.y1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x1, o.x2) && JagGeo::jagEQ(y1, o.y2) ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x2, o.x1) && JagGeo::jagEQ(y2, o.y1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x2, o.x2) && JagGeo::jagEQ(y2, o.y2) ) return true;
+		}
+	}
+	return false;
+}
+
+bool JagSortPoint3D::operator>( const JagSortPoint3D &o) const
+{
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 > o.x1 ) return 1;
+			if ( JagGeo::jagEQ( x1, o.x1) ) {
+				if ( y1 > o.y1 ) return -1;
+			}
+		} else {
+			if ( x1 > o.x2 ) return 1;
+			if ( JagGeo::jagEQ( x1, o.x2) ) {
+				if ( y1 > o.y2 ) return 1;
+			}
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 > o.x1 ) return 1;
+			if ( JagGeo::jagEQ( x2, o.x1) ) {
+				if ( y2 > o.y1 ) return 1;
+			}
+		} else {
+			if ( x2 > o.x2 ) return 1;
+			if ( JagGeo::jagEQ( x2, o.x2) ) {
+				if ( y2 > o.y2 ) return 1;
+			}
+		}
+	}
+
+	return false;
+}
+
+
+bool JagSortPoint3D::operator>=( const JagSortPoint3D &o) const
+{
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( x1 > o.x1 ) return true;
+			if ( JagGeo::jagEQ( x1, o.x1) ) {
+				if ( y1 > o.y1 ) return true;
+			}
+		} else {
+			if ( x1 > o.x2 ) return true;
+			if ( JagGeo::jagEQ( x1, o.x2) ) {
+				if ( y1 > o.y2 ) return true;
+			}
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( x2 > o.x1 ) return true;
+			if ( JagGeo::jagEQ( x2, o.x1) ) {
+				if ( y2 > o.y1 ) return true;
+			}
+		} else {
+			if ( x2 > o.x2 ) return true;
+			if ( JagGeo::jagEQ( x2, o.x2) ) {
+				if ( y2 > o.y2 ) return true;
+			}
+		}
+	}
+
+	if ( JAG_LEFT == end ) {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x1, o.x1) && JagGeo::jagEQ(y1, o.y1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x1, o.x2) && JagGeo::jagEQ(y1, o.y2) ) return true;
+		}
+	} else {
+		if ( JAG_LEFT == o.end ) {
+			if ( JagGeo::jagEQ(x2, o.x1) && JagGeo::jagEQ(y2, o.y1) ) return true;
+		} else {
+			if ( JagGeo::jagEQ(x2, o.x2) && JagGeo::jagEQ(y2, o.y2) ) return true;
+		}
+	}
+
+	return false;
+}
+
+
+JagPoint::JagPoint() { init(); }
+JagPoint::JagPoint( const char *inx, const char *iny )
+{
+	init();
+	strcpy( x, inx );
+	strcpy( y, iny );
+}
+
+JagPoint::JagPoint( const char *inx, const char *iny, const char *inz )
+{
+	init();
+	strcpy( x, inx );
+	strcpy( y, iny );
+	strcpy( z, inz );
+}
+
+JagPoint& JagPoint::operator=( const JagPoint& p2 ) 
+{
+	if ( this == &p2 ) { return *this; }
+	copyData( p2 );
+	return *this; 
+}
+
+bool JagPoint::equal2D(const JagPoint &p ) const
+{
+	return JagGeo::jagEQ( jagatof(x), jagatof(p.x) ) && JagGeo::jagEQ( jagatof(y), jagatof(p.y) );
+}
+bool JagPoint::equal3D(const JagPoint &p ) const
+{
+	return JagGeo::jagEQ( jagatof(x), jagatof(p.x) ) && JagGeo::jagEQ( jagatof(y), jagatof(p.y) ) && JagGeo::jagEQ( jagatof(z), jagatof(p.z) );
+}
+
+
+JagPoint::JagPoint( const JagPoint& p2 ) 
+{
+	copyData( p2 );
+}
+void JagPoint::init() 
+{
+	memset( x, 0, JAG_POINT_LEN); memset(y, 0, JAG_POINT_LEN ); memset( z, 0, JAG_POINT_LEN); 
+	memset( a, 0, JAG_POINT_LEN); memset( b, 0, JAG_POINT_LEN); memset( c, 0, JAG_POINT_LEN);
+	memset( nx, 0, JAG_POINT_LEN); memset( ny, 0, JAG_POINT_LEN); 
+}
+
+void JagPoint::copyData( const JagPoint& p2 )
+{
+	memcpy( x, p2.x, JAG_POINT_LEN); 
+	memcpy( y, p2.y, JAG_POINT_LEN ); 
+	memcpy( z, p2.z, JAG_POINT_LEN); 
+	memcpy( a, p2.a, JAG_POINT_LEN );
+	memcpy( b, p2.b, JAG_POINT_LEN );
+	memcpy( c, p2.c, JAG_POINT_LEN );
+	memcpy( nx, p2.nx, JAG_POINT_LEN );
+	memcpy( ny, p2.ny, JAG_POINT_LEN );
+}
+
+void JagPoint::print()  const
+{
+	prt(("x=[%s] y=[%s] z=[%s] a=[%s] b=[%s] c=[%s] nx=[%s] ny=[%s]\n", x,y,z,a,b,c,nx,ny ));
+
+}
+
+JagLineString& JagLineString::operator=( const JagLineString3D& L2 )
+{
+	init();
+	for ( int i=0; i < L2.size(); ++i ) {
+		add( L2.point[i] );
+	}
+	return *this;
+}
+
+JagLineString& JagLineString::copyFrom( const JagLineString3D& L2, bool removeLast )
+{
+	init();
+	int len =  L2.size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len; ++i ) {
+		add( L2.point[i] );
+	}
+	return *this;
+}
+
+JagLineString& JagLineString::appendFrom( const JagLineString3D& L2, bool removeLast )
+{
+	//init();
+	int len =  L2.size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len; ++i ) {
+		add( L2.point[i] );
+	}
+	return *this;
+}
+
+double JagLineString::lineLength( bool removeLast, bool is3D, int srid )
+{
+	double sum = 0.0;
+	int len =  size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len-1; ++i ) {
+		if ( is3D ) {
+			sum += JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y), jagatof(point[i].z),
+									 jagatof(point[i+1].x), jagatof(point[i+1].y), jagatof(point[i+1].z), srid );
+		} else {
+			sum += JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y),
+									 jagatof(point[i+1].x), jagatof(point[i+1].y), srid );
+		}
+	}
+	return sum;
+}
+
+bool JagLineString::getBetweenPointsFromLen( short dim, double len, int srid, JagPoint3D &p1, JagPoint3D &p2, 
+											double &segDist, double &segFraction )
+{
+	//prt(("s6110 getBetweenPointsFromLen  dim=%d len=%f \n", dim, len ));
+	double prevsegsum = 0.0;  // total len of all previous segments
+	double segsum = 0.0;      // total len of all segments including current segment
+	double dist = 0.0;
+	int plen =  point.size();
+	for ( int i=0; i < plen-1; ++i ) {
+		if ( JAG_3D == dim  ) {
+			dist = JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y), jagatof(point[i].z),
+									 jagatof(point[i+1].x), jagatof(point[i+1].y), jagatof(point[i+1].z), srid );
+		} else {
+			dist = JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y),
+									 jagatof(point[i+1].x), jagatof(point[i+1].y), srid );
+		}
+
+		segsum += dist;
+		//prt(("s1028 dist=%.3f prevsegsum=%.3f segsum=%.3f\n", dist, prevsegsum, segsum ));
+
+		if ( segsum > len || JagGeo::jagEQ( segsum, len) ) {
+			p1.x = jagatof(point[i].x); p1.y = jagatof(point[i].y); 
+			p2.x = jagatof(point[i+1].x); p2.y = jagatof(point[i+1].y); 
+			if ( JAG_3D == dim  ) { p1.z = jagatof(point[i].z); p2.z = jagatof(point[i+1].z); }
+			segDist = dist;
+			segFraction = (len-prevsegsum)/dist;
+			//prt(("s9483 retrn true\n" ));
+			return true;
+		}
+
+		prevsegsum = segsum;
+	}
+	//prt(("s9283 retrn false\n" ));
+	return false;
+}
+
+// ratio: [0.0, 1.0]  returns point
+bool JagLineString::interpolatePoint( short dim, int srid, double ratio, JagPoint3D &point )
+{
+	double length = lineLength(false, false, srid );
+	double len = length * ratio;
+	double segDist, segFraction;
+	JagPoint3D p1, p2;
+	bool rc = getBetweenPointsFromLen( dim, len, srid, p1, p2, segDist, segFraction );
+	//prt(("s2831 getBetweenPointsFromLen rc=%d\n", rc ));
+	if ( ! rc ) return false;
+
+	if ( JAG_2D == dim && JAG_GEO_WGS84 == srid ) {
+		JagGeo::interpolatePoint2D( segDist, segFraction, p1, p2, point );
+	} else {
+		point.x = p1.x + segFraction*(p2.x - p1.x);
+		point.y = p1.y + segFraction*(p2.y - p1.y);
+		if ( dim == JAG_3D ) { point.z = p1.z + segFraction*(p2.z - p1.z); }
+	}
+
+	return true;
+}
+
+double JagLineString3D::lineLength( bool removeLast, bool is3D, int srid )
+{
+	double sum = 0.0;
+	int len =  size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len-1; ++i ) {
+		if ( is3D ) {
+			sum += JagGeo::distance( point[i].x, point[i].y, point[i].z,
+									 point[i+1].x, point[i+1].y, point[i+1].z, srid );
+		} else {
+			sum += JagGeo::distance( point[i].x, point[i].y,
+									 point[i+1].x, point[i+1].y, srid);
+		}
+	}
+	return sum;
+}
+
+
+void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
+{
+	xmin = ymin = LONG_MAX;
+	xmax = ymax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = jagatof(point[i].x);
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = jagatof(point[i].y);
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+	}
+}
+
+void JagLineString::bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const
+{
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = jagatof(point[i].x);
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = jagatof(point[i].y);
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+
+		f = jagatof(point[i].z);
+		if ( f < zmin ) zmin = f;
+		if ( f > zmax ) zmax = f;
+	}
+}
+
+
+
+void JagLineString::add( const JagPoint2D &p )
+{
+	JagPoint pp( d2s(p.x).c_str(),  d2s(p.y).c_str() );
+	point.append(pp);
+}
+
+void JagLineString::add( const JagPoint3D &p )
+{
+	JagPoint pp( d2s(p.x).c_str(),  d2s(p.y).c_str(), d2s(p.z).c_str() );
+	point.append(pp);
+}
+
+void JagLineString::add( double x, double y )
+{
+	JagPoint pp( d2s(x).c_str(),  d2s(y).c_str() );
+	point.append(pp);
+}
+
+void JagLineString::add( double x, double y, double z )
+{
+	JagPoint pp( d2s(x).c_str(),  d2s(y).c_str(), d2s(z).c_str() );
+	point.append(pp);
+}
+
+void JagLineString::center2D( double &cx, double &cy, bool dropLast ) const
+{
+	cx = cy = 0.0;
+
+	int len = point.size();
+	if ( dropLast) --len;
+	if ( len < 1 ) return;
+	for ( int i=0; i < len; ++i ) {
+		cx += jagatof(point[i].x);
+		cy += jagatof(point[i].y);
+	}
+	cx = cx/len;
+	cy = cy/len;
+}
+void JagLineString::center3D( double &cx, double &cy, double &cz, bool dropLast ) const
+{
+	cx = cy = cz = 0.0;
+	int len = point.size();
+	if ( dropLast) --len;
+	if ( len < 1 ) return;
+	for ( int i=0; i < len; ++i ) {
+		cx += jagatof(point[i].x);
+		cy += jagatof(point[i].y);
+		cz += jagatof(point[i].z);
+	}
+	cx = cx/len;
+	cy = cy/len;
+	cz = cz/len;
+}
+
+
+void JagLineString3D::add( const JagPoint2D &p )
+{
+	JagPoint3D pp( d2s(p.x).c_str(),  d2s(p.y).c_str(), "0.0" );
+	point.append(pp);
+}
+
+void JagLineString3D::add( const JagPoint3D &p )
+{
+	JagPoint3D pp( d2s(p.x).c_str(),  d2s(p.y).c_str(), d2s(p.z).c_str() );
+	point.append(pp);
+}
+
+void JagLineString3D::add( double x, double y, double z )
+{
+	JagPoint3D pp;
+	pp.x = x; pp.y = y; pp.z = z;
+	point.append(pp);
+}
+
+void JagLineString3D::center3D( double &cx, double &cy, double &cz, bool dropLast ) const
+{
+	cx = cy = cz = 0.0;
+	int len = point.size();
+	if ( dropLast ) --len;
+	if ( len < 1 ) return;
+	for ( int i=0; i < len; ++i ) {
+		cx += point[i].x;
+		cy += point[i].y;
+		cz += point[i].z;
+	}
+	cx = cx/len;
+	cy = cy/len;
+	cz = cz/len; 
+}
+
+void JagLineString3D::center2D( double &cx, double &cy, bool dropLast ) const
+{
+	cx = cy = 0.0;
+	int len = point.size();
+    if ( dropLast ) --len;
+   	if ( len < 1 ) return;
+	for ( int i=0; i < len; ++i ) {
+		cx += point[i].x;
+		cy += point[i].y;
+	}
+	cx = cx/len;
+	cy = cy/len;
+}
+
+void JagLineString3D::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
+{
+	xmin = ymin = LONG_MAX;
+	xmax = ymax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = point[i].x;
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = point[i].y;
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+	}
+}
+
+void JagLineString3D::bbox3D( double &xmin, double &ymin, double &zmin,double &xmax, double &ymax, double &zmax ) const
+{
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double f;
+	for ( int i=0; i < point.size(); ++i ) {
+		f = point[i].x;
+		if ( f < xmin ) xmin = f;
+		if ( f > xmax ) xmax = f;
+
+		f = point[i].y;
+		if ( f < ymin ) ymin = f;
+		if ( f > ymax ) ymax = f;
+
+		f = point[i].z;
+		if ( f < zmin ) zmin = f;
+		if ( f > zmax ) zmax = f;
+	}
+}
+
+
 JagSquare2D::JagSquare2D(double inx, double iny, double ina, double innx, int insrid )
 {
 	init(inx, iny, ina, innx, insrid );
@@ -169,5 +839,150 @@ void JagTriangle2D::init( double inx1, double iny1, double inx2, double iny2, do
 	x2 = inx2; y2 = iny2;
 	x3 = inx3; y3 = iny3;
 	srid = insrid;
+}
+
+
+void JagPolygon::center2D(  double &cx, double &cy ) const
+{
+	cx = cy = 0.0;
+	// JagVector<JagLineString3D> linestr;
+	int len = linestr.size();
+	//prt(("s10007 len=[%d]\n", len ));
+	if ( len < 1 ) return;
+	double x, y;
+	for ( int i=0; i < len; ++i ) {
+		linestr[i].center2D(x, y, true);
+		cx += x;
+		cy += y;
+	}
+
+	cx = cx / len;
+	cy = cy / len;
+}
+
+void JagPolygon::center3D(  double &cx, double &cy, double &cz ) const
+{
+	cx = cy = cz = 0.0;
+	int len = linestr.size();
+	if ( len < 1 ) return;
+	double x, y, z;
+	for ( int i=0; i < len; ++i ) {
+		linestr[i].center3D(x, y, z, true);
+
+		cx += x;
+		cy += y;
+		cz += z;
+	}
+
+	cx = cx / len;
+	cy = cy / len;
+	cz = cz / len;
+}
+
+bool JagPolygon::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
+{
+	int len = linestr.size();
+	if ( len < 1 ) return false;
+	double xmi, ymi, xma, yma;
+	xmin = ymin =  LONG_MAX;
+	xmax = ymax = LONG_MIN;
+	int cnt = 0;
+	for ( int i=0; i < len; ++i ) {
+		if ( linestr[i].size() < 1 ) continue;
+		linestr[i].bbox2D( xmi, ymi, xma, yma );
+		if ( xmi < xmin ) xmin = xmi;
+		if ( ymi < ymin ) ymin = ymi;
+		if ( xma > xmax ) xmax = xma;
+		if ( yma > ymax ) ymax = yma;
+		++cnt;
+	}
+
+	return (cnt > 0 );
+}
+
+bool JagPolygon::bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const
+{
+	int len = linestr.size();
+	if ( len < 1 ) return false;
+	double xmi, ymi, zmi, xma, yma, zma;
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	for ( int i=0; i < len; ++i ) {
+		linestr[i].bbox3D( xmi, ymi, zmi, xma, yma, zma );
+		if ( xmi < xmin ) xmin = xmi;
+		if ( ymi < ymin ) ymin = ymi;
+		if ( zmi < zmin ) zmin = zmi;
+		if ( xma > xmax ) xmax = xma;
+		if ( yma > ymax ) ymax = yma;
+		if ( zma > zmax ) zmax = zma;
+	}
+
+	return true;
+}
+
+double JagPolygon::lineLength( bool removeLast, bool is3D, int srid )
+{
+	int len = linestr.size();
+	if ( len < 1 ) return 0.0;
+	double sum = 0.0;
+	for ( int i=0; i < len; ++i ) {
+		sum += linestr[i].lineLength( removeLast, is3D, srid );
+		//prt(("s0393 i=%d/%d sum=%f\n", i, len, sum ));
+	}
+	return sum;
+}
+
+void JagPolygon::toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const
+{
+	if ( linestr.size() < 1 ) { str=""; return; }
+	if ( hasHdr ) {
+		str = objname +  "(";
+	} else {
+		str = "(";
+	}
+
+	for ( int i=0; i < linestr.size(); ++i ) {
+		if ( i==0 ) {
+			str += "(";
+		} else {
+			str += ",(";
+		}
+		const JagLineString3D &lstr = linestr[i];
+		for (  int j=0; j< lstr.size(); ++j ) {
+			if ( j>0) { str += Jstr(","); }
+			str += d2s(lstr.point[j].x) + " " +  d2s(lstr.point[j].y);
+			if ( is3D ) { str += Jstr(" ") + d2s(lstr.point[j].z); }
+		}
+		str += ")";
+	}
+	
+	str += ")";
+}
+
+void JagPolygon::toJAG( bool is3D, bool hasHdr, int srid, Jstr &str ) const
+{
+	if ( linestr.size() < 1 ) { str=""; return; }
+	if ( hasHdr ) {
+		Jstr srids = intToStr( srid );
+		if ( is3D ) {
+			str = Jstr("CJAG=") + srids + "=0=PL3=d 0:0:0:0:0:0";
+		} else {
+			str = Jstr("CJAG=") + srids + "=0=PL=d 0:0:0:0";
+		}
+	} else {
+	}
+
+	for ( int i=0; i < linestr.size(); ++i ) {
+		if ( i>0 ) {
+			str += " |";
+		}
+		const JagLineString3D &lstr = linestr[i];
+		prt(("s1127 JagPolygon::toJAG i=%d lstr.size=%d\n", i, lstr.size() ));
+		for (  int j=0; j< lstr.size(); ++j ) {
+			str += Jstr(" ") + d2s(lstr.point[j].x) + ":" +  d2s(lstr.point[j].y);
+			if ( is3D ) { str += Jstr(":") + d2s(lstr.point[j].z); }
+		}
+	}
+	
 }
 

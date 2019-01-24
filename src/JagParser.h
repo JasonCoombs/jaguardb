@@ -24,23 +24,24 @@
 #include <string.h>
 #include <ctype.h>
 #include <string>
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/error/en.h"
 
 #include <abax.h>
 #include <JagCfg.h>
 #include <JagUtil.h>
 #include <JagVector.h>
 #include <JagStrSplit.h>
-#include <JagParseExpr.h>
 #include <JagParseParam.h>
+#include <JagParseExpr.h>
 #include <JagStrSplitWithQuote.h>
 #include <JagColumn.h>
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/error/en.h"
 
 class JaguarCPPClient;
 class JagDBServer;
+class CreateAttribute;
 
 class JagParser
 {
