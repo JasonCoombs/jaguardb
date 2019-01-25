@@ -103,38 +103,57 @@ public abstract class AbstractValueObject implements ValueObject {
         if (rawBytes == null) {
             return 0;
         }
-        return Float.valueOf(getString());
+		String s = getString();
+		if ( s == null || s.length() < 1 ) return 0.0f;
+        return Float.valueOf( s );
     }
 
     public double getDouble() {
         if (rawBytes == null) {
             return 0;
         }
-        return Double.valueOf(getString());
+		String s = getString();
+		if ( s == null || s.length() < 1 ) return 0.0;
+        return Double.valueOf( s );
     }
 
     public BigDecimal getBigDecimal() {
         if (rawBytes == null) {
-			System.out.printf("j3802 rawBytes is null");
-            return null;
+			String bs = "0.0";
+        	return new BigDecimal( bs );
         }
 
-		String str = getString().trim();
+		String s = getString();
+		if ( s == null || s.length() < 1 ) {
+			String bs = "0.0";
+        	return new BigDecimal( bs );
+		}
+		String str = s.trim();
 		// System.out.println("j3803 str=["+str + "]");
         // return new BigDecimal(getString());
         return new BigDecimal( str );
     }
     public BigInteger getBigInteger() {
         if (rawBytes == null) {
-            return null;
+			String bs = "0";
+        	return new BigInteger( bs );
         }
-        return new BigInteger(getString());
+		String s = getString();
+		if ( s == null || s.length() < 1 ) {
+			String bs = "0";
+        	return new BigInteger( bs );
+		}
+        return new BigInteger( s );
     }
     public Date getDate() throws ParseException {
         if (rawBytes == null) {
             return null;
         }
-        final String rawValue = getString();
+        String rawValue = getString();
+		if ( rawValue == null ) {
+			rawValue = "1970-01-01 00:00:00";
+		}
+
         final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         final java.util.Date utilDate = sdf.parse(rawValue);
         return new Date(utilDate.getTime());
@@ -153,6 +172,7 @@ public abstract class AbstractValueObject implements ValueObject {
             return null;
         }
         String rawValue = getString();
+		if ( rawValue == null ) { rawValue = "00:00:00"; }
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 
         sdf.setLenient(false);
@@ -165,6 +185,7 @@ public abstract class AbstractValueObject implements ValueObject {
             return null;
         }
         String rawValue = getString();
+		if ( rawValue == null ) { rawValue = "1970-01-01"; }
         SimpleDateFormat sdf;
 
         if (rawValue.length() > 11) {
@@ -197,7 +218,9 @@ public abstract class AbstractValueObject implements ValueObject {
         if (rawBytes == null) {
             return null;
         }
-        final String rawValue = getString();
+        //final String rawValue = getString();
+        String rawValue = getString();
+		if ( rawValue == null ) { rawValue = "1970-01-01"; }
         final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         sdf.setCalendar(cal);
         final java.util.Date utilDate = sdf.parse(rawValue);
@@ -221,7 +244,9 @@ public abstract class AbstractValueObject implements ValueObject {
         if (rawBytes == null) {
             return null;
         }
-        final String rawValue = getString();
+        //final String rawValue = getString();
+        String rawValue = getString();
+		if ( rawValue == null ) { rawValue = "1970-01-01 00:00:00"; }
         final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         sdf.setCalendar(cal);
         final java.util.Date utilTime = sdf.parse(rawValue);
@@ -232,7 +257,9 @@ public abstract class AbstractValueObject implements ValueObject {
         if (rawBytes == null) {
             return false;
         }
-        final String rawVal = getString();
+        //final String rawVal = getString();
+        String rawVal = getString();
+		if ( rawVal == null ) { rawVal = "0"; }
         return rawVal.equalsIgnoreCase("true") || rawVal.equalsIgnoreCase("1") || (rawBytes[0] & 0x1)==1;
     }
 
