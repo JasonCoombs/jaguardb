@@ -1138,6 +1138,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER || _binaryOp == JAG_FUNC_UNIQUE
 	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
 		 || _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT || _binaryOp == JAG_FUNC_INTERSECTION
+		 || _binaryOp == JAG_FUNC_LINESUBSTRING
 		 || _binaryOp == JAG_FUNC_ASTEXT ||  _binaryOp == JAG_FUNC_DIFFERENCE || _binaryOp == JAG_FUNC_SYMDIFFERENCE
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
@@ -3106,6 +3107,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 	             || _binaryOp == JAG_FUNC_ISSIMPLE  || _binaryOp == JAG_FUNC_ISRING
 	             || _binaryOp == JAG_FUNC_ISCONVEX  || _binaryOp == JAG_FUNC_INTERPOLATE
+				 || _binaryOp == JAG_FUNC_LINESUBSTRING
 	             || _binaryOp == JAG_FUNC_ISVALID  || _binaryOp == JAG_FUNC_ISPOLYGONCCW 
 				 || _binaryOp == JAG_FUNC_ISPOLYGONCW || _binaryOp == JAG_FUNC_POLYGONN 
 				 || _binaryOp == JAG_FUNC_SRID || _binaryOp == JAG_FUNC_SUMMARY
@@ -3116,7 +3118,7 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 		bool brc = false;
 		Jstr val;
 		prt(("s4081 processSingleStrOp lstr=[%s] ...\n", lstr.c_str() ));
-		//prt(("s4082 processSingleStrOp _carg1=[%s] ...\n", _carg1.c_str() ));
+		prt(("s4082 processSingleStrOp _carg1=[%s] ...\n", _carg1.c_str() ));
 		try {
 			brc = processSingleStrOp( _binaryOp, lstr, _carg1, val );
 		} catch ( int e ) {
@@ -3249,26 +3251,6 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 	//Jstr columns = JagParser::getColumns( str );
 	//prt(("s2821 getColumns=[%s]\n", columns.c_str() ));
 	if ( 0 == strncasecmp(str, "all(", 4 ) ) {
-		/***
-		// simple way for all, exact columns are in _colHash
-		Jstr columns = JagParser::getColumns( str );
-		prt(("s2821 getColumns=[%s]\n", columns.c_str() ));
-		const char *q = str + 4;
-		while ( *q != ')' && *q != '\0' ) ++q;  // q is at )
-		if ( *q == '\0' ) throw 2008;
-		if ( q - str -4 > 0 ) {
-			// columns += Jstr( str + 4, q - str -4 ); 
-			// debug
-			Jstr allc = Jstr( str + 4, q - str -4 );
-			if ( allc != columns ) {
-				if ( columns.size() < 1 ) {
-					columns = allc;
-				} else {
-					columns += Jstr("|") +  allc;
-				}
-			}
-		}
-		***/
 	} else if (  0 == strncasecmp(str, "geotype(", 8 ) ) {
 		// _GEOTYPE
 		type = 0;
@@ -3446,7 +3428,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
     // operandStack.size() == 1
     // otherwise, the expression is not well formed.
     if ( operandStack.size() != 1 ) {
-		//prt(("s2093 operandStack.size=%d !=1  throw 326\n", operandStack.size() ));
+		prt(("s2093 operandStack.size=%d !=1  throw 326\n", operandStack.size() ));
         throw 2326;
     }
 
@@ -3894,8 +3876,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				} else throw 1319;
 				operandStack.pop();  // popped the third element
 			}
-		}
-
+		} 
 		//operandStack.pop();  // popped the third element
 
 		// right child
@@ -4055,7 +4036,26 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			}
 
 			operandStack.pop();
-		} 
+		} else if ( op == JAG_FUNC_LINESUBSTRING ) {
+			Jstr endf;
+			const char *p = NULL;
+			ExpressionElementNode *t3 = operandStack.top();
+			if ( t3->getValue(p) ) {
+				endf = p; 
+			} else throw 1323;
+			operandStack.pop();  // popped the third element
+
+			if ( operandStack.empty() ) throw 1325;
+			t3 = operandStack.top();
+			Jstr startf;
+			if ( t3->getValue(p) ) {
+				startf = p; 
+			} else throw 1326;
+			operandStack.pop();  // popped the startfrac element
+
+			carg1 = startf + ":" + endf;
+			// leaving the geom column in stack for right to be assigned
+		}
 
 		// left child
 		if ( operandStack.empty() ) throw 446;
@@ -4123,6 +4123,7 @@ bool BinaryExpressionBuilder::funcHasZeroChildren( short fop )
 	return false;
 }
 
+// only one col/onject needed
 bool BinaryExpressionBuilder::funcHasOneChildren( short fop )
 {
 	if ( fop == JAG_FUNC_TOSECOND || fop == JAG_FUNC_TOMICROSECOND
@@ -4167,6 +4168,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 	return false;
 }
 
+// two columns/objects needed
 bool BinaryExpressionBuilder::funcHasThreeChildren( short fop )
 {
 	if ( fop == JAG_FUNC_NEARBY || fop == JAG_FUNC_DISTANCE ) {
@@ -4256,6 +4258,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_TOMICROSECOND || 
 		fop == JAG_FUNC_LINELENGTH || 
 		fop == JAG_FUNC_INTERPOLATE || 
+		fop == JAG_FUNC_LINESUBSTRING || 
 		fop == JAG_FUNC_DEGREES || fop == JAG_FUNC_RADIANS ||
 		fop == JAG_FUNC_LENGTH || fop == JAG_FUNC_COUNT ) {
 			return true;
@@ -4514,6 +4517,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_RINGN; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "interpolate", 11 ) ) {
 		fop = JAG_FUNC_INTERPOLATE; len = 11; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "linesubstring", 13 ) ) {
+		fop = JAG_FUNC_LINESUBSTRING; len = 13; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "astext", 6 ) ) {
 		fop = JAG_FUNC_ASTEXT; len = 6; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "text", 4 ) ) {
@@ -5099,6 +5104,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllAsText( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_INTERPOLATE ) {
 		rc = doAllInterpolate( srid1, colType1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_LINESUBSTRING ) {
+		rc = doAllLineSubstring( srid1, colType1, sp1, carg, value );
 	} else {
 	}
 	//prt(("s2337 rc=%d\n", rc ));
@@ -5888,7 +5895,8 @@ bool BinaryOpNode::doAllInterpolate( int srid, const Jstr &colType, const JagStr
 	value = "";
 
 	double frac = carg.tof();
-	JagLineString line;
+	//JagLineString line;
+	JagLineString3D line;
 	JagPolygon pgon;
 	bool rc = false;
 	JagPoint3D point;
@@ -5902,7 +5910,7 @@ bool BinaryOpNode::doAllInterpolate( int srid, const Jstr &colType, const JagStr
 		px = jagatof( sp[JAG_SP_START+2] );
 		py = jagatof( sp[JAG_SP_START+3] );
 		line.add(px, py);
-		rc = line.interpolatePoint( JAG_2D, srid, frac, point );
+		rc = line.interpolatePoint( JAG_3D, srid, frac, point );
 		prt(("s5029 rc=%d\n", rc ));
 		if ( ! rc ) return false;
 		value += d2s( point.x ) + " " + d2s( point.y ); 
@@ -5923,17 +5931,91 @@ bool BinaryOpNode::doAllInterpolate( int srid, const Jstr &colType, const JagStr
     } else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
 		value = Jstr("CJAG=0=0=PT=d 0:0:0:0 ");
 	    JagParser::addPolygonData( pgon, sp, true );
-		line.copyFrom( pgon.linestr[0], true );
-		rc = line.interpolatePoint( JAG_2D, srid, frac, point );
+		//line.copyFrom( pgon.linestr[0], true );
+		//rc = line.interpolatePoint( JAG_2D, srid, frac, point );
+		rc = pgon.linestr[0].interpolatePoint( JAG_2D, srid, frac, point );
 		if ( ! rc ) return false;
 		value += d2s( point.x ) + " " + d2s( point.y ); 
     } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
 		value = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ");
 	    JagParser::addPolygon3DData( pgon, sp, true );
-		line.copyFrom( pgon.linestr[0], true );
-		rc = line.interpolatePoint( JAG_2D, srid, frac, point );
+		//line.copyFrom( pgon.linestr[0], true );
+		//rc = line.interpolatePoint( JAG_3D, srid, frac, point );
+		rc = pgon.linestr[0].interpolatePoint( JAG_3D, srid, frac, point );
 		if ( ! rc ) return false;
 		value += d2s( point.x ) + " " + d2s( point.y )  + " " + d2s(point.z);
+	} else {
+		return false;
+	}
+
+	return true;
+}
+
+
+bool BinaryOpNode::doAllLineSubstring( int srid, const Jstr &colType, const JagStrSplit &sp, const Jstr& carg, Jstr &value )
+{
+	prt(("s3453 doAllLineSubstring() srid=%d colType=[%s] sp1.print(): \n", srid, colType.c_str() ));
+	//sp.print();
+	value = "";
+
+	JagStrSplit fs(carg, ':' );
+	if ( fs.size() < 2 ) return false;
+
+	double startfrac = fs[0].tof();
+	double endfrac = fs[1].tof();
+	if ( startfrac > endfrac ) return false;
+	JagLineString3D line;
+	JagPolygon pgon;
+	bool rc = false;
+	Jstr retLstr;
+
+	if ( colType == JAG_C_COL_TYPE_LINE ) {
+		JagPoint3D point;
+		value = Jstr("CJAG=0=0=LS=d 0:0:0:0 ");
+		double px, py;
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
+		line.add(px, py);
+		px = jagatof( sp[JAG_SP_START+2] );
+		py = jagatof( sp[JAG_SP_START+3] );
+		line.add(px, py);
+		rc = line.interpolatePoint( JAG_2D, srid, startfrac, point );
+		if ( ! rc ) return false;
+		value += d2s(point.x) + ":" + d2s(point.y) +  " ";
+		rc = line.interpolatePoint( JAG_2D, srid, endfrac, point );
+		if ( ! rc ) return false;
+		value += d2s(point.x) + ":" + d2s(point.y);
+	} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+		JagPoint3D point;
+		value = Jstr("CJAG=0=0=LS3=d 0:0:0:0:0:0 ");
+		double px, py, pz;
+		px = jagatof( sp[JAG_SP_START+0] );
+		py = jagatof( sp[JAG_SP_START+1] );
+		pz = jagatof( sp[JAG_SP_START+2] );
+		line.add(px, py);
+		px = jagatof( sp[JAG_SP_START+3] );
+		py = jagatof( sp[JAG_SP_START+4] );
+		pz = jagatof( sp[JAG_SP_START+5] );
+		line.add(px, py);
+
+		rc = line.interpolatePoint( JAG_3D, srid, startfrac, point );
+		if ( ! rc ) return false;
+		value += d2s(point.x) + ":" + d2s(point.y) + ":" + d2s(point.z) +  " ";
+		rc = line.interpolatePoint( JAG_2D, srid, endfrac, point );
+		if ( ! rc ) return false;
+		value += d2s(point.x) + ":" + d2s(point.y) + ":" + d2s(point.z);
+    } else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+		value = Jstr("CJAG=0=0=LS=d 0:0:0:0 ");
+	    JagParser::addPolygonData( pgon, sp, true );
+		rc = pgon.linestr[0].substring( JAG_2D, srid, startfrac, endfrac, retLstr );
+		if ( ! rc ) return false;
+		value += retLstr;
+    } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+		value = Jstr("CJAG=0=0=LS3=d 0:0:0:0:0:0 ");
+	    JagParser::addPolygon3DData( pgon, sp, true );
+		rc = pgon.linestr[0].substring( JAG_3D, srid, startfrac, endfrac, retLstr );
+		if ( ! rc ) return false;
+		value += retLstr;
 	} else {
 		return false;
 	}

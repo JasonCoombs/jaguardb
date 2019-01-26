@@ -8630,7 +8630,6 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	}
 	
 	// process aggregation functions, also applied for order by simple object
-	// if ( !_isToGate && hasAggregate && _jda->getdatalen() > 0 ) 
 	if ( hasAggregate && _jda->getdatalen() > 0 ) {
 		JagSchemaRecord aggrec;
 		rc = aggrec.parseRecord( _dataFileHeader.c_str() );
@@ -8909,7 +8908,8 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 		checkquery += AbaxDataString(" group by ") + parseParam.selectGroupClause + " ";
 	}
 
-	if ( parseParam.hasOrder ) {
+	//prt(("c1028 parseParam.hasOrder=%d selectOrderClause=[%s]\n", parseParam.hasOrder, parseParam.selectOrderClause.c_str() ));
+	if ( parseParam.hasOrder && parseParam.selectOrderClause.size() > 0 ) {
 		checkquery += AbaxDataString(" order by ") + parseParam.selectOrderClause + " ";
 	}
 
@@ -8966,7 +8966,7 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 	}
 	
 	// if hasOrderBy, check the validation of those order by columns, original query check
-	int orc;
+	int orc = -1;
 	if ( parseParam.hasOrder && ( orc = checkOrderByValidation( parseParam, attrs, numCols, num ) ) == 0 ) {
 		errmsg = "E4302 Error order by [";
 		errmsg += parseParam.origCmd + "]";
@@ -8983,7 +8983,7 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 	if ( parseParam.hasGroup ) {
 		newquery += AbaxDataString(" group by ") + parseParam.selectGroupClause + " ";
 	}
-	if ( 2 == orc ) {
+	if ( 2 == orc && parseParam.selectOrderClause.size() > 0 ) {
 		// if order by first key asc or desc, add order by part to server
 		newquery += AbaxDataString(" order by ") + parseParam.selectOrderClause + " ";
 	}
@@ -9519,6 +9519,7 @@ int JaguarCPPClient::processDataSortArray( const JagParseParam &parseParam,
 int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam ) 
 {	
 	// process order by and possible limit condition
+	_debug && prt(("c1038 processOrderByQuery ...\n" ));
 	AbaxFixString sortstr;
 	AbaxDataString tmpuuid;
 	JagSchemaRecord orderrec(true);
@@ -9528,10 +9529,12 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 	abaxint writeoff = 0, totbytes = _jda->elements( 1 );
 	bool isMem = true;
 	abaxint orderByMemLimit = jagatoll((_cfg->getValue("ORDERBY_MEM_LIMIT", "100")).c_str());
+	abaxint orderByLimit = jagatoll((_cfg->getValue("ORDERBY_LIMIT", "100000")).c_str());
 	
 	if ( totbytes > orderByMemLimit*1024*1024 ) { // order by sorted in memory array
 		isMem = false;
 	}	
+	_debug && prt(("c3831 isMem=%d\n", isMem ));
 	
 	int rc = orderrec.parseRecord( _dataFileHeader.c_str() );
 	JagHashMap<AbaxString, abaxint> sentDataList;
@@ -9554,13 +9557,15 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 	memset(sortbuf, 0, sortkeylen+sortvallen+1);
 	
 	_orderByKEYLEN = sortkeylen;
-	_orderByVALLEN = sortvallen;						
+	_orderByVALLEN = sortvallen;
+	int entries = 0;
 	if ( isMem ) {
 		_orderByReadFrom = JAG_ORDERBY_READFROM_MEMARR;
 		if ( _orderByMemArr ) {
 			delete _orderByMemArr;
 		}
 		_orderByMemArr = new PairArray();
+		_debug && prt(("c3371 isMem readit ...\n" ));
 		while( _jda->readit(sortstr) ) {
 			writeoff = 0;
 			for ( int i = 0; i < ordernum; ++i ) {
@@ -9573,7 +9578,13 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 			memcpy(sortbuf+writeoff, sortstr.c_str(), sortstr.length());
 			JagDBPair tpair(sortbuf, sortkeylen, sortbuf+sortkeylen, sortstr.length());
 			_orderByMemArr->insert( tpair );
+			++ entries;
+			if ( entries > orderByLimit ) {
+				_debug && prt(("c3372 mem orderByLimit=%d reached, break\n", orderByLimit ));
+				break;
+			}
 		}
+		_debug && prt(("c3371 isMem readit done\n" ));
 		
 		if ( _orderByIsAsc ) {
 			_orderByReadPos = -1;
@@ -9627,6 +9638,8 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 		_orderByDiskArr = new JagDiskArrayClient(clifpath, _orderByRecord);
 		JagDBPair retpair;
 		
+		_debug && prt(("c0018 isdisk start readit ...\n" ));
+		entries = 0;
 		while( _jda->readit(sortstr) ) {
 			writeoff = 0;
 			for ( int i = 0; i < ordernum; ++i ) {
@@ -9640,8 +9653,15 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 			JagDBPair tpair(sortbuf, sortkeylen, sortbuf+sortkeylen, sortstr.length(), true);
 			_orderByDiskArr->insertSync( tpair );
 			// _orderByDiskArr->insert(tpair, insertCode, true, false, retpair);
+			++ entries;
+			if ( entries > orderByLimit ) {
+				_debug && prt(("c3374 disk orderByLimit=%d reached, break\n", orderByLimit ));
+				break;
+			}
 		}
+		_debug && prt(("c0018 isdisk end readit\n" ));
 		_orderByDiskArr->flushInsertBufferSync();
+		_debug && prt(("c0018 isdisk done flushInsertBufferSync \n" ));
 		// _orderByDiskArr->copyInsertBuffer();
 		// _orderByDiskArr->flushInsertBuffer2();
 		// _orderByDiskArr->cleanInsertBufferCopy();

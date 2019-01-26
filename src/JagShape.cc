@@ -416,44 +416,25 @@ double JagLineString::lineLength( bool removeLast, bool is3D, int srid )
 	return sum;
 }
 
-bool JagLineString::getBetweenPointsFromLen( short dim, double len, int srid, JagPoint3D &p1, JagPoint3D &p2, 
-											double &segDist, double &segFraction )
+double JagLineString3D::lineLength( bool removeLast, bool is3D, int srid )
 {
-	//prt(("s6110 getBetweenPointsFromLen  dim=%d len=%f \n", dim, len ));
-	double prevsegsum = 0.0;  // total len of all previous segments
-	double segsum = 0.0;      // total len of all segments including current segment
-	double dist = 0.0;
-	int plen =  point.size();
-	for ( int i=0; i < plen-1; ++i ) {
-		if ( JAG_3D == dim  ) {
-			dist = JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y), jagatof(point[i].z),
-									 jagatof(point[i+1].x), jagatof(point[i+1].y), jagatof(point[i+1].z), srid );
+	double sum = 0.0;
+	int len =  size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len-1; ++i ) {
+		if ( is3D ) {
+			sum += JagGeo::distance( point[i].x, point[i].y, point[i].z,
+									 point[i+1].x, point[i+1].y, point[i+1].z, srid );
 		} else {
-			dist = JagGeo::distance( jagatof(point[i].x), jagatof(point[i].y),
-									 jagatof(point[i+1].x), jagatof(point[i+1].y), srid );
+			sum += JagGeo::distance( point[i].x, point[i].y,
+									 point[i+1].x, point[i+1].y, srid);
 		}
-
-		segsum += dist;
-		//prt(("s1028 dist=%.3f prevsegsum=%.3f segsum=%.3f\n", dist, prevsegsum, segsum ));
-
-		if ( segsum > len || JagGeo::jagEQ( segsum, len) ) {
-			p1.x = jagatof(point[i].x); p1.y = jagatof(point[i].y); 
-			p2.x = jagatof(point[i+1].x); p2.y = jagatof(point[i+1].y); 
-			if ( JAG_3D == dim  ) { p1.z = jagatof(point[i].z); p2.z = jagatof(point[i+1].z); }
-			segDist = dist;
-			segFraction = (len-prevsegsum)/dist;
-			//prt(("s9483 retrn true\n" ));
-			return true;
-		}
-
-		prevsegsum = segsum;
 	}
-	//prt(("s9283 retrn false\n" ));
-	return false;
+	return sum;
 }
 
 // ratio: [0.0, 1.0]  returns point
-bool JagLineString::interpolatePoint( short dim, int srid, double ratio, JagPoint3D &point )
+bool JagLineString3D::interpolatePoint( short dim, int srid, double ratio, JagPoint3D &point )
 {
 	double length = lineLength(false, false, srid );
 	double len = length * ratio;
@@ -474,23 +455,140 @@ bool JagLineString::interpolatePoint( short dim, int srid, double ratio, JagPoin
 	return true;
 }
 
-double JagLineString3D::lineLength( bool removeLast, bool is3D, int srid )
+bool JagLineString3D::getBetweenPointsFromLen( short dim, double len, int srid, JagPoint3D &p1, JagPoint3D &p2, 
+											double &segDist, double &segFraction )
 {
-	double sum = 0.0;
-	int len =  size();
-	if ( removeLast ) --len;
-	for ( int i=0; i < len-1; ++i ) {
-		if ( is3D ) {
-			sum += JagGeo::distance( point[i].x, point[i].y, point[i].z,
+	//prt(("s6110 getBetweenPointsFromLen  dim=%d len=%f \n", dim, len ));
+	double prevsegsum = 0.0;  // total len of all previous segments
+	double segsum = 0.0;      // total len of all segments including current segment
+	double dist = 0.0;
+	int plen =  point.size();
+	for ( int i=0; i < plen-1; ++i ) {
+		if ( JAG_3D == dim  ) {
+			dist = JagGeo::distance( point[i].x, point[i].y, point[i].z,
 									 point[i+1].x, point[i+1].y, point[i+1].z, srid );
 		} else {
-			sum += JagGeo::distance( point[i].x, point[i].y,
-									 point[i+1].x, point[i+1].y, srid);
+			dist = JagGeo::distance( point[i].x, point[i].y,
+									 point[i+1].x, point[i+1].y, srid );
 		}
+
+		segsum += dist;
+		//prt(("s1028 dist=%.3f prevsegsum=%.3f segsum=%.3f\n", dist, prevsegsum, segsum ));
+
+		if ( segsum > len || JagGeo::jagEQ( segsum, len) ) {
+			p1.x = point[i].x; p1.y = point[i].y; 
+			p2.x = point[i+1].x; p2.y = point[i+1].y; 
+			if ( JAG_3D == dim  ) { p1.z = point[i].z; p2.z = point[i+1].z; }
+			segDist = dist;
+			segFraction = (len-prevsegsum)/dist;
+			//prt(("s9483 retrn true\n" ));
+			return true;
+		}
+
+		prevsegsum = segsum;
 	}
-	return sum;
+	//prt(("s9283 retrn false\n" ));
+	return false;
 }
 
+// ratio: [0.0, 1.0]  returns point
+bool JagLineString3D::substring( short dim, int srid, double startFrac, double endFrac, Jstr &retLstr )
+{
+	// qwer todo
+	double length = lineLength(false, false, srid );
+	double len1 = length * startFrac;
+	double len2 = length * endFrac;
+
+	double prevsegsum = 0.0;  // total len of all previous segments
+	double segsum = 0.0;      // total len of all segments including current segment
+	double dist = 0.0;
+	int plen =  point.size();
+	bool inside = false;
+	JagPoint3D p11, p12;
+	JagPoint3D p21, p22;
+	double segDist1, segFraction1;
+	double segDist2, segFraction2;
+	JagVector<JagPoint3D> pvec;
+
+	for ( int i=0; i < plen-1; ++i ) {
+		if ( JAG_3D == dim  ) {
+			dist = JagGeo::distance( point[i].x, point[i].y, point[i].z,
+									 point[i+1].x, point[i+1].y, point[i+1].z, srid );
+		} else {
+			dist = JagGeo::distance( point[i].x, point[i].y,
+									 point[i+1].x, point[i+1].y, srid );
+		}
+
+		segsum += dist;
+		//prt(("s1028 dist=%.3f prevsegsum=%.3f segsum=%.3f\n", dist, prevsegsum, segsum ));
+
+		if ( ! inside ) {
+    		if ( segsum > len1 || JagGeo::jagEQ( segsum, len1) ) {
+    			p11.x = point[i].x; p11.y = point[i].y; 
+    			p12.x = point[i+1].x; p12.y = point[i+1].y; 
+    			if ( JAG_3D == dim  ) { p11.z = point[i].z; p12.z = point[i+1].z; }
+    			segDist1 = dist;
+    			segFraction1 = (len1-prevsegsum)/dist;
+    			inside = true;
+    		}
+		}
+
+
+		if ( inside ) {
+    		if ( segsum > len2 || JagGeo::jagEQ( segsum, len2) ) {
+    			p21.x = point[i].x; p21.y = point[i].y; 
+    			p22.x = point[i+1].x; p22.y = point[i+1].y; 
+    			if ( JAG_3D == dim  ) { p21.z = point[i].z; p22.z = point[i+1].z; }
+    			segDist2 = dist;
+    			segFraction2 = (len2-prevsegsum)/dist;
+    			break;
+    		} else {
+				if ( JAG_3D == dim ) {
+					pvec.append( JagPoint3D(point[i+1].x, point[i+1].y, point[i+1].z ) );
+				} else {
+					pvec.append( JagPoint3D(point[i+1].x, point[i+1].y, 0.0) );
+				}
+			}
+		}
+
+		prevsegsum = segsum;
+	}
+
+	JagPoint3D startPoint;
+	if ( JAG_2D == dim && JAG_GEO_WGS84 == srid ) {
+		JagGeo::interpolatePoint2D( segDist1, segFraction1, p11, p12, startPoint );
+	} else {
+		startPoint.x = p11.x + segFraction1*(p12.x - p11.x);
+		startPoint.y = p11.y + segFraction1*(p12.y - p11.y);
+		if ( dim == JAG_3D ) { startPoint.z = p11.z + segFraction1*(p12.z - p11.z); }
+	}
+
+	JagPoint3D endPoint;
+	if ( JAG_2D == dim && JAG_GEO_WGS84 == srid ) {
+		JagGeo::interpolatePoint2D( segDist2, segFraction2, p21, p22, endPoint );
+	} else {
+		endPoint.x = p21.x + segFraction2*(p22.x - p21.x);
+		endPoint.y = p21.y + segFraction2*(p22.y - p21.y);
+		if ( dim == JAG_3D ) { endPoint.z = p21.z + segFraction2*(p22.z - p21.z); }
+	}
+
+
+	if ( JAG_2D == dim ) {
+		retLstr = d2s(startPoint.x) + ":" + d2s(startPoint.y);
+		for ( int i=0; i < pvec.size(); ++i ) {
+			retLstr += Jstr(" ") +  d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
+		}
+		retLstr += Jstr(" " ) +  d2s(endPoint.x) + ":" + d2s(endPoint.y);
+	} else {
+		retLstr = d2s(startPoint.x) + ":" + d2s(startPoint.y) + ":" + d2s(startPoint.z);
+		for ( int i=0; i < pvec.size(); ++i ) {
+			retLstr += Jstr(" ") +  d2s(pvec[i].x) + ":" + d2s(pvec[i].y) + ":" + d2s(pvec[i].z);
+		}
+		retLstr += Jstr(" " ) +  d2s(endPoint.x) + ":" + d2s(endPoint.y) + ":" + d2s(endPoint.z);
+	}
+	
+	return true;
+}
 
 void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
 {

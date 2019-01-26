@@ -472,6 +472,7 @@
 #define JAG_FUNC_SYMDIFFERENCE  282  // g1+g2 - (g1 common g2)
 #define JAG_FUNC_ISCONVEX       283  // if outer ring of polygon is convex
 #define JAG_FUNC_INTERPOLATE    284  // find point on a linestring by fraction
+#define JAG_FUNC_LINESUBSTRING  285  // linesubstring(lstr, 0.1, 0.8) substring between two end fraction points
 
 
 // multi-line data ( string functions )

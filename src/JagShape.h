@@ -412,6 +412,10 @@ class JagLineString3D
 		const JagPoint3D& operator[](int i ) const { return point[i]; }
 		double lineLength( bool removeLast, bool is3D, int srid );
 
+		bool  interpolatePoint( short dim, int srid, double fraction, JagPoint3D &point );
+		bool  getBetweenPointsFromLen( short dim, double len, int srid, JagPoint3D &p1, JagPoint3D &p2, 
+										double &segdist, double &segFraction );
+		bool  substring( short dim, int srid, double startFrac, double endFrac, Jstr &lstr );
 		JagVector<JagPoint3D> point;
 };
 
@@ -437,9 +441,6 @@ class JagLineString
 		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		const JagPoint& operator[](int i ) const { return point[i]; }
 		double lineLength( bool removeLast, bool is3D, int srid );
-		bool  interpolatePoint( short dim, int srid, double fraction, JagPoint3D &point );
-		bool  getBetweenPointsFromLen( short dim, double len, int srid, JagPoint3D &p1, JagPoint3D &p2, 
-										double &segdist, double &segFraction );
 
 		JagVector<JagPoint> point;
 };
