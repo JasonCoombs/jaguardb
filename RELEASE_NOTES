@@ -1,3 +1,18 @@
+
+JaguarDB 2.9.7 01/27/2019
+------------------------------------------------------------------
+added:
+1. isconvex() -- check if the outer ring of a polygon is convex
+2. interpolate() -- the point on linestring where linelength is at a fraction
+3. linesubstring()  -- substring of linestring between start fraction and end fraction
+4. linelength() -- linear length of line strings
+
+fixed bug: 
+1. closestpoint()  
+2. order by with limit
+3. getDouble() in jar file
+4. select count(*) error
+
 JaguarDB 2.9.6 01/22/2019
 ------------------------------------------------------------------
 Added:
