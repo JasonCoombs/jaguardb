@@ -2739,10 +2739,13 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    union(geom1,geom2)      -- union of two geoms. Polygon outer ring should be counter-clock-wise\n";
 		str += "    collect(geom1,geom2)    -- collection of two geoms\n";
 		str += "    topolygon(geom)         -- converting square, rectangle, circle, ellipse, triangle to polygon\n";
+		str += "    topolygon(geom,N)       -- converting circle, ellipse to polygon with N points\n";
 		str += "    text(geom)              -- text string of a geometry shape\n";
 		str += "    difference(g1,g2)       -- g1 minus the common part of g1 and g2\n";
 		str += "    symdifference(g1,g2)    -- g1+g2 minus the common part of g1 and g2\n";
 		str += "    isconvex(pgon)          -- check if the outer ring of a polygon is convex\n";
+		str += "    interpolate(lstr,frac)  -- the point on linestring where linelength is at a fraction (0.0-1.0)\n";
+		str += "    linesubstring(lstr,startfrac,endfrac)  -- substring of linestring between start fraction and end fraction\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
@@ -2754,6 +2757,9 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "select angle(c1,c2) from g3 where id < 100;\n";
 		str += "select buffer(col2, 'distance=symmetric:20,join=round:20,end=round') as buf from g2;\n";
 		str += "select perimeter(squares) as perim from myshape;\n";
+		str += "select ringn(poly, 2) as ring2 from myshape;\n";
+		str += "select interpolate(lstr, 0.5) as midpoint from myline;\n";
+		str += "select linesubstring(lstr, 0.2, 0.8) as midseg from myline where a=100;\n";
 	} else if ( 0 == strncasecmp( cmd, "update", 6 ) ) {
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1='...' and KEY2='...', ... ;\n";
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1>='...' and KEY2>='...', ...;\n";
@@ -12848,10 +12854,11 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
     	    root = parseParam->selColVec[i].tree->getRoot();
     		AbaxFixString str;
     		root->checkFuncValidConstantOnly( str, typeMode, type, length );
+			/**
     		prt(("s7372 checkFuncValidConstantOnly str=[%s] typeMode=%d type=[%s] length=%d name=%s asname=%s\n",
     			 str.c_str(), typeMode, type.c_str(), length, 
     			 parseParam->selColVec[i].name.c_str(), parseParam->selColVec[i].asName.c_str() ));
-    
+			 ***/
 			if ( str.size() > 0 ) {
     			asName = parseParam->selColVec[i].asName;
             	rec.addNameValue( asName.c_str(), str.c_str() );
@@ -12861,7 +12868,7 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
 
 		if ( cnt > 0 ) {
         	int rc = JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
-			prt(("s1128 sendMessageLength msg=[%s] rc=%d\n", rec.getSource(), rc  ));
+			//prt(("s1128 sendMessageLength msg=[%s] rc=%d\n", rec.getSource(), rc  ));
 			return rc;
 		} else {
 			return 0;

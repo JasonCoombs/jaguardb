@@ -4116,6 +4116,7 @@ short BinaryExpressionBuilder::precedence( short fop )
 	}
 }
 
+//  select curdate() 
 bool BinaryExpressionBuilder::funcHasZeroChildren( short fop )
 {
 	if ( fop == JAG_FUNC_CURDATE || fop == JAG_FUNC_CURTIME 
@@ -4124,6 +4125,7 @@ bool BinaryExpressionBuilder::funcHasZeroChildren( short fop )
 }
 
 // only one col/onject needed
+// select miletometer(12.3) 
 bool BinaryExpressionBuilder::funcHasOneChildren( short fop )
 {
 	if ( fop == JAG_FUNC_TOSECOND || fop == JAG_FUNC_TOMICROSECOND
@@ -4133,12 +4135,13 @@ bool BinaryExpressionBuilder::funcHasOneChildren( short fop )
 	return false;
 }
 
+// func(col1, col2, [...])
 bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 {
 	if ( fop == JAG_FUNC_MOD || fop == JAG_FUNC_POW 
 		 || fop == JAG_FUNC_DATEDIFF 
 		 || fop == JAG_LOGIC_AND || fop == JAG_LOGIC_OR || BinaryOpNode::isMathOp(fop) 
-		 || fop == JAG_FUNC_DISTANCE 
+		 //|| fop == JAG_FUNC_DISTANCE 
 		 || fop == JAG_FUNC_WITHIN 
 		 || fop == JAG_FUNC_COVEREDBY 
 		 || fop == JAG_FUNC_COVER
@@ -4147,7 +4150,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_SAME 
 		 || fop == JAG_FUNC_INTERSECT 
 		 || fop == JAG_FUNC_DISJOINT 
-		 || fop == JAG_FUNC_NEARBY 
+		 //|| fop == JAG_FUNC_NEARBY 
 		 || fop == JAG_FUNC_CLOSESTPOINT 
 		 || fop == JAG_FUNC_ANGLE 
 		 || fop == JAG_FUNC_POINTN 

@@ -13174,6 +13174,7 @@ bool JagGeo::doAllNearby( const Jstr& mark1, const Jstr &colType1, int srid1, co
 	double px,py,pz, x,y,z, R1x, R1y, R1z, R2x, R2y, R2z;
 	getCoordAvg( colType1, sp1, px,py,pz, R1x, R1y, R1z );
 	getCoordAvg( colType2, sp2, x,y,z, R2x, R2y, R2z );
+	prt(("s1029 r=%.2f px=%.2f py=%.2f pz=%.2f    x=%.2f y=%.2f z=%.2f\n", r, px,py,pz, x,y,z ));
 
 	if ( 0 == srid1 ) {
     	if ( 2 == dim1 ) {
@@ -13206,6 +13207,7 @@ bool JagGeo::doAllNearby( const Jstr& mark1, const Jstr &colType1, int srid1, co
 	double dist;
 	if ( 2 == dim1 ) {
 		dist = distance( px,py, x,y, srid1 );
+		prt(("s1737 dist=%.2f r=%.2f\n", dist, r ));
 		if ( jagLE( dist, r ) ) return true; 
 	} else if ( 3 == dim1 ) {
 		dist = distance( px,py,pz, x,y,z, srid1 );
@@ -13351,28 +13353,28 @@ int JagGeo::getPolyDimension( const Jstr& colType )
 void JagGeo::getCoordAvg( const Jstr &colType, const JagStrSplit &sp, double &x, double &y, double &z, 
 							double &Rx, double &Ry, double &Rz )
 {
-	double px1 = jagatof( sp[0].c_str() );
-	double py1 = jagatof( sp[1].c_str() );
-	double pz1 = jagatof( sp[2].c_str() );
+	double px1 = jagatof( sp[JAG_SP_START+0].c_str() );
+	double py1 = jagatof( sp[JAG_SP_START+1].c_str() );
+	double pz1 = jagatof( sp[JAG_SP_START+2].c_str() );
 	x = px1;
 	y = py1;
 	z = pz1;
 	Rx = Ry = Rz = 0.0;
 
 	if ( colType == JAG_C_COL_TYPE_LINE ) {
-		double px2 = jagatof( sp[2].c_str() );
-		double py2 = jagatof( sp[3].c_str() );
+		double px2 = jagatof( sp[JAG_SP_START+2].c_str() );
+		double py2 = jagatof( sp[JAG_SP_START+3].c_str() );
 		x = (px1+px2)/2.0;
 		y = (py1+py2)/2.0;
 		Rx = jagmax( fabs(x-px1), fabs(x-px2) );
 		Ry = jagmax( fabs(y-py1), fabs(y-py2) );
 	} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
-		double px2 = jagatof( sp[3].c_str() );
-		double py2 = jagatof( sp[4].c_str() );
-		double pz2 = jagatof( sp[5].c_str() );
-		double px3 = jagatof( sp[6].c_str() );
-		double py3 = jagatof( sp[7].c_str() );
-		double pz3 = jagatof( sp[8].c_str() );
+		double px2 = jagatof( sp[JAG_SP_START+3].c_str() );
+		double py2 = jagatof( sp[JAG_SP_START+4].c_str() );
+		double pz2 = jagatof( sp[JAG_SP_START+5].c_str() );
+		double px3 = jagatof( sp[JAG_SP_START+6].c_str() );
+		double py3 = jagatof( sp[JAG_SP_START+7].c_str() );
+		double pz3 = jagatof( sp[JAG_SP_START+8].c_str() );
 		x = (px1+px2+px3)/3.0;
 		y = (py1+py2+py3)/3.0;
 		z = (pz1+pz2+pz3)/3.0;
@@ -13380,21 +13382,21 @@ void JagGeo::getCoordAvg( const Jstr &colType, const JagStrSplit &sp, double &x,
 		Ry = jagMax( fabs(y-py1), fabs(y-py2), fabs(y-py3) );
 		Rz = jagMax( fabs(z-pz1), fabs(z-pz2), fabs(z-pz3) );
 	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
-		double px2 = jagatof( sp[2].c_str() );
-		double py2 = jagatof( sp[3].c_str() );
-		double px3 = jagatof( sp[4].c_str() );
-		double py3 = jagatof( sp[5].c_str() );
+		double px2 = jagatof( sp[JAG_SP_START+2].c_str() );
+		double py2 = jagatof( sp[JAG_SP_START+3].c_str() );
+		double px3 = jagatof( sp[JAG_SP_START+4].c_str() );
+		double py3 = jagatof( sp[JAG_SP_START+5].c_str() );
 		x = (px1+px2+px3)/3.0;
 		y = (py1+py2+py3)/3.0;
 		Rx = jagMax( fabs(x-px1), fabs(x-px2), fabs(x-px3) );
 		Ry = jagMax( fabs(y-py1), fabs(y-py2), fabs(y-py3) );
 	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
-		double px2 = jagatof( sp[3].c_str() );
-		double py2 = jagatof( sp[4].c_str() );
-		double pz2 = jagatof( sp[5].c_str() );
-		double px3 = jagatof( sp[6].c_str() );
-		double py3 = jagatof( sp[7].c_str() );
-		double pz3 = jagatof( sp[8].c_str() );
+		double px2 = jagatof( sp[JAG_SP_START+3].c_str() );
+		double py2 = jagatof( sp[JAG_SP_START+4].c_str() );
+		double pz2 = jagatof( sp[JAG_SP_START+5].c_str() );
+		double px3 = jagatof( sp[JAG_SP_START+6].c_str() );
+		double py3 = jagatof( sp[JAG_SP_START+7].c_str() );
+		double pz3 = jagatof( sp[JAG_SP_START+8].c_str() );
 		x = (px1+px2+px3)/3.0;
 		y = (py1+py2+py3)/3.0;
 		z = (pz1+pz2+pz3)/3.0;
@@ -13402,20 +13404,20 @@ void JagGeo::getCoordAvg( const Jstr &colType, const JagStrSplit &sp, double &x,
 		Ry = jagMax( fabs(y-py1), fabs(y-py2), fabs(y-py3) );
 		Rz = jagMax( fabs(z-pz1), fabs(z-pz2), fabs(z-pz3) );
 	} else if ( colType == JAG_C_COL_TYPE_CUBE || colType == JAG_C_COL_TYPE_SPHERE || colType == JAG_C_COL_TYPE_CIRCLE3D ) {
-		Rx = jagatof( sp[3].c_str() );
+		Rx = jagatof( sp[JAG_SP_START+3].c_str() );
 		Rz = Ry = Rx;
 	} else if ( colType == JAG_C_COL_TYPE_BOX || colType == JAG_C_COL_TYPE_ELLIPSOID ) {
-		Rx = jagatof( sp[3].c_str() );
-		Ry = jagatof( sp[4].c_str() );
-		Rz = jagatof( sp[5].c_str() );
+		Rx = jagatof( sp[JAG_SP_START+3].c_str() );
+		Ry = jagatof( sp[JAG_SP_START+4].c_str() );
+		Rz = jagatof( sp[JAG_SP_START+5].c_str() );
 	} else if ( colType == JAG_C_COL_TYPE_CONE || colType ==  JAG_C_COL_TYPE_RECTANGLE3D ) {
-		Rx = Ry = jagatof( sp[3].c_str() );
-		Rz = jagatof( sp[4].c_str() );
+		Rx = Ry = jagatof( sp[JAG_SP_START+3].c_str() );
+		Rz = jagatof( sp[JAG_SP_START+4].c_str() );
 	} else if ( colType == JAG_C_COL_TYPE_CIRCLE || colType == JAG_C_COL_TYPE_SQUARE ) {
-		Rx = Ry = jagatof( sp[2].c_str() );
+		Rx = Ry = jagatof( sp[JAG_SP_START+2].c_str() );
 	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE ||  colType == JAG_C_COL_TYPE_ELLIPSE ) {
-		Rx = jagatof( sp[2].c_str() );
-		Ry = jagatof( sp[3].c_str() );
+		Rx = jagatof( sp[JAG_SP_START+2].c_str() );
+		Ry = jagatof( sp[JAG_SP_START+3].c_str() );
 	}
 }
 
