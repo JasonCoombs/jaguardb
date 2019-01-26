@@ -20,7 +20,7 @@
 #define _jag_def_h_
 
 // version
-#define JAG_VERSION			"2.9.6"
+#define JAG_VERSION			"2.9.7"
 #define JAG_BRAND			"jaguar"
 
 // File Defs
@@ -473,10 +473,14 @@
 #define JAG_FUNC_ISCONVEX       283  // if outer ring of polygon is convex
 #define JAG_FUNC_INTERPOLATE    284  // find point on a linestring by fraction
 #define JAG_FUNC_LINESUBSTRING  285  // linesubstring(lstr, 0.1, 0.8) substring between two end fraction points
+#define JAG_FUNC_LOCATEPOINT    286  // fraction number where on linestring a point is closest to a given point
+#define JAG_FUNC_SETPOINT       300  // set n-th point on a linestring
+#define JAG_FUNC_ADDPOINT       301  // add a point to a linestring
+#define JAG_FUNC_REMOVEPOINT    302  // remove a point from a linestring
 
 
-// multi-line data ( string functions )
-#define JAG_FUNC_SUBSTR			350  // substr(str, offset, len)  susstr(str, offset )
+// string functions 
+#define JAG_FUNC_SUBSTR			350  // substr(str, offset, len)  substr(str, offset )
 #define JAG_FUNC_UPPER			351
 #define JAG_FUNC_LOWER			352
 #define JAG_FUNC_LTRIM			353

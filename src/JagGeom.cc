@@ -10351,23 +10351,24 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 
 	// colType1 must be point or point3d
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		res = "CJAG=0=0=PT=d 0:0:0:0 ";
     	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
-			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
+			res = sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1];
     	} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
-    		double x1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 			double projx, projy;
 			minPoint2DToLineSegDistance( px, py, x1, y1, x2, y2, srid, projx, projy );
-			res = d2s(projx) + " " + d2s(projy);
+			res += d2s(projx) + " " + d2s(projy);
     	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
 			double mind = LONG_MAX, d;
-			Jstr xs, ys;
+			Jstr xs, ys, t;
 			int imin = -1;
 			const char *str;
 			char *p;
-			for ( int i = 2; i < sp2.length(); ++i ) {
+			for ( int i = JAG_SP_START; i < sp2.length(); ++i ) {
 				str = sp2[i].c_str();
 				if ( strchrnum( str, ':') != 1 ) continue;
 				get2double(str, p, ':', dx, dy );
@@ -10375,32 +10376,33 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 				if ( d < mind ) { mind = d; imin = i; }
 			}
 			if ( imin >= 0 ) {
-				res = sp2[imin];
-				res.replace(':', ' ');
+				t = sp2[imin];
+				t.replace(':', ' ');
+				res += t;
 			} else return false;
     	} else if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 			double d1, d2, d3, p1x, p1y, p2x, p2y, p3x, p3y;
-			double x1 = jagatof( sp2[JAG_SP_START+1].c_str());
-			double y1 = jagatof( sp2[JAG_SP_START+2].c_str());
-			double x2 = jagatof( sp2[JAG_SP_START+3].c_str());
-			double y2 = jagatof( sp2[JAG_SP_START+4].c_str());
-			double x3 = jagatof( sp2[JAG_SP_START+5].c_str());
-			double y3 = jagatof( sp2[JAG_SP_START+6].c_str());
+			double x1 = jagatof( sp2[JAG_SP_START+0].c_str());
+			double y1 = jagatof( sp2[JAG_SP_START+1].c_str());
+			double x2 = jagatof( sp2[JAG_SP_START+2].c_str());
+			double y2 = jagatof( sp2[JAG_SP_START+3].c_str());
+			double x3 = jagatof( sp2[JAG_SP_START+4].c_str());
+			double y3 = jagatof( sp2[JAG_SP_START+5].c_str());
 			d1 = minPoint2DToLineSegDistance( px, py, x1, y1, x2, y2, srid, p1x, p1y );
 			d2 = minPoint2DToLineSegDistance( px, py, x1, y1, x3, y3, srid, p2x, p2y );
 			d3 = minPoint2DToLineSegDistance( px, py, x2, y2, x3, y3, srid, p3x, p3y );
 			if ( d1 < d2 && d1 < d3 ) {
-				res = d2s(p1x) + " " + d2s(p1y);
+				res += d2s(p1x) + " " + d2s(p1y);
 			} else if ( d2 < d1 && d2 < d3 ) {
-				res = d2s(p2x) + " " + d2s(p2y);
+				res += d2s(p2x) + " " + d2s(p2y);
 			} else {
-				res = d2s(p3x) + " " + d2s(p3y);
+				res += d2s(p3x) + " " + d2s(p3y);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_SQUARE ) {
-    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double nx = safeget(sp2, JAG_SP_START+4);
+    		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+3);
 			double locx, locy;
 			transform2DCoordGlobal2Local( x0, y0, px, py, nx, locx, locy );
 			double d1, d2, d3, d4, p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y;
@@ -10409,20 +10411,20 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 			d3 = minPoint2DToLineSegDistance( locx, locy, r, -r, r, r, srid, p3x, p3y );
 			d4 = minPoint2DToLineSegDistance( locx, locy, -r, r, r, r, srid, p4x, p4y );
 			if ( d1 < d2 && d1 < d3 && d1 < d4 ) {
-				res = d2s(p1x) + " " + d2s(p1y);
+				res += d2s(p1x) + " " + d2s(p1y);
 			} else if ( d2 < d1 && d2 < d3 && d2 < d4 ) {
-				res = d2s(p2x) + " " + d2s(p2y);
+				res += d2s(p2x) + " " + d2s(p2y);
 			} else if ( d3 < d1 && d3 < d2 && d3 < d4 ) {
-				res = d2s(p3x) + " " + d2s(p3y);
+				res += d2s(p3x) + " " + d2s(p3y);
 			} else {
-				res = d2s(p4x) + " " + d2s(p4y);
+				res += d2s(p4x) + " " + d2s(p4y);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double h = jagatof( sp2[JAG_SP_START+4].c_str() ); 
-    		double nx = safeget(sp2, JAG_SP_START+5);
+    		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double w = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double h = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+4);
 			double locx, locy;
 			transform2DCoordGlobal2Local( x0, y0, px, py, nx, locx, locy );
 			double d1, d2, d3, d4, p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y;
@@ -10431,62 +10433,69 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 			d3 = minPoint2DToLineSegDistance( locx, locy, w, -h, w, h, srid, p3x, p3y );
 			d4 = minPoint2DToLineSegDistance( locx, locy, -w, h, w, h, srid, p4x, p4y );
 			if ( d1 < d2 && d1 < d3 && d1 < d4 ) {
-				res = d2s(p1x) + " " + d2s(p1y);
+				res += d2s(p1x) + " " + d2s(p1y);
 			} else if ( d2 < d1 && d2 < d3 && d2 < d4 ) {
-				res = d2s(p2x) + " " + d2s(p2y);
+				res += d2s(p2x) + " " + d2s(p2y);
 			} else if ( d3 < d1 && d3 < d2 && d3 < d4 ) {
-				res = d2s(p3x) + " " + d2s(p3y);
+				res += d2s(p3x) + " " + d2s(p3y);
 			} else {
-				res = d2s(p4x) + " " + d2s(p4y);
+				res += d2s(p4x) + " " + d2s(p4y);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-    		double x = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+    		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
 			double d = distance(px, py, x, y, srid );
 			if ( r < d ) {
-				res = d2s(px*d/r) + " " + d2s(py*d/r);
+				res += d2s(px*d/r) + " " + d2s(py*d/r);
 			} else {
-				res = d2s(px*r/d) + " " + d2s(py*r/d);
+				res += d2s(px*r/d) + " " + d2s(py*r/d);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double a = jagatof( sp2[JAG_SP_START+3].c_str() );
-    		double b = jagatof( sp2[JAG_SP_START+4].c_str() );
+    		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double a = jagatof( sp2[JAG_SP_START+2].c_str() );
+    		double b = jagatof( sp2[JAG_SP_START+3].c_str() );
     		double nx = safeget(sp2, JAG_SP_START+4);
 			double locx, locy;
 			transform2DCoordGlobal2Local( x0,y0, px, py, nx, locx, locy );
 			double projx, projy, dist;
 			minMaxPointOnNormalEllipse( srid, a, b, locx, locy, true, projx, projy, dist );
-			res = d2s(projx) + " " + d2s(projy);
+			res += d2s(projx) + " " + d2s(projy);
     	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
-			return closestPoint2DPolygon( srid, px, py, mark2, sp2, res );
+			Jstr t;
+			if ( closestPoint2DPolygon( srid, px, py, mark2, sp2, t ) ) {
+				res += t;
+			} else return false;
     	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			return closestPoint2DMultiPolygon( srid, px, py, mark2, sp2, res );
+			Jstr t;
+			if ( closestPoint2DMultiPolygon( srid, px, py, mark2, sp2, t ) )  {
+				res += t;
+			} else return false;
     	} else {
-			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2];
+			res = sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1];
 		}
 	} else {
+		res = "CJAG=0=0=PT3=d 0:0:0:0:0:0 ";
     	if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
-			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2] + " " + sp2[JAG_SP_START+3];
+			res += sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+3];
     	} else if ( colType2 == JAG_C_COL_TYPE_LINE3D ) {
-    		double x1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double z1 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double x2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
-    		double y2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
-    		double z2 = jagatof( sp2[JAG_SP_START+6].c_str() ); 
+    		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    		double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 			double projx, projy, projz;
 			minPoint3DToLineSegDistance( px, py, pz, x1, y1, z1, x2, y2, z2, srid, projx, projy, projz );
-			res = d2s(projx) + " " + d2s(projy) + " " + d2s(projz);;
+			res += d2s(projx) + " " + d2s(projy) + " " + d2s(projz);;
     	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
             double mind = LONG_MAX, d;
             Jstr xs, ys, zs;
             int imin = -1;
             const char *str;
             char *p;
-            for ( int i = 2; i < sp2.length(); ++i ) {
+            for ( int i = JAG_SP_START; i < sp2.length(); ++i ) {
                 str = sp2[i].c_str();
                 if ( strchrnum( str, ':') != 2 ) continue;
                 get3double(str, p, ':', dx, dy, dz );
@@ -10494,64 +10503,70 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
                 if ( d < mind ) { mind = d; imin = i; }
             }
             if ( imin >= 0 ) {
-                res = sp2[imin];
-                res.replace(':', ' ');
+				Jstr t;
+                t = sp2[imin];
+                t.replace(':', ' ');
+				res += t;
             } else return false;
     	} else if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
-    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double r = jagatof( sp2[JAG_SP_START+4].c_str() ); 
-    		double nx = safeget(sp2, JAG_SP_START+5);
-    		double ny = safeget(sp2, JAG_SP_START+6);
+    		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+4);
+    		double ny = safeget(sp2, JAG_SP_START+5);
 			double dist;
-			closestPoint3DBox( srid, px, py, pz, x0, y0, z0, r, r, r, nx, ny, dist, res ); 
+			Jstr t;
+			closestPoint3DBox( srid, px, py, pz, x0, y0, z0, r, r, r, nx, ny, dist, t ); 
+			res += t;
     	} else if ( colType2 == JAG_C_COL_TYPE_BOX ) {
-    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double a = jagatof( sp2[JAG_SP_START+4].c_str() ); 
-    		double b = jagatof( sp2[JAG_SP_START+5].c_str() ); 
-    		double c = jagatof( sp2[JAG_SP_START+6].c_str() ); 
-    		double nx = safeget(sp2, JAG_SP_START+7);
-    		double ny = safeget(sp2, JAG_SP_START+8);
+    		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double a = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+    		double b = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+    		double c = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+    		double nx = safeget(sp2, JAG_SP_START+6);
+    		double ny = safeget(sp2, JAG_SP_START+7);
 			double dist;
-			closestPoint3DBox( srid, px, py, pz, x0, y0, z0, a, b, c, nx, ny, dist, res ); 
+			Jstr t;
+			closestPoint3DBox( srid, px, py, pz, x0, y0, z0, a, b, c, nx, ny, dist, t ); 
+			res += t;
     	} else if ( colType2 == JAG_C_COL_TYPE_SPHERE ) {
-    		double x = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double z = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double r = jagatof( sp2[JAG_SP_START+4].c_str() );
+    		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
 			double d = distance(px, py, pz, x, y, z, srid );
 			if ( r < d ) {
-				res = d2s(px*d/r) + " " + d2s(py*d/r) + " " + d2s(pz*d/r);
+				res += d2s(px*d/r) + " " + d2s(py*d/r) + " " + d2s(pz*d/r);
 			} else {
-				res = d2s(px*r/d) + " " + d2s(py*r/d) + " " + d2s(pz*r/d);
+				res += d2s(px*r/d) + " " + d2s(py*r/d) + " " + d2s(pz*r/d);
 			}
     	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSOID ) {
-    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double a = jagatof( sp2[JAG_SP_START+4].c_str() );
-    		double b = jagatof( sp2[JAG_SP_START+5].c_str() );
-    		double c = jagatof( sp2[JAG_SP_START+6].c_str() );
-    		double nx = safeget(sp2, JAG_SP_START+7);
-    		double ny = safeget(sp2, JAG_SP_START+8);
+    		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double a = jagatof( sp2[JAG_SP_START+3].c_str() );
+    		double b = jagatof( sp2[JAG_SP_START+4].c_str() );
+    		double c = jagatof( sp2[JAG_SP_START+5].c_str() );
+    		double nx = safeget(sp2, JAG_SP_START+6);
+    		double ny = safeget(sp2, JAG_SP_START+7);
 			double locx, locy, locz;
 			transform3DCoordGlobal2Local( x0,y0,z0, px, py, pz, nx, ny, locx, locy, locz );
 			double projx, projy, projz, dist;
 			minMaxPoint3DOnNormalEllipsoid( srid, a, b, c,  locx, locy, locz, true, projx, projy, projz, dist );
 			// reuse a b c
 			transform3DCoordLocal2Global( x0, y0, z0, projx, projy, projz, nx, ny, a, b, c );
-			res = d2s(a) + " " + d2s(b) + " " + d2s(c);
+			res += d2s(a) + " " + d2s(b) + " " + d2s(c);
     	} else if ( colType2 == JAG_C_COL_TYPE_CONE ) {
-    		double x0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-    		double y0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-    		double z0 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    		double r = jagatof( sp2[JAG_SP_START+4].c_str() );
-    		double h = jagatof( sp2[JAG_SP_START+5].c_str() );
-    		double nx = safeget(sp2, JAG_SP_START+6);
-    		double ny = safeget(sp2, JAG_SP_START+7);
+    		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+    		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+    		double z0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+    		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+    		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+    		double nx = safeget(sp2, JAG_SP_START+5);
+    		double ny = safeget(sp2, JAG_SP_START+6);
 			// use triangle model
 			double locx, locy, locz;
 			transform3DCoordGlobal2Local( x0,y0,z0, px, py, pz, nx, ny, locx, locy, locz );
@@ -10590,13 +10605,19 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 				locx = locy = 0.0; locz = h;
 			}
 			transform3DCoordLocal2Global( x0, y0, z0, locx, locy, locz, nx, ny, d1, d2, d3 );
-			res = d2s(d1) + " " + d2s(d2) + " " + d2s(d3);;
+			res += d2s(d1) + " " + d2s(d2) + " " + d2s(d3);;
     	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
-			return closestPoint3DPolygon( srid, px, py, pz, mark2, sp2, res );
+			Jstr t;
+			if ( closestPoint3DPolygon( srid, px, py, pz, mark2, sp2, t ) ) {
+				res += t;
+			} else return false;
     	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			return closestPoint3DMultiPolygon( srid, px, py, pz, mark2, sp2, res );
+			Jstr t;
+			if ( closestPoint3DMultiPolygon( srid, px, py, pz, mark2, sp2, t ) ) {
+				res += t;
+			} else return false;
     	} else {
-			res = sp2[JAG_SP_START+1] + " " + sp2[JAG_SP_START+2] + " " +  sp2[JAG_SP_START+3];
+			res += sp2[JAG_SP_START+0] + " " + sp2[JAG_SP_START+1] + " " +  sp2[JAG_SP_START+2];
     	}
 	}
 
