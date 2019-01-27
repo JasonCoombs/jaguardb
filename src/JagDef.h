@@ -19,7 +19,6 @@
 #ifndef _jag_def_h_
 #define _jag_def_h_
 
-// version
 #define JAG_VERSION			"2.9.7"
 #define JAG_BRAND			"jaguar"
 
@@ -91,7 +90,6 @@
 #define JAG_GETFILE_ACTDATA 0
 
 // Parser Defs
-// simple cmd Defs
 #define JAG_NOOP		        0
 #define JAG_CREATETABLE_OP		1
 #define JAG_CREATEMEMTABLE_OP	2
@@ -133,7 +131,7 @@
 #define JAG_SHOWCHAIN_OP		132
 #define JAG_SHOWINDEX_OP		140
 #define JAG_SHOWTASK_OP			150
-#define JAG_HELP_OP			160
+#define JAG_HELP_OP				160
 #define JAG_CURRENTDB_OP		162
 #define JAG_SHOWSTATUS_OP		163
 #define JAG_SHOWSVER_OP			164
@@ -223,24 +221,24 @@
 
 // schema and actual data Defs
 // cannot be changed
-#define JAG_C_COL_TYPE_STR		"s"
+#define JAG_C_COL_TYPE_STR			"s"
 #define JAG_C_COL_TYPE_FLOAT		"f"
 #define JAG_C_COL_TYPE_DOUBLE		"d"
 #define JAG_C_COL_TYPE_DATETIME		"t"
 #define JAG_C_COL_TYPE_TIMESTAMP	"m"
-#define JAG_C_COL_TYPE_TIME		"h"
-#define JAG_C_COL_TYPE_DATETIMENANO		"N"
+#define JAG_C_COL_TYPE_TIME			"h"
+#define JAG_C_COL_TYPE_DATETIMENANO	"N"
 #define JAG_C_COL_TYPE_TIMENANO		"n"
-#define JAG_C_COL_TYPE_DATE		"r"
+#define JAG_C_COL_TYPE_DATE			"r"
 #define JAG_C_COL_TYPE_UUID_CHAR	'u'
-#define JAG_C_COL_TYPE_UUID		"u"
-#define JAG_C_COL_TYPE_FILE		"F"
-#define JAG_C_COL_TYPE_FILE_CHAR		'F'
-#define JAG_C_COL_TYPE_ENUM		"e"
+#define JAG_C_COL_TYPE_UUID			"u"
+#define JAG_C_COL_TYPE_FILE			"F"
+#define JAG_C_COL_TYPE_FILE_CHAR	'F'
+#define JAG_C_COL_TYPE_ENUM			"e"
 #define JAG_C_COL_TYPE_ENUM_CHAR	'e'
 #define JAG_C_COL_TYPE_DBOOLEAN		"R"
-#define JAG_C_COL_TYPE_DBIT		"A"
-#define JAG_C_COL_TYPE_DINT		"I"
+#define JAG_C_COL_TYPE_DBIT			"A"
+#define JAG_C_COL_TYPE_DINT			"I"
 #define JAG_C_COL_TYPE_DTINYINT		"T"
 #define JAG_C_COL_TYPE_DSMALLINT	"S"
 #define JAG_C_COL_TYPE_DMEDINT		"M"
@@ -283,14 +281,11 @@
 
 // temp column types
 #define JAG_C_COL_TEMPTYPE_STRING		"31"
-#define JAG_C_COL_TEMPTYPE_REAL		"33"
-
+#define JAG_C_COL_TEMPTYPE_REAL			"33"
 #define JAG_C_COL_TEMPTYPE_TINYTEXT		"34"
 #define JAG_C_COL_TEMPTYPE_TEXT		    "35"
 #define JAG_C_COL_TEMPTYPE_MEDIUMTEXT	"37"
 #define JAG_C_COL_TEMPTYPE_LONGTEXT	    "39"
-
-
 
 #define JAG_C_COL_KEY		'k'
 #define JAG_C_COL_VALUE	    'v'
@@ -299,8 +294,8 @@
 
 #define JAG_DATETIME_FIELD_LEN		17
 #define JAG_TIMESTAMP_FIELD_LEN		17
-#define JAG_TIME_FIELD_LEN		12
-#define JAG_DATETIMENANO_FIELD_LEN		20
+#define JAG_TIME_FIELD_LEN			12
+#define JAG_DATETIMENANO_FIELD_LEN	20
 #define JAG_TIMENANO_FIELD_LEN		15
 #define JAG_DATE_FIELD_LEN		8
 #define JAG_UUID_FIELD_LEN		40
@@ -314,10 +309,10 @@
 #define JAG_MEDIUMTEXT_FIELD_LEN        2048
 #define JAG_LONGTEXT_FIELD_LEN          10240
 #define JAG_STRING_FIELD_LEN          	64
-#define JAG_CTIME_LEN				25
-#define JAG_DBOOLEAN_FIELD_LEN		1
-#define JAG_DBIT_FIELD_LEN		1
-#define JAG_DINT_FIELD_LEN		11
+#define JAG_CTIME_LEN					25
+#define JAG_DBOOLEAN_FIELD_LEN			1
+#define JAG_DBIT_FIELD_LEN			1
+#define JAG_DINT_FIELD_LEN			11
 #define JAG_DTINYINT_FIELD_LEN		4
 #define JAG_DSMALLINT_FIELD_LEN		6
 #define JAG_DMEDINT_FIELD_LEN		8
@@ -355,8 +350,8 @@
 #define JAG_FUNC_EMPTYARG_LEN		32
 #define JAG_FUNC_CURDATE_LEN		10
 #define JAG_FUNC_CURTIME_LEN		8
-#define JAG_FUNC_NOW_LEN		19
-#define JAG_FUNC_NOW_LEN_MICRO	26
+#define JAG_FUNC_NOW_LEN			19
+#define JAG_FUNC_NOW_LEN_MICRO		26
 
 // logic operators
 #define JAG_LOGIC_AND			'A'
@@ -365,7 +360,7 @@
 // calculation operators
 #define JAG_NUM_ADD			'+'
 #define JAG_NUM_SUB			'-'
-#define JAG_NUM_MULT			'*'
+#define JAG_NUM_MULT		'*'
 #define JAG_NUM_DIV			'/'
 #define JAG_NUM_REM			'%'
 #define JAG_NUM_POW			'^'

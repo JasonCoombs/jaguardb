@@ -598,6 +598,8 @@ class JagGeo
 											   const Jstr &type2,const JagStrSplit &sp2 );
    	static Jstr doMultiPolygonSymDifference( const Jstr &type1,const JagStrSplit &sp1, 
 											   const Jstr &type2,const JagStrSplit &sp2 );
+   	static Jstr doLocatePoint( int srid, const Jstr &type1,const JagStrSplit &sp1, 
+							   const Jstr &type2,const JagStrSplit &sp2 );
 
 
 	// 2D circle
@@ -1808,6 +1810,10 @@ class JagGeo
 	static void vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashSetStr &hashset );
 
 	static void getVectorPoints( const JagStrSplit &sp, bool is3D, JagVector<JagPoint3D> &resvec );
+
+	static double getMinDist2DPointFraction( double px, double py, int srid, const JagStrSplit &sp );
+	static double getMinDist3DPointFraction( double px, double py, double pz, int srid, const JagStrSplit &sp );
+
 
 
 };  // end of class JagGeo

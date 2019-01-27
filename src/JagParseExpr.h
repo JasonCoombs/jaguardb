@@ -324,7 +324,9 @@ class BinaryOpNode: public ExpressionElementNode
     Jstr doAllSymDifference( const Jstr& mark1, const Jstr &colType1,
 				               const JagStrSplit &sp1, const Jstr& mark2,
 				               const Jstr &colType2, const JagStrSplit &sp2 );
-
+    Jstr doAllLocatePoint( int srid, const Jstr& mark1, const Jstr &colType1,
+				               const JagStrSplit &sp1, const Jstr& mark2,
+				               const Jstr &colType2, const JagStrSplit &sp2 );
 
 
 	// data members
