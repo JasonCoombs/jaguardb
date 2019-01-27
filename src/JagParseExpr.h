@@ -382,9 +382,8 @@ class BinaryExpressionBuilder
 	void doBinary( short op, JagHashStrInt &jmap );
 	short precedence( short fop );
 	bool funcHasZeroChildren( short fop );
-	bool funcHasOneChildren( short fop );
+	bool funcHasOneConstant( short fop );
 	bool funcHasTwoChildren( short fop );
-	bool funcHasThreeChildren( short fop );
 	bool checkFuncType( short fop );
 	bool getCalculationType( const char *p, short &fop, short &len, short &ctype );
 	bool nameConvertionCheck( Jstr &name, int &tabnum,

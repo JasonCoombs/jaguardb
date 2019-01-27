@@ -1139,7 +1139,8 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	if ( _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER || _binaryOp == JAG_FUNC_UNIQUE
 	     || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN ||  _binaryOp == JAG_FUNC_POLYGONN
 		 || _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT || _binaryOp == JAG_FUNC_INTERSECTION
-		 || _binaryOp == JAG_FUNC_LINESUBSTRING
+		 || _binaryOp == JAG_FUNC_LINESUBSTRING || _binaryOp == JAG_FUNC_ADDPOINT || _binaryOp == JAG_FUNC_SETPOINT
+		 || _binaryOp == JAG_FUNC_REMOVEPOINT
 		 || _binaryOp == JAG_FUNC_ASTEXT ||  _binaryOp == JAG_FUNC_DIFFERENCE || _binaryOp == JAG_FUNC_SYMDIFFERENCE
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
@@ -3854,12 +3855,9 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 	ExpressionElementNode *left = NULL;
 	int arg1 = 0, arg2 = 0;
 	Jstr carg1;
-
-	if ( funcHasThreeChildren(op) ) {
-		if ( operandStack.empty() ) throw 1336;
+	if ( funcHasTwoChildren(op) ) {
+    	if ( operandStack.empty() ) { throw 1434; } 
 		if ( op == JAG_FUNC_NEARBY ) {
-			//operandStack.pop();
-			//if ( operandStack.empty() ) throw 1336;
 			const char *p = NULL;
 			ExpressionElementNode *t3 = operandStack.top();
 			if ( t3->getValue(p) ) {
@@ -3879,40 +3877,20 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				operandStack.pop();  // popped the third element
 			}
 		} 
-		//operandStack.pop();  // popped the third element
 
 		// right child
-		if ( operandStack.empty() ) { throw 1334; } 
-		right = operandStack.top();
-		operandStack.pop();
-
-		// left child
-		if ( operandStack.empty() ) { throw 1335; } 
-		left = operandStack.top();
-		operandStack.pop();
-	} else if ( funcHasTwoChildren(op) ) {
-		// right child
-    	//operandStack.print();
-		int nargs = operandStack.size();
-		prt(("s1026 funcHasTwoChildren operandStack.size=%d\n", nargs ));
     	if ( operandStack.empty() ) { throw 1434; } 
-		if ( 1 == nargs ) {
-			right = NULL; // no right child(arg)
-    		left = operandStack.top();
-    		operandStack.pop();
-		} else {
-			// right child
-    		right = operandStack.top();
-    		operandStack.pop();
+    	right = operandStack.top();
+    	operandStack.pop();
     
-    		// left child
-    		if ( operandStack.empty() ) { throw 1435; } 
-    		left = operandStack.top();
-    		operandStack.pop();
-		}
+    	// left child
+    	if ( operandStack.empty() ) { throw 1435; } 
+    	left = operandStack.top();
+    	operandStack.pop();
 
 		// if datediff, pop and process third top operand as diff type
 		if ( op == JAG_FUNC_DATEDIFF ) {
+			// datediff(type, BEGIN_TIMECOL, END_TIMECOL )  type is first element, and last in stack
 			ExpressionElementNode *tdiff = NULL;
 			const char *p = NULL;
 			if ( operandStack.empty() ) throw 436;
@@ -3928,27 +3906,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				else throw 437;				
 			} else throw 438;
 			operandStack.pop();
-		}  else if ( op == JAG_FUNC_POINTN || op == JAG_FUNC_BUFFER || op == JAG_FUNC_POLYGONN
-					 || op == JAG_FUNC_INTERPOLATE
-		             || op == JAG_FUNC_RINGN || op == JAG_FUNC_INNERRINGN ) {
-			const char *p = NULL;
-			if ( ! right ) throw 2810;
-			if ( right->getValue(p) ) {
-				carg1 = p;
-				// prt(("s3388 JAG_FUNC_POINTN p=[%s]\n", p ));
-			} else throw 1448;
-			operandStack.pop();
-		} else if ( op == JAG_FUNC_TOPOLYGON ) {
-			if ( ! right ) {
-				// ommited second arg
-				carg1 = "30";
-			} else {
-				const char *p = NULL;
-				if ( right->getValue(p) ) {
-					carg1 = p;
-				} else throw 2932;
-			}
-			operandStack.pop();
 		}
 
 		// for compare op, and each child is different table column, setup joinmap
@@ -3962,12 +3919,12 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				jmap.addKeyValue( q, rrc );
 			}
 		}
-	} else if ( funcHasOneChildren(op) ) {
+	} else if ( funcHasOneConstant(op) ) {
+		if ( operandStack.empty() ) throw 4306;
 		if ( op == JAG_FUNC_TOSECOND || op == JAG_FUNC_TOMICROSECOND  ) {
 			ExpressionElementNode *en = NULL;
 			const char *p = NULL;
-			if ( operandStack.empty() ) throw 4306;
-			else en = operandStack.top();
+			en = operandStack.top();
 			if ( en->getValue(p) ) {
 				// here directly compute and assign result to _carg1
 				//prt(("s6203 p=[%s]\n", p ));
@@ -3987,56 +3944,51 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		} else if ( op == JAG_FUNC_MILETOMETER ) {
 			ExpressionElementNode *en = NULL;
 			const char *p = NULL;
-			if ( operandStack.empty() ) throw 4307;
-			else en = operandStack.top();
+			en = operandStack.top();
 			if ( en->getValue(p) ) {
 				double meter = jagatof( p ) * 1069.344;
 				carg1 = doubleToStr( meter );
 			} else throw 4309;
 			operandStack.pop();
-		}
-
-	} else if ( !funcHasZeroChildren(op) ) {
+		} 
+	} else if ( funcHasZeroChildren(op) ) {
+		// nothing to be done
+	} else {
+		// process one column but may have some arguments
 		// if substr, pop and process first two top operands as length and offset of substr
-		prt(("s2088 !funcHasZeroChildren(op) op=%d\n", op ));
+		if ( operandStack.empty() ) throw 3439;
 		if ( op == JAG_FUNC_SUBSTR ) {
 			ExpressionElementNode *targ = NULL;
 			const char *p = NULL;
 			int hasEncode = 0;
-			if ( operandStack.empty() ) throw 439;
 			targ = operandStack.top();
-			
 			if ( targ->getValue(p) ) {
 				if ( isdigit(*p) ) { arg2 = jagatoi(p); }
 				else { 
 					hasEncode = 1;
 					carg1 = p; 
 				}
-			} else {
-				throw 440;
-			}
+			} else { throw 3440; }
     		operandStack.pop();
 
-    		if ( operandStack.empty() ) throw 441;
+    		if ( operandStack.empty() ) throw 3441;
     		targ = operandStack.top();
-
 			if ( ! hasEncode ) {
     			if ( targ->getValue(p) ) {
     				if ( isdigit(*p) ) arg1 = jagatoi(p);
-    			} else throw 442;
+    			} else throw 3442;
 			} else {
 				if ( targ->getValue(p) ) {
 					if ( isdigit(*p) ) { arg2 = jagatoi(p); }
-				} else throw 443;
+				} else throw 3443;
 
     			operandStack.pop();
-    			if ( operandStack.empty() ) throw 444;
+    			if ( operandStack.empty() ) throw 3444;
     			targ = operandStack.top();
     			if ( targ->getValue(p) ) {
     				if ( isdigit(*p) ) arg1 = jagatoi(p);
-    			} else throw 445;
+    			} else throw 3445;
 			}
-
 			operandStack.pop();
 		} else if ( op == JAG_FUNC_LINESUBSTRING ) {
 			Jstr endf;
@@ -4054,13 +4006,47 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				startf = p; 
 			} else throw 1326;
 			operandStack.pop();  // popped the startfrac element
-
 			carg1 = startf + ":" + endf;
 			// leaving the geom column in stack for right to be assigned
-		}
+		} else if ( op == JAG_FUNC_POINTN || op == JAG_FUNC_POLYGONN
+    					 || op == JAG_FUNC_INTERPOLATE
+    		             || op == JAG_FUNC_RINGN || op == JAG_FUNC_INNERRINGN ) {
+	    	if ( operandStack.size() < 2 ) throw 2425;
+    		const char *p = NULL;
+        	right = operandStack.top();
+    		if ( right->getValue(p) ) {
+    			carg1 = p;
+    		} else throw 1448;
+    		operandStack.pop();
+			right = NULL;
+    	} else if ( op == JAG_FUNC_TOPOLYGON ) {
+	    	if ( 1 == operandStack.size() ) {
+    			carg1 = "30";
+    		} else {
+    			const char *p = NULL;
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = p;
+    			} else throw 2932;
+    			operandStack.pop();
+				right = NULL;
+    		}
+    	} else if ( op == JAG_FUNC_BUFFER ) {
+	    	if ( 1 == operandStack.size() ) {
+    			carg1 = "distance=symmetric:10,side=side,join=round:10,end=round:10,point=circle:10";
+    		} else {
+    			const char *p = NULL;
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = p;
+    			} else throw 2935;
+    			operandStack.pop();
+				right = NULL;
+    		}
+    	}
 
 		// left child
-		if ( operandStack.empty() ) throw 446;
+		if ( operandStack.empty() ) throw 4446;
 
 		left = operandStack.top();
 		operandStack.pop();
@@ -4126,9 +4112,9 @@ bool BinaryExpressionBuilder::funcHasZeroChildren( short fop )
 	return false;
 }
 
-// only one col/onject needed
+// only one constant needed
 // select miletometer(12.3) 
-bool BinaryExpressionBuilder::funcHasOneChildren( short fop )
+bool BinaryExpressionBuilder::funcHasOneConstant( short fop )
 {
 	if ( fop == JAG_FUNC_TOSECOND || fop == JAG_FUNC_TOMICROSECOND
          || fop == JAG_FUNC_MILETOMETER ) {
@@ -4153,30 +4139,22 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_DISJOINT 
 		 || fop == JAG_FUNC_CLOSESTPOINT 
 		 || fop == JAG_FUNC_ANGLE 
-		 || fop == JAG_FUNC_POINTN 
-		 || fop == JAG_FUNC_RINGN 
-		 || fop == JAG_FUNC_POLYGONN 
-		 || fop == JAG_FUNC_INNERRINGN 
-		 || fop == JAG_FUNC_BUFFER 
+		 //|| fop == JAG_FUNC_POINTN 
+		 //|| fop == JAG_FUNC_RINGN 
+		 //|| fop == JAG_FUNC_POLYGONN 
+		 //|| fop == JAG_FUNC_INNERRINGN 
+		 //|| fop == JAG_FUNC_BUFFER 
 		 || fop == JAG_FUNC_UNION 
 		 || fop == JAG_FUNC_LOCATEPOINT 
 		 || fop == JAG_FUNC_DIFFERENCE
 		 || fop == JAG_FUNC_SYMDIFFERENCE
 		 || fop == JAG_FUNC_INTERSECTION 
 		 || fop == JAG_FUNC_COLLECT
-		 || fop == JAG_FUNC_TOPOLYGON
-		 || fop == JAG_FUNC_INTERPOLATE
+		 //|| fop == JAG_FUNC_TOPOLYGON
+		 //|| fop == JAG_FUNC_INTERPOLATE
+		 || fop == JAG_FUNC_NEARBY || fop == JAG_FUNC_DISTANCE
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
-	}
-	return false;
-}
-
-// two columns/objects needed
-bool BinaryExpressionBuilder::funcHasThreeChildren( short fop )
-{
-	if ( fop == JAG_FUNC_NEARBY || fop == JAG_FUNC_DISTANCE ) {
-	 	return true;
 	}
 	return false;
 }
@@ -4193,39 +4171,18 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_TRIM || fop == JAG_FUNC_SECOND || fop == JAG_FUNC_MINUTE || fop == JAG_FUNC_HOUR ||
 		fop == JAG_FUNC_DATE || fop == JAG_FUNC_MONTH || fop == JAG_FUNC_YEAR || fop == JAG_FUNC_RTRIM ||
 		fop == JAG_FUNC_DATEDIFF || fop == JAG_FUNC_DAYOFMONTH || fop == JAG_FUNC_DAYOFWEEK || 
-		fop == JAG_FUNC_DAYOFYEAR || 
-		fop == JAG_FUNC_CURDATE || 
-		fop == JAG_FUNC_CURTIME || 
-		fop == JAG_FUNC_NOW || 
-		fop == JAG_FUNC_TIME || 
-		fop == JAG_FUNC_DISTANCE || 
-		fop == JAG_FUNC_WITHIN || 
-		fop == JAG_FUNC_CLOSESTPOINT || 
-		fop == JAG_FUNC_ANGLE || 
-		fop == JAG_FUNC_COVEREDBY || 
-		fop == JAG_FUNC_COVER || 
-		fop == JAG_FUNC_CONTAIN || 
-		fop == JAG_FUNC_SAME || 
-		fop == JAG_FUNC_INTERSECT || 
-		fop == JAG_FUNC_DISJOINT || 
-		fop == JAG_FUNC_NEARBY || 
+		fop == JAG_FUNC_DAYOFYEAR || fop == JAG_FUNC_CURDATE || fop == JAG_FUNC_CURTIME || fop == JAG_FUNC_NOW || fop == JAG_FUNC_TIME || 
+		fop == JAG_FUNC_DISTANCE || fop == JAG_FUNC_WITHIN || 
+		fop == JAG_FUNC_COVEREDBY || fop == JAG_FUNC_COVER || fop == JAG_FUNC_CONTAIN || fop == JAG_FUNC_SAME || 
+		fop == JAG_FUNC_INTERSECT || fop == JAG_FUNC_DISJOINT || fop == JAG_FUNC_NEARBY || 
 		fop == JAG_FUNC_ALL || 
-		fop == JAG_FUNC_AREA || 
-		fop == JAG_FUNC_PERIMETER || 
-		fop == JAG_FUNC_VOLUME || 
-		fop == JAG_FUNC_DIMENSION || 
-		fop == JAG_FUNC_GEOTYPE || 
-		fop == JAG_FUNC_POINTN || 
-		fop == JAG_FUNC_BBOX || 
-		fop == JAG_FUNC_STARTPOINT || 
-		fop == JAG_FUNC_ENDPOINT || 
+		fop == JAG_FUNC_AREA || fop == JAG_FUNC_CLOSESTPOINT || fop == JAG_FUNC_ANGLE || fop == JAG_FUNC_PERIMETER || 
+		fop == JAG_FUNC_VOLUME || fop == JAG_FUNC_DIMENSION || fop == JAG_FUNC_GEOTYPE || fop == JAG_FUNC_POINTN || 
+		fop == JAG_FUNC_BBOX || fop == JAG_FUNC_STARTPOINT || fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
 		fop == JAG_FUNC_TOPOLYGON || 
-		fop == JAG_FUNC_UNION || 
-		fop == JAG_FUNC_DIFFERENCE || 
-		fop == JAG_FUNC_SYMDIFFERENCE || 
-		fop == JAG_FUNC_INTERSECTION || 
-		fop == JAG_FUNC_COLLECT || 
+		fop == JAG_FUNC_UNION || fop == JAG_FUNC_DIFFERENCE || fop == JAG_FUNC_SYMDIFFERENCE || 
+		fop == JAG_FUNC_INTERSECTION || fop == JAG_FUNC_COLLECT || 
 		fop == JAG_FUNC_POLYGONN || 
 		fop == JAG_FUNC_OUTERRING || 
 		fop == JAG_FUNC_OUTERRINGS || 
@@ -4236,11 +4193,8 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_ASTEXT || 
 		fop == JAG_FUNC_BUFFER || 
 		fop == JAG_FUNC_CENTROID || 
-		fop == JAG_FUNC_ISCLOSED || 
-		fop == JAG_FUNC_ISSIMPLE || 
-		fop == JAG_FUNC_ISCONVEX || 
-		fop == JAG_FUNC_ISVALID || 
-		fop == JAG_FUNC_ISRING || 
+		fop == JAG_FUNC_ISCLOSED || fop == JAG_FUNC_ISSIMPLE || fop == JAG_FUNC_ISCONVEX || 
+		fop == JAG_FUNC_ISVALID || fop == JAG_FUNC_ISRING || 
 		fop == JAG_FUNC_ISPOLYGONCCW || 
 		fop == JAG_FUNC_ISPOLYGONCW || 
 		fop == JAG_FUNC_NUMPOINTS || 
@@ -4250,12 +4204,8 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_NUMINNERRINGS || 
 		fop == JAG_FUNC_SRID || 
 		fop == JAG_FUNC_SUMMARY || 
-		fop == JAG_FUNC_XMIN || 
-		fop == JAG_FUNC_YMIN || 
-		fop == JAG_FUNC_ZMIN || 
-		fop == JAG_FUNC_XMAX || 
-		fop == JAG_FUNC_YMAX || 
-		fop == JAG_FUNC_ZMAX || 
+		fop == JAG_FUNC_XMIN || fop == JAG_FUNC_YMIN || fop == JAG_FUNC_ZMIN || 
+		fop == JAG_FUNC_XMAX || fop == JAG_FUNC_YMAX || fop == JAG_FUNC_ZMAX || 
 		fop == JAG_FUNC_STRDIFF || 
 		fop == JAG_FUNC_TOSECOND || 
 		fop == JAG_FUNC_MILETOMETER || 
@@ -4263,13 +4213,13 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_LINELENGTH || 
 		fop == JAG_FUNC_INTERPOLATE || 
 		fop == JAG_FUNC_LINESUBSTRING || 
-		fop == JAG_FUNC_LOCATEPOINT || 
+		fop == JAG_FUNC_LOCATEPOINT || fop == JAG_FUNC_ADDPOINT || fop == JAG_FUNC_SETPOINT || fop == JAG_FUNC_REMOVEPOINT ||
 		fop == JAG_FUNC_DEGREES || fop == JAG_FUNC_RADIANS ||
 		fop == JAG_FUNC_LENGTH || fop == JAG_FUNC_COUNT ) {
 			return true;
 	}
 	return false;
-}
+}  // end checkFuncType()
 
 bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, short &len, short &ctype )
 {
@@ -4580,6 +4530,12 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_YMAX; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "zmax", 4 ) ) {
 		fop = JAG_FUNC_ZMAX; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "addpoint", 8 ) ) {
+		fop = JAG_FUNC_ADDPOINT; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "setpoint", 8 ) ) {
+		fop = JAG_FUNC_SETPOINT; len = 8; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "removepoint", 11 ) ) {
+		fop = JAG_FUNC_REMOVEPOINT; len = 11; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
