@@ -2746,6 +2746,11 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    isconvex(pgon)          -- check if the outer ring of a polygon is convex\n";
 		str += "    interpolate(lstr,frac)  -- the point on linestring where linelength is at a fraction (0.0-1.0)\n";
 		str += "    linesubstring(lstr,startfrac,endfrac)  -- substring of linestring between start fraction and end fraction\n";
+		str += "    locatepoint(lstr,point) -- fraction where on linestring a point is closest to a given point\n";
+		str += "    addpoint(lstr,point)    -- add a point to end of a linestring\n";
+		str += "    addpoint(lstr,point,position)  -- add a point to the position of a linestring\n";
+		str += "    setpoint(lstr,point,position)  -- change a point at position of a linestring\n";
+		str += "    removepoint(lstr,position)     -- remove a point at position of a linestring\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
