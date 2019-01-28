@@ -1570,6 +1570,8 @@ class JagGeo
     static double meterToLon( int srid, double meter, double lon, double lat);
     static double meterToLat( int srid, double meter, double lon, double lat);
 	static bool interpolatePoint2D(double segdist, double segfrac, const JagPoint3D &p1, const JagPoint3D &p2, JagPoint3D &point );
+	static bool toJAG( const JagVector<JagPolygon> &pgvec, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str );
+
 
 
 

@@ -23914,4 +23914,35 @@ bool JagGeo::interpolatePoint2D(double segdist, double segfrac, const JagPoint3D
 
 }
 
+bool JagGeo::toJAG( const JagVector<JagPolygon> &pgvec, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) 
+{
+	if ( pgvec.size() < 1 ) { str=""; return false; }
+	if ( hasHdr ) {
+		Jstr srids = intToStr( srid );
+		Jstr bbox;
+		Jstr mk = "OJAG=";
+		if ( is3D ) {
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=MG3=d " + bbox;
+		} else {
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=MG=d " + bbox;
+		}
+	} 
 
+	for ( int k=0; k < pgvec.size(); ++k ) {
+    	if ( k>0 ) { str += " !"; }
+		const JagPolygon &pgon = pgvec[k];
+    	for ( int i=0; i < pgon.linestr.size(); ++i ) {
+    		if ( i>0 ) { str += " |"; }
+    		const JagLineString3D &lstr = pgon.linestr[i];
+    		for (  int j=0; j< lstr.size(); ++j ) {
+    			str += Jstr(" ") + d2s(lstr.point[j].x) + ":" +  d2s(lstr.point[j].y);
+    			if ( is3D ) { str += Jstr(":") + d2s(lstr.point[j].z); }
+    		}
+    	}
+	}
+
+	return true;
+	
+}

@@ -416,6 +416,50 @@ double JagLineString::lineLength( bool removeLast, bool is3D, int srid )
 	return sum;
 }
 
+void JagLineString::toJAG( bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const
+{
+	if ( point.size() < 1 ) { str=""; return; }
+	if ( hasHdr ) {
+		Jstr srids = intToStr( srid );
+		Jstr bbox;
+		Jstr mk = "OJAG=";
+		if ( is3D ) {
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=LS3=d " + bbox;
+		} else {
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=LS=d " + bbox;
+		}
+	} 
+
+	for ( int i=0; i < point.size(); ++i ) {
+		str += Jstr(" ") + Jstr(point[i].x) + ":" +  Jstr(point[i].y);
+		if ( is3D ) { str += Jstr(":") + Jstr(point[i].z); }
+	}
+}
+
+void JagLineString3D::toJAG( bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const
+{
+	if ( point.size() < 1 ) { str=""; return; }
+	if ( hasHdr ) {
+		Jstr srids = intToStr( srid );
+		Jstr bbox;
+		Jstr mk = "OJAG=";
+		if ( is3D ) {
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=LS3=d " + bbox;
+		} else {
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=LS=d " + bbox;
+		}
+	} 
+
+	for ( int i=0; i < point.size(); ++i ) {
+		str += Jstr(" ") + d2s(point[i].x) + ":" +  d2s(point[i].y);
+		if ( is3D ) { str += Jstr(":") + d2s(point[i].z); }
+	}
+}
+
 double JagLineString3D::lineLength( bool removeLast, bool is3D, int srid )
 {
 	double sum = 0.0;
@@ -768,6 +812,32 @@ void JagLineString3D::bbox3D( double &xmin, double &ymin, double &zmin,double &x
 	}
 }
 
+void JagLineString3D::reverse()
+{
+	int len = point.size();
+	JagPoint3D t;
+	for ( int i=0; i < len/2; ++i ) {
+		if ( i != len-i-1 ) {
+			t = point[i];
+			point[i] = point[len-i-1];
+			point[len-i-1] = t;
+		}
+	}
+}
+
+void JagLineString::reverse()
+{
+	int len = point.size();
+	JagPoint t;
+	for ( int i=0; i < len/2; ++i ) {
+		if ( i != len-i-1 ) {
+			t = point[i];
+			point[i] = point[len-i-1];
+			point[len-i-1] = t;
+		}
+	}
+}
+
 
 JagSquare2D::JagSquare2D(double inx, double iny, double ina, double innx, int insrid )
 {
@@ -1057,18 +1127,21 @@ void JagPolygon::toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str )
 	str += ")";
 }
 
-void JagPolygon::toJAG( bool is3D, bool hasHdr, int srid, Jstr &str ) const
+void JagPolygon::toJAG( bool is3D, bool hasHdr,  const Jstr &inbbox, int srid, Jstr &str ) const
 {
 	if ( linestr.size() < 1 ) { str=""; return; }
 	if ( hasHdr ) {
 		Jstr srids = intToStr( srid );
+		Jstr bbox;
+		Jstr mk = "OJAG=";
 		if ( is3D ) {
-			str = Jstr("CJAG=") + srids + "=0=PL3=d 0:0:0:0:0:0";
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=PL3=d " + bbox;
 		} else {
-			str = Jstr("CJAG=") + srids + "=0=PL=d 0:0:0:0";
+			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
+			str = mk + srids + "=0=PL=d " + bbox;
 		}
-	} else {
-	}
+	} 
 
 	for ( int i=0; i < linestr.size(); ++i ) {
 		if ( i>0 ) {

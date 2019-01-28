@@ -19,7 +19,7 @@
 #ifndef _jag_def_h_
 #define _jag_def_h_
 
-#define JAG_VERSION			"2.9.8"
+#define JAG_VERSION			"2.9.7"
 #define JAG_BRAND			"jaguar"
 
 // File Defs
@@ -472,6 +472,7 @@
 #define JAG_FUNC_ADDPOINT       300  // add a point to a linestring
 #define JAG_FUNC_SETPOINT       301  // set n-th point on a linestring
 #define JAG_FUNC_REMOVEPOINT    302  // remove a point from a linestring
+#define JAG_FUNC_REVERSE        303  // reverse points of line, linestring, polygon, multipolygon
 
 
 // string functions 
