@@ -844,6 +844,15 @@ void JagLineString3D::scale( double fx, double fy, double fz, bool is3D )
 	}
 }
 
+void JagLineString3D::scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D )
+{
+	for ( int i=0; i < point.size(); ++i ) {
+		point[i].x = x0 + fx*(point[i].x-x0);
+		point[i].y = y0 + fy*(point[i].y-y0);
+		if ( is3D ) point[i].z = z0 + fz*(point[i].z-z0);
+	}
+}
+
 void JagLineString::scale( double fx, double fy, double fz, bool is3D )
 {
 	for ( int i=0; i < point.size(); ++i ) {
@@ -852,6 +861,25 @@ void JagLineString::scale( double fx, double fy, double fz, bool is3D )
 		if ( is3D ) strcpy( point[i].z, d2s(jagatof(point[i].z)*fz).c_str() );
 	}
 }
+
+void JagLineString::scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D )
+{
+	double x, y, z;
+	for ( int i=0; i < point.size(); ++i ) {
+		x = jagatof(point[i].x);
+		y = jagatof(point[i].y);
+		x = x0 + fx*(x-x0);
+		y = y0 + fy*(y-y0);
+		strcpy( point[i].x, d2s(x).c_str() );
+		strcpy( point[i].y, d2s(y).c_str() );
+		if ( is3D ) {
+			z = jagatof(point[i].z);
+			z = z0 + fz*(z-z0);
+			strcpy( point[i].z, d2s(z).c_str() );
+		}
+	}
+}
+
 
 JagSquare2D::JagSquare2D(double inx, double iny, double ina, double innx, int insrid )
 {

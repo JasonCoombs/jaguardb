@@ -4808,9 +4808,7 @@ Jstr  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inlstr, const 
 	//  lstr : OJAG=srid=name=type=subtype bbx  data1 data2 data3 ...
 	//  rstr : OJAG=srid=name=type=subtype bbx  data1 data2 data3 ...
 	//  rstr : CJAG=0=0=type=subtype bbx  data1 data2 data3 ...
-
 	if ( inlstr.size() < 1 ) return "";
-
 	Jstr lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
 		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
@@ -4835,7 +4833,6 @@ Jstr  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inlstr, const 
 
 	prt(("s5482 do processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
 	prt(("s5482 do processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
-
 	Jstr colobjstr1 = lstr.firstToken(' ');
 	Jstr colobjstr2 = rstr.firstToken(' ');
 	JagStrSplit spcol2(colobjstr2, '=');  
@@ -5203,6 +5200,12 @@ Jstr BinaryOpNode::doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, 
 		return doAllAddPoint( srid1, mark1, colType1, sp1, mark2, colType2, sp2, carg );
 	} else if ( op == JAG_FUNC_SETPOINT ) {
 		return doAllSetPoint( srid1, mark1, colType1, sp1, mark2, colType2, sp2, carg );
+	} else if ( op == JAG_FUNC_SCALEFROM ) {
+		if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+			return doAllScaleFrom( srid1, mark1, colType1, sp1, mark2, colType2, sp2, carg );
+		} else {
+			return "";
+		}
 	} else {
 		return "";
 	}
@@ -7446,6 +7449,282 @@ bool BinaryOpNode::doAllRemovePoint( int srid, const Jstr &colType1,
 	return true;
 }
 
+Jstr BinaryOpNode::doAllScaleFrom( int srid, const Jstr& mark1, const Jstr &colType1, 
+										const JagStrSplit &sp1, const Jstr& mark2, 
+										const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg )
+{
+	prt(("s1727 doAllScaleFrom sp1.size()=%d\n", sp1.size() ));
+	if ( sp1.size() < 1 ) return false;
+	double fx, fy, fz;
+	fx = fy = fz = 1.0;
+	JagStrSplit sf( carg, ':');
+	if ( 3 == sf.size() ) {
+		fx = fabs(sf[0].tof()); fy = fabs(sf[1].tof()); fz = fabs(sf[2].tof());
+	} else if ( 2 == sf.size() ) {
+		fx = fabs(sf[0].tof()); fy = fabs(sf[1].tof()); 
+	} else {
+		fx = fy = fz = fabs(carg.tof());
+	}
+	prt(("s1827 doAllScaleFrom fx=%.2f fy=%.2f fz=%.2f colType1=%s\n", fx, fy, fz, colType1.c_str() ));
+	double px, py, pz, x, y, z;
+	px = sp2[JAG_SP_START+0].tof();
+	py = sp2[JAG_SP_START+1].tof();
+	pz = sp2[JAG_SP_START+2].tof();
+	Jstr val;
+
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
+		double x,y;
+		val = "CJAG=" + intToStr(srid) + "=0=PT=d 0:0:0:0 ";
+		x = sp1[JAG_SP_START+0].tof(); y = sp1[JAG_SP_START+1].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val += d2s(x) + Jstr(" ") + d2s(y);
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D ) {
+		double x,y,z;
+		val = "CJAG=" + intToStr(srid) + "=0=PT=d 0:0:0:0 ";
+		x = sp1[JAG_SP_START+0].tof(); y = sp1[JAG_SP_START+1].tof(); z = sp1[JAG_SP_START+2].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val += d2s(x) + Jstr(" ") + d2s(y) + " " + d2s(z);
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE  ) {
+		val = "CJAG=" + intToStr(srid) + "=0=LN=d 0:0:0:0 ";
+		x = sp1[JAG_SP_START+0].tof(); y = sp1[JAG_SP_START+1].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val += d2s(x) + Jstr(" ") + d2s(y);
+
+		x = sp1[JAG_SP_START+2].tof(); y = sp1[JAG_SP_START+3].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val += d2s(x) + Jstr(" ") + d2s(y);
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE3D ) {
+		val = "CJAG=" + intToStr(srid) + "=0=LN3=d 0:0:0:0:0:0 ";
+		x = sp1[JAG_SP_START+0].tof(); y = sp1[JAG_SP_START+1].tof(); z = sp1[JAG_SP_START+2].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val += d2s(x) + Jstr(" ") + d2s(y) + " " + d2s(z);
+
+		x = sp1[JAG_SP_START+3].tof(); y = sp1[JAG_SP_START+4].tof(); z = sp1[JAG_SP_START+5].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val += d2s(x) + Jstr(" ") + d2s(y) + " " + d2s(z);
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE  ) {
+		val = "CJAG=" + intToStr(srid) + "=0=TR=d 0:0:0:0 ";
+		// 3 pairs of x-y coords
+		x = sp1[JAG_SP_START+0].tof(); y = sp1[JAG_SP_START+1].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val += d2s(x) + Jstr(" ") + d2s(y);
+
+		x = sp1[JAG_SP_START+2].tof(); y = sp1[JAG_SP_START+3].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val += Jstr(" ") + d2s(x) + Jstr(" ") + d2s(y);
+
+		x = sp1[JAG_SP_START+4].tof(); y = sp1[JAG_SP_START+5].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val += Jstr(" ") + d2s(x) + Jstr(" ") + d2s(y);
+	} else if ( colType1 == JAG_C_COL_TYPE_TRIANGLE3D  ) {
+		val = "CJAG=" + intToStr(srid) + "=0=TR3=d 0:0:0:0:0:0 ";
+		x = sp1[JAG_SP_START+0].tof(); y = sp1[JAG_SP_START+1].tof(); z = sp1[JAG_SP_START+2].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val += d2s(x) + Jstr(" ") + d2s(y) + " " + d2s(z);
+
+		x = sp1[JAG_SP_START+3].tof(); y = sp1[JAG_SP_START+4].tof(); z = sp1[JAG_SP_START+5].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val += Jstr(" ") + d2s(x) + Jstr(" ") + d2s(y) + " " + d2s(z);
+
+		x = sp1[JAG_SP_START+6].tof(); y = sp1[JAG_SP_START+7].tof(); z = sp1[JAG_SP_START+8].tof();
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val += Jstr(" ") + d2s(x) + Jstr(" ") + d2s(y) + " " + d2s(z);
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		double r = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double a = r *fx;
+		double b = r *fy;
+		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
+	} else if ( colType1 == JAG_C_COL_TYPE_SQUARE3D ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() )*fx;
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() )*fy;
+		double z = jagatof( sp1[JAG_SP_START+2].c_str() )*fz;
+		double r = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
+		double ny = JagGeo::safeget(sp1, JAG_SP_START+5);
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		double a = r *fx;
+		double b = r *fy;
+		val = "CJAG=" + intToStr(srid) + "=0=RC3=d 0:0:0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx) + " " + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double a = jagatof( sp1[JAG_SP_START+2].c_str() )*fx;
+		double b = jagatof( sp1[JAG_SP_START+3].c_str() )*fy;
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
+	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double a = jagatof( sp1[JAG_SP_START+3].c_str() )*fx;
+		double b = jagatof( sp1[JAG_SP_START+4].c_str() )*fy;
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+5);
+		double ny = JagGeo::safeget(sp1, JAG_SP_START+6);
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val = "CJAG=" + intToStr(srid) + "=0=RC3=d 0:0:0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx) + " " + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double r = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double a = r *fx;
+		double b = r *fy;
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val = "CJAG=" + intToStr(srid) + "=0=EL=d 0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " 0.0";
+	} else if ( colType1 == JAG_C_COL_TYPE_CIRCLE3D ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double r = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
+		double ny = JagGeo::safeget(sp1, JAG_SP_START+5);
+		double a = r *fx;
+		double b = r *fy;
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val = "CJAG=" + intToStr(srid) + "=0=EL3=d 0:0:0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx) + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSE ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double a = jagatof( sp1[JAG_SP_START+2].c_str() )*fx;
+		double b = jagatof( sp1[JAG_SP_START+3].c_str() )*fy;
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		x = px + fx*(x-px); y = py + fy*(y-py);
+		val = "CJAG=" + intToStr(srid) + "=0=EL=d 0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
+	} else if ( colType1 == JAG_C_COL_TYPE_ELLIPSE3D ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double a = jagatof( sp1[JAG_SP_START+3].c_str() )*fx;
+		double b = jagatof( sp1[JAG_SP_START+4].c_str() )*fy;
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+5);
+		double ny = JagGeo::safeget(sp1, JAG_SP_START+6);
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val = "CJAG=" + intToStr(srid) + "=0=EL3=d 0:0:0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx) + " " + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_CUBE  ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double r = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double nx = jagatof( sp1[JAG_SP_START+4].c_str() );
+		double ny = jagatof( sp1[JAG_SP_START+5].c_str() );
+		double a = r *fx;
+		double b = r *fy;
+		double c = r *fz;
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val = "CJAG=" + intToStr(srid) + "=0=BX=d 0:0:0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(c) 
+				+ " " + d2s(nx) + " " + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_SPHERE ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double r = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double a = r *fx;
+		double b = r *fy;
+		double c = r *fz;
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		val = "CJAG=" + intToStr(srid) + "=0=EX=d 0:0:0:0:0:0 ";
+		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(c) + " 0.0 0.0";
+	} else if ( colType1 == JAG_C_COL_TYPE_BOX || colType1 == JAG_C_COL_TYPE_ELLIPSOID  ) {
+		double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double a = jagatof( sp1[JAG_SP_START+3].c_str() )*fx;
+		double b = jagatof( sp1[JAG_SP_START+4].c_str() )*fy;
+		double c = jagatof( sp1[JAG_SP_START+5].c_str() )*fz;
+		double nx = jagatof( sp1[JAG_SP_START+6].c_str() );
+		double ny = jagatof( sp1[JAG_SP_START+7].c_str() );
+		x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+		if ( colType1 == JAG_C_COL_TYPE_BOX ) {
+			val = "CJAG=" + intToStr(srid) + "=0=BX=d 0:0:0:0:0:0 ";
+		} else {
+			val = "CJAG=" + intToStr(srid) + "=0=EX=d 0:0:0:0:0:0 ";
+		}
+		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(c) 
+				+ " " + d2s(nx) + " " + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_CONE || colType1 == JAG_C_COL_TYPE_CYLINDER  ) {
+		if ( JagGeo::jagEQ(fx,fy) && JagGeo::jagEQ(fx,fz) ) {
+            double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+            double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+            double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+            double r = jagatof( sp1[JAG_SP_START+3].c_str() )*fx;
+            double h = jagatof( sp1[JAG_SP_START+4].c_str() )*fx;
+            double nx = JagGeo::safeget(sp1, JAG_SP_START+5);
+            double ny = JagGeo::safeget(sp1, JAG_SP_START+6);
+			if ( colType1 == JAG_C_COL_TYPE_CONE ) {
+				val = "CJAG=" + intToStr(srid) + "=0=CN=d 0:0:0:0:0:0 ";
+			} else {
+				val = "CJAG=" + intToStr(srid) + "=0=CL=d 0:0:0:0:0:0 ";
+			}
+			x = px + fx*(x-px); y = py + fy*(y-py); z = pz + fz*(z-pz);
+			val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(r) + " " + d2s(h) + 
+				+ " " + d2s(nx) + " " + d2s(ny);
+		}
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
+		JagLineString linestr;
+		JagParser::addLineStringData( linestr, sp1 );
+		linestr.scaleFrom( px,py,pz, fx,fy, 1.0, false );
+		linestr.toJAG( JAG_C_COL_TYPE_LINESTRING, false, true, sp1[1], srid, val );
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
+		JagLineString3D linestr;
+		JagParser::addLineString3DData( linestr, sp1 );
+		linestr.scaleFrom(px,py,pz, fx,fy,fz, true );
+		linestr.toJAG( JAG_C_COL_TYPE_LINESTRING3D, true, true, sp1[1], srid, val );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT ) {
+		JagLineString linestr;
+		JagParser::addLineStringData( linestr, sp1 );
+		linestr.scaleFrom(px,py,pz, fx,fy, 1.0, false );
+		linestr.toJAG( JAG_C_COL_TYPE_MULTIPOINT, false, true, sp1[1], srid, val );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		JagLineString linestr;
+		JagParser::addLineStringData( linestr, sp1 );
+		linestr.scaleFrom(px, py, pz, fx,fy, fz, true );
+		linestr.toJAG( JAG_C_COL_TYPE_MULTIPOINT3D, true, true, sp1[1], srid, val );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygonData( pgon, sp1, false );
+		if ( rc < 0 ) return val;
+		pgon.scaleFrom(px,py,pz, fx,fy, 1.0, false );
+		pgon.toJAG( false, true, sp1[1], srid, val );
+	} else if ( colType1 == JAG_C_COL_TYPE_POLYGON3D ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygon3DData( pgon, sp1, false );
+		if ( rc < 0 ) return val;
+		pgon.scaleFrom(px,py,pz, fx,fy,fz, true );
+		pgon.toJAG( true, true, sp1[1], srid, val );
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		JagVector<JagPolygon> pgvec;
+        int n = JagParser::addMultiPolygonData( pgvec, sp1, false, false );
+        if ( n <= 0 ) return val;
+		for ( int i=0; i < pgvec.size(); ++i ) { pgvec[i].scaleFrom(px,py,pz, fx,fy,1.0, false ); }
+		bool rc = JagGeo::toJAG( pgvec, false, true, sp1[1], srid, val );
+		if ( ! rc ) return val; 
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		JagVector<JagPolygon> pgvec;
+        int n = JagParser::addMultiPolygonData( pgvec, sp1, false, true );
+        if ( n <= 0 ) return val;
+		for ( int i=0; i < pgvec.size(); ++i ) { pgvec[i].scaleFrom(px,py,pz, fx,fy,fz, true ); }
+		bool rc = JagGeo::toJAG( pgvec, true, true, sp1[1], srid, val );
+		if ( ! rc ) return val; 
+	} else {
+		return val;
+	}
+
+	return val;
+}
+
 bool BinaryOpNode::doAllReverse( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val )
 {
 	if ( sp1.size() < 1 ) return false;
@@ -7662,6 +7941,23 @@ bool BinaryOpNode::doAllScale( int srid, const Jstr &colType1, const JagStrSplit
 		}
 		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(c) 
 				+ " " + d2s(nx) + " " + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_CONE || colType1 == JAG_C_COL_TYPE_CYLINDER  ) {
+		if ( JagGeo::jagEQ(fx,fy) && JagGeo::jagEQ(fx,fz) ) {
+            double x = jagatof( sp1[JAG_SP_START+0].c_str() )*fx;
+            double y = jagatof( sp1[JAG_SP_START+1].c_str() )*fx;
+            double z = jagatof( sp1[JAG_SP_START+2].c_str() )*fx;
+            double r = jagatof( sp1[JAG_SP_START+3].c_str() )*fx;
+            double h = jagatof( sp1[JAG_SP_START+4].c_str() )*fx;
+            double nx = JagGeo::safeget(sp1, JAG_SP_START+5);
+            double ny = JagGeo::safeget(sp1, JAG_SP_START+6);
+			if ( colType1 == JAG_C_COL_TYPE_CONE ) {
+				val = "CJAG=" + intToStr(srid) + "=0=CN=d 0:0:0:0:0:0 ";
+			} else {
+				val = "CJAG=" + intToStr(srid) + "=0=CL=d 0:0:0:0:0:0 ";
+			}
+			val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(r) + " " + d2s(h) + 
+				+ " " + d2s(nx) + " " + d2s(ny);
+		}
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
 		JagLineString linestr;
 		JagParser::addLineStringData( linestr, sp1 );
@@ -7732,7 +8028,12 @@ bool BinaryOpNode::doAllScaleSize( int srid, const Jstr &colType1, const JagStrS
 	}
 	prt(("s1827 doAllScale fx=%.2f fy=%.2f fz=%.2f colType1=%s\n", fx, fy, fz, colType1.c_str() ));
 
-	if ( colType1 == JAG_C_COL_TYPE_LINE  ) {
+	if ( colType1 == JAG_C_COL_TYPE_POINT  ) {
+		val = sp1[0] + " " + sp1[1] + " " +  sp1[JAG_SP_START+0] + Jstr(" ") + sp1[JAG_SP_START+1];
+	} else if ( colType1 == JAG_C_COL_TYPE_POINT3D  ) {
+		val = sp1[0] + " " + sp1[1] + " " +  sp1[JAG_SP_START+0] + Jstr(" ") + sp1[JAG_SP_START+1] 
+		      + " " + sp1[JAG_SP_START+2];
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE  ) {
 		val = "CJAG=" + intToStr(srid) + "=0=LN=d 0:0:0:0 ";
 		val += d2s(sp1[JAG_SP_START+0].tof()*fx) + Jstr(" ") + d2s(sp1[JAG_SP_START+1].tof()*fy) + Jstr(" ") 
 			  + d2s(sp1[JAG_SP_START+2].tof()*fx) + Jstr(" ") + d2s(sp1[JAG_SP_START+3].tof()*fy);  
@@ -7870,6 +8171,23 @@ bool BinaryOpNode::doAllScaleSize( int srid, const Jstr &colType1, const JagStrS
 		}
 		val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(a) + " " + d2s(b) + " " + d2s(c) 
 				+ " " + d2s(nx) + " " + d2s(ny);
+	} else if ( colType1 == JAG_C_COL_TYPE_CONE || colType1 == JAG_C_COL_TYPE_CYLINDER  ) {
+		if ( JagGeo::jagEQ(fx,fy) && JagGeo::jagEQ(fx,fz) ) {
+            double x = jagatof( sp1[JAG_SP_START+0].c_str() );
+            double y = jagatof( sp1[JAG_SP_START+1].c_str() );
+            double z = jagatof( sp1[JAG_SP_START+2].c_str() );
+            double r = jagatof( sp1[JAG_SP_START+3].c_str() )*fx;
+            double h = jagatof( sp1[JAG_SP_START+4].c_str() )*fx;
+            double nx = JagGeo::safeget(sp1, JAG_SP_START+5);
+            double ny = JagGeo::safeget(sp1, JAG_SP_START+6);
+			if ( colType1 == JAG_C_COL_TYPE_CONE ) {
+				val = "CJAG=" + intToStr(srid) + "=0=CN=d 0:0:0:0:0:0 ";
+			} else {
+				val = "CJAG=" + intToStr(srid) + "=0=CL=d 0:0:0:0:0:0 ";
+			}
+			val += d2s(x) + " " + d2s(y) + " " + d2s(z) + " " + d2s(r) + " " + d2s(h) + 
+				+ " " + d2s(nx) + " " + d2s(ny);
+		}
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
 		JagLineString linestr;
 		JagParser::addLineStringData( linestr, sp1 );

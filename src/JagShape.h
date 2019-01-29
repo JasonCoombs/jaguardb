@@ -411,8 +411,9 @@ class JagLineString3D
 		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		const JagPoint3D& operator[](int i ) const { return point[i]; }
 		double lineLength( bool removeLast, bool is3D, int srid );
-		void   reverse();
-		void   scale( double fx, double fy, double fz, bool is3D);
+		void reverse();
+		void scale( double fx, double fy, double fz, bool is3D);
+		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
 		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 
 		bool  interpolatePoint( short dim, int srid, double fraction, JagPoint3D &point );
@@ -445,7 +446,8 @@ class JagLineString
 		const JagPoint& operator[](int i ) const { return point[i]; }
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void reverse();
-		void   scale( double fx, double fy, double fz, bool is3D);
+		void scale( double fx, double fy, double fz, bool is3D);
+		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
 		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 
 		JagVector<JagPoint> point;
@@ -472,7 +474,11 @@ class JagPolygon
 		void toJAG( bool is3D, bool hasHdr,  const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 		void reverse() { for (int i=0; i < linestr.size(); ++i ) linestr[i].reverse(); }
 		void   scale( double fx, double fy, double fz, bool is3D) { 
-			for (int i=0; i < linestr.size(); ++i ) linestr[i].scale(fx,fy,fz,is3D); }
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].scale(fx,fy,fz,is3D); 
+		}
+		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D) {
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].scaleFrom(x0,y0,z0, fx,fy,fz,is3D);
+		}
 
 		JagPolygon( const JagSquare2D &sq );
 		JagPolygon( const JagRectangle2D &rect );
