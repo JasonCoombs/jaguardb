@@ -182,7 +182,8 @@ const Pair &JagStack<Pair>::top() const
 {
 	if ( _last < 0 ) {
 		printf("s5004 stack empty, error top()\n");
-		exit(1);
+		//exit(1);
+		throw 2920;
 	} 
 	return _arr[ _last ];
 }

@@ -413,6 +413,7 @@ class JagLineString3D
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void reverse();
 		void scale( double fx, double fy, double fz, bool is3D);
+		void translate( double dx, double dy, double dz, bool is3D);
 		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
 		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 
@@ -447,6 +448,7 @@ class JagLineString
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void reverse();
 		void scale( double fx, double fy, double fz, bool is3D);
+		void translate( double dx, double dy, double dz, bool is3D);
 		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
 		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 
@@ -478,6 +480,9 @@ class JagPolygon
 		}
 		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D) {
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].scaleFrom(x0,y0,z0, fx,fy,fz,is3D);
+		}
+		void   translate( double dx, double dy, double dz, bool is3D) { 
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].translate(dx,dy,dz,is3D); 
 		}
 
 		JagPolygon( const JagSquare2D &sq );

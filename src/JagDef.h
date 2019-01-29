@@ -476,6 +476,7 @@
 #define JAG_FUNC_SCALE          304  // scale the coordinate values by factors
 #define JAG_FUNC_SCALEFROM      305  // scale the coordinate values, relative to a point, by factors
 #define JAG_FUNC_SCALESIZE      306  // scale the dimension of vector shapes
+#define JAG_FUNC_TRANSLATE      307  // translate the location of geom
 
 
 // string functions 

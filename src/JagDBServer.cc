@@ -2761,6 +2761,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    scalesize(geom,factor)         -- scale the size of vector shapes by a factor\n";
 		str += "    scalesize(geom,xfac,yfac)      -- scale the size of vector shapes by diffeent factors\n";
 		str += "    scalesize(geom,xfac,yfac,zfac) -- scale the size of vector shapes by diffeent factors\n";
+		str += "    translate(geom,dx,dy)          -- translate the location of 2D geom by dx,dy\n";
+		str += "    translate(geom,dx,dy,dz)       -- translate the location of 3D geom by dx,dy,dz\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
