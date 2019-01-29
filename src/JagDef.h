@@ -112,11 +112,11 @@
 #define JAG_FULLJOIN_OP			28
 #define JAG_UPDATE_OP			30
 #define JAG_DELETE_OP			50
-#define JAG_COPY_OP			53
-#define JAG_LOAD_OP			55
-#define JAG_LOADB_OP		56
-#define JAG_LOADR_OP		57
-#define JAG_RAND_OP		    58
+#define JAG_COPY_OP				53
+#define JAG_LOAD_OP				55
+#define JAG_LOADB_OP			56
+#define JAG_LOADR_OP			57
+#define JAG_RAND_OP		    	58
 #define JAG_DROPTABLE_OP		60
 #define JAG_DROPINDEX_OP		65
 #define JAG_TRUNCATE_OP			70
@@ -144,7 +144,7 @@
 #define	JAG_CHANGEPASS_OP		182
 #define	JAG_SHOWUSER_OP			184
 #define	JAG_SHOW_CREATE_TABLE_OP	186
-#define JAG_CREATECHAIN_OP	    188
+#define JAG_CREATECHAIN_OP	    	188
 #define	JAG_SHOW_CREATE_CHAIN_OP	190
 #define JAG_SHOWDATACENTER_OP		192
 #define JAG_SHOWTOOLS_OP		194
@@ -289,8 +289,8 @@
 
 #define JAG_C_COL_KEY		'k'
 #define JAG_C_COL_VALUE	    'v'
-#define JAG_C_NEG_SIGN			'-'
-#define JAG_C_POS_SIGN			'0'
+#define JAG_C_NEG_SIGN		'-'
+#define JAG_C_POS_SIGN		'0'
 
 #define JAG_DATETIME_FIELD_LEN		17
 #define JAG_TIMESTAMP_FIELD_LEN		17
@@ -473,6 +473,9 @@
 #define JAG_FUNC_SETPOINT       301  // set n-th point on a linestring
 #define JAG_FUNC_REMOVEPOINT    302  // remove a point from a linestring
 #define JAG_FUNC_REVERSE        303  // reverse points of line, linestring, polygon, multipolygon
+#define JAG_FUNC_SCALE          304  // scale the coordinate values by factors
+#define JAG_FUNC_SCALEFROM      305  // scale the coordinate values, relative to a point, by factors
+#define JAG_FUNC_SCALESIZE      306  // scale the dimension of vector shapes
 
 
 // string functions 

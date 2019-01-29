@@ -32,6 +32,7 @@ class JagStack
 		void 	push( const Pair &pair );
 		void 	pop();
 		const Pair &top() const;
+		const Pair & operator[](int i) const;
 		inline  abaxint size() const { return _last+1; }
 		inline  abaxint capacity() const { return _arrlen; }
 		void 	destroy();
@@ -214,6 +215,14 @@ void JagStack<Pair>::print()
 		printf("%09d  %d\n", i, _arr[i] );
 	}
 	printf("\n");
+}
+
+template <class Pair> 
+const Pair& JagStack<Pair>::operator[](int i) const 
+{ 
+	if ( i<0 ) { i=0; }
+	else if ( i > _last ) { i = _last; }
+	return _arr[i];
 }
 
 #endif

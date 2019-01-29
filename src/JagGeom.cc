@@ -7268,8 +7268,8 @@ bool JagGeo::doLine3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &m
     	double py0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
     	double pz0 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
     	double w = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-    	double nx = safeget(sp2, JAG_SP_START+5);
-    	double ny = safeget(sp2, JAG_SP_START+6);
+    	double nx = safeget(sp2, JAG_SP_START+4);
+    	double ny = safeget(sp2, JAG_SP_START+5);
 		return line3DIntersectRectangle3D( line, px0, py0, pz0, w, w, nx, ny );
 	}
 	return false;
@@ -15216,6 +15216,15 @@ bool JagGeo::doPoint3DDistance( const Jstr& mk1, const JagStrSplit& sp1, const J
 		double nx = safeget(sp2, JAG_SP_START+5);
 		double ny = safeget(sp2, JAG_SP_START+6);
 		return point3DDistanceCone( srid, px0,py0,pz0, x, y, z, r, h, nx, ny, arg, dist );
+	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
+		return point3DDistanceCylinder( srid, px0,py0,pz0, x, y, z, r, h, nx, ny, arg, dist );
 	}
 	return false;
 }
@@ -17134,6 +17143,7 @@ bool JagGeo::point3DDistanceSquare3D(int srid, double px, double py, double pz,
 	return true; 
 
 }
+
 bool JagGeo::point3DDistanceCylinder(int srid,  double px, double py, double pz,
                                     double x, double y, double z,
                                     double r, double h, double nx, double ny, const Jstr& arg, double &dist )

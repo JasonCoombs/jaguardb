@@ -335,6 +335,8 @@ class BinaryOpNode: public ExpressionElementNode
 	
 	bool doAllRemovePoint( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllReverse( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	bool doAllScale( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	bool doAllScaleSize( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 
 
 

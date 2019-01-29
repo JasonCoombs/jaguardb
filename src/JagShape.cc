@@ -416,7 +416,7 @@ double JagLineString::lineLength( bool removeLast, bool is3D, int srid )
 	return sum;
 }
 
-void JagLineString::toJAG( bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const
+void JagLineString::toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const
 {
 	if ( point.size() < 1 ) { str=""; return; }
 	if ( hasHdr ) {
@@ -425,11 +425,10 @@ void JagLineString::toJAG( bool is3D, bool hasHdr, const Jstr &inbbox, int srid,
 		Jstr mk = "OJAG=";
 		if ( is3D ) {
 			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
-			str = mk + srids + "=0=LS3=d " + bbox;
 		} else {
 			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
-			str = mk + srids + "=0=LS=d " + bbox;
 		}
+		str = mk + srids + "=0=" + colType + "=d " + bbox;
 	} 
 
 	for ( int i=0; i < point.size(); ++i ) {
@@ -438,7 +437,7 @@ void JagLineString::toJAG( bool is3D, bool hasHdr, const Jstr &inbbox, int srid,
 	}
 }
 
-void JagLineString3D::toJAG( bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const
+void JagLineString3D::toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const
 {
 	if ( point.size() < 1 ) { str=""; return; }
 	if ( hasHdr ) {
@@ -447,11 +446,10 @@ void JagLineString3D::toJAG( bool is3D, bool hasHdr, const Jstr &inbbox, int sri
 		Jstr mk = "OJAG=";
 		if ( is3D ) {
 			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
-			str = mk + srids + "=0=LS3=d " + bbox;
 		} else {
 			if ( inbbox.size() < 1 )  { bbox = "0:0:0:0"; mk="CJAG="; } else { bbox = inbbox; }
-			str = mk + srids + "=0=LS=d " + bbox;
 		}
+		str = mk + srids + "=0=" + colType + "=d " + bbox;
 	} 
 
 	for ( int i=0; i < point.size(); ++i ) {
@@ -538,7 +536,6 @@ bool JagLineString3D::getBetweenPointsFromLen( short dim, double len, int srid, 
 // ratio: [0.0, 1.0]  returns point
 bool JagLineString3D::substring( short dim, int srid, double startFrac, double endFrac, Jstr &retLstr )
 {
-	// qwer todo
 	double length = lineLength(false, false, srid );
 	double len1 = length * startFrac;
 	double len2 = length * endFrac;
@@ -838,6 +835,23 @@ void JagLineString::reverse()
 	}
 }
 
+void JagLineString3D::scale( double fx, double fy, double fz, bool is3D )
+{
+	for ( int i=0; i < point.size(); ++i ) {
+		point[i].x *= fx;
+		point[i].y *= fy;
+		if ( is3D ) point[i].z *= fz;
+	}
+}
+
+void JagLineString::scale( double fx, double fy, double fz, bool is3D )
+{
+	for ( int i=0; i < point.size(); ++i ) {
+		strcpy( point[i].x, d2s(jagatof(point[i].x)*fx).c_str() );
+		strcpy( point[i].y, d2s(jagatof(point[i].y)*fy).c_str() );
+		if ( is3D ) strcpy( point[i].z, d2s(jagatof(point[i].z)*fz).c_str() );
+	}
+}
 
 JagSquare2D::JagSquare2D(double inx, double iny, double ina, double innx, int insrid )
 {

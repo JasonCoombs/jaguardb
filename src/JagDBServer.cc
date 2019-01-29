@@ -2751,6 +2751,16 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    addpoint(lstr,point,position)  -- add a point to the position of a linestring\n";
 		str += "    setpoint(lstr,point,position)  -- change a point at position of a linestring\n";
 		str += "    removepoint(lstr,position)     -- remove a point at position of a linestring\n";
+		str += "    reverse(geom)                  -- reverse the order of points on a line, linestring, polygon, and multipolygon\n";
+		str += "    scale(geom,factor)             -- scale the coordinates of geom by a factor\n";
+		str += "    scale(geom,xfac,yfac)          -- scale the x-y coordinates of geom by factors\n";
+		str += "    scale(geom,xfac,yfac,zfac)     -- scale the x-y-z coordinates of geom by factors\n";
+		str += "    scalefrom(geom,point,factor)   -- scale the coordinates of geom relative to a point by a factor\n";
+		str += "    scalefrom(geom,point,xfac,yfac)      -- scale the coordinates of geom relative to a point by a factor\n";
+		str += "    scalefrom(geom,point,xfac,yfac,zfac) -- scale the coordinates of geom relative to a point by a factor\n";
+		str += "    scalesize(geom,factor)         -- scale the size of vector shapes by a factor\n";
+		str += "    scalesize(geom,xfac,yfac)      -- scale the size of vector shapes by diffeent factors\n";
+		str += "    scalesize(geom,xfac,yfac,zfac) -- scale the size of vector shapes by diffeent factors\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
