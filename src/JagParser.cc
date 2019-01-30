@@ -5884,7 +5884,24 @@ void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp
 		if ( nc != 1 ) continue;
 		get2double(str, p, ':', dx, dy );
 		linestr.add( dx, dy );
-		prt(("s4028 addLineStringData add(%.2f %.2f)\n", dx, dy ));
+		//prt(("s4028 addLineStringData add(%.2f %.2f)\n", dx, dy ));
+	}
+}
+
+// from OJAG type
+void JagParser::addLineStringData( JagLineString3D &linestr, const JagStrSplit &sp )
+{
+	const char *str;
+	char *p;
+	double dx,dy;
+	int nc;
+	for ( int i=0; i < sp.length(); ++i ) {
+		str = sp[i].c_str();
+		nc = strchrnum( str, ':');
+		if ( nc != 1 ) continue;
+		get2double(str, p, ':', dx, dy );
+		linestr.add( dx, dy );
+		//prt(("s4028 addLineStringData add(%.2f %.2f)\n", dx, dy ));
 	}
 }
 

@@ -3827,3 +3827,23 @@ bool isNumeric( const char *str)
     return true;
 }
 
+// rotate counter-clock-wise of point oldx,oldy around point x0,y0
+// alpha is radians
+void rotateat( double oldx, double oldy, double alpha, double x0, double y0, double &x, double &y )
+{
+	x = x0 + (oldx-x0)*cos(alpha) - (oldy-y0)*sin(alpha);
+	y = y0 + (oldy-y0)*cos(alpha) + (oldx-x0)*sin(alpha);
+}
+
+void rotatenx( double oldnx, double alpha, double &nx )
+{
+	if ( fabs(oldnx) > 1.0 || fabs( fabs(oldnx) - 1.0 ) < 0.00000001 ) {
+		nx = 1.0;
+		return;
+	}
+	double oldny = sqrt(1.0 - oldnx*oldnx);
+	nx = oldnx*cos(alpha) - oldny*sin(alpha);
+}
+
+
+

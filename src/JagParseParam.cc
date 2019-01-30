@@ -1150,7 +1150,10 @@ void JagParseParam::initColHash()
 
 bool JagParseParam::isSelectConst() const
 {
+	prt(("s1773 JagParseParam::isSelectConst() _allColumns.size()=%d _selectStar=%d objectVec.size()=%d\n",
+			_allColumns.size(), _selectStar, objectVec.size() ));
 	if ( _allColumns.size() < 1 && ! _selectStar && objectVec.size() < 1 ) {
+		prt(("s2838 true\n" ));
 		return true;
 	} else {
 		return false;

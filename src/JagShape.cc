@@ -864,13 +864,30 @@ void JagLineString3D::transscale( double dx, double dy, double dz, double fx, do
 	}
 }
 
-void JagLineString3D::scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D )
+void JagLineString3D::scaleat(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D )
 {
 	for ( int i=0; i < point.size(); ++i ) {
 		point[i].x = x0 + fx*(point[i].x-x0);
 		point[i].y = y0 + fy*(point[i].y-y0);
 		if ( is3D ) point[i].z = z0 + fz*(point[i].z-z0);
 	}
+}
+
+void JagLineString3D::rotateat( double alpha, double x0, double y0 )
+{
+	double newx, newy;
+	for ( int i=0; i < point.size(); ++i ) {
+		::rotateat( point[i].x, point[i].y, alpha, x0, y0, newx, newy );
+		point[i].x = newx;
+		point[i].y = newy;
+	}
+}
+
+void JagLineString3D::rotateself( double alpha )
+{
+	double cx, cy;
+	center2D( cx, cy, false );
+	rotateat( alpha, cx, cy );
 }
 
 void JagLineString::scale( double fx, double fy, double fz, bool is3D )
@@ -900,7 +917,7 @@ void JagLineString::transscale( double dx, double dy, double dz, double fx, doub
 	}
 }
 
-void JagLineString::scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D )
+void JagLineString::scaleat(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D )
 {
 	double x, y, z;
 	for ( int i=0; i < point.size(); ++i ) {

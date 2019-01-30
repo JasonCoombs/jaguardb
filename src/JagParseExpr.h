@@ -337,10 +337,12 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllReverse( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllScale( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllScaleSize( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
-	Jstr doAllScaleFrom( int srid, const Jstr& mark1, const Jstr &colType1,
+	Jstr doAllScaleAt( int srid, const Jstr& mark1, const Jstr &colType1,
 	                    const JagStrSplit &sp1, const Jstr& mark2, const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
 	bool doAllTranslate( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllTransScale( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	bool doAllRotateAt( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	bool doAllRotateSelf( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 
 
 	// data members

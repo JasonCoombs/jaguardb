@@ -474,10 +474,13 @@
 #define JAG_FUNC_REMOVEPOINT    302  // remove a point from a linestring
 #define JAG_FUNC_REVERSE        303  // reverse points of line, linestring, polygon, multipolygon
 #define JAG_FUNC_SCALE          304  // scale the coordinate values by factors
-#define JAG_FUNC_SCALEFROM      305  // scale the coordinate values, relative to a point, by factors
+#define JAG_FUNC_SCALEAT        305  // scale the coordinate values, relative to a point, by factors
 #define JAG_FUNC_SCALESIZE      306  // scale the dimension of vector shapes
 #define JAG_FUNC_TRANSLATE      307  // translate the location of geom
 #define JAG_FUNC_TRANSSCALE     308  // translate and then scale
+#define JAG_FUNC_ROTATE         310  // rotate around (0, 0)
+#define JAG_FUNC_ROTATEAT       311  // rotate around (x0, y0)
+#define JAG_FUNC_ROTATESELF     312  // rotate around self-center
 
 
 // string functions 
@@ -507,7 +510,9 @@
 #define JAG_FUNC_TIME			436 // "12393949499"  seconds since epoch
 #define JAG_FUNC_TOSECOND		438 
 #define JAG_FUNC_TOMICROSECOND	440 
+
 #define JAG_FUNC_MILETOMETER	442 
+#define JAG_FUNC_PI				444 
 
 
 // = != < <= > >= like calculation

@@ -415,7 +415,9 @@ class JagLineString3D
 		void scale( double fx, double fy, double fz, bool is3D);
 		void translate( double dx, double dy, double dz, bool is3D);
 		void transscale( double dx, double dy, double dz, double fx, double fy, double fz, bool is3D);
-		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
+		void scaleat(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
+		void rotateat( double alpha, double x0, double y0 );
+		void rotateself( double alpha );
 		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 
 		bool  interpolatePoint( short dim, int srid, double fraction, JagPoint3D &point );
@@ -451,7 +453,7 @@ class JagLineString
 		void scale( double fx, double fy, double fz, bool is3D);
 		void translate( double dx, double dy, double dz, bool is3D);
 		void transscale( double dx, double dy, double dz, double fx, double fy, double fz, bool is3D);
-		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
+		void scaleat(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
 		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 
 		JagVector<JagPoint> point;
@@ -480,14 +482,20 @@ class JagPolygon
 		void   scale( double fx, double fy, double fz, bool is3D) { 
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].scale(fx,fy,fz,is3D); 
 		}
-		void scaleFrom(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D) {
-			for (int i=0; i < linestr.size(); ++i ) linestr[i].scaleFrom(x0,y0,z0, fx,fy,fz,is3D);
+		void scaleat(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D) {
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].scaleat(x0,y0,z0, fx,fy,fz,is3D);
 		}
 		void   translate( double dx, double dy, double dz, bool is3D) { 
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].translate(dx,dy,dz,is3D); 
 		}
 		void transscale( double dx, double dy, double dz, double fx, double fy, double fz, bool is3D) {
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].transscale(dx,dy,dz,fx,fy,fz,is3D); 
+		}
+		void rotateat( double alpha, double x0, double y0 ) {
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].rotateat( alpha, x0, y0 ); 
+		}
+		void rotateself( double alpha ) {
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].rotateself( alpha ); 
 		}
 
 		JagPolygon( const JagSquare2D &sq );

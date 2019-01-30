@@ -68,6 +68,7 @@ class JagParser
 	static int  getLineString3DMinMax( char sep, const char *p, double &xmin, double &ymin, double &zmin, 
 										double &xmax, double &ymax, double &zmax );
 	static void addLineStringData( JagLineString &linestr, const JagStrSplit &sp );
+	static void addLineStringData( JagLineString3D &linestr, const JagStrSplit &sp );
 	static void addLineString3DData( JagLineString3D &linestr, const JagStrSplit &sp );
 	static int  addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose );
 	static int  addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose );

@@ -318,6 +318,8 @@ void printStr( const Jstr &str );
 char *secondTokenStart( const char *str, char sep=' ' );
 abaxint convertToSecond( const char *str);
 abaxint convertToMicroSecond( const char *str);
+void rotateat( double oldx, double oldy, double alpha, double x0, double y0, double &x, double &y );
+void rotatenx( double oldnx, double alpha, double &nx );
 
 template <class T> T* newObject( bool doPrint = true )
 {

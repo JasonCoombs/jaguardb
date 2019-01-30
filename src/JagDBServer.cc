@@ -857,6 +857,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		 || JAG_GETFILE_OP == parseParam.opcode ) {
 
 
+		prt(("s3728 parseParam.isSelectConst()=%d\n", parseParam.isSelectConst() ));
 		if (  parseParam.isSelectConst() ) {
 			 servobj->processSelectConstData( req, &parseParam );
 			 return 1;
@@ -2763,6 +2764,16 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    scalesize(geom,xfac,yfac,zfac) -- scale the size of vector shapes by diffeent factors\n";
 		str += "    translate(geom,dx,dy)          -- translate the location of 2D geom by dx,dy\n";
 		str += "    translate(geom,dx,dy,dz)       -- translate the location of 3D geom by dx,dy,dz\n";
+		str += "    transscale(geom,dx,dy,xfac,yfac)  -- translate and then scale 2D geom\n";
+		str += "    transscale(geom,dx,dy,dz,xfac,yfac,zfac)  -- translate and then scale 3D geom\n";
+		str += "    rotate(geom,N)                 -- rotate 2D geom by N degrees counter-clock-wise with respect to point(0,0)\n";
+		str += "    rotate(geom,N,'radian')        -- rotate 2D geom by N radians counter-clock-wise with respect to point(0,0)\n";
+		str += "    rotate(geom,N,'degree')        -- rotate 2D geom by N degrees counter-clock-wise with respect to point(0,0)\n";
+		str += "    rotateself(geom,N)             -- rotate 2D geom by N degrees counter-clock-wise with respect to self-center\n";
+		str += "    rotateself(geom,N,'radian')    -- rotate 2D geom by N radians counter-clock-wise with respect to self-center\n";
+		str += "    rotateself(geom,N,'degree')    -- rotate 2D geom by N degrees counter-clock-wise with respect to self-center\n";
+		str += "    rotateat(geom,N,'radian',x,y)  -- rotate 2D geom by N radians counter-clock-wise with respect to point(x,y)\n";
+		str += "    rotateat(geom,N,'degree',x,y)  -- rotate 2D geom by N degrees counter-clock-wise with respect to point(y,y)\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
@@ -12867,15 +12878,14 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
     	int length;
     	ExpressionElementNode *root; 
 		int cnt = 0;
+		prt(("s1283 in processSelectConstData parseParam->selColVec.size()=%d\n", parseParam->selColVec.size() ));
 		for ( int i=0; i < parseParam->selColVec.size(); ++i ) {
     	    root = parseParam->selColVec[i].tree->getRoot();
     		AbaxFixString str;
     		root->checkFuncValidConstantOnly( str, typeMode, type, length );
-			/**
     		prt(("s7372 checkFuncValidConstantOnly str=[%s] typeMode=%d type=[%s] length=%d name=%s asname=%s\n",
     			 str.c_str(), typeMode, type.c_str(), length, 
     			 parseParam->selColVec[i].name.c_str(), parseParam->selColVec[i].asName.c_str() ));
-			 ***/
 			if ( str.size() > 0 ) {
     			asName = parseParam->selColVec[i].asName;
             	rec.addNameValue( asName.c_str(), str.c_str() );
