@@ -130,6 +130,7 @@ char *jumptoEndQuote(const char *p);
 char *jumptoEndBracket(const char *p);
 int stripStrEnd( char *msg, int len );
 void randDataStringSort( Jstr *vec, int maxlen );
+bool isNumeric( const char *str );
 
 void fsetXattr( int fd, const char* path, const char *name, abaxint value );
 abaxint fgetXattr( int fd, const char *path, const char *name );

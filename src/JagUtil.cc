@@ -3815,3 +3815,15 @@ char *strnchr(const char *s, int c, int n)
 }
 
 
+bool isNumeric( const char *str) 
+{
+	while ( *str != '\0' ) {
+        if ( ! isdigit(*str) && *str != '.' ) {
+            return false;
+        } else {
+			++str;
+		}
+    }
+    return true;
+}
+

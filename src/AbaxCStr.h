@@ -100,6 +100,7 @@ class AbaxCStr
 		const char *secondTokenStart( char sep );
 		AbaxCStr 	substr( char startc, char endc );
 		bool        containsChar( char c );
+		bool        isNumeric() const;  // 2 203 or 234.5
 
 
 	private:

@@ -340,6 +340,7 @@ class BinaryOpNode: public ExpressionElementNode
 	Jstr doAllScaleFrom( int srid, const Jstr& mark1, const Jstr &colType1,
 	                    const JagStrSplit &sp1, const Jstr& mark2, const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
 	bool doAllTranslate( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	bool doAllTransScale( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 
 
 	// data members

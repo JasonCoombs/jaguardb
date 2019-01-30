@@ -691,3 +691,12 @@ double AbaxCStr::tof() const
 	return atof( buf_ );
 }
 
+bool AbaxCStr::isNumeric() const
+{
+	for ( int i=0; i < length_; ++i ) {
+		if ( ! isdigit(buf_[i]) && buf_[i] != '.' ) {
+			return false;
+		}
+	}
+	return true;
+}
