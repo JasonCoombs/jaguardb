@@ -292,6 +292,7 @@ class JagFixString
 		~JagFixString();
 		inline const char *addr() const { return _buf; }
 		inline const char *c_str() const { return _buf; }
+		inline const char *s() const { return _buf; }
 		inline abaxint addrlen() const { return _length; }
 		inline abaxint size() const { return _length; }
 		inline abaxint length() const { return _length; }

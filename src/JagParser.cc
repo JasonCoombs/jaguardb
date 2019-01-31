@@ -394,6 +394,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				tabname = _gettok;
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 				if ( _gettok && strcasecmp(_gettok, "rename") == 0 ) {
+					_ptrParam->cmd = JAG_SCHEMA_RENAME;
 					_gettok = (char*)tabname.c_str();
 					rc = setTableIndexList( 0 );
 					if ( rc > 0 ) {
@@ -416,6 +417,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						}
 					}
 				} else if ( _gettok && strcasecmp(_gettok, "add") == 0 ) {
+					_ptrParam->cmd = JAG_SCHEMA_ADD;
 					_gettok = (char*)tabname.c_str();
 					rc = setTableIndexList( 0 );
 					if ( rc > 0 ) {
@@ -427,6 +429,33 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						rc = setOneCreateColumnAttribute( cattr );
 						if ( rc <= 0 ) return rc;
 						_ptrParam->createAttrVec.append( cattr );
+					}
+				} else if ( _gettok && strcasecmp(_gettok, "set") == 0 ) {
+					_ptrParam->cmd = JAG_SCHEMA_SET;
+					_gettok = (char*)tabname.c_str();
+					rc = setTableIndexList( 0 );
+					if ( rc > 0 ) {
+						rc = setTableIndexList( 0 );
+						if ( rc > 0 ) {					
+							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+							if ( _gettok && strchr( _gettok, ':' ) ) {								
+								_ptrParam->objectVec[0].colName = makeLowerString(_gettok);
+								_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+								if ( _gettok && strcasecmp(_gettok, "to") == 0 ) {
+									_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+									if ( _gettok ) {
+										if ( 0==strcasecmp( _gettok, "wgs84" ) ) {
+											_ptrParam->value = "4326";
+										} else {
+											_ptrParam->value = _gettok;
+										}
+										_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+										if ( !_gettok ) rc = 1;
+										else rc = -480;
+									} else rc = -482;
+								} else rc = -484;
+							} else rc = -486;
+						}
 					}
 				} else rc = -420;
 			} else rc = -430;

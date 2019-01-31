@@ -70,6 +70,7 @@ class JagSchema
 	int insert( const JagParseParam *parseParam, bool isTable=true );
 	bool remove( const Jstr &dbtable );
 	bool renameColumn( const Jstr &dbtable, const JagParseParam *parseParam );
+	bool setColumn( const Jstr &dbtable, const JagParseParam *parseParam );
 	bool checkSpareRemains( const Jstr &dbtable, const JagParseParam *parseParam );
 	bool dbTableExist( const Jstr &dbname, const Jstr &tabname );
 	

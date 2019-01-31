@@ -163,17 +163,17 @@ bool JagSchemaRecord::print()
 	return 1;
 }
 
-bool JagSchemaRecord::renameKey( const AbaxString &oldKeyName, const AbaxString & newKeyName )
+bool JagSchemaRecord::renameColumn( const AbaxString &oldName, const AbaxString & newName )
 {
 	int len = columnVector->size();
 	AbaxString name;
 	bool found = false;
 	for ( int i = 0; i < len; ++i ) {
 		name = (*columnVector)[i].name;
-		if ( name == oldKeyName ) {
-			(*columnVector)[i].name = newKeyName;
-			_nameMap.removeKey( oldKeyName.c_str() );
-			_nameMap.addKeyValue( newKeyName.c_str(), i );
+		if ( name == oldName ) {
+			(*columnVector)[i].name = newName;
+			_nameMap.removeKey( oldName.c_str() );
+			_nameMap.addKeyValue( newName.c_str(), i );
 			found = true;
 			break;
 		}
@@ -181,6 +181,29 @@ bool JagSchemaRecord::renameKey( const AbaxString &oldKeyName, const AbaxString 
 
 	return found;
 }
+
+bool JagSchemaRecord::setColumn( const AbaxString &colName, const AbaxString &attr, const AbaxString & value )
+{
+	int len = columnVector->size();
+	AbaxString name;
+	bool found = false;
+	for ( int i = 0; i < len; ++i ) {
+		name = (*columnVector)[i].name;
+		if ( name == colName ) {
+			//(*columnVector)[i].name = newName;
+			//_nameMap.removeKey( oldName.c_str() );
+			//_nameMap.addKeyValue( newName.c_str(), i );
+			if ( attr == "srid" ) {
+				(*columnVector)[i].srid = jagatoi(value.s());
+			}
+			found = true;
+			break;
+		}
+	}
+
+	return found;
+}
+
 
 // add new column using spare space
 bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 

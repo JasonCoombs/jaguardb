@@ -746,4 +746,9 @@
 #define  JAG_3D        3
 #define  JAG_2D        2
 
+// alter table commands
+#define JAG_SCHEMA_ADD 		10
+#define JAG_SCHEMA_RENAME 	20
+#define JAG_SCHEMA_SET 		30
+
 #endif

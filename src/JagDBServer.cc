@@ -2843,15 +2843,18 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "alter table TABLE add COLNAME TYPE;\n";
 		str += "alter table TABLE rename OLDKEY to NEWKEY;\n";
 		str += "alter table TABLE rename OLDCOL to NEWCOL;\n";
+		str += "alter table TABLE set COL:ATTR to VALUE;\n";
 		str += "\n";
 		str += "Add a new column in table TABLE.\n";
 		str += "Rename a key column name in table TABLE.\n";
 		str += "Rename a value column name in table TABLE.\n";
+		str += "Set an attribute ATTR of column COL to value VALUE.\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "alter table mytable add zipcode char(6);\n";
 		str += "alter table mytable rename mykey to userid;\n";
 		str += "alter table mytable rename col2 to col3;\n";
+		str += "alter table mytable set sq:srid to 4326;\n";
 	} else if ( 0 == strncasecmp( cmd, "join", 4 ) ) {
 		str += "Join two tables by any column, either key or value.\n";
 		str += "(SELECT ) from TABLE1 [inner] join TABLE2 on TABLE1.COL1=TABLE2.COL2 [WHERE CLAUSE] [GROUPBY] [ORDERBY] [LIMIT] [TIMEOUT];\n";
@@ -7237,20 +7240,42 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 	req.session->spCommandReject = 0;
 	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;	
 	// prt(("s0938 ptab->refreshSchema();...\n"));
+	bool hasChange = false;
 	if ( ptab ) {
-		prt(("s0283 tableschema->renameColumn ...\n" ));
-		tableschema->renameColumn( dbtable, parseParam );
-		prt(("s0284  ptab->refreshSchema ...\n" ));
-		ptab->refreshSchema();
+		//prt(("s0283 parseParam->cmd=%d ...\n", parseParam->cmd ));
+		if ( parseParam->cmd == JAG_SCHEMA_ADD || parseParam->cmd == JAG_SCHEMA_RENAME ) {
+			//prt(("s0283 tableschema->renameColumn ...\n"  ));
+			tableschema->renameColumn( dbtable, parseParam );
+			hasChange = true;
+		} else if ( parseParam->cmd == JAG_SCHEMA_SET ) {
+			//prt(("s0283 tableschema->setColumn ...\n"  ));
+			tableschema->setColumn( dbtable, parseParam );
+			hasChange = true;
+		}
+
+		if ( hasChange ) {
+			//prt(("s0284  ptab->refreshSchema ...\n" ));
+			ptab->refreshSchema();
+		}
 	}
 
 	if ( parseParam->createAttrVec.size() < 1 ) {
 		// if rename column
 		if ( ptab ) {
-			ptab->renameIndexColumn( parseParam, reterr );
+			if ( parseParam->cmd == JAG_SCHEMA_ADD || parseParam->cmd == JAG_SCHEMA_RENAME ) {
+				ptab->renameIndexColumn( parseParam, reterr );
+				hasChange = true;
+			} else if (  parseParam->cmd == JAG_SCHEMA_SET ) {
+				ptab->setIndexColumn( parseParam, reterr );
+				hasChange = true;
+			}
 		}
 	}
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+
+	if ( hasChange ) {
+		refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	}
+
 	jaguar_mutex_unlock ( &g_dbmutex );
 	servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
@@ -7258,9 +7283,11 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 
 	// bcast schema change
-	servobj->sendMapInfo( "_cschema", req );
+	if ( hasChange ) {
+		servobj->sendMapInfo( "_cschema", req );
+		threadSchemaTime = g_lastSchemaTime;
+	}
 	//servobj->sendMapInfo( "_cdefval", req );
-	threadSchemaTime = g_lastSchemaTime;
 	// prt(("s6029 done\n"));
 	return 1;
 }

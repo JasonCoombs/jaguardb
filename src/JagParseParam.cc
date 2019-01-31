@@ -92,6 +92,7 @@ void JagParseParam::init( const JagParseAttribute *ijpa, bool needClean )
 	hasCountAll = false;
 	like="";
 	_selectStar = false;
+	cmd = 0;
 }
 
 // clean all trees and reset all vectors
@@ -105,6 +106,8 @@ void JagParseParam::clean()
 	selAllColVec.clean();
 	jpa.clean();
 	_selectStar = false;
+	cmd = 0;
+	value = "";
 
 	if ( _rowHash ) {
 		delete _rowHash;

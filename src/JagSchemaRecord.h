@@ -35,7 +35,8 @@ class JagSchemaRecord
 		JagSchemaRecord( const JagSchemaRecord& other );
 		JagSchemaRecord& operator=( const JagSchemaRecord& other );
 		bool print();
-		bool renameKey( const AbaxString &oldKeyName, const AbaxString & newKeyName );
+		bool renameColumn( const AbaxString &oldColName, const AbaxString & newColName );
+		bool setColumn( const AbaxString &oldColName, const AbaxString &attr, const AbaxString & value );
 		bool addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 
 									  abaxint length, abaxint sig );
 		Jstr getString() const;

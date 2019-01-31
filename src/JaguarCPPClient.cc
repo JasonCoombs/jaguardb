@@ -6653,7 +6653,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, Jstr &ne
 		if ( parseParam.createAttrVec.size() < 1 ) {
 			// for rename column, check if old column name is a member of table's column names
 			AbaxString ss = hdbobj + "." + parseParam.objectVec[0].colName;
-			if ( !objAttr->schmap.keyExist( ss.c_str() ) ) {
+			if ( !objAttr->schmap.keyExist( ss.c_str() ) && parseParam.cmd != JAG_SCHEMA_SET ) {
 				errmsg = Jstr("E1028 Column ") + parseParam.objectVec[0].colName + 
 						" is not a member of table columns";
 				return 0;

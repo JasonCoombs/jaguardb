@@ -2947,6 +2947,31 @@ int JagTable::renameIndexColumn( const JagParseParam *parseParam, Jstr &errmsg )
 	return 1;	
 }
 
+int JagTable::setIndexColumn( const JagParseParam *parseParam, Jstr &errmsg )
+{
+	JagIndex *pindex = NULL;
+	AbaxBuffer bfr;
+	bool rc;
+	if ( _indexlist.size() > 0 ) {
+		Jstr dbtab  = _dbname + "." + _tableName;
+		Jstr dbtabIndex;
+		for ( int k = 0; k < _indexlist.size(); ++k ) {
+			pindex = _servobj->_objectLock->writeLockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
+				_tableschema, _indexschema, _replicateType, 1 );
+			if ( pindex ) {
+				pindex->drop();
+				dbtabIndex = dbtab + "." + _indexlist[k];
+				_indexschema->setColumn( dbtabIndex, parseParam );
+				pindex->refreshSchema();
+				_servobj->_objectLock->writeUnlockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
+					_tableschema, _indexschema, _replicateType, 1 );
+			}
+		}
+	}
+
+	return 1;	
+}
+
 // send to socket with header
 abaxint JagTable::sendMessage( const JagRequest &req, const char *mesg, const char *type )
 {

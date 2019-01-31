@@ -466,7 +466,9 @@ class JagParseParam
 	JagLineFile	     *_lineFile;
 	Jstr    like;
 	Jstr    _allColumns;
-	bool              _selectStar;
+	bool    _selectStar;
+	short   cmd;
+	Jstr    value;
 
 };
 

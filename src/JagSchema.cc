@@ -497,14 +497,18 @@ bool JagSchema::remove( const Jstr &dbtable )
 
 bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parseParam )
 {
+	//prt(("s5590 JagSchema::renameColumn dbtable=[%s] ...\n", dbtable.s() ));
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
 	bool rc;
+	Jstr oldName, newName;
 
 	JagSchemaRecord record(true);
 	_schemaMap->getValue( AbaxString(dbtable), record );
 	if ( parseParam->createAttrVec.size() < 1 ) {
-		record.renameKey( AbaxString(parseParam->objectVec[0].colName), AbaxString(parseParam->objectVec[1].colName) );
+		oldName = parseParam->objectVec[0].colName;
+		newName = parseParam->objectVec[1].colName;
+		record.renameColumn( AbaxString(oldName), AbaxString(newName) );
 	} else {
 		record.addValueColumnFromSpare( parseParam->createAttrVec[0].objName.colName, parseParam->createAttrVec[0].type,
 										parseParam->createAttrVec[0].length, parseParam->createAttrVec[0].sig );
@@ -512,7 +516,7 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 	// first, remove old column names from defvalMap before setValue of schemaMap and recordMap
 	setupDefvalMap( dbtable, NULL, 1 );
 	_schemaMap->setValue( AbaxString(dbtable), record );
-	Jstr sstr = record.getString();
+	Jstr sstr = record.getString(); // new modified string
 	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
 
 	// disk array update
@@ -530,28 +534,35 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 	JagDBPair pair( key, value );
 
 	// for value part, reformat default value column part
+	// _schema->print();
+
 	if ( _schema->get( pair ) ) {
 		if ( parseParam->createAttrVec.size() < 1 ) {
-			Jstr cstr = Jstr(":") + parseParam->objectVec[0].colName + ":";
+			Jstr cstr = Jstr(":") + oldName + ":";  // find oldName
+			//prt(("s2314 pair.value=[%s]\n", pair.value.c_str() ));
+			//prt(("s2314 cstr=[%s]\n", cstr.c_str() ));
 			const char *p = strstr( pair.value.c_str(), cstr.c_str() );
 			if ( p ) {
-				if ( offset+parseParam->objectVec[1].colName.size()-parseParam->objectVec[0].colName.size()+pair.value.size() > VALLEN ) {
+				// default values of column
+				if ( offset+newName.size()-oldName.size()+pair.value.size() > VALLEN ) {
 					free( keybuf );
 					free( valbuf );
 					return 0;
 				}
+				// copy items before cstr
 				memcpy( valbuf+offset, pair.value.c_str(), p-pair.value.c_str() );
 				offset += p-pair.value.c_str();
 				valbuf[offset] = ':';
 				++offset;
-				memcpy( valbuf+offset, parseParam->objectVec[1].colName.c_str(), parseParam->objectVec[1].colName.size() );
-				offset += parseParam->objectVec[1].colName.size();
+				memcpy( valbuf+offset, newName.c_str(), newName.size() ); // insert newName
+				offset += newName.size();
 				valbuf[offset] = ':';
 				++offset;
-				p += 1 + parseParam->objectVec[0].colName.size() + 1;
-				memcpy( valbuf+offset, p, pair.value.c_str()+pair.value.size()-p );
+				p += 1 + oldName.size() + 1;
+				memcpy( valbuf+offset, p, pair.value.c_str()+pair.value.size()-p ); // save items after oldName
 			} else {
-				memcpy( valbuf+offset, pair.value.c_str(), pair.value.size() );
+				//prt(("s9348 error find [%s]\n", cstr.s() ));
+				memcpy( valbuf+offset, pair.value.c_str(), pair.value.size() );  // oldName not found, copy orginal data
 			}
 		} else {
 			memcpy( valbuf+offset, pair.value.c_str(), pair.value.size() );
@@ -578,15 +589,47 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 		}
 		value = JagFixString( valbuf, VALLEN );
 	}
+
 	// then, add new column names to defvalMap after setValue of schemaMap and recordMap
 	setupDefvalMap( dbtable, valbuf, 0 );
 	JagDBPair pair2( key, value );
 	_schema->set( pair2 );
-	writeSchemaText( keybuf, sstr );
 
+	//prt(("s2038 writeSchemaText() ... keybuf=[%s] sstr=[%s]\n", keybuf, sstr.s() ));
+	writeSchemaText( keybuf, sstr );
 	free( keybuf );
 	free( valbuf );
+	return 1;
+}
 
+// set properties of column
+bool JagSchema::setColumn( const Jstr &dbtable, const JagParseParam *parseParam )
+{
+	//prt(("s5591 JagSchema::setColumn dbtable=[%s] ...\n", dbtable.s() ));
+	Jstr colName, attr, newValue;
+	Jstr tabattr = parseParam->objectVec[0].colName;
+	newValue = parseParam->value;
+	JagStrSplit ta( tabattr, ':' );
+	if ( ta.size() < 2 ) return false;
+	colName = ta[0];
+	attr = ta[1];
+	JagSchemaRecord record(true);
+	bool rc;
+
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK ); JAG_OVER;
+
+	rc = _schemaMap->getValue( AbaxString(dbtable), record );
+	//prt(("s1338 setColumn colName=[%s] attr=[%s] newValue=[%s] rc=%d\n", colName.c_str(), attr.s(), newValue.s(), rc ));
+	if ( ! rc ) {
+		return 0;
+	}
+
+	record.setColumn( AbaxString(colName), AbaxString(attr), AbaxString(newValue) );
+	_schemaMap->setValue( AbaxString(dbtable), record );
+	Jstr sstr = record.getString();
+	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
+	//prt(("s5203 sstr=[%s]\n",sstr.s() ));
+	writeSchemaText( dbtable, sstr );
 	return 1;
 }
 
@@ -956,6 +999,7 @@ Jstr JagSchema::readSchemaText( const Jstr &key ) const
 
 void JagSchema::writeSchemaText( const Jstr &key, const Jstr &text )
 {
+	prt(("s8273 writeSchemaText key=[%s] text=[%s]\n", key.s(), text.s() ));
 	Jstr fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
 	JagFileMgr::writeTextFile( fpath, text );
 	// prt(("s8831 writeSchemaText fpath=[%s] text=[%s]\n", fpath.c_str(), text.c_str() ));

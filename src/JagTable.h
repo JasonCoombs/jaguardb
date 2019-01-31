@@ -84,6 +84,7 @@ class JagTable
 	int insertPair( JagDBPair &pair, int &insertCode, bool direct, int mode ); 
 	Jstr drop( Jstr &errmsg, bool isTruncate=false );
 	int renameIndexColumn ( const JagParseParam *parseParam, Jstr &errmsg );
+	int setIndexColumn ( const JagParseParam *parseParam, Jstr &errmsg );
 	void dropFromIndexList( const Jstr &indexName );
 	void buildInitIndexlist();
 	void setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, const char *buffers[] );
