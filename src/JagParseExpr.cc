@@ -201,6 +201,7 @@ int StringElementNode::setFuncAttribute( const JagHashStrInt *maps[], const JagS
 			#endif
 
 		} else {
+			prt(("s2830 setFuncAttribute error return 0 _name=[%s]\n", _name.c_str() ));
 			return 0;
 		}
 
@@ -1143,6 +1144,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 
 	if ( !checkAggregateValid( lcmode, rcmode, laggr, raggr ) ) {
 		// aggregate combine with non aggregate funcs, error
+		prt(("s5982 checkAggregateValid false error\n" ));
 		return 0;
 	}
 		

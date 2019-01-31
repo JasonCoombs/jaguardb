@@ -3049,6 +3049,10 @@ int JagTable::refreshSchema()
 	***/
 
 	_schAttr = new JagSchemaAttribute[_numCols];
+
+	// refresh
+	_tableRecord = *record;
+
 	_schAttr[0].record = _tableRecord;
 
 	if ( _tablemap ) {
@@ -3056,6 +3060,7 @@ int JagTable::refreshSchema()
 	}
 	//_tablemap = new JagHashStrInt();
 	_tablemap = newObject<JagHashStrInt>();
+	prt(("s4982 created a new _tablemap \n" ));
 
 	// setupSchemaMapAttr( _numCols, _origHasSpare );
 	setupSchemaMapAttr( _numCols );
@@ -3192,7 +3197,7 @@ bool JagTable::hasSpareColumn()
 
 void JagTable::setupSchemaMapAttr( int numCols )
 {
-	// prt(("s3800 JagTable::setupSchemaMapAttr numCols=%d ...\n", numCols ));
+	prt(("s3800 JagTable::setupSchemaMapAttr numCols=%d ...\n", numCols ));
 	/**
 	prt(("s2039 setupSchemaMapAttr numCols=%d\n", numCols ));
 	int  N;
@@ -3224,7 +3229,7 @@ void JagTable::setupSchemaMapAttr( int numCols )
 		_schAttr[i].isFILE = false;
 
 		_tablemap->addKeyValue(dbcolumn, i);
-		// prt(("s4015 _tablemap->addKeyValue(dbcolumn=[%s] ==> i=%d\n", dbcolumn.c_str(), i ));
+		prt(("s4015 _tablemap->addKeyValue(dbcolumn=[%s] ==> i=%d\n", dbcolumn.c_str(), i ));
 
 		rc = *((*(_tableRecord.columnVector))[i].spare+1);
 		rc2 = *((*(_tableRecord.columnVector))[i].spare+4);

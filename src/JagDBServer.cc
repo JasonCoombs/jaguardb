@@ -2842,96 +2842,16 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 	} else if ( 0 == strncasecmp( cmd, "alter", 3 ) ) {
 		str += "alter table TABLE add COLNAME TYPE;\n";
 		str += "alter table TABLE rename OLDKEY to NEWKEY;\n";
+		str += "alter table TABLE rename OLDCOL to NEWCOL;\n";
 		str += "\n";
 		str += "Add a new column in table TABLE.\n";
-		str += "Rename a key name in table TABLE.\n";
+		str += "Rename a key column name in table TABLE.\n";
+		str += "Rename a value column name in table TABLE.\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "alter table mytable add zipcode char(6);\n";
-		str += "alter table mytable rename mykey1 to userid;\n";
-		/**************
-	} else if ( 0 == strncasecmp( cmd, "join", 4 ) ) {
-		str += "Join tables that have partial keys or the same set of keys as the first table.\n";
-		str += "(SELECT CLAUSE) join ( TABLE, TABLE1, TABLE2, ...)  [WHERE CLAUSE] [GROUP BY] [LIMIT CLAUSE];\n";
-		str += "select * join ( TABLE, TABLE1, TABLE2, ...);\n";
-		str += "select * join ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select * join ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select TAB.COL, TAB.COL, ...  join ( TABLE, TABLE1, TABLE2, ...);\n";
-		str += "select TAB.COL, TAB.COL, ...  join ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select TAB.COL, TAB.COL, ...  join ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select * join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...);\n";
-		str += "select * join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) where KEY between A and B;\n";
-		str += "select * join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) where KEY between A and B and DB.TABLE.VAL >= nnn;\n";
-		str += "select * join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "select * join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...);\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  join ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "\n";
-		str += "Example:\n";
-		str += "select * join ( user, clubmember );\n";
-		str += "select * join ( user, clubmember ) limit 100;\n";
-		str += "select * join ( user, clubmember ) limit 100;\n";
-		str += "select user.fname, user.lname, clubmember.clubname, clubmember.level join ( user, clubmember );\n";
-		str += "select user.fname, user.lname, clubmember.clubname, clubmember.level join ( user, clubmember ) limit 30;\n";
-		str += "select mdb.user.fname, mdb.user.lname, storedb.customer.credit join ( mdb.user, storedb.customer );\n";
-		str += "select * join ( user, clubmember ) where user.uid=12345; \n";
-		str += "select * join ( user, clubmember ) where user.age>50 and clubmemer.zipcode=94506 limit 100;\n";
-	} else if ( 0 == strncasecmp( cmd, "starjoin", 8 ) ) {
-		str += "Join tables that have keys appearing as key or value in the first table.\n";
-		str += "(SELECT CLAUSE) starjoin ( TABLE, TABLE1, TABLE2, ...)  [WHERE CLAUSE] [GROUP BY] [LIMIT CLAUSE];\n";
-		str += "select * starjoin ( TABLE, TABLE1, TABLE2, ...);\n";
-		str += "select * starjoin ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select * starjoin ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select TAB.COL, TAB.COL, ...  starjoin ( TABLE, TABLE1, TABLE2, ...);\n";
-		str += "select TAB.COL, TAB.COL, ...  starjoin ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select TAB.COL, TAB.COL, ...  starjoin ( TABLE, TABLE1, TABLE2, ...) limit N;\n";
-		str += "select * starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...);\n";
-		str += "select * starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) where KEY between A and B;\n";
-		str += "select * starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) where KEY between A and B and DB.TABLE.VAL >= nnn;\n";
-		str += "select * starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "select * starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...);\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  starjoin ( DB.TABLE, DB.TABLE1, DB.TABLE2, ...) limit N;\n";
-		str += "\n";
-		str += "Example:\n";
-		str += "select * starjoin ( user, clubmember );\n";
-		str += "select * starjoin ( user, clubmember ) limit 100;\n";
-		str += "select * starjoin ( user, clubmember ) limit 100;\n";
-		str += "select user.fname, user.lname, clubmember.clubname, clubmember.level starjoin ( user, clubmember );\n";
-		str += "select user.fname, user.lname, clubmember.clubname, clubmember.level starjoin ( user, clubmember ) limit 30;\n";
-		str += "select mdb.user.fname, mdb.user.lname, storedb.customer.credit starjoin ( mdb.user, storedb.customer );\n";
-		str += "select * starjoin ( user, clubmember ) where user.uid=12345; \n";
-		str += "select * starjoin ( user, clubmember ) where user.age>50 and clubmemer.zipcode=94506 limit 100;\n";
-	} else if ( 0 == strncasecmp( cmd, "indexjoin", 9 ) ) {
-		str += "Join an index and tables that have the same set of keys or partial keys of the index.\n";
-		str += "(SELECT CLAUSE) indexjoin ( index(INDEX), TABLE1, TABLE2 ...)  [WHERE CLAUSE] [GROUP BY CLAUSE] [LIMIT CLAUSE];\n";
-		str += "select * indexjoin ( index(INDEX), TABLE1, TABLE2 ...);\n";
-		str += "select * indexjoin ( index(INDEX), TABLE1, TABLE2 ...) limit N;\n";
-		str += "select * indexjoin ( index(INDEX), TABLE1, TABLE2 ...) limit N;\n";
-		str += "select TAB.COL, TAB.COL, ...  indexjoin ( index(INDEX), TABLE1, TABLE2 ...);\n";
-		str += "select TAB.COL, TAB.COL, ...  indexjoin ( index(INDEX), TABLE1, TABLE2 ...) limit N;\n";
-		str += "select TAB.COL, TAB.COL, ...  indexjoin ( index(INDEX), TABLE1, TABLE2 ...) limit N;\n";
-		str += "select * indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...);\n";
-		str += "select * indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...) where KEY between A and B;\n";
-		str += "select * indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...) where KEY between A and B and DB.TABLE.VAL >= nnn;\n";
-		str += "select * indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...) limit N;\n";
-		str += "select * indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...) limit N;\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...);\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...) limit N;\n";
-		str += "select DB.TAB.COL, DB.TAB.COL, ...  indexjoin ( index(DB.INDEX), DB.TABLE1, DB.TABLE2 ...) limit N;\n";
-		str += "\n";
-		str += "Example:\n";
-		str += "select * indexjoin ( index(addr_index), user, clubmember );\n";
-		str += "select * indexjoin ( index(addr_index), user, clubmember ) limit 100;\n";
-		str += "select * indexjoin ( index(addr_index), user, clubmember ) limit 100;\n";
-		str += "select user.fname, user.lname, clubmember.clubname, clubmember.level indexjoin ( index(addr_index), user, clubmember );\n";
-		str += "select user.fname, user.lname, clubmember.clubname, clubmember.level indexjoin ( index(addr_index), user, clubmember ) limit 30;\n";
-		str += "select mdb.user.fname, mdb.user.lname, storedb.customer.credit indexjoin ( index(cdb.addr_index), mdb.user, storedb.customer );\n";
-		str += "select * indexjoin ( index(addr_index), user, clubmember ) where user.uid=12345; \n";
-		str += "select * indexjoin ( index(addr_index), user, clubmember ) where user.age>50 and clubmemer.zipcode=94506 limit 100;\n";
-		******/
+		str += "alter table mytable rename mykey to userid;\n";
+		str += "alter table mytable rename col2 to col3;\n";
 	} else if ( 0 == strncasecmp( cmd, "join", 4 ) ) {
 		str += "Join two tables by any column, either key or value.\n";
 		str += "(SELECT ) from TABLE1 [inner] join TABLE2 on TABLE1.COL1=TABLE2.COL2 [WHERE CLAUSE] [GROUPBY] [ORDERBY] [LIMIT] [TIMEOUT];\n";
@@ -7259,7 +7179,7 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 							   const JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime, 
 							   abaxint &threadSchemaTime )
 {
-	// prt(("s6028 renameColumn...\n"));
+	prt(("s6028 renameColumn...\n"));
 
 	JagTableSchema *tableschema = servobj->getTableSchema( req.session->replicateType );
 	JagTable *ptab = NULL;
@@ -7318,7 +7238,9 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;	
 	// prt(("s0938 ptab->refreshSchema();...\n"));
 	if ( ptab ) {
+		prt(("s0283 tableschema->renameColumn ...\n" ));
 		tableschema->renameColumn( dbtable, parseParam );
+		prt(("s0284  ptab->refreshSchema ...\n" ));
 		ptab->refreshSchema();
 	}
 
