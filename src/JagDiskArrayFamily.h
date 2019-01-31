@@ -69,7 +69,7 @@ class JagDiskArrayFamily
 	bool set( JagDBPair &pair ); // set all darrs
 	bool getWithRange( JagDBPair &pair, abaxint &index ); // set all darrs
 	bool setWithRange( const JagRequest &req, JagDBPair &pair, const char *buffers[], bool uniqueAndHasValueCol, 
-		ExpressionElementNode *root, JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
+		ExprElementNode *root, JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
 		abaxint setposlist[], JagDBPair &retpair ); // set all darrs
 	void drop();
 	void flushBlockIndexToDisk();

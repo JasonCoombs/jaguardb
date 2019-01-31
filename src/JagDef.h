@@ -481,6 +481,7 @@
 #define JAG_FUNC_ROTATE         310  // rotate around (0, 0)
 #define JAG_FUNC_ROTATEAT       311  // rotate around (x0, y0)
 #define JAG_FUNC_ROTATESELF     312  // rotate around self-center
+#define JAG_FUNC_AFFINE         313  // affine op on 3D or 2D coordinates
 
 
 // string functions 

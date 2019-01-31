@@ -28,7 +28,7 @@
 #include <JagDBConnector.h>
 #include <JagParallelParse.h>
 
-JagIndex::JagIndex( int replicateType, const JagDBServer *servobj, const AbaxDataString &wholePathName, 
+JagIndex::JagIndex( int replicateType, const JagDBServer *servobj, const Jstr &wholePathName, 
 					const JagSchemaRecord &trecord, 
 				    const JagSchemaRecord &irecord, bool buildInitIndex ) 
   : _tableRecord(trecord), _indexRecord(irecord), _servobj( servobj )
@@ -88,15 +88,15 @@ void JagIndex::init( bool buildInitIndex )
 {
 	if ( NULL != _darrFamily ) { return; }
 	
-	AbaxDataString fpath, dbcolumn;
-	AbaxDataString dbtable = _dbname + "." + _tableName;
-	AbaxDataString jagdatahome = _cfg->getJDBDataHOME( _replicateType );
-	AbaxDataString oldfpath =  jagdatahome + "/" + _dbname;
+	Jstr fpath, dbcolumn;
+	Jstr dbtable = _dbname + "." + _tableName;
+	Jstr jagdatahome = _cfg->getJDBDataHOME( _replicateType );
+	Jstr oldfpath =  jagdatahome + "/" + _dbname;
 	fpath = oldfpath + "/" + _tableName + "/" + _tableName + "." + _indexName;
 
-	AbaxDataString newfpath =  oldfpath + "/" + _tableName;
-	AbaxDataString oldpathname = oldfpath + "/" + _tableName + "." + _indexName + ".jdb"; 
-	AbaxDataString newfpathname = fpath + ".jdb";
+	Jstr newfpath =  oldfpath + "/" + _tableName;
+	Jstr oldpathname = oldfpath + "/" + _tableName + "." + _indexName + ".jdb"; 
+	Jstr newfpathname = fpath + ".jdb";
 	if ( JagFileMgr::exist( oldpathname ) ) {
 		JagFileMgr::makedirPath( newfpath );
 		jagrename( oldpathname.c_str(), newfpathname.c_str() );
@@ -180,8 +180,8 @@ bool JagIndex::getPair( JagDBPair &pair )
 
 void JagIndex::refreshSchema()
 {
-	AbaxDataString dbpath = _dbname + "." + _tableName;
-	AbaxDataString dbtable, dbcolumn;
+	Jstr dbpath = _dbname + "." + _tableName;
+	Jstr dbtable, dbcolumn;
 	AbaxString ischemaStr;
 	const JagSchemaRecord *onerecord  = _tableschema->getAttr( dbpath );
 	if ( ! onerecord ) return;
@@ -302,7 +302,7 @@ int JagIndex::removeFromTable( const char *tablebuf )
 }
 
 abaxint JagIndex::count( const char *cmd, const JagRequest& req, JagParseParam *parseParam, 
-						 AbaxDataString &errmsg, abaxint &keyCheckerCnt )
+						 Jstr &errmsg, abaxint &keyCheckerCnt )
 {
 	if ( parseParam->hasWhere ) {
 		JagDataAggregate *jda = NULL;
@@ -316,7 +316,7 @@ abaxint JagIndex::count( const char *cmd, const JagRequest& req, JagParseParam *
 }
 
 abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequest& req, JagParseParam *parseParam, 
-						AbaxDataString &errmsg, bool nowherecnt, bool isInsertSelect )
+						Jstr &errmsg, bool nowherecnt, bool isInsertSelect )
 {	
 	// set up timeout for select starting timestamp
 	struct timeval now;
@@ -325,7 +325,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	bool timeoutFlag = 0;
 
 	AbaxFixString treestr;
-	AbaxDataString treetype = " ";
+	Jstr treetype = " ";
 	int rc, grouplen = 0, typeMode = 0, tabnum = 0, treelength = 0;
 	bool uniqueAndHasValueCol = 0, needInit = 1;
 	abaxint tpossibleElem = 0, treadcnt = 0;
@@ -346,18 +346,18 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	attrs[0] = _schAttr;
 	JagMinMax minmax[1];
 	minmax[0].setbuflen( keylen[0] );
-	AbaxDataString newhdr, gbvheader;
+	Jstr newhdr, gbvheader;
 	abaxint finalsendlen = 0;
 	abaxint gbvsendlen = 0;
 	JagSchemaRecord nrec;
-	ExpressionElementNode *root = NULL;
+	ExprElementNode *root = NULL;
 	AbaxFixString strres;
 	
 	if ( nowherecnt ) {
 		JagVector<SetHdrAttr> hspa;
 		SetHdrAttr honespa;
 		AbaxString getstr;
-		AbaxDataString fullname = _dbname + "." + _tableName + "." + _indexName;
+		Jstr fullname = _dbname + "." + _tableName + "." + _indexName;
 		_indexschema->getAttr( fullname, getstr );
 		honespa.setattr( _numKeys, false, _dbobj, &_indexRecord, getstr.c_str() );
 		hspa.append( honespa );
@@ -402,7 +402,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	if ( JAG_INSERTSELECT_OP == parseParam->opcode ) {
 		//pcli = new JaguarCPPClient();
 		pcli = newObject<JaguarCPPClient>();
-		AbaxDataString host = "localhost", unixSocket = AbaxDataString("/TOKEN=") + _servobj->_servToken;
+		Jstr host = "localhost", unixSocket = Jstr("/TOKEN=") + _servobj->_servToken;
 		if ( _servobj->_listenIP.size() > 0 ) { host = _servobj->_listenIP; }
 		if ( !pcli->connect( host.c_str(), _servobj->_port, "admin", "jaguar", "test", unixSocket.c_str(), 0 ) ) {
 			raydebug( stdout, JAG_LOG_LOW, "s4055 Connect (%s:%s) (%s:%d) error [%s], retry ...\n",
@@ -427,8 +427,8 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 			memcpy(buf, pair.key.c_str(), KEYLEN);
 			memcpy(buf+KEYLEN, pair.value.c_str(), VALLEN);
 			buffers[0] = buf;
-			AbaxDataString iscmd;
-			AbaxDataString hdir;
+			Jstr iscmd;
+			Jstr hdir;
 
 			if ( JAG_GETFILE_OP == parseParam->opcode ) { 
 					char *tablebuf = (char*)jagmalloc(TABKEYLEN+TABVALLEN+1);
@@ -449,7 +449,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 				JagTable::nonAggregateFinalbuf(NULL, maps, attrs, req, buffers, parseParam, finalbuf, finalsendlen, 
 												jda, _dbobj, cnt, nowherecnt, NULL, true );
 				if ( parseParam->opcode == JAG_GETFILE_OP && parseParam->getfileActualData ) {
-					AbaxDataString ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
+					Jstr ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
 					jaguar_mutex_lock ( &req.session->dataMutex );
 					sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
 					for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
@@ -480,7 +480,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 					if ( parseParam->opcode == JAG_GETFILE_OP && parseParam->getfileActualData ) {
 						jaguar_mutex_lock ( &req.session->dataMutex );
 						sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
-						AbaxDataString ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
+						Jstr ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
 						for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 							ddcol = _dbobj + "." + parseParam->selColVec[i].getfileCol.c_str();
 							if ( _indexmap->getValue(ddcol, getpos) ) {
@@ -693,7 +693,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	}
 	
 	if ( timeoutFlag ) {
-		AbaxDataString timeoutStr = "Index select command has timed out. Results have been truncated;";
+		Jstr timeoutStr = "Index select command has timed out. Results have been truncated;";
 		JagTable::sendMessage( req, timeoutStr.c_str(), "ER" );
 	}
 	if ( pcli ) {
@@ -727,10 +727,10 @@ void JagIndex::copyAndInsertBufferAndClean()
 	if ( _darrFamily ) { _darrFamily->copyAndInsertBufferAndClean(); } 
 }
 
-void JagIndex::setGetFileAttributes( const AbaxDataString &hdir, JagParseParam *parseParam, char *buffers[] )
+void JagIndex::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, char *buffers[] )
 {
 	// if getfile, arrange point query to be size of file/modify time of file/md5sum of file/file path ( for actural data )
-	AbaxDataString ddcol, inpath, instr, outstr; int getpos; char fname[JAG_FILE_FIELD_LEN+1]; struct stat sbuf;
+	Jstr ddcol, inpath, instr, outstr; int getpos; char fname[JAG_FILE_FIELD_LEN+1]; struct stat sbuf;
 	for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 		ddcol = _dbobj + "." + parseParam->selColVec[i].getfileCol.c_str();
 		if ( _indexmap->getValue(ddcol, getpos) ) {
@@ -746,8 +746,8 @@ void JagIndex::setGetFileAttributes( const AbaxDataString &hdir, JagParseParam *
 					outstr = octime;
 				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_MD5SUM ) {
 					if ( lastChar( inpath ) != '/' ) {
-						instr = AbaxDataString("md5sum ") + inpath;
-						outstr = AbaxDataString(psystem( instr.c_str() ).c_str(), 32);
+						instr = Jstr("md5sum ") + inpath;
+						outstr = Jstr(psystem( instr.c_str() ).c_str(), 32);
 					} else {
 						outstr = "";
 					}

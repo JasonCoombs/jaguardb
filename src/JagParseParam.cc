@@ -299,7 +299,7 @@ void OnlyTreeAttribute::init( const JagParseAttribute &jpa, JagParseParam *pram 
 void OnlyTreeAttribute::destroy() 
 {
 	if ( tree ) {
-		ExpressionElementNode *root = tree->getRoot();
+		ExprElementNode *root = tree->getRoot();
 		if ( root ) { 
 			root->clear(); 
 			delete root; 
@@ -447,7 +447,7 @@ void JagParseParam::print()
 	if ( this->updSetVec.size() > 0 ) {
 		prt(("-----------------update set vector------------------\n"));
 		for ( int i = 0; i < this->updSetVec.size(); ++i ) {
-			ExpressionElementNode *root = this->updSetVec[i].tree->getRoot();
+			ExprElementNode *root = this->updSetVec[i].tree->getRoot();
 			if ( root ) root->print(0); 
 			prt(("\ncolName=[%s]\n", this->updSetVec[i].colName.c_str()));
 		}
@@ -456,7 +456,7 @@ void JagParseParam::print()
 	if ( this->selColVec.size() > 0 ) {
 		prt(("-----------------select column vector------------------\n"));
 		for ( int i = 0; i < this->selColVec.size(); ++i ) {
-			ExpressionElementNode *root = this->selColVec[i].tree->getRoot();
+			ExprElementNode *root = this->selColVec[i].tree->getRoot();
 			if ( root ) root->print(0);		
 			prt(("\norigFuncStr=[%s]   ", this->selColVec[i].origFuncStr.c_str()));
 			prt(("asName=[%s]   ", this->selColVec[i].asName.c_str()));
@@ -479,7 +479,7 @@ void JagParseParam::print()
 	if ( this->joinOnVec.size() > 0 ) {
 		prt(("-----------------select join on vector------------------\n"));
 		for ( int i = 0; i < this->joinOnVec.size(); ++i ) {
-			ExpressionElementNode *root = this->joinOnVec[i].tree->getRoot();
+			ExprElementNode *root = this->joinOnVec[i].tree->getRoot();
 			if ( root ) root->print(0);
 			prt(("\n"));
 		}
@@ -488,7 +488,7 @@ void JagParseParam::print()
 	if ( this->whereVec.size() > 0 ) {
 		prt(("-----------------select where vector------------------\n"));
 		for ( int i = 0; i < this->whereVec.size(); ++i ) {
-			ExpressionElementNode *root = this->whereVec[i].tree->getRoot();
+			ExprElementNode *root = this->whereVec[i].tree->getRoot();
 			if ( root ) root->print(0);
 			prt(("\n"));
 		}
@@ -498,7 +498,7 @@ void JagParseParam::print()
 	if ( this->havingVec.size() > 0 ) {
 		prt(("-----------------select having vector------------------\n"));
 		for ( int i = 0; i < this->havingVec.size(); ++i ) {
-			ExpressionElementNode *root = this->havingVec[i].tree->getRoot();
+			ExprElementNode *root = this->havingVec[i].tree->getRoot();
 			if ( root ) root->print(0);
 			prt(("\n"));
 		}
@@ -1135,7 +1135,7 @@ int JagParseParam::addRangeColumns( int colLen, const CreateAttribute &pointcatt
 void JagParseParam::clearRowHash()
 {
     if ( ! hasWhere ) return;
-    ExpressionElementNode *root = whereVec[0].tree->getRoot();
+    ExprElementNode *root = whereVec[0].tree->getRoot();
     if ( root && root->_builder && root->_builder->_pparam->_rowHash ) {
         delete root->_builder->_pparam->_rowHash;
         root->_builder->_pparam->_rowHash = NULL;
@@ -1150,10 +1150,9 @@ void JagParseParam::initColHash()
 
 bool JagParseParam::isSelectConst() const
 {
-	prt(("s1773 JagParseParam::isSelectConst() _allColumns.size()=%d _selectStar=%d objectVec.size()=%d\n",
-			_allColumns.size(), _selectStar, objectVec.size() ));
+	//prt(("s1773 _allColumns.size()=%d _selectStar=%d objectVec.size()=%d\n", _allColumns.size(), _selectStar, objectVec.size() ));
 	if ( _allColumns.size() < 1 && ! _selectStar && objectVec.size() < 1 ) {
-		prt(("s2838 true\n" ));
+		//prt(("s2838 true\n" ));
 		return true;
 	} else {
 		return false;

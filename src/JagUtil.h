@@ -320,6 +320,11 @@ abaxint convertToSecond( const char *str);
 abaxint convertToMicroSecond( const char *str);
 void rotateat( double oldx, double oldy, double alpha, double x0, double y0, double &x, double &y );
 void rotatenx( double oldnx, double alpha, double &nx );
+void affine2d( double x1, double y1, double a, double b, double d, double e, 
+				double dx, double dy, double &x, double &y );
+void affine3d( double x1, double y1, double z1, double a, double b, double c, double d, double e, 
+				double f, double g, double h, double i, double dx, double dy, double dz, 
+				double &x, double &y, double &z );
 
 template <class T> T* newObject( bool doPrint = true )
 {

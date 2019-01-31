@@ -105,8 +105,8 @@ void JaguarCPPClient::_init()
 	char brand[64];
 	sprintf( brand, JAG_BRAND );
 	brand[0] = toupper( brand[0] );
-	_brand = AbaxDataString( brand );
-	_version = AbaxDataString(JAG_VERSION);
+	_brand = Jstr( brand );
+	_version = Jstr(JAG_VERSION);
 
 	// time zone diff from GMT in minutes
 	_tdiff = JagTime::getTimeZoneDiff();
@@ -395,7 +395,7 @@ void JaguarCPPClient::destroy()
 			jagdelete( _insertBufferCopy);
 		}
 
-		AbaxDataString fpath = JagFileMgr::getLocalLogDir("cmd/") + intToString( _sock );
+		Jstr fpath = JagFileMgr::getLocalLogDir("cmd/") + intToString( _sock );
 		JagFileMgr::rmdir( fpath );
 		// printf("c3939 rmdir %s\n", fpath.c_str() );
 
@@ -438,7 +438,7 @@ JAGSOCK JaguarCPPClient::getSocket() const
 }
 
 // get host
-AbaxDataString JaguarCPPClient::getHost() const
+Jstr JaguarCPPClient::getHost() const
 {
 	return _host;
 }
@@ -493,7 +493,7 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 
 		char hbuf[64];
 		if ( 0==strcmp( host, "127.0.0.1") ) {
-			JagVector<AbaxDataString> hvec;
+			JagVector<Jstr> hvec;
     		JagNet::getLocalIPs( hvec );
 			for ( int i=0; i < hvec.size(); ++i ) {
 				if ( hvec[i] != "127.0.0.1" ) {
@@ -590,7 +590,7 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 			return 0;
 		}
 		rc = reply();
-		AbaxDataString pubkey;
+		Jstr pubkey;
 		if ( ! rc || _row->data == NULL ) { 
 			_replyerrmsg = "C0010 PubKey Error";
 			_queryerrmsg = "C0010 PubKey Error";
@@ -609,7 +609,7 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 			return 0;
 		}
 
-		AbaxDataString encPass;
+		Jstr encPass;
 		encPass = JagEncryptStr( pubkey, passwd );
 		sprintf( querys, "auth|%s|%s|%d|%d|%d|%d|%s|%d", 
 				 username, encPass.c_str(), _tdiff, fromsrv, rpt, drc, _unixSocket.c_str(), getpid() );
@@ -625,7 +625,7 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 
 		// prt(("c3012 queryDirect(%s) sent, reply()...\n", querys ));
 		int authed = 0;
-		AbaxDataString reterr;
+		Jstr reterr;
 		while ( reply( ) ) {
 			// prt(("c4802 inside reply() data=[%s]\n", _row->data ));
 			if ( _row->data && _row->data[0] == 'O' && _row->data[1] == 'K' ) {
@@ -661,18 +661,18 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 						if ( _allHosts ) {
 							jagdelete( _allHosts);
 						}
-						_allHosts = new JagVector<AbaxDataString>();
+						_allHosts = new JagVector<Jstr>();
 
 						if ( _allHostsByCluster ) {
 							jagdelete( _allHostsByCluster);
 						}
-						_allHostsByCluster = new JagVector<JagVector<AbaxDataString>>();
+						_allHostsByCluster = new JagVector<JagVector<Jstr>>();
 						_parentCli = this;
 					}
 
 					JagStrSplit sp2( sp[3], '#', true );
 					for ( int i = 0; i < sp2.length(); ++i ) {
-						JagVector<AbaxDataString> chosts;
+						JagVector<Jstr> chosts;
 						JagStrSplit sp3( sp2[i], '|', true );
 						for ( int j = 0; j < sp3.length(); ++j ) {
 							++_numHosts;
@@ -773,7 +773,7 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 			// prt(("c4005 reply() done\n" ));
 
 			if ( ! usedbok ) {
-				_replyerrmsg =  AbaxDataString("C1014 error: database [") + dbname  + "] does not exist";
+				_replyerrmsg =  Jstr("C1014 error: database [") + dbname  + "] does not exist";
 				_row->type = 'E';
 				// printf("99 error\n");
 				return 0;
@@ -783,7 +783,7 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 		
 		// after make successful connection, set and make replicate connection for _jpb
 		if ( !_oneConnect && !_isExclusive ) {
-			JagVector<AbaxDataString> hostlist;
+			JagVector<Jstr> hostlist;
 			getReplicateHostList( hostlist );
 			_jpb->setConnAttributes( _faultToleranceCopy, drc, _port, _clientFlag, fromsrv,
 				hostlist, _username, _password, _dbname, _unixSocket );
@@ -851,8 +851,8 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 		// prt(("c2938 _lock=%0x\n", _lock ));
 		_loadlock = new JagReadWriteLock();
 		// prt(("c2438 _loadlock=%0x\n", _loadlock ));
-		_insertBuffer = new JagVector<AbaxDataString>();
-		_insertBufferCopy = new JagVector<AbaxDataString>();
+		_insertBuffer = new JagVector<Jstr>();
+		_insertBufferCopy = new JagVector<Jstr>();
 		_passmo->cli = this;
 
 		_insertPool = thpool_init( _numHosts );
@@ -867,7 +867,7 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 }
 
 // method to get replicate host lists
-void JaguarCPPClient::getReplicateHostList( JagVector<AbaxDataString> &hostlist )
+void JaguarCPPClient::getReplicateHostList( JagVector<Jstr> &hostlist )
 {
 	abaxint i = 0, j = 0, i1 = 0, i2 = 0;
 	
@@ -891,7 +891,7 @@ void JaguarCPPClient::getReplicateHostList( JagVector<AbaxDataString> &hostlist 
 }
 
 // method to update _dbname after successfully "use db"
-void JaguarCPPClient::updateDBName( const AbaxDataString &dbname )
+void JaguarCPPClient::updateDBName( const Jstr &dbname )
 {
 	_dbname = dbname;
 	// if has replicate copy, update _jpb _dbname
@@ -899,7 +899,7 @@ void JaguarCPPClient::updateDBName( const AbaxDataString &dbname )
 }
 
 // method to update _password after successfully "changepass uid password"
-void JaguarCPPClient::updatePassword( const AbaxDataString &password )
+void JaguarCPPClient::updatePassword( const Jstr &password )
 {
 	_password = password;
 	// if has replicate copy, update _jpb _password
@@ -935,7 +935,7 @@ bool JaguarCPPClient::buildConnMap()
 			if ( !connsuccess && _faultToleranceCopy > 1 && !_parentCli->_isExclusive ) {
 				// connection failure, main connection is unreachable, try to connect backup servers if has replications
 				jcli->_faultToleranceCopy = _faultToleranceCopy;
-				JagVector<AbaxDataString> hostlist;
+				JagVector<Jstr> hostlist;
 				jcli->getReplicateHostList( hostlist );
 				if ( jcli->_jpb->setConnAttributes( _faultToleranceCopy, _deltaRecoverConnection, _port, _clientFlag, _fromServ,
 					hostlist, _username, _password, _dbname, _unixSocket ) ) {
@@ -970,7 +970,7 @@ bool JaguarCPPClient::buildConnMap()
 
 void JaguarCPPClient::requestInitMapInfo()
 {
-	AbaxDataString sqlcmd("_cschema");
+	Jstr sqlcmd("_cschema");
 	queryDirect( sqlcmd.c_str() );
 	while ( reply() ) {}
 }
@@ -1125,7 +1125,7 @@ int JaguarCPPClient::concurrentDirectInsert( const char *querys )
 		jagsleep(1, JAG_MSEC);
 	}
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	_insertBuffer->append( AbaxDataString(querys), strlen( querys ) );
+	_insertBuffer->append( Jstr(querys), strlen( querys ) );
 	mutex.writeUnlock();
 	return 1;
 }
@@ -1182,7 +1182,7 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 
 	
 	JagParseParam pparam;
-	AbaxDataString retmsg, oldquerys = querys;
+	Jstr retmsg, oldquerys = querys;
 	// prt(("c2020 querys=[%s]\n", querys ));
 	int rc = getParseInfo( oldquerys, pparam, retmsg );
 	if ( rc > 0 && pparam.dbNameCmd.size() > 0 && pparam.opcode != JAG_USEDB_OP ) {
@@ -1268,7 +1268,7 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 	JaguarCPPClient *tcli = this;
 	int setEnd = JAG_END_BEGIN;
 	int qmode = checkRegularCommands( querys );
-	AbaxDataString newquery = querys;
+	Jstr newquery = querys;
 	JagParseParam parseParam;
 	bool doneParse = false;
 
@@ -1351,7 +1351,7 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 		prt(("c1282 objAttr=%0x\n", objAttr ));
 
 		bool hasFile = objAttr->hasFile, noQueryButReply = false;
-		JagVector<AbaxDataString> *files = new JagVector<AbaxDataString>();
+		JagVector<Jstr> *files = new JagVector<Jstr>();
 		_mapLock->readUnlock( -1 );
 			
 		if ( hasFile ) {
@@ -1427,7 +1427,7 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 				jagsleep(1, JAG_MSEC);
 			}
 			JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-			_insertBuffer->append( AbaxDataString(querys), len );
+			_insertBuffer->append( Jstr(querys), len );
 			mutex.writeUnlock();
 			setEnd = JAG_END_NORMAL;	
 		}
@@ -1454,7 +1454,7 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 			_debug && prt(("c4004 commit()...\n" ));
 			commit();
 			_debug && prt(("c4004 commit() done qdirect _chost...\n" ));
-			_parentCli->queryDirect( AbaxDataString("_chost").c_str() );
+			_parentCli->queryDirect( Jstr("_chost").c_str() );
 			_debug && prt(("c4005 queryDirect( _chost ) done\n" ));
 			while ( _parentCli->reply() ) {}
 			_debug && prt(("c4006 reply( ) done\n" ));
@@ -1697,7 +1697,7 @@ int JaguarCPPClient::doquery( const char *querys, bool reply, bool compress, boo
 		} else {
 			++ _qCount;
 			// do compress sampling
-			AbaxDataString compStr;
+			Jstr compStr;
 			modv =  _qCount%1000;
 			if (  0 <= modv && modv <= 3 ) {
 				JagFastCompress::compress( querys, compStr );
@@ -1729,7 +1729,7 @@ int JaguarCPPClient::doquery( const char *querys, bool reply, bool compress, boo
 		***/
 		
 		// send data part header
-		AbaxDataString compressedStr;
+		Jstr compressedStr;
 		if ( compress ) {
 			if ( reply ) {
 				JagFastCompress::compress( querys, compressedStr );
@@ -1957,7 +1957,7 @@ abaxint JaguarCPPClient::doRecvDirectFromSockAll( char *&buf, abaxint len )
 
 // method to send files to client one by one, only called by insert command with files
 // return number of files sent
-int JaguarCPPClient::sendFilesToServer( const JagVector<AbaxDataString> &files )
+int JaguarCPPClient::sendFilesToServer( const JagVector<Jstr> &files )
 {	
 	// first need to send _BEGINFILEUPLOAD_ to server
 	_debug && prt(("c3394 this=%0x sendFilesToServer files.size=%d _debug=%d _useJPB=%d ...\n", this, files.size(), _debug, _useJPB ));
@@ -2632,8 +2632,8 @@ int JaguarCPPClient::doreply( bool headerOnly )
     		}
     		
         	if ( recvhdr[JAG_SOCK_MSG_HDR_LEN-4] == 'Z' ) { 
-        		AbaxDataString compressed( buf, len );
-        		AbaxDataString unCompressed;
+        		Jstr compressed( buf, len );
+        		Jstr unCompressed;
         		JagFastCompress::uncompress( compressed, unCompressed );
         		if ( buf ) jagfree( buf );
         		// since strdup cannot process \0 byte, we use jagmalloc instead
@@ -2733,7 +2733,7 @@ int JaguarCPPClient::doreply( bool headerOnly )
 			_row->data = buf;
 			_row->datalen = len;
 			_parentCli->_mapLock->writeLock( -1 );
-			_parentCli->_hostUpdateString = AbaxDataString(_row->data);
+			_parentCli->_hostUpdateString = Jstr(_row->data);
 			_parentCli->_mapLock->writeUnlock( -1 );
 			// return doreply( false );
 			headerOnly = false;
@@ -2796,7 +2796,7 @@ int JaguarCPPClient::doreply( bool headerOnly )
 			_row->type = 'J';
 			_debug && prt(("c3430 this=%0x _parentCli=%0x buf=[%s]\n", this, _parentCli, buf ));
 			_debug && prt(("c3430 got JS data=[%s] parentCli->appendJSData()...\n", buf ));
-			AbaxDataString jsData = convertToJson(buf);
+			Jstr jsData = convertToJson(buf);
 			_debug && prt(("c7203 jsData=[%s] to be appended to parent ...\n", jsData.c_str() ));
 			_parentCli->appendJSData( jsData );
 
@@ -3056,8 +3056,8 @@ char *JaguarCPPClient::doGetValue( const char *longName )
 	}
 
 	// get offset and length
-	AbaxDataString strValue, outstr;
-	AbaxDataString ktype;
+	Jstr strValue, outstr;
+	Jstr ktype;
 	int rc = _getKeyOrValue( fullname, strValue, ktype );
 	if ( ! rc ) {
 		// prt(("c3819 return NULL; fullname=[%s] rc=%d\n", fullname, rc ));
@@ -3152,7 +3152,7 @@ int JaguarCPPClient::doFreeRow( int cleantype )
 int JaguarCPPClient::printRow()
 {
 	_debug && prt(("c6010 printRow() ...\n" ));
-	AbaxDataString  rowStr;
+	Jstr  rowStr;
 	if ( _oneConnect ) {
 		_debug && prt(("c6011 doPrintRow() ...\n" ));
 		return doPrintRow( false, rowStr);
@@ -3178,7 +3178,7 @@ char *JaguarCPPClient::getAllByName( const char *name )
 {
 	char *all = getAll();
 	if ( ! all ) return NULL;
-	AbaxDataString names( name );
+	Jstr names( name );
 
 	// all: "db.tab.col=....\ndb.tab.col=....\ndb.tab.col=...."
 	char *p = all;
@@ -3188,7 +3188,7 @@ char *JaguarCPPClient::getAllByName( const char *name )
 		while ( *q != '=' && *q != '\0' ) ++q;
 		if ( *q == '\0' ) { break; }
 
-		AbaxDataString s(p, q-p);
+		Jstr s(p, q-p);
 		JagStrSplit sp(s, '.' );
 		if ( sp.length() < 3 ) { break; }
 
@@ -3226,7 +3226,7 @@ char *JaguarCPPClient::getAllByIndex( int nth )
 		while ( *q != '=' && *q != '\0' ) ++q;
 		if ( *q == '\0' ) { break; }
 
-		AbaxDataString s(p, q-p);
+		Jstr s(p, q-p);
 		JagStrSplit sp(s, '.' );
 		if ( sp.length() < 3 ) { break; }
 
@@ -3253,7 +3253,7 @@ char *JaguarCPPClient::getAllByIndex( int nth )
 // strndup string, must be freed by caller
 char *JaguarCPPClient::getAll()
 {
-	AbaxDataString  rowStr;
+	Jstr  rowStr;
 	if ( _oneConnect ) {
 		doPrintAll( true, rowStr);
 		return strndup(rowStr.c_str(), rowStr.size() );
@@ -3266,7 +3266,7 @@ char *JaguarCPPClient::getAll()
 bool JaguarCPPClient::printAll()
 {
 	_debug && prt(("c6010 printAll() ...\n" ));
-	AbaxDataString  rowStr;
+	Jstr  rowStr;
 	if ( _oneConnect ) {
 		_debug && prt(("c6011 doPrintAll() ...\n" ));
 		return doPrintAll( false, rowStr);
@@ -3278,7 +3278,7 @@ bool JaguarCPPClient::printAll()
 // get row data into rowStr
 char *JaguarCPPClient::getRow()
 {
-	AbaxDataString  rowStr;
+	Jstr  rowStr;
 	if ( _oneConnect ) {
 		doPrintRow( true, rowStr);
 		return strdup( rowStr.c_str() );
@@ -3299,7 +3299,7 @@ char *JaguarCPPClient::getRow()
 	}
 }
 
-int JaguarCPPClient::doPrintRow( bool retRow, AbaxDataString &rowStr )
+int JaguarCPPClient::doPrintRow( bool retRow, Jstr &rowStr )
 {
 	if ( retRow ) {
 		return _printRow( stdout, 0, true, rowStr, _parentCli->_forExport, _parentCli->_exportObj.c_str() );
@@ -3311,7 +3311,7 @@ int JaguarCPPClient::doPrintRow( bool retRow, AbaxDataString &rowStr )
 }
 
 
-int JaguarCPPClient::doPrintAll( bool retRow, AbaxDataString &rowStr )
+int JaguarCPPClient::doPrintAll( bool retRow, Jstr &rowStr )
 {
 	//prt(("c4081 this=%0x doPrintRow retRow=%d _row->jsData.size=%d \n", this, retRow, _row->jsData.size()  ));
 	jaguar_mutex_lock ( &_lineFileMutex );
@@ -3319,7 +3319,7 @@ int JaguarCPPClient::doPrintAll( bool retRow, AbaxDataString &rowStr )
 		if ( ! _parentCli->_lineFile->_hasStartedRead ) { _parentCli->_lineFile->startRead(); }
 	}
 
-	AbaxDataString jsData;
+	Jstr jsData;
 	int rc = 0;
 	if ( _row && _parentCli && _parentCli->_lineFile && _parentCli->_lineFile->getLine( jsData  ) ) {
 		_debug && prt(("c4720 this=%0x jsData=[%s] _parentCli=%0x _parentCli->_lineFile=%0x\n", 
@@ -3373,7 +3373,7 @@ void JaguarCPPClient::doFlush()
 
 // client receives a row with all columns
 // int JaguarCPPClient::_printRow( FILE *outf, char **retstr, int nth, int forExport, const char *dbobj )
-int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString &rowStr, 
+int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, Jstr &rowStr, 
 								int forExport, const char *dbobj )
 {
 	char *p, v;
@@ -3424,7 +3424,7 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 			foundnth =  0;
 			for ( i = 0; i < len; ++i ) {
 				if ( retRow ) {
-					 rowStr += AbaxDataString(_row->g_names[i]) + "=[" + AbaxDataString( _row->g_values[i] ) + "]    ";
+					 rowStr += Jstr(_row->g_names[i]) + "=[" + Jstr( _row->g_values[i] ) + "]    ";
 				} else if ( outf ) {
 					fprintf( outf, "%s=[%s]    ", _row->g_names[i], _row->g_values[i] );
 				} else { 
@@ -3456,7 +3456,7 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 	// print keys & values
 	// change format from "col=[data]" to "insert into db.table ( col ) values ( data )" format if export
 	int cnt = 1, typerc = 0;
-	AbaxDataString instr, outstr;
+	Jstr instr, outstr;
 	//prt(("c29293 forExport=%d outf=%0x dbobj=%0x\n", forExport, outf, dbobj ));
 	if ( ! forExport || ! outf || ! dbobj ) {
 		//prt(("s3349 numKeyVals=%d\n", _row->numKeyVals ));
@@ -3471,33 +3471,33 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 			if ( retRow ) {
 				// copy of if ( outf )  but replace with rowStr
 				if ( *(_row->prop[i].dbname) != '\0' ) {
-					rowStr += AbaxDataString(_row->prop[i].dbname) + "." + _row->prop[i].tabname 
+					rowStr += Jstr(_row->prop[i].dbname) + "." + _row->prop[i].tabname 
 							  + "." + _row->prop[i].colname + "=[";
 				} else if ( *(_row->prop[i].tabname) != '\0' ) {
-					rowStr += AbaxDataString(_row->prop[i].tabname) + "." + _row->prop[i].colname + "=[";
+					rowStr += Jstr(_row->prop[i].tabname) + "." + _row->prop[i].colname + "=[";
 				} else {
-					rowStr += AbaxDataString(_row->prop[i].colname) + "=[";
+					rowStr += Jstr(_row->prop[i].colname) + "=[";
 				}
 
 				if (  streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIME) 
 					  || streq(_row->prop[i].type, JAG_C_COL_TYPE_TIMESTAMP) ) {
-					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 					JagTime::convertDateTimeToLocalStr( instr, outstr );
 					rowStr += outstr;
 				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIMENANO) ) {
-					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 					JagTime::convertDateTimeToLocalStr( instr, outstr, true );
 					rowStr += outstr;
 				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_TIME) ) {
-					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 					JagTime::convertTimeToStr( instr, outstr, 1 );
 					rowStr += outstr;
 				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_TIMENANO) ) {
-					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 					JagTime::convertTimeToStr( instr, outstr, 2 );
 					rowStr += outstr;
 				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATE) ) {
-					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 					JagTime::convertDateToStr( instr, outstr );
 					rowStr += outstr;
 				} else if ( isInteger(_row->prop[i].type) ) {
@@ -3538,23 +3538,23 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 					//prt(("\nc3292 i=%d _row->prop[i].type=[%s]\n\n", i,  _row->prop[i].type ));
     
     				if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIME) || streq(_row->prop[i].type, JAG_C_COL_TYPE_TIMESTAMP) ) {
-    					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+    					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
     					JagTime::convertDateTimeToLocalStr( instr, outstr );
     					fprintf( outf, "%s", outstr.c_str() );
     				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIMENANO) ) {
-    					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+    					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
     					JagTime::convertDateTimeToLocalStr( instr, outstr, true );
     					fprintf( outf, "%s", outstr.c_str() );
     				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_TIME) ) {
-    					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+    					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
     					JagTime::convertTimeToStr( instr, outstr, 1 );
     					fprintf( outf, "%s", outstr.c_str() );
     				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_TIMENANO) ) {
-    					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+    					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
     					JagTime::convertTimeToStr( instr, outstr, 2 );
     					fprintf( outf, "%s", outstr.c_str() );
     				} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATE) ) {
-    					instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+    					instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
     					JagTime::convertDateToStr( instr, outstr );
     					fprintf( outf, "%s", outstr.c_str() );
     				} else if ( isInteger(_row->prop[i].type) ) {
@@ -3580,19 +3580,19 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 				// prt(("c2203 nth=%d  cnt=%d\n", nth, cnt ));
 				if ( nth == cnt ) {
 					if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIME) || streq(_row->prop[i].type, JAG_C_COL_TYPE_TIMESTAMP) ) {
-						instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+						instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 						JagTime::convertDateTimeToLocalStr( instr, rowStr );
 					} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIMENANO) ) {
-						instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+						instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 						JagTime::convertDateTimeToLocalStr( instr, rowStr, true );
 					} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_TIME) ) {
-						instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+						instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 						JagTime::convertTimeToStr( instr, rowStr, 1 );
 					} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_TIMENANO) ) {
-						instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+						instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 						JagTime::convertTimeToStr( instr, rowStr, 2 );
 					} else if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATE) ) {
-						instr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+						instr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 						JagTime::convertDateToStr( instr, rowStr );
 					} else if ( isInteger(_row->prop[i].type) ) {
 						if ( *(_row->data+_row->prop[i].offset) == '\0' ) rowStr = "";
@@ -3601,7 +3601,7 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 						if ( *(_row->data+_row->prop[i].offset) == '\0' ) rowStr = "";
 						else rowStr = longDoubleToStr(raystrtold(_row->data+_row->prop[i].offset, _row->prop[i].length));
 					} else {
-						rowStr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+						rowStr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 					}
 					//rowStr = outstr;
 					return 1;
@@ -3649,7 +3649,7 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 				if ( isLast ) break;
 			}
 		} else if ( forExport == JAG_EXPORT_CSV ) {
-			AbaxDataString nlstr;
+			Jstr nlstr;
 			bool isLast = 0;
 			for ( int i = 0; i < _row->numKeyVals; ++i ) {
 				if ( i==_row->numKeyVals-2) {
@@ -3692,7 +3692,7 @@ int JaguarCPPClient::_printRow( FILE *outf, int nth, bool retRow, AbaxDataString
 }
 
 // key: db.tab.colname
-bool JaguarCPPClient::_getKeyOrValue( const char *key, AbaxDataString &strValue, AbaxDataString &ktype )
+bool JaguarCPPClient::_getKeyOrValue( const char *key, Jstr &strValue, Jstr &ktype )
 {
 	char *pval = jag_hash_lookup( &(_row->colHash ), key );
 	if ( ! pval ) {
@@ -3783,7 +3783,7 @@ const char *JaguarCPPClient::doJsonString()
 			}
 		}
 	} else {
-		AbaxDataString instr, outstr;
+		Jstr instr, outstr;
 		for ( i = 0; i < _row->numKeyVals; ++i ) {
 			if ( streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIME) 
 			     || streq(_row->prop[i].type, JAG_C_COL_TYPE_DATETIMENANO)
@@ -3812,14 +3812,14 @@ const char *JaguarCPPClient::doJsonString()
 					if ( *(_row->data+_row->prop[i].offset) == '\0' ) outstr = "";
 					outstr = longDoubleToStr(raystrtold(_row->data+_row->prop[i].offset, _row->prop[i].length));
 				} else {
-					outstr = AbaxDataString( _row->data+_row->prop[i].offset, _row->prop[i].length );
+					outstr = Jstr( _row->data+_row->prop[i].offset, _row->prop[i].length );
 				}
 			}
 
 			if ( *(_row->prop[i].dbname) != '\0' ) {
-					instr = AbaxDataString(_row->prop[i].dbname) + "." + _row->prop[i].tabname + "." + _row->prop[i].colname;
+					instr = Jstr(_row->prop[i].dbname) + "." + _row->prop[i].tabname + "." + _row->prop[i].colname;
 			} else if ( *(_row->prop[i].tabname) != '\0' ) {
-					instr = AbaxDataString(_row->prop[i].tabname) + "." + _row->prop[i].colname;
+					instr = Jstr(_row->prop[i].tabname) + "." + _row->prop[i].colname;
 			} else {
 					instr = _row->prop[i].colname;
 			}
@@ -4038,7 +4038,7 @@ char *JaguarCPPClient::_getNthValue( int nth )
 char *JaguarCPPClient::doGetNthValue( int nth )
 {
 	if ( nth < 1 ) { return NULL; }
-	AbaxDataString rowStr;
+	Jstr rowStr;
     _printRow( NULL, nth, false, rowStr, 0, NULL );
     return strdup(rowStr.c_str());
 }
@@ -4079,7 +4079,7 @@ int JaguarCPPClient::doGetColumnCount()
 // get selected kv or select *  columns property
 int JaguarCPPClient::findAllMetaKeyValueProperty( JagRecord &rrec )
 {
-	AbaxDataString defdb, deftab, defcol;
+	Jstr defdb, deftab, defcol;
 	char *p = rrec.getValue("schema.table");
 	if ( ! p ) return 0;
 
@@ -4271,7 +4271,7 @@ int JaguarCPPClient::doGetColumnType( int col )
 {
 	// printf("c3002 getColumnType col=%d\n", col );
 	if ( col > _row->numKeyVals || col < 1 ) { return 0; }
-	AbaxDataString type = _row->prop[col-1].type;
+	Jstr type = _row->prop[col-1].type;
 
     if ( type == JAG_C_COL_TYPE_STR ) {
     	return 1;
@@ -4333,7 +4333,7 @@ char *JaguarCPPClient::doGetColumnTypeName( int col )
 	// printf("c3002 getColumnTypeName col=%d\n", col );
 
 	if ( col > _row->numKeyVals || col < 1 ) { return NULL; }
-	AbaxDataString type =  _row->prop[col-1].type;
+	Jstr type =  _row->prop[col-1].type;
 
     if ( type == JAG_C_COL_TYPE_STR ) {
     	return strdup("CHAR");
@@ -4631,7 +4631,7 @@ bool JaguarCPPClient::isSigned( int col )
 bool JaguarCPPClient::doIsSigned( int col )
 {
 	if ( col > _row->numKeyVals || col < 1 ) { return false; }
-	AbaxDataString type =  _row->prop[col-1].type;
+	Jstr type =  _row->prop[col-1].type;
 
     if ( type == JAG_C_COL_TYPE_STR ) {
     	return false;
@@ -4667,16 +4667,16 @@ int JaguarCPPClient::_parseSchema( const char *keyschema )
 
 	JagStrSplit namesp;
 	int len = krec.columnVector->size();
-	AbaxDataString key;
+	Jstr key;
 	char buf[128];
-	AbaxDataString type;
+	Jstr type;
 	int offset, length, sig;
 	bool iskey;
 	const char *p;
 	// printf("c301 krec.columnVector->size()=%d\n", len );
 
 	for ( int i = 0; i < len; ++i ) {
-		key = AbaxDataString( (*krec.columnVector)[i].name.c_str() );
+		key = Jstr( (*krec.columnVector)[i].name.c_str() );
 		type = (*krec.columnVector)[i].type;
 		offset = (*krec.columnVector)[i].offset;
 		length = (*krec.columnVector)[i].length;
@@ -4720,7 +4720,7 @@ int JaguarCPPClient::_parseSchema( const char *keyschema )
 		_row->prop[ _row->numKeyVals].offset = offset;
 		_row->prop[ _row->numKeyVals].length = length;
 		_row->prop[ _row->numKeyVals].sig = sig;
-		//_row->prop[ _row->numKeyVals].type = AbaxDataString(type.c_str(), type.size() );
+		//_row->prop[ _row->numKeyVals].type = Jstr(type.c_str(), type.size() );
 		charFromStr(_row->prop[ _row->numKeyVals].type, type );
 		_row->prop[ _row->numKeyVals].iskey = iskey;
 
@@ -4749,7 +4749,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 	JagReadWriteMutex mutex( _loadlock, JagReadWriteMutex::WRITE_LOCK );
 
 	AbaxString dbobj;
-	AbaxDataString cmd, cmdhdr, dbname, tabname, errpath, coldata, reterr;
+	Jstr cmd, cmdhdr, dbname, tabname, errpath, coldata, reterr;
 	JagParseParam parseParam;
 	JagParseAttribute jpa;
 	jpa.dfdbname = _dbname;
@@ -4758,12 +4758,12 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 	int rc = parser.parseCommand( jpa, loadCommand, &parseParam, reterr );
 	
 	if ( ! rc ) {
-		_queryerrmsg = AbaxDataString("E6001 Error command [") + loadCommand + "]" ;
+		_queryerrmsg = Jstr("E6001 Error command [") + loadCommand + "]" ;
 		return 0;
 	}
 
 	if ( ! JagFileMgr::exist( parseParam.batchFileName ) || ! rc ) {
-		_queryerrmsg = AbaxDataString("Input file [") + parseParam.batchFileName + "] does not exist.";
+		_queryerrmsg = Jstr("Input file [") + parseParam.batchFileName + "] does not exist.";
 		return 0;
 	}
 
@@ -4785,7 +4785,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 	errpath = jaguarHome() + "/log";
 	JagFileMgr::makedirPath( errpath, 0700);
 	errpath += "/load.err";
-	cmdhdr = AbaxDataString("insert into ") + dbname + "." + tabname + " values (";
+	cmdhdr = Jstr("insert into ") + dbname + "." + tabname + " values (";
 	
 	int KEYVALLEN = objAttr->keylen + objAttr->vallen;
 	int i, fd, len, linelen = KEYVALLEN*3;
@@ -4799,7 +4799,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 	fd = jagopen((char *)parseParam.batchFileName.c_str(), O_RDONLY );
 	if ( fd < 0 ) {
 		_mapLock->readUnlock( -1 );
-		_queryerrmsg = AbaxDataString("E3220 Error open file ") + parseParam.batchFileName + " for read.";
+		_queryerrmsg = Jstr("E3220 Error open file ") + parseParam.batchFileName + " for read.";
 		if ( line ) free ( line );
 		return 0;		
 	}
@@ -4880,7 +4880,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 						if ( '\0' == *(p+1) ) {
 							coldata = "";
 						} else {
-							coldata = AbaxDataString("'") + AbaxDataString(p+1) + "'";
+							coldata = Jstr("'") + Jstr(p+1) + "'";
 						}
 						p = q + 1;
 						while ( jagisspace(*p) ) ++p;
@@ -4937,7 +4937,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 							coldata = "";
 						} else {
 							++q;
-    						coldata = AbaxDataString(p, q-p);
+    						coldata = Jstr(p, q-p);
 							prt(("c2093 coldata=[%s]\n", coldata.c_str() ));
 						}
 						p = q;
@@ -4949,7 +4949,7 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
     					--q;
     					while ( jagisspace(*q) ) --q;
     					++q;
-    					coldata = AbaxDataString("'") + AbaxDataString(p, q-p) + "'";
+    					coldata = Jstr("'") + Jstr(p, q-p) + "'";
     					p = q;
     					while ( jagisspace(*p) ) ++p;
     					if ( *p == fieldsep ) ++p;	 // pass its own ,
@@ -5040,7 +5040,7 @@ bool JaguarCPPClient::processSpool( char *querys )
 			 }
 		} else {
 			if ( _outf ) { jagfclose( _outf ); }
-			AbaxDataString fpenv = expandEnvPath(path);
+			Jstr fpenv = expandEnvPath(path);
 			_outf = jagfopen( fpenv.c_str(), "wb" );
 			if ( ! _outf ) {
 				rc = 0;
@@ -5100,7 +5100,7 @@ void JaguarCPPClient::updateSchemaMap( const char *msg )
 	char save;
 	char *s, *p;
 	AbaxString dbidx;
-	AbaxDataString dbobj, objonly, dbcolumn;
+	Jstr dbobj, objonly, dbcolumn;
 	PosOffsetLength onearr;
 	abaxint tabpos;
 
@@ -5257,9 +5257,9 @@ void JaguarCPPClient::updateSchemaMap( const char *msg )
 	// _schemaMap->printKeyStringOnly();
 }
 
-// serialize AbaxDataString from schemaMap, only called by servers
+// serialize Jstr from schemaMap, only called by servers
 // only get db.tab parts and db.tab.idx parts, ignore db.idx parts ( same as db.tab.idx parts )
-void JaguarCPPClient::getSchemaMapInfo( AbaxDataString &schemaInfo )
+void JaguarCPPClient::getSchemaMapInfo( Jstr &schemaInfo )
 {
 	_mapLock->readLock( -1 );
 	if ( _isparent && _schemaMap ) {
@@ -5270,7 +5270,7 @@ void JaguarCPPClient::getSchemaMapInfo( AbaxDataString &schemaInfo )
 				if ( arr[i].value.schemaString.size() > 0 ) {
 					if ( ( 2 == arr[i].value.dbobjnum && arr[i].value.indexName.size() < 1 ) ||
 						 ( 3 == arr[i].value.dbobjnum && arr[i].value.indexName.size() > 0 ) ) {
-						schemaInfo += AbaxDataString( arr[i].key.c_str() ) + ":" + arr[i].value.schemaString.c_str() + "\n";
+						schemaInfo += Jstr( arr[i].key.c_str() ) + ":" + arr[i].value.schemaString.c_str() + "\n";
 						// prt(("c3039 key=[%s]\n", arr[i].key.c_str() ));
 					}
 				}
@@ -5299,9 +5299,9 @@ void JaguarCPPClient::rebuildHostsConnections( const char *msg, abaxint len )
 		return;
 	}
 	JagStrSplit sp( msg+_primaryHostString.length(), '#', true );
-	JagVector<AbaxDataString> newhosts;
+	JagVector<Jstr> newhosts;
 	for ( int i = 0; i < sp.length(); ++i ) {
-		JagVector<AbaxDataString> chosts;
+		JagVector<Jstr> chosts;
 		JagStrSplit sp2( sp[i], '|', true );
 		for ( int j = 0; j < sp2.length(); ++j ) {
 			++_numHosts;
@@ -5329,7 +5329,7 @@ void JaguarCPPClient::rebuildHostsConnections( const char *msg, abaxint len )
 			_unixSocket.c_str(), JAG_CLI_CHILD );
 		if ( !connsuccess && _faultToleranceCopy > 1 && !_isExclusive ) {
 			// connection failure, main connection is unreachable, try to connect backup servers if has replications
-			JagVector<AbaxDataString> hostlist;
+			JagVector<Jstr> hostlist;
 			jcli->getReplicateHostList( hostlist );
 			if ( jcli->_jpb->setConnAttributes( _faultToleranceCopy, _deltaRecoverConnection, _port, _clientFlag, _fromServ,
 				hostlist, _username, _password, _dbname, _unixSocket ) ) {
@@ -5365,11 +5365,11 @@ void JaguarCPPClient::rebuildHostsConnections( const char *msg, abaxint len )
 // called by parentCli
 // mode 0: one node of each cluster; 
 // mode 1: one node of each first n-1 cluster; mode 2: one node of cluster n; mode 3: one node of cluster n-1 and n
-int JaguarCPPClient::getUsingHosts( JagVector<AbaxDataString> &hosts, const AbaxFixString &kstr, int mode ) 
+int JaguarCPPClient::getUsingHosts( JagVector<Jstr> &hosts, const AbaxFixString &kstr, int mode ) 
 {
 	abaxint hashCode = kstr.hashCode();
 	abaxint 	   idx, len;
-	AbaxDataString host;
+	Jstr host;
 
 	if ( 0 && _debug ) { 
 		prt(("c0253 kstr:\n" ));
@@ -5425,7 +5425,7 @@ int JaguarCPPClient::getUsingHosts( JagVector<AbaxDataString> &hosts, const Abax
 	return 1;
 }
 
-bool JaguarCPPClient::getSQLCommand( AbaxDataString &sqlcmd, int echo, FILE *fp, int saveNewline )
+bool JaguarCPPClient::getSQLCommand( Jstr &sqlcmd, int echo, FILE *fp, int saveNewline )
 {
 	sqlcmd = "";
 	char *cmdline = NULL; 
@@ -5547,12 +5547,12 @@ void JaguarCPPClient::setWalLog( bool flag )
 }
 
 // append insert to log _inserLog
-void JaguarCPPClient::appendToLog( const AbaxDataString &querys )
+void JaguarCPPClient::appendToLog( const Jstr &querys )
 {
 	if ( ! _walLog ) return;
 
 	if ( ! _insertLog ) {
-    	AbaxDataString fpath = JagFileMgr::makeLocalLogDir("cmd/") + intToString( _sock );
+    	Jstr fpath = JagFileMgr::makeLocalLogDir("cmd/") + intToString( _sock );
 		jagmkdir( fpath.c_str(), 0700 );
 		fpath += "/clientinsert-"  + longToStr( abaxint(this) ) + "-" + longToString( JagTime::mtime() ) + ".log";
 		_logFPath = fpath;
@@ -5584,7 +5584,7 @@ void JaguarCPPClient::resetLog()
 	// printf("c7309 unlink [%s]\n",  _logFPath.c_str() );
 	jagunlink( _logFPath.c_str() );
 
-   	AbaxDataString fpath = JagFileMgr::makeLocalLogDir("cmd/") + intToString( _sock );
+   	Jstr fpath = JagFileMgr::makeLocalLogDir("cmd/") + intToString( _sock );
 	jagmkdir( fpath.c_str(), 0700 );
 	fpath += "/clientinsert-"  + longToStr( abaxint(this) ) + "-" + longToString( JagTime::mtime() ) + ".log";
 	_logFPath = fpath;
@@ -5594,7 +5594,7 @@ void JaguarCPPClient::resetLog()
 // load commands in log file
 // fpath is full path file name of log file
 // "/home/jaguar/jaguar/log/cmd/3/clientinsert-140733714918848-1466193562011.log"
-abaxint JaguarCPPClient::redoLog( const AbaxDataString &fpath )
+abaxint JaguarCPPClient::redoLog( const Jstr &fpath )
 {
 	// printf("c0032 redoLog [%s]\n", fpath.c_str() );
 
@@ -5604,7 +5604,7 @@ abaxint JaguarCPPClient::redoLog( const AbaxDataString &fpath )
 
 	JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer>> qmap;
 
-	AbaxDataString sqlcmd;
+	Jstr sqlcmd;
 	abaxint cnt = 0;
 	abaxint onecnt = 0;
 	// printf("c3049 getSQLCommand ...\n");
@@ -5654,7 +5654,7 @@ void JaguarCPPClient::flushInsertBuffer()
  	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	if ( _insertBufferCopy ) { delete _insertBufferCopy; _insertBufferCopy = NULL; }
 	_insertBufferCopy = _insertBuffer;
-	_insertBuffer = new JagVector<AbaxDataString>();
+	_insertBuffer = new JagVector<Jstr>();
 	mutex.writeUnlock();
 	// clock.stop();
 	// prt(("c3001 %lld copy/clean insertBuffer %lld recs took %d millisecs\n", THREADID, _insertBufferCopy->size(), clock.elapsed() ));
@@ -5687,12 +5687,12 @@ void JaguarCPPClient::flushInsertBuffer()
 
 // format insert cmd and cinsert cmd to qmap
 // return 0: error; return 1: success
-int JaguarCPPClient::oneCmdInsertPool( JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer>> &qmap, const AbaxDataString &cmd )
+int JaguarCPPClient::oneCmdInsertPool( JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer>> &qmap, const Jstr &cmd )
 {
 	int rc;
 	bool exist;
 	JagParseParam pparam;
-	AbaxDataString errmsg;
+	Jstr errmsg;
 	JaguarCPPClient *tcli;
 	JagVector<JagDBPair> cmdhosts;
 	//JagClock clock; clock.start();	
@@ -5814,7 +5814,7 @@ int JaguarCPPClient::recvTwoBytes( char *condition )
 void *JaguarCPPClient::broadcastAllRegularStatic( void * ptr )
 {
 	CliPass *pass = (CliPass*)ptr;
-	AbaxDataString  rowStr;
+	Jstr  rowStr;
 	
 	pass->cli->queryDirect( pass->cmd.c_str(), true, false );
 	while ( pass->cli->reply() ) {
@@ -5893,7 +5893,7 @@ void *JaguarCPPClient::broadcastAllRejectFailureStatic4( void * ptr )
 {
 	CliPass *pass = (CliPass*)ptr;
 	int rc = 0;
-	AbaxDataString rowStr;
+	Jstr rowStr;
 	if ( pass->isContinue ) {
 		if ( pass->cli->_parentCli->_spCommandErrorCnt > 0 ) {
 			rc = pass->cli->sendTwoBytes( "NG" );
@@ -6095,7 +6095,7 @@ void *JaguarCPPClient::broadcastAllSelectStatic2( void * ptr )
 		const char *p;
 		abaxint rc, clen;
 		// send request buf and receive data
-		AbaxDataString tcmd; abaxint hjlimit = pass->cli->_parentCli->_hashJoinLimit;
+		Jstr tcmd; abaxint hjlimit = pass->cli->_parentCli->_hashJoinLimit;
 		if ( (pass->joinEachCnt)[0] > hjlimit && (pass->joinEachCnt)[1] > hjlimit ) {
 			tcmd = "-1";
 		} else {
@@ -6398,13 +6398,13 @@ void JaguarCPPClient::setDebug( bool flag )
 
 // method to recover delta log
 // method for server use only
-int JaguarCPPClient::recoverDeltaLog( const AbaxDataString &inpath )
+int JaguarCPPClient::recoverDeltaLog( const Jstr &inpath )
 {
 	if ( !_isparent ) { return 0; }
 	
 	JagStrSplit sp( inpath.c_str(), '|' );
 	int numfiles = sp.length();
-	JagVector<AbaxDataString> fpaths;
+	JagVector<Jstr> fpaths;
 	struct stat sbuf;
 	for ( int i = 0; i < numfiles; ++i ) {
 		if ( JagFileMgr::exist( sp[i].c_str() ) ) {
@@ -6443,7 +6443,7 @@ void *JaguarCPPClient::recoverDeltaLogStatic( void *ptr )
 	
 	int useidx = atoi( sp[1].c_str() );
 	abaxint rc;
-	AbaxDataString cmd;
+	Jstr cmd;
 	char *buf = NULL;
 	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
 	memset(hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
@@ -6483,13 +6483,13 @@ void *JaguarCPPClient::recoverDeltaLogStatic( void *ptr )
 // method for server use only
 // return -1: export file does not exist
 // inpath: aaa/t1.1.sql|aaa/t1.5.sql|aaa/t1.3.sql
-int JaguarCPPClient::importLocalFileFamily( const AbaxDataString &inpath, const char *spstr )
+int JaguarCPPClient::importLocalFileFamily( const Jstr &inpath, const char *spstr )
 {
 	if ( !_isparent ) { return 0; }
 	JagStrSplit sp( inpath.c_str(), '|' );
 
 	int numfiles = sp.length();
-	AbaxDataString paths[numfiles];
+	Jstr paths[numfiles];
 	
 	for ( int i = 0; i < numfiles; ++i ) {
 		if ( ! JagFileMgr::exist( sp[i].c_str() ) ) {
@@ -6498,14 +6498,14 @@ int JaguarCPPClient::importLocalFileFamily( const AbaxDataString &inpath, const 
 		paths[i] = sp[i];
 	}
 
-	AbaxDataString fullpath;
+	Jstr fullpath;
 	for ( int i = 0; i < numfiles; ++i ) {
 		if ( i < numfiles-1 ) fullpath += paths[i] + "|";
 		else fullpath += paths[i];
 	}
 	JagSQLMergeReader mr( fullpath );
 	int rc;
-	AbaxDataString cmd, cmd2;
+	Jstr cmd, cmd2;
 	if ( spstr ) cmd2 = spstr;
 	
 	while ( true ) {
@@ -6524,8 +6524,8 @@ int JaguarCPPClient::importLocalFileFamily( const AbaxDataString &inpath, const 
 
 // method to check validation for some special commands, e.g. create/drop/changepass/alter
 // return 0: error; return 1: success
-int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxDataString &newquery, 
-	const JagParseParam &parseParam, AbaxDataString &errmsg, AbaxString &hdbobj, const JagTableOrIndexAttrs *objAttr )
+int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, Jstr &newquery, 
+	const JagParseParam &parseParam, Jstr &errmsg, AbaxString &hdbobj, const JagTableOrIndexAttrs *objAttr )
 {
 	// prt(("c4812 checkSpecialCommandValidation querys=[%s] parseParam.opcode=%d\n", querys, parseParam.opcode ));
 	stripEndSpace( (char*)querys, ';' );
@@ -6540,14 +6540,14 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 		// prt(("c3849 querys=[%s]\n", querys ));
 		JagStrSplit sp( querys, ' ', true );
 		if ( sp.length() == 2 && strchr( sp[1].c_str(), ':' ) ) {
-			newquery = AbaxDataString("createuser ") + parseParam.uid + ":" + parseParam.passwd;
+			newquery = Jstr("createuser ") + parseParam.uid + ":" + parseParam.passwd;
 			if ( parseParam.passwd.length() < 12 ) {
 				errmsg = "E6110 Error length for password. It must have at least 12 letters.";
 				return 0;
 			}
 		} else {
 			errmsg = "E4063 Error format for createuser user:password [";
-			errmsg += AbaxDataString(querys) + "]";
+			errmsg += Jstr(querys) + "]";
 			return 0;
 		}
 	} else if ( parseParam.opcode == JAG_DROPUSER_OP ) {
@@ -6555,7 +6555,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 			errmsg = "E4081 Only admin can drop user account";
 			return 0;
 		}
-		newquery = AbaxDataString("dropuser ") + parseParam.uid;
+		newquery = Jstr("dropuser ") + parseParam.uid;
 	} else if ( parseParam.opcode == JAG_CHANGEPASS_OP ) {
 		JagStrSplit sp( querys, ' ', true );
 		if ( sp.length() == 2 && strchr( sp[1].c_str(), ':' ) ) {
@@ -6564,7 +6564,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 				return 0;
 			}
 
-			newquery = AbaxDataString("changepass ") + parseParam.uid + ":" + parseParam.passwd;
+			newquery = Jstr("changepass ") + parseParam.uid + ":" + parseParam.passwd;
 			if ( parseParam.passwd.length() < 12 ) {
 				errmsg = "E3088 Error length for password. It must have at least 12 letters.";
 				return 0;
@@ -6577,9 +6577,9 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 		JagStrSplit sp( querys, ' ', true );
 		if ( sp.length() == 2 && isValidVar( sp[1].c_str() ) &&
 			sp[1].length() <= JAG_MAX_DBNAME && 0 != strcmp( sp[1].c_str(), JAG_BRAND ) ) {
-			newquery = AbaxDataString("changedb ") + parseParam.dbName;
+			newquery = Jstr("changedb ") + parseParam.dbName;
 		} else {
-			errmsg = AbaxDataString("E2837 Error name [") + sp[1] + "] for database";
+			errmsg = Jstr("E2837 Error name [") + sp[1] + "] for database";
 			return 0;
 		}
 	} else if ( parseParam.opcode == JAG_CREATEDB_OP ) {
@@ -6591,10 +6591,10 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 		//prt(("c0092 querys=[%s] isValid=%d\n", querys, isValidVar( sp[1].c_str()) ));
 		if ( sp.length() == 2 && isValidVar( sp[1].c_str() ) &&
 			sp[1].length() <= JAG_MAX_DBNAME && 0 != strcmp( sp[1].c_str(), JAG_BRAND ) ) {
-			newquery = AbaxDataString("createdb ") + parseParam.dbName;
+			newquery = Jstr("createdb ") + parseParam.dbName;
 		} else {
 			//prt(("c2739 spleng=%d sp[1] = [%s] JAG_BRAND=[%s]\n", sp.length(), sp[1].c_str(), JAG_BRAND ));
-			errmsg = AbaxDataString("E3088 Error name [") + sp[1] + "] for database";
+			errmsg = Jstr("E3088 Error name [") + sp[1] + "] for database";
 			return 0;
 		}
 	} else if ( parseParam.opcode == JAG_DROPDB_OP ) {
@@ -6616,9 +6616,9 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 				return 0;
 			}
 			if ( parseParam.hasForce ) {
-				newquery = AbaxDataString("dropdb force ") + parseParam.dbName;
+				newquery = Jstr("dropdb force ") + parseParam.dbName;
 			} else {
-				newquery = AbaxDataString("dropdb ") + parseParam.dbName;
+				newquery = Jstr("dropdb ") + parseParam.dbName;
 			}
 		} else if ( sp.length() == 3 && isValidVar( sp[2].c_str() ) &&
 		         sp[2].length() <= JAG_MAX_DBNAME  ) {
@@ -6632,7 +6632,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 				errmsg = "Current database cannot be dropped";
 				return 0;
 			}
-			newquery = AbaxDataString("dropdb force ") + parseParam.dbName;
+			newquery = Jstr("dropdb force ") + parseParam.dbName;
 		} else {
 			errmsg = "E2408 Error name for database";
 			return 0;
@@ -6643,7 +6643,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 			AbaxString ss = hdbobj + "." + parseParam.otherVec[i].objName.colName;
 			// prt(("c3008 check ss=[%s] in objAttr.schmap ...\n", ss.c_str() ));
 			if ( !objAttr->schmap.keyExist( ss.c_str() ) ) {
-				errmsg = AbaxDataString("E2008 Index column ") + parseParam.otherVec[i].objName.colName + 
+				errmsg = Jstr("E2008 Index column ") + parseParam.otherVec[i].objName.colName + 
 						" is not a member of table columns";
 				return 0;
 			}
@@ -6654,7 +6654,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 			// for rename column, check if old column name is a member of table's column names
 			AbaxString ss = hdbobj + "." + parseParam.objectVec[0].colName;
 			if ( !objAttr->schmap.keyExist( ss.c_str() ) ) {
-				errmsg = AbaxDataString("E1028 Column ") + parseParam.objectVec[0].colName + 
+				errmsg = Jstr("E1028 Column ") + parseParam.objectVec[0].colName + 
 						" is not a member of table columns";
 				return 0;
 			}
@@ -6662,7 +6662,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 			// for add column, check if new column name is a member of table's column names
 			AbaxString ss = hdbobj + "." + parseParam.createAttrVec[0].objName.colName;
 			if ( objAttr->schmap.keyExist( ss.c_str() ) ) {
-				errmsg = AbaxDataString("Column ") + parseParam.createAttrVec[0].objName.colName + 
+				errmsg = Jstr("Column ") + parseParam.createAttrVec[0].objName.colName + 
 						" is already a member of table columns";
 				return 0;
 			}
@@ -6677,7 +6677,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 			}
 		}
 		if ( totlen > JAG_SCHEMA_VALLEN ) {
-			errmsg = AbaxDataString("E3088 Error creating table ") + 
+			errmsg = Jstr("E3088 Error creating table ") + 
 							parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName + 
 					". Default values are too long.";
 			return 0;
@@ -6698,23 +6698,23 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, AbaxData
 	return 1;
 }
 
-int JaguarCPPClient::formatReturnMessageForSpecialCommand( const JagParseParam &parseParam, AbaxDataString &retmsg )
+int JaguarCPPClient::formatReturnMessageForSpecialCommand( const JagParseParam &parseParam, Jstr &retmsg )
 {
 	retmsg = "";
 	bool rc = 1; // success commit
 	if ( _spCommandErrorCnt > 0 ) rc = 0; // abort commit
 
 	if ( parseParam.opcode == JAG_CREATEUSER_OP ) {
-		retmsg = AbaxDataString("User ") + parseParam.uid;
+		retmsg = Jstr("User ") + parseParam.uid;
 		if ( rc ) retmsg += " is created successfully. Please use grant command to give permissions to the user.";
 		else retmsg += " create error";
 	} else if ( parseParam.opcode == JAG_DROPUSER_OP ) {
-		retmsg = AbaxDataString("User ") + parseParam.uid;
+		retmsg = Jstr("User ") + parseParam.uid;
 		if ( rc ) retmsg += " is dropped successfully";
 		else retmsg += " drop error";
 	} else if ( parseParam.opcode == JAG_CHANGEPASS_OP ) {
 		if ( rc ) {
-			retmsg = AbaxDataString("Password is changed successfully for ") + parseParam.uid;
+			retmsg = Jstr("Password is changed successfully for ") + parseParam.uid;
 			// update _password for all client objects
 			JaguarCPPClient *jcli;
 			for ( int i = 0; i < _parentCli->_allHosts->size(); ++i ) {
@@ -6734,53 +6734,53 @@ int JaguarCPPClient::formatReturnMessageForSpecialCommand( const JagParseParam &
 			}
 		} else retmsg = "Database is NOT changed";
 	} else if ( parseParam.opcode == JAG_CREATEDB_OP ) {
-		retmsg = AbaxDataString("Database ") + parseParam.dbName;
+		retmsg = Jstr("Database ") + parseParam.dbName;
 		if ( rc ) retmsg += " is created successfully";
 		else retmsg += " create error";
 	} else if ( parseParam.opcode == JAG_DROPDB_OP ) {
-		retmsg = AbaxDataString("Database ") + parseParam.dbName;
+		retmsg = Jstr("Database ") + parseParam.dbName;
 		if ( rc ) retmsg += " is dropped successfully";
 		else retmsg += " drop error";
 	} else if ( parseParam.opcode == JAG_CREATETABLE_OP || parseParam.opcode == JAG_CREATEMEMTABLE_OP ) {
 		// prt(("c5092 create table parseParam.hasExist=%d\n", parseParam.hasExist ));
-		retmsg = AbaxDataString("Table ") + parseParam.objectVec[0].tableName;
+		retmsg = Jstr("Table ") + parseParam.objectVec[0].tableName;
 		if ( rc ) retmsg += " is created successfully";
 		else if ( !parseParam.hasExist ) retmsg += " create error";
 		else retmsg = "";
 	} else if ( parseParam.opcode == JAG_CREATECHAIN_OP ) {
-		retmsg = AbaxDataString("Chain ") + parseParam.objectVec[0].tableName;
+		retmsg = Jstr("Chain ") + parseParam.objectVec[0].tableName;
 		if ( rc ) retmsg += " is created successfully";
 		else if ( !parseParam.hasExist ) retmsg += " create error";
 		else retmsg = "";
 	} else if ( parseParam.opcode == JAG_CREATEINDEX_OP ) {
-		retmsg = AbaxDataString("Index ") + parseParam.objectVec[1].indexName;
+		retmsg = Jstr("Index ") + parseParam.objectVec[1].indexName;
 		if ( rc ) retmsg += " is created successfully";
 		else retmsg += " create error";
 	} else if ( parseParam.opcode == JAG_DROPTABLE_OP ) {
-		retmsg = AbaxDataString("Table ") + parseParam.objectVec[0].tableName;
+		retmsg = Jstr("Table ") + parseParam.objectVec[0].tableName;
 		if ( rc ) retmsg += " is dropped successfully";
 		else if ( !parseParam.hasExist ) retmsg += " drop error";
 		else retmsg = "";
 	} else if ( parseParam.opcode == JAG_DROPINDEX_OP ) {
-		retmsg = AbaxDataString("Index ") + parseParam.objectVec[1].indexName;
+		retmsg = Jstr("Index ") + parseParam.objectVec[1].indexName;
 		if ( rc ) retmsg += " is dropped successfully";
 		else if ( !parseParam.hasExist ) retmsg += " drop error";
 		else retmsg = "";
 	} else if ( parseParam.opcode == JAG_TRUNCATE_OP ) {
-		retmsg = AbaxDataString("Table ") + parseParam.objectVec[0].tableName;
+		retmsg = Jstr("Table ") + parseParam.objectVec[0].tableName;
 		if ( rc ) retmsg += " been truncated successfully";
 		else retmsg += " truncate error";
 	} else if ( parseParam.opcode == JAG_ALTER_OP ) {
-		if ( rc ) retmsg = AbaxDataString("Table column ") + parseParam.objectVec[0].colName +
+		if ( rc ) retmsg = Jstr("Table column ") + parseParam.objectVec[0].colName +
 					" is renamed/added successfully";
-		else retmsg = AbaxDataString("Table ") + parseParam.objectVec[0].tableName + " alter error";
+		else retmsg = Jstr("Table ") + parseParam.objectVec[0].tableName + " alter error";
 	} else if ( JAG_GRANT_OP == parseParam.opcode ) {
-		retmsg = AbaxDataString("Permission [") + JagUserRole::convertManyToStr(parseParam.grantPerm) + 
+		retmsg = Jstr("Permission [") + JagUserRole::convertManyToStr(parseParam.grantPerm) + 
 				"] for " + parseParam.grantUser;
 		if ( rc ) retmsg += " is granted successfully";
 		else retmsg += " is not granted";
 	} else if ( JAG_REVOKE_OP == parseParam.opcode ) {
-		retmsg = AbaxDataString("Permission [") + JagUserRole::convertManyToStr(parseParam.grantPerm) + 
+		retmsg = Jstr("Permission [") + JagUserRole::convertManyToStr(parseParam.grantPerm) + 
 				 "] for " + parseParam.grantUser;
 		if ( rc ) retmsg += " is revoked successfully";
 		else retmsg += " is not revoked";
@@ -6796,7 +6796,7 @@ int JaguarCPPClient::formatReturnMessageForSpecialCommand( const JagParseParam &
 // first, parse to see if cmd is valid or not
 // 0: fail
 // rc: parse OK, return and prepare to find related server return value is checkCmdMode
-int JaguarCPPClient::getParseInfo( const AbaxDataString &cmd, JagParseParam &parseParam, AbaxDataString &errmsg )
+int JaguarCPPClient::getParseInfo( const Jstr &cmd, JagParseParam &parseParam, Jstr &errmsg )
 {
 	JagParseAttribute jpa( NULL, _tdiff, _tdiff, _dbname );
 	JagParser parser( NULL, this );
@@ -6813,12 +6813,12 @@ int JaguarCPPClient::getParseInfo( const AbaxDataString &cmd, JagParseParam &par
 // return 1: all tables/indexs exist, or 'C' related cmds except create index and alter table
 // return 0: any one of tables/index does not exist
 int JaguarCPPClient::checkCmdTableIndexExist( const JagParseParam &parseParam, AbaxString &hdbobj, 
-										const JagTableOrIndexAttrs *&objAttr, AbaxDataString &errmsg )
+										const JagTableOrIndexAttrs *&objAttr, Jstr &errmsg )
 {
 	if ( parseParam.optype == 'C' && parseParam.opcode != JAG_CREATEINDEX_OP && parseParam.opcode != JAG_ALTER_OP ) return 1;
 	if ( !_schemaMap ) {
 		hdbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
-		errmsg = AbaxDataString(hdbobj.c_str()) + " does not exist [0]";
+		errmsg = Jstr(hdbobj.c_str()) + " does not exist [0]";
 		return 0;
 	}
 
@@ -6829,7 +6829,7 @@ int JaguarCPPClient::checkCmdTableIndexExist( const JagParseParam &parseParam, A
 		// if ( !_schemaMap->getValue( hdbobj, objAttr ) ) 
 		objAttr = _schemaMap->getValue( hdbobj );
 		if ( ! objAttr ) {
-			errmsg = AbaxDataString(hdbobj.c_str()) + " does not exist [100]";
+			errmsg = Jstr(hdbobj.c_str()) + " does not exist [100]";
 			return 0;
 		}
 	} else {
@@ -6840,7 +6840,7 @@ int JaguarCPPClient::checkCmdTableIndexExist( const JagParseParam &parseParam, A
 				// if ( !_schemaMap->getValue( hdbobj, objAttr ) ) 
 				objAttr = _schemaMap->getValue( hdbobj );
 				if ( ! objAttr ) {
-					errmsg = AbaxDataString(hdbobj.c_str()) + " does not exist [200]";
+					errmsg = Jstr(hdbobj.c_str()) + " does not exist [200]";
 					return 0;
 				}
 			} else {
@@ -6854,13 +6854,13 @@ int JaguarCPPClient::checkCmdTableIndexExist( const JagParseParam &parseParam, A
 						// if ( !_schemaMap->getValue( hdbobj, objAttr ) ) 
 						objAttr = _schemaMap->getValue( hdbobj );
 						if ( ! objAttr ) {
-							errmsg = AbaxDataString(hdbobj.c_str()) + " does not exist [3030]";
+							errmsg = Jstr(hdbobj.c_str()) + " does not exist [3030]";
 							return 0;
 						} else {
 							if ( 0 == i ) coltab = 1;					
 						}
 					} else {
-						errmsg = AbaxDataString(hdbobj.c_str()) + " does not exist [3095]";
+						errmsg = Jstr(hdbobj.c_str()) + " does not exist [3095]";
 						return 0;
 					}
 				}
@@ -6871,7 +6871,7 @@ int JaguarCPPClient::checkCmdTableIndexExist( const JagParseParam &parseParam, A
 				// if ( !_schemaMap->getValue( hdbobj, objAttr2 ) ) 
 				objAttr2 = _schemaMap->getValue( hdbobj );
 				if ( ! objAttr2 ) {
-					errmsg = AbaxDataString("E2033 No table ") + hdbobj2.c_str() + " for index " + hdbobj.c_str();
+					errmsg = Jstr("E2033 No table ") + hdbobj2.c_str() + " for index " + hdbobj.c_str();
 					return 0;
 				}
 			}
@@ -6897,7 +6897,7 @@ int JaguarCPPClient::checkCmdTableIndexExist( const JagParseParam &parseParam, A
 //     1: success
 //     0: error
 int JaguarCPPClient::processInsertCommands( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, 
-										    AbaxDataString &errmsg, JagVector<AbaxDataString> *filevec )
+										    Jstr &errmsg, JagVector<Jstr> *filevec )
 {
 	int numNames = parseParam.inscolmap.size();
 	if ( numNames > 0 ) {
@@ -6913,11 +6913,11 @@ int JaguarCPPClient::processInsertCommands( JagVector<JagDBPair> &cmdhosts, JagP
 //     1: success
 //     0: error
 int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, 
-										    AbaxDataString &errmsg, JagVector<AbaxDataString> *filevec )
+										    Jstr &errmsg, JagVector<Jstr> *filevec )
 {
 	int rc;
 	AbaxString hdbobj;
-	AbaxDataString newquery;
+	Jstr newquery;
 	const JagTableOrIndexAttrs *objAttr = NULL;
 
 	_mapLock->readLock( -1 );
@@ -6953,7 +6953,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	
 	if ( parseParam.objectVec[0].indexName.length() > 0 || objAttr->indexName.size() > 0 ) { 
 	    // insert to index, invalid command
-		errmsg = AbaxDataString("E4003 Cannot insert directly into index ") + hdbobj.c_str();
+		errmsg = Jstr("E4003 Cannot insert directly into index ") + hdbobj.c_str();
 		_mapLock->readUnlock( -1 );
 		return 0;
 	}
@@ -6965,13 +6965,13 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	int numInValues = parseParam.otherVec.size(); // # of data in vaues ()
 	_debug && prt(("c6003 numNames=%d otherVec.size=numInValues=%d numCols=%d\n", numNames, numInValues, objAttr->numCols ));
 	int getpos = 0;
-	AbaxDataString colName;
-	AbaxDataString colName2;
-	AbaxDataString colData;
+	Jstr colName;
+	Jstr colName2;
+	Jstr colData;
 	AbaxFixString kstr;
-	JagVector<AbaxDataString> hosts;
+	JagVector<Jstr> hosts;
 	int offset, length, sig;
-	AbaxDataString type;
+	Jstr type;
 	char spare1, spare4;
 	char kbuf[objAttr->keylen+1];
 	memset(kbuf, 0, objAttr->keylen+1);
@@ -6992,15 +6992,15 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	if ( ! fromsrv ) {
 		if ( numInValues >= objAttr->numCols ) {
 			// prt(("c3005 numInValues=%d objAttr->numCols=%d\n", numInValues, objAttr->numCols ));
-			errmsg = AbaxDataString("E0382 Too many columns in name list for ") + hdbobj.c_str();
-			errmsg += AbaxDataString("Names: ") + intToStr( numInValues ) + " Columns: " + intToStr(objAttr->numCols);
+			errmsg = Jstr("E0382 Too many columns in name list for ") + hdbobj.c_str();
+			errmsg += Jstr("Names: ") + intToStr( numInValues ) + " Columns: " + intToStr(objAttr->numCols);
 			_mapLock->readUnlock( -1 );
 			return 0;
 		}
 	}
 
 	// disallow uuid column in names list
-	AbaxDataString uuidCols;
+	Jstr uuidCols;
 	int pos;
 	int otherSize = parseParam.otherVec.size();
 	JagNameIndex sortedName[otherSize];
@@ -7009,7 +7009,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		getpos =  objAttr->schemaRecord.getPosition( colName2 );
 
 		if ( getpos < 0 ) {
-			errmsg = AbaxDataString("E1382 Error column in insert [") + colName2 + "]";
+			errmsg = Jstr("E1382 Error column in insert [") + colName2 + "]";
 			_mapLock->readUnlock( -1 );
 			return 0;
 		}
@@ -7017,7 +7017,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		spare1 = (*objAttr->schemaRecord.columnVector)[getpos].spare[1];
 		if ( spare1 == JAG_C_COL_TYPE_UUID_CHAR )  {
 			// this column is uuid, not allowed in columns list
-			errmsg = AbaxDataString("E1383 Error uuid column in insert [") + colName2 + "]";
+			errmsg = Jstr("E1383 Error uuid column in insert [") + colName2 + "]";
 			_mapLock->readUnlock( -1 );
 			return 0;
 		}
@@ -7032,11 +7032,11 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	//prt(("s871 done sortLinePoints otherSize=%d\n", otherSize ));
 	
 	// insert into table related cmds, need to reformat
-	newquery = AbaxDataString("insert into ") + parseParam.objectVec[0].dbName + "." 
+	newquery = Jstr("insert into ") + parseParam.objectVec[0].dbName + "." 
 			   + parseParam.objectVec[0].tableName + " values ('";
 	if ( JAG_CINSERT_OP == parseParam.opcode ) {
 		// for dinsert cmd, change and format to dinsert _tdiff into ... for server processing
-		newquery = AbaxDataString("dinsert ") + intToStr( _tdiff ) + " into ";
+		newquery = Jstr("dinsert ") + intToStr( _tdiff ) + " into ";
 	} else {
 		newquery = "insert into ";
 	}
@@ -7045,7 +7045,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	
 	bool hquote, useValueData;
 	int issubcol, begincol, endcol;
-	AbaxDataString colType;
+	Jstr colType;
 
 	// debug only
 	#if 0
@@ -7230,35 +7230,35 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("linestring(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("linestring(") + parseParam.otherVec[otherPos].valueData  + ")";
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING3D ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("linestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("linestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("multipoint(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("multipoint(") + parseParam.otherVec[otherPos].valueData  + ")";
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("multipoint3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("multipoint3d(") + parseParam.otherVec[otherPos].valueData  + ")";
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("polygon(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("polygon(") + parseParam.otherVec[otherPos].valueData  + ")";
 				prt(("s0291 POLYGON valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
 			} else {
 				newquery += "''";
@@ -7266,28 +7266,28 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_POLYGON3D ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("polygon3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("polygon3d(") + parseParam.otherVec[otherPos].valueData  + ")";
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("multipolygon") + parseParam.otherVec[otherPos].valueData;
+				newquery += Jstr("multipolygon") + parseParam.otherVec[otherPos].valueData;
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("multipolygon3d") + parseParam.otherVec[otherPos].valueData;
+				newquery += Jstr("multipolygon3d") + parseParam.otherVec[otherPos].valueData;
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("multilinestring(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("multilinestring(") + parseParam.otherVec[otherPos].valueData  + ")";
 				prt(("s0295 MULTILINESTRING valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
 			} else {
 				newquery += "''";
@@ -7295,14 +7295,14 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("multilinestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("multilinestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
 			if ( colInOther ) {
-				newquery += AbaxDataString("range") + parseParam.otherVec[otherPos].valueData  + ")";
+				newquery += Jstr("range") + parseParam.otherVec[otherPos].valueData  + ")";
 			} else {
 				newquery += "''";
 			}
@@ -7371,13 +7371,13 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			if ( colInOther && spare1 == JAG_C_COL_TYPE_FILE_CHAR && filevec ) {
 				if ( _debug ) { prt(("c63830 JAG_C_COL_TYPE_FILE ... getpos=%d colData=[%s]\n", getpos, colData.c_str() )); }
 				// for file object, parse and get the filename only 
-				AbaxDataString oripath = colData;
+				Jstr oripath = colData;
 				const char *lp = strrchr( colData.c_str(), '/' );
 				if ( lp ) { colData = lp+1; }
 				if ( _datcSrcType != JAG_DATACENTER_GATE ) {
 					// rewrite filepath if called by datacenter client in jaguarserver
 					if ( _isDataCenterSync ) {
-						AbaxDataString hdir = fileHashDir( kstr );
+						Jstr hdir = fileHashDir( kstr );
 						oripath = jaguarHome() + "/data/" + parseParam.objectVec[0].dbName + "/" 
 								  + parseParam.objectVec[0].tableName + "/files/" + hdir + "/" + colData;
 					}
@@ -7394,7 +7394,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 					if ( oripath.size() > 0 ) {
 						if ( 0 !=  access( oripath.c_str(), R_OK ) ) {
     						_mapLock->readUnlock( -1 );
-    						errmsg = AbaxDataString("E7102 File ") + oripath + " cannot be open";
+    						errmsg = Jstr("E7102 File ") + oripath + " cannot be open";
 							if ( _debug ) { prt(("c5202 errmsg=[%s]\n", errmsg.c_str() )); }
     						return 0;
 						}
@@ -7414,21 +7414,21 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			if ( !rc ) {
 				_mapLock->readUnlock( -1 );
 				_debug && prt(("c5039 return 0 i=%d objAttr->numKeys=%d\n", i, objAttr->numKeys, objAttr->numKeys ));
-				errmsg = AbaxDataString("E0801 Error insert for ") + colName.c_str() + " formatOneCol error";
+				errmsg = Jstr("E0801 Error insert for ") + colName.c_str() + " formatOneCol error";
 				return 0;
 			}
 		}
 
 		// check first column value
 		if ( ! parseParam.hasPoly && (0 == i ) && (colData.size() < 1) ) {
-			errmsg = AbaxDataString("E0811 Error insert for ") + hdbobj.c_str() + 
+			errmsg = Jstr("E0811 Error insert for ") + hdbobj.c_str() + 
 					 ". First column data " + colName.c_str() + " must be provided.";
 			_mapLock->readUnlock( -1 );
 			return 0;
 		}
 
-		//newquery += AbaxDataString ( "'" ) + colData + "',";
-		newquery += AbaxDataString ( "'" ) + colData + "'";
+		//newquery += Jstr ( "'" ) + colData + "',";
+		newquery += Jstr ( "'" ) + colData + "'";
 		//prt(("c3934 added getpos=%d colData=[%s] newquery=[%s]\n", getpos, colData.c_str(), newquery.c_str() ));
 
 		//if ( colInOther ) { ++j; }
@@ -7436,7 +7436,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	}  // end for loop ( int i = 0; i < objAttr->numCols; ++i  )
 
 
-	newquery += AbaxDataString(");");
+	newquery += Jstr(");");
 	//prt(("c3091 newquery=[%s]\n", newquery.c_str() ));
 
 	dbNaturalFormatExchange( kbuf, objAttr->numKeys, objAttr->schAttr, 0, 0, " " ); // natural format -> db format
@@ -7462,17 +7462,17 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 //     1: success
 //     0: error
 int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, 
-										    AbaxDataString &errmsg, JagVector<AbaxDataString> *filevec )
+										    Jstr &errmsg, JagVector<Jstr> *filevec )
 {
 	int rc;
 	AbaxString hdbobj;
-	AbaxDataString newquery;
+	Jstr newquery;
 	const JagTableOrIndexAttrs *objAttr = NULL;
 	_mapLock->readLock( -1 );
 	if ( !checkCmdTableIndexExist( parseParam, hdbobj, objAttr, errmsg ) ) {
 		// table does not exist, retry
 		_mapLock->readUnlock( -1 );
-		//_parentCli->queryDirect( AbaxDataString("_cschema").c_str() );
+		//_parentCli->queryDirect( Jstr("_cschema").c_str() );
 
 		_parentCli->queryDirect( "_cschema" ); _parentCli->replyAll();
 		if ( _schemaUpdateString.size() > 0 ) {
@@ -7505,7 +7505,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 	
 	if ( parseParam.objectVec[0].indexName.length() > 0 || objAttr->indexName.size() > 0 ) { 
 	    // insert to index, invalid command
-		errmsg = AbaxDataString("E4003 Cannot insert directly into index ") + hdbobj.c_str();
+		errmsg = Jstr("E4003 Cannot insert directly into index ") + hdbobj.c_str();
 		_mapLock->readUnlock( -1 );
 		return 0;
 	}
@@ -7517,13 +7517,13 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 	int numInValues = parseParam.otherVec.size(); // # of data in vaues ()
 	_debug && prt(("c6003 numNames=%d otherVec.size=numInValues=%d numCols=%d\n", numNames, numInValues, objAttr->numCols ));
 	int getpos = 0;
-	//AbaxDataString colName;
-	AbaxDataString colName2;
-	AbaxDataString colData;
+	//Jstr colName;
+	Jstr colName2;
+	Jstr colData;
 	AbaxFixString kstr;
-	JagVector<AbaxDataString> hosts;
+	JagVector<Jstr> hosts;
 	int offset, length, sig;
-	AbaxDataString type;
+	Jstr type;
 	char kbuf[objAttr->keylen+1];
 	memset(kbuf, 0, objAttr->keylen+1);
 	int fromsrv = _fromServ;
@@ -7540,11 +7540,11 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 	}
 	
 	// insert into table related cmds, need to reformat
-	newquery = AbaxDataString("insert into ") + parseParam.objectVec[0].dbName + "." 
+	newquery = Jstr("insert into ") + parseParam.objectVec[0].dbName + "." 
 				+ parseParam.objectVec[0].tableName + " values ('";
 	if ( JAG_CINSERT_OP == parseParam.opcode ) {
 		// for dinsert cmd, change and format to dinsert _tdiff into ... for server processing
-		newquery = AbaxDataString("dinsert ") + intToStr( _tdiff ) + " into ";
+		newquery = Jstr("dinsert ") + intToStr( _tdiff ) + " into ";
 	} else {
 		newquery = "insert into ";
 	}
@@ -7557,8 +7557,8 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			// just values insert and has all columns (except last spare_ col)
 		} else {
 			if ( numInValues + objAttr->uuidarr.size() + objAttr->deftimestamparr.size() > objAttr->numCols ) {
-					errmsg = AbaxDataString("E0237 Error columns in value insert for ") + hdbobj.c_str();
-					errmsg += AbaxDataString(" numInValues=") + intToStr(numInValues) 
+					errmsg = Jstr("E0237 Error columns in value insert for ") + hdbobj.c_str();
+					errmsg += Jstr(" numInValues=") + intToStr(numInValues) 
 					          + " uuidnum=" + intToStr( objAttr->uuidarr.size() ) 
 							  + " deftime=" + intToStr( objAttr->deftimestamparr.size() )
 							  + " objAttr->numCols=" + intToStr( objAttr->numCols );
@@ -7573,7 +7573,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 
 	bool hquote, useValueData;
 	int issubcol, begincol, endcol;
-	AbaxDataString colType;
+	Jstr colType;
 	bool lastIsGeo  = false;
 
 	int ii = -1;
@@ -7608,7 +7608,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 		if ( first ) {
 			first = false;
 		} else {
-			newquery += AbaxDataString(",");
+			newquery += Jstr(",");
 		}
 
 		if ( type == JAG_C_COL_TYPE_POINT ) {
@@ -7688,91 +7688,91 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("linestring(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("linestring(") + parseParam.otherVec[ii].valueData  + ")";
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING3D ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("linestring3d(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("linestring3d(") + parseParam.otherVec[ii].valueData  + ")";
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("multipoint(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("multipoint(") + parseParam.otherVec[ii].valueData  + ")";
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("multipoint3d(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("multipoint3d(") + parseParam.otherVec[ii].valueData  + ")";
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("polygon(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("polygon(") + parseParam.otherVec[ii].valueData  + ")";
 				prt(("s2093 POLYGON valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_POLYGON3D ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("polygon3d(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("polygon3d(") + parseParam.otherVec[ii].valueData  + ")";
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("multipolygon") + parseParam.otherVec[ii].valueData;
+				newquery += Jstr("multipolygon") + parseParam.otherVec[ii].valueData;
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			if ( parseParam.otherVec[ii].valueData.size() > 0 ) {
-				newquery += AbaxDataString("multipolygon3d") + parseParam.otherVec[ii].valueData;
+				newquery += Jstr("multipolygon3d") + parseParam.otherVec[ii].valueData;
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("multilinestring(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("multilinestring(") + parseParam.otherVec[ii].valueData  + ")";
 				//prt(("s2053 MULTILINESTRING valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("multilinestring3d(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("multilinestring3d(") + parseParam.otherVec[ii].valueData  + ")";
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += AbaxDataString("range(") + parseParam.otherVec[ii].valueData  + ")";
+				newquery += Jstr("range(") + parseParam.otherVec[ii].valueData  + ")";
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
@@ -7780,7 +7780,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
 				newquery += getTriangleCoordStr( "triangle", parseParam, ii, 1, 1, 0, 1, 1, 0, 1, 1, 0 );
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
@@ -7788,12 +7788,12 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
 				newquery += getTriangleCoordStr( "triangle3d", parseParam, ii, 1, 1, 1, 1, 1, 1, 1, 1, 1 );
 			} else {
-				newquery += AbaxDataString("''");
+				newquery += Jstr("''");
 			}
 			lastIsGeo = true;
 			continue;
 		} else {
-			//newquery += AbaxDataString("''");
+			//newquery += Jstr("''");
 			lastIsGeo = false;
 		}
 
@@ -7854,13 +7854,13 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			if ( spare1 == JAG_C_COL_TYPE_FILE_CHAR && filevec ) {
 				if ( _debug ) { prt(("c63830 JAG_C_COL_TYPE_FILE ... i=%d colData=[%s]\n", i, colData.c_str() )); }
 				// for file object, parse and get the filename only 
-				AbaxDataString oripath = colData;
+				Jstr oripath = colData;
 				const char *lp = strrchr( colData.c_str(), '/' );
 				if ( lp ) { colData = lp+1; }
 				if ( _datcSrcType != JAG_DATACENTER_GATE ) {
 					// rewrite filepath if called by datacenter client in jaguarserver
 					if ( _isDataCenterSync ) {
-						AbaxDataString hdir = fileHashDir( kstr );
+						Jstr hdir = fileHashDir( kstr );
 						oripath = jaguarHome() + "/data/" + parseParam.objectVec[0].dbName + "/" 
 								  + parseParam.objectVec[0].tableName + "/files/" + hdir + "/" + colData;
 					}
@@ -7881,20 +7881,20 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			if ( !rc ) {
 				_mapLock->readUnlock( -1 );
 				_debug && prt(("c8039 return 0 i=%d objAttr->numKeys=%d\n", i, objAttr->numKeys, objAttr->numKeys ));
-				errmsg = AbaxDataString("E0801 Error insert for ") + colName2.c_str() + " formatOneCol error";
+				errmsg = Jstr("E0801 Error insert for ") + colName2.c_str() + " formatOneCol error";
 				return 0;
 			}
 		}
 
 		// check first column value
 		if ( ! parseParam.hasPoly && (0 == i) && (colData.size() < 1) ) {
-			errmsg = AbaxDataString("E0811 Error insert for ") + hdbobj.c_str() 
+			errmsg = Jstr("E0811 Error insert for ") + hdbobj.c_str() 
 					 				+ ". Data of first column " + colName2.c_str() + " must be provided.";
 			_mapLock->readUnlock( -1 );
 			return 0;
 		}
 
-		newquery += AbaxDataString ( "'" ) + colData + "'";
+		newquery += Jstr ( "'" ) + colData + "'";
 		//prt(("c3935 added i=%d colData=[%s]\n", i, colData.c_str() ));
 		//prt(("c3048 newquery=[%s]\n", newquery.c_str() ));
 
@@ -7902,7 +7902,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 	// end of all cols i
 
 
-	newquery += AbaxDataString(");");  // must end with ;
+	newquery += Jstr(");");  // must end with ;
 	//prt(("c3091 newquery=[%s]\n", newquery.c_str() ));
 
 	dbNaturalFormatExchange( kbuf, objAttr->numKeys, objAttr->schAttr, 0, 0, " " ); // natural format -> db format
@@ -7918,7 +7918,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 
 	/////////////////////////////////////////////////////////////
 	// filevec
-	AbaxDataString hdir, oripath;
+	Jstr hdir, oripath;
 	const char *lp;
 	ii = -1;
 	int otherSize = parseParam.otherVec.size();
@@ -7959,7 +7959,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 					if ( oripath.size() > 0 ) {
 						if ( 0 !=  access( oripath.c_str(), R_OK ) ) {
     						_mapLock->readUnlock( -1 );
-    						errmsg = AbaxDataString("E7102 File ") + colData + " cannot be open";
+    						errmsg = Jstr("E7102 File ") + colData + " cannot be open";
 							if ( _debug ) { prt(("c5202 errmsg=[%s]\n", errmsg.c_str() )); }
     						return 0;
 						}
@@ -7984,13 +7984,13 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 //     JAG_END_GOT_DBPAIR_AND_ORDERBY: done order by
 //     JAG_END_GOT_DBPAIR: regular non orderby was done
 //     0: error
-int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam &parseParam, AbaxDataString &errmsg )
+int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam &parseParam, Jstr &errmsg )
 {	
 	_debug && prt(("c8823 processMultiServerCommands [%s]\n", qstr ));
 
 	int rc, isInsertSelect = 0;
 	AbaxString hdbobj;
-	AbaxDataString newquery;
+	Jstr newquery;
 	const JagTableOrIndexAttrs *objAttr = NULL;
 	_mapLock->readLock( -1 );
 	if ( !checkCmdTableIndexExist( parseParam, hdbobj, objAttr, errmsg ) ) {
@@ -8027,7 +8027,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 
 	// update/delete from index invalid
 	if ( (JAG_UPDATE_OP == parseParam.opcode || JAG_DELETE_OP == parseParam.opcode) && objAttr->indexName.size() > 0 ) {
-		errmsg = AbaxDataString("E3028 error update/delete directly from index ") + hdbobj.c_str();
+		errmsg = Jstr("E3028 error update/delete directly from index ") + hdbobj.c_str();
 		_mapLock->readUnlock( -1 );
 		return 0;
 	}
@@ -8118,7 +8118,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 
 		rc = formatReturnMessageForSpecialCommand( parseParam, errmsg );
 		if ( hasError() ) {
-			errmsg += AbaxDataString(" [") + error() + "]";
+			errmsg += Jstr(" [") + error() + "]";
 		}
 
 		if ( rc ) {
@@ -8153,8 +8153,8 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	}
 	bool uniqueAndHasValueCol = 0, hasAggregate = 0;
 	int numCol, grouplen, keylen[num], numKeys[num], numCols[num];
-	AbaxDataString dbobjs[num];
-	AbaxDataString schStrings[num];
+	Jstr dbobjs[num];
+	Jstr schStrings[num];
 	JagSchemaRecord records[num];
 	const JagHashStrInt *maps[num];
 	const JagSchemaAttribute *attrs[num];
@@ -8163,13 +8163,13 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	JagHashMap<AbaxInt, AbaxInt> selColToselParts;
 	JagMinMax minmax[num];
 	keylen[0] = 0;
-	AbaxDataString sendquery;
+	Jstr sendquery;
 	bool isPointQuery = false;
 	int nqHasLimit = 0;
 	abaxint limitNum = 0;
 	JagParseParam parseParam2;
-	JagVector<AbaxDataString> *uhosts;
-	JagVector<AbaxDataString> phosts;
+	JagVector<Jstr> *uhosts;
+	JagVector<Jstr> phosts;
 	bool rc2;
 	
 	// setup local variables
@@ -8212,7 +8212,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 
 	// if has update set part, check its validation
 	if ( parseParam.updSetVec.size() > 0 ) {
-		AbaxDataString udbcol;
+		Jstr udbcol;
 		int udbpos;
 		for ( int i = 0; i < parseParam.updSetVec.size(); ++i ) {
 			udbcol = dbobjs[0] + "." + parseParam.updSetVec[i].colName;
@@ -8228,7 +8228,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	// if getfile, check columns validation
 	if ( parseParam.opcode == JAG_GETFILE_OP ) {
 		if ( _debug ) { prt(("c4582 JAG_GETFILE_OP ...\n" )); }
-		AbaxDataString udbcol;
+		Jstr udbcol;
 		int udbpos;
 		for ( int i = 0; i < parseParam.selColVec.size(); ++i ) {
 			udbcol = dbobjs[0] + "." + parseParam.selColVec[i].getfileCol;
@@ -8252,7 +8252,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 
 	// if has join_on part, check its validation
 	if ( parseParam.joinOnVec.size() > 0 ) {
-		ExpressionElementNode *root = parseParam.joinOnVec[0].tree->getRoot();
+		ExprElementNode *root = parseParam.joinOnVec[0].tree->getRoot();
 		rc = root->setWhereRange( maps, attrs, keylen, numKeys, num, uniqueAndHasValueCol, minmax, 
 								  treestr, typeMode, tabnum );
 		if ( 0 == rc ) {
@@ -8270,7 +8270,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	
 	// process where part
 	if ( parseParam.hasWhere ) {
-		ExpressionElementNode *root = parseParam.whereVec[0].tree->getRoot();
+		ExprElementNode *root = parseParam.whereVec[0].tree->getRoot();
 		//prt(("c2033 root->setWhereRange maps...\n" ));
 		rc = root->setWhereRange( maps, attrs, keylen, numKeys, num, uniqueAndHasValueCol, 
 								  minmax, treestr, typeMode, tabnum );
@@ -8314,16 +8314,16 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 
 			// const char *start = newquery.c_str(), *wstart = strcasestr( start, " where " );
 			const char *start = newquery.c_str(), *wstart = strcasestrskipquote( start, " where " );
-			sendquery = AbaxDataString( start, wstart-start );
+			sendquery = Jstr( start, wstart-start );
 			// go through all columns, and set all default timestamp accordingly
 			for ( int i = 0; i < numCols[0]; ++i ) {
 				if ( *((*(objAttr->schemaRecord.columnVector))[i].spare+4) == JAG_CREATE_DEFUPDATE ||
 					*((*(objAttr->schemaRecord.columnVector))[i].spare+4) == JAG_CREATE_UPDDATE ) {
-					sendquery += AbaxDataString(", ") + (*(objAttr->schemaRecord.columnVector))[i].name.c_str() +
+					sendquery += Jstr(", ") + (*(objAttr->schemaRecord.columnVector))[i].name.c_str() +
 						"='" + timebuf2 + "' ";
 				} else if ( *((*(objAttr->schemaRecord.columnVector))[i].spare+4) == JAG_CREATE_DEFUPDATETIME ||
 					*((*(objAttr->schemaRecord.columnVector))[i].spare+4) == JAG_CREATE_UPDATETIME ) {
-					sendquery += AbaxDataString(", ") + (*(objAttr->schemaRecord.columnVector))[i].name.c_str() +
+					sendquery += Jstr(", ") + (*(objAttr->schemaRecord.columnVector))[i].name.c_str() +
 						"='" + timebuf + "' ";
 				}
 			}
@@ -8369,7 +8369,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 		AbaxFixString hostkstr;
 		if ( ! objAttr ) {
 			_mapLock->readUnlock( -1 );
-			errmsg = AbaxDataString("E5054 error objAttr, no table found.");
+			errmsg = Jstr("E5054 error objAttr, no table found.");
 			return 0;
 		}
 
@@ -8379,7 +8379,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 			objAttr2 = _schemaMap->getValue( idxdbtab );
 			if ( ! objAttr2 ) {
 				_mapLock->readUnlock( -1 );
-				errmsg = AbaxDataString("E5100 error TableOrIndexAttrs for ") + idxdbtab.c_str();
+				errmsg = Jstr("E5100 error TableOrIndexAttrs for ") + idxdbtab.c_str();
 				return 0;
 			}
 			// use get related table keystr from index buffer
@@ -8427,7 +8427,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	bool noQueryButReply = false;
 	int hasError = 0, isSelectMode = 0, joinEachCnt[2] = {0};
 	abaxint finalsendlen, gbvsendlen, selcount = 0;
-	AbaxDataString finalFileHeader, gbvFileHeader;
+	Jstr finalFileHeader, gbvFileHeader;
 	if ( parseParam.optype == 'R' && isPointQuery ) isSelectMode = 1;
 	else if ( parseParam.optype == 'R' && !isPointQuery ) isSelectMode = 2;
 	if ( JAG_COUNT_OP == parseParam.opcode ) isSelectMode = 3;
@@ -8616,7 +8616,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 		return JAG_END_NORMAL; // update/delete, no need to check methods below
 	} else if ( 3 == isSelectMode ) {
 		// select count(*)
-		_dataSelectCount = AbaxDataString( hdbobj.c_str() ) + " contains " + longToStr( selcount ) + " rows";
+		_dataSelectCount = Jstr( hdbobj.c_str() ) + " contains " + longToStr( selcount ) + " rows";
 		return JAG_END_GOT_DBPAIR;
 	} else if ( 2 == isSelectMode ) _jda->flushwrite();
 	
@@ -8769,18 +8769,18 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 									JagVector<int> &selColSetAggParts, JagHashMap<AbaxInt, AbaxInt> &selColToselParts, 
 									int &nqHasLimit, bool &hasAggregate,
 									abaxint &limitNum, int &grouplen,
-									int numCols[], int num, AbaxDataString &newquery, AbaxDataString &errmsg )
+									int numCols[], int num, Jstr &newquery, Jstr &errmsg )
 {
 	// prt(("c3093 formatSendQuery ...\n"));
 	bool isAggregate;
  	hasAggregate = 0;
-	AbaxDataString type;
+	Jstr type;
 	const char *ppos, *qpos;
 	int rc, collen, siglen, constMode = 0, typeMode = 0, nodenum = 0;
 	abaxint offset = 0, offset2 = 0;
-	ExpressionElementNode *root;
-	AbaxDataString columnlist, aggQuery;
-	JagVector<AbaxDataString> selectParts;
+	ExprElementNode *root;
+	Jstr columnlist, aggQuery;
+	JagVector<Jstr> selectParts;
 	grouplen = 0;
 
 	// if has group by, need to check if each column in group by is alias of db column; if true, replace the original query
@@ -8874,24 +8874,24 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 		if ( parseParam.hasColumn ) {
 			columnlist = selectParts[0];
 			for ( int i = 1; i < selectParts.size(); ++i ) {
-				columnlist += AbaxDataString(", ") + selectParts[i];
+				columnlist += Jstr(", ") + selectParts[i];
 			}
 		} else {
 			if ( parseParam.hasGroup ) {
 				columnlist = parseParam.groupVec[0].name;
 				for ( int i = 1; i < parseParam.groupVec.size(); ++i ) {
-					columnlist += AbaxDataString(", ") + parseParam.groupVec[i].name;
+					columnlist += Jstr(", ") + parseParam.groupVec[i].name;
 				}
 				if ( num == 1 ) {
 					for ( int i = 0; i < num; ++i ) {
 						for ( int j = 0; j < numCols[i]; ++j ) {
-							columnlist += AbaxDataString(", ") + attrs[i][j].colname;
+							columnlist += Jstr(", ") + attrs[i][j].colname;
 						}
 					}
 				} else {
 					for ( int i = 0; i < num; ++i ) {
 						for ( int j = 0; j < numCols[i]; ++j ) {
-							columnlist += AbaxDataString(", ") + attrs[i][j].dbcol;
+							columnlist += Jstr(", ") + attrs[i][j].dbcol;
 						}
 					}
 				}
@@ -8901,20 +8901,20 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 		}
 	}
 	
-	AbaxDataString checkquery;
+	Jstr checkquery;
 	formatInsertSelectCmdHeader( &parseParam, checkquery );
 	checkquery += "select " + columnlist + " from " + parseParam.selectTablistClause + " ";
 	if ( parseParam.hasGroup ) {
-		checkquery += AbaxDataString(" group by ") + parseParam.selectGroupClause + " ";
+		checkquery += Jstr(" group by ") + parseParam.selectGroupClause + " ";
 	}
 
 	//prt(("c1028 parseParam.hasOrder=%d selectOrderClause=[%s]\n", parseParam.hasOrder, parseParam.selectOrderClause.c_str() ));
 	if ( parseParam.hasOrder && parseParam.selectOrderClause.size() > 0 ) {
-		checkquery += AbaxDataString(" order by ") + parseParam.selectOrderClause + " ";
+		checkquery += Jstr(" order by ") + parseParam.selectOrderClause + " ";
 	}
 
 	checkquery += " ;";
-	AbaxDataString errmsg2;
+	Jstr errmsg2;
 	JagParseAttribute jpa;
 	jpa.dfdbname = _dbname;
 	jpa.timediff = _tdiff;
@@ -8976,16 +8976,16 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 	// after checking all valid conditions, form the final query which needs to be sent to server(s)
 	abaxint limitsize = jagatoll((_cfg->getValue("DEFAULT_LIMIT_SIZE", "10000")).c_str());
 	formatInsertSelectCmdHeader( &parseParam, newquery );
-	newquery += AbaxDataString("select ") + columnlist + " from " + parseParam.selectTablistClause;
+	newquery += Jstr("select ") + columnlist + " from " + parseParam.selectTablistClause;
 	if ( parseParam.hasWhere ) {
-		newquery += AbaxDataString(" where ") + parseParam.selectWhereClause + " ";
+		newquery += Jstr(" where ") + parseParam.selectWhereClause + " ";
 	}
 	if ( parseParam.hasGroup ) {
-		newquery += AbaxDataString(" group by ") + parseParam.selectGroupClause + " ";
+		newquery += Jstr(" group by ") + parseParam.selectGroupClause + " ";
 	}
 	if ( 2 == orc && parseParam.selectOrderClause.size() > 0 ) {
 		// if order by first key asc or desc, add order by part to server
-		newquery += AbaxDataString(" order by ") + parseParam.selectOrderClause + " ";
+		newquery += Jstr(" order by ") + parseParam.selectOrderClause + " ";
 	}
 	// + parseParam.selectHavingClause + " " later
 	// also add limit condition if needed, need to change later
@@ -9006,12 +9006,12 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 		}
 		
 		if ( !parseParam.hasExport || parseParam.hasLimit ) {
-			newquery += AbaxDataString (" limit ") + longToStr( parseParam.limitStart+limitNum );
+			newquery += Jstr (" limit ") + longToStr( parseParam.limitStart+limitNum );
 			if ( JAG_INSERTSELECT_OP != parseParam.opcode ) {
 				if ( ! parseParam.hasTimeout ) {
-					newquery += AbaxDataString (" timeout ") + longToStr( dfTimeout );
+					newquery += Jstr (" timeout ") + longToStr( dfTimeout );
 				} else {
-					newquery += AbaxDataString (" timeout ") + longToStr( parseParam.timeout );
+					newquery += Jstr (" timeout ") + longToStr( parseParam.timeout );
 				}
 			}
 			//newquery += ";";
@@ -9024,9 +9024,9 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 			} else {
 				if ( JAG_INSERTSELECT_OP != parseParam.opcode ) {
 					if ( ! parseParam.hasTimeout ) {
-						newquery += AbaxDataString (" timeout ") + longToStr( dfTimeout );
+						newquery += Jstr (" timeout ") + longToStr( dfTimeout );
 					} else {
-						newquery += AbaxDataString (" timeout ") + longToStr( parseParam.timeout );
+						newquery += Jstr (" timeout ") + longToStr( parseParam.timeout );
 					}
 				}
 				//newquery += " ;";
@@ -9047,9 +9047,9 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 		} else {
 			if ( JAG_INSERTSELECT_OP != parseParam.opcode ) {
 				if ( ! parseParam.hasTimeout ) {
-					newquery += AbaxDataString (" timeout ") + longToStr( dfTimeout );
+					newquery += Jstr (" timeout ") + longToStr( dfTimeout );
 				} else {
-					newquery += AbaxDataString (" timeout ") + longToStr( parseParam.timeout );
+					newquery += Jstr (" timeout ") + longToStr( parseParam.timeout );
 				}
 			}
 			//newquery += ";";
@@ -9063,7 +9063,7 @@ int JaguarCPPClient::checkOrderByValidation( JagParseParam &parseParam, const Ja
 	int rc = 1;
 
 	// check if order list is sublist of select part
-	JagHashMap<AbaxString, AbaxDataString> colchecklist;
+	JagHashMap<AbaxString, Jstr> colchecklist;
 	if ( !parseParam.hasColumn ) {
 		if ( 1 == num ) {
 			for ( int i = 0; i < numCols[0]; ++i ) {
@@ -9091,7 +9091,7 @@ int JaguarCPPClient::checkOrderByValidation( JagParseParam &parseParam, const Ja
 			break;
 		} else {
 			if ( !parseParam.hasColumn && num > 1 ) {
-				AbaxDataString fname;
+				Jstr fname;
 				if ( !colchecklist.getValue( AbaxString(parseParam.orderVec[i].name), fname ) ) {
 					rc = 0;
 				} else {
@@ -9114,7 +9114,7 @@ int JaguarCPPClient::checkOrderByValidation( JagParseParam &parseParam, const Ja
 // return 1: OK;
 int JaguarCPPClient::checkInsertSelectColumnValidation( const JagParseParam &parseParam )
 {
-	AbaxDataString dbobj1, dbobj2;
+	Jstr dbobj1, dbobj2;
 	const JagTableOrIndexAttrs *oattr1 = NULL, *oattr2 = NULL;
 	if ( parseParam.objectVec.size() < 2 ) {
 		return 0;
@@ -9199,7 +9199,7 @@ int JaguarCPPClient::checkInsertSelectColumnValidation( const JagParseParam &par
 		}
 	} else if ( 2 == check ) {
 		// check only given columns
-		AbaxDataString dbcol1, dbcol2;
+		Jstr dbcol1, dbcol2;
 		for ( int i = 0; i < parseParam.otherVec.size(); ++i ) {
 			dbcol1 = dbobj1 + "." + parseParam.otherVec[i].objName.colName;
 			pos2 = strchrnum(parseParam.selColVec[i].asName.c_str(), '.');
@@ -9237,7 +9237,7 @@ int JaguarCPPClient::doAggregateCalculation( const JagSchemaRecord &aggrec, cons
 											const JagVector<AbaxFixString> &oneSetData, char *aggbuf, int datalen, int countBegin ) 
 {
 	char save;
-	AbaxDataString type;
+	Jstr type;
 	abaxdouble ld, ld1, ld2, ld3, ld4, ld5;
 	abaxint ns, ns1, ns2, offset, length, rc;
 
@@ -9363,12 +9363,12 @@ int JaguarCPPClient::reformOriginalAggQuery( const JagSchemaRecord &aggrec, cons
 {
 	// put aggregated values back to original query
 	char save;
-	AbaxDataString treetype = " ";
+	Jstr treetype = " ";
 	int typeMode = 0, treelength = 0;
 	abaxint offset, length, sig;
 	AbaxInt vpos;
-	ExpressionElementNode *root;
-	AbaxDataString errmsg;
+	ExprElementNode *root;
+	Jstr errmsg;
 	for ( int i = 0; i < aggrec.columnVector->size(); ++i ) {
 		offset = (*aggrec.columnVector)[i].offset;
 		length = (*aggrec.columnVector)[i].length;
@@ -9414,7 +9414,7 @@ int JaguarCPPClient::reformOriginalAggQuery( const JagSchemaRecord &aggrec, cons
 // pay attention to return values
 // return 0: no order by, direct read from jda
 int JaguarCPPClient::processDataSortArray( const JagParseParam &parseParam, 
-	const AbaxDataString &selcnt, const AbaxDataString &selhdr, const AbaxFixString &aggstr ) 
+	const Jstr &selcnt, const Jstr &selhdr, const AbaxFixString &aggstr ) 
 {
 	abaxint skeylen = 0, svallen = 0, lstart = 0, limit = 0, isdesc = 0, elem = 0, jlen = 0;
 	if ( !parseParam.hasLimit ) {
@@ -9463,23 +9463,23 @@ int JaguarCPPClient::processDataSortArray( const JagParseParam &parseParam,
 		char hbuf[JAG_SCHEMA_SPARE_LEN+1];
 		hbuf[JAG_SCHEMA_SPARE_LEN] = '\0';
 		memset(hbuf, ' ', JAG_SCHEMA_SPARE_LEN );					
-		AbaxDataString hstr = AbaxDataString("NN|") + longToStr(skeylen) + "|" + longToStr(svallen) + "|0|{";
+		Jstr hstr = Jstr("NN|") + longToStr(skeylen) + "|" + longToStr(svallen) + "|0|{";
 		hbuf[0] = JAG_C_COL_KEY;
 		hbuf[2] = JAG_RAND;
 		for ( int i = 0; i < parseParam.orderVec.size(); ++i ) {
-			hstr += AbaxDataString("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(offset) + "!" + 
+			hstr += Jstr("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(offset) + "!" + 
 				longToStr(lengths[i]) + "!0!" + hbuf + "|";
 			offset += lengths[i];
 		}
 		hbuf[1] = JAG_C_COL_TYPE_UUID_CHAR;
-		hstr += AbaxDataString("!") + "key_" + longToStr( THREADID ) + "_uuid" + "!s!" + longToStr(offset) + "!" + 
+		hstr += Jstr("!") + "key_" + longToStr( THREADID ) + "_uuid" + "!s!" + longToStr(offset) + "!" + 
 			longToStr(JAG_UUID_FIELD_LEN) + "!0!" + hbuf + "|";
 		offset += JAG_UUID_FIELD_LEN;
 		memset( hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
 		hbuf[0] = JAG_C_COL_VALUE;
 		hbuf[2] = JAG_RAND;
 		for ( int i = 0; i < rec.columnVector->size(); ++i ) {
-			hstr += AbaxDataString("!") + (*(rec.columnVector))[i].name.c_str() + "!s!" + longToStr(offset) + "!" + 
+			hstr += Jstr("!") + (*(rec.columnVector))[i].name.c_str() + "!s!" + longToStr(offset) + "!" + 
 				longToStr((*(rec.columnVector))[i].length) + "!0!" + hbuf + "|";
 			offset += (*(rec.columnVector))[i].length;
 		}
@@ -9521,7 +9521,7 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 	// process order by and possible limit condition
 	_debug && prt(("c1038 processOrderByQuery ...\n" ));
 	AbaxFixString sortstr;
-	AbaxDataString tmpuuid;
+	Jstr tmpuuid;
 	JagSchemaRecord orderrec(true);
 	int ordernum = parseParam.orderVec.size();
 	abaxint orderoffset[ordernum], orderlength[ordernum];
@@ -9599,18 +9599,18 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 		char cschebuf[JAG_SCHEMA_SPARE_LEN+1];
 		cschebuf[JAG_SCHEMA_SPARE_LEN] = '\0';
 		memset(cschebuf, ' ', JAG_SCHEMA_SPARE_LEN );
-		AbaxDataString clifpath = jaguarHome() + "/tmp/" + longToStr( THREADID ) + "_" + "orderBySortFile";					
-		AbaxDataString clischema = AbaxDataString("NN|") + longToStr(sortkeylen) + "|" + longToStr(sortvallen) + "|0|{";
+		Jstr clifpath = jaguarHome() + "/tmp/" + longToStr( THREADID ) + "_" + "orderBySortFile";					
+		Jstr clischema = Jstr("NN|") + longToStr(sortkeylen) + "|" + longToStr(sortvallen) + "|0|{";
 		// format client key schema
 		cschebuf[0] = JAG_C_COL_KEY;
 		cschebuf[2] = JAG_RAND;
 		for ( int i = 0; i < parseParam.orderVec.size(); ++i ) {
-			clischema += AbaxDataString("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(cntoffset) + "!" + 
+			clischema += Jstr("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(cntoffset) + "!" + 
 						longToStr(orderlength[i]) + "!0!" + cschebuf + "|";
 			cntoffset += orderlength[i];
 		}
 		cschebuf[1] = JAG_C_COL_TYPE_UUID_CHAR;
-		clischema += AbaxDataString("!") + "key_" + longToStr( THREADID ) + "_uuid" + "!s!" + longToStr(cntoffset) + "!" + 
+		clischema += Jstr("!") + "key_" + longToStr( THREADID ) + "_uuid" + "!s!" + longToStr(cntoffset) + "!" + 
 					longToStr(JAG_UUID_FIELD_LEN) + "!0!" + cschebuf + "|";
 		cntoffset += JAG_UUID_FIELD_LEN;
 		// format client value schema
@@ -9618,7 +9618,7 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 		cschebuf[0] = JAG_C_COL_VALUE;
 		cschebuf[2] = JAG_RAND;
 		for ( int i = 0; i < orderrec.columnVector->size(); ++i ) {
-			clischema += AbaxDataString("!") + (*(orderrec.columnVector))[i].name.c_str() + "!s!" + longToStr(cntoffset) + "!" + 
+			clischema += Jstr("!") + (*(orderrec.columnVector))[i].name.c_str() + "!s!" + longToStr(cntoffset) + "!" + 
 						longToStr((*(orderrec.columnVector))[i].length) + "!0!" + cschebuf + "|";
 			cntoffset += (*(orderrec.columnVector))[i].length;
 		}
@@ -9727,7 +9727,7 @@ bool  JaguarCPPClient::hasEnoughDiskSpace( abaxint numServers, abaxint totbytes,
 }
 
 // return < 0 for error;  1: OK
-int JaguarCPPClient::doKVLen( const char *querys, int len, AbaxDataString &retmsg  )
+int JaguarCPPClient::doKVLen( const char *querys, int len, Jstr &retmsg  )
 {
 		trimLenEndColonWhite( (char*)querys, len );
 		JagStrSplit sp(querys, ' ', true );
@@ -9736,7 +9736,7 @@ int JaguarCPPClient::doKVLen( const char *querys, int len, AbaxDataString &retms
 			return -1;
 		}
 
-		AbaxDataString dbtab = sp[1];
+		Jstr dbtab = sp[1];
 		JagStrSplit spo( dbtab, '.' );
 		if ( spo.length() != 2 ) {
 			_queryerrmsg = "E4043 Error command. Use \"kvlen DB.TABLE; or kvlen DB.INDEX;\" command";
@@ -9746,7 +9746,7 @@ int JaguarCPPClient::doKVLen( const char *querys, int len, AbaxDataString &retms
 		_mapLock->readLock( -1 );
 		const JagTableOrIndexAttrs *objAttr = _schemaMap->getValue( dbtab );
 		if ( _schemaMap && objAttr ) {
-			retmsg = AbaxDataString("KLEN=") + intToStr(objAttr->keylen) + " VLEN=" + intToStr(objAttr->vallen);
+			retmsg = Jstr("KLEN=") + intToStr(objAttr->keylen) + " VLEN=" + intToStr(objAttr->vallen);
 			// setEnd = JAG_END_RECVONE_THEN_DONE;
 		} else {
 			_queryerrmsg = "E4045 Error command. Table or Index does not exist";
@@ -9761,7 +9761,7 @@ int JaguarCPPClient::doKVLen( const char *querys, int len, AbaxDataString &retms
 int JaguarCPPClient::processMaintenanceCommand( const char *querys )
 {
 	int rc, isShutDown = 0, shellReply = 0;
-	AbaxDataString newquery, cmd;
+	Jstr newquery, cmd;
 	if ( strncasecmp( querys, "localbackup", 11 ) == 0 ) {
 		newquery = "_ex_proclocalbackup";
 		cmd = "localbackup";
@@ -9778,13 +9778,13 @@ int JaguarCPPClient::processMaintenanceCommand( const char *querys )
 			_queryerrmsg = "E4123 Error command. Use \"check DB.TABLE; or check DB.INDEX;\" command";
 			return 0;
 		}
-		AbaxDataString dbtab = sp[1];
+		Jstr dbtab = sp[1];
 		JagStrSplit spo( dbtab, '.' );
 		if ( spo.length() != 2 ) {
 			_queryerrmsg = "E4124 Error command. Use \"check DB.TABLE; or check DB.INDEX;\" command";
 			return 0;
 		}
-		newquery = AbaxDataString("_ex_repairocheck|") + dbtab;
+		newquery = Jstr("_ex_repairocheck|") + dbtab;
 		shellReply = 1;
 		cmd = "checktable";
 	} else if ( strncasecmp( querys, "repair", 6 ) == 0 ) {
@@ -9794,13 +9794,13 @@ int JaguarCPPClient::processMaintenanceCommand( const char *querys )
 			_queryerrmsg = "E4421 Error command. Use \"repair DB.TABLE; or repair DB.INDEX;\" command";
 			return 0;
 		}
-		AbaxDataString dbtab = sp[1];
+		Jstr dbtab = sp[1];
 		JagStrSplit spo( dbtab, '.' );
 		if ( spo.length() != 2 ) {
 			_queryerrmsg = "E4129 Error command. Use \"repair DB.TABLE; or repair DB.INDEX;\" command";
 			return 0;
 		}
-		newquery = AbaxDataString("_ex_repairobject|") + dbtab;
+		newquery = Jstr("_ex_repairobject|") + dbtab;
 		shellReply = 1;
 		cmd = "repairtable";
 	} else if ( strncasecmp( querys, "addcluster", 10 ) == 0 ) {
@@ -9815,7 +9815,7 @@ int JaguarCPPClient::processMaintenanceCommand( const char *querys )
 			return 0;
 		}
 		newquery = "_ex_shutdown";
-		AbaxDataString targetHost = trimTailChar(sp[1], ';');
+		Jstr targetHost = trimTailChar(sp[1], ';');
 		if ( targetHost != "all" ) {
 			int found = 0;
     		for ( int i = 0; i < _numHosts; ++i ) {
@@ -9895,7 +9895,7 @@ int JaguarCPPClient::processMaintenanceCommand( const char *querys )
 
 // form the "_ex_addcluster|#ip1|ip2#ip3|ip4!ip5|ip6" command, where ip5|ip6 are new added servers' ips
 // also, make connections with new added servers
-int JaguarCPPClient::getnewClusterString( AbaxDataString &newquery, AbaxDataString &queryerrmsg )
+int JaguarCPPClient::getnewClusterString( Jstr &newquery, Jstr &queryerrmsg )
 {
 	/**************************************
 	** conf/newcluster.conf
@@ -9903,19 +9903,19 @@ int JaguarCPPClient::getnewClusterString( AbaxDataString &newquery, AbaxDataStri
 	** ip2
 	** ip3
 	**************************************/
-	AbaxDataString vfpath = jaguarHome() + "/conf/newcluster.conf";
+	Jstr vfpath = jaguarHome() + "/conf/newcluster.conf";
 	FILE *fv = jagfopen( vfpath.c_str(), "rb" );
 	if ( ! fv ) { 
 		queryerrmsg = "No conf/newcluster.conf file found. Operation is not performed.";
 		return 0;
 	}
 	
-	newquery = AbaxDataString("_ex_addcluster|") + _primaryHostString + "!";
+	newquery = Jstr("_ex_addcluster|") + _primaryHostString + "!";
 	char line[2048];
 	int len, first = true, cnt = 0;
-	AbaxDataString hn, sline;
+	Jstr hn, sline;
 	abaxint pos;
-	JagVector<AbaxDataString> newhosts;
+	JagVector<Jstr> newhosts;
 	while ( NULL != (fgets( line, 2048, fv ) ) ) {
 		if ( strchr( line, '#' ) ) continue;
 		len = strlen( line );
@@ -9927,14 +9927,14 @@ int JaguarCPPClient::getnewClusterString( AbaxDataString &newquery, AbaxDataStri
 			prt(("c2939 newhost [%s] ==> [%s]\n", hn.c_str(), sline.c_str() ));
 		}
 		if ( sline.length() < 2 ) {
-			queryerrmsg = AbaxDataString("E8003 Host ") + hn + " cannot resolve to IP address. Operation not performed";
+			queryerrmsg = Jstr("E8003 Host ") + hn + " cannot resolve to IP address. Operation not performed";
 			jagfclose( fv );
 			return 0;
 		}
 
 		if ( _hostIdxMap->getValue( AbaxString(sline), pos ) ) {
 			// if any of the new node is part of original nodes, ignore add cluster
-			queryerrmsg = AbaxDataString("E4008 Host ") + hn + "(" + sline + ") already exists in cluster. Operation not performed.";
+			queryerrmsg = Jstr("E4008 Host ") + hn + "(" + sline + ") already exists in cluster. Operation not performed.";
 			jagfclose( fv );
 			return 0;
 		}
@@ -9942,13 +9942,13 @@ int JaguarCPPClient::getnewClusterString( AbaxDataString &newquery, AbaxDataStri
 		if ( first ) {
 			newquery += sline;
 			first = false;
-		} else newquery += AbaxDataString("|") + sline;
+		} else newquery += Jstr("|") + sline;
 		newhosts.append( sline );
 		++cnt;
 	}
    	jagfclose( fv );
 	if ( cnt < _faultToleranceCopy ) {
-		queryerrmsg = AbaxDataString("E6208 Not enough servers to add. Number of new servers must be at least ") + 
+		queryerrmsg = Jstr("E6208 Not enough servers to add. Number of new servers must be at least ") + 
 					  intToStr( _faultToleranceCopy );
 		return 0;
 	}
@@ -9971,7 +9971,7 @@ int JaguarCPPClient::getnewClusterString( AbaxDataString &newquery, AbaxDataStri
 			delete jcli[i];
 			jcli[i] = NULL;
 		}
-		queryerrmsg = AbaxDataString("E4098 Unable connect to new hosts, addcluster not done");
+		queryerrmsg = Jstr("E4098 Unable connect to new hosts, addcluster not done");
 		return 0; 
 	}
 	
@@ -10015,54 +10015,54 @@ void JaguarCPPClient::getHostKeyStr( const char *kbuf, const JagTableOrIndexAttr
 	jagfree( nbuf );
 }
 
-AbaxDataString JaguarCPPClient::getSquareCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, int pos )
+Jstr JaguarCPPClient::getSquareCoordStr( const Jstr &shape, const JagParseParam &parseParam, int pos )
 {
 	if ( strlen( parseParam.otherVec[pos].point.x ) < 1 ) { return "''"; }
 
-	AbaxDataString res = shape + "(";
+	Jstr res = shape + "(";
 	res += trimEndZeros(parseParam.otherVec[pos].point.x);
-	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.y);
-	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.a);
-	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.b);
-	res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.nx);
+	res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.y);
+	res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.a);
+	res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.b);
+	res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.nx);
 	res +=  ")";
 	return res;
 }
 
-AbaxDataString JaguarCPPClient::getCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, int pos, 
+Jstr JaguarCPPClient::getCoordStr( const Jstr &shape, const JagParseParam &parseParam, int pos, 
 										     bool hasX, bool hasY, bool hasZ, bool hasWidth, bool hasDepth, bool hasHeight )
 {
 	if ( strlen( parseParam.otherVec[pos].point.x ) < 1 ) { return "''"; }
 
-	AbaxDataString res = shape + "(";
+	Jstr res = shape + "(";
 	if ( hasX ) {
 		res += trimEndZeros(parseParam.otherVec[pos].point.x);
 		//prt(("s4501 pos=%d res=[%s]\n", pos, res.c_str() ));
 	} 
 
 	if ( hasY ) {
-		res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.y);
+		res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.y);
 		//prt(("s4402 pos=%d res=[%s]\n", pos, res.c_str() ));
 	} 
 
 	if ( hasZ ) {
-		res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.z);
+		res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.z);
 		//prt(("s4403 pos=%d res=[%s]\n", pos, res.c_str() ));
 	} 
 
 	if ( hasWidth ) {
-		res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.a);
+		res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.a);
 	} 
 
 	if ( hasDepth ) {
-		res += AbaxDataString(" ") + trimEndZeros(parseParam.otherVec[pos].point.b);
+		res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.b);
 	} 
 
 	if ( hasHeight ) {
 		if ( hasDepth ) {
-			res += AbaxDataString(" ") + parseParam.otherVec[pos].point.c;
+			res += Jstr(" ") + parseParam.otherVec[pos].point.c;
 		} else {
-			res += AbaxDataString(" ") + parseParam.otherVec[pos].point.b;
+			res += Jstr(" ") + parseParam.otherVec[pos].point.b;
 		}
 	} 
 	
@@ -10070,34 +10070,34 @@ AbaxDataString JaguarCPPClient::getCoordStr( const AbaxDataString &shape, const 
 	return res;
 }
 
-AbaxDataString JaguarCPPClient::getLineCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam,
+Jstr JaguarCPPClient::getLineCoordStr( const Jstr &shape, const JagParseParam &parseParam,
     											 int pos, bool hasX1, bool hasY1, bool hasZ1, bool hasX2, bool hasY2, bool hasZ2 )
 {
 	if ( strlen( parseParam.otherVec[pos].linestr.point[0].x ) < 1 ) { return "''"; }
 
-	AbaxDataString res = shape + "(";
+	Jstr res = shape + "(";
 	if ( hasX1 ) {
 		res += parseParam.otherVec[pos].linestr.point[0].x;
 	} 
 
 	if ( hasY1 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[0].y;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[0].y;
 	} 
 
 	if ( hasZ1 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[0].z;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[0].z;
 	} 
 
 	if ( hasX2 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[1].x;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[1].x;
 	} 
 
 	if ( hasY2 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[1].y;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[1].y;
 	} 
 
 	if ( hasZ2 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[1].z;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[1].z;
 	} 
 
 	res +=  ")";
@@ -10106,7 +10106,7 @@ AbaxDataString JaguarCPPClient::getLineCoordStr( const AbaxDataString &shape, co
 	return res;
 }
 
-AbaxDataString JaguarCPPClient::getTriangleCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam,
+Jstr JaguarCPPClient::getTriangleCoordStr( const Jstr &shape, const JagParseParam &parseParam,
     											 int pos, bool hasX1, bool hasY1, bool hasZ1, 
 												 bool hasX2, bool hasY2, bool hasZ2,
 												 bool hasX3, bool hasY3, bool hasZ3 )
@@ -10115,41 +10115,41 @@ AbaxDataString JaguarCPPClient::getTriangleCoordStr( const AbaxDataString &shape
 		return "''";
 	}
 
-	AbaxDataString res = shape + "(";
+	Jstr res = shape + "(";
 	if ( hasX1 ) {
 		res += parseParam.otherVec[pos].linestr.point[0].x;
 	} 
 
 	if ( hasY1 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[0].y;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[0].y;
 	} 
 
 	if ( hasZ1 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[0].z;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[0].z;
 	} 
 
 	if ( hasX2 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[1].x;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[1].x;
 	} 
 
 	if ( hasY2 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[1].y;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[1].y;
 	} 
 
 	if ( hasZ2 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[1].z;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[1].z;
 	} 
 
 	if ( hasX3 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[2].x;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[2].x;
 	} 
 
 	if ( hasY3 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[2].y;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[2].y;
 	} 
 
 	if ( hasZ3 ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].linestr.point[2].z;
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[2].z;
 	} 
 
 	res +=  ")";
@@ -10158,7 +10158,7 @@ AbaxDataString JaguarCPPClient::getTriangleCoordStr( const AbaxDataString &shape
 	return res;
 }
 
-AbaxDataString JaguarCPPClient::get3DPlaneCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam,
+Jstr JaguarCPPClient::get3DPlaneCoordStr( const Jstr &shape, const JagParseParam &parseParam,
                                        int pos, bool hasX, bool hasY, bool hasZ,
                                          bool hasWidth, bool hasDepth, bool hasHeight,
                                          bool hasNX, bool hasNY, bool hasNZ )
@@ -10168,36 +10168,36 @@ AbaxDataString JaguarCPPClient::get3DPlaneCoordStr( const AbaxDataString &shape,
 		return "''";
 	}
 
-	AbaxDataString res = shape + "(";
+	Jstr res = shape + "(";
 	if ( hasX ) {
 		res += parseParam.otherVec[pos].point.x;
 	} 
 
 	if ( hasY ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].point.y;
+		res += Jstr(" ") + parseParam.otherVec[pos].point.y;
 	} 
 
 	if ( hasZ ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].point.z;
+		res += Jstr(" ") + parseParam.otherVec[pos].point.z;
 	} 
 
 	if ( hasWidth ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].point.a;
+		res += Jstr(" ") + parseParam.otherVec[pos].point.a;
 	} 
 
 	if ( hasDepth ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].point.b;
+		res += Jstr(" ") + parseParam.otherVec[pos].point.b;
 	} 
 
 	if ( hasHeight ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].point.c;
+		res += Jstr(" ") + parseParam.otherVec[pos].point.c;
 	} 
 
 	if ( hasNX ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].point.nx;
+		res += Jstr(" ") + parseParam.otherVec[pos].point.nx;
 	} 
 	if ( hasNY ) {
-		res += AbaxDataString(" ") + parseParam.otherVec[pos].point.ny;
+		res += Jstr(" ") + parseParam.otherVec[pos].point.ny;
 	} 
 
 	res +=  ")";
@@ -10206,13 +10206,13 @@ AbaxDataString JaguarCPPClient::get3DPlaneCoordStr( const AbaxDataString &shape,
 
 // buf:  "db.tab.ls=....!db.tab.ls=.....!...
 // buf:  "db.tab.ls=....#db.tab.ls=.....#...
-AbaxDataString JaguarCPPClient::convertToJson(const char *buf)
+Jstr JaguarCPPClient::convertToJson(const char *buf)
 {
 	if ( ! buf || *buf == '\0' ) {
 		// prt(("c2280 convertToJson buf is NULL, return empty str\n" ));
 		return "";
 	}
-	AbaxDataString res, colobj, json;
+	Jstr res, colobj, json;
 	//prt(("c2064 convertToJS buf=[%s]\n", buf ));
 
 	const char *p = buf;
@@ -10225,7 +10225,7 @@ AbaxDataString JaguarCPPClient::convertToJson(const char *buf)
 			break; 
 		}
 
-		AbaxDataString dbtabcol(p, q-p);
+		Jstr dbtabcol(p, q-p);
 		//prt(("s2120 dbtabcol=[%s]\n", dbtabcol.c_str() ));
 		JagStrSplit sp(dbtabcol, '.' );
 		if ( sp.length() < 3 ) { 
@@ -10238,7 +10238,7 @@ AbaxDataString JaguarCPPClient::convertToJson(const char *buf)
 		//while ( *q != '!' && *q != '\0' ) ++q;
 		while ( *q != '#' && *q != '\0' ) ++q;
 		// p-q is "OJAG=srid=db.tab.col=LS x:y x:y ...."
-		AbaxDataString value(p, q-p);
+		Jstr value(p, q-p);
 		//prt(("c8282 value=[%s]\n", value.c_str() ));
 		colobj = value.firstToken(' ');
 		//prt(("c8283 colobj=[%s]\n", colobj.c_str() ));
@@ -10251,7 +10251,7 @@ AbaxDataString JaguarCPPClient::convertToJson(const char *buf)
 		if ( res.size() < 1 ) {
 			res = dbtabcol + "=" + json;
 		} else {
-			res += AbaxDataString("\n") + dbtabcol + "=" + json;
+			res += Jstr("\n") + dbtabcol + "=" + json;
 		}
 		if ( *q == '\0' ) break;
 		p = q+1;
@@ -10282,8 +10282,8 @@ void JaguarCPPClient::getTimebuf( const JagTableOrIndexAttrs *objAttr, char *tim
 
 void JaguarCPPClient::addQueryToCmdhosts( const JagParseParam &parseParam, const AbaxFixString &hostkstr, 
 										  const JagTableOrIndexAttrs *objAttr, 
-										  JagVector<AbaxDataString> &hosts,
-										  JagVector<JagDBPair> &cmdhosts, AbaxDataString &newquery )
+										  JagVector<Jstr> &hosts,
+										  JagVector<JagDBPair> &cmdhosts, Jstr &newquery )
 {
 
 	if ( JAG_CINSERT_OP == parseParam.opcode || JAG_SINSERT_OP == parseParam.opcode ) {
@@ -10299,7 +10299,7 @@ void JaguarCPPClient::addQueryToCmdhosts( const JagParseParam &parseParam, const
 		// first, get write commands
 		getUsingHosts( hosts, hostkstr, 2 );
 		if ( objAttr->hasFile ) {
-			AbaxDataString snewquery = AbaxDataString("s") + newquery;
+			Jstr snewquery = Jstr("s") + newquery;
 			if ( parseParam.insertDCSyncHost.size() > 0 ) {
 				snewquery = parseParam.insertDCSyncHost + " " + snewquery;
 			}
@@ -10316,7 +10316,7 @@ void JaguarCPPClient::addQueryToCmdhosts( const JagParseParam &parseParam, const
 		}
 		// if not allow duplicates, send 'c' + insertcmd to old clusters to check if exists
 		if ( _numClusters >= 2 ) {
-			AbaxDataString cnewquery = AbaxDataString("c") + newquery;
+			Jstr cnewquery = Jstr("c") + newquery;
 			if ( parseParam.insertDCSyncHost.size() > 0 ) {
 				cnewquery = parseParam.insertDCSyncHost + " " + cnewquery;
 			}
@@ -10380,7 +10380,7 @@ bool JaguarCPPClient::hasDefaultValue( char spare4 )
 	return false;
 }
 
-void JaguarCPPClient::appendJSData( const AbaxDataString &line )
+void JaguarCPPClient::appendJSData( const Jstr &line )
 {
 	if ( line.size() < 1 ) return;
 	jaguar_mutex_lock ( &_lineFileMutex );

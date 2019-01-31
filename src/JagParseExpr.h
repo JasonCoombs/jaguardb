@@ -41,7 +41,7 @@
 
 /**
 				---------------------------
-				| ExpressionElementNode    |
+				| ExprElementNode    |
 				---------------------------
 					|			 	     |
 					|	  			     |
@@ -66,11 +66,11 @@ class JagBox
 	int len;
 };
 
-class ExpressionElementNode
+class ExprElementNode
 {
   public:
-	ExpressionElementNode();
-	virtual ~ExpressionElementNode();
+	ExprElementNode();
+	virtual ~ExprElementNode();
 	virtual int getBinaryOp() = 0;
 	virtual int getName( const char *&p ) = 0;
 	virtual bool getValue( const char *&p ) = 0;
@@ -102,7 +102,7 @@ class ExpressionElementNode
 	Jstr				_type;
 };
 
-class StringElementNode: public ExpressionElementNode
+class StringElementNode: public ExprElementNode
 {
   public:
 	StringElementNode();
@@ -161,10 +161,10 @@ class StringElementNode: public ExpressionElementNode
 
 };  // end StringElementNode
 
-class BinaryOpNode: public ExpressionElementNode
+class BinaryOpNode: public ExprElementNode
 {
   public:
-	BinaryOpNode( BinaryExpressionBuilder* builder, short op, ExpressionElementNode *l, ExpressionElementNode *r, 
+	BinaryOpNode( BinaryExpressionBuilder* builder, short op, ExprElementNode *l, ExprElementNode *r, 
 					    const JagParseAttribute &jpa, int arg1=0, int arg2=0, Jstr carg1="" );
 	virtual ~BinaryOpNode() {}
 	BinaryOpNode &operator=(const BinaryOpNode& n) {}
@@ -204,8 +204,8 @@ class BinaryOpNode: public ExpressionElementNode
 	int						_arg1; // use for substr and datediff (for now)
 	int						_arg2; // use for substr and datediff (for now)
 	Jstr			_carg1; // use for substr and datediff (for now)
-	ExpressionElementNode	*_left;
-	ExpressionElementNode	*_right;
+	ExprElementNode	*_left;
+	ExprElementNode	*_right;
 	int						_nodenum; // a number set to distinguish each node of the tree
 	
   protected:
@@ -343,6 +343,8 @@ class BinaryOpNode: public ExpressionElementNode
 	bool doAllTransScale( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllRotateAt( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllRotateSelf( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	bool doAllAffine( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	static int getTypeMode( short fop );
 
 
 	// data members
@@ -366,7 +368,7 @@ class BinaryExpressionBuilder
 	BinaryOpNode *parse( const JagParser *jagParser, const char* str, int type,
 								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
 								Jstr &colList );
-	ExpressionElementNode *getRoot() const;
+	ExprElementNode *getRoot() const;
 	
 	JagParseAttribute _jpa;
 	JagParseParam *_pparam;
@@ -376,7 +378,8 @@ class BinaryExpressionBuilder
 	JagStack<int> operatorStack;	
 
 	// operandStack is made up of BinaryOpNodes and StringElementNode
-	JagStack<ExpressionElementNode*> operandStack; 
+	JagStack<ExprElementNode*> operandStack; 
+	int         operandStackTopSize() const;
 	int 		_datediffClause;
 	int			_substrClause;
 	int  		_lastOp;

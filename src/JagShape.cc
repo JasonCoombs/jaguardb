@@ -890,6 +890,30 @@ void JagLineString3D::rotateself( double alpha )
 	rotateat( alpha, cx, cy );
 }
 
+
+void JagLineString3D::affine2d( double a, double b, double d, double e, double dx,double dy )
+{
+	double newx, newy;
+	for ( int i=0; i < point.size(); ++i ) {
+		::affine2d( point[i].x, point[i].y, a, b, d, e, dx, dy, newx, newy );
+		point[i].x = newx;
+		point[i].y = newy;
+	}
+}
+
+void JagLineString3D::affine3d( double a, double b, double c, double d, double e, double f, double g, double h, double i, 
+								double dx, double dy, double dz )
+{
+	double newx, newy, newz;
+	for ( int i=0; i < point.size(); ++i ) {
+		::affine3d( point[i].x, point[i].y, point[i].z, a, b, c, d, e, f, g, h, i, dx, dy, dz, newx, newy, newz );
+		point[i].x = newx;
+		point[i].y = newy;
+		point[i].z = newz;
+	}
+}
+
+
 void JagLineString::scale( double fx, double fy, double fz, bool is3D )
 {
 	for ( int i=0; i < point.size(); ++i ) {

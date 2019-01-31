@@ -39,12 +39,12 @@ class JagDiskArrayServer : public JagDiskArrayBase
 {
 	public:
 		// JagDiskArrayServer public methods
-		JagDiskArrayServer( const JagDBServer *servobj, const AbaxDataString &fpathname, 
+		JagDiskArrayServer( const JagDBServer *servobj, const Jstr &fpathname, 
 							const JagSchemaRecord *record, 
 							bool buildInitIndex=true, abaxint length=32, bool noMonitor=false, bool isLastOne=true );
-		JagDiskArrayServer( const JagDBServer *servobj, const AbaxDataString &fpathname, 
+		JagDiskArrayServer( const JagDBServer *servobj, const Jstr &fpathname, 
 							const JagSchemaRecord *record, 
-							const AbaxDataString &pdbobj, JagDBPair &minpair, JagDBPair &maxpair );
+							const Jstr &pdbobj, JagDBPair &minpair, JagDBPair &maxpair );
 		virtual ~JagDiskArrayServer();
 			
 		inline bool remove( const JagDBPair &pair ) { abaxint idx; return removeData( pair, &idx ); }
@@ -59,7 +59,7 @@ class JagDiskArrayServer : public JagDiskArrayBase
 		bool getWithRange( JagDBPair &pair, abaxint &index );
 		bool set( JagDBPair &pair, abaxint &index );
 		bool setWithRange(  const JagRequest &req, JagDBPair &pair, const char *buffers[], bool uniqueAndHasValueCol, 
-							ExpressionElementNode *root, 
+							ExprElementNode *root, 
 							JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
 							abaxint setposlist[], JagDBPair &retpair );	
 		bool getLimitStartPos( abaxint &startlen, abaxint limitstart, abaxint &soffset );
@@ -71,7 +71,7 @@ class JagDiskArrayServer : public JagDiskArrayBase
 		void print( abaxint start=-1, abaxint end=-1, abaxint limit=-1 );
 		int	orderCheckOK(); // check if the order in diskarray is correct	
 		int buildInitIndexFromIdxFile();
-		AbaxDataString getListKeys();
+		Jstr getListKeys();
 
 		virtual void drop();
 		virtual void buildInitIndex( bool force=false );
@@ -94,7 +94,7 @@ class JagDiskArrayServer : public JagDiskArrayBase
 	protected:
 		// JagDiskArrayServer protected methods
 		bool checkSetPairCondition( const JagRequest &req, JagDBPair &pair, char *buffers[], 
-									bool uniqueAndHasValueCol, ExpressionElementNode *root, 
+									bool uniqueAndHasValueCol, ExprElementNode *root, 
 									JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
 									abaxint setposlist[], JagDBPair &retpair );
 		bool removeData( const JagDBPair &pair, abaxint *retindex );

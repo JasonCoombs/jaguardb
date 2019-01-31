@@ -418,6 +418,10 @@ class JagLineString3D
 		void scaleat(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
 		void rotateat( double alpha, double x0, double y0 );
 		void rotateself( double alpha );
+		void affine2d( double a, double b, double d, double e, double dx,double dy );
+		void affine3d( double a, double b, double c, double d, double e, double f, double g, double h, double i, 
+						double dx, double dy, double dz );
+
 		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
 
 		bool  interpolatePoint( short dim, int srid, double fraction, JagPoint3D &point );
@@ -496,6 +500,13 @@ class JagPolygon
 		}
 		void rotateself( double alpha ) {
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].rotateself( alpha ); 
+		}
+		void affine2d( double a, double b, double d, double e, double dx,double dy ) {
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].affine2d( a, b, d, e, dx, dy ); 
+		}
+		void affine3d( double a, double b, double c, double d, double e, double f, double g, double h, double i, 
+						double dx, double dy, double dz ) {
+			for (int i=0; i < linestr.size(); ++i ) linestr[i].affine3d( a, b, c, d, e, f, g, h, i, dx, dy, dz ); 
 		}
 
 		JagPolygon( const JagSquare2D &sq );

@@ -26,7 +26,7 @@
 #include <JagDiskKeyChecker.h>
 #include <JagFixKeyChecker.h>
 
-JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const AbaxDataString &filePathName,
+JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const Jstr &filePathName,
     const JagSchemaRecord *record, bool buildInitIndex, abaxint length, bool noMonitor ) : _schemaRecord(record)
 {
 	int kcrc = 0;
@@ -47,16 +47,16 @@ JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const AbaxDa
 	} else {
 		_keyChecker = new JagFixKeyChecker( _pathname, _KLEN, _VLEN );
 	}
-	AbaxDataString existFiles, fullpath, objname;
+	Jstr existFiles, fullpath, objname;
 	const char *p = strrchr( filePathName.c_str(), '/' );
 	if ( p == NULL ) {
 		printf("s7482 error _pathname=%s, exit\n", _pathname.c_str() );
 		exit(1);
 	}
-	fullpath = AbaxDataString( filePathName.c_str(), p-filePathName.c_str() );
+	fullpath = Jstr( filePathName.c_str(), p-filePathName.c_str() );
 	_tablepath = fullpath; 
 	_sfilepath = fullpath + "/files";
-	objname = AbaxDataString( p+1 ) + ".jdb";
+	objname = Jstr( p+1 ) + ".jdb";
 	_objname = objname;
 	existFiles = JagFileMgr::getFileFamily( fullpath, objname );
 	if ( existFiles.size() < 1 ) {	
@@ -70,7 +70,7 @@ JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const AbaxDa
 		kcrc = _keyChecker->buildInitKeyCheckerFromSigFile();
 		JagStrSplit split( existFiles, '|' );
 		// need to rearrange files by order, and remove .jdb
-		JagVector<AbaxDataString> paths( split.length() );
+		JagVector<Jstr> paths( split.length() );
 		for ( int i = 0; i < split.length(); ++i ) {
 			const char *ss = strrchr( split[i].c_str(), '/' );
 			if ( !ss ) ss = split[i].c_str();
@@ -85,7 +85,7 @@ JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const AbaxDa
 				exit(1);
 			}
 			const char *q = strrchr( split[i].c_str(), '.' );
-			paths[pos] = AbaxDataString(split[i].c_str(), q-split[i].c_str());
+			paths[pos] = Jstr(split[i].c_str(), q-split[i].c_str());
 			paths._elements++;
 		}
 
@@ -108,7 +108,7 @@ JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const AbaxDa
 			if ( getElements( keyCheckerCnt ) != _keyChecker->size() ) {
 				// remove old .hdb file if exists
 				raydebug( stdout, JAG_LOG_LOW, "s6381 famelems not equal hdb elements\n");
-				AbaxDataString hdbpath = _keyChecker->getPath() + ".hdb";
+				Jstr hdbpath = _keyChecker->getPath() + ".hdb";
 				if ( JagFileMgr::exist( hdbpath ) ) {
 					jagunlink( hdbpath.c_str() );
 				}
@@ -201,7 +201,7 @@ int JagDiskArrayFamily::insert( JagDBPair &pair, int &insertCode, bool doFirstRe
 		}
 		if ( _darrlistlen-1 == _activepos && _filecnt < JAG_TWOBYTES_MAX ) {
 			++_filecnt;
-			AbaxDataString nfpath = _pathname + "." + intToStr( _filecnt );
+			Jstr nfpath = _pathname + "." + intToStr( _filecnt );
 			JagDiskArrayServer *ldarr = new JagDiskArrayServer( _darrlist[_activepos]->_servobj, nfpath, _schemaRecord );
 			_darrlist.append(ldarr);
 			_darrlistlen = _darrlist.size();
@@ -474,7 +474,7 @@ bool JagDiskArrayFamily::set( JagDBPair &pair )
 }
 
 bool JagDiskArrayFamily::setWithRange( const JagRequest &req, JagDBPair &pair, const char *buffers[], bool uniqueAndHasValueCol, 
-	ExpressionElementNode *root, JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
+	ExprElementNode *root, JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
 	abaxint setposlist[], JagDBPair &retpair )
 {
 	int pos = 0;
@@ -526,7 +526,7 @@ void JagDiskArrayFamily::flushBlockIndexToDisk()
 // read bottom level of blockindex and write it to a disk file
 void JagDiskArrayFamily::flushKeyCheckerString()
 {
-	AbaxDataString keyCheckerPath = renameFilePath( _darrlist[0]->_filePath, "sig" );
+	Jstr keyCheckerPath = renameFilePath( _darrlist[0]->_filePath, "sig" );
 	int fd = jagopen( keyCheckerPath.c_str(), O_CREAT|O_RDWR|JAG_NOATIME, S_IRWXU);
 	if ( fd < 0 ) {
 		printf("s3804 error open [%s] for write\n", keyCheckerPath.c_str() );

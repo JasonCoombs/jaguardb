@@ -33,7 +33,7 @@
 #include <JagSingleBuffWriter.h>
 #include <JagUtil.h>
 
-JagDiskArrayServer::JagDiskArrayServer( const JagDBServer *servobj, const AbaxDataString &filePathName, 
+JagDiskArrayServer::JagDiskArrayServer( const JagDBServer *servobj, const Jstr &filePathName, 
 	const JagSchemaRecord *record, bool buildInitIndex, abaxint length, bool noMonitor, bool isLastOne ) 
   :JagDiskArrayBase( servobj, filePathName, record, buildInitIndex, length, noMonitor )
 {
@@ -48,8 +48,8 @@ JagDiskArrayServer::JagDiskArrayServer( const JagDBServer *servobj, const AbaxDa
 	else _hasmonitor = 0;
 }
 
-JagDiskArrayServer::JagDiskArrayServer( const JagDBServer *servobj, const AbaxDataString &filePathName, 
-	const JagSchemaRecord *record, const AbaxDataString &pdbobj, JagDBPair &minpair, JagDBPair &maxpair ) 
+JagDiskArrayServer::JagDiskArrayServer( const JagDBServer *servobj, const Jstr &filePathName, 
+	const JagSchemaRecord *record, const Jstr &pdbobj, JagDBPair &minpair, JagDBPair &maxpair ) 
   :JagDiskArrayBase( servobj, filePathName, record, pdbobj, minpair, maxpair )
 {
 	_isClient = 0;
@@ -98,7 +98,7 @@ void JagDiskArrayServer::init( abaxint length, bool buildBlockIndex, bool isLast
 	_respartMaxBlock = atoll(_servobj->_cfg->getValue("MAX_PARTIAL_RESIZE", "1024").c_str()) * 1024 * 1024;
 	_respartMaxBlock /= ( KEYVALLEN * JAG_BLOCK_SIZE );
 	const char *dp = strrchr ( _pathname.c_str(), '/' );
-	_dirPath = AbaxDataString(_pathname.c_str(), dp-_pathname.c_str());
+	_dirPath = Jstr(_pathname.c_str(), dp-_pathname.c_str());
 	_filePath = _pathname + ".jdb"; 
 	_tmpFilePath =  _pathname + ".jdb.tmp";
 	JagStrSplit split( _pathname, '/' );
@@ -188,7 +188,7 @@ void JagDiskArrayServer::init( abaxint length, bool buildBlockIndex, bool isLast
 				clock.stop();
 				// prt(("s8870 %s buildInitIndex for init %d ms\n", _dbobj.c_str(), clock.elapsed()));
 			} else {
-				AbaxDataString idxPath = renameFilePath( _filePath, "bid" );
+				Jstr idxPath = renameFilePath( _filePath, "bid" );
 				jagunlink( idxPath.c_str() );
 			}
 		}
@@ -207,7 +207,7 @@ bool JagDiskArrayServer::checkInitResizeCondition( bool isLastOne )
 	// first check if resize needs to be done;
 	// condition 1: if db.tab.jdb.tmp or db.tab_darrnew.jdb or db.tab_darrnew.jdb.tmp exists, always true to do resize
 	// otherwise, buildInitIndex to get elements, then use needResize to check if need to do resize
-	AbaxDataString path, tpath, dnpath, tdnpath;
+	Jstr path, tpath, dnpath, tdnpath;
 	int nrsz = 0, rc;
 	path = _filePath;
 	tpath = _tmpFilePath;
@@ -355,7 +355,7 @@ void JagDiskArrayServer::drop()
 	_jdfs->remove();
 	removeBlockIndexIndDisk();
 	jagunlink( _tmpFilePath.c_str() );
-	AbaxDataString dnpath = _pathname + "_darrnew.jdb";
+	Jstr dnpath = _pathname + "_darrnew.jdb";
 	jagunlink( dnpath.c_str() );
 	dnpath += ".tmp";
 	jagunlink( dnpath.c_str() );
@@ -936,7 +936,7 @@ int JagDiskArrayServer::buildInitIndexFromIdxFile()
 		return 1;
 	}
 
-	AbaxDataString idxPath = renameFilePath( _filePath, "bid");
+	Jstr idxPath = renameFilePath( _filePath, "bid");
 	// prt(("s2283 buildInitIndexFromIdxFile idxPath=[%s]\n", idxPath.c_str() ));
 
 	int fd = jagopen((char *)idxPath.c_str(), O_RDONLY|JAG_NOATIME );
@@ -1128,7 +1128,7 @@ bool JagDiskArrayServer::set( JagDBPair &pair, abaxint &index )
 // pair: in pair with keys only; out: keys and values of old record
 // retpair: keys and new modified values
 bool JagDiskArrayServer::setWithRange( const JagRequest &req, JagDBPair &pair, const char *buffers[], bool uniqueAndHasValueCol, 
-						ExpressionElementNode *root, JagParseParam *parseParam, int numKeys, 
+						ExprElementNode *root, JagParseParam *parseParam, int numKeys, 
 						const JagSchemaAttribute *schAttr, abaxint setposlist[], JagDBPair &retpair )
 {
 	++_updateUsers;
@@ -1167,17 +1167,17 @@ bool JagDiskArrayServer::setWithRange( const JagRequest &req, JagDBPair &pair, c
 }
 
 bool JagDiskArrayServer::checkSetPairCondition( const JagRequest &req, JagDBPair &pair, char *buffers[], bool uniqueAndHasValueCol, 
-						ExpressionElementNode *root, JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
+						ExprElementNode *root, JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
 						abaxint setposlist[], JagDBPair &retpair )
 {
 	bool rc, needInit = true;
 	char *tbuf = (char*)jagmalloc(KEYVALLEN+1);
 	memset( tbuf, 0, KEYVALLEN+1 );
-	ExpressionElementNode *updroot;
-	AbaxDataString errmsg;
+	ExprElementNode *updroot;
+	Jstr errmsg;
 	AbaxFixString strres;
 	int typeMode = 0, treelength = 0;
-	AbaxDataString treetype = " ";
+	Jstr treetype = " ";
 	const JagSchemaAttribute *attrs[1];
 	attrs[0] = schAttr;
 	
@@ -1223,7 +1223,7 @@ abaxint JagDiskArrayServer::removeMatchKey( const char *kstr, int klen )
 {
 	AbaxFixString fixs(kstr, klen);
 	JagDBPair pair(fixs);
-	AbaxDataString keys =  getListKeys();
+	Jstr keys =  getListKeys();
 
 	// key1\n
 	// key2\n
@@ -1355,17 +1355,17 @@ int JagDiskArrayServer::removeFromAll( const JagDBPair &pair, abaxint *retindex 
 }
 
 // Return a list of keys for non-fixstring keys, such as JagNode, UserID class
-// where the key is just a AbaxDataString
-AbaxDataString JagDiskArrayServer::getListKeys()
+// where the key is just a Jstr
+Jstr JagDiskArrayServer::getListKeys()
 {
-	AbaxDataString res;
+	Jstr res;
 	char *buf = (char*)jagmalloc(KEYVALLEN+1);
 	memset(buf, 0, KEYVALLEN+1);
 	abaxint rlimit = getBuffReaderWriterMemorySize( _garrlen*KEYVALLEN/1024/1024 );
 	JagBuffReader ntr( this, _garrlen, KEYLEN, VALLEN, 0, 0, rlimit );
 	while ( ntr.getNext( buf ) ) {
 		AbaxFixString key ( buf, KEYLEN );
-		res += AbaxDataString( key.c_str() ) + "\n";
+		res += Jstr( key.c_str() ) + "\n";
 	}
 	free( buf );
 	return res;
@@ -1412,7 +1412,7 @@ bool JagDiskArrayServer::checkFileOrder( const JagRequest &req )
 {
 	int rc, percnt = 5;
 	abaxint ipos;
-	AbaxDataString sendmsg = _pdbobj + " check finished ";
+	Jstr sendmsg = _pdbobj + " check finished ";
    	char keybuf[ KEYLEN+1];
    	char *keyvalbuf = (char*)jagmalloc( KEYVALLEN+1);
 	memset( keybuf, 0,  KEYLEN + 1 );
@@ -1421,7 +1421,7 @@ bool JagDiskArrayServer::checkFileOrder( const JagRequest &req )
 	JagBuffReader br( this, _arrlen, KEYLEN, VALLEN, _nthserv*_arrlen, 0, rlimit );
 	while ( br.getNext( keyvalbuf, KEYVALLEN, ipos ) ) { 
 		if ( ipos*100/_arrlen >= percnt ) {
-			JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+			JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 			percnt += 5;
 		}
 		if ( keybuf[0] == '\0' ) {
@@ -1450,7 +1450,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 	_newblockIndex = new JagFixBlock( KEYLEN );
 	
 	int rc, insertCode, percnt=5;
-	AbaxDataString sendmsg = _pdbobj + " repair finished ";
+	Jstr sendmsg = _pdbobj + " repair finished ";
 	abaxint oldelem = _elements;
 	_elements = 0;
 	JagDBPair tpair;
@@ -1466,7 +1466,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 	memset( buf0, 0,  KEYVALLEN + 1 );
 	memset( buf1, 0,  KEYVALLEN + 1 );
 	memset( buf2, 0,  KEYVALLEN + 1 );
-	AbaxDataString msg = _pdbobj + "_REPAIR";
+	Jstr msg = _pdbobj + "_REPAIR";
 	JagDataAggregate jda( true );
 	jda.setwrite( msg, msg, false );
 	jda.setMemoryLimit( _elements*KEYVALLEN*2 );
@@ -1511,7 +1511,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf1, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1524,7 +1524,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf0, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1539,7 +1539,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf2, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1552,7 +1552,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf0, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1566,7 +1566,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf0, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1580,7 +1580,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			updateCorrectDataBlockIndex( buf0, pos0, tpair, lastBlock );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1594,7 +1594,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 2;
@@ -1606,7 +1606,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			// order of 5-4-5, delete first 5, window to 4-5-?
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1621,7 +1621,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 2;
@@ -1634,7 +1634,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			updateCorrectDataBlockIndex( buf0, pos0, tpair, lastBlock );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1647,7 +1647,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			updateCorrectDataBlockIndex( buf0, pos0, tpair, lastBlock );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1660,7 +1660,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 2;
@@ -1687,7 +1687,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			errorcnt += 1;
 		}
 		if ( pos2*100/_arrlen >= percnt ) {
-			JagTable::sendMessage( req, AbaxDataString(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+			JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 			percnt += 5;
 		}
 	} 
@@ -1750,7 +1750,7 @@ void JagDiskArrayServer::updateCorrectDataBlockIndex( char *buf, abaxint pos, Ja
 // read bottom level of blockindex and write it to a disk file
 void JagDiskArrayServer::flushBlockIndexToDisk()
 {
-	AbaxDataString idxPath = renameFilePath( _filePath, "bid");
+	Jstr idxPath = renameFilePath( _filePath, "bid");
 	// printf("s3803 JagDiskArrayServer::flushBlockIndexToDisk() _blockIndex=%0x\n", _blockIndex );
 	if ( _blockIndex ) {
 		_blockIndex->flushBottomLevel( idxPath, _elements, _arrlen, _minindex, _maxindex );
@@ -1759,7 +1759,7 @@ void JagDiskArrayServer::flushBlockIndexToDisk()
 
 void JagDiskArrayServer::removeBlockIndexIndDisk()
 {
-	AbaxDataString idxPath = renameFilePath( _filePath, "bid");
+	Jstr idxPath = renameFilePath( _filePath, "bid");
 	jagunlink( idxPath.c_str() );
 }
 

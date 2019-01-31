@@ -1666,7 +1666,7 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 	int rc, collen, siglen, constMode = 0, typeMode = 0;
 	bool isAggregate;
 	abaxint offset = 0;
-	ExpressionElementNode *root;
+	ExprElementNode *root;
 	const JagSchemaRecord *records[num];
 	Jstr type, hdr, tname;
 	int groupnum = parseParam->groupVec.size();
@@ -3844,6 +3844,23 @@ void rotatenx( double oldnx, double alpha, double &nx )
 	double oldny = sqrt(1.0 - oldnx*oldnx);
 	nx = oldnx*cos(alpha) - oldny*sin(alpha);
 }
+
+void affine2d( double x1, double y1, double a, double b, double d, double e,
+                double dx, double dy, double &x, double &y )
+{
+	x = a*x1 + b*y1 + dx;
+	y = d*x1 + e*y1 + dy;
+}
+
+void affine3d( double x1, double y1, double z1, double a, double b, double c, double d, double e,
+                double f, double g, double h, double i, double dx, double dy, double dz,
+                double &x, double &y, double &z )
+{
+	x = a*x1 + b*y1 + c*z1 + dx;
+	y = d*x1 + e*y1 + f*z1 + dy;
+	z = g*x1 + h*y1 + i*z1 + dz;
+}
+
 
 
 

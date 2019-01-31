@@ -39,7 +39,7 @@
 #include <JagParser.h>
 #include <JagLineFile.h>
 
-JagTable::JagTable( int replicateType, const JagDBServer *servobj, const AbaxDataString &dbname, const AbaxDataString &tableName, 
+JagTable::JagTable( int replicateType, const JagDBServer *servobj, const Jstr &dbname, const Jstr &tableName, 
 					  const JagSchemaRecord &record, bool buildInitIndex ) : _tableRecord(record), _servobj( servobj )
 {
 	_cfg = _servobj->_cfg;
@@ -86,8 +86,8 @@ void JagTable::init( bool buildInitIndex )
 	if ( NULL != _darrFamily ) { return; }
 	
 	bool rc;
-	AbaxDataString dbpath, fpath, dbcolumn;
-	AbaxDataString rdbdatahome = _cfg->getJDBDataHOME( _replicateType );
+	Jstr dbpath, fpath, dbcolumn;
+	Jstr rdbdatahome = _cfg->getJDBDataHOME( _replicateType );
 	dbpath = rdbdatahome + "/" + _dbname;
 
 	// new path
@@ -95,9 +95,9 @@ void JagTable::init( bool buildInitIndex )
 	JagFileMgr::makedirPath( dbpath +  "/" + _tableName );
 	JagFileMgr::makedirPath( dbpath +  "/" + _tableName + "/files" );
 
-	AbaxDataString oldpath = dbpath +  "/" + _tableName;
-	AbaxDataString oldpathname = oldpath + ".jdb";
-	AbaxDataString newfpathname = fpath + ".jdb";
+	Jstr oldpath = dbpath +  "/" + _tableName;
+	Jstr oldpathname = oldpath + ".jdb";
+	Jstr newfpathname = fpath + ".jdb";
 	if ( JagFileMgr::exist( oldpathname ) ) {
 		jagrename( oldpathname.c_str(), newfpathname.c_str() );
 		// prt(("s1028 rename( %s ==> %s )\n", oldpathname.c_str(), newfpathname.c_str() ));
@@ -144,9 +144,9 @@ void JagTable::init( bool buildInitIndex )
 // build indexlist
 void JagTable::buildInitIndexlist()
 {
-	int rc; AbaxDataString dbtabindex, dbindex; JagIndex *pindex = NULL;
+	int rc; Jstr dbtabindex, dbindex; JagIndex *pindex = NULL;
 	const JagSchemaRecord *irecord;
-	JagVector<AbaxDataString> vec;
+	JagVector<Jstr> vec;
 
 	rc = _indexschema->getIndexNamesFromMem( _dbname, _tableName, vec );
     for ( int i = 0; i < vec.length(); ++i ) {
@@ -176,12 +176,12 @@ bool JagTable::getPair( JagDBPair &pair )
 
 // 0: fail to insert
 // 1: success to insert
-int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &retpair, AbaxDataString &errmsg )
+int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &retpair, Jstr &errmsg )
 {
 	int getpos = 0;
 	int rc, rc2;
 	
-	AbaxDataString dbcolumn, dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
+	Jstr dbcolumn, dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
 	if ( _numCols < parseParam->otherVec.size() ) {
 		prt(("s4893 Error JagTable::parsePair _numCols=%d parseParam->otherVec.size()=%d\n", _numCols, parseParam->otherVec.size() ));
 		errmsg = "E3143  _numCols-1 != parseParam->otherVec.size";
@@ -258,7 +258,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 		JagVector<OtherAttribute> otherVec;
 
 		int j = -1;
-		AbaxDataString colType;
+		Jstr colType;
 		for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 			#ifdef DEVDEBUG
 			prt(("s6675 parseParam->hasPoly=%d _tableRecord.lastKeyColumn=%d parseParam->polyDim=%d\n",
@@ -417,11 +417,11 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	#endif
 
 
-	AbaxDataString point, pointi, pointx, pointy, pointz, pointr, pointw, pointd, pointh, colname;
-	AbaxDataString pointx1, pointy1, pointz1;
-	AbaxDataString pointx2, pointy2, pointz2;
-	AbaxDataString pointx3, pointy3, pointz3;
-	AbaxDataString pointnx, pointny, colType;
+	Jstr point, pointi, pointx, pointy, pointz, pointr, pointw, pointd, pointh, colname;
+	Jstr pointx1, pointy1, pointz1;
+	Jstr pointx2, pointy2, pointz2;
+	Jstr pointx3, pointy3, pointz3;
+	Jstr pointnx, pointny, colType;
 	bool is3D = false, hasDoneAppend = false;
 	char *tablekvbuf = (char*)jagmalloc(KEYVALLEN+1);
 	memset(tablekvbuf, 0, KEYVALLEN+1);
@@ -437,7 +437,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	//_tableRecord.print();
 	#endif
 
-	AbaxDataString lsuuid = _servobj->_jagUUID->getString();
+	Jstr lsuuid = _servobj->_jagUUID->getString();
 	for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 		if ( parseParam->otherVec[i].issubcol ) { 
 			#if 0
@@ -453,7 +453,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 		rc = _tablemap->getValue(dbcolumn, getpos);
 		if ( ! rc ) {
 			free( tablekvbuf );
-			errmsg = AbaxDataString("E5003  _tablemap->getValue(") + dbcolumn + ") error i=" + intToStr(i);
+			errmsg = Jstr("E5003  _tablemap->getValue(") + dbcolumn + ") error i=" + intToStr(i);
 			return 0;
 		}
 		//prt(("s5031 i=%d dbcolumn=[%s] getpos=%d\n", i, dbcolumn.c_str(), getpos ));
@@ -1069,7 +1069,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 				if ( 0 == rc ) { continue; }
 				if ( rc < 0 ) {
-					errmsg = AbaxDataString("E3014  Polygon input data error ") + intToStr(rc);
+					errmsg = Jstr("E3014  Polygon input data error ") + intToStr(rc);
 					prt(("E3014 Polygon input data error rc=%d\n", rc ));
 					free( tablekvbuf );
 					return 0;
@@ -1131,7 +1131,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 				if ( 0 == rc ) continue;
 				if ( rc < 0 ) {
-					errmsg = AbaxDataString("E3015  MultiPolygon input data error ") + intToStr(rc);
+					errmsg = Jstr("E3015  MultiPolygon input data error ") + intToStr(rc);
 					//prt(("E3015 Polygon input data error rc=%d\n", rc ));
 					free( tablekvbuf );
 					return 0;
@@ -1379,7 +1379,7 @@ int JagTable::insertPair( JagDBPair &pair, int &insertCode, bool direct, int mod
 }
 
 // insert : insert cmd into jdb file
-int JagTable::insert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct )
+int JagTable::insert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
 {
 	JagVector<JagDBPair> pair;
 	int rc = parsePair( req.session->timediff, parseParam, pair, errmsg );
@@ -1392,18 +1392,18 @@ int JagTable::insert( const JagRequest &req, JagParseParam *parseParam, AbaxData
 			rc = insertPair( pair[i], insertCode, direct, 0 );
 			// prt(("s3481 insertPair rc=%d\n", rc ));
 			if ( !rc ) {
-				errmsg = AbaxDataString("E2108 Insert error key: ") + pair[i].key.c_str();
+				errmsg = Jstr("E2108 Insert error key: ") + pair[i].key.c_str();
 			}
 		}
 	} else {
-		errmsg += AbaxDataString(" E5208 Error insert pair");
+		errmsg += Jstr(" E5208 Error insert pair");
 	}
 	
 	return rc;
 }
 
 // single insert, used by inserted data with file transfer
-int JagTable::sinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct )
+int JagTable::sinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
 {
 	JagVector<JagDBPair> pair;
 	int rc = parsePair( req.session->timediff, parseParam, pair, errmsg );
@@ -1413,10 +1413,10 @@ int JagTable::sinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDat
     		pair[k].upsertFlag = 0;
     		rc = insertPair( pair[k], insertCode, 1, 0 );
     		if ( !rc ) {
-    			errmsg = AbaxDataString("E4003 Insert error key: ") + pair[k].key.c_str();
+    			errmsg = Jstr("E4003 Insert error key: ") + pair[k].key.c_str();
     		} else {
     			rc = 0;
-    			AbaxDataString hdir = fileHashDir( pair[k].key );
+    			Jstr hdir = fileHashDir( pair[k].key );
     			jaguar_mutex_lock ( &req.session->dataMutex );
     			// receive _BEGINFILEUPLOAD_ to begin file transfer
     			char *newbuf = NULL; char hdr[JAG_SOCK_MSG_HDR_LEN+1]; ssize_t rlen = 0;
@@ -1439,14 +1439,14 @@ int JagTable::sinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDat
     		}
 		}
 	} else {
-		errmsg = AbaxDataString("E4123 Error insert pair");
+		errmsg = Jstr("E4123 Error insert pair");
 	}
 	
 	return rc;
 }
 
 // cinsert : check if this pair is exist or not
-int JagTable::cinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct )
+int JagTable::cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
 {
 	JagVector<JagDBPair> pair;
 	int rc = parsePair( req.session->timediff, parseParam, pair, errmsg );
@@ -1456,14 +1456,14 @@ int JagTable::cinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDat
 			rc = insertPair( pair[i], insertCode, direct, 1 );
 		}
 	} else {
-		errmsg += AbaxDataString(" E3043 Error cinsert pair");
+		errmsg += Jstr(" E3043 Error cinsert pair");
 	}
 	
 	return rc;
 }
 
 // dinsert: delete if this pair is exist
-int JagTable::dinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct )
+int JagTable::dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
 {
 	JagVector<JagDBPair> pair;
 	int rc = parsePair( parseParam->timediff, parseParam, pair, errmsg );
@@ -1473,7 +1473,7 @@ int JagTable::dinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDat
 			rc = insertPair( pair[i], insertCode, direct, 2 );
 		}
 	} else {
-		errmsg += AbaxDataString(" E0221 Error dinsert pair");
+		errmsg += Jstr(" E0221 Error dinsert pair");
 	}
 	
 	return rc;
@@ -1557,7 +1557,7 @@ void *JagTable::parallelCreateIndexStatic( void * ptr )
 	delete pass;
 }
 
-abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode )
+abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode )
 {
 	// chain not able to update
 	if ( JAG_CHAINTABLE_TYPE == _objectType ) {
@@ -1567,7 +1567,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 
 	int setnum = parseParam->updSetVec.size();
 	int rc, collen, siglen, setindexnum = _indexlist.size(), constMode = 0, typeMode = 0, tabnum = 0, treelength = 0;
-	AbaxDataString treetype;
+	Jstr treetype;
 	bool keyset, uniqueAndHasValueCol = 0, setKey;
 	abaxint cnt = 0;
 	const char *buffers[1];
@@ -1576,13 +1576,13 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 	JagIndex *lpindex[_indexlist.size()];
 	JagIndex *pindex = NULL;
 	AbaxBuffer bfr;
-	AbaxDataString dbcolumn;
+	Jstr dbcolumn;
 	char *tableoldbuf = (char*)jagmalloc(KEYVALLEN+1);
 	char *tablenewbuf = (char*)jagmalloc(KEYVALLEN+1);
 	memset( tableoldbuf, 0, KEYVALLEN+1 );
 	memset( tablenewbuf, 0, KEYVALLEN+1 );
 	
-	ExpressionElementNode *updroot;
+	ExprElementNode *updroot;
 	const JagHashStrInt *maps[1];
 	const JagSchemaAttribute *attrs[1];	
 	maps[0] = _tablemap;
@@ -1598,7 +1598,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 		if ( isFileColumn( parseParam->updSetVec[i].colName ) ) {
 			if ( tableoldbuf ) free ( tableoldbuf );
 			if ( tablenewbuf ) free ( tablenewbuf );
-			errmsg = AbaxDataString("E0283 column ") + parseParam->updSetVec[i].colName + " is file type";
+			errmsg = Jstr("E0283 column ") + parseParam->updSetVec[i].colName + " is file type";
 			return -1;
 		}
 
@@ -1611,13 +1611,13 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 			if ( 0 == rc || isAggregate ) {
 				if ( tableoldbuf ) free ( tableoldbuf );
 				if ( tablenewbuf ) free ( tablenewbuf );
-				errmsg = AbaxDataString("E0383 wrong update type. Char column must use single quotes.");
+				errmsg = Jstr("E0383 wrong update type. Char column must use single quotes.");
 				return -1;
 			}
 		} else {
 			if ( tableoldbuf ) free ( tableoldbuf );
 			if ( tablenewbuf ) free ( tablenewbuf );
-			errmsg = AbaxDataString("E0384 column ") + dbcolumn + " does not exist";
+			errmsg = Jstr("E0384 column ") + dbcolumn + " does not exist";
 			return -1;
 		}
 	}
@@ -1656,7 +1656,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 	minmax[0].setbuflen( keylen[0] );
 	buffers[0] = tableoldbuf;
 
-	ExpressionElementNode *root = parseParam->whereVec[0].tree->getRoot();
+	ExprElementNode *root = parseParam->whereVec[0].tree->getRoot();
 	rc = root->setWhereRange( maps, attrs, keylen, numKeys, 1, uniqueAndHasValueCol, minmax, treestr, typeMode, tabnum );
 	if ( 0 == rc ) {
 		memset( minmax[0].minbuf, 0, keylen[0]+1 );
@@ -1671,7 +1671,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 					_tableschema, _indexschema, _replicateType, 1 );
 			}
 		}
-		errmsg = AbaxDataString("E0385 invalid where range found ");
+		errmsg = Jstr("E0385 invalid where range found ");
 		return -1;
 	}
 
@@ -1706,7 +1706,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 											_tableschema, _indexschema, _replicateType, 1 );
 									}
 								}
-								errmsg = AbaxDataString("E0386 key update error");
+								errmsg = Jstr("E0386 key update error");
 								return -1;						
 							}								
 						} else {
@@ -1718,7 +1718,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 										_tableschema, _indexschema, _replicateType, 1 );
 								}
 							}
-							errmsg = AbaxDataString("E0387 update error");
+							errmsg = Jstr("E0387 update error");
 							return -1;
 						}
 					}
@@ -1828,7 +1828,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Abax
 	return cnt;
 }
 
-abaxint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg )	
+abaxint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg )	
 {	
 	// chain not able to remove
 	if ( JAG_CHAINTABLE_TYPE == _objectType ) {
@@ -1841,7 +1841,7 @@ abaxint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Abax
 	abaxint cnt = 0;
 	const char *buffers[1];
 	char *buf = (char*)jagmalloc(KEYVALLEN+1);
-	AbaxDataString treetype;
+	Jstr treetype;
 	JagIndex *pindex = NULL;
 	AbaxBuffer bfr;
 	memset( buf, 0, KEYVALLEN+1 );	
@@ -1860,7 +1860,7 @@ abaxint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Abax
 	minmax[0].setbuflen( keylen[0] );
 	AbaxFixString treestr;
 
-	ExpressionElementNode *root = parseParam->whereVec[0].tree->getRoot();
+	ExprElementNode *root = parseParam->whereVec[0].tree->getRoot();
 	rc = root->setWhereRange( maps, attrs, keylen, numKeys, 1, uniqueAndHasValueCol, minmax, treestr, typeMode, tabnum );
 	if ( 0 == rc ) {
 		memset( minmax[0].minbuf, 0, keylen[0]+1 );
@@ -1925,7 +1925,7 @@ abaxint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Abax
 	return cnt;
 }
 
-abaxint JagTable::count( const char *cmd, const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, abaxint &keyCheckerCnt )
+abaxint JagTable::count( const char *cmd, const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, abaxint &keyCheckerCnt )
 {
 	if ( parseParam->hasWhere ) {
 		JagDataAggregate *jda = NULL;
@@ -1941,7 +1941,7 @@ abaxint JagTable::count( const char *cmd, const JagRequest &req, JagParseParam *
 // nowherecnt: false if  select count(*) from t123 where
 // nowherecnt: true if  select ... from t123 where ... (there is no cunt in where)
 abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequest &req, JagParseParam *parseParam, 
-						  AbaxDataString &errmsg, bool nowherecnt, bool isInsertSelect )
+						  Jstr &errmsg, bool nowherecnt, bool isInsertSelect )
 {
 	// set up timeout for select starting timestamp
 	// prt(("s8773 JagTable::select cmd=[%s]\n", cmd ));
@@ -1949,7 +1949,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	gettimeofday( &now, NULL ); 
 	abaxint bsec = now.tv_sec;
 	bool timeoutFlag = 0;
-	AbaxDataString treetype;
+	Jstr treetype;
 	int rc, typeMode = 0, tabnum = 0, treelength = 0;
 	bool uniqueAndHasValueCol = 0, needInit = true;
 	abaxint tpossibleElem = 0, treadcnt = 0;
@@ -1972,12 +1972,12 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	maps[0] = _tablemap;
 	attrs[0] = _schAttr;
 	JagMinMax minmax[1];
-	AbaxDataString newhdr, gbvheader;
+	Jstr newhdr, gbvheader;
 	abaxint finalsendlen = 0;
 	abaxint gbvsendlen = 0;
 	JagSchemaRecord nrec;
 	AbaxFixString treestr, strres;
-	ExpressionElementNode *root = NULL;
+	ExprElementNode *root = NULL;
 
 	minmax[0].setbuflen( keylen[0] ); // KEYLEN
 	//prt(("s2028 minmax[0].setbuflen( keylen=%d )\n", keylen[0] ));
@@ -2044,7 +2044,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	if ( JAG_INSERTSELECT_OP == parseParam->opcode ) {
 		//pcli = new JaguarCPPClient();
 		pcli = newObject<JaguarCPPClient>();
-		AbaxDataString host = "localhost", unixSocket = AbaxDataString("/TOKEN=") + _servobj->_servToken;
+		Jstr host = "localhost", unixSocket = Jstr("/TOKEN=") + _servobj->_servToken;
 		if ( _servobj->_listenIP.size() > 0 ) { host = _servobj->_listenIP; }
 		if ( !pcli->connect( host.c_str(), _servobj->_port, "admin", "dummy", "test", unixSocket.c_str(), 0 ) ) {
 			raydebug( stdout, JAG_LOG_LOW, "s4055 Connect (%s:%s) (%s:%d) error [%s], retry ...\n",
@@ -2073,7 +2073,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 			memcpy(buf, pair.key.c_str(), KEYLEN);
 			memcpy(buf+KEYLEN, pair.value.c_str(), VALLEN);
 			buffers[0] = buf;
-			AbaxDataString hdir = fileHashDir( pair.key );
+			Jstr hdir = fileHashDir( pair.key );
 			dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
 			//prt((" point query s1293 uniqueAndHasValueCol=%d\n", uniqueAndHasValueCol ));
 			if ( !uniqueAndHasValueCol ||
@@ -2087,12 +2087,12 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 									  _dbtable, recordcnt, nowherecnt, NULL, true );
 				//prt(("s5820 opcode=%d getfileActualData=%d\n", parseParam->opcode, parseParam->getfileActualData ));
 				if ( parseParam->opcode == JAG_GETFILE_OP && parseParam->getfileActualData ) {
-					AbaxDataString hdir = fileHashDir( pair.key );
+					Jstr hdir = fileHashDir( pair.key );
 					jaguar_mutex_lock ( &req.session->dataMutex );
 					//prt(("s4320 tab sendDirectToSock _BEGINFILEUPLOAD_ ...\n" ));
 					sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
 					//prt(("s4320 tab sendDirectToSock _BEGINFILEUPLOAD_ done ...\n" ));
-					AbaxDataString ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
+					Jstr ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
 					for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 						ddcol = _dbtable + "." + parseParam->selColVec[i].getfileCol.c_str();
 						if ( _tablemap->getValue(ddcol, getpos) ) {
@@ -2107,7 +2107,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 					jaguar_mutex_unlock ( &req.session->dataMutex );
 				} else {
 					if ( JAG_INSERTSELECT_OP == parseParam->opcode ) {
-						AbaxDataString iscmd;
+						Jstr iscmd;
 						if ( formatInsertSelectCmdHeader( parseParam, iscmd ) ) {
 							formatInsertFromSelect( parseParam, attrs[0], finalbuf, buffers[0], finalsendlen, 
 												    _numCols, pcli, recordcnt, iscmd );
@@ -2348,7 +2348,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	}
 
 	if ( timeoutFlag ) {
-		AbaxDataString timeoutStr = "E0283 Table select has timed out. Results have been truncated;";
+		Jstr timeoutStr = "E0283 Table select has timed out. Results have been truncated;";
 		sendMessage( req, timeoutStr.c_str(), "ER" );
 	}
 	
@@ -2371,7 +2371,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 {	
 	//prt(("s2298 parallelSelectStatic ...\n" ));
 	ParallelCmdPass *pass = (ParallelCmdPass*)ptr;
-	ExpressionElementNode *root;
+	ExprElementNode *root;
 	int rc, collen, siglen, constMode = 0, typeMode = 0, treelength = 0, tabnum = 0;
 	bool isAggregate, hasAggregate = false, hasFirst = false, needInit = true, uniqueAndHasValueCol;
 	abaxint offset = 0;
@@ -2382,7 +2382,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 	const JagHashStrInt *maps[1];
 	const JagSchemaAttribute *attrs[1];	
 	AbaxFixString strres, treestr;
-	AbaxDataString treetype;
+	Jstr treetype;
 
 	if ( pass->ptab ) {
 		numCols[0] = pass->ptab->_numCols;
@@ -2438,7 +2438,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 		}
 	}
 
-	AbaxDataString iscmd;
+	Jstr iscmd;
 	formatInsertSelectCmdHeader( pass->parseParam, iscmd );
 
 	char *buf = (char*)jagmalloc(pass->kvlen+1); memset(buf, 0, pass->kvlen+1);
@@ -2519,7 +2519,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 						root = pass->parseParam->whereVec[0].tree->getRoot();
     					if ( root && root->_builder->_pparam->_rowHash ) {
     						//prt(("s2042 root->_builder->_pparam->_rowHash=%0x\n", root->_builder->_pparam->_rowHash ));
-    						AbaxDataString str =  root->_builder->_pparam->_rowHash->getKVStrings("#");
+    						Jstr str =  root->_builder->_pparam->_rowHash->getKVStrings("#");
     						if ( ! pass->parseParam->parent->_lineFile ) {
     							pass->parseParam->parent->_lineFile = new JagLineFile();
     						} 
@@ -2540,7 +2540,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 					if ( root->_builder->_pparam->_rowHash ) {
 						//prt(("s2022 root->_builder->_pparam->_rowHash=%0x\n", root->_builder->_pparam->_rowHash ));
 						if ( rc ) {
-							AbaxDataString str =  root->_builder->_pparam->_rowHash->getKVStrings("#");
+							Jstr str =  root->_builder->_pparam->_rowHash->getKVStrings("#");
 							if ( ! pass->parseParam->parent->_lineFile ) {
 								pass->parseParam->parent->_lineFile = newObject<JagLineFile>();
 							} 
@@ -2595,10 +2595,10 @@ int JagTable::buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashSt
 										const JagRequest &req, const char *buffers[], JagParseParam *parseParam, 
 										JagMemDiskSortArray *gmdarr, char *gbvbuf )
 {
-	AbaxDataString treetype;
+	Jstr treetype;
 	abaxint totoff = 0;
-	ExpressionElementNode *root;
-	AbaxDataString errmsg;
+	ExprElementNode *root;
+	Jstr errmsg;
 	bool init = 1;
 	int rc = 0, treelength = 0, typeMode = 0, treesig;
 
@@ -2634,7 +2634,7 @@ int JagTable::buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashSt
 // main thread calling
 // input buffers are natural data
 void JagTable::groupByFinalCalculation( char *gbvbuf, bool nowherecnt, abaxint finalsendlen, std::atomic<abaxint> &cnt, abaxint actlimit,
-										const JagRequest &req, const AbaxDataString &writeName, JagParseParam *parseParam, 
+										const JagRequest &req, const Jstr &writeName, JagParseParam *parseParam, 
 										JagDataAggregate *jda, JagMemDiskSortArray *gmdarr, const JagSchemaRecord *nrec )
 {
 	//prt(("s9282 groupByFinalCalculation ...\n" ));
@@ -2662,18 +2662,18 @@ void JagTable::groupByFinalCalculation( char *gbvbuf, bool nowherecnt, abaxint f
 void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 									const JagRequest &req, const char *buffers[], 
 									JagParseParam *parseParam, char *finalbuf, abaxint finalsendlen,
-									JagDataAggregate *jda, const AbaxDataString &writeName, std::atomic<abaxint> &cnt, 
+									JagDataAggregate *jda, const Jstr &writeName, std::atomic<abaxint> &cnt, 
 									bool nowherecnt, const JagSchemaRecord *nrec, bool oneLine )
 {
 	prt(("s4817 nonAggregateFinalbuf parseParam->hasColumn=%d\n", parseParam->hasColumn ));
 	if ( parseParam->hasColumn ) {
 		memset(finalbuf, 0, finalsendlen);
-		AbaxDataString treetype;
+		Jstr treetype;
 		int rc, typeMode = 0, treelength = 0, treesig = 0;
 		bool init = 1;
 		abaxint offset;
-		ExpressionElementNode *root;
-		AbaxDataString errmsg;
+		ExprElementNode *root;
+		Jstr errmsg;
 		for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 			init = 1;
 			root = parseParam->selColVec[i].tree->getRoot();
@@ -2695,7 +2695,7 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 	
 	if ( JAG_GETFILE_OP == parseParam->opcode ) {
 		// if getfile, arrange point query to be size of file/modify time of file/md5sum of file/file path ( for actural data )
-		AbaxDataString ddcol, inpath, instr, outstr; 
+		Jstr ddcol, inpath, instr, outstr; 
 		abaxint getpos; char fname[JAG_FILE_FIELD_LEN+1]; struct stat sbuf;
 		raydebug( stdout, JAG_LOG_HIGH, "s0391 JAG_GETFILE_OP selColVec.size()=%d\n", parseParam->selColVec.size() );
 		for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
@@ -2748,9 +2748,9 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 void JagTable::aggregateDataFormat( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 									const JagRequest &req, const char *buffers[], JagParseParam *parseParam, bool init )
 {
-	ExpressionElementNode *root;
+	ExprElementNode *root;
 	int typeMode = 0, treelength = 0;
-	AbaxDataString treetype;
+	Jstr treetype;
 	for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 		root = parseParam->selColVec[i].tree->getRoot();
 		if ( root->checkFuncValid( ntr, maps, attrs, buffers, parseParam->selColVec[i].strResult, typeMode, 
@@ -2764,8 +2764,8 @@ void JagTable::aggregateDataFormat( JagMergeReaderBase *ntr, const JagHashStrInt
 // finish all data, merge all aggregation results to form one final result to send
 // main thread calling
 // input buffers are natural data
-void JagTable::aggregateFinalbuf( const JagRequest &req, const AbaxDataString &sendhdr, abaxint len, JagParseParam *parseParam[], 
-								  char *finalbuf, abaxint finalsendlen, JagDataAggregate *jda, const AbaxDataString &writeName, 
+void JagTable::aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, abaxint len, JagParseParam *parseParam[], 
+								  char *finalbuf, abaxint finalsendlen, JagDataAggregate *jda, const Jstr &writeName, 
 								  std::atomic<abaxint> &cnt, bool nowherecnt, const JagSchemaRecord *nrec )
 {
 	JagSchemaRecord aggrec;
@@ -2776,10 +2776,10 @@ void JagTable::aggregateFinalbuf( const JagRequest &req, const AbaxDataString &s
 	JagVector<AbaxFixString> oneSetData;
 	JagVector<int> selectPartsOpcode;
 	
-	AbaxDataString type;
+	Jstr type;
 	abaxint offset, length, sig;
-	ExpressionElementNode *root;
-	AbaxDataString errmsg;
+	ExprElementNode *root;
+	Jstr errmsg;
 	
 	for ( int m = 0; m < len; ++m ) {
 		memset(finalbuf, 0, finalsendlen);
@@ -2813,10 +2813,10 @@ void JagTable::aggregateFinalbuf( const JagRequest &req, const AbaxDataString &s
 	free( aggbuf );
 }
 
-AbaxDataString JagTable::drop( AbaxDataString &errmsg, bool isTruncate )
+Jstr JagTable::drop( Jstr &errmsg, bool isTruncate )
 {
 	JagIndex *pindex = NULL;
-	AbaxDataString idxNames;
+	Jstr idxNames;
 	if ( ! _darrFamily ) return idxNames;
 	if ( _indexlist.size() > 0 ) {
 		if ( isTruncate ) {	
@@ -2825,13 +2825,13 @@ AbaxDataString JagTable::drop( AbaxDataString &errmsg, bool isTruncate )
 				if ( idxNames.size() < 1 ) {
 					idxNames = _indexlist[i];
 				} else {
-					idxNames += AbaxDataString("|") + _indexlist[i];
+					idxNames += Jstr("|") + _indexlist[i];
 				}
 			}
 		}
-		AbaxDataString dbtab = _dbname + "." + _tableName;
-		AbaxDataString tabIndex;
-		AbaxDataString dbtabIndex;
+		Jstr dbtab = _dbname + "." + _tableName;
+		Jstr tabIndex;
+		Jstr dbtabIndex;
 		while ( _indexlist.size() > 0 ) {
 			pindex = _servobj->_objectLock->writeLockIndex( JAG_DROPINDEX_OP, _dbname, _tableName, _indexlist[_indexlist.size()-1],
 				_tableschema, _indexschema, _replicateType, 1 );
@@ -2855,7 +2855,7 @@ AbaxDataString JagTable::drop( AbaxDataString &errmsg, bool isTruncate )
 	if ( _darrFamily ) delete _darrFamily;
 	_darrFamily = NULL;
 	// rmdir
-	AbaxDataString rdbdatahome = _cfg->getJDBDataHOME( _replicateType ), dbpath = rdbdatahome + "/" + _dbname;
+	Jstr rdbdatahome = _cfg->getJDBDataHOME( _replicateType ), dbpath = rdbdatahome + "/" + _dbname;
 	JagFileMgr::rmdir( dbpath + "/" + _tableName, true );
 
 	jagmalloc_trim(0);
@@ -2863,7 +2863,7 @@ AbaxDataString JagTable::drop( AbaxDataString &errmsg, bool isTruncate )
 	return idxNames;
 }
 
-void JagTable::dropFromIndexList( const AbaxDataString &indexName )
+void JagTable::dropFromIndexList( const Jstr &indexName )
 {
 	for ( int k = 0; k < _indexlist.size(); ++k ) {
 		const char *idxName = strrchr(_indexlist[k].c_str(), '.');
@@ -2905,9 +2905,9 @@ int JagTable::_removeIndexRecords( const char *buf )
 }
 
 // return "db.idx1,db.idx2,db.idx3" 
-AbaxDataString JagTable::getIndexNameList()
+Jstr JagTable::getIndexNameList()
 {
-	AbaxDataString res;
+	Jstr res;
 	if ( ! _darrFamily ) return res;
 	if ( _indexlist.size() < 1 ) { return res; }
 
@@ -2915,21 +2915,21 @@ AbaxDataString JagTable::getIndexNameList()
 		if ( res.size() < 1 ) {
 			res = _indexlist[i];
 		} else {
-			res += AbaxDataString(",") + _indexlist[i];
+			res += Jstr(",") + _indexlist[i];
 		}
 	}
 
 	return res;
 }
 
-int JagTable::renameIndexColumn( const JagParseParam *parseParam, AbaxDataString &errmsg )
+int JagTable::renameIndexColumn( const JagParseParam *parseParam, Jstr &errmsg )
 {
 	JagIndex *pindex = NULL;
 	AbaxBuffer bfr;
 	bool rc;
 	if ( _indexlist.size() > 0 ) {
-		AbaxDataString dbtab  = _dbname + "." + _tableName;
-		AbaxDataString dbtabIndex;
+		Jstr dbtab  = _dbname + "." + _tableName;
+		Jstr dbtabIndex;
 		for ( int k = 0; k < _indexlist.size(); ++k ) {
 			pindex = _servobj->_objectLock->writeLockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
 				_tableschema, _indexschema, _replicateType, 1 );
@@ -2988,7 +2988,7 @@ abaxint JagTable::sendMessageLength2( JagSession *session, const char *mesg, aba
 
 	// compress or no: if no, len is original; if yes, use new length
 	if ( len >= JAG_SOCK_COMPRSS_MIN ) {
-		AbaxDataString comp;
+		Jstr comp;
 		JagFastCompress::compress( mesg, len, comp );
 		buf = (char*)jagmalloc( JAG_SOCK_MSG_HDR_LEN+comp.size()+1+64 );
 		sprintf( buf, "%0*lldZ%c%cC", JAG_SOCK_MSG_HDR_LEN-4, comp.size(), type[0], type[1] );
@@ -3018,8 +3018,8 @@ abaxint JagTable::sendMessageLength2( JagSession *session, const char *mesg, aba
 
 int JagTable::refreshSchema()
 {
-	AbaxDataString dbtable = _dbname + "." + _tableName;
-	AbaxDataString dbcolumn;
+	Jstr dbtable = _dbname + "." + _tableName;
+	Jstr dbcolumn;
 	AbaxString schemaStr;
 	const JagSchemaRecord *record =  _tableschema->getAttr( dbtable );
 	if ( ! record ) {
@@ -3066,11 +3066,11 @@ int JagTable::refreshSchema()
 int JagTable::refreshIndexList()
 {
 	// create index : _indexlist.append( dbindex 
-	JagVector<AbaxDataString> vec;
+	JagVector<Jstr> vec;
 	int cnt = _indexschema->getIndexNames( _dbname, _tableName, vec );
 	if ( cnt < 1 ) return 0;
 
-	AbaxDataString dbindex, idxname;
+	Jstr dbindex, idxname;
 	_indexlist.destroy();
 	_indexlist.init( 8 );
 
@@ -3128,14 +3128,14 @@ void JagTable::copyAndInsertBufferAndClean( JagIndex *ipindex )
 // static
 // currently, doWriteIt has only one host name, so it can only been write one by one ( use mutex in jda to protect, with last flag true )
 void JagTable::doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam, const JagRequest &req, 
-						  const AbaxDataString &host, const char *buf, abaxint buflen, const JagSchemaRecord *nrec )
+						  const Jstr &host, const char *buf, abaxint buflen, const JagSchemaRecord *nrec )
 {
 
 	// first check if there is any _having clause
 	// if having exists, convert natrual format to dbformat,
 	if ( parseParam->hasHaving ) {
 		// todo having tree
-		// ExpressionElementNode *root = (parseParam->havingTree).getRoot();
+		// ExprElementNode *root = (parseParam->havingTree).getRoot();
 	} else {
 		if ( jda ) jda->writeit( host, buf, buflen, nrec, true );
 	}
@@ -3146,18 +3146,18 @@ void JagTable::doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam
 // iscmd should be either "insert into TABLE (COL1,COL2)" or "insert into TABLE" format
 void JagTable::formatInsertFromSelect( const JagParseParam *parseParam, const JagSchemaAttribute *attrs, 
 	const char *finalbuf, const char *buffers, abaxint finalsendlen, abaxint numCols,
-	JaguarCPPClient *pcli, std::atomic<abaxint> &cnt, const AbaxDataString &iscmd )
+	JaguarCPPClient *pcli, std::atomic<abaxint> &cnt, const Jstr &iscmd )
 {
 	// format insert cmd
-	AbaxDataString insertCmd = iscmd + " values ( ", oneData;
+	Jstr insertCmd = iscmd + " values ( ", oneData;
 	if ( parseParam->hasColumn ) {
 		for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 			oneData = formOneColumnNaturalData( finalbuf, parseParam->selColVec[i].offset, 
 				parseParam->selColVec[i].length, parseParam->selColVec[i].type );
 			if ( 0 == i ) {
-				insertCmd += AbaxDataString("'") + oneData.c_str() + "'";
+				insertCmd += Jstr("'") + oneData.c_str() + "'";
 			} else {
-				insertCmd += AbaxDataString(",'") + oneData.c_str() + "'";
+				insertCmd += Jstr(",'") + oneData.c_str() + "'";
 			}
 		}
 		insertCmd += ");";
@@ -3166,9 +3166,9 @@ void JagTable::formatInsertFromSelect( const JagParseParam *parseParam, const Ja
 			if ( attrs[i].colname != "spare_" ) {
 				oneData = formOneColumnNaturalData( buffers, attrs[i].offset, attrs[i].length, attrs[i].type );
 				if ( 0 == i ) {
-					insertCmd += AbaxDataString("'") + oneData.c_str() + "'";
+					insertCmd += Jstr("'") + oneData.c_str() + "'";
 				} else {
-					insertCmd += AbaxDataString(",'") + oneData.c_str() + "'";
+					insertCmd += Jstr(",'") + oneData.c_str() + "'";
 				}
 			}			
 		}
@@ -3181,7 +3181,7 @@ void JagTable::formatInsertFromSelect( const JagParseParam *parseParam, const Ja
 
 bool JagTable::hasSpareColumn()
 {
-	AbaxDataString colname;
+	Jstr colname;
 	for ( int i = 0; i < _numCols; ++i ) {
 		colname = (*(_tableRecord.columnVector))[i].name.c_str();
 		// prt(("s4772 hasSpareColumn i=%d colname=[%s]\n", i, colname.c_str() ));
@@ -3204,7 +3204,7 @@ void JagTable::setupSchemaMapAttr( int numCols )
 	_numKeys = 0;
 	int i = 0, rc, rc2;
 	int j = 0;
-	AbaxDataString dbcolumn, defvalStr;
+	Jstr dbcolumn, defvalStr;
 	for ( i = 0; i < N; ++i ) {
 		if ( _schAttr[i].isKey ) { ++ _numKeys; }
 		dbcolumn = _dbtable + "." + (*(_tableRecord.columnVector))[i].name.c_str();
@@ -3245,7 +3245,7 @@ void JagTable::setupSchemaMapAttr( int numCols )
 			JagStrSplitWithQuote sp( defvalStr.c_str(), '|' );
 			
 			if ( rc == JAG_C_COL_TYPE_ENUM_CHAR ) {
-				// _schAttr[i].enumList = new JagVector<AbaxDataString>();
+				// _schAttr[i].enumList = new JagVector<Jstr>();
 				for ( int k = 0; k < sp.length()-1; ++k ) {
 					_schAttr[i].enumList.append( strRemoveQuote( sp[k].c_str() ) );
 					// sp.length()-1 are enum options
@@ -3272,16 +3272,16 @@ int  JagTable::removeColFiles(const char *kvbuf )
 	if ( kvbuf == NULL ) return 0;
 	if ( *kvbuf == '\0' ) return 0;
 	int rc = 0;
-	AbaxDataString fpath, db, tab, fname;
+	Jstr fpath, db, tab, fname;
 	AbaxFixString fstr = AbaxFixString( kvbuf, KEYLEN );
-	AbaxDataString hdir = fileHashDir( fstr );
+	Jstr hdir = fileHashDir( fstr );
 	for ( int i = 0; i < _numCols; ++i ) {
 		if ( _schAttr[i].isFILE ) {
 			JagStrSplit sp( _schAttr[i].dbcol, '.' );
 			if (sp.length() < 3 ) continue;
 			db = sp[0];
 			tab = sp[1];
-			fname = AbaxDataString( kvbuf+_schAttr[i].offset,  _schAttr[i].length );
+			fname = Jstr( kvbuf+_schAttr[i].offset,  _schAttr[i].length );
 			// fpath = jaguarHome() + "/data/" + db + "/" + tab + "/files/" + fname;
 			fpath = _darrFamily->_sfilepath + "/" + hdir + "/" + fname;
 			jagunlink( fpath.c_str() );
@@ -3297,9 +3297,9 @@ int  JagTable::removeColFiles(const char *kvbuf )
 	return rc;
 }
 
-bool JagTable::isFileColumn( const AbaxDataString &colname )
+bool JagTable::isFileColumn( const Jstr &colname )
 {
-	AbaxDataString col;
+	Jstr col;
 	for ( int i = 0; i < _numCols; ++i ) {
 		if ( _schAttr[i].isFILE ) {
 			JagStrSplit sp( _schAttr[i].dbcol, '.' );
@@ -3314,10 +3314,10 @@ bool JagTable::isFileColumn( const AbaxDataString &colname )
 	return false;
 }
 
-void JagTable::setGetFileAttributes( const AbaxDataString &hdir, JagParseParam *parseParam, const char *buffers[] )
+void JagTable::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, const char *buffers[] )
 {
 	// if getfile, arrange point query to be size of file/modify time of file/md5sum of file/file path ( for actural data )
-	AbaxDataString ddcol, inpath, instr, outstr; int getpos; char fname[JAG_FILE_FIELD_LEN+1]; struct stat sbuf;
+	Jstr ddcol, inpath, instr, outstr; int getpos; char fname[JAG_FILE_FIELD_LEN+1]; struct stat sbuf;
 	raydebug( stdout, JAG_LOG_HIGH, "s3331 setGetFileAttributes selColVec.size=%d\n", parseParam->selColVec.size() );
 	for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 		ddcol = _dbtable + "." + parseParam->selColVec[i].getfileCol.c_str();
@@ -3334,8 +3334,8 @@ void JagTable::setGetFileAttributes( const AbaxDataString &hdir, JagParseParam *
 					outstr = octime;
 				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_MD5SUM ) {
 					if ( lastChar(inpath) != '/' ) {
-						instr = AbaxDataString("md5sum ") + inpath;
-						outstr = AbaxDataString(psystem( instr.c_str() ).c_str(), 32);
+						instr = Jstr("md5sum ") + inpath;
+						outstr = Jstr(psystem( instr.c_str() ).c_str(), 32);
 					} else {
 						outstr = "";
 					}
@@ -3356,15 +3356,15 @@ void JagTable::setGetFileAttributes( const AbaxDataString &hdir, JagParseParam *
 }
 
 void JagTable::formatPointsInLineString( const JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
-										 JagVector<JagDBPair> &retpair, AbaxDataString &errmsg )
+										 JagVector<JagDBPair> &retpair, Jstr &errmsg )
 {
 	int getpos;
-	AbaxDataString point;
+	Jstr point;
 	char ibuf[32];
 	int rc;
-	AbaxDataString pointx = pass.colname + ":x";
-	AbaxDataString pointy = pass.colname + ":y";
-	AbaxDataString pointz = pass.colname + ":z";
+	Jstr pointx = pass.colname + ":x";
+	Jstr pointy = pass.colname + ":y";
+	Jstr pointz = pass.colname + ":z";
 
 	//prt(("s2935 pointx=[%s] pointz=[%s] pass.getxmin=%d pass.getymin=%d \n", pointx.c_str(), pointz.c_str(), pass.getxmin, pass.getymin ));
 
@@ -3507,16 +3507,16 @@ void JagTable::formatPointsInLineString( const JagLineString &line, char *tablek
 
 }
 
-void JagTable::getColumnIndex( const AbaxDataString &dbtab, const AbaxDataString &colname, bool is3D,
+void JagTable::getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D,
 								int &getx, int &gety, int &getz, int &getxmin, int &getymin, int &getzmin,
 								int &getxmax, int &getymax, int &getzmax,
 								int &getid, int &getcol, int &getm, int &getn, int &geti )
 {
 	int getpos;
-	AbaxDataString dbcolumn;
-	AbaxDataString pointx = colname + ":x";
-	AbaxDataString pointy = colname + ":y";
-	AbaxDataString pointz = colname + ":z";
+	Jstr dbcolumn;
+	Jstr pointx = colname + ":x";
+	Jstr pointy = colname + ":y";
+	Jstr pointz = colname + ":z";
 
 	getx=gety=getz=-1;
 	getxmin = getymin = getzmin = getxmax = getymax = getzmax = -1;

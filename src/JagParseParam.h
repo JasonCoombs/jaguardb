@@ -31,10 +31,10 @@ class JagLineFile;
 class ObjectNameAttribute
 {
   public:
-	AbaxDataString dbName;
-	AbaxDataString tableName;	
-	AbaxDataString indexName; 
-	AbaxDataString colName;
+	Jstr dbName;
+	Jstr tableName;	
+	Jstr indexName; 
+	Jstr colName;
 	
 	void init() { dbName = tableName = indexName = colName = ""; }
 
@@ -74,7 +74,7 @@ class ObjectNameAttribute
 class GroupOrderVecAttribute
 {
   public:
-	AbaxDataString name;
+	Jstr name;
 	bool isAsc;
 	void init() { name = ""; isAsc = true; }
 };
@@ -95,10 +95,10 @@ class OtherAttribute
 
 	bool hasQuote;
 	ObjectNameAttribute objName;
-	AbaxDataString valueData;
+	Jstr valueData;
 	bool issubcol;
 
-	AbaxDataString  type;
+	Jstr  type;
 	JagPoint 		point;
 	JagLineString 	linestr;
 	bool			is3D;
@@ -112,9 +112,9 @@ class CreateAttribute
   public:
   	CreateAttribute() { init(); }
 	ObjectNameAttribute objName;
-	AbaxDataString defValues;
+	Jstr defValues;
 	char spare[JAG_SCHEMA_SPARE_LEN+1];
-	AbaxDataString type;
+	Jstr type;
 	unsigned int offset;
 	unsigned int length;
 	unsigned int sig;
@@ -187,8 +187,8 @@ class UpdSetAttribute
 {
   public:
 	BinaryExpressionBuilder *tree;
-	AbaxDataString colName;
-	AbaxDataString colList;
+	Jstr colName;
+	Jstr colList;
 
 	UpdSetAttribute() {
 		// tree = new BinaryExpressionBuilder();
@@ -208,7 +208,7 @@ class UpdSetAttribute
 
 	void destroy() {
 		if ( tree ) {
-			ExpressionElementNode *root = tree->getRoot();
+			ExprElementNode *root = tree->getRoot();
 			if ( root ) { root->clear(); delete root; }
 			tree->clean();
 			delete tree;
@@ -232,18 +232,18 @@ class SelColAttribute
   public:
     SelColAttribute( JagParseParam *pparam ) { _pparam = pparam; tree=NULL; }
 	BinaryExpressionBuilder *tree;
-	AbaxDataString origFuncStr;
-	AbaxDataString name;
-	AbaxDataString asName;
-	AbaxDataString getfileCol;
-	AbaxDataString getfilePath;
-	AbaxDataString colList;
+	Jstr origFuncStr;
+	Jstr name;
+	Jstr asName;
+	Jstr getfileCol;
+	Jstr getfilePath;
+	Jstr colList;
 	int getfileType;
 	bool givenAsName;
 	JagParseParam *_pparam;
 	
 	// use when process data
-	AbaxDataString type;
+	Jstr type;
 	unsigned int offset;
 	unsigned int length;
 	unsigned int sig;
@@ -273,7 +273,7 @@ class SelColAttribute
 
 	void destroy() {
 		if ( tree ) {
-			ExpressionElementNode *root = tree->getRoot();
+			ExprElementNode *root = tree->getRoot();
 			if ( root ) { root->clear(); delete root; }
 			tree->clean();
 			delete tree;
@@ -307,7 +307,7 @@ class OnlyTreeAttribute
 {
   public:
 	BinaryExpressionBuilder *tree;
-	AbaxDataString colList;
+	Jstr colList;
 
 	OnlyTreeAttribute( ) {
 		// tree = new BinaryExpressionBuilder();
@@ -340,9 +340,9 @@ class JagParseParam
   	~JagParseParam();
 	void clean();
 	int setSelectWhere( );
-	int resetSelectWhere( const AbaxDataString &extraWhere );
+	int resetSelectWhere( const Jstr &extraWhere );
 	int setupCheckMap();
-	AbaxDataString formSelectSQL();
+	Jstr formSelectSQL();
 	void print();
 	int addPointColumns( const CreateAttribute &cattr );
 	int addPoint3DColumns( const CreateAttribute &cattr );
@@ -415,33 +415,33 @@ class JagParseParam
 	const char *tabidxpos;
 	const char *endtabidxpos;
 
-	AbaxDataString uid;
-	AbaxDataString passwd;
-	AbaxDataString dbName;
-	AbaxDataString batchFileName;
-	AbaxDataString selectTablistClause;
-	AbaxDataString selectColumnClause;
-	AbaxDataString selectWhereClause;
-	AbaxDataString selectGroupClause;
-	AbaxDataString selectHavingClause;
-	AbaxDataString selectOrderClause;
-	AbaxDataString selectLimitClause;
-	AbaxDataString selectTimeoutClause;
-	AbaxDataString selectPivotClause;
-	AbaxDataString selectExportClause;
-	AbaxDataString loadColumnClause;
-	AbaxDataString loadLineClause;
-	AbaxDataString loadQuoteClause;
+	Jstr uid;
+	Jstr passwd;
+	Jstr dbName;
+	Jstr batchFileName;
+	Jstr selectTablistClause;
+	Jstr selectColumnClause;
+	Jstr selectWhereClause;
+	Jstr selectGroupClause;
+	Jstr selectHavingClause;
+	Jstr selectOrderClause;
+	Jstr selectLimitClause;
+	Jstr selectTimeoutClause;
+	Jstr selectPivotClause;
+	Jstr selectExportClause;
+	Jstr loadColumnClause;
+	Jstr loadLineClause;
+	Jstr loadQuoteClause;
 
-	AbaxDataString grantPerm;
-	AbaxDataString grantObj;
-	AbaxDataString grantUser;
-	AbaxDataString grantWhere;
+	Jstr grantPerm;
+	Jstr grantObj;
+	Jstr grantUser;
+	Jstr grantWhere;
 
-	AbaxDataString insertDCSyncHost;
+	Jstr insertDCSyncHost;
 
-	AbaxDataString origCmd;
-	AbaxDataString dbNameCmd;
+	Jstr origCmd;
+	Jstr dbNameCmd;
 
 	JagVector<ObjectNameAttribute> objectVec;
 	JagVector<GroupOrderVecAttribute> orderVec;
@@ -450,7 +450,7 @@ class JagParseParam
 	JagVector<CreateAttribute> createAttrVec;
 	JagVector<UpdSetAttribute> updSetVec;
 	JagVector<SelColAttribute> selColVec;
-	JagVector<AbaxDataString> selAllColVec;
+	JagVector<Jstr> selAllColVec;
 	JagVector<OnlyTreeAttribute> joinOnVec;
 	JagVector<OnlyTreeAttribute> whereVec;
 	JagVector<abaxint> offsetVec;
@@ -462,10 +462,10 @@ class JagParseParam
 	JagParseParam    *parent;
 	JagHashStrStr    *_rowHash;
 	JagHashStrStr    *_colHash; // save column names in select and where
-	AbaxDataString   _rowUUID;
+	Jstr   _rowUUID;
 	JagLineFile	     *_lineFile;
-	AbaxDataString    like;
-	AbaxDataString    _allColumns;
+	Jstr    like;
+	Jstr    _allColumns;
 	bool              _selectStar;
 
 };

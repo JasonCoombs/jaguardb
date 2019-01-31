@@ -2774,6 +2774,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    rotateself(geom,N,'degree')    -- rotate 2D geom by N degrees counter-clock-wise with respect to self-center\n";
 		str += "    rotateat(geom,N,'radian',x,y)  -- rotate 2D geom by N radians counter-clock-wise with respect to point(x,y)\n";
 		str += "    rotateat(geom,N,'degree',x,y)  -- rotate 2D geom by N degrees counter-clock-wise with respect to point(y,y)\n";
+		str += "    affine(geom,a,b,d,e,dx,dy)     -- affine transformation on 2D geom\n";
+		str += "    affine(geom,a,b,c,d,e,f,g,h,i,dx,dy,dz)  -- affine transformation on 3D geom\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
@@ -2788,6 +2790,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "select ringn(poly, 2) as ring2 from myshape;\n";
 		str += "select interpolate(lstr, 0.5) as midpoint from myline;\n";
 		str += "select linesubstring(lstr, 0.2, 0.8) as midseg from myline where a=100;\n";
+		str += "select rotate(lstr, 30, 'degree' ) as rot from myline where a=100;\n";
 	} else if ( 0 == strncasecmp( cmd, "update", 6 ) ) {
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1='...' and KEY2='...', ... ;\n";
 		str += "update TABLE set VALUE='...', VALUE='...', ... where KEY1>='...' and KEY2>='...', ...;\n";
@@ -9436,7 +9439,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	AbaxFixString rstr, tstr, fkey, fval;
 	Jstr jname, jpath, jdapath, jdapath2, sigpath, sigpath2, sigpath3, newhdr, gbvhdr;
 	Jstr unixSocket = Jstr("/TOKEN=") + servobj->_servToken;
-	ExpressionElementNode *root = NULL;
+	ExprElementNode *root = NULL;
 	JagDataAggregate *jda = NULL;
 	JagVector<abaxint> jsvec[num];
 	JaguarCPPClient hcli;
@@ -10669,7 +10672,7 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 	if ( dend > pass->df->_darrlistlen ) dend = pass->df->_darrlistlen;
 	Jstr fpath, tpath; 
 	AbaxFixString sres, value;
-	ExpressionElementNode *root;
+	ExprElementNode *root;
 	JagDataAggregate jda;
 	char *buf = (char*)jagmalloc(pass->kvlen+1);
 	char *sbuf = (char*)jagmalloc(pass->sklen+1);
@@ -10825,7 +10828,7 @@ void *JagDBServer::joinHashStatic( void *ptr )
     JagDBPair retpair;
     AbaxFixString key, value;
 	abaxint i, aoffset = 0, alen = 0, callCounts = -1, lastBytes = 0, mlimit, slimit = 0, rlimit = darr->_arrlen;
-	ExpressionElementNode *root;
+	ExprElementNode *root;
 	AbaxFixString sres;
 	Jstr jdapath = pass->jpath + "/alldata";
 	int rc, tmode = 0, tlength = 0, insertCode;
@@ -10958,7 +10961,7 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 			pass->df2->setFamilyRead( ntr, pass->minbuf2, pass->maxbuf2 );
 
 			if ( ntr ) {
-				ExpressionElementNode *root;
+				ExprElementNode *root;
 				AbaxFixString sres;
 				int rc, tmode = 0, tlength = 0;
 				bool needInit = 1;
@@ -11040,7 +11043,7 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 			return NULL;
 		}
 		// regular join, get data and join to get result together ( store in jda )
-		ExpressionElementNode *root;
+		ExprElementNode *root;
 		JagMergeReader *jntr = NULL;
 		if ( pass->dfSorted ) {
 			pass->df->setFamilyRead( jntr );
@@ -11343,7 +11346,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 
 	if ( ntr ) {
 		// malloc a large block of memory to store batch block
-		ExpressionElementNode *root;
+		ExprElementNode *root;
 		AbaxFixString sres;
 		int rc, tmode = 0, tlength = 0;
 		abaxint boffset = 0, totlen = sklen+kvlen, totbytes = jagatoll(_cfg->getValue("JOIN_BATCH_LINE", "100000").c_str())*totlen;
@@ -12876,9 +12879,9 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
     	int  typeMode;
     	Jstr type;
     	int length;
-    	ExpressionElementNode *root; 
+    	ExprElementNode *root; 
 		int cnt = 0;
-		prt(("s1283 in processSelectConstData parseParam->selColVec.size()=%d\n", parseParam->selColVec.size() ));
+		//prt(("s1283 in processSelectConstData parseParam->selColVec.size()=%d\n", parseParam->selColVec.size() ));
 		for ( int i=0; i < parseParam->selColVec.size(); ++i ) {
     	    root = parseParam->selColVec[i].tree->getRoot();
     		AbaxFixString str;
