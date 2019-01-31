@@ -4147,11 +4147,26 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				operandStack.pop();  // popped the third element
 			}
 		}  else if ( op == JAG_FUNC_TRANSSCALE ) {
+			// transscale(geom, dx, dy, fac )
 			// transscale(geom, dx, dy, xfac, yfac)
 			// translate(geom, dx, dy, dz, xfac, yfac, zfac )
 			int nargs = operandStackTopSize();
 			prt(("s3663 nargs=%d\n", nargs ));
-			if ( 5 == nargs ) {
+			if ( 4 == nargs ) {
+    			t3 = operandStack.top();
+    			if ( t3->getValue(p) ) { carg1 = p; } else throw 3362;
+    			operandStack.pop();  // popped xfac and yfac
+
+    			if ( operandStack.empty() ) throw 3246;
+    			t3 = operandStack.top();
+    			if ( t3->getValue(p) ) { carg1 = Jstr(p) + ":" + carg1; } else throw 3452;
+    			operandStack.pop();  // popped dy
+
+    			if ( operandStack.empty() ) throw 3247;
+    			t3 = operandStack.top();
+    			if ( t3->getValue(p) ) { carg1 = Jstr(p) + ":" + carg1; } else throw 3453;
+    			operandStack.pop();  // popped dx
+			} else if ( 5 == nargs ) {
     			t3 = operandStack.top();
     			if ( t3->getValue(p) ) { carg1 = p; } else throw 2452;
     			operandStack.pop();  // popped yfac
@@ -9285,7 +9300,10 @@ bool BinaryOpNode::doAllTransScale( int srid, const Jstr &colType1, const JagStr
 	fx = fy = fz = 1.0;
 	JagStrSplit sf( carg, ':', true);
 	prt(("s3828 sf.size=%d\n", sf.size() ));
-	if ( 4 == sf.size() ) {
+	if ( 3 ==  sf.size() ) {
+		dx = fabs(sf[0].tof()); dy = fabs(sf[1].tof()); 
+		fx = fy = fabs(sf[2].tof()); 
+	} else if ( 4 == sf.size() ) {
 		dx = fabs(sf[0].tof()); dy = fabs(sf[1].tof()); 
 		fx = fabs(sf[2].tof()); fy = fabs(sf[3].tof());
 	} else if ( 6 == sf.size() ) {
