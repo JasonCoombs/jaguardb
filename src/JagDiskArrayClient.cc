@@ -23,7 +23,7 @@
 #include <JagHotSpot.h>
 #include <JagTime.h>
 
-JagDiskArrayClient::JagDiskArrayClient( const AbaxDataString &fpathname, 
+JagDiskArrayClient::JagDiskArrayClient( const Jstr &fpathname, 
 			const JagSchemaRecord *record, bool dropClean, abaxint length )
     : JagDiskArrayBase( fpathname, record, length )
 {

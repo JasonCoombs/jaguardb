@@ -29,7 +29,7 @@ JagStrSplit::JagStrSplit()
 	pdata_ = NULL;
 }
 
-JagStrSplit::JagStrSplit(const AbaxDataString& str, char sep, bool ignoreregion )
+JagStrSplit::JagStrSplit(const Jstr& str, char sep, bool ignoreregion )
 {
 	list_ = NULL;
 	length_ = 0;
@@ -88,7 +88,7 @@ void JagStrSplit::init(const char *str, char sep, bool ignoreregion )
 
 	// printf("c8383 tokens=%d\n", tokens );
 
-	list_ = new AbaxDataString[tokens];
+	list_ = new Jstr[tokens];
 	length_ = tokens;
 
 	// start = ps = (char*) str.c_str();
@@ -109,7 +109,7 @@ void JagStrSplit::init(const char *str, char sep, bool ignoreregion )
 		if ( len == 0 ) {
 			list_[i] = "";
 		} else {
-			list_[i] = AbaxDataString(start, len);
+			list_[i] = Jstr(start, len);
 		}
 
 		i++;
@@ -140,7 +140,7 @@ void JagStrSplit::destroy()
 	length_=0;
 }
 
-const AbaxDataString& JagStrSplit::operator[](int i ) const
+const Jstr& JagStrSplit::operator[](int i ) const
 {
 	if ( i+start_ < 0 ) return _NULL;
 
@@ -155,7 +155,7 @@ const AbaxDataString& JagStrSplit::operator[](int i ) const
 	}
 }
 
-AbaxDataString& JagStrSplit::operator[](int i ) 
+Jstr& JagStrSplit::operator[](int i ) 
 {
 	if ( i+start_ < 0 ) return _NULL;
 
@@ -184,7 +184,7 @@ abaxint JagStrSplit::slength() const
 	return length_ - start_;
 }
 
-bool JagStrSplit::exists(const AbaxDataString &token) const
+bool JagStrSplit::exists(const Jstr &token) const
 {
 	for (int i=0; i < length_; i++) {
 		if ( 0==strcmp( token.c_str(), list_[i].c_str() ) ) {
@@ -195,7 +195,7 @@ bool JagStrSplit::exists(const AbaxDataString &token) const
 	return false;
 }
 
-bool JagStrSplit::contains(const AbaxDataString &token, AbaxDataString &rec) const
+bool JagStrSplit::contains(const Jstr &token, Jstr &rec) const
 {
 	const char *tok;
 	for (int i=0; i < length_; i++) {
@@ -226,7 +226,7 @@ void JagStrSplit::printStr() const
 	printf("s3008 JagStrSplit::printStr(): [%s]\n", pdata_ );
 }
 
-AbaxDataString& JagStrSplit::last() const
+Jstr& JagStrSplit::last() const
 {
 	return list_[ length_ -1];
 }

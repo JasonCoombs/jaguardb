@@ -25,7 +25,7 @@
 #include <JagUtil.h>
 
 // ctor
-JagFixKV::JagFixKV( JagDBServer *servobj, const AbaxDataString &dbname, const AbaxDataString & tabname, int replicateType )
+JagFixKV::JagFixKV( JagDBServer *servobj, const Jstr &dbname, const Jstr & tabname, int replicateType )
 {
 	_darr = NULL;
 	_hashmap = NULL;
@@ -51,8 +51,8 @@ JagFixKV::~JagFixKV()
 
 void JagFixKV::init( )
 {
-    AbaxDataString fpath;
-    AbaxDataString jagdatahome = _servobj->_cfg->getJDBDataHOME( _replicateType );
+    Jstr fpath;
+    Jstr jagdatahome = _servobj->_cfg->getJDBDataHOME( _replicateType );
     fpath = jagdatahome + "/" + _dbname + "/" + _tabname;
     _darr = new JagDiskArrayServer ( _servobj, fpath, &_onerecord, true, 32, true );
 
@@ -196,7 +196,7 @@ bool JagFixKV::dropKey( const AbaxString &key, bool doLock )
 	return rc;
 }
 
-AbaxDataString JagFixKV::getListKeys()
+Jstr JagFixKV::getListKeys()
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	return _darr->getListKeys();

@@ -29,8 +29,8 @@ class JagLocalDiskHash
 {
 	public:
 
-		JagLocalDiskHash( const AbaxDataString &filepath, int keylength=16, int vallength=16, int arrlength=32 );
-		// JagLocalDiskHash( const AbaxDataString &filepath, JagSchemaRecord *record, int arrlength=32 );
+		JagLocalDiskHash( const Jstr &filepath, int keylength=16, int vallength=16, int arrlength=32 );
+		// JagLocalDiskHash( const Jstr &filepath, JagSchemaRecord *record, int arrlength=32 );
 		~JagLocalDiskHash();
 
 		inline bool	insert( const JagDBPair &pair ) { return _insertHash( pair, 1); }
@@ -49,14 +49,14 @@ class JagLocalDiskHash
 		abaxint keyLength() const { return KEYLEN; }
 		abaxint valueLength() const { return VALLEN; }
 		abaxint keyValueLength() const { return KVLEN; }
-		AbaxDataString getName() { return _hashname; }
+		Jstr getName() { return _hashname; }
 
 		abaxint elements() { return _elements; }
 		void print();
 		void printnew();
 		
 	protected:
-		void    init( const AbaxDataString &fileName, int arrlength );
+		void    init( const Jstr &fileName, int arrlength );
 		void 	reAllocDistribute();
 		void 	reAllocShrink();
 		// bool 	updateHash( const JagDBPair &pair );
@@ -81,8 +81,8 @@ class JagLocalDiskHash
 		abaxint  	_newarrlen;
 
 		abaxint  	_elements;
-		AbaxDataString _hashname;
-		AbaxDataString _newhashname;
+		Jstr _hashname;
+		Jstr _newhashname;
 		
 		abaxint KEYLEN; 
 		abaxint VALLEN;

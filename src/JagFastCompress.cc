@@ -19,7 +19,7 @@
 #include <JagFastCompress.h>
 #include <snappy.h>
 
-void JagFastCompress::compress(const AbaxDataString& in, AbaxDataString &out )
+void JagFastCompress::compress(const Jstr& in, Jstr &out )
 {
 	if ( in.size() < 1 ) { out=""; return; }
 	// snappy::Compress( in.data(), in.size(), &out );
@@ -32,11 +32,11 @@ void JagFastCompress::compress(const AbaxDataString& in, AbaxDataString &out )
 
 	size_t len;
 	snappy::RawCompress( in.c_str(), in.size(), buf, &len );
-	out = AbaxDataString( buf, len );
+	out = Jstr( buf, len );
 	free( buf );
 }
 
-void JagFastCompress::compress( const char *instr, abaxint inlen, AbaxDataString& outstr )
+void JagFastCompress::compress( const char *instr, abaxint inlen, Jstr& outstr )
 {
 	if ( inlen < 1 || ! instr ) { outstr=""; return; }
 	// snappy::Compress( instr, inlen, &outstr );
@@ -49,12 +49,12 @@ void JagFastCompress::compress( const char *instr, abaxint inlen, AbaxDataString
 
 	size_t len;
 	snappy::RawCompress( instr, inlen, buf, &len );
-	outstr = AbaxDataString( buf, len );
+	outstr = Jstr( buf, len );
 	free( buf );
 }
 
 
-void JagFastCompress::uncompress(const AbaxDataString & in, AbaxDataString &out )
+void JagFastCompress::uncompress(const Jstr & in, Jstr &out )
 {
 	if ( in.size() < 1 ) { out=""; return; }
 	// snappy::Uncompress( in.data(), in.size(), &out );
@@ -67,11 +67,11 @@ void JagFastCompress::uncompress(const AbaxDataString & in, AbaxDataString &out 
 	char *buf = (char*)malloc( unlen + 1 );
 	memset( buf, 0, unlen + 1 );
 	snappy::RawUncompress( in.c_str(), in.size(), buf );
-	out = AbaxDataString(buf, unlen);
+	out = Jstr(buf, unlen);
 	free( buf );
 }
 
-void JagFastCompress::uncompress( const char *instr, abaxint inlen, AbaxDataString& outstr )
+void JagFastCompress::uncompress( const char *instr, abaxint inlen, Jstr& outstr )
 {
 	if ( inlen < 1 || ! instr ) { outstr=""; return; }
 	// snappy::Uncompress( instr, inlen, &outstr );
@@ -82,7 +82,7 @@ void JagFastCompress::uncompress( const char *instr, abaxint inlen, AbaxDataStri
 	char *buf = (char*)malloc( unlen + 1 );
 	memset( buf, 0, unlen + 1 );
 	snappy::RawUncompress( instr, inlen, buf );
-	outstr = AbaxDataString(buf, unlen);
+	outstr = Jstr(buf, unlen);
 	free( buf );
 }
 

@@ -45,7 +45,7 @@ JagSchema::JagSchema()
 	_replicateType = 0;
 }
 
-void JagSchema::init( JagDBServer *serv, const AbaxDataString &stype, int replicateType )
+void JagSchema::init( JagDBServer *serv, const Jstr &stype, int replicateType )
 {
 	// JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	// JAG_OVER;
@@ -53,8 +53,8 @@ void JagSchema::init( JagDBServer *serv, const AbaxDataString &stype, int replic
 	_replicateType = replicateType;
 	_servobj = serv;
 
-	AbaxDataString jagdatahome = _cfg->getJDBDataHOME( _replicateType );
-	AbaxDataString fpath = jagdatahome; 
+	Jstr jagdatahome = _cfg->getJDBDataHOME( _replicateType );
+	Jstr fpath = jagdatahome; 
 	fpath += "/system";
 
 	_stype = stype;
@@ -90,7 +90,7 @@ void JagSchema::init( JagDBServer *serv, const AbaxDataString &stype, int replic
 	char *buf = (char*)jagmalloc(KVLEN+1);
 	memset( buf, '\0', KVLEN+1 );
 	abaxint length = _schema->_garrlen;
-	AbaxDataString keystr, schemaText, dbobj;
+	Jstr keystr, schemaText, dbobj;
 	JagBuffReader nti( _schema, length, KEYLEN, VALLEN, 0, 0 );
 	int prc;
 	while ( nti.getNext(buf) ) {
@@ -186,9 +186,9 @@ void JagSchema::print()
 // dbobj: dbtab or dbtabidx; 
 // buf: def value string with column names; 
 // isClean: 0 is set, 1 is clear
-void JagSchema::setupDefvalMap( const AbaxDataString &dbobj, const char *buf, bool isClean )
+void JagSchema::setupDefvalMap( const Jstr &dbobj, const char *buf, bool isClean )
 {
-	AbaxDataString key, value;
+	Jstr key, value;
 	if ( !isClean ) {
 		//prt(("s5051 setupDefvalMap buf=[%s] buf+1=[%s]\n", buf, buf+1 ));
 		JagStrSplitWithQuote sp( buf+1, ':' );
@@ -255,7 +255,7 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	char ddd[32];
 	char buf2[2];
 	buf2[1] = '\0';
-	AbaxDataString  schemaText;
+	Jstr  schemaText;
 
 	if ( parseParam->keyLength < 1 ) {
 		// prt(("E0501 parseParam->keyLength=%d  < 1 error\n", parseParam->keyLength ));
@@ -265,7 +265,7 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
 
-	AbaxDataString pathName, dbname, tabname, idxname;
+	Jstr pathName, dbname, tabname, idxname;
 	if ( isTable ) {
 		dbname = parseParam->objectVec[0].dbName ;
 		tabname = parseParam->objectVec[0].tableName;
@@ -281,7 +281,7 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	}
 
 	memset(buf, 0, buflen );
-	AbaxDataString tableProperty = intToStr( parseParam->polyDim );
+	Jstr tableProperty = intToStr( parseParam->polyDim );
 	//prt(("s5134 schema this=%0x parseParam->polyDim=%d tableProperty=[%s]\n", parseParam->polyDim, tableProperty.c_str() ));
 	if ( parseParam->isMemTable ) {
 		// NM means memtable
@@ -381,8 +381,8 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	memset( kvbuf, 0, KVLEN+1 );
 	strcpy( kvbuf, pathName.c_str() );
 	length = KEYLEN;
-	AbaxDataString colName;
-	AbaxDataString defValues;
+	Jstr colName;
+	Jstr defValues;
 	// for each column, need to add default value if exists
 	for (int i = 0; i < parseParam->createAttrVec.size(); ++i) {
 		if ( parseParam->createAttrVec[i].defValues.size() > 0 ) {
@@ -430,7 +430,7 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		prt(("WARN0202 _schemaMap->addKeyValue pathName=[%s]\n", pathName.c_str() ));
 	}
 
-	AbaxDataString dbobj;
+	Jstr dbobj;
 	if ( ! isTable ) {
 		dbobj = dbname + "." + idxname;
 		_tableIndexMap->addKeyValue( dbobj, tabname );
@@ -448,7 +448,7 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 
 //  indexschema->remove( dbtabidx );
 // dbtable is db.tab.idx
-bool JagSchema::remove( const AbaxDataString &dbtable ) 
+bool JagSchema::remove( const Jstr &dbtable ) 
 {
 	// prt(("s0338 JagSchema::remove( %s ) ...\n", dbtable.c_str() ));
 
@@ -459,7 +459,7 @@ bool JagSchema::remove( const AbaxDataString &dbtable )
 	char *keybuf = (char*)jagmalloc(KEYLEN+1);
 	memset(keybuf, '\0', KEYLEN+1);
 	strcpy(keybuf, dbtable.c_str());
-	AbaxFixString key(keybuf, KEYLEN );
+	JagFixString key(keybuf, KEYLEN );
 	bool rc;
 
 	JagDBPair pair( key );
@@ -495,7 +495,7 @@ bool JagSchema::remove( const AbaxDataString &dbtable )
 	return true;
 }
 
-bool JagSchema::renameColumn( const AbaxDataString &dbtable, const JagParseParam *parseParam )
+bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parseParam )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
@@ -512,7 +512,7 @@ bool JagSchema::renameColumn( const AbaxDataString &dbtable, const JagParseParam
 	// first, remove old column names from defvalMap before setValue of schemaMap and recordMap
 	setupDefvalMap( dbtable, NULL, 1 );
 	_schemaMap->setValue( AbaxString(dbtable), record );
-	AbaxDataString sstr = record.getString();
+	Jstr sstr = record.getString();
 	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
 
 	// disk array update
@@ -522,17 +522,17 @@ bool JagSchema::renameColumn( const AbaxDataString &dbtable, const JagParseParam
 	char *keybuf = (char*)jagmalloc(KEYLEN+1);
 	memset(keybuf, '\0', KEYLEN+1);
 	strcpy(keybuf, dbtable.c_str());
-	AbaxFixString key(keybuf, KEYLEN );
+	JagFixString key(keybuf, KEYLEN );
 
 	char *valbuf = (char*)jagmalloc(VALLEN+1);
 	memset( valbuf, 0, VALLEN+1);
-	AbaxFixString value( valbuf, VALLEN );
+	JagFixString value( valbuf, VALLEN );
 	JagDBPair pair( key, value );
 
 	// for value part, reformat default value column part
 	if ( _schema->get( pair ) ) {
 		if ( parseParam->createAttrVec.size() < 1 ) {
-			AbaxDataString cstr = AbaxDataString(":") + parseParam->objectVec[0].colName + ":";
+			Jstr cstr = Jstr(":") + parseParam->objectVec[0].colName + ":";
 			const char *p = strstr( pair.value.c_str(), cstr.c_str() );
 			if ( p ) {
 				if ( offset+parseParam->objectVec[1].colName.size()-parseParam->objectVec[0].colName.size()+pair.value.size() > VALLEN ) {
@@ -576,7 +576,7 @@ bool JagSchema::renameColumn( const AbaxDataString &dbtable, const JagParseParam
 				offset += parseParam->createAttrVec[0].defValues.size();
 			}
 		}
-		value = AbaxFixString( valbuf, VALLEN );
+		value = JagFixString( valbuf, VALLEN );
 	}
 	// then, add new column names to defvalMap after setValue of schemaMap and recordMap
 	setupDefvalMap( dbtable, valbuf, 0 );
@@ -590,7 +590,7 @@ bool JagSchema::renameColumn( const AbaxDataString &dbtable, const JagParseParam
 	return 1;
 }
 
-bool JagSchema::checkSpareRemains( const AbaxDataString &dbtable, const JagParseParam *parseParam )
+bool JagSchema::checkSpareRemains( const Jstr &dbtable, const JagParseParam *parseParam )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
@@ -608,7 +608,7 @@ return type of object
 #define JAG_CHAINTABLE_TYPE     20
 #define JAG_TABLE_TYPE          30
 ***/
-int JagSchema::objectType( const AbaxDataString &dbtable ) const 
+int JagSchema::objectType( const Jstr &dbtable ) const 
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	return _objectTypeNoLock( dbtable );
@@ -620,7 +620,7 @@ return type of object
 #define JAG_CHAINTABLE_TYPE     20
 #define JAG_TABLE_TYPE          30
 ***/
-int JagSchema::_objectTypeNoLock( const AbaxDataString &dbtable ) const 
+int JagSchema::_objectTypeNoLock( const Jstr &dbtable ) const 
 {
 	AbaxString sstr;
 	_recordMap->getValue( dbtable, sstr );
@@ -635,7 +635,7 @@ int JagSchema::_objectTypeNoLock( const AbaxDataString &dbtable ) const
 }
 
 
-int JagSchema::isMemTable( const AbaxDataString &dbtable ) const
+int JagSchema::isMemTable( const Jstr &dbtable ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	AbaxString sstr;
@@ -648,7 +648,7 @@ int JagSchema::isMemTable( const AbaxDataString &dbtable ) const
 	}
 }
 
-int JagSchema::isChainTable( const AbaxDataString &dbtable ) const
+int JagSchema::isChainTable( const Jstr &dbtable ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	AbaxString sstr;
@@ -661,7 +661,7 @@ int JagSchema::isChainTable( const AbaxDataString &dbtable ) const
 	}
 }
 
-const JagSchemaRecord* JagSchema::getAttr( const AbaxDataString & pathName ) const
+const JagSchemaRecord* JagSchema::getAttr( const Jstr & pathName ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK ); JAG_OVER;
 	return _schemaMap->getValue( pathName );
@@ -669,7 +669,7 @@ const JagSchemaRecord* JagSchema::getAttr( const AbaxDataString & pathName ) con
 
 
 /***
-bool JagSchema::getAttr( const AbaxDataString & pathName, JagSchemaRecord & onerecord ) const 
+bool JagSchema::getAttr( const Jstr & pathName, JagSchemaRecord & onerecord ) const 
 { 
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_OVER;
@@ -677,14 +677,14 @@ bool JagSchema::getAttr( const AbaxDataString & pathName, JagSchemaRecord & oner
 }
 ***/
 	
-bool JagSchema::getAttr( const AbaxDataString & pathName, AbaxString & keyInfo ) const 
+bool JagSchema::getAttr( const Jstr & pathName, AbaxString & keyInfo ) const 
 { 
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_OVER;
 	return _recordMap->getValue( AbaxString(pathName), keyInfo ); 
 }
 
-bool JagSchema::getAttrDefVal( const AbaxDataString & pathName, AbaxDataString & keyInfo ) const 
+bool JagSchema::getAttrDefVal( const Jstr & pathName, Jstr & keyInfo ) const 
 { 
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_OVER;
@@ -692,22 +692,22 @@ bool JagSchema::getAttrDefVal( const AbaxDataString & pathName, AbaxDataString &
 }
 
 // return "key1=val1|key2=val2|..."
-AbaxDataString JagSchema::getAllDefVals() const
+Jstr JagSchema::getAllDefVals() const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_OVER;
 	return _defvalMap->getKVStrings();
 }
 
-bool JagSchema::existAttr( const AbaxDataString & pathName ) const 
+bool JagSchema::existAttr( const Jstr & pathName ) const 
 { 
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_OVER;
 	return _recordMap->keyExist( AbaxString(pathName) ); 
 }
 
-const JagSchemaRecord *JagSchema::getOneIndexAttr( const AbaxDataString &dbName, const AbaxDataString &indexName, 
-			AbaxDataString &tabPathName ) const
+const JagSchemaRecord *JagSchema::getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, 
+			Jstr &tabPathName ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_OVER;
@@ -733,7 +733,7 @@ const JagSchemaRecord *JagSchema::getOneIndexAttr( const AbaxDataString &dbName,
 // dbtable can be dbname  -- all table/index for this db
 // dbtable can db.tab  -- all indexes for db.tab
 // dbtable can be NULL -- all table/index for all dbs
-JagVector<AbaxString>* JagSchema::getAllTablesOrIndexesLabel( int inObjType, const AbaxDataString &dbtable, const AbaxDataString &like ) const
+JagVector<AbaxString>* JagSchema::getAllTablesOrIndexesLabel( int inObjType, const Jstr &dbtable, const Jstr &like ) const
 {
 	// JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
@@ -801,7 +801,7 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexesLabel( int inObjType, con
 // dbtable can be dbname  -- all table/index for this db
 // dbtable can db.tab  -- all indexes for db.tab
 // dbtable can be NULL -- all table/index for all dbs
-JagVector<AbaxString>* JagSchema::getAllTablesOrIndexes( const AbaxDataString &dbtable, const AbaxDataString &like ) const
+JagVector<AbaxString>* JagSchema::getAllTablesOrIndexes( const Jstr &dbtable, const Jstr &like ) const
 {
 	// JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
@@ -850,14 +850,14 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexes( const AbaxDataString &d
 	return vec;
 }
 
-JagVector<AbaxString>* JagSchema::getAllIndexes( const AbaxDataString &dbname,  const AbaxDataString &like ) const
+JagVector<AbaxString>* JagSchema::getAllIndexes( const Jstr &dbname,  const Jstr &like ) const
 {
 	// JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
 
 	JagVector<AbaxString> *vec = new JagVector<AbaxString>();
-	AbaxDataString rec;
+	Jstr rec;
 	char  *buf = (char*)jagmalloc(KVLEN+1);
 	char  *keybuf = (char*)jagmalloc(KEYLEN+1);
 	memset( buf, '\0', KVLEN+1 );
@@ -894,11 +894,11 @@ JagVector<AbaxString>* JagSchema::getAllIndexes( const AbaxDataString &dbname,  
 	return vec;
 }
 
-AbaxDataString JagSchema::getTableName( const AbaxDataString &dbName, const AbaxDataString &indexName ) const
+Jstr JagSchema::getTableName( const Jstr &dbName, const Jstr &indexName ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 
-	AbaxDataString  tabName;
+	Jstr  tabName;
 	AbaxString res;
 	// prt(("s2029  JagSchema::getTableName dbName=[%s] indexName=[%s] _tableIndexMap=%0x\n", dbName.c_str(),
 			// indexName.c_str(), _tableIndexMap ));
@@ -926,11 +926,11 @@ AbaxDataString JagSchema::getTableName( const AbaxDataString &dbName, const Abax
 }
 
 
-AbaxDataString JagSchema::getTableNameScan( const AbaxDataString &dbName, const AbaxDataString &indexName ) const
+Jstr JagSchema::getTableNameScan( const Jstr &dbName, const Jstr &indexName ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 
-	AbaxDataString  tabName;
+	Jstr  tabName;
 
     abaxint len = _recordMap->arrayLength();
     const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
@@ -945,33 +945,33 @@ AbaxDataString JagSchema::getTableNameScan( const AbaxDataString &dbName, const 
 	return tabName;
 }
 
-AbaxDataString JagSchema::readSchemaText( const AbaxDataString &key ) const
+Jstr JagSchema::readSchemaText( const Jstr &key ) const
 {
-	AbaxDataString fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
-	AbaxDataString text;
+	Jstr fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
+	Jstr text;
 	JagFileMgr::readTextFile( fpath, text );
 	// prt(("s8830 readSchemaText fpath=[%s] text=[%s]\n", fpath.c_str(), text.c_str() ));
 	return text;
 }
 
-void JagSchema::writeSchemaText( const AbaxDataString &key, const AbaxDataString &text )
+void JagSchema::writeSchemaText( const Jstr &key, const Jstr &text )
 {
-	AbaxDataString fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
+	Jstr fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
 	JagFileMgr::writeTextFile( fpath, text );
 	// prt(("s8831 writeSchemaText fpath=[%s] text=[%s]\n", fpath.c_str(), text.c_str() ));
 }
 
-void JagSchema::removeSchemaFile( const AbaxDataString &key )
+void JagSchema::removeSchemaFile( const Jstr &key )
 {
-	AbaxDataString fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
+	Jstr fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
 	jagunlink( fpath.c_str() );
 	// prt(("s3719 remove schema file [%s]\n", fpath.c_str() ));
 }
 
 // static 
-AbaxDataString JagSchema::getDatabases( JagCfg *cfg, int replicateType )
+Jstr JagSchema::getDatabases( JagCfg *cfg, int replicateType )
 {
-	AbaxDataString res, sdir, fpath;
+	Jstr res, sdir, fpath;
 	DIR             *dp;
 	struct dirent   *dirp;
 	struct stat     statbuf;
@@ -990,7 +990,7 @@ AbaxDataString JagSchema::getDatabases( JagCfg *cfg, int replicateType )
         }
 
 		if ( '.' == dirp->d_name[0] ) { continue; }
-		sdir = fpath + "/" + AbaxDataString(dirp->d_name);
+		sdir = fpath + "/" + Jstr(dirp->d_name);
 		if ( stat( sdir.c_str(), &statbuf) < 0 ) { continue; }
 		if ( ! S_ISDIR( statbuf.st_mode ) ) { continue; }
         res += dirp->d_name;
@@ -1000,7 +1000,7 @@ AbaxDataString JagSchema::getDatabases( JagCfg *cfg, int replicateType )
 	return res;
 }
 
- bool JagSchema::dbTableExist( const AbaxDataString &dbname, const AbaxDataString &tabname )
+ bool JagSchema::dbTableExist( const Jstr &dbname, const Jstr &tabname )
  {
  	if ( ! _recordMap ) return false;
 
@@ -1008,20 +1008,20 @@ AbaxDataString JagSchema::getDatabases( JagCfg *cfg, int replicateType )
  	return _recordMap->keyExist( k );
  }
 
-const JagColumn* JagSchema::getColumn( const AbaxDataString &dbname, const AbaxDataString &objname,
-                            const AbaxDataString &colname )
+const JagColumn* JagSchema::getColumn( const Jstr &dbname, const Jstr &objname,
+                            const Jstr &colname )
 {
-	AbaxDataString key = dbname + "." + objname + "." + colname;
+	Jstr key = dbname + "." + objname + "." + colname;
 	// prt(("s7220 JagSchema::getColumn key=[%s]\n", key.c_str() ));
 	return _columnMap->getValue( key );
 }
 
 // dbobj:  db.tab  or db.idx
-int JagSchema::addToColumnMap( const AbaxDataString& dbobj, const JagSchemaRecord &record )
+int JagSchema::addToColumnMap( const Jstr& dbobj, const JagSchemaRecord &record )
 {
 	// get each column and add db.tab.column  -> JagColumn
 	// get each column and add db.idx.column  -> JagColumn
-	AbaxDataString key;
+	Jstr key;
 	for ( int i = 0; i < record.columnVector->size(); ++i ) {
 		key = dbobj + "." + (*(record.columnVector))[i].name.c_str();
 		_columnMap->addKeyValue( key, (*(record.columnVector))[i] );
@@ -1031,7 +1031,7 @@ int JagSchema::addToColumnMap( const AbaxDataString& dbobj, const JagSchemaRecor
 }
 
 // dbobj:  db.tab  or db.idx
-int JagSchema::removeFromColumnMap( const AbaxDataString& dbtabobj, const AbaxDataString& dbobj )
+int JagSchema::removeFromColumnMap( const Jstr& dbtabobj, const Jstr& dbobj )
 {
 	// get each column and add db.tab.column  -> JagColumn
 	// get each column and add db.idx.column  -> JagColumn
@@ -1043,7 +1043,7 @@ int JagSchema::removeFromColumnMap( const AbaxDataString& dbtabobj, const AbaxDa
 		// prt(("s1120 _schemaMap->getValue(%s) OK\n",  dbtabobj.c_str() ));
 	}
 
-	AbaxDataString key;
+	Jstr key;
 	for ( int i = 0; i < record->columnVector->size(); ++i ) {
 		key = dbobj + "." + (*(record->columnVector))[i].name.c_str();
 		_columnMap->removeKey( key );
@@ -1053,7 +1053,7 @@ int JagSchema::removeFromColumnMap( const AbaxDataString& dbtabobj, const AbaxDa
 	return 1;
 }
 
-bool JagSchema::isIndexCol( const AbaxDataString &dbname, const AbaxDataString &colName )
+bool JagSchema::isIndexCol( const Jstr &dbname, const Jstr &colName )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	AbaxString dbidx = dbname + "." + colName;

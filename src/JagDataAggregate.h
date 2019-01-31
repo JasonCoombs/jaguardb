@@ -47,7 +47,7 @@ class JagDBPairFile
 
 	abaxint diskpos;   // pointer position
 	abaxint disklen;   // size of file in bytes
-	AbaxFixString kv;  // last-read data (DBPair, kv fix string)
+	JagFixString kv;  // last-read data (DBPair, kv fix string)
 	
 	JagDBPairFile() {
 		fd = -1;
@@ -76,28 +76,28 @@ class JagDataAggregate
 	inline bool hasFlushWrite() { return _isFlushWriteDone; }
 
 	void clean();
-	void setwrite( const JagVector<AbaxDataString> &hostlist );
+	void setwrite( const JagVector<Jstr> &hostlist );
 	void setwrite( abaxint num );
-	void setwrite( const AbaxDataString &mapstr, const AbaxDataString &filestr, int keepFile=0 );
-	bool writeit( const AbaxDataString &host, const char *buf, abaxint len, 
+	void setwrite( const Jstr &mapstr, const Jstr &filestr, int keepFile=0 );
+	bool writeit( const Jstr &host, const char *buf, abaxint len, 
 				  const JagSchemaRecord *rec=NULL, bool noUnlock=false, abaxint membytes=0 );
 	bool flushwrite();
-	bool readit( AbaxFixString &buf );
-	bool backreadit( AbaxFixString &buf );
-	bool pallreadit( AbaxFixString &buf );
+	bool readit( JagFixString &buf );
+	bool backreadit( JagFixString &buf );
+	bool pallreadit( JagFixString &buf );
 	void setread( abaxint start, abaxint readcnt );
-	int  readRangeOffsetLength( AbaxFixString &data, abaxint offset, abaxint length );
+	int  readRangeOffsetLength( JagFixString &data, abaxint offset, abaxint length );
 	char *readBlock( abaxint &len );
 
 	void beginJoinRead( int keylen );
-	int joinReadNext( JagVector<AbaxFixString> &vec );
+	int joinReadNext( JagVector<JagFixString> &vec );
 	void endJoinRead();
 
 	void setMemoryLimit( abaxint maxLimitBytes );
 	void shuffleSQLMemAndFlush();
 
 	void sendDataToClient( abaxint cnt, const JagRequest &req );
-	//void appendJSData( const AbaxDataString &line );
+	//void appendJSData( const Jstr &line );
 
   protected:
 	JagCfg *_cfg;
@@ -124,8 +124,8 @@ class JagDataAggregate
 	abaxint _readlen;
 	abaxint _readmaxlen;
 	AbaxString _defpath;
-	AbaxDataString _dirpath;
-	AbaxDataString _dbobj;
+	Jstr _dirpath;
+	Jstr _dbobj;
 	// JagVector<JagDBPairFile> _writeattr;
 	JagVector<JagDBPairFile> _dbPairFileVec;
 	JagVector<abaxint> _pallreadpos;
@@ -135,15 +135,15 @@ class JagDataAggregate
 	abaxint  _endcnt;
 	JagSingleMergeReader  *_mergeReader;
 
-	AbaxDataString *_sqlarr;
+	Jstr *_sqlarr;
 	
 	abaxint readNextBlock();
 	abaxint backreadNextBlock();
 	abaxint pallreadNextBlock();
 	abaxint getUsableMemory();
 	int   _getNextDataOfHostFromMem( int i  );
-	int   _joinReadFromMem( JagVector<AbaxFixString> &vec );
-	int   _joinReadFromDisk( JagVector<AbaxFixString> &vec );
+	int   _joinReadFromMem( JagVector<JagFixString> &vec );
+	int   _joinReadFromDisk( JagVector<JagFixString> &vec );
 
 
 

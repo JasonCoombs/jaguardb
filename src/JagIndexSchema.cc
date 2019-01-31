@@ -31,8 +31,8 @@ JagIndexSchema::~JagIndexSchema()
 {
 }
 
-int JagIndexSchema::getIndexNames( const AbaxDataString &dbname, const AbaxDataString &tabname, 
-									JagVector<AbaxDataString> &vec )
+int JagIndexSchema::getIndexNames( const Jstr &dbname, const Jstr &tabname, 
+									JagVector<Jstr> &vec )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	bool rc;
@@ -43,7 +43,7 @@ int JagIndexSchema::getIndexNames( const AbaxDataString &dbname, const AbaxDataS
 	abaxint length = _schema->_garrlen;
 	JagBuffReader nti( _schema, length, KEYLEN, VALLEN, 0, 0 );
 	JagColumn onecolrec;
-	AbaxDataString  ks;
+	Jstr  ks;
 
 	int cnt = 0;
 	while ( true ) {
@@ -67,30 +67,30 @@ int JagIndexSchema::getIndexNames( const AbaxDataString &dbname, const AbaxDataS
 }
 
 // use memory to read instead of disk, _recordMap, to get all index names under one table
-int JagIndexSchema::getIndexNamesFromMem( const AbaxDataString &dbname, const AbaxDataString &tabname, 
-											JagVector<AbaxDataString> &vec )
+int JagIndexSchema::getIndexNamesFromMem( const Jstr &dbname, const Jstr &tabname, 
+											JagVector<Jstr> &vec )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 
-	AbaxDataString dbtab = dbname + "." + tabname + ".";
+	Jstr dbtab = dbname + "." + tabname + ".";
 	abaxint hdrlen = dbtab.size(), len = _recordMap->arrayLength();
     const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
     for ( abaxint i = 0; i < len; ++i ) {
     	if ( _recordMap->isNull(i) ) continue;
 		if ( memcmp(arr[i].key.c_str(), dbtab.c_str(), hdrlen) != 0 ) { continue; }
-		vec.append( AbaxDataString(arr[i].key.c_str()+hdrlen) );
+		vec.append( Jstr(arr[i].key.c_str()+hdrlen) );
     }
 	return 1;
 }
 
 // check if the table exists already from index schema file
-bool JagIndexSchema::tableExist( const AbaxDataString &dbname, JagParseParam *parseParam )
+bool JagIndexSchema::tableExist( const Jstr &dbname, JagParseParam *parseParam )
 {
-	AbaxDataString tab = parseParam->objectVec[0].tableName;
+	Jstr tab = parseParam->objectVec[0].tableName;
 	return tableExist( dbname, tab );
 }
 
-bool JagIndexSchema::tableExist( const AbaxDataString &dbname, const AbaxDataString &tab )
+bool JagIndexSchema::tableExist( const Jstr &dbname, const Jstr &tab )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	bool found = false;
@@ -132,13 +132,13 @@ bool JagIndexSchema::tableExist( const AbaxDataString &dbname, const AbaxDataStr
 }
 
 // check if the index exists already from index schema file
-bool JagIndexSchema::indexExist( const AbaxDataString &dbname, JagParseParam *parseParam )
+bool JagIndexSchema::indexExist( const Jstr &dbname, JagParseParam *parseParam )
 {
-	AbaxDataString idx  = parseParam->objectVec[0].indexName;
+	Jstr idx  = parseParam->objectVec[0].indexName;
 	return indexExist( dbname, idx );
 }
 
-bool JagIndexSchema::indexExist( const AbaxDataString &dbname, const AbaxDataString &idx )
+bool JagIndexSchema::indexExist( const Jstr &dbname, const Jstr &idx )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	abaxint totlen = _schema->_garrlen;

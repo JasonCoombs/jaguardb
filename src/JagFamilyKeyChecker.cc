@@ -18,7 +18,7 @@
  */
 #include <JagMD5lib.h>
 #include <JagFamilyKeyChecker.h>
-JagFamilyKeyChecker::JagFamilyKeyChecker( const AbaxDataString &fpathname, int klen, int vlen )
+JagFamilyKeyChecker::JagFamilyKeyChecker( const Jstr &fpathname, int klen, int vlen )
 {
 	_KLEN = klen;
 	_VLEN = vlen; // jdb file k/v len
@@ -42,7 +42,7 @@ JagFamilyKeyChecker::~JagFamilyKeyChecker()
 
 
 // key can be any length
-// void JagFamilyKeyChecker::getUniqueKey( const AbaxFixString &key, char *ukey )
+// void JagFamilyKeyChecker::getUniqueKey( const JagFixString &key, char *ukey )
 void JagFamilyKeyChecker::getUniqueKey( const char *buf, char *ukey )
 {
 	if ( !_useHash ) {

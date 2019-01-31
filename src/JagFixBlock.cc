@@ -52,13 +52,13 @@ void JagFixBlock::destroy( )
 	}
 }
 
-AbaxFixString JagFixBlock::getMinKey()
+JagFixString JagFixBlock::getMinKey()
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	return _minKey.key;
 }
 
-AbaxFixString JagFixBlock::getMaxKey()
+JagFixString JagFixBlock::getMaxKey()
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	return _maxKey.key;
@@ -199,7 +199,7 @@ bool JagFixBlock::updateIndex( const JagDBPair &inpair, abaxint loweri, bool for
 		}
 
 		// pair = _vec[level][primei];
-		pair.key = AbaxFixString( _vec[level][primei], klen);
+		pair.key = JagFixString( _vec[level][primei], klen);
 
 		++ level;
 		if ( level > _topLevel ) {
@@ -345,7 +345,7 @@ bool JagFixBlock::findFirstLast( const JagDBPair &pair, abaxint *retfirst, abaxi
 }
 
 // write bottom level of block index to a file
-void JagFixBlock::flushBottomLevel( const AbaxDataString &outFPath, abaxint elements, abaxint arrlen, abaxint minindex, abaxint maxindex )
+void JagFixBlock::flushBottomLevel( const Jstr &outFPath, abaxint elements, abaxint arrlen, abaxint minindex, abaxint maxindex )
 {
 	if ( _topLevel == 0 &&  _vec[0].size() < 1 ) {
 		return;

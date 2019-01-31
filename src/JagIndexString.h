@@ -36,7 +36,7 @@ class JagIndexString
 	void init();
 	void reset();
 
-	void add( const AbaxFixString &key, abaxint i, int isnew, int force );
+	void add( const JagFixString &key, abaxint i, int isnew, int force );
   	
   protected:
 	abaxint  _length;

@@ -27,15 +27,15 @@
 class JagSQLFileBuffReader
 {
   public:
-  	JagSQLFileBuffReader( const AbaxDataString &fpath );
+  	JagSQLFileBuffReader( const Jstr &fpath );
   	~JagSQLFileBuffReader( ); 
-  	bool getNextSQL ( AbaxDataString &cmd );
+  	bool getNextSQL ( Jstr &cmd );
 
   protected:
 	bool readNextBlock();
 
     static const int NB = 100000;
-	AbaxDataString _cmd[NB];
+	Jstr _cmd[NB];
 	abaxint    _cmdlen;
 	abaxint    _cursor;
 	FILE  *_fp;

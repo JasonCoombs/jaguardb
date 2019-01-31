@@ -28,7 +28,7 @@ class JagFixKeyChecker  : public JagFamilyKeyChecker
 {
 
     public: 
-        JagFixKeyChecker( const AbaxDataString &pathName, int klen, int vlen );
+        JagFixKeyChecker( const Jstr &pathName, int klen, int vlen );
         virtual ~JagFixKeyChecker() { destroy(); }
         virtual bool addKeyValue( const char *kv );
         virtual bool addKeyValueNoLock( const char *kv );

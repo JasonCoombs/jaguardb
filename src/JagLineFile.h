@@ -28,23 +28,23 @@ class JagLineFile
   public:
 	JagLineFile( int bufline = 10000 );
 	~JagLineFile();
-	void append( const AbaxDataString &line );
+	void append( const Jstr &line );
 	abaxint size() const;
 	JagLineFile& operator+= ( JagLineFile &f2 );
 
 	void startRead();
-	bool getLine( AbaxDataString &line );
+	bool getLine( Jstr &line );
 	bool hasData();
 	bool _hasStartedRead;
 	bool print() const;
 
   protected:
-    AbaxDataString *_buf;
+    Jstr *_buf;
 	FILE *_fp;
 	int  _bufLen;
 	int  _bufMax;
 	abaxint _fileLen;
-	AbaxDataString _fname;
+	Jstr _fname;
 	abaxint  _i;
 	JagHashStrStr _hash;
 

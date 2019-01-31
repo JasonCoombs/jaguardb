@@ -30,15 +30,15 @@ class JagHashStrStr
 		JagHashStrStr( const JagHashStrStr &o );
 		JagHashStrStr& operator= ( const JagHashStrStr &o );
 
-		bool addKeyValue( const AbaxDataString &key, const AbaxDataString &value );
-		void removeKey( const AbaxDataString &key );
-		bool keyExist( const AbaxDataString &key ) const;
-		AbaxDataString getValue( const AbaxDataString &key, bool &rc ) const;
-		char *getValue( const AbaxDataString &key ) const;
+		bool addKeyValue( const Jstr &key, const Jstr &value );
+		void removeKey( const Jstr &key );
+		bool keyExist( const Jstr &key ) const;
+		Jstr getValue( const Jstr &key, bool &rc ) const;
+		char *getValue( const Jstr &key ) const;
 		void reset();
-		bool getValue( const AbaxDataString &key, AbaxDataString &val ) const;
-		AbaxDataString getKVStrings( const char *sep = "|" );
-		AbaxDataString getKeyStrings( const char *sep = "|" );
+		bool getValue( const Jstr &key, Jstr &val ) const;
+		Jstr getKVStrings( const char *sep = "|" );
+		Jstr getKeyStrings( const char *sep = "|" );
 		int  size(); // how many items
 		void removeAllKey();
 

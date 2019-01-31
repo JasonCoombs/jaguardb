@@ -21,7 +21,7 @@
 #include <JagSQLFileBuffReader.h>
 #include <JaguarCPPClient.h>
 
-JagSQLFileBuffReader::JagSQLFileBuffReader ( const AbaxDataString &fpath )
+JagSQLFileBuffReader::JagSQLFileBuffReader ( const Jstr &fpath )
 {
 	_fp = jagfopen( fpath.c_str(), "rb" );
 	_cursor = 0;
@@ -32,7 +32,7 @@ JagSQLFileBuffReader::~JagSQLFileBuffReader ()
 	if ( _fp ) jagfclose( _fp );
 }
 
-bool JagSQLFileBuffReader::getNextSQL( AbaxDataString &sql  )
+bool JagSQLFileBuffReader::getNextSQL( Jstr &sql  )
 {
 	if ( ! _fp ) return false;
 
@@ -54,7 +54,7 @@ bool JagSQLFileBuffReader::readNextBlock()
 	bool rc;
 	_cmdlen = 0;
 	_cursor = 0;
-	AbaxDataString sql;
+	Jstr sql;
 	for ( abaxint i = 0; i < NB; ++i ) {
 		rc = JaguarCPPClient::getSQLCommand( sql, 0, _fp, true );
 		if ( ! rc ) break;

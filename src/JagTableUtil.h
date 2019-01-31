@@ -52,22 +52,22 @@ class SetHdrAttr
 {
   public:
     int numKeys;
-	AbaxDataString dbobj;
+	Jstr dbobj;
 	const JagSchemaRecord *record;
-	AbaxDataString sstring;
+	Jstr sstring;
 	
 	SetHdrAttr() {
 		numKeys = 0;
 		record = NULL;
 	}
 	
-	void setattr( int nk, bool ui, AbaxDataString &obj, const JagSchemaRecord *rec ) 
+	void setattr( int nk, bool ui, Jstr &obj, const JagSchemaRecord *rec ) 
 	{
 		numKeys = nk;
 		dbobj = obj;
 		record = rec;
 	}
-	void setattr( int nk, bool ui, AbaxDataString &obj, const JagSchemaRecord *rec, const char *ss ) 
+	void setattr( int nk, bool ui, Jstr &obj, const JagSchemaRecord *rec, const char *ss ) 
 	{
 		numKeys = nk;
 		dbobj = obj;
@@ -81,7 +81,7 @@ class SetHdrAttr
 class GroupByValueTransfer
 {
   public:
-	AbaxDataString name;
+	Jstr name;
 	abaxint objnum;
 	abaxint offset;
 	abaxint length;
@@ -138,7 +138,7 @@ class ParallelCmdPass
 	JagDataAggregate *jda;
 	JagSchemaRecord *nrec;
 	JaguarCPPClient *cli;
-	AbaxDataString writeName;
+	Jstr writeName;
 	bool nowherecnt;
 	std::atomic<abaxint> *recordcnt;
 	abaxint actlimit;
@@ -220,17 +220,17 @@ class ParallelJoinPass
 	abaxint tabnum2;
 	abaxint pos;
 	abaxint totlen;
-	AbaxDataString jpath;
-	AbaxDataString jname;
+	Jstr jpath;
+	Jstr jname;
 	JagRequest req;
 	JagParseParam *parseParam;
 	JagDataAggregate *jda;
 	JaguarCPPClient *hcli;
 	abaxint stime;
-	AbaxDataString uhost;
+	Jstr uhost;
 	bool timeout;
 	abaxint numCPUs;
-	JagHashMap<AbaxFixString, AbaxFixString> *hmaps;
+	JagHashMap<JagFixString, JagFixString> *hmaps;
 	
 	ParallelJoinPass() {
 		ptab = NULL; ptab2 = NULL; pindex = NULL; pindex2 = NULL;
@@ -251,8 +251,8 @@ class CreateIndexBatchPass
   public:
 	JagIndex *pindex;
 	JaguarCPPClient *tcli;
-	AbaxDataString dbobj;
-	AbaxFixString data;
+	Jstr dbobj;
+	JagFixString data;
 };
 
 class DoIndexPass
@@ -260,8 +260,8 @@ class DoIndexPass
   public:
 	JagDBServer *servobj;
 	JagRequest req;
-	AbaxDataString dbtable;
-	AbaxDataString indexName;
+	Jstr dbtable;
+	Jstr indexName;
 	
 	DoIndexPass() {
 		// JagSession session;

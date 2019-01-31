@@ -324,7 +324,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	abaxint bsec = now.tv_sec;
 	bool timeoutFlag = 0;
 
-	AbaxFixString treestr;
+	JagFixString treestr;
 	Jstr treetype = " ";
 	int rc, grouplen = 0, typeMode = 0, tabnum = 0, treelength = 0;
 	bool uniqueAndHasValueCol = 0, needInit = 1;
@@ -351,7 +351,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	abaxint gbvsendlen = 0;
 	JagSchemaRecord nrec;
 	ExprElementNode *root = NULL;
-	AbaxFixString strres;
+	JagFixString strres;
 	
 	if ( nowherecnt ) {
 		JagVector<SetHdrAttr> hspa;
@@ -434,7 +434,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 					char *tablebuf = (char*)jagmalloc(TABKEYLEN+TABVALLEN+1);
 					memset( tablebuf, 0, TABKEYLEN+TABVALLEN+1 );
 					bufchange( buf, tablebuf );
-					AbaxFixString fstr( tablebuf, TABKEYLEN );
+					JagFixString fstr( tablebuf, TABKEYLEN );
 					// prt(("s30094 print:\n" ));
 					// fstr.dump();
 					hdir = fileHashDir( fstr );

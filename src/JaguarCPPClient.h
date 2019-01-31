@@ -61,7 +61,7 @@ class JagLineFile;
 struct JagNameIndex
 {
 	int i;
-	AbaxDataString name;
+	Jstr name;
 	JagNameIndex();
 	JagNameIndex( const JagNameIndex &o);
 	JagNameIndex& operator=( const JagNameIndex& o );
@@ -136,15 +136,15 @@ class JaguarCPPClient
 
 
 	///////// Below are public, called by Jaguar programs, but not public APIs
-	static bool getSQLCommand( AbaxDataString &sqlcmd, int echo, FILE *fp, int saveNewline=0 );
+	static bool getSQLCommand( Jstr &sqlcmd, int echo, FILE *fp, int saveNewline=0 );
 	static int doAggregateCalculation( const JagSchemaRecord &aggrec, const JagVector<int> &selectPartsOpcode,
-						const JagVector<AbaxFixString> &oneSetData, char *aggbuf, int datalen, int countBegin );
+						const JagVector<JagFixString> &oneSetData, char *aggbuf, int datalen, int countBegin );
 
 	int concurrentDirectInsert( const char *querys );
 	JAGSOCK getSocket() const;
 	const char *getSession();
 	const char *getDatabase();
-	AbaxDataString getHost() const;
+	Jstr getHost() const;
 	abaxint getMessageLen();
 	char getMessageType();
 	void destroy();
@@ -153,19 +153,19 @@ class JaguarCPPClient
 	// update schema and/or host list
 	void rebuildSchemaMap();
 	void updateSchemaMap( const char *schstr );
-	// void updateDefvalMap( const AbaxDataString &schstr );
+	// void updateDefvalMap( const Jstr &schstr );
 
 	void setWalLog( bool flag = true );
-	void getReplicateHostList( JagVector<AbaxDataString> &hostlist );
-	void getSchemaMapInfo( AbaxDataString &schemaInfo );
-	int oneCmdInsertPool( JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer> > &qmap, const AbaxDataString &cmd );
+	void getReplicateHostList( JagVector<Jstr> &hostlist );
+	void getSchemaMapInfo( Jstr &schemaInfo );
+	int oneCmdInsertPool( JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer> > &qmap, const Jstr &cmd );
 	abaxint flushQMap( JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer> > &qmap );
-	void updateDBName( const AbaxDataString &dbname );
-	void updatePassword( const AbaxDataString &password );
+	void updateDBName( const Jstr &dbname );
+	void updatePassword( const Jstr &password );
 	void setFullConnection( bool flag );
 	void setDebug( bool flag );
-	int recoverDeltaLog( const AbaxDataString &inpath );
-	int importLocalFileFamily( const AbaxDataString &inpath, const char *spstr=NULL );
+	int recoverDeltaLog( const Jstr &inpath );
+	int importLocalFileFamily( const Jstr &inpath, const char *spstr=NULL );
 
 	abaxint sendDirectToSockAll( const char *mesg, abaxint len, bool nohdr=false );
 	abaxint recvDirectFromSockAll( char *&buf, char *hdr );
@@ -173,12 +173,12 @@ class JaguarCPPClient
 	abaxint doRecvDirectFromSockAll( char *&buf, char *hdr );
 	abaxint recvDirectFromSockAll( char *&buf, abaxint len );
 	abaxint doRecvDirectFromSockAll( char *&buf, abaxint len );
-	void appendJSData( const AbaxDataString &line );
+	void appendJSData( const Jstr &line );
 
 
     // public data members
-	AbaxDataString _version;	
-	AbaxDataString _dbname;
+	Jstr _version;	
+	Jstr _dbname;
 	short 			_queryCode;
 	JagBlockLock *_mapLock;
 	int 		_deltaRecoverConnection;
@@ -191,7 +191,7 @@ class JaguarCPPClient
 	int      _datcSrcType;   // connecting from to HOST or GATE JAG_DATACENTER_HOST/JAG_DATACENTER_GATE
 	int      _datcDestType;  // connecting to HOST or GATE JAG_DATACENTER_HOST/JAG_DATACENTER_GATE
 	int      _isToGate;  // connecting to GATE
-	AbaxDataString _primaryHostString;
+	Jstr _primaryHostString;
 	abaxint  _qCount;
 	FILE *_outf;
 
@@ -203,36 +203,36 @@ class JaguarCPPClient
 
 	///////////////////// protected
   protected:
-	int checkSpecialCommandValidation( const char *querys, AbaxDataString &newquery, 
-		const JagParseParam &parseParam, AbaxDataString &errmsg, AbaxString &hdbobj, const JagTableOrIndexAttrs *objAttr );
-	int formatReturnMessageForSpecialCommand( const JagParseParam &parseParam, AbaxDataString &retmsg );
-	int getParseInfo( const AbaxDataString &cmd, JagParseParam &parseParam, AbaxDataString &errmsg );
+	int checkSpecialCommandValidation( const char *querys, Jstr &newquery, 
+		const JagParseParam &parseParam, Jstr &errmsg, AbaxString &hdbobj, const JagTableOrIndexAttrs *objAttr );
+	int formatReturnMessageForSpecialCommand( const JagParseParam &parseParam, Jstr &retmsg );
+	int getParseInfo( const Jstr &cmd, JagParseParam &parseParam, Jstr &errmsg );
 	int checkCmdTableIndexExist( const JagParseParam &parseParam, AbaxString &hdbobj, 
-								 const JagTableOrIndexAttrs *&objAttr, AbaxDataString &errmsg );
-	int processInsertCommands( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, AbaxDataString &errmsg, 
-							   JagVector<AbaxDataString> *filevec=NULL );
-	int processInsertCommandsWithNames( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, AbaxDataString &errmsg, 
-							   JagVector<AbaxDataString> *filevec=NULL );
-	int processInsertCommandsWithoutNames( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, AbaxDataString &errmsg, 
-							   JagVector<AbaxDataString> *filevec=NULL );
-	int processMultiServerCommands( const char *qstr, JagParseParam &parseParam, AbaxDataString &errmsg );
+								 const JagTableOrIndexAttrs *&objAttr, Jstr &errmsg );
+	int processInsertCommands( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, Jstr &errmsg, 
+							   JagVector<Jstr> *filevec=NULL );
+	int processInsertCommandsWithNames( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, Jstr &errmsg, 
+							   JagVector<Jstr> *filevec=NULL );
+	int processInsertCommandsWithoutNames( JagVector<JagDBPair> &cmdhosts, JagParseParam &parseParam, Jstr &errmsg, 
+							   JagVector<Jstr> *filevec=NULL );
+	int processMultiServerCommands( const char *qstr, JagParseParam &parseParam, Jstr &errmsg );
 	int reformOriginalAggQuery( const JagSchemaRecord &aggrec, const JagVector<int> &selectPartsOpcode, 
 							const JagVector<int> &selColSetAggParts, const JagHashMap<AbaxInt, AbaxInt> &selColToselParts, 
 							const char *aggbuf, char *finalbuf, JagParseParam &parseParam );
-	int processDataSortArray( const JagParseParam &parseParam, const AbaxDataString &selcnt, const AbaxDataString &selhdr, 
-								const AbaxFixString &aggstr );
+	int processDataSortArray( const JagParseParam &parseParam, const Jstr &selcnt, const Jstr &selhdr, 
+								const JagFixString &aggstr );
 	int processOrderByQuery( const JagParseParam &parseParam );
 	int formatSendQuery( JagParseParam &parseParam, JagParseParam &parseParam2, const JagHashStrInt *maps[], 
 		const JagSchemaAttribute *attr[], JagVector<int> &selectPartsOpcode, JagVector<int> &selColSetAggParts, 
 		JagHashMap<AbaxInt, AbaxInt> &selColToselParts, int &nqHasLimit, bool &hasAggregate, 
-		abaxint &limitNum, int &grouplen, int numCols[], int num, AbaxDataString &newquery, AbaxDataString &errmsg );
-	int getUsingHosts( JagVector<AbaxDataString> &hosts, const AbaxFixString &kstr, int isWrite );
+		abaxint &limitNum, int &grouplen, int numCols[], int num, Jstr &newquery, Jstr &errmsg );
+	int getUsingHosts( JagVector<Jstr> &hosts, const JagFixString &kstr, int isWrite );
 
-	int sendFilesToServer( const JagVector<AbaxDataString> &files );
+	int sendFilesToServer( const JagVector<Jstr> &files );
 	int recvFilesFromServer( const JagParseParam *parseParam );
 
 	int checkRegularCommands( const char *querys );
-	int getnewClusterString( AbaxDataString &newquery, AbaxDataString &queryerrmsg );
+	int getnewClusterString( Jstr &newquery, Jstr &queryerrmsg );
 	void setConnectionBrokenTime();
 	int checkConnectionRetry();
 	int processMaintenanceCommand( const char *querys );
@@ -241,30 +241,30 @@ class JaguarCPPClient
 	int initRow();
 	void cleanUpSchemaMap( bool dolock );
 	void rebuildHostsConnections( const char *msg, abaxint len );
-	abaxint redoLog( const AbaxDataString &fpath );
+	abaxint redoLog( const Jstr &fpath );
   	void _init();
 	void resetLog();
 	void flushInsertBuffer();
 	void _printSelectedCols();
 	void requestInitMapInfo();
-	void appendToLog( const AbaxDataString &querys );
-	void checkPoint( const AbaxDataString &infpath );
+	void appendToLog( const Jstr &querys );
+	void checkPoint( const Jstr &infpath );
 	bool processSpool( char *querys );
-	bool _getKeyOrValue( const char *key, AbaxDataString & strValue, AbaxDataString &type );
+	bool _getKeyOrValue( const char *key, Jstr & strValue, Jstr &type );
 	int  setOneCmdProp( int pos );
 	int _parseSchema( const char *schema );
 	int findAllMetaKeyValueProperty( JagRecord &rrec );
 	int findAllNameValueProperty( JagRecord &rrec );
-	// int _printRow( FILE *outf, char **retstr, int nth, bool retRow, AbaxDataString &rowStr, int forExport, const char *dbobj );
-	int _printRow( FILE *outf, int nth, bool retRow, AbaxDataString &rowStr, int forExport, const char *dbobj );
+	// int _printRow( FILE *outf, char **retstr, int nth, bool retRow, Jstr &rowStr, int forExport, const char *dbobj );
+	int _printRow( FILE *outf, int nth, bool retRow, Jstr &rowStr, int forExport, const char *dbobj );
     char *_getField( const char * rowstr, char fieldToken );
     
     // methods with do at beginning
     int doquery( const char *querys, bool reply=true, bool compress=true, bool batchReply=false, bool dirConn=false, 
 				 int setEnd=0, const char *msg="", bool forceConnection=false ); 
     int doreply( bool headerOnly );
-    int doPrintRow( bool retRow, AbaxDataString &rowStr );
-    int doPrintAll( bool retRow, AbaxDataString &rowStr );
+    int doPrintRow( bool retRow, Jstr &rowStr );
+    int doPrintAll( bool retRow, Jstr &rowStr );
     void doFlush();
     int doHasError();
     int doFreeRow( int type=0 );
@@ -320,7 +320,7 @@ class JaguarCPPClient
 	int sendTwoBytes( const char *condition );
 	int recvTwoBytes( char *condition );
 
-	int getRebalanceString( AbaxDataString &newquery, AbaxDataString &queryerrmsg );
+	int getRebalanceString( Jstr &newquery, Jstr &queryerrmsg );
 	int doShutDown( const char *querys );
 
 	int checkOrderByValidation( JagParseParam &parseParam, const JagSchemaAttribute *attr[], int numCols[], int num );
@@ -334,38 +334,38 @@ class JaguarCPPClient
 	int  doDebugCheck( const char *querys, int len, JagParseParam &parseParam );
 	int  doRepairCheck( const char *querys, int len );
 	int  doRepairObject( const char *querys, int len );
-	int  doKVLen( const char *querys, int len, AbaxDataString &retmsg );
-	void getHostKeyStr( const char *kbuf, const JagTableOrIndexAttrs *objAttr, AbaxFixString &hostKeyStr );
-	AbaxDataString getSquareCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, int pos );
-	AbaxDataString getCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, 
+	int  doKVLen( const char *querys, int len, Jstr &retmsg );
+	void getHostKeyStr( const char *kbuf, const JagTableOrIndexAttrs *objAttr, JagFixString &hostKeyStr );
+	Jstr getSquareCoordStr( const Jstr &shape, const JagParseParam &parseParam, int pos );
+	Jstr getCoordStr( const Jstr &shape, const JagParseParam &parseParam, 
 								int pos, bool hasX, bool hasY, bool hasZ, bool hasWidth, 
 								bool hasDepth=false, bool hasHeight=false ); 
-	AbaxDataString getLineCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, 
+	Jstr getLineCoordStr( const Jstr &shape, const JagParseParam &parseParam, 
 								int pos, bool hasX1, bool hasY1, bool hasZ1, 
 								         bool hasX2, bool hasY2, bool hasZ2 );
-	AbaxDataString getTriangleCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, 
+	Jstr getTriangleCoordStr( const Jstr &shape, const JagParseParam &parseParam, 
 								int pos, bool hasX1, bool hasY1, bool hasZ1, 
 								         bool hasX2, bool hasY2, bool hasZ2,
 										 bool hasX3, bool hasY3, bool hasZ3 );
 
-	AbaxDataString get3DPlaneCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam,  int pos,
+	Jstr get3DPlaneCoordStr( const Jstr &shape, const JagParseParam &parseParam,  int pos,
 								       bool hasX,  bool hasY,  bool hasZ, 
 								       bool hasW,  bool hasD,  bool hasH,
 									   bool hasNX, bool hasNY, bool hasNZ );
     /***
-	AbaxDataString getLineStringCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, 
+	Jstr getLineStringCoordStr( const Jstr &shape, const JagParseParam &parseParam, 
 								       int pos, bool hasX1, bool hasY1, bool hasZ1 );
-	AbaxDataString getPolygonCoordStr( const AbaxDataString &shape, const JagParseParam &parseParam, 
+	Jstr getPolygonCoordStr( const Jstr &shape, const JagParseParam &parseParam, 
 								       int pos, bool hasX1, bool hasY1, bool hasZ1 );
 	***/
 
-	//bool matchFillOtherCols( const AbaxDataString &colType, JagVector<OtherAttribute>&otherVec, int &i );
-	AbaxDataString convertToJson(const char *buf);
+	//bool matchFillOtherCols( const Jstr &colType, JagVector<OtherAttribute>&otherVec, int &i );
+	Jstr convertToJson(const char *buf);
 	void  getTimebuf( const JagTableOrIndexAttrs *objAttr, char *timebuf, char *timebuf2 );
-	void addQueryToCmdhosts( const JagParseParam &parseParam, const AbaxFixString &hostkstr,
+	void addQueryToCmdhosts( const JagParseParam &parseParam, const JagFixString &hostkstr,
 	                         const JagTableOrIndexAttrs *objAttr,
-		                     JagVector<AbaxDataString> &hosts, JagVector<JagDBPair> &cmdhosts, 
-							 AbaxDataString &newquery );
+		                     JagVector<Jstr> &hosts, JagVector<JagDBPair> &cmdhosts, 
+							 Jstr &newquery );
 
 	bool hasDefaultValue( char spare4 );
 
@@ -375,8 +375,8 @@ class JaguarCPPClient
 	JagHashMap<AbaxString, abaxint> *_hostIdxMap;
 	JagHashMap<AbaxString, abaxint> *_clusterIdxMap;
 	JagHashMap<AbaxInt, AbaxBuffer>	*_thrdCliMap;
-	JagVector<AbaxDataString> *_insertBuffer;
-	JagVector<AbaxDataString> *_insertBufferCopy;
+	JagVector<Jstr> *_insertBuffer;
+	JagVector<Jstr> *_insertBufferCopy;
 	JagVector<abaxint> *_selectCountBuffer;
 	std::atomic<int>   _spCommandErrorCnt;
 	std::atomic<abaxint>	_lastConnectionBrokenTime;
@@ -391,7 +391,7 @@ class JaguarCPPClient
 	std::atomic<bool> _hasReply;
 	bool _fromShell;
 	int _forExport;
-	AbaxDataString _exportObj;
+	Jstr _exportObj;
 	abaxint _nthHost;
 	abaxint _numHosts;
 	abaxint _numClusters;
@@ -404,10 +404,10 @@ class JaguarCPPClient
 	pthread_cond_t  _insertBufferLessThanMaxCond;
 	pthread_cond_t  _insertBufferMoreThanMinCond;	
 	JagReadWriteLock *_qrlock;
-	AbaxDataString _brand;
-	AbaxDataString _newdbname;
-	AbaxDataString _queryerrmsg;
-	AbaxDataString _queryStatMsg;
+	Jstr _brand;
+	Jstr _newdbname;
+	Jstr _queryerrmsg;
+	Jstr _queryStatMsg;
 	JaguarCPPClient *_parentCli;
 	short			 _lastOpCode;
 	bool			 _lastHasGroupBy;
@@ -420,18 +420,18 @@ class JaguarCPPClient
 	int _useJPB;
 	int _makeSingleReconnect;
 	JagDataAggregate *_jda;
-	AbaxFixString _aggregateData;
-	AbaxFixString _pointQueryString;
-	AbaxDataString _dataFileHeader;
-	AbaxDataString _dataSelectCount;
-	AbaxDataString _lastQuery;
-	AbaxDataString _randfilepath;
-	AbaxDataString _selectTruncateMsg;
+	JagFixString _aggregateData;
+	JagFixString _pointQueryString;
+	Jstr _dataFileHeader;
+	Jstr _dataSelectCount;
+	Jstr _lastQuery;
+	Jstr _randfilepath;
+	Jstr _selectTruncateMsg;
 
 	// for host update string and schema update string
-	AbaxDataString _hostUpdateString;
-	AbaxDataString _schemaUpdateString;
-	//AbaxDataString _defvalUpdateString;
+	Jstr _hostUpdateString;
+	Jstr _schemaUpdateString;
+	//Jstr _defvalUpdateString;
 	JagMemDiskSortArray *_dataSortArr;
 	int _oneConnect;
 	// may be removed later
@@ -483,19 +483,19 @@ class JaguarCPPClient
 	bool _isExclusive;
 	uabaxint _clientFlag;
 	FILE *_insertLog;
-	AbaxDataString _host;
-	AbaxDataString _lefthost;
-	AbaxDataString _righthost;
-	AbaxDataString _username;
-	AbaxDataString _password;
-	AbaxDataString _unixSocket;
+	Jstr _host;
+	Jstr _lefthost;
+	Jstr _righthost;
+	Jstr _username;
+	Jstr _password;
+	Jstr _unixSocket;
 
-	JagVector<AbaxDataString> *_allHosts;
-	JagVector<JagVector<AbaxDataString> > *_allHostsByCluster;
-	AbaxDataString _replyerrmsg;
-	AbaxDataString _session;
-	AbaxDataString _logFPath;
-	AbaxDataString _jsonString;
+	JagVector<Jstr> *_allHosts;
+	JagVector<JagVector<Jstr> > *_allHostsByCluster;
+	Jstr _replyerrmsg;
+	Jstr _session;
+	Jstr _logFPath;
+	Jstr _jsonString;
 	JagUUID    *_jagUUID;
 	int        _tcode;
 	
@@ -507,7 +507,7 @@ class JaguarCPPClient
 	int   _debug;
 	std::atomic<int>   _isFlushingInsertBuffer;
 	int  _compressFlag[4];
-	// AbaxDataString _control;
+	// Jstr _control;
 	std::atomic<bool>   _monitorDone;
 
 };

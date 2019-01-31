@@ -30,9 +30,9 @@ class JagHashSetStr
 		JagHashSetStr( const JagHashSetStr &o );
 		JagHashSetStr& operator= ( const JagHashSetStr &o );
 
-		bool addKey( const AbaxDataString &key );
-		void removeKey( const AbaxDataString &key );
-		bool keyExist( const AbaxDataString &key ) const;
+		bool addKey( const Jstr &key );
+		void removeKey( const Jstr &key );
+		bool keyExist( const Jstr &key ) const;
 		void reset();
 		int  size(); // how many items
 		void removeAllKey();

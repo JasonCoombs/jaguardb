@@ -31,23 +31,23 @@ class JagIndex
 	
   public:
 
-  	JagIndex( int replicateType, const JagDBServer *servobj, const AbaxDataString &wholePathName, 
+  	JagIndex( int replicateType, const JagDBServer *servobj, const Jstr &wholePathName, 
 				const JagSchemaRecord &tabrecord, const JagSchemaRecord &idxrecord, 
 				bool buildInitIndex=true );	
   	~JagIndex();
 	inline int getnumCols() { return _numCols; }
 	inline int getnumKeys() { return _numKeys; }
-	inline bool needUpdate( const AbaxDataString &colName ) {
-		AbaxDataString dbcolumn = _dbname + "." + _indexName + "." + colName;
+	inline bool needUpdate( const Jstr &colName ) {
+		Jstr dbcolumn = _dbname + "." + _indexName + "." + colName;
 		int getpos;
 		if ( _indexmap->getValue(dbcolumn, getpos) ) return 1;
 		else return 0;
 	}
 	inline void debugObject( int flag, abaxint limit, abaxint hold, abaxint instart, abaxint inend ) { _darrFamily->debugJDBFile( flag, limit, hold, instart, inend ); }
 	void getlimitStart( abaxint &startlen, abaxint limitstart, abaxint& soffset, abaxint &foffset );
-	inline AbaxDataString getdbName() { return _dbname; }
-	inline AbaxDataString getTableName() { return _tableName; }	
-	inline AbaxDataString getIndexName() { return _indexName; }
+	inline Jstr getdbName() { return _dbname; }
+	inline Jstr getTableName() { return _tableName; }	
+	inline Jstr getIndexName() { return _indexName; }
 	inline const JagHashStrInt *getIndexMap() { return _indexmap; }
 	inline const JagSchemaAttribute *getSchemaAttributes() { return _schAttr; }
 	inline const JagSchemaRecord* getTableRecord() { return &_tableRecord; }
@@ -59,20 +59,20 @@ class JagIndex
 	int updateFromTable( const char *tableoldbuf, const char *tablenewbuf );
 	int removeFromTable( const char *tablebuf );
 	int drop();	
-	abaxint select( JagDataAggregate *&jda, const char *cmd, const JagRequest& req, JagParseParam *parseParam, AbaxDataString &errmsg, 
+	abaxint select( JagDataAggregate *&jda, const char *cmd, const JagRequest& req, JagParseParam *parseParam, Jstr &errmsg, 
 				 bool nowherecnt=true, bool isInsertSelect=false );
-	abaxint count( const char *cmd, const JagRequest& req, JagParseParam *parseParam, AbaxDataString &errmsg, abaxint &keyCheckerCnt );
+	abaxint count( const char *cmd, const JagRequest& req, JagParseParam *parseParam, Jstr &errmsg, abaxint &keyCheckerCnt );
 	
 	bool bufchange( char *indexbuf, char *tablebuf );
 	void refreshSchema();
 	void   flushBlockIndexToDisk();
 	void   copyAndInsertBufferAndClean();
-	void setGetFileAttributes( const AbaxDataString &hdir, JagParseParam *parseParam, char *buffers[] );
+	void setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, char *buffers[] );
 
 	int formatIndexCmdFromTable( const char *tablebuf, int type );
 
 	JagDiskArrayFamily *_darrFamily;
-	AbaxDataString _dbobj;
+	Jstr _dbobj;
   	abaxint KEYLEN;
 	abaxint VALLEN;
 	abaxint KEYVALLEN;
@@ -98,9 +98,9 @@ class JagIndex
 
 	int *_indtotabOffset; // maybe removed
 	const JagCfg *_cfg;
-	AbaxDataString _dbname;
-	AbaxDataString _tableName;
-	AbaxDataString _indexName;
+	Jstr _dbname;
+	Jstr _tableName;
+	Jstr _indexName;
 	JagArray<JagDBPair> *_marr; // may be removed
 	
 	void init( bool buildInitIndex );

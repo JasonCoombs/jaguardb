@@ -54,9 +54,9 @@ class JagFixBlock
 		bool findFirstLast( const JagDBPair &newpair, abaxint *first, abaxint *last );
 		bool findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset ); 
 		abaxint getPartElements( abaxint pos ) { return _vec[0].getPartElements( pos ); }
-		AbaxFixString getMinKey();
-		AbaxFixString getMaxKey();
-		void  flushBottomLevel( const AbaxDataString &outPath, abaxint elemts, abaxint arln, abaxint minindx, abaxint maxindx );
+		JagFixString getMinKey();
+		JagFixString getMaxKey();
+		void  flushBottomLevel( const Jstr &outPath, abaxint elemts, abaxint arln, abaxint minindx, abaxint maxindx );
 		abaxint getBottomCapacity() const { return _vec[0].capacity(); }
 
 		// debug purpose

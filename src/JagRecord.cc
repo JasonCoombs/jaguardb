@@ -78,7 +78,7 @@ int JagRecord::makeNewRecLength( const char *name, int n1,  const char *value, i
 	int len;
 	int hdrsize;
 	//char buf256[256];
-	AbaxDataString buf256str;
+	Jstr buf256str;
 	char buf[32];
 
 	//if ( n1 > FREC_MAX_NAME_LEN ) return -2089;
@@ -99,7 +99,7 @@ int JagRecord::makeNewRecLength( const char *name, int n1,  const char *value, i
 	hdrsize = strlen(buf256);  // hdrsize
 	***/
 	sprintf(buf, "%06d", n2 );
-	buf256str = AbaxDataString(name) + ":0+" + buf;
+	buf256str = Jstr(name) + ":0+" + buf;
 	hdrsize = buf256str.size();
 
 	// fixhead
@@ -124,15 +124,15 @@ int JagRecord::getNameStartLen( const char *name, int namelen, int *colstart, in
 	char *start;
 	//char startpos[FREC_STR_MAX_LEN];
 	//char poslen[FREC_STR_MAX_LEN];  // FREC_STR_MAX_LEN=128
-	AbaxDataString startposstr;
-	AbaxDataString poslenstr;;
+	Jstr startposstr;
+	Jstr poslenstr;;
 	//int  i;
 	//char buf256[256];
 	if ( name == NULL || *name == '\0' ) {
 		*colstart = *collen = 0;
 		return 0;
 	}
-	AbaxDataString buf256;
+	Jstr buf256;
 
 	//if (namelen > FREC_MAX_NAME_LEN ) return -100;
 	/**
@@ -143,7 +143,7 @@ int JagRecord::getNameStartLen( const char *name, int namelen, int *colstart, in
 	strncat(buf256, ":", 1);
 	**/
 	buf256 = FREC_COMMA_STR;
-	buf256 += AbaxDataString(name, namelen );
+	buf256 += Jstr(name, namelen );
 	buf256 += ":";
 
 	// index = str_str_ch( _record, FREC_HDR_END, buf256 );
@@ -225,7 +225,7 @@ int JagRecord::getSize( int *hdrsize, int *valsize )
 {
 	char *p;
 	//char lenbuf[FREC_STR_MAX_LEN];
-	AbaxDataString lenbufstr;
+	Jstr lenbufstr;
 	//int i;
 	// uncompress();
 	//memset(lenbuf, 0, FREC_STR_MAX_LEN );
@@ -337,7 +337,7 @@ int JagRecord::getAllNameValues( char *names[],  char *values[], int *len )
 	*len = 0;
 
 	// names is array of maxsize 
-	AbaxDataString valbufstr;
+	Jstr valbufstr;
 	//memset(valbuf, 0, FREC_STR_MAX_LEN);
 	//i = 0;
 	// for ( p = _record;  (*p != FREC_VAL_SEP ) && *p != '\0'; p++ )
@@ -383,7 +383,7 @@ int JagRecord::getAllNameValues( char *names[],  char *values[], int *len )
 	p++; // past second  #
 
     // get all names and positions
-	AbaxDataString bufstr;
+	Jstr bufstr;
 	valbufstr = "";
 	while ( ( *p != FREC_HDR_END ) && (*p != '\0')  ) {
 		donenames = 0;
@@ -728,7 +728,7 @@ int JagRecord::addNameValueLength ( const char *name, int n1, const char *value,
 	// psep now points to '^'
 
 	//memset(buf256, 0, 256 );
-	AbaxDataString buf256str;
+	Jstr buf256str;
 	pound = 0;
 	if ( _record[oldlen-1] == FREC_VAL_SEP ) {
 		pound = 1;
@@ -861,7 +861,7 @@ int JagRecord::nameLengthExists( const char *name, int namelen )
 {
 	int    index;
 	//char  buf256[256];
-	AbaxDataString buf256;
+	Jstr buf256;
 
 	//if ( namelen > FREC_MAX_NAME_LEN ) return 0;
 	/***
@@ -872,7 +872,7 @@ int JagRecord::nameLengthExists( const char *name, int namelen )
     strncat(buf256, ":", 1);
 	**/
 	buf256 = FREC_COMMA_STR;
-	buf256 += AbaxDataString(name, namelen );
+	buf256 += Jstr(name, namelen );
 	buf256 += ":";
 
     //index = str_str_ch( _record+10, FREC_HDR_END, buf256 );

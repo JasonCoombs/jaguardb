@@ -24,10 +24,10 @@
 class JagSchemaAttribute
 {
   public:
-	AbaxDataString dbcol;
-	AbaxDataString objcol;
-	AbaxDataString colname;
-	AbaxDataString type;
+	Jstr dbcol;
+	Jstr objcol;
+	Jstr colname;
+	Jstr type;
 	unsigned int offset;
 	unsigned int length;
 	unsigned int sig;
@@ -38,8 +38,8 @@ class JagSchemaAttribute
 	bool isFILE;
 	bool isKey;
 	bool isAscending;
-	AbaxDataString defValue;
-	JagVector<AbaxDataString> enumList;
+	Jstr defValue;
+	JagVector<Jstr> enumList;
 	JagSchemaRecord record;
 	
 	JagSchemaAttribute() {

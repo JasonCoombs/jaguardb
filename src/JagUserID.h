@@ -43,11 +43,11 @@ class JagUserID : public JagFixKV
 	virtual ~JagUserID();
 	bool 	addUser( const AbaxString &userid, const AbaxString& passwd, 
 				const AbaxString &role, const AbaxString& permission );
-	bool    isAuth( char  op, const AbaxDataString &dbname, 
-					const AbaxDataString &tabname, const AbaxDataString &uid );
+	bool    isAuth( char  op, const Jstr &dbname, 
+					const Jstr &tabname, const Jstr &uid );
 	bool 	dropUser( const AbaxString &userid ); 
 	bool 	exist( const AbaxString &userid ); 
-	AbaxDataString  getListUsers();
+	Jstr  getListUsers();
 
 };
 

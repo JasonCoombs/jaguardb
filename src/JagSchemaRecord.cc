@@ -183,7 +183,7 @@ bool JagSchemaRecord::renameKey( const AbaxString &oldKeyName, const AbaxString 
 }
 
 // add new column using spare space
-bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const AbaxDataString &type, 
+bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 
 											   abaxint length, abaxint sig )
 {
 	if ( ! columnVector ) {
@@ -192,7 +192,7 @@ bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const 
 
 	int len = columnVector->size();
 	AbaxString aname; unsigned int aoffset, alength, asig; 
-	AbaxDataString atype;
+	Jstr atype;
 	char aspare[JAG_SCHEMA_SPARE_LEN]; 
 	char aiskey; int afunc;
 	aname = (*columnVector)[len-1].name;
@@ -235,11 +235,11 @@ bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const 
 	_nameMap.addKeyValue( colName.c_str(), len-1 );
 }
 
-AbaxDataString JagSchemaRecord::getString() const
+Jstr JagSchemaRecord::getString() const
 {
 	if ( ! columnVector ) return "";
 
-	AbaxDataString res;
+	Jstr res;
 	char mem[4096];
 	char buf[32];
 	char buf2[2];
@@ -248,7 +248,7 @@ AbaxDataString JagSchemaRecord::getString() const
 	memset( mem, 0, 4096 );
 	// sprintf(mem, "%c%c|%d|%d|%d|{", type[0], type[1], keyLength, valueLength, ovalueLength );
 	sprintf(mem, "%c%c|%d|%d|%s|{", type[0], type[1], keyLength, valueLength, tableProperty.c_str() );
-	res += AbaxDataString( mem );
+	res += Jstr( mem );
 
 	int len = columnVector->size();
 	for ( int i = 0; i < len; ++i ) {
@@ -288,18 +288,18 @@ AbaxDataString JagSchemaRecord::getString() const
 	return res;
 }
 
-AbaxDataString JagSchemaRecord::formatHeadRecord() const
+Jstr JagSchemaRecord::formatHeadRecord() const
 { 
 	// return "NN|0|0|0|{"; 
-	return AbaxDataString("NN|0|0|") + tableProperty + "|{"; 
+	return Jstr("NN|0|0|") + tableProperty + "|{"; 
 }
 
-AbaxDataString JagSchemaRecord::formatColumnRecord( const char *name, const char *type, int offset, int length, 
+Jstr JagSchemaRecord::formatColumnRecord( const char *name, const char *type, int offset, int length, 
 													int sig, bool isKey ) const
 {
 	char buf[256];
 	sprintf(buf, "!#%s#!%s!%d!%d!%d!", name, type, offset, length, sig);
-	AbaxDataString res = buf;
+	Jstr res = buf;
 	if ( isKey ) {
 		res += "k a ";
 	} else {
@@ -316,7 +316,7 @@ AbaxDataString JagSchemaRecord::formatColumnRecord( const char *name, const char
 }
 
 
-AbaxDataString JagSchemaRecord::formatTailRecord() const
+Jstr JagSchemaRecord::formatTailRecord() const
 {
 	return "}";
 }
@@ -347,7 +347,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 
 	if ( *q == ':' ) {
 		// a.b(q)NN|
-		// dbobj = AbaxDataString(p, q-p);
+		// dbobj = Jstr(p, q-p);
 		++q;
 		type[0] = *q; type[1] = *(q+1);
 		while ( *q != '|' ) ++q;
@@ -381,7 +381,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 	++q; p = q;
 	while ( *q != '|' && *q != '{' ) ++q;
 	if ( *q == '\0' ) return -42;
-	tableProperty = AbaxDataString(p, q-p);
+	tableProperty = Jstr(p, q-p);
 	//prt(("s5034 tableProperty=[%s] this=%0x\n", tableProperty.c_str(), this ));
 	if ( *q == '|' && *(q+1) == '{' ) {
 		q += 2;
@@ -410,7 +410,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 					++q;
 				} else break;
 			}
-			onecolrec.name = AbaxDataString(p, q-p);
+			onecolrec.name = Jstr(p, q-p);
 			++q;
 		} else {
 			while ( 1 ) {
@@ -422,7 +422,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 					++q;
 				} else break;
 			}
-			onecolrec.name = AbaxDataString(p, q-p);
+			onecolrec.name = Jstr(p, q-p);
 		}
 		// get func(col) and assign onecolrec.func and change  onecolrec.type
 		// onecolrec.func = getFuncType( onecolrec.name, newDataType );
@@ -436,7 +436,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 			// prt(("s1283 q=[%s]\n", q ));
 			return -100;
 		}
-		onecolrec.type = AbaxDataString(p, q-p);
+		onecolrec.type = Jstr(p, q-p);
 		// prt(("s2031 onecolrec.type=[%s]\n", onecolrec.type.c_str() ));
 		// get offset
 		++q; p = q;

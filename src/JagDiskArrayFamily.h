@@ -53,7 +53,7 @@ class SepThrdDACompressPass
 class JagDiskArrayFamily
 {
   public:
-	JagDiskArrayFamily( const JagDBServer *servobj, const AbaxDataString &fpathname, const JagSchemaRecord *record, 
+	JagDiskArrayFamily( const JagDBServer *servobj, const Jstr &fpathname, const JagSchemaRecord *record, 
 		bool buildInitIndex=true, abaxint length=32, bool noMonitor=false );
 	~JagDiskArrayFamily();
 
@@ -100,10 +100,10 @@ class JagDiskArrayFamily
 	int         _VLEN;
 	bool		_needCompressThrd;
 	abaxint		_compthrdhold;
-	AbaxDataString 		_tablepath;
-	AbaxDataString 		_pathname;
-	AbaxDataString 		_sfilepath;
-	AbaxDataString 		_objname;
+	Jstr 		_tablepath;
+	Jstr 		_pathname;
+	Jstr 		_sfilepath;
+	Jstr 		_objname;
 	const JagSchemaRecord 	*_schemaRecord;
 	JagVector<JagDiskArrayServer*> _darrlist;
 	JagFamilyKeyChecker		*_keyChecker;

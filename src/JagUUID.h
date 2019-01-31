@@ -25,14 +25,14 @@ class JagUUID
 {
   public:
   	JagUUID();
-	AbaxDataString  getString();
+	Jstr  getString();
 
   protected:
 	void _getHostStr();
 	void _getPidStr();
 	AbaxString _hostStr;
 	AbaxString _pidStr;
-	AbaxDataString  _hostID;
+	Jstr  _hostID;
 	int				_pid;
 };
 

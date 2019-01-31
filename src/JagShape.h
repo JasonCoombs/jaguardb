@@ -132,9 +132,9 @@ class JagPoint3D
      JagPoint3D( double inx, double iny, double inz );
 	 void transform( double x0, double y0, double z0, double nx0, double ny0 );
 	 void print() const { printf("x=%.1f y=%.1f z=%.1f ", x, y, z ); }
-	 AbaxDataString hashString() const;
-	 AbaxDataString str3D() const { return d2s(x) + ":" + d2s(y) + ":" + d2s(z); }
-	 AbaxDataString str2D() const { return d2s(x) + ":" + d2s(y); }
+	 Jstr hashString() const;
+	 Jstr str3D() const { return d2s(x) + ":" + d2s(y) + ":" + d2s(z); }
+	 Jstr str2D() const { return d2s(x) + ":" + d2s(y); }
      double x;
 	 double y;
 	 double z;
@@ -422,7 +422,7 @@ class JagLineString3D
 		void affine3d( double a, double b, double c, double d, double e, double f, double g, double h, double i, 
 						double dx, double dy, double dz );
 
-		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
+		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const;
 
 		bool  interpolatePoint( short dim, int srid, double fraction, JagPoint3D &point );
 		bool  getBetweenPointsFromLen( short dim, double len, int srid, JagPoint3D &p1, JagPoint3D &p2, 
@@ -458,7 +458,7 @@ class JagLineString
 		void translate( double dx, double dy, double dz, bool is3D);
 		void transscale( double dx, double dy, double dz, double fx, double fy, double fz, bool is3D);
 		void scaleat(double x0, double y0, double z0, double fx, double fy, double fz, bool is3D);
-		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, AbaxDataString &str ) const;
+		void toJAG( const Jstr &colType, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str ) const;
 
 		JagVector<JagPoint> point;
 };
@@ -480,8 +480,8 @@ class JagPolygon
 		JagVector<JagLineString3D> linestr;
 		void print() const { linestr.print(); }
 		double lineLength( bool removeLast, bool is3D, int srid );
-		void toWKT( bool is3D, bool hasHdr, const AbaxDataString &objname, AbaxDataString &str ) const;
-		void toJAG( bool is3D, bool hasHdr,  const Jstr &inbbox, int srid, AbaxDataString &str ) const;
+		void toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const;
+		void toJAG( bool is3D, bool hasHdr,  const Jstr &inbbox, int srid, Jstr &str ) const;
 		void reverse() { for (int i=0; i < linestr.size(); ++i ) linestr[i].reverse(); }
 		void   scale( double fx, double fy, double fz, bool is3D) { 
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].scale(fx,fy,fz,is3D); 

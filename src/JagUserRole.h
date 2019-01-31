@@ -33,24 +33,24 @@ class JagUserRole : public JagFixKV
     JagUserRole( JagDBServer *servobj=NULL, int replicateType=0 );
 	virtual ~JagUserRole();
 	// virtual void init();
-	AbaxDataString  getListRoles();
+	Jstr  getListRoles();
 	bool 	addRole( const AbaxString &userid, const AbaxString& db, const AbaxString& tab, const AbaxString& col, 
 				const AbaxString& role, const AbaxString &rowfilter );
 	bool 	dropRole( const AbaxString &userid, const AbaxString& db, const AbaxString& tab, const AbaxString& col, const AbaxString& op ); 
 	bool 	checkUserCommandPermission( const JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
-					const JagParseParam &parseParam, int i, AbaxDataString &rowFilter, AbaxDataString& errmsg );
-	bool    isAuthed( const AbaxDataString &op, const AbaxDataString &userid, const AbaxDataString &db, const AbaxDataString &tab,
-                 const AbaxDataString &col, AbaxDataString &rowFilter );
+					const JagParseParam &parseParam, int i, Jstr &rowFilter, Jstr& errmsg );
+	bool    isAuthed( const Jstr &op, const Jstr &userid, const Jstr &db, const Jstr &tab,
+                 const Jstr &col, Jstr &rowFilter );
 
-	AbaxDataString showRole( const AbaxString &userid );
-	static AbaxDataString convertToStr( const AbaxDataString  &pm );
-	static AbaxDataString convertManyToStr( const AbaxDataString &pm );
+	Jstr showRole( const AbaxString &userid );
+	static Jstr convertToStr( const Jstr  &pm );
+	static Jstr convertManyToStr( const Jstr &pm );
 
 	protected:
 	  void getDbTabCol( const JagParseParam &parseParam, int i, const JagStrSplit &sp2,
-	  			AbaxDataString &db, AbaxDataString &tab, AbaxDataString &col );
-	  AbaxDataString getError( const AbaxDataString &code, const AbaxDataString &action, 
-	  		const AbaxDataString &db, const AbaxDataString &tab, const AbaxDataString &col, const AbaxDataString &uid );
+	  			Jstr &db, Jstr &tab, Jstr &col );
+	  Jstr getError( const Jstr &code, const Jstr &action, 
+	  		const Jstr &db, const Jstr &tab, const Jstr &col, const Jstr &uid );
 
 
 

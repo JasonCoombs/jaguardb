@@ -550,7 +550,7 @@ void JagDiskArrayFamily::flushKeyCheckerString()
 
 	// begin flush key checker map to disk
 	// const AbaxPair<AbaxString, char> *arr = _keyChecker->array();
-	// const AbaxPair<AbaxString, AbaxFixString> *arr = _keyChecker->array();
+	// const AbaxPair<AbaxString, JagFixString> *arr = _keyChecker->array();
 	const char *arr = _keyChecker->array();
 	abaxint len = _keyChecker->arrayLength();
 	if ( len >= 1 ) {
@@ -625,7 +625,7 @@ abaxint JagDiskArrayFamily::setFamilyRead( JagMergeReader *&nts, const char *min
 	bool startFlag = false;
     abaxint index = 0, rc, slimit, rlimit;
     JagDBPair retpair;
-	AbaxFixString value;
+	JagFixString value;
 	char *lminbuf = NULL;
 	char *lmaxbuf = NULL;
 	abaxint maxPossibleElem = 0;
@@ -646,8 +646,8 @@ abaxint JagDiskArrayFamily::setFamilyRead( JagMergeReader *&nts, const char *min
 	}
 			
 	if ( minbuf || maxbuf ) {
-		JagDBPair minpair( AbaxFixString( minbuf, _darrlist[0]->KEYLEN ), value );
-		JagDBPair maxpair( AbaxFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
+		JagDBPair minpair( JagFixString( minbuf, _darrlist[0]->KEYLEN ), value );
+		JagDBPair maxpair( JagFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
 		for ( int i = _darrlistlen-1; i >= 0; --i ) {
 			rc = _darrlist[i]->exist( minpair, &index, retpair );
 			if ( startFlag && !rc ) ++index;
@@ -711,7 +711,7 @@ abaxint JagDiskArrayFamily::setFamilyReadPartial( JagMergeReader *&nts, const ch
 	bool startFlag = false;
     abaxint index = 0, rc, slimit, rlimit;
     JagDBPair retpair;
-	AbaxFixString value;
+	JagFixString value;
 	char *lminbuf = NULL;
 	char *lmaxbuf = NULL;
 	abaxint maxPossibleElem = 0;
@@ -732,8 +732,8 @@ abaxint JagDiskArrayFamily::setFamilyReadPartial( JagMergeReader *&nts, const ch
 	}
 			
 	if ( minbuf || maxbuf ) {
-		JagDBPair minpair( AbaxFixString( minbuf, _darrlist[0]->KEYLEN ), value );
-		JagDBPair maxpair( AbaxFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
+		JagDBPair minpair( JagFixString( minbuf, _darrlist[0]->KEYLEN ), value );
+		JagDBPair maxpair( JagFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
 		for ( int i = epos; i >= spos; --i ) {
 			rc = _darrlist[i]->exist( minpair, &index, retpair );
 			if ( startFlag && !rc ) ++index;
@@ -795,7 +795,7 @@ abaxint JagDiskArrayFamily::setFamilyReadBackPartial( JagMergeBackReader *&nts, 
 	bool startFlag = false;
     abaxint index = 0, rc, slimit, rlimit;
     JagDBPair retpair;
-	AbaxFixString value;
+	JagFixString value;
 	char *lminbuf = NULL;
 	char *lmaxbuf = NULL;
 	abaxint maxPossibleElem = 0;
@@ -816,8 +816,8 @@ abaxint JagDiskArrayFamily::setFamilyReadBackPartial( JagMergeBackReader *&nts, 
 	}
 			
 	if ( minbuf || maxbuf ) {
-		JagDBPair minpair( AbaxFixString( minbuf, _darrlist[0]->KEYLEN ), value );
-		JagDBPair maxpair( AbaxFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
+		JagDBPair minpair( JagFixString( minbuf, _darrlist[0]->KEYLEN ), value );
+		JagDBPair maxpair( JagFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
 		for ( int i = epos; i >= spos; --i ) {
 			rc = _darrlist[i]->exist( minpair, &index, retpair );
 			if ( startFlag && !rc ) ++index;

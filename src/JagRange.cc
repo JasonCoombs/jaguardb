@@ -24,9 +24,9 @@
 #include <JagTime.h>
 
 bool 
-JagRange::doRangeWithin( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, 
+JagRange::doRangeWithin( const JagParseAttribute &jpa, const Jstr &mk1, const Jstr &colType1, 
 						 int srid1, const JagStrSplit &sp1, 
-						 const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+						 const Jstr &mk2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
 						 bool strict )
 {
 	/***
@@ -43,26 +43,26 @@ JagRange::doRangeWithin( const JagParseAttribute &jpa, const AbaxDataString &mk1
 	} 
 
 	JagStrSplit ssp( sp2[0], '|' );
-	AbaxDataString begin2 = ssp[0]; begin2.replace('_', ' ' );
-	AbaxDataString end2 = ssp[1]; end2.replace('_', ' ' );
+	Jstr begin2 = ssp[0]; begin2.replace('_', ' ' );
+	Jstr end2 = ssp[1]; end2.replace('_', ' ' );
 
 	if ( colType1 == JAG_C_COL_TYPE_RANGE ) {
-		AbaxDataString colobj = sp1[-1];
+		Jstr colobj = sp1[-1];
 		JagStrSplit sp( colobj, '=' );
 		if ( sp.length() < 5 ) return false;
-		AbaxDataString subtype = sp[4];
-		AbaxDataString begin1 = sp1[0];
-		AbaxDataString end1 = sp1[1];
+		Jstr subtype = sp[4];
+		Jstr begin1 = sp1[0];
+		Jstr end1 = sp1[1];
 		return rangeWithinRange( jpa, subtype, begin1, end1, begin2, end2, strict );
 	} else {
-		AbaxDataString data = sp1[0];
+		Jstr data = sp1[0];
 		return pointWithinRange( jpa, colType1, data, begin2, end2, strict );
 	}
 }
 
-bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, 
-								 const AbaxDataString &begin1, const AbaxDataString &end1,
-								 AbaxDataString &begin2, AbaxDataString &end2, bool strict )
+bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const Jstr &subtype, 
+								 const Jstr &begin1, const Jstr &end1,
+								 Jstr &begin2, Jstr &end2, bool strict )
 {
 	//prt(("s2238 rangeWithinRange begin1=[%s] end1=[%s]\n", begin1.c_str(), end1.c_str() ));
 
@@ -84,7 +84,7 @@ bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const AbaxDataStr
 		//prt(("s2234 begin2=[%s] end2=[%s]\n", begin2.c_str(), end2.c_str() ));
 		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
 		if ( ! strchr( end2.c_str(), ':' ) ) return false;
-		AbaxDataString buf1, buf2;
+		Jstr buf1, buf2;
 		JagTime::convertTimeToStr( begin1, buf1, 0 );
 		JagTime::convertTimeToStr( end1, buf2, 0 );
 
@@ -135,8 +135,8 @@ bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const AbaxDataStr
 	return false;
 }
 
-bool JagRange::pointWithinRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, const AbaxDataString &data, 
-								 AbaxDataString &begin2, AbaxDataString &end2, bool strict )
+bool JagRange::pointWithinRange( const JagParseAttribute &jpa, const Jstr &subtype, const Jstr &data, 
+								 Jstr &begin2, Jstr &end2, bool strict )
 {
 	//prt(("s8723 pointWithinRange subtype=[%s]\n", subtype.c_str() ));
 	if ( subtype == JAG_C_COL_TYPE_DATE ) {
@@ -157,7 +157,7 @@ bool JagRange::pointWithinRange( const JagParseAttribute &jpa, const AbaxDataStr
 		//prt(("s6633 begin2.c_str=[%s] end2.c_str=[%s]\n", begin2.c_str(), end2.c_str() ));
 		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
 		if ( ! strchr( end2.c_str(), ':' ) ) return false;
-		AbaxDataString buf;
+		Jstr buf;
 		JagTime::convertTimeToStr( data, buf, 0 );
 		//prt(("s2837 data=[%s] JAG_C_COL_TYPE_TIME buf=[%s] strict=%d\n", data.c_str(), buf.c_str(), strict ));
 		//prt(("s2208 strcmp( begin2.c_str(), buf.c_str() )=%d\n", strcmp( begin2.c_str(), buf.c_str() ) ));
@@ -207,9 +207,9 @@ bool JagRange::pointWithinRange( const JagParseAttribute &jpa, const AbaxDataStr
 
 
 bool 
-JagRange::doRangeIntersect( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, 
+JagRange::doRangeIntersect( const JagParseAttribute &jpa, const Jstr &mk1, const Jstr &colType1, 
 						    int srid1, const JagStrSplit &sp1, 
-						    const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+						    const Jstr &mk2, const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	/***
 	prt(("s6683 doRangeWithin colType2=[%s]\n", colType2.c_str() ));
@@ -226,28 +226,28 @@ JagRange::doRangeIntersect( const JagParseAttribute &jpa, const AbaxDataString &
 	} 
 
 	JagStrSplit ssp( sp2[0], '|' );
-	AbaxDataString begin2 = ssp[0]; begin2.replace('_', ' ' );
-	AbaxDataString end2 = ssp[1]; end2.replace('_', ' ' );
+	Jstr begin2 = ssp[0]; begin2.replace('_', ' ' );
+	Jstr end2 = ssp[1]; end2.replace('_', ' ' );
 
 	if ( colType1 == JAG_C_COL_TYPE_RANGE ) {
-		AbaxDataString colobj = sp1[-1];
+		Jstr colobj = sp1[-1];
 		JagStrSplit sp( colobj, '=' );
 		if ( sp.length() < 5 ) return false;
-		AbaxDataString subtype = sp[4];
-		AbaxDataString begin1 = sp1[0];
-		AbaxDataString end1 = sp1[1];
+		Jstr subtype = sp[4];
+		Jstr begin1 = sp1[0];
+		Jstr end1 = sp1[1];
 		return rangeIntersectRange( jpa, subtype, begin1, end1, begin2, end2 );
 	} else {
-		AbaxDataString data = sp1[0];
+		Jstr data = sp1[0];
 		//prt(("s9480 data=[%s]\n", data.c_str() ));
 		return pointWithinRange( jpa, colType1, data, begin2, end2, false );
 	}
 }
 
 
-bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, 
-									const AbaxDataString &begin1, const AbaxDataString &end1,
-								 	AbaxDataString &begin2, AbaxDataString &end2 )
+bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const Jstr &subtype, 
+									const Jstr &begin1, const Jstr &end1,
+								 	Jstr &begin2, Jstr &end2 )
 {
 	if ( subtype == JAG_C_COL_TYPE_DATE ) {
 		if ( ! strchr( begin2.c_str(), '-' ) ) return false;
@@ -264,8 +264,8 @@ bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const AbaxData
 		//strftime (buffer, 20, "%Y-%m-%d %H:%M:%S", timeinfo);
 		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
 		if ( ! strchr( end2.c_str(), ':' ) ) return false;
-		//AbaxDataString buf1 = JagTime::rawToServerString( jpa, rawtime, subtype );
-		AbaxDataString buf1, buf2;
+		//Jstr buf1 = JagTime::rawToServerString( jpa, rawtime, subtype );
+		Jstr buf1, buf2;
 		JagTime::convertTimeToStr( begin1, buf1, 0 );
 		JagTime::convertTimeToStr( end1, buf2, 0 );
 		if ( strcmp( begin2.c_str(), buf1.c_str() ) <= 0 && strcmp( buf1.c_str(), end2.c_str() ) <= 0 ) {
@@ -306,9 +306,9 @@ bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const AbaxData
 
 
 bool 
-JagRange::doRangeSame( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, 
+JagRange::doRangeSame( const JagParseAttribute &jpa, const Jstr &mk1, const Jstr &colType1, 
 						 int srid1, const JagStrSplit &sp1, 
-						 const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 )
+						 const Jstr &mk2, const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	/***
 	prt(("s6683 doRangeWithin colType2=[%s]\n", colType2.c_str() ));
@@ -324,21 +324,21 @@ JagRange::doRangeSame( const JagParseAttribute &jpa, const AbaxDataString &mk1, 
 	} 
 
 	JagStrSplit ssp( sp2[0], '|' );
-	AbaxDataString begin2 = ssp[0]; begin2.replace('_', ' ' );
-	AbaxDataString end2 = ssp[1]; end2.replace('_', ' ' );
+	Jstr begin2 = ssp[0]; begin2.replace('_', ' ' );
+	Jstr end2 = ssp[1]; end2.replace('_', ' ' );
 
-	AbaxDataString colobj = sp1[-1];
+	Jstr colobj = sp1[-1];
 	JagStrSplit sp( colobj, '=' );
 	if ( sp.length() < 5 ) return false;
-	AbaxDataString subtype = sp[4];
-	AbaxDataString begin1 = sp1[0];
-	AbaxDataString end1 = sp1[1];
+	Jstr subtype = sp[4];
+	Jstr begin1 = sp1[0];
+	Jstr end1 = sp1[1];
 	return rangeSameRange( jpa, subtype, begin1, end1, begin2, end2 );
 }
 
-bool JagRange::rangeSameRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, 
-								 const AbaxDataString &begin1, const AbaxDataString &end1,
-								 AbaxDataString &begin2, AbaxDataString &end2 )
+bool JagRange::rangeSameRange( const JagParseAttribute &jpa, const Jstr &subtype, 
+								 const Jstr &begin1, const Jstr &end1,
+								 Jstr &begin2, Jstr &end2 )
 {
 	//prt(("s2238 rangeWithinRange begin1=[%s] end1=[%s]\n", begin1.c_str(), end1.c_str() ));
 
@@ -352,7 +352,7 @@ bool JagRange::rangeSameRange( const JagParseAttribute &jpa, const AbaxDataStrin
 		//prt(("s2234 begin2=[%s] end2=[%s]\n", begin2.c_str(), end2.c_str() ));
 		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
 		if ( ! strchr( end2.c_str(), ':' ) ) return false;
-		AbaxDataString buf1, buf2;
+		Jstr buf1, buf2;
 		JagTime::convertTimeToStr( begin1, buf1, 0 );
 		JagTime::convertTimeToStr( end1, buf2, 0 );
 

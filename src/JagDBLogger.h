@@ -27,15 +27,15 @@ class JagDBLogger
    	 JagDBLogger( int dologmsg, int dologerr, int historyDay = 3 );
    	 ~JagDBLogger( );
 
-	 void logmsg( const JagRequest &req, const AbaxDataString &msg,  const AbaxDataString &cmd );
-	 void logerr( const JagRequest &req, const AbaxDataString &errmsg, const AbaxDataString &cmd );
+	 void logmsg( const JagRequest &req, const Jstr &msg,  const Jstr &cmd );
+	 void logerr( const JagRequest &req, const Jstr &errmsg, const Jstr &cmd );
 
   protected:
   	 int _historyDay; 
 	 int _dologmsg;
 	 int _dologerr;
-	 void logit( const JagRequest &req, const AbaxDataString &fpath, const AbaxDataString &hdr, const AbaxDataString &cmd );
-	 AbaxDataString  _logDir;
+	 void logit( const JagRequest &req, const Jstr &fpath, const Jstr &hdr, const Jstr &cmd );
+	 Jstr  _logDir;
   	 JagHashMap<AbaxString, AbaxBuffer> *_filemap;
   	 JagHashMap<AbaxString, AbaxLong> *_timemap;
 };

@@ -68,9 +68,9 @@ class CliPass
 	abaxint totnum;
 	abaxint start;
 	abaxint cnt;
-	AbaxDataString cmd;
+	Jstr cmd;
 	JaguarCPPClient *cli;
-	AbaxDataString errmsg;
+	Jstr errmsg;
 	JagParseParam *parseParam;
 	int *joinEachCnt;
 };
@@ -79,7 +79,7 @@ class RecoverPass
 {
   public:
 	RecoverPass() { pcli = NULL; result = 0; }
-	AbaxDataString fpath;
+	Jstr fpath;
 	JaguarCPPClient *pcli;
 	int result;
 };

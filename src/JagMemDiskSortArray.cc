@@ -133,7 +133,7 @@ void JagMemDiskSortArray::clean()
 	_aggstr = "";
 }
 
-void JagMemDiskSortArray::setClientUseStr( const AbaxDataString &selcnt, const AbaxDataString &selhdr, const AbaxFixString &aggstr )
+void JagMemDiskSortArray::setClientUseStr( const Jstr &selcnt, const Jstr &selhdr, const JagFixString &aggstr )
 {
 	_cntstr = selcnt;
 	_selhdr = selhdr;
@@ -218,7 +218,7 @@ int JagMemDiskSortArray::insert( JagDBPair &pair )
 				delete _diskarr;
 				_diskarr = NULL;
 			}
-			AbaxDataString fpath = jaguarHome() + "/tmp/" + longToStr(THREADID) + "_" + _opstr;
+			Jstr fpath = jaguarHome() + "/tmp/" + longToStr(THREADID) + "_" + _opstr;
 			_diskarr = new JagDiskArrayClient( fpath, _srecord, true );
 			
 			JagDBPair mpair;
@@ -270,7 +270,7 @@ int JagMemDiskSortArray::groupByUpdate( const JagDBPair &pair )
 void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBPair &oldpair )
 {
 	char save;
-	AbaxDataString type;
+	Jstr type;
 	int rc, keylen, offset, length, func;
 	abaxint cnt, cnt1, cnt2;
 	abaxdouble value1 = 0.0, value2 = 0.0, value3 = 0.0;
@@ -381,7 +381,7 @@ int JagMemDiskSortArray::ignoreNumData( abaxint num )
 	
 	// if has jda
 	if ( _jda ) {
-		AbaxFixString rdata;
+		JagFixString rdata;
 		while ( true ) {
 			if ( !_isback ) rc = _jda->readit( rdata );
 			else rc = _jda->backreadit( rdata );
@@ -442,7 +442,7 @@ int JagMemDiskSortArray::ignoreNumData( abaxint num )
 // return 2: get select hdr string
 // return 3: get select count(*) string
 // return 4: get aggregate data string
-int JagMemDiskSortArray::get( AbaxFixString &str )
+int JagMemDiskSortArray::get( JagFixString &str )
 {
 	if ( 3 != _rwtype || _rend ) return 0; // not correct sequence calling for write
 	str = "";
@@ -519,7 +519,7 @@ int JagMemDiskSortArray::get( AbaxFixString &str )
 		JagDBPair pair = _memarr->exactAt(_mempos);
 		memcpy(buf, pair.key.c_str(), _keylen);
 		memcpy(buf+_keylen, pair.value.c_str(), _vallen);
-		str = AbaxFixString( buf, _kvlen );
+		str = JagFixString( buf, _kvlen );
 		if ( !_isback ) ++_mempos;
 		else --_mempos;
 		if ( buf ) free ( buf );
@@ -538,7 +538,7 @@ int JagMemDiskSortArray::get( AbaxFixString &str )
 			rc = 0;
 			_rend = 1;
 		} else {
-			str = AbaxFixString( buf, _kvlen );
+			str = JagFixString( buf, _kvlen );
 		}	
 	} else {
 		_rend = 1;

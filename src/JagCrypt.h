@@ -20,9 +20,9 @@
 #define _abax_crypt_h_
 #include <abax.h>
 #include <tomcrypt.h>
-AbaxDataString 		JagDecryptStr( const AbaxDataString &privkey,  const AbaxDataString &str );
-AbaxDataString 		JagEncryptStr(const AbaxDataString &pubkey, const AbaxDataString &str );
-AbaxDataString 		JagEncryptZFC(ecc_key *pecckey, const AbaxDataString &str );
-ecc_key *			JagMakeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString &privkey );
+Jstr 		JagDecryptStr( const Jstr &privkey,  const Jstr &str );
+Jstr 		JagEncryptStr(const Jstr &pubkey, const Jstr &str );
+Jstr 		JagEncryptZFC(ecc_key *pecckey, const Jstr &str );
+ecc_key *			JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey );
 #endif
 

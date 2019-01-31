@@ -27,14 +27,14 @@ class JDFSMgr;
 class JDFS
 {
 	public:
-		JDFS( JagDBServer *servobj, const AbaxDataString &fpath, int kvlen, abaxint arrlen=0 );
+		JDFS( JagDBServer *servobj, const Jstr &fpath, int kvlen, abaxint arrlen=0 );
 		~JDFS();
 		int getFD();
 		abaxint getFileSize() const;
 		int exist() const;
 		int open();
 		int close();
-		int rename( const AbaxDataString &newpath );
+		int rename( const Jstr &newpath );
 		int remove();
 		int fallocate( abaxint offset, abaxint len );
 		int setStripeSize( size_t ss ) { _stripeSize = ss; }
@@ -42,7 +42,7 @@ class JDFS
 		abaxint getArrayLength() const;
 		abaxint pread( char *buf, size_t len, size_t offset ) const; 
 		abaxint pwrite( const char *buf, size_t len, size_t offset ); 
-		AbaxDataString  _fpath;
+		Jstr  _fpath;
 
   protected:
   		int          _kvlen;  // KEYVAL length

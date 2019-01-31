@@ -54,14 +54,14 @@ class JagTableExSort {
 	 * by. outfile is the output file that is created/overwritten.
 	 */
 	void externalSort( const JagParseParam *parseParam, const JagSchemaRecord& schema, 
-					   const AbaxDataString& input, const AbaxDataString& output, 
+					   const Jstr& input, const Jstr& output, 
 					   bool group_by = false, bool descending = false) 
     {
 
 		std::cout << "External Sort started" << std::endl;
 		const char *c_name = input.c_str();		// C string of the input file
-		std::vector<AbaxDataString> sort_by;		// Stores the sort parameters
-		AbaxDataString sort_param;			// String to store the sort
+		std::vector<Jstr> sort_by;		// Stores the sort parameters
+		Jstr sort_param;			// String to store the sort
 		int is_key;
 
 		if(group_by) {
@@ -99,7 +99,7 @@ class JagTableExSort {
 		std::ofstream write_file;			// stream to write files to
 		int boxNum = 0;					// # of boxes
 		int lineNum = 0;				// Counter for lines per box
-		std::vector<AbaxDataString> box_vec;		// stores list of names of temp files
+		std::vector<Jstr> box_vec;		// stores list of names of temp files
 		read_buff.open(c_name, std::ios::in);		// Open the input file for reading
 
 		// Check if it is empty
@@ -181,7 +181,7 @@ class JagTableExSort {
 		// Close any files left open
 		write_file.close();
 		// Merge the files together to form output file
-		AbaxDataString sorted_file = mergeAllFiles(box_vec, sort_by, schema, box_vec.size(), descending);
+		Jstr sorted_file = mergeAllFiles(box_vec, sort_by, schema, box_vec.size(), descending);
 		rename(sorted_file.c_str(), output.c_str());
 		std::cout << "External Sort finished" << std::endl;
 	}
@@ -189,12 +189,12 @@ class JagTableExSort {
 	/**
 	 * Merges and sort list of files together. Merges k-way. k must be greater than 1
 	 */
-	AbaxDataString mergeAllFiles(const std::vector<AbaxDataString>& box_vec, 
-								 const std::vector<AbaxDataString>& sort_by, const JagSchemaRecord& schema, 
+	Jstr mergeAllFiles(const std::vector<Jstr>& box_vec, 
+								 const std::vector<Jstr>& sort_by, const JagSchemaRecord& schema, 
 								 int k, bool descending = false) 
 	{
-		std::vector<AbaxDataString> merge_vec;
-		std::queue<AbaxDataString> file_q;
+		std::vector<Jstr> merge_vec;
+		std::queue<Jstr> file_q;
 
 		if(k < 2) {
 			k = 2;
@@ -208,17 +208,17 @@ class JagTableExSort {
 		while(merge_vec.size() != 1) {
 			int extra = merge_vec.size() % k;
 			int num_runs = merge_vec.size()/k;
-			std::vector<AbaxDataString> new_vec;
+			std::vector<Jstr> new_vec;
 
 			if(num_runs == 0) {
 				num_runs = 1;
 				extra = 0;
 			}
 			
-			std::vector<std::vector<AbaxDataString>> group_vec;
+			std::vector<std::vector<Jstr>> group_vec;
 
 			for(int i = 0; i < num_runs; i++) {
-				std::vector<AbaxDataString> merge_group;
+				std::vector<Jstr> merge_group;
 				group_vec.push_back(merge_group);
 			}
 	
@@ -228,7 +228,7 @@ class JagTableExSort {
 
 			#pragma omp parallel for
 			for(int i = 0; i < num_runs; i++) {
-				AbaxDataString merged = mergeFiles(group_vec[i], sort_by, schema, num_runs, descending);
+				Jstr merged = mergeFiles(group_vec[i], sort_by, schema, num_runs, descending);
 				std::cout << "Merge vector size: " << group_vec[i].size() << std::endl;
 				new_vec.push_back(merged);
 
@@ -245,8 +245,8 @@ class JagTableExSort {
 	/**
 	 * Merges the files in box_vec
 	 */
-	AbaxDataString mergeFiles( const std::vector<AbaxDataString>& box_vec, 
-							   const std::vector<AbaxDataString>& sort_by, const JagSchemaRecord& schema, 
+	Jstr mergeFiles( const std::vector<Jstr>& box_vec, 
+							   const std::vector<Jstr>& sort_by, const JagSchemaRecord& schema, 
 							   int k, bool descending = false) 
 	{
 		// Hash name for merged file
@@ -257,7 +257,7 @@ class JagTableExSort {
 			merge_hash += hash(box_vec[i].c_str());
 		}
 
-		AbaxDataString merged = to_string(merge_hash) + ".dat";
+		Jstr merged = to_string(merge_hash) + ".dat";
 		std::ofstream merge_file;
 		merge_file.open(merged, std::ios::out);
 
@@ -267,7 +267,7 @@ class JagTableExSort {
 
 		// Unordered map to store information on each file and its buffer
 		// <Key: file name, tuple<buffer, file its reading from, number of lines left in buffer, pointer inside buffer>>
-		std::unordered_map<AbaxDataString, std::tuple<char*, std::ifstream*, int, int>> files;
+		std::unordered_map<Jstr, std::tuple<char*, std::ifstream*, int, int>> files;
 
 		unsigned int numCPU = sysconf(_SC_NPROCESSORS_ONLN);
 		if(numCPU < k) { k = numCPU; }
@@ -278,7 +278,7 @@ class JagTableExSort {
 		char lenbuf[BUFF_LEN + 1];
 		memset(lenbuf, '\0', BUFF_LEN + 1);
 		int rr_length;
-		AbaxDataString full_line;
+		Jstr full_line;
 
 		//#pragma omp parallel for
 		// Malloc a buffer for each file
@@ -296,7 +296,7 @@ class JagTableExSort {
 				rr_length = atol(lenbuf);
 				char line[rr_length + 1];
 				(*file_ptr).read(line, rr_length);
-				full_line = AbaxDataString(lenbuf) + AbaxDataString(line);
+				full_line = Jstr(lenbuf) + Jstr(line);
 
 				if(full_line.length() <= buf_left) {
 					memcpy(buf+buf_size-buf_left, full_line.c_str(), full_line.length());
@@ -323,8 +323,8 @@ class JagTableExSort {
 
 			// If there is a line to take then put in pq
 			if(std::get<2>(files[box_vec[i]]) > 0) {
-				int rr_length = atol(AbaxDataString(std::get<0>(files[box_vec[i]]), BUFF_LEN).c_str());
-				AbaxDataString line(std::get<0>(files[box_vec[i]]) + std::get<3>(files[box_vec[i]]) + BUFF_LEN, rr_length);
+				int rr_length = atol(Jstr(std::get<0>(files[box_vec[i]]), BUFF_LEN).c_str());
+				Jstr line(std::get<0>(files[box_vec[i]]) + std::get<3>(files[box_vec[i]]) + BUFF_LEN, rr_length);
 				JagTableLine jag_line(line, box_vec[i]);
 				pq.push(jag_line);
 				std::get<3>(files[box_vec[i]]) += rr_length + BUFF_LEN;
@@ -341,7 +341,7 @@ class JagTableExSort {
 						abaxint rr_length = atol(lenbuf);
 						char line[rr_length + 1];
 						(*std::get<1>(files[box_vec[i]])).read(line, rr_length);
-						AbaxDataString full_line = AbaxDataString(lenbuf) + AbaxDataString(line);
+						Jstr full_line = Jstr(lenbuf) + Jstr(line);
 
 						if(rr_length <= buf_left) {
 							memcpy(std::get<0>(files[box_vec[i]])+buf_size-buf_left, full_line.c_str(), full_line.length());
@@ -370,7 +370,7 @@ class JagTableExSort {
 			JagTableLine curr = pq.top();
 			pq.pop();
 			sprintf(lenbuf, FORMAT_STR, curr.line.length());
-			AbaxDataString full_line = AbaxDataString(lenbuf) + curr.line;
+			Jstr full_line = Jstr(lenbuf) + curr.line;
 
 			if(buf_size < main_buf_ptr + full_line.length() || pq.empty()) {
 				main_buf_ptr = 0;
@@ -389,8 +389,8 @@ class JagTableExSort {
 
 			// If there is a line to put in pq then take it
 			if(num_lines > 0) {
-				int rr_length = atol(AbaxDataString(buf + buf_ptr, BUFF_LEN).c_str());
-				AbaxDataString line(buf + buf_ptr + BUFF_LEN, rr_length);
+				int rr_length = atol(Jstr(buf + buf_ptr, BUFF_LEN).c_str());
+				Jstr line(buf + buf_ptr + BUFF_LEN, rr_length);
 				JagTableLine jag_line(line, curr.file_name);
 				pq.push(jag_line);
 				buf_ptr += rr_length + BUFF_LEN;
@@ -406,7 +406,7 @@ class JagTableExSort {
 						abaxint rr_length = atol(lenbuf);
 						char line[rr_length + 1];
 						(*file_ptr).read(line, rr_length);
-						AbaxDataString full_line = AbaxDataString(lenbuf) + AbaxDataString(line);
+						Jstr full_line = Jstr(lenbuf) + Jstr(line);
 
 						if(rr_length <= buf_left) {
 							memcpy(buf+buf_size-buf_left, full_line.c_str(), full_line.length());
@@ -450,7 +450,7 @@ class JagTableExSort {
 	/**
 	 * Converts int to string
 	 */
-	AbaxDataString to_string(uabaxint number) 
+	Jstr to_string(uabaxint number) 
 	{
 		std::ostringstream os;
 
@@ -478,13 +478,13 @@ class JagTableExSort {
 	int get_max_buf() 
 	{
 		JagCfg cfg;
-		AbaxDataString max_buff = cfg.getValue(AbaxDataString("EXSORTBUFFER_SIZE"));
+		Jstr max_buff = cfg.getValue(Jstr("EXSORTBUFFER_SIZE"));
 		if(max_buff == "") { return 3000000; }
 		return std::stoi(max_buff)*1000000;
 	}
 
 	// Returns the size of the file
-	int file_size(const AbaxDataString& file_name) 
+	int file_size(const Jstr& file_name) 
 	{
 		std::ifstream file(file_name, std::ios::binary | std::ios::ate);
 

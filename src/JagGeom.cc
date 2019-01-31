@@ -14908,7 +14908,7 @@ double JagGeo::dotProduct( const JagPoint2D &p1, const JagPoint2D &p2 )
 }
 
 
-bool JagGeo::distance( const AbaxFixString &inlstr, const AbaxFixString &inrstr, const Jstr &arg, double &dist )
+bool JagGeo::distance( const JagFixString &inlstr, const JagFixString &inrstr, const Jstr &arg, double &dist )
 {
 	prt(("s3083 JagGeo::distance inlstr=[%s] arg=[%s]\n", inlstr.c_str(), arg.c_str() ));
 	prt(("s3083 JagGeo::distance inrstr=[%s] arg=[%s]\n", inrstr.c_str(), arg.c_str() ));
@@ -20811,7 +20811,7 @@ JagPolygon::JagPolygon( const JagTriangle2D &t )
 // return n>0: OK ,  <=0 error
 // instr: "point3d(...)"  "polygon((...),(...))"
 // outstr: "CJAG=0=0=type=subtype  bbox data1 data2 data3 ..."
-int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr )
+int JagGeo::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 {
 	int cnt = 0;
 	Jstr othertype;
@@ -21171,7 +21171,7 @@ int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr )
 // lstr: CJAG=0=0=ML=0 ( (0 0, 1 1, 4 6, 9 3, 0 0),( 3 4 , 2 1, 9 2, 3 4 ) )
 // lstr: OJAG=0=0=ML=0 1:2:3:4 x:y ...|x:y ...
 // type: line/3d, linestring/3d, multilinestring/3d
-double JagGeo::getGeoLength( const AbaxFixString &inlstr )
+double JagGeo::getGeoLength( const JagFixString &inlstr )
 {
 	if ( inlstr.size() < 1 ) return 0.0;
 	Jstr lstr;
@@ -21681,7 +21681,7 @@ Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1,
 	prt(("s4811 doPolygonUnion colType2=%s\n", colType2.c_str() ));
 	Jstr val;
 	Jstr t;
-	AbaxFixString txt;
+	JagFixString txt;
 	std::vector< std::string> vec;
 	Jstr uwkt;
 	char *p;
@@ -21692,7 +21692,7 @@ Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1,
 			prt(("s2038 error unionOfTwoPolygons rc=%d\n", rc ));
 			return "";
 		}
-		rc = convertConstantObjToJAG( AbaxFixString(uwkt.c_str()), val );
+		rc = convertConstantObjToJAG( JagFixString(uwkt.c_str()), val );
 		if ( rc <= 0 ) { val = ""; }
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		Jstr res;
@@ -21704,7 +21704,7 @@ Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1,
 		}
 		prt(("s1728 res=[%s] rc=%d\n", res.c_str(), rc ));
 		if ( res.size() < 1 ) return "";
-		rc = convertConstantObjToJAG( AbaxFixString(res.c_str()), val );
+		rc = convertConstantObjToJAG( JagFixString(res.c_str()), val );
 		prt(("s1728 val=[%s] rc=%d\n", val.c_str(), rc ));
 		if ( rc <= 0 ) {
 			prt(("s2038 error convertConstantObjToJAG rc=%d\n", rc ));
@@ -21713,7 +21713,7 @@ Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1,
 	} 
 	return val;
 
-	// int JagGeo::convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr )
+	// int JagGeo::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 
 }
 

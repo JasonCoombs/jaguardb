@@ -99,7 +99,7 @@ StringElementNode& StringElementNode::operator=(const StringElementNode& n)
 
 // ctor
 StringElementNode::StringElementNode( BinaryExpressionBuilder *builder, const Jstr &name, 
-									 const AbaxFixString &value, 
+									 const JagFixString &value, 
                        				  const JagParseAttribute &jpa, int tabnum, int typeMode )
 {
     _name = makeLowerString(name); 
@@ -141,7 +141,7 @@ void StringElementNode::print( int mode ) {
 // 1: OK
 int StringElementNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
-						JagMinMax *minmax, AbaxFixString &str, int &typeMode, int &tabnum ) 
+						JagMinMax *minmax, JagFixString &str, int &typeMode, int &tabnum ) 
 {
 	//prt(("s6112  StringElementNode::setWhereRange _name=[%s] \n", _name.c_str() ));
 	tabnum = -1;
@@ -253,7 +253,7 @@ int StringElementNode::setAggregateValue( int nodenum, const char *buf, int leng
 // return 1: get string to compare; 
 // return 2: no string provided, regard as true
 int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-					const char *buffers[], AbaxFixString &str, int &typeMode, 
+					const char *buffers[], JagFixString &str, int &typeMode, 
 					Jstr &type, int &length, bool &first, bool useZero, bool setGlobal ) 
 {
 	prt(( "s3039 StEleNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s]\n", _name.c_str(), _value.c_str(), _type.c_str() ));
@@ -288,8 +288,8 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 		} else if (  _type == JAG_C_COL_TYPE_RANGE  ) {
 			makeRangeDataString( attrs, buffers, colobjstr, str );
 		} else {
-			str = AbaxFixString(buffers[_tabnum]+_offset, _length);
-			//prt(("s0233 AbaxFixString str=[%s] _type=[%s]\n", str.c_str(), _type.c_str() ));
+			str = JagFixString(buffers[_tabnum]+_offset, _length);
+			//prt(("s0233 JagFixString str=[%s] _type=[%s]\n", str.c_str(), _type.c_str() ));
 		}
 
 		if ( isInteger(_type) ) typeMode = 1;
@@ -312,7 +312,7 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 	return 1;
 }
 
-int StringElementNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length )
+int StringElementNode::checkFuncValidConstantOnly( JagFixString &str, int &typeMode, Jstr &type, int &length )
 {
 	prt(("s1026 StringElementNode::checkFuncValidConstantOnly() ...\n" ));
 	if ( _value.length() > 0 ) {
@@ -330,7 +330,7 @@ int StringElementNode::checkFuncValidConstantOnly( AbaxFixString &str, int &type
 // return str:  "OJAG=srid=tab=TYPE bbx  x y z"  3D
 // return str:  "OJAG=srid=tab=TYPE bbx  x y"  2D
 void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
-										const Jstr &colobjstr, AbaxFixString &str )
+										const Jstr &colobjstr, JagFixString &str )
 {
 	char *pbuf;
 	int  ncols = _endcol - _begincol +1;
@@ -361,7 +361,7 @@ void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const
 	}
 
 	buf[totlen-1] = '\0';
-	str = AbaxFixString( buf, totlen-1 );
+	str = JagFixString( buf, totlen-1 );
 	free( buf );
 	//prt(("s0883 makeDataString str=[%s]\n", str.c_str() ));
 }
@@ -370,7 +370,7 @@ void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const
 // return str:  "OJAG=srid=tab=TYPE bbx  x y z"  3D
 // return str:  "OJAG=srid=tab=TYPE bbx  x y"  2D
 void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
-										const Jstr &colobjstr, AbaxFixString &str )
+										const Jstr &colobjstr, JagFixString &str )
 {
 	int  ncols = _endcol - _begincol +1;
 	Jstr bufstr = colobjstr;
@@ -378,13 +378,13 @@ void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const
 		bufstr += Jstr(" ") + Jstr(buffers[_tabnum]+attrs[_tabnum][_begincol+i].offset, attrs[_tabnum][_begincol+i].length ).trim0();
 	}
 
-	str = AbaxFixString( bufstr.c_str(), bufstr.size() );
+	str = JagFixString( bufstr.c_str(), bufstr.size() );
 }
 
 // return str:  "OJAG=srid=tab=TYPE=subtype  x y z"  3D
 // return str:  "OJAG=srid=tab=TYPE=subtype  x y"  2D
 void StringElementNode::makeRangeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
-										const Jstr &incolobjstr, AbaxFixString &str )
+										const Jstr &incolobjstr, JagFixString &str )
 {
 	//prt(("makeRangeDataString...\n" ));
 	int  ncols = _endcol - _begincol +1;
@@ -394,13 +394,13 @@ void StringElementNode::makeRangeDataString( const JagSchemaAttribute *attrs[], 
 	for ( int i = 0; i < ncols; ++i ) {
 		bufstr += Jstr(" ") + Jstr( buffers[_tabnum]+attrs[_tabnum][_begincol+i].offset, attrs[_tabnum][_begincol+i].length ).trim0();
 	}
-	str = AbaxFixString( bufstr.c_str(), bufstr.size() );
+	str = JagFixString( bufstr.c_str(), bufstr.size() );
 }
 
 void StringElementNode::getPolyDataString( JagMergeReaderBase *ntr, const Jstr &polyType, 
 											const JagHashStrInt *maps[],
 											const JagSchemaAttribute *attrs[], const char *buffers[], 
-											AbaxFixString &str )
+											JagFixString &str )
 {
 	//prt(("s7026 getPolyDataString polyType=[%s]\n", polyType.c_str() ));
 	if ( polyType == JAG_C_COL_TYPE_POLYGON 
@@ -426,7 +426,7 @@ void StringElementNode::getPolyDataString( JagMergeReaderBase *ntr, const Jstr &
 // return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z ... ! ...|...|...!...|...|..."  multipolygon3d
 void StringElementNode::getPolyData( const Jstr &polyType, JagMergeReaderBase *ntr, 
 									const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-									const char *buffers[], AbaxFixString &str, bool is3D )
+									const char *buffers[], JagFixString &str, bool is3D )
 {
 	Jstr polyColumns;
 	// prt(("s6732 polyType=[%s] _columns=[%s] is3D=%d\n", polyType.c_str(), _columns.c_str(), is3D ));
@@ -508,7 +508,7 @@ void StringElementNode::getPolyData( const Jstr &polyType, JagMergeReaderBase *n
 	if ( _builder->_pparam->_rowHash ) {
 		Jstr val = _builder->_pparam->_rowHash->getValue( _name, rc );
 		if ( rc ) {
-			str  = AbaxFixString(val.c_str(), val.size() );
+			str  = JagFixString(val.c_str(), val.size() );
 			//prt(("s6720 got str=[%s] from _rowHash for _name=[%s]\n", str.c_str(), _name.c_str() ));
 		} else {
 			//prt(("6723 NOT got str=[%s] from _rowHash for _name=[%s]\n", str.c_str(), _name.c_str() ));
@@ -888,7 +888,7 @@ void BinaryOpNode::clear()
 // 1 OK with limited range
 int BinaryOpNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
-						JagMinMax *minmax, AbaxFixString &str, int &typeMode, int &tabnum ) 
+						JagMinMax *minmax, JagFixString &str, int &typeMode, int &tabnum ) 
 {
 	//prt(("s0448 BinaryOpNode::setWhereRange numTabs=%d ...\n", numTabs ));
 
@@ -904,7 +904,7 @@ int BinaryOpNode::setWhereRange( const JagHashStrInt *maps[], const JagSchemaAtt
 	}
 
 	bool lhasVal = 0, rhasVal = 0;
-	AbaxFixString lstr, rstr;
+	JagFixString lstr, rstr;
 	int leftVal = 1, rightVal = 1, ltmode = 0, rtmode = 0, ltabnum = -1, rtabnum = -1, result = 0;
 	if ( _left ) leftVal = _left->setWhereRange( maps, attrs, keylen, numKeys, numTabs, 
 									lhasVal, leftbuf, lstr, ltmode, ltabnum );
@@ -1349,7 +1349,7 @@ int BinaryOpNode::setAggregateValue( int nodenum, const char *buf, int length )
 		if ( _binaryOp == JAG_FUNC_AVG || _binaryOp == JAG_FUNC_SUM || _binaryOp == JAG_FUNC_STDDEV ) {
 			_opString = longDoubleToStr(raystrtold(buf, length));
 		} else {
-			_opString = AbaxFixString( buf, length );
+			_opString = JagFixString( buf, length );
 		}
 	}
 	return 1;
@@ -1361,12 +1361,12 @@ int BinaryOpNode::setAggregateValue( int nodenum, const char *buf, int length )
 // 0: OK and false ( e.g. 1 == 0 ) ;
 // 1 and 2 OK and true ( e.g. 1 == 1 )  2: if no data avaialble
 int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-								         const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
+								         const char *buffers[], JagFixString &str, int &typeMode, Jstr &type, 
 										 int &length, bool &first, bool useZero, bool setGlobal )
 {
 	prt(("s2301 BinaryOpNode::checkFuncValid _left=%0x _right=%0x _binaryOp=%d ...\n", _left, _right, _binaryOp ));
 
-	AbaxFixString lstr, rstr;
+	JagFixString lstr, rstr;
 	Jstr ltype, rtype;
 	int leftVal = 1, rightVal = 1, ltmode = 0, rtmode = 0, llength = 0, rlength = 0, result = 0;
 
@@ -1438,12 +1438,12 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 // return -1: error; 
 // 0: OK and false ( e.g. 1 == 0 ) ; 
 // 1 OK and true ( e.g. 1 == 1 )
-int BinaryOpNode::checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length )
+int BinaryOpNode::checkFuncValidConstantOnly( JagFixString &str, int &typeMode, Jstr &type, int &length )
 {
 	prt(("s1128 BinaryOpNode::checkFuncValidConstantOnly _left=%0x _right=%0x\n", _left, _right ));
 
 	bool first = 0;
-	AbaxFixString lstr, rstr;
+	JagFixString lstr, rstr;
 	Jstr ltype, rtype;
 	int leftVal = 1, rightVal = 1, ltmode = 0, rtmode = 0, llength = 0, rlength = 0, result = 0;
 
@@ -1550,7 +1550,7 @@ void BinaryOpNode::findAndBuffer( JagMinMax *minmax, JagMinMax *leftbuf, JagMinM
 // minOrMax 1: min only
 // minOrMax 2: max only
 bool BinaryOpNode::formatColumnData( JagMinMax *minmax, JagMinMax *iminmax, 
-										    const AbaxFixString &value, int tabnum, int minOrMax )
+										    const JagFixString &value, int tabnum, int minOrMax )
 {	
 	// if is value, not set column data
 	if ( minmax[tabnum].buflen <= iminmax[tabnum].offset ) { 
@@ -1869,7 +1869,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 						const int keylen[], const int numKeys[], int numTabs, int ltmode, int rtmode, 
 						int ltabnum, int rtabnum,
 						JagMinMax *minmax, JagMinMax *lminmax, JagMinMax *rminmax, 
-						AbaxFixString &str, AbaxFixString &lstr, AbaxFixString &rstr )
+						JagFixString &str, JagFixString &lstr, JagFixString &rstr )
 {
 	char c;
 	int coltype, cmode;
@@ -1903,7 +1903,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 	if ( _binaryOp == JAG_FUNC_EQUAL ) {
 		if ( 1 == coltype ) {
 			if ( formatColumnData( minmax, lminmax, rstr, ltabnum, 0 ) ) {
-				str = AbaxFixString(minmax[ltabnum].minbuf, keylen[ltabnum]);
+				str = JagFixString(minmax[ltabnum].minbuf, keylen[ltabnum]);
 			} else {
 				str="1";
 			}
@@ -1911,7 +1911,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 			return 1;
 		} else if ( 2 == coltype ) {
 			if ( formatColumnData( minmax, rminmax, lstr, rtabnum, 0 ) ) {
-				str = AbaxFixString(minmax[rtabnum].minbuf, keylen[rtabnum]);
+				str = JagFixString(minmax[rtabnum].minbuf, keylen[rtabnum]);
 			} else {
 				str="1";
 			}
@@ -1961,7 +1961,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 		if ( 1 == coltype ) {
 			//prt(("s9309 ltabnum=%d keylen[ltabnum]=%d\n", ltabnum, keylen[ltabnum] ));
 			if ( formatColumnData( minmax, lminmax, rstr, ltabnum, 2 ) ) {
-				str = AbaxFixString(minmax[ltabnum].maxbuf, keylen[ltabnum] );
+				str = JagFixString(minmax[ltabnum].maxbuf, keylen[ltabnum] );
 				//prt(("s3865 1 == coltype str=[%s] return 1\n", str.c_str() ));
 			} else {
 				str = "1";
@@ -1969,7 +1969,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 			return 1;
 		} else if ( 2 == coltype ) {
 			if ( formatColumnData( minmax, rminmax, lstr, rtabnum, 1 ) ) {
-				str = AbaxFixString(minmax[rtabnum].minbuf, keylen[rtabnum]);
+				str = JagFixString(minmax[rtabnum].minbuf, keylen[rtabnum]);
 			} else {
 				str = "1";
 			}
@@ -2011,12 +2011,12 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 		if ( 1 == coltype ) {
 			//prt(("s0028 formatColumnData ...\n" ));
 			formatColumnData( minmax, lminmax, rstr, ltabnum, 1  );
-			str = AbaxFixString(minmax[ltabnum].minbuf, keylen[ltabnum]);
+			str = JagFixString(minmax[ltabnum].minbuf, keylen[ltabnum]);
 			//prt(("s0028 formatColumnData str=[%s] ...\n", str.c_str()  ));
 			return 1;
 		} else if ( 2 == coltype ) {
 			formatColumnData( minmax, rminmax, lstr, rtabnum, 2  );
-			str = AbaxFixString(minmax[rtabnum].maxbuf, keylen[rtabnum]);
+			str = JagFixString(minmax[rtabnum].maxbuf, keylen[rtabnum]);
 			return 1;
 		} else {
 			if ( _binaryOp == JAG_FUNC_GREATERTHAN ) {
@@ -2066,7 +2066,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 					memcpy(minmax[ltabnum].maxbuf+lminmax[ltabnum].offset, rstr.c_str(), plast-pfirst);
 				}
 			}
-			str = AbaxFixString(minmax[ltabnum].minbuf, keylen[ltabnum]);
+			str = JagFixString(minmax[ltabnum].minbuf, keylen[ltabnum]);
 			return 1;
 		} else if ( 2 == coltype ) {
 			// must be col like constant or constant like constant
@@ -2405,19 +2405,19 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 				//res.tm_year+1900, res.tm_mon+1, res.tm_mday,  res.tm_hour, res.tm_min, res.tm_sec );
 			strftime( buf, collen+1, "%Y-%m-%d %H:%M:%S", &res );
 		}
-		str = AbaxFixString( buf, collen );
+		str = JagFixString( buf, collen );
 		if ( buf ) free ( buf );
 		return 1;
 	}
 	else if ( _binaryOp == JAG_FUNC_TIME ) {
 		char buf[32];
 		sprintf( buf, "%ld", time(NULL) );
-		str = AbaxFixString( buf );
+		str = JagFixString( buf );
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_PI ) {
 		char buf[32];
 		sprintf( buf, "%f", JAG_PI );
-		str = AbaxFixString( buf );
+		str = JagFixString( buf );
 		return 1;
 	}
 	// DISTANCE
@@ -2435,7 +2435,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 
 // cmode 0: regard as string; cmode 1: regard as int; cmode 2: regard as double/float
 // return -1: error; 0, 1 OK
-int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr, 
+int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr, 
 	int &ltmode, int &rtmode,  const Jstr& ltype,  const Jstr& rtype, 
 	int llength, int rlength, bool &first )
 {
@@ -2457,13 +2457,13 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 			char buf[llength+1];
 			memset( buf, 0, llength+1 );
 			formatOneCol( _jpa.timediff, _jpa.servtimediff, buf, rstr.c_str(), errmsg, "GARBAGE", 0, llength, 0, ltype );
-			rstr = AbaxFixString( buf, llength );
+			rstr = JagFixString( buf, llength );
 		} else if ( isDateTime(rtype) && 0 == ltype.size() ) {
 			// right is date time column and left is constant, covert left
 			char buf[rlength+1];
 			memset( buf, 0, rlength+1 );
 			formatOneCol( _jpa.timediff, _jpa.servtimediff, buf, lstr.c_str(), errmsg, "GARBAGE", 0, rlength, 0, rtype );
-			lstr = AbaxFixString( buf, rlength );
+			lstr = JagFixString( buf, rlength );
 		} // otherwise, do nothing
 	}
 	
@@ -3080,18 +3080,18 @@ int BinaryOpNode::_doCalculation( AbaxFixString &lstr, AbaxFixString &rstr,
 				//res.tm_year+1900, res.tm_mon+1, res.tm_mday,  res.tm_hour, res.tm_min, res.tm_sec );
 			strftime( buf, collen+1, "%Y-%m-%d %H:%M:%S", &res );
 		}
-		lstr = AbaxFixString( buf, collen );
+		lstr = JagFixString( buf, collen );
 		if ( buf ) free ( buf );
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_TIME ) {
 		char buf[32];
 		sprintf( buf, "%ld", time(NULL) );
-		lstr = AbaxFixString( buf );
+		lstr = JagFixString( buf );
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_PI ) {
 		char buf[32];
 		sprintf( buf, "%f", JAG_PI );
-		lstr = AbaxFixString( buf );
+		lstr = JagFixString( buf );
 		ltmode = 2;
 		return 1;
 	} else if ( _binaryOp == JAG_FUNC_DISTANCE ) {
@@ -4955,7 +4955,7 @@ int BinaryExpressionBuilder::operandStackTopSize() const
 // op can be WITHIN, CONTAIN, COVER, COVERED, OVERLAP, INTERSECT
 // within: point-> line, linestring, triangle, square, cube, ...
 // within:  triangle -> triangle, square, cube, ...
-bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, 
+bool BinaryOpNode::processBooleanOp( int op, const JagFixString &inlstr, const JagFixString &inrstr, 
 											const Jstr &carg )
 {
 	prt(("s5481 do processBooleanOp inlstr=[%s]\n", inlstr.c_str() ));
@@ -5073,7 +5073,7 @@ bool BinaryOpNode::processBooleanOp( int op, const AbaxFixString &inlstr, const 
 // lstr must be table/index column with its all internal data
 // rstr must be table/index column with all internal data 
 // op can be UNION
-Jstr  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inlstr, const AbaxFixString &inrstr, const Jstr &carg )
+Jstr  BinaryOpNode::processTwoStrOp( int op, const JagFixString &inlstr, const JagFixString &inrstr, const Jstr &carg )
 {
 	prt(("s5481 do processTwoStrOp inlstr=[%s]\n", inlstr.c_str() ));
 	prt(("s5481 do processTwoStrOp inrstr=[%s]\n", inrstr.c_str() ));
@@ -5195,7 +5195,7 @@ Jstr  BinaryOpNode::processTwoStrOp( int op, const AbaxFixString &inlstr, const 
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
 // op can be AEA
-bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &inlstr, const Jstr &carg, Jstr &value )
+bool BinaryOpNode::processSingleStrOp( int op, const JagFixString &inlstr, const Jstr &carg, Jstr &value )
 {
 	prt(("s5481 do processSingleStrOp inlstr=[%s]\n", inlstr.c_str() ));
 	prt(("s5481 do processSingleStrOp carg=[%s]\n", carg.c_str() ));
@@ -5239,7 +5239,7 @@ bool BinaryOpNode::processSingleStrOp( int op, const AbaxFixString &inlstr, cons
 // return 0 for OK;  < 0 for error or false
 // lstr must be table/index column with its all internal data
 // op can be AEA
-bool BinaryOpNode::processSingleDoubleOp( int op, const AbaxFixString &inlstr, const Jstr &carg, double &value )
+bool BinaryOpNode::processSingleDoubleOp( int op, const JagFixString &inlstr, const Jstr &carg, double &value )
 {
 	prt(("s5481 do processSingleDoubleOp lstr=[%s]\n", inlstr.c_str() ));
 	//prt(("s5481 do processSingleDoubleOp carg=[%s]\n", carg.c_str() ));

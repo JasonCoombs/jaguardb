@@ -31,7 +31,7 @@ class JagBoundFile
 	int  appendLine( const char *line );
 
 	int openRead();
-	int  readLines( int numLines, JagVector<AbaxDataString> &vec );
+	int  readLines( int numLines, JagVector<Jstr> &vec );
 	void close();
 
 	~JagBoundFile();
@@ -40,7 +40,7 @@ class JagBoundFile
   	int  _numLines;
   	int  _bound;
 	FILE  *_fp;
-	AbaxDataString _fpath;
+	Jstr _fpath;
 	int  _trimFile();	
 	int _getNumLines();
 

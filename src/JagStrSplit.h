@@ -26,7 +26,7 @@ class JagStrSplit
 	public:   
 
 		JagStrSplit();
-		JagStrSplit(const AbaxDataString& str, char sep = ' ', bool ignoreregion=false );
+		JagStrSplit(const Jstr& str, char sep = ' ', bool ignoreregion=false );
 		JagStrSplit(const char *str, char sep = ' ', bool ignoreregion=false );
 		
 		void init(const char *str, char sep=' ', bool ignoreregion=false );
@@ -34,14 +34,14 @@ class JagStrSplit
 		void destroy();
 		~JagStrSplit();
 
-	    const AbaxDataString& operator[](int i ) const;
-	    AbaxDataString& operator[](int i );
-		AbaxDataString& last() const;
+	    const Jstr& operator[](int i ) const;
+	    Jstr& operator[](int i );
+		Jstr& last() const;
 		abaxint length() const;
 		abaxint size() const;
 		abaxint slength() const;
-		bool  exists(const AbaxDataString &token) const;
-		bool  contains(const AbaxDataString &token, AbaxDataString &rec ) const;
+		bool  exists(const Jstr &token) const;
+		bool  contains(const Jstr &token, Jstr &rec ) const;
 		void	print() const;
 		void	printStr() const;
 		void  shift();
@@ -50,11 +50,11 @@ class JagStrSplit
 		void  pointTo( const char* str );
 
 	private:
-		AbaxDataString *list_;
+		Jstr *list_;
 		abaxint length_;
 		char sep_;
 		int  start_;
-		AbaxDataString _NULL;
+		Jstr _NULL;
 		const char* pdata_;
 };
 

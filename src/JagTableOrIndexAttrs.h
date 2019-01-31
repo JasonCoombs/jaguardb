@@ -58,10 +58,10 @@ class JagTableOrIndexAttrs
 	char defDatetime; // has default update time stamp or not ( 'T' or ' ' )
 	char updDatetime; // has default update time stamp or not ( 'P' or ' ' )
 	bool hasFile; // has file type -- need to transmit files from client to server, single insert
-	AbaxDataString dbName;
-	AbaxDataString tableName;
-	AbaxDataString indexName; // if not empty, this object is an index of dbName.tableName
-	AbaxDataString schemaString;
+	Jstr dbName;
+	Jstr tableName;
+	Jstr indexName; // if not empty, this object is an index of dbName.tableName
+	Jstr schemaString;
 	JagSchemaRecord schemaRecord;
 	JagVector<PosOffsetLength> uuidarr;
 	JagVector<PosOffsetLength> deftimestamparr;

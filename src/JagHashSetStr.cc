@@ -33,7 +33,7 @@ JagHashSetStr::~JagHashSetStr()
 	jag_hash_set_destroy( &_hash );
 }
 
-bool JagHashSetStr::addKey( const AbaxDataString & key )
+bool JagHashSetStr::addKey( const Jstr & key )
 {
 	if ( key.size() < 1 ) return 0;
 	int rc = jag_hash_set_insert( &_hash, key.c_str() );
@@ -44,7 +44,7 @@ bool JagHashSetStr::addKey( const AbaxDataString & key )
 	return false;
 }
 
-void JagHashSetStr::removeKey( const AbaxDataString & key )
+void JagHashSetStr::removeKey( const Jstr & key )
 {
 	if ( key.size() < 1 ) return;
 	int rc = jag_hash_set_delete( &_hash, key.c_str() );
@@ -53,7 +53,7 @@ void JagHashSetStr::removeKey( const AbaxDataString & key )
 	}
 }
 
-bool JagHashSetStr::keyExist( const AbaxDataString & key ) const
+bool JagHashSetStr::keyExist( const Jstr & key ) const
 {
 	if ( key.size() < 1 ) return false;
 	return jag_hash_set_lookup( &_hash, key.c_str() );

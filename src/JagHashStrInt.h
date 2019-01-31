@@ -30,13 +30,13 @@ class JagHashStrInt
 		JagHashStrInt( const JagHashStrInt &o );
 		JagHashStrInt& operator= ( const JagHashStrInt &o );
 
-		bool addKeyValue( const AbaxDataString &key, int val );
-		void removeKey( const AbaxDataString &key );
-		bool keyExist( const AbaxDataString &key ) const;
-		int getValue( const AbaxDataString &key, bool &rc ) const;
+		bool addKeyValue( const Jstr &key, int val );
+		void removeKey( const Jstr &key );
+		bool keyExist( const Jstr &key ) const;
+		int getValue( const Jstr &key, bool &rc ) const;
 		void reset();
-		bool getValue( const AbaxDataString &key, int &pos ) const;
-		JagVector<AbaxPair<AbaxDataString,abaxint> > getStrIntVector();
+		bool getValue( const Jstr &key, int &pos ) const;
+		JagVector<AbaxPair<Jstr,abaxint> > getStrIntVector();
 		int  size(); // how many items
 		void removeAllKey();
 		void print();

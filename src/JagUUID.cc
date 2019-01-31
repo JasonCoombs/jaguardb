@@ -43,7 +43,7 @@ JagUUID::JagUUID()
 	_getPidStr();
 }
 
-AbaxDataString JagUUID::getString()
+Jstr JagUUID::getString()
 {
 
 	/***
@@ -51,7 +51,7 @@ AbaxDataString JagUUID::getString()
     uuid_generate(id);
 	char str[40];
     uuid_unparse(id, str);
-    AbaxDataString res = str;
+    Jstr res = str;
     return res;
 	***/
 	char ds[41];

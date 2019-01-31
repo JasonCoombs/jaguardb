@@ -1078,7 +1078,7 @@ class JagGeo
 	static Jstr makeJsonPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
 	static Jstr makeJsonMultiPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
 	static Jstr makeJsonDefault( const JagStrSplit &sp, const char *str );
-	static bool distance( const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &arg, double &dist );
+	static bool distance( const JagFixString &lstr, const JagFixString &rstr, const Jstr &arg, double &dist );
 
 
 	////////////// distance //////////////////
@@ -1560,9 +1560,9 @@ class JagGeo
 	static bool getBBox3D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 	static bool getBBox2DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 	static bool getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
-	static double getGeoLength( const AbaxFixString &lstr );
+	static double getGeoLength( const JagFixString &lstr );
 	static Jstr bboxstr( const JagStrSplit &sp, bool skipRing );
-	static int convertConstantObjToJAG( const AbaxFixString &instr, Jstr &outstr );
+	static int convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr );
 	static int numberOfSegments( const JagStrSplit &sp );
 	static bool isPolygonCCW( const JagStrSplit &sp );
 	static bool isPolygonCW( const JagStrSplit &sp );

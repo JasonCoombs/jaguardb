@@ -62,47 +62,47 @@ class JagSchema
 	JagSchema();
   	virtual ~JagSchema(); 
 	virtual void destroy( bool removelock = true);
-	void init( JagDBServer* serv, const AbaxDataString &type, int replicateType );
+	void init( JagDBServer* serv, const Jstr &type, int replicateType );
 	void print();
 	void printinfo();
-	void setupDefvalMap( const AbaxDataString &dbobj, const char *buf, bool isClean );
+	void setupDefvalMap( const Jstr &dbobj, const char *buf, bool isClean );
 	
 	int insert( const JagParseParam *parseParam, bool isTable=true );
-	bool remove( const AbaxDataString &dbtable );
-	bool renameColumn( const AbaxDataString &dbtable, const JagParseParam *parseParam );
-	bool checkSpareRemains( const AbaxDataString &dbtable, const JagParseParam *parseParam );
-	bool dbTableExist( const AbaxDataString &dbname, const AbaxDataString &tabname );
+	bool remove( const Jstr &dbtable );
+	bool renameColumn( const Jstr &dbtable, const JagParseParam *parseParam );
+	bool checkSpareRemains( const Jstr &dbtable, const JagParseParam *parseParam );
+	bool dbTableExist( const Jstr &dbname, const Jstr &tabname );
 	
-	int  isMemTable( const AbaxDataString &dbtable ) const;
-	int  isChainTable( const AbaxDataString &dbtable ) const;
-	int  objectType( const AbaxDataString &dbtable ) const;
-	const JagSchemaRecord*  getAttr( const AbaxDataString & pathName ) const;
-	// bool getAttr( const AbaxDataString & pathName, JagSchemaRecord & onerecord ) const;
-	bool getAttr( const AbaxDataString & pathName, AbaxString & keyInfo ) const;
-	bool getAttrDefVal( const AbaxDataString & pathName, AbaxDataString & keyInfo ) const;
-	AbaxDataString getAllDefVals() const;
-	bool existAttr( const AbaxDataString & pathName ) const;
+	int  isMemTable( const Jstr &dbtable ) const;
+	int  isChainTable( const Jstr &dbtable ) const;
+	int  objectType( const Jstr &dbtable ) const;
+	const JagSchemaRecord*  getAttr( const Jstr & pathName ) const;
+	// bool getAttr( const Jstr & pathName, JagSchemaRecord & onerecord ) const;
+	bool getAttr( const Jstr & pathName, AbaxString & keyInfo ) const;
+	bool getAttrDefVal( const Jstr & pathName, Jstr & keyInfo ) const;
+	Jstr getAllDefVals() const;
+	bool existAttr( const Jstr & pathName ) const;
 	/***
-	bool getOneIndexAttr( const AbaxDataString &dbName, const AbaxDataString &indexName, 
-						  AbaxDataString &tabPathName, JagSchemaRecord &onerecord ) const;
+	bool getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, 
+						  Jstr &tabPathName, JagSchemaRecord &onerecord ) const;
 						  ***/
-	const JagSchemaRecord *getOneIndexAttr( const AbaxDataString &dbName, const AbaxDataString &indexName, 
-						  AbaxDataString &tabPathName ) const;
+	const JagSchemaRecord *getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, 
+						  Jstr &tabPathName ) const;
 
-	JagVector<AbaxString> *getAllTablesOrIndexesLabel( int objType, const AbaxDataString &dbtable, const AbaxDataString &like ) const;
-	JagVector<AbaxString> *getAllTablesOrIndexes( const AbaxDataString &dbtable, const AbaxDataString &like ) const;
-	JagVector<AbaxString> *getAllIndexes( const AbaxDataString &dbname, const AbaxDataString &like ) const;
-	AbaxDataString getTableName(const AbaxDataString &dbname, const AbaxDataString &idxname) const;
-	AbaxDataString getTableNameScan(const AbaxDataString &dbname, const AbaxDataString &idxname) const;
-	bool isIndexCol( const AbaxDataString &dbname, const AbaxDataString &colName );
+	JagVector<AbaxString> *getAllTablesOrIndexesLabel( int objType, const Jstr &dbtable, const Jstr &like ) const;
+	JagVector<AbaxString> *getAllTablesOrIndexes( const Jstr &dbtable, const Jstr &like ) const;
+	JagVector<AbaxString> *getAllIndexes( const Jstr &dbname, const Jstr &like ) const;
+	Jstr getTableName(const Jstr &dbname, const Jstr &idxname) const;
+	Jstr getTableNameScan(const Jstr &dbname, const Jstr &idxname) const;
+	bool isIndexCol( const Jstr &dbname, const Jstr &colName );
 
-	AbaxDataString      readSchemaText( const AbaxDataString &key ) const;
-	void      			writeSchemaText( const AbaxDataString &key, const AbaxDataString &value );
-	void      			removeSchemaFile( const AbaxDataString &key );
-	const JagColumn *getColumn( const AbaxDataString &dbname, const AbaxDataString &objname, 
-								const AbaxDataString &colname ); 
+	Jstr    readSchemaText( const Jstr &key ) const;
+	void   	writeSchemaText( const Jstr &key, const Jstr &value );
+	void   	removeSchemaFile( const Jstr &key );
+	const JagColumn *getColumn( const Jstr &dbname, const Jstr &objname, 
+								const Jstr &colname ); 
 
-	static AbaxDataString getDatabases( JagCfg *cfg = NULL, int replicateType=0 );
+	static Jstr getDatabases( JagCfg *cfg = NULL, int replicateType=0 );
 	static const abaxint KEYLEN = JAG_SCHEMA_KEYLEN;
 	static const abaxint VALLEN = JAG_SCHEMA_VALLEN;
 	static const abaxint KVLEN = KEYLEN + VALLEN;
@@ -124,13 +124,13 @@ class JagSchema
 	JagDBServer    			*_servobj;
 	JagSchemaRecord 		*_schmRecord;
 	JagDiskArrayServer  	*_schema;
-	AbaxDataString 			_stype;
+	Jstr 			_stype;
 	int						_replicateType;
 	JagColumn               _dummyColumn;
 
-	int  _objectTypeNoLock( const AbaxDataString &dbtable ) const;
-	int 	addToColumnMap( const AbaxDataString& dbobj, const JagSchemaRecord &record );
-	int removeFromColumnMap( const AbaxDataString& dbtabobj, const AbaxDataString& dbobj );
+	int  _objectTypeNoLock( const Jstr &dbtable ) const;
+	int 	addToColumnMap( const Jstr& dbobj, const JagSchemaRecord &record );
+	int removeFromColumnMap( const Jstr& dbtabobj, const Jstr& dbobj );
 
 
 };

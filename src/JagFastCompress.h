@@ -24,10 +24,10 @@
 class JagFastCompress
 {
   public:
-	static  void compress(const AbaxDataString & instr, AbaxDataString & outstr );
-	static  void uncompress(const AbaxDataString &instr, AbaxDataString & outstr );
-	static  void compress( const char *instr, abaxint inlen, AbaxDataString & outstr );
-	static  void uncompress( const char *instr, abaxint inlen, AbaxDataString & outstr );
+	static  void compress(const Jstr & instr, Jstr & outstr );
+	static  void uncompress(const Jstr &instr, Jstr & outstr );
+	static  void compress( const char *instr, abaxint inlen, Jstr & outstr );
+	static  void uncompress( const char *instr, abaxint inlen, Jstr & outstr );
 };
 
 #endif

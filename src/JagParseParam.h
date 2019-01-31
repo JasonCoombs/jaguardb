@@ -249,7 +249,7 @@ class SelColAttribute
 	unsigned int sig;
 	int   srid;
 	bool isAggregate;
-	AbaxFixString strResult;
+	JagFixString strResult;
 
 	SelColAttribute() {
 		// tree = new BinaryExpressionBuilder();

@@ -38,13 +38,13 @@
 #include "JagFileMgr.h"
 #include "JagUtil.h"
 
-AbaxDataString JagDecryptStr( const AbaxDataString &privkey, const AbaxDataString &src64 )
+Jstr JagDecryptStr( const Jstr &privkey, const Jstr &src64 )
 {
 	unsigned char 	plainmsg[512];
 	ecc_key  		ecckey;
 	unsigned long 	outlen;
-    AbaxDataString 	pkey = abaxDecodeBase64( privkey );
-    AbaxDataString 	src = abaxDecodeBase64( src64 );
+    Jstr 	pkey = abaxDecodeBase64( privkey );
+    Jstr 	src = abaxDecodeBase64( src64 );
 
 	ltc_mp = tfm_desc;
 	register_hash(&sha512_desc);
@@ -66,7 +66,7 @@ AbaxDataString JagDecryptStr( const AbaxDataString &privkey, const AbaxDataStrin
 		return "";
 	}
 
-	AbaxDataString astr( (const char*)plainmsg, outlen );
+	Jstr astr( (const char*)plainmsg, outlen );
 	return astr;
 }
 
@@ -75,7 +75,7 @@ AbaxDataString JagDecryptStr( const AbaxDataString &privkey, const AbaxDataStrin
 
 // ptr: OK
 // NULL: bad
-ecc_key *JagMakeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString &privkey )
+ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
 {
 	int wprng;
 	int hash;
@@ -108,7 +108,7 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString
 		return NULL;
 	}
 
-	AbaxDataString newp( (const char*)pub, outlen );
+	Jstr newp( (const char*)pub, outlen );
 	pubkey = abaxEncodeBase64 ( newp );
 
 	outlen = 512;
@@ -117,18 +117,18 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, AbaxDataString &pubkey, AbaxDataString
 		return NULL;
 	}
 
-	AbaxDataString newv( (const char*)priv, outlen );
+	Jstr newv( (const char*)priv, outlen );
 	privkey = abaxEncodeBase64 ( newv );
 
 	return pecckey;
 }
 
-AbaxDataString JagEncryptStr( const AbaxDataString &pubkey, const AbaxDataString &src )
+Jstr JagEncryptStr( const Jstr &pubkey, const Jstr &src )
 {
 	// import pbkey to ecckey
 	ecc_key  		ecckey;
 	unsigned long 	outlen;
-    AbaxDataString 	pkey = abaxDecodeBase64( pubkey );
+    Jstr 	pkey = abaxDecodeBase64( pubkey );
 
 	ltc_mp = tfm_desc;
 
@@ -141,7 +141,7 @@ AbaxDataString JagEncryptStr( const AbaxDataString &pubkey, const AbaxDataString
 	return JagEncryptZFC( &ecckey, src );
 }
 
-AbaxDataString JagEncryptZFC( ecc_key *pecckey, const AbaxDataString &src )
+Jstr JagEncryptZFC( ecc_key *pecckey, const Jstr &src )
 {
 	int rc;
 	int hash;
@@ -170,7 +170,7 @@ AbaxDataString JagEncryptZFC( ecc_key *pecckey, const AbaxDataString &src )
           return "";
     }
 
-	AbaxDataString enc( (const char*)ciphermsg, outlen );
+	Jstr enc( (const char*)ciphermsg, outlen );
 	return ( abaxEncodeBase64 ( enc ) );
 }
 

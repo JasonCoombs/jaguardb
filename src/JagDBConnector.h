@@ -32,9 +32,9 @@ class BroadCastAttr
 {
   public:
 	JaguarCPPClient *usecli;
-	AbaxDataString host;
-	AbaxDataString cmd;
-	AbaxDataString value;
+	Jstr host;
+	Jstr cmd;
+	Jstr value;
 	bool getStr;
 	bool result;
 };
@@ -46,19 +46,19 @@ class JagDBConnector
   	~JagDBConnector();
 
 	void makeInitConnection( bool debugClient );
-	AbaxDataString broadCastGet( const AbaxDataString &signal, const AbaxDataString &hostlist, JaguarCPPClient *ucli=NULL );
-	bool broadCastSignal( const AbaxDataString &signal, const AbaxDataString &hostlist, JaguarCPPClient *ucli=NULL );
+	Jstr broadCastGet( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli=NULL );
+	bool broadCastSignal( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli=NULL );
 	static void *queryDBServerStatic( void *ptr );
 
 	// data members
 	short _port;
-	AbaxDataString _passwd;
-	AbaxDataString _servToken;
+	Jstr _passwd;
+	Jstr _servToken;
 	JagNodeMgr *_nodeMgr;
 	JaguarCPPClient *_parentCliNonRecover;
 	JaguarCPPClient *_parentCli;
 	JaguarCPPClient *_broadCastCli;
-	AbaxDataString   _listenIP;
+	Jstr   _listenIP;
 	JagReadWriteLock *_lock;
 
 };

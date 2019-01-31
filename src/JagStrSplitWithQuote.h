@@ -38,13 +38,13 @@ class JagStrSplitWithQuote
 		void destroy();
 		~JagStrSplitWithQuote();
 
-	    const AbaxDataString& operator[]( int i ) const;
+	    const Jstr& operator[]( int i ) const;
 		abaxint length() const;
-		bool  exists(const AbaxDataString &token) const;
+		bool  exists(const Jstr &token) const;
 		void	print();
 
 	private:
-		AbaxDataString *list_;
+		Jstr *list_;
 		abaxint length_;
 		char sep_;
 };

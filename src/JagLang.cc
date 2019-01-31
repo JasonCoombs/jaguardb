@@ -64,7 +64,7 @@ GB 18030 编码是一二四字节变长编码。
 
 JagLang::JagLang()
 {
-	_vec = new JagVector<AbaxDataString>(16);
+	_vec = new JagVector<Jstr>(16);
 }
 
 JagLang::~JagLang()
@@ -137,7 +137,7 @@ abaxint  JagLang:: size()
 	return (*_vec).length();
 }
 
-AbaxDataString JagLang::at(int i)
+Jstr JagLang::at(int i)
 {
 	return (*_vec)[i];
 }
@@ -162,14 +162,14 @@ abaxint JagLang::_parseUTF8( const char *instr )
 }
 
 // DO not support len <= 0 now
-void JagLang::rangeFixString( int buflen, int start, int len, AbaxFixString &res )
+void JagLang::rangeFixString( int buflen, int start, int len, JagFixString &res )
 {
 	if ( start  < 0 ) start = 0;
 
 	char *buf = (char*)jagmalloc( buflen + 1 );
 	memset( buf, 0, buflen+1 );
 	if ( len <= 0 ) {
-		res = AbaxFixString( buf, buflen );
+		res = JagFixString( buf, buflen );
 		free( buf );
 		return;
 	}
@@ -183,7 +183,7 @@ void JagLang::rangeFixString( int buflen, int start, int len, AbaxFixString &res
 		if ( cnt >= len ) break;
 	}
 
-	res = AbaxFixString( buf, buflen );
+	res = JagFixString( buf, buflen );
 	free( buf );
 }
 

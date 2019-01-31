@@ -91,9 +91,9 @@ void endBulkSend( JAGSOCK sock );
 class JagNet
 {
   public:
-	static AbaxDataString getLocalHost();
-	static void getLocalIPs( JagVector<AbaxDataString> &vec );
-	static AbaxDataString getMacAddress();
+	static Jstr getLocalHost();
+	static void getLocalIPs( JagVector<Jstr> &vec );
+	static Jstr getMacAddress();
 	static JAGSOCK connect2Host( const char *host, short port, int timeoutsecs, bool errPrint );
 	static int getNetStat( uabaxint &reads, uabaxint &writes );
 	static JAGSOCK createIPV4Socket( const char *ip, short port );
@@ -105,7 +105,7 @@ class JagNet
 	static int getNumTCPConnections();
 	static void  setRecvSndTimeOut( JAGSOCK sock, int dtimeout, int cliservSameProcess );
 	static void getIPFromHostName( const char *hostname, char *ip ); 
-	static AbaxDataString getIPFromHostName( const AbaxDataString &hostname );
+	static Jstr getIPFromHostName( const Jstr &hostname );
 	static void getIPFromEtcFile( const char *hostname, char *ip );
 	// static JAGSOCK acceptTimeout( JAGSOCK sock, struct sockaddr *pcliaddr, socklen_t* pclilen, abaxint thrdGroup, int timeOutseconds );
 

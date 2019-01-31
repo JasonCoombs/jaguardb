@@ -35,7 +35,7 @@ class JagColumn
 		JagColumn& operator=( const JagColumn& other );
 
 		AbaxString 	   name;
-		AbaxDataString type;
+		Jstr type;
 		unsigned int   offset;
 		unsigned int   length;
 		unsigned int   sig;

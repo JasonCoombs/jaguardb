@@ -75,7 +75,7 @@ JagDBConnector::~JagDBConnector()
 // static connect JDB server, make init connection
 void JagDBConnector::makeInitConnection( bool debugClient )
 {
-	AbaxDataString username, dbname;
+	Jstr username, dbname;
 	username = "admin";
 	dbname = "test";
 
@@ -104,7 +104,7 @@ void JagDBConnector::makeInitConnection( bool debugClient )
 	_broadCastCli = newObject<JaguarCPPClient>();
 	_broadCastCli->setDebug( debugClient );
 
-	AbaxDataString unixSocket = AbaxDataString("/TOKEN=") + _servToken;
+	Jstr unixSocket = Jstr("/TOKEN=") + _servToken;
 
 	raydebug( stdout, JAG_LOG_HIGH, "Init Connection Localhost [%s]\n", _nodeMgr->_selfIP.c_str() );
 	while ( !_parentCliNonRecover->connect( _nodeMgr->_selfIP.c_str(), _port, username.c_str(), _passwd.c_str(), 
@@ -133,7 +133,7 @@ void JagDBConnector::makeInitConnection( bool debugClient )
 // send signal to all JDB servers
 // return false: no server list in cluster.conf, or some connection failure during broadcast
 // otherwise, if all broadcast successfully finished, return true
-bool JagDBConnector::broadCastSignal( const AbaxDataString &signal, const AbaxDataString &hostlist, JaguarCPPClient *ucli )
+bool JagDBConnector::broadCastSignal( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli )
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 
@@ -193,12 +193,12 @@ bool JagDBConnector::broadCastSignal( const AbaxDataString &signal, const AbaxDa
 //   host2_result1\n
 //   host3_result1\n
 //   host4_result1\n
-AbaxDataString JagDBConnector::broadCastGet( const AbaxDataString &signal, const AbaxDataString &hostlist, JaguarCPPClient *ucli )
+Jstr JagDBConnector::broadCastGet( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli )
 {
 	// get a list of all server IPs
 	// if not in localIP send command
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	AbaxDataString res;
+	Jstr res;
 	JagStrSplit split(_nodeMgr->_allNodes, '|', true);
 	int n = 0, len = split.length();
 	if ( len <= 1 ) { return ""; }

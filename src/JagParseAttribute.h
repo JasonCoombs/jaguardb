@@ -27,7 +27,7 @@ class JagParseAttribute
   public:
 	int timediff;
 	int servtimediff;
-	AbaxDataString dfdbname;
+	Jstr dfdbname;
 	const JagCfg *cfg;
 	const JagDBServer *servobj;
 
@@ -41,7 +41,7 @@ class JagParseAttribute
 	}
 
 	JagParseAttribute( const JagDBServer *iservobj, int itimediff=0, int iservtimediff=0, 
-					   AbaxDataString idbname="", const JagCfg *icfg=NULL ) 
+					   Jstr idbname="", const JagCfg *icfg=NULL ) 
     {
 		timediff = itimediff;
 		servtimediff = iservtimediff;

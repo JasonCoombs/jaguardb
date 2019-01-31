@@ -20,16 +20,16 @@
 #include "JagZlibCompress.h"
 
 #ifdef _WINDOWS64_
-AbaxDataString JagZlibCompress:: compress(const AbaxDataString& str )
+Jstr JagZlibCompress:: compress(const Jstr& str )
 {
 	return str;
 }
-AbaxDataString JagZlibCompress:: uncompress(const AbaxDataString& str)
+Jstr JagZlibCompress:: uncompress(const Jstr& str)
 {
 	return str;
 }
 #else
-AbaxDataString JagZlibCompress:: compress(const AbaxDataString& str, int compressionlevel )
+Jstr JagZlibCompress:: compress(const Jstr& str, int compressionlevel )
 {
     z_stream zs; 
     memset(&zs, 0, sizeof(zs));
@@ -44,7 +44,7 @@ AbaxDataString JagZlibCompress:: compress(const AbaxDataString& str, int compres
 
     int ret;
     char outbuffer[32768];
-    AbaxDataString outstring;
+    Jstr outstring;
 
     // retrieve the compressed bytes blockwise
     do {
@@ -65,7 +65,7 @@ AbaxDataString JagZlibCompress:: compress(const AbaxDataString& str, int compres
 }
 
 /** Decompress an STL string using zlib and return the original data. */
-AbaxDataString JagZlibCompress:: uncompress(const AbaxDataString& str)
+Jstr JagZlibCompress:: uncompress(const Jstr& str)
 {
     z_stream zs; 
     memset(&zs, 0, sizeof(zs));
@@ -79,7 +79,7 @@ AbaxDataString JagZlibCompress:: uncompress(const AbaxDataString& str)
 
     int ret;
     char outbuffer[32768];
-    AbaxDataString outstring;
+    Jstr outstring;
 
     do {
         zs.next_out = reinterpret_cast<Bytef*>(outbuffer);

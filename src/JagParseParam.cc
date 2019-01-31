@@ -153,11 +153,11 @@ int JagParseParam::setSelectWhere( )
 // method to set select where tree
 // return value <= 0 error; 1 OK
 // extraWhere: "where1|where2|where3|"
-int JagParseParam::resetSelectWhere( const AbaxDataString &extraWhere )
+int JagParseParam::resetSelectWhere( const Jstr &extraWhere )
 {
 	JagHashMap<AbaxString, AbaxInt> hash;
 	JagStrSplit sp(extraWhere, '|', true );
-	AbaxDataString newWhere;
+	Jstr newWhere;
 	for ( int i=0; i < sp.length(); ++i ) {
 		if ( sp[i].size() < 1 ) continue;
 		if ( ! hash.keyExist( sp[i].c_str() ) ) {
@@ -165,14 +165,14 @@ int JagParseParam::resetSelectWhere( const AbaxDataString &extraWhere )
 			if ( newWhere.size() < 1 ) {
 				newWhere = sp[i];
 			} else {
-				newWhere += AbaxDataString(" and ") + sp[i];
+				newWhere += Jstr(" and ") + sp[i];
 			}
 		}
 	}
 
 	//prt(("s4035 resetSelectWhere selectWhereClause=[%s] extraWhere=[%s]\n", selectWhereClause.c_str(), extraWhere.c_str() ));
 	if ( selectWhereClause.size() > 0 && newWhere.size() > 0 ) {
-		selectWhereClause = AbaxDataString("(") + selectWhereClause + ") and (" + newWhere + ")";
+		selectWhereClause = Jstr("(") + selectWhereClause + ") and (" + newWhere + ")";
 	} else if ( newWhere.size() > 0 ) {
 		selectWhereClause = newWhere;
 	}
@@ -312,30 +312,30 @@ void OnlyTreeAttribute::destroy()
 }
 
 // rebuild select sql from internal saved statements
-AbaxDataString JagParseParam::formSelectSQL()
+Jstr JagParseParam::formSelectSQL()
 {
-	AbaxDataString q;
+	Jstr q;
 	formatInsertSelectCmdHeader( this, q );
 	q += "select " + selectColumnClause + " from " + selectTablistClause + " ";
 
 	if ( hasWhere ) {
-		q += AbaxDataString(" where ") + selectWhereClause + " ";
+		q += Jstr(" where ") + selectWhereClause + " ";
 	}
 
 	if ( hasGroup ) {
-		q += AbaxDataString(" group by ") + selectGroupClause + " ";
+		q += Jstr(" group by ") + selectGroupClause + " ";
 	}
 
 	if ( hasOrder ) {
-		q += AbaxDataString(" order by ") +  selectOrderClause + " ";
+		q += Jstr(" order by ") +  selectOrderClause + " ";
 	}
 
 	if ( hasLimit ) {
-		q += AbaxDataString(" limit ") +  selectLimitClause + " ";
+		q += Jstr(" limit ") +  selectLimitClause + " ";
 	}
 
 	if ( hasTimeout ) {
-		q += AbaxDataString(" timeout ") +  selectTimeoutClause + " ";
+		q += Jstr(" timeout ") +  selectTimeoutClause + " ";
 	}
 
 	// prt(("s3028 selectExportClause=[%s]\n", selectExportClause.c_str() ));
@@ -943,7 +943,7 @@ void JagParseParam::fillRangeSubData( int colLen, CreateAttribute &cattr, int &o
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
 
-	AbaxDataString ctype = JagParser::getFieldType( cattr.srid ); 
+	Jstr ctype = JagParser::getFieldType( cattr.srid ); 
 	cattr.type = ctype;
 	//prt(("s3387 fillRangeSubData srid=%d ctype=[%s]\n", cattr.srid, ctype.c_str() ));
 

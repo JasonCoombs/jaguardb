@@ -81,21 +81,21 @@ class JagDiskArrayBase
 	public:
 	
 		// ctor and dtor
-		JagDiskArrayBase( const JagDBServer *servobj, const AbaxDataString &fpathname, 
+		JagDiskArrayBase( const JagDBServer *servobj, const Jstr &fpathname, 
 							const JagSchemaRecord *record, 
 							bool buildInitIndex=true, abaxint length=32, bool noMonitor=false );
-		JagDiskArrayBase( const JagDBServer *servobj, const AbaxDataString &fpathname, 
+		JagDiskArrayBase( const JagDBServer *servobj, const Jstr &fpathname, 
 						   const JagSchemaRecord *record, 
-						const AbaxDataString &pdbobj, JagDBPair &minpair, JagDBPair &maxpair );
-		JagDiskArrayBase( const AbaxDataString &fpathname, const JagSchemaRecord *record, abaxint length=32 );
+						const Jstr &pdbobj, JagDBPair &minpair, JagDBPair &maxpair );
+		JagDiskArrayBase( const Jstr &fpathname, const JagSchemaRecord *record, abaxint length=32 );
 		virtual ~JagDiskArrayBase();
 		
 		inline const JagSchemaRecord *getSchemaRecord() const { return _schemaRecord; }
-		inline AbaxDataString getFilePathName() const { return _pathname; }
-		inline AbaxDataString getFilePath() const { return _filePath; }
-		inline AbaxDataString getDBName() const { return _dbname; }
-		inline AbaxDataString getObjName() const { return _objname; }
-		inline AbaxDataString getDBObject() const { return _dbobj; }
+		inline Jstr getFilePathName() const { return _pathname; }
+		inline Jstr getFilePath() const { return _filePath; }
+		inline Jstr getDBName() const { return _dbname; }
+		inline Jstr getObjName() const { return _objname; }
+		inline Jstr getDBObject() const { return _dbobj; }
 		inline int getFD() const { return _jdfs->getFD(); }
 		inline int insert( JagDBPair &pair, int &insertCode, bool doFirstRedist, bool direct, JagDBPair &retpair ) { 
 			return insertData( pair, insertCode, doFirstRedist, direct, retpair ); 
@@ -118,8 +118,8 @@ class JagDiskArrayBase
 		virtual void reSizeLocal( ) {}
 		void copyAndInsertBufferAndClean();
 		abaxint waitCopyAndInsertBufferAndClean( JagClock &clock, JagClock &clock2 );
-		static AbaxDataString jdbPath( const AbaxDataString &jdbhome, const AbaxDataString &db, const AbaxDataString &tab );
-		AbaxDataString jdbPathName( const AbaxDataString &jdbhome, const AbaxDataString &db, const AbaxDataString &tab );
+		static Jstr jdbPath( const Jstr &jdbhome, const Jstr &db, const Jstr &tab );
+		Jstr jdbPathName( const Jstr &jdbhome, const Jstr &db, const Jstr &tab );
 		void debugJDBFile( int flag, abaxint limit, abaxint hold, abaxint instart, abaxint inend );
 		abaxint getRegionElements( abaxint first, abaxint length );
 
@@ -160,15 +160,15 @@ class JagDiskArrayBase
 		//JagBlock<JagDBPair> *_blockIndex;
 		JagFixBlock *_blockIndex;
 
-		AbaxDataString _dirPath;
-		AbaxDataString _filePath;
-		AbaxDataString _pdbobj;
-		AbaxDataString _dbobj;
+		Jstr _dirPath;
+		Jstr _filePath;
+		Jstr _pdbobj;
+		Jstr _dbobj;
 		JagDBServer *_servobj;
 		time_t		_lastSyncTime;
 		pthread_mutex_t 	_insertBufferMutex;
-		AbaxDataString _dbname;
-		AbaxDataString _objname;
+		Jstr _dbname;
+		Jstr _objname;
 		const JagSchemaRecord *_schemaRecord;
 		abaxint _newarrlen;		
 		std::atomic<int>  _isFlushing;
@@ -201,8 +201,8 @@ class JagDiskArrayBase
 		bool _uidORschema;
 		JDFS *_jdfs2;
 		abaxint _respartMaxBlock;
-		AbaxDataString _pathname;
-		AbaxDataString _tmpFilePath;
+		Jstr _pathname;
+		Jstr _tmpFilePath;
 		// JagBlock<JagDBPair> *_newblockIndex;
 		JagFixBlock *_newblockIndex;
 

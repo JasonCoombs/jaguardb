@@ -21,11 +21,11 @@
 
 #include <abax.h>
 
-AbaxDataString abaxEncodeBase64( const AbaxDataString &src );
-AbaxDataString abaxDecodeBase64(AbaxDataString const& encstr);
+Jstr abaxEncodeBase64( const Jstr &src );
+Jstr abaxDecodeBase64(Jstr const& encstr);
 
-int base64EncodeFile2String( FILE *infile, AbaxDataString &outStr );
-int base64DecodeFile2String( FILE *infile, AbaxDataString &outStr );
+int base64EncodeFile2String( FILE *infile, Jstr &outStr );
+int base64DecodeFile2String( FILE *infile, Jstr &outStr );
 
 #endif
 

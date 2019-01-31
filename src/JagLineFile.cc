@@ -23,7 +23,7 @@
 JagLineFile::JagLineFile( int bufline )
 {
 	_bufMax = bufline;
-	_buf = new AbaxDataString[bufline];
+	_buf = new Jstr[bufline];
 	_bufLen = 0;  // number of lines in buffer
 	_fileLen = 0;
 	_fp = NULL;
@@ -55,7 +55,7 @@ bool JagLineFile::print() const
 	return true;
 }
 
-void JagLineFile::append( const AbaxDataString &line )
+void JagLineFile::append( const Jstr &line )
 {
 	if ( _hash.keyExist( line ) ) return;
 	//jaguar_mutex_lock ( &_mutex );
@@ -103,7 +103,7 @@ void JagLineFile::startRead()
 	//jaguar_mutex_unlock ( &_mutex );
 }
 
-bool JagLineFile::getLine( AbaxDataString &line )
+bool JagLineFile::getLine( Jstr &line )
 {
 	//jaguar_mutex_lock ( &_mutex );
 	//prt(("s3820 getLine _bufLen=%d _i=%d\n", _bufLen, _i ));
@@ -161,7 +161,7 @@ JagLineFile& JagLineFile::operator+= ( JagLineFile &f2 )
 {
 	//jaguar_mutex_lock ( &_mutex );
 	f2.startRead();
-	AbaxDataString line;
+	Jstr line;
 	while ( f2.getLine( line ) ) {
 		append( line );
 	}

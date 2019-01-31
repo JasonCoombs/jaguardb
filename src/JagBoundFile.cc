@@ -92,9 +92,9 @@ int JagBoundFile::appendLine( const char *line )
 	return 1;
 }
 
-int  JagBoundFile::readLines( int numLines, JagVector<AbaxDataString> &vec )
+int  JagBoundFile::readLines( int numLines, JagVector<Jstr> &vec )
 {
-	JagVector<AbaxDataString> allvec;
+	JagVector<Jstr> allvec;
 
 	FILE *fp = jagfopen( _fpath.c_str(), "rb" );
 	if ( ! fp ) {
@@ -102,8 +102,8 @@ int  JagBoundFile::readLines( int numLines, JagVector<AbaxDataString> &vec )
 	}
 
 	char buf[2048];
-	AbaxDataString line;
-	AbaxDataString pureline;
+	Jstr line;
+	Jstr pureline;
 	while ( NULL != ( fgets( buf, 2048, fp ) ) ) {
 		line = buf;
 		pureline = trimTailChar( line, '\n' );
@@ -135,7 +135,7 @@ int JagBoundFile::_trimFile()
 	jagfclose( _fp );
 
 	// read in data
-	JagVector<AbaxDataString> vec;
+	JagVector<Jstr> vec;
 	int n = readLines( _bound, vec );
 
 	// remove old file

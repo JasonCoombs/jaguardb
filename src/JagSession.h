@@ -51,13 +51,13 @@ class JagSession
 	bool spCommandReject;
 	bool datacenter;
 	JagDBServer *servobj;
-	AbaxDataString ip;
-	AbaxDataString unixSocket;
-	AbaxDataString uid;
-	AbaxDataString passwd;
-	AbaxDataString dbname;
-	AbaxDataString cliPID;
-	AbaxDataString loadlocalbpath;
+	Jstr ip;
+	Jstr unixSocket;
+	Jstr uid;
+	Jstr passwd;
+	Jstr dbname;
+	Jstr cliPID;
+	Jstr loadlocalbpath;
 
 	// data member for separate thread timer
 	pthread_t threadTimer;

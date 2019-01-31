@@ -29,7 +29,7 @@ class JagKeyValProp {
 	char  dbname[JAG_NAME_MAX];
 	char  tabname[JAG_NAME_MAX];
 	char  colname[JAG_NAME_MAX];
-	//AbaxDataString 	type;
+	//Jstr 	type;
 	char    type[4];
 	int 	offset;
 	int 	length;

@@ -25,16 +25,16 @@
 class JagIPACL 
 {
     public: 
-        JagIPACL( const AbaxDataString &fpath );
+        JagIPACL( const Jstr &fpath );
         ~JagIPACL() { destroy(); }
-		bool match( const AbaxDataString &ip );
+		bool match( const Jstr &ip );
 		int  size();
-		AbaxDataString _data;
-		void refresh( const AbaxDataString &newdata );
+		Jstr _data;
+		void refresh( const Jstr &newdata );
 
     protected:
 		JagHashMap<AbaxString, AbaxString> *_map;
-		bool readFile( const AbaxDataString &fpath );
+		bool readFile( const Jstr &fpath );
 		void  destroy();
 };
 

@@ -80,7 +80,7 @@ class ExprElementNode
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 								const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
-								JagMinMax *minmaxbuf, AbaxFixString &str, int &typeMode, int &tabnum ) = 0;
+								JagMinMax *minmaxbuf, JagFixString &str, int &typeMode, int &tabnum ) = 0;
 	virtual int setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 									int &constMode, int &typeMode, bool &isAggregate, Jstr &type, 
 									int &collen, int &siglen ) = 0;
@@ -90,9 +90,9 @@ class ExprElementNode
 	virtual int getAggregateParts( Jstr &parts, int &nodenum ) = 0;
 	virtual int setAggregateValue( int nodenum, const char *buf, int length ) = 0;
 	virtual int checkFuncValid( JagMergeReaderBase *ntr,  const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-								const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
+								const char *buffers[], JagFixString &str, int &typeMode, Jstr &type, 
 								int &length, bool &first, bool useZero, bool setGlobal ) = 0;
-	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length ) = 0;
+	virtual int checkFuncValidConstantOnly( JagFixString &str, int &typeMode, Jstr &type, int &length ) = 0;
 
 	JagParseAttribute   		_jpa;
 	BinaryExpressionBuilder* 	_builder;
@@ -106,7 +106,7 @@ class StringElementNode: public ExprElementNode
 {
   public:
 	StringElementNode();
-	StringElementNode( BinaryExpressionBuilder* builder,  const Jstr &name, const AbaxFixString &value, 
+	StringElementNode( BinaryExpressionBuilder* builder,  const Jstr &name, const JagFixString &value, 
 					   const JagParseAttribute &jpa, int tabnum, int typeMode=0 ) ;
 	virtual ~StringElementNode();
 	virtual int getBinaryOp() { return 0; }
@@ -118,7 +118,7 @@ class StringElementNode: public ExprElementNode
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 								const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
-								JagMinMax *minmaxbuf, AbaxFixString &str, int &typeMode, int &tabnum );
+								JagMinMax *minmaxbuf, JagFixString &str, int &typeMode, int &tabnum );
 	virtual int setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 								  int &constMode, int &typeMode, bool &isAggregate, Jstr &type, int &collen, int &siglen );
 	virtual int getFuncAggregate( JagVector<Jstr> &selectParts, JagVector<int> &selectPartsOpcode, 
@@ -127,26 +127,26 @@ class StringElementNode: public ExprElementNode
 	virtual int getAggregateParts( Jstr &parts, int &nodenum );
 	virtual int setAggregateValue( int nodenum, const char *buf, int length );
 	virtual int checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-								const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
+								const char *buffers[], JagFixString &str, int &typeMode, Jstr &type, 
 								int &length, bool &first, bool useZero, bool setGlobal );
-	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length );
+	virtual int checkFuncValidConstantOnly( JagFixString &str, int &typeMode, Jstr &type, int &length );
 	void makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[], 
-						 const Jstr &colobjstr, AbaxFixString &str );
+						 const Jstr &colobjstr, JagFixString &str );
 	void makeRangeDataString( const JagSchemaAttribute *attrs[], const char *buffers[], 
-						 const Jstr &colobjstr, AbaxFixString &str );
+						 const Jstr &colobjstr, JagFixString &str );
     void getPolyDataString( JagMergeReaderBase *ntr, const Jstr &polyType, const JagHashStrInt *maps[],
 							 const JagSchemaAttribute *attrs[],
-	                         const char *buffers[], AbaxFixString &str );
+	                         const char *buffers[], JagFixString &str );
     void getPolyData( const Jstr &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
 							 const JagSchemaAttribute *attrs[],
-	                         const char *buffers[], AbaxFixString &str, bool is3D );
+	                         const char *buffers[], JagFixString &str, bool is3D );
     void savePolyData( const Jstr &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
 							 const JagSchemaAttribute *attrs[],
 	                         const char *buffers[], const Jstr &uuid, const Jstr &db, const Jstr &tab, 
 							 const Jstr &col, bool isBoundBox3D, bool is3D=false );
 
 	//Jstr		_columns;
-	AbaxFixString		_value;
+	JagFixString		_value;
 	unsigned int		_tabnum;
 	int					_typeMode;
 	int					_nodenum; // a number set to distinguish each node of the tree
@@ -177,7 +177,7 @@ class BinaryOpNode: public ExprElementNode
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 								const int keylen[], const int numKeys[], int numTabs, bool &hasValue, 
-								JagMinMax *minmaxbuf, AbaxFixString &str, int &typeMode, int &tabnum );
+								JagMinMax *minmaxbuf, JagFixString &str, int &typeMode, int &tabnum );
 	virtual int setFuncAttribute( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 									int &constMode, int &typeMode, bool &isAggregate, Jstr &type, 
 									int &collen, int &siglen );
@@ -187,9 +187,9 @@ class BinaryOpNode: public ExprElementNode
 	virtual int getAggregateParts( Jstr &parts, int &nodenum );
 	virtual int setAggregateValue( int nodenum, const char *buf, int length );
 	virtual int checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
-							    const char *buffers[], AbaxFixString &str, int &typeMode, Jstr &type, 
+							    const char *buffers[], JagFixString &str, int &typeMode, Jstr &type, 
 								int &length, bool &first, bool useZero, bool setGlobal );
-	virtual int checkFuncValidConstantOnly( AbaxFixString &str, int &typeMode, Jstr &type, int &length );
+	virtual int checkFuncValidConstantOnly( JagFixString &str, int &typeMode, Jstr &type, int &length );
 	static Jstr binaryOpStr( short binaryOp );
 	static bool isAggregateOp( short op );
 	static bool isMathOp( short op );
@@ -214,21 +214,21 @@ class BinaryOpNode: public ExprElementNode
 						const int keylen[], const int numTabs );
 	void findAndBuffer( JagMinMax *minmaxbuf, JagMinMax *leftbuf, JagMinMax *rightbuf, 
 						const JagSchemaAttribute *attrs[], const int numTabs, const int numKeys[] );
-	bool formatColumnData( JagMinMax *minmaxbuf, JagMinMax *iminmaxbuf, const AbaxFixString &value, int tabnum, int minOrMax );
+	bool formatColumnData( JagMinMax *minmaxbuf, JagMinMax *iminmaxbuf, const JagFixString &value, int tabnum, int minOrMax );
 	bool checkAggregateValid( int lcmode, int rcmode, bool laggr, bool raggr );
 	int formatAggregateParts( Jstr &parts, Jstr &lparts, Jstr &rparts );
 	int _doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, int ltmode, int rtmode, int ltabnum, int rtabnum,
 						JagMinMax *minmaxbuf, JagMinMax *lminmaxbuf, JagMinMax *rminmaxbuf, 
-						AbaxFixString &str, AbaxFixString &lstr, AbaxFixString &rstr );
-	int _doCalculation( AbaxFixString &lstr, AbaxFixString &rstr, 
+						JagFixString &str, JagFixString &lstr, JagFixString &rstr );
+	int _doCalculation( JagFixString &lstr, JagFixString &rstr, 
 						int &ltmode, int &rtmode, const Jstr& ltype,  const Jstr& rtype, 
 						int llength, int rlength, bool &first );	
 
-	bool processBooleanOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg );
-	Jstr  processTwoStrOp( int op, const AbaxFixString &lstr, const AbaxFixString &rstr, const Jstr &carg );
-	bool processSingleDoubleOp( int op, const AbaxFixString &lstr, const Jstr &carg, double &val );
-	bool processSingleStrOp( int op, const AbaxFixString &lstr, const Jstr &carg, Jstr &val );
+	bool processBooleanOp( int op, const JagFixString &lstr, const JagFixString &rstr, const Jstr &carg );
+	Jstr  processTwoStrOp( int op, const JagFixString &lstr, const JagFixString &rstr, const Jstr &carg );
+	bool processSingleDoubleOp( int op, const JagFixString &lstr, const Jstr &carg, double &val );
+	bool processSingleStrOp( int op, const JagFixString &lstr, const Jstr &carg, Jstr &val );
 	bool doBooleanOp( int op, const Jstr& mark1, const Jstr &colType1, int srid1, const JagStrSplit &sp1,
 							 const Jstr& mark2, const Jstr &colType2, int srid2, 
 							 const JagStrSplit &sp2, const Jstr &carg );
@@ -348,7 +348,7 @@ class BinaryOpNode: public ExprElementNode
 
 
 	// data members
-	AbaxFixString 	_opString;
+	JagFixString 	_opString;
 	abaxint 		_numCnts; // use for calcuations
 	abaxdouble 		_initK; // use for stddev
 	abaxdouble 		_stddevSum; //use for stddev

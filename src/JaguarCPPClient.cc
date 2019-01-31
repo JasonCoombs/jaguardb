@@ -2192,7 +2192,7 @@ int JaguarCPPClient::reply( bool headerOnly )
 					prcli->_aggregateData = "";
 					cli->_end = JAG_END_NORMAL;
 				} else {
-					AbaxFixString rdata;							
+					JagFixString rdata;							
 					if ( prcli->_orderByLimitStart > 1 ) {
 						// ignore limitstart-1 lines of data
 						for ( abaxint i = 1; i < prcli->_orderByLimitStart; ++i ) {
@@ -2246,7 +2246,7 @@ int JaguarCPPClient::reply( bool headerOnly )
 				} else { // actually order by results, read one by one
 					if ( prcli->_orderByReadFrom == JAG_ORDERBY_READFROM_JDA ) {
 						if ( prcli->_orderByIsAsc ) {
-							AbaxFixString rdata;							
+							JagFixString rdata;							
 							if ( prcli->_orderByLimitStart > 1 ) {
 								// ignore limitstart-1 lines of data
 								for ( abaxint i = 1; i < prcli->_orderByLimitStart; ++i ) {
@@ -2283,7 +2283,7 @@ int JaguarCPPClient::reply( bool headerOnly )
 								rc = 0;
 							}
 						} else {							
-							AbaxFixString rdata;							
+							JagFixString rdata;							
 							if ( prcli->_orderByLimitStart > 1 ) {
 								// ignore limitstart-1 lines of data
 								for ( abaxint i = 1; i < prcli->_orderByLimitStart; ++i ) {
@@ -5365,7 +5365,7 @@ void JaguarCPPClient::rebuildHostsConnections( const char *msg, abaxint len )
 // called by parentCli
 // mode 0: one node of each cluster; 
 // mode 1: one node of each first n-1 cluster; mode 2: one node of cluster n; mode 3: one node of cluster n-1 and n
-int JaguarCPPClient::getUsingHosts( JagVector<Jstr> &hosts, const AbaxFixString &kstr, int mode ) 
+int JaguarCPPClient::getUsingHosts( JagVector<Jstr> &hosts, const JagFixString &kstr, int mode ) 
 {
 	abaxint hashCode = kstr.hashCode();
 	abaxint 	   idx, len;
@@ -5953,7 +5953,7 @@ void *JaguarCPPClient::broadcastAllSelectStatic( void * ptr )
 				if ( pass->cli->_debug )  { prt(("c2349 pass->cli->_row->type=[%c]\n", pass->cli->_row->type )); }
 				if ( pass->cli->_row->type == '1' ) {
 					// point query data, or getfile data ( must be point query )
-					pass->cli->_pointQueryString = AbaxFixString(pass->cli->_row->data, pass->cli->_row->datalen);
+					pass->cli->_pointQueryString = JagFixString(pass->cli->_row->data, pass->cli->_row->datalen);
 					pass->cli->_debug && prt(("c3849 pass->cli->_pointQueryString=[%s]\n", pass->cli->_pointQueryString.c_str() )); 
 					if ( pass->parseParam->opcode == JAG_GETFILE_OP && pass->parseParam->getfileActualData ) {
 						/***
@@ -6968,7 +6968,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	Jstr colName;
 	Jstr colName2;
 	Jstr colData;
-	AbaxFixString kstr;
+	JagFixString kstr;
 	JagVector<Jstr> hosts;
 	int offset, length, sig;
 	Jstr type;
@@ -7440,10 +7440,10 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 	//prt(("c3091 newquery=[%s]\n", newquery.c_str() ));
 
 	dbNaturalFormatExchange( kbuf, objAttr->numKeys, objAttr->schAttr, 0, 0, " " ); // natural format -> db format
-	kstr = AbaxFixString( kbuf, objAttr->keylen );
+	kstr = JagFixString( kbuf, objAttr->keylen );
 	// if ( _debug ) { prt(("c5038 kstr:\n" )); kstr.dump(); }
 	// kstr.dump();
-	AbaxFixString hostkstr;
+	JagFixString hostkstr;
 	if ( objAttr->schemaRecord.hasMute ) {
 		getHostKeyStr( kbuf, objAttr, hostkstr );
 	} else {
@@ -7520,7 +7520,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 	//Jstr colName;
 	Jstr colName2;
 	Jstr colData;
-	AbaxFixString kstr;
+	JagFixString kstr;
 	JagVector<Jstr> hosts;
 	int offset, length, sig;
 	Jstr type;
@@ -7906,10 +7906,10 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 	//prt(("c3091 newquery=[%s]\n", newquery.c_str() ));
 
 	dbNaturalFormatExchange( kbuf, objAttr->numKeys, objAttr->schAttr, 0, 0, " " ); // natural format -> db format
-	kstr = AbaxFixString( kbuf, objAttr->keylen );
+	kstr = JagFixString( kbuf, objAttr->keylen );
 	// if ( _debug ) { prt(("c5038 kstr:\n" )); kstr.dump(); }
 	// kstr.dump();
-	AbaxFixString hostkstr;
+	JagFixString hostkstr;
 	if ( objAttr->schemaRecord.hasMute ) {
 		getHostKeyStr( kbuf, objAttr, hostkstr );
 	} else {
@@ -8138,7 +8138,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	_lastHasOrderBy = parseParam.hasOrder; 
 	// prt(("c3829 _lastOpCode=%d _lastHasGroupBy=%d _lastHasOrderBy=%d\n", _lastOpCode, _lastHasGroupBy, _lastHasOrderBy ));
 	errmsg = "";
-	AbaxFixString kstr, treestr;
+	JagFixString kstr, treestr;
 	int num, beginnum, typeMode = 0, tabnum = 0;
 	if ( !isInsertSelect ) {
 		num = parseParam.objectVec.size();
@@ -8366,7 +8366,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 		// first, need to see if request object is table or index
 		// if is index, get table kstr from index object
 		// otherwise, format kstr using minbuf
-		AbaxFixString hostkstr;
+		JagFixString hostkstr;
 		if ( ! objAttr ) {
 			_mapLock->readUnlock( -1 );
 			errmsg = Jstr("E5054 error objAttr, no table found.");
@@ -8395,14 +8395,14 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 							objAttr->schAttr[gpos].length );
 				}
 			}
-			kstr = AbaxFixString( tabbuf, objAttr2->keylen );
+			kstr = JagFixString( tabbuf, objAttr2->keylen );
 			if ( objAttr2->schemaRecord.hasMute ) {
 				getHostKeyStr( tabbuf, objAttr2, hostkstr );
 			} else {
 				hostkstr.point( kstr );
 			}
 		} else {
-			kstr = AbaxFixString( minmax[0].minbuf, keylen[0] );
+			kstr = JagFixString( minmax[0].minbuf, keylen[0] );
 			if ( objAttr->schemaRecord.hasMute ) {
 				getHostKeyStr( minmax[0].minbuf, objAttr, hostkstr );
 			} else {
@@ -8635,10 +8635,10 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 		rc = aggrec.parseRecord( _dataFileHeader.c_str() );
 		if ( rc < 0 ) { prt(("c9473 should not happen\n")); abort(); }
 		if ( aggrec.columnVector->size() != selectPartsOpcode.size() ) { prt(("c9473 should not happen\n")); abort(); }
-		AbaxFixString aggstr;
+		JagFixString aggstr;
 		int datalen = _jda->getdatalen();
 		int dcountbegin = parseParam.groupVec.size();
-		JagVector<AbaxFixString> oneSetData;
+		JagVector<JagFixString> oneSetData;
 		char *aggbuf = (char*)jagmalloc(datalen+1);
 		char *finalbuf = (char*)jagmalloc(finalsendlen+1);
 		memset(aggbuf, 0, datalen+1);
@@ -8650,7 +8650,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 				memcpy( aggbuf, aggstr.c_str(), datalen );
 			}
 			reformOriginalAggQuery( aggrec, selectPartsOpcode, selColSetAggParts, selColToselParts, aggbuf, finalbuf, parseParam );
-			_aggregateData = AbaxFixString( finalbuf, finalsendlen );
+			_aggregateData = JagFixString( finalbuf, finalsendlen );
 		} else if ( !parseParam.hasGroup ) { // not group by sql command, one set of data
 			while ( _jda->readit( aggstr ) ) {
 				oneSetData.append( aggstr );
@@ -8659,7 +8659,7 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 				doAggregateCalculation( aggrec, selectPartsOpcode, oneSetData, aggbuf, datalen, dcountbegin );
 				reformOriginalAggQuery( aggrec, selectPartsOpcode, selColSetAggParts, selColToselParts, aggbuf, finalbuf, parseParam );
 				oneSetData.clean();
-				_aggregateData = AbaxFixString( finalbuf, finalsendlen );	
+				_aggregateData = JagFixString( finalbuf, finalsendlen );	
 			}
 		} else { // group by, multiple sets of data
 			JagDataAggregate *jda2 = new JagDataAggregate( false );
@@ -8686,13 +8686,13 @@ int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam
 	// also reform no aggregate and has group by
 	// if ( !_isToGate && !hasAggregate && parseParam.hasGroup && _jda->getdatalen() > 0 ) 
 	if ( !hasAggregate && parseParam.hasGroup && _jda->getdatalen() > 0 ) {
-		AbaxFixString aggstr;
-		JagVector<AbaxFixString> oneSetData;
+		JagFixString aggstr;
+		JagVector<JagFixString> oneSetData;
 		_dataFileHeader = finalFileHeader;
 
 		if ( 1 == _jda->elements( _jda->getdatalen() ) ) { // if only one line of data
 			while ( _jda->readit( aggstr ) ) {
-				_aggregateData = AbaxFixString( aggstr.c_str()+grouplen, finalsendlen );
+				_aggregateData = JagFixString( aggstr.c_str()+grouplen, finalsendlen );
 			}
 		} else { // group by, multiple sets of data
 			JagDataAggregate *jda2 = new JagDataAggregate( false );
@@ -9234,7 +9234,7 @@ int JaguarCPPClient::checkInsertSelectColumnValidation( const JagParseParam &par
 
 // calculate each separate aggregate function value between servers
 int JaguarCPPClient::doAggregateCalculation( const JagSchemaRecord &aggrec, const JagVector<int> &selectPartsOpcode,
-											const JagVector<AbaxFixString> &oneSetData, char *aggbuf, int datalen, int countBegin ) 
+											const JagVector<JagFixString> &oneSetData, char *aggbuf, int datalen, int countBegin ) 
 {
 	char save;
 	Jstr type;
@@ -9414,7 +9414,7 @@ int JaguarCPPClient::reformOriginalAggQuery( const JagSchemaRecord &aggrec, cons
 // pay attention to return values
 // return 0: no order by, direct read from jda
 int JaguarCPPClient::processDataSortArray( const JagParseParam &parseParam, 
-	const Jstr &selcnt, const Jstr &selhdr, const AbaxFixString &aggstr ) 
+	const Jstr &selcnt, const Jstr &selhdr, const JagFixString &aggstr ) 
 {
 	abaxint skeylen = 0, svallen = 0, lstart = 0, limit = 0, isdesc = 0, elem = 0, jlen = 0;
 	if ( !parseParam.hasLimit ) {
@@ -9438,7 +9438,7 @@ int JaguarCPPClient::processDataSortArray( const JagParseParam &parseParam,
 	} else { // process order by sort, if _jda has multiple lines of data
 		// get sort lengths
 		JagSchemaRecord rec;
-		AbaxFixString str;
+		JagFixString str;
 		int num = parseParam.orderVec.size();
 		abaxint offsets[num], lengths[num];
 		abaxint pos = 0, offset = 0;						
@@ -9520,7 +9520,7 @@ int JaguarCPPClient::processOrderByQuery( const JagParseParam &parseParam )
 {	
 	// process order by and possible limit condition
 	_debug && prt(("c1038 processOrderByQuery ...\n" ));
-	AbaxFixString sortstr;
+	JagFixString sortstr;
 	Jstr tmpuuid;
 	JagSchemaRecord orderrec(true);
 	int ordernum = parseParam.orderVec.size();
@@ -9993,7 +9993,7 @@ int JaguarCPPClient::getnewClusterString( Jstr &newquery, Jstr &queryerrmsg )
 }
 
 // Pick non-mute key cols
-void JaguarCPPClient::getHostKeyStr( const char *kbuf, const JagTableOrIndexAttrs *objAttr, AbaxFixString &hostKeyStr )
+void JaguarCPPClient::getHostKeyStr( const char *kbuf, const JagTableOrIndexAttrs *objAttr, JagFixString &hostKeyStr )
 {
 	char *nbuf = jagmalloc( objAttr->keylen );
 	memset( nbuf, 0, objAttr->keylen );
@@ -10009,7 +10009,7 @@ void JaguarCPPClient::getHostKeyStr( const char *kbuf, const JagTableOrIndexAttr
 		}
 	}
 
-	hostKeyStr = AbaxFixString(nbuf, pos);
+	hostKeyStr = JagFixString(nbuf, pos);
 	// prt(("c4029 hostKeyStr:\n" ));
 	// hostKeyStr.dump();
 	jagfree( nbuf );
@@ -10280,7 +10280,7 @@ void JaguarCPPClient::getTimebuf( const JagTableOrIndexAttrs *objAttr, char *tim
 	}
 }
 
-void JaguarCPPClient::addQueryToCmdhosts( const JagParseParam &parseParam, const AbaxFixString &hostkstr, 
+void JaguarCPPClient::addQueryToCmdhosts( const JagParseParam &parseParam, const JagFixString &hostkstr, 
 										  const JagTableOrIndexAttrs *objAttr, 
 										  JagVector<Jstr> &hosts,
 										  JagVector<JagDBPair> &cmdhosts, Jstr &newquery )

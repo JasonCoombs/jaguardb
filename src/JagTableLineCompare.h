@@ -29,13 +29,13 @@
 class JagTableLineCompare 
 {
 	public:
-		JagTableLineCompare(const std::vector<AbaxDataString>& sortBy, const JagSchemaRecord& raySchema) {
+		JagTableLineCompare(const std::vector<Jstr>& sortBy, const JagSchemaRecord& raySchema) {
 			sort_vec = sortBy;
 			schema = raySchema;
 			reverse = false;
 		}
 
-		JagTableLineCompare(const std::vector<AbaxDataString>& sortBy, const JagSchemaRecord& raySchema, bool flag) {
+		JagTableLineCompare(const std::vector<Jstr>& sortBy, const JagSchemaRecord& raySchema, bool flag) {
 			sort_vec = sortBy;
 			schema = raySchema;
 			reverse = flag;
@@ -43,8 +43,8 @@ class JagTableLineCompare
 
 
 		bool operator() (const JagTableLine& a, const JagTableLine& b) {
-			AbaxDataString c1;
-			AbaxDataString c2;
+			Jstr c1;
+			Jstr c2;
 			char* ptr;
 			for(int i = 0; i < sort_vec.size(); i++) {
 				// Find out what the option is
@@ -60,7 +60,7 @@ class JagTableLineCompare
 					JagRecord* bRecord = JagTableLine::createJagRecord(schema, b.line);
 					ptr = aRecord->getValue((sort_vec[i]).c_str());
 					if(ptr != NULL) {
-						c1 = AbaxDataString(ptr);
+						c1 = Jstr(ptr);
 						if ( ptr ) free(ptr);
 						ptr = NULL;
 						if ( aRecord ) delete(aRecord);
@@ -71,7 +71,7 @@ class JagTableLineCompare
 
 					ptr = bRecord->getValue((sort_vec[i]).c_str());
 					if(ptr != NULL) {
-						c2 = AbaxDataString(ptr);
+						c2 = Jstr(ptr);
 						if ( ptr ) free(ptr);
 						ptr = NULL;
 						if ( aRecord ) delete(aRecord);
@@ -105,7 +105,7 @@ class JagTableLineCompare
 			return true;
 		}
 
-		std::vector<AbaxDataString> sort_vec;
+		std::vector<Jstr> sort_vec;
 		JagSchemaRecord schema;
 		bool reverse;
 };

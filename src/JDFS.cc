@@ -40,7 +40,7 @@
 // fpath is full path of a file, without stripe number
 // all JDFS methods process localfile only
 // ctor
-JDFS::JDFS( JagDBServer *servobj, const AbaxDataString &fpath, int kvlen, abaxint stripeSize )
+JDFS::JDFS( JagDBServer *servobj, const Jstr &fpath, int kvlen, abaxint stripeSize )
 {
 	_kvlen = kvlen;
 	_fpath = fpath;
@@ -89,7 +89,7 @@ int JDFS::close()
 	return _jdfsMgr->close( _fpath );
 }
 
-int JDFS::rename( const AbaxDataString &newpath )
+int JDFS::rename( const Jstr &newpath )
 {
 	_jdfsMgr->rename( _fpath, newpath );
 	_fpath = newpath;

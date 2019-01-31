@@ -30,7 +30,7 @@
 // ctor
 // filePathName: /home/yzhj/jaguar/data/test/jinhua  no .jdb part
 // User by server only
-JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const AbaxDataString &filePathName, 
+JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const Jstr &filePathName, 
 	const JagSchemaRecord *record, bool buildInitIndex, abaxint length, bool noMonitor ) : _schemaRecord(record)
 {
 	_servobj = (JagDBServer*)servobj;
@@ -78,8 +78,8 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const AbaxDataSt
 // another ctor for darrnew use only
 // filePathName: /home/yzhj/jaguar/data/test/jinhua  no .jdb part
 // User by server only
-JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const AbaxDataString &filePathName, 
-	const JagSchemaRecord *record, const AbaxDataString &pdbobj, JagDBPair &minpair, JagDBPair &maxpair ) 
+JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const Jstr &filePathName, 
+	const JagSchemaRecord *record, const Jstr &pdbobj, JagDBPair &minpair, JagDBPair &maxpair ) 
 	: _schemaRecord(record)
 {
 	_servobj = (JagDBServer*)servobj;
@@ -121,7 +121,7 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const AbaxDataSt
 }
 
 // client use only
-JagDiskArrayBase::JagDiskArrayBase( const AbaxDataString &filePathName, 
+JagDiskArrayBase::JagDiskArrayBase( const Jstr &filePathName, 
 				const JagSchemaRecord *record, abaxint length ) 
     :  _schemaRecord(record)
 {	
@@ -364,7 +364,7 @@ bool JagDiskArrayBase::findPred( const JagDBPair &pair, abaxint *index, abaxint 
 	}
 
     JagDBPair arr[JagCfg::_BLOCK];
-    AbaxFixString key, val;
+    JagFixString key, val;
 	if (  (KEYVALLEN <= 10 * KEYLEN) || diskbuf ) {
 		// if diskbuf !=NULL it is for write data later
 		if ( diskbuf ) {
@@ -1419,15 +1419,15 @@ abaxint JagDiskArrayBase::flushInsertBuffer()
 	return cnt;
 }
 
-AbaxDataString JagDiskArrayBase::jdbPath( const AbaxDataString &jdbhome, const AbaxDataString &db, const AbaxDataString &tab )
+Jstr JagDiskArrayBase::jdbPath( const Jstr &jdbhome, const Jstr &db, const Jstr &tab )
 {
-	AbaxDataString fpath = jdbhome + "/" + db + "/" + tab;
+	Jstr fpath = jdbhome + "/" + db + "/" + tab;
 	return fpath;
 }
 
-AbaxDataString JagDiskArrayBase::jdbPathName( const AbaxDataString &jdbhome, const AbaxDataString &db, const AbaxDataString &tab )
+Jstr JagDiskArrayBase::jdbPathName( const Jstr &jdbhome, const Jstr &db, const Jstr &tab )
 {
-	AbaxDataString fpath = jdbhome + "/" + db + "/" + tab + "/" + tab + ".jdb";
+	Jstr fpath = jdbhome + "/" + db + "/" + tab + "/" + tab + ".jdb";
 	return fpath;
 }
 
@@ -1616,7 +1616,7 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 	int fd = -1, span, pattern;
 	bool half = 0, even = 0;
 	char *wbuf = NULL;
-	AbaxDataString twp = _pathname + ".reg";
+	Jstr twp = _pathname + ".reg";
 	JagSingleBuffWriter *sbw = NULL;
 	abaxint wpos = -1, ipos = minfirst, lastBlock = -1, actualcnt = 0;
 	int dgoNext = 1, mgoNext = 1;

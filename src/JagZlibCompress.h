@@ -26,18 +26,18 @@
 class JagZlibCompress
 {
   public:
-	static  AbaxDataString compress(const AbaxDataString& str );
-	static  AbaxDataString uncompress(const AbaxDataString& str);
+	static  Jstr compress(const Jstr& str );
+	static  Jstr uncompress(const Jstr& str);
 };
 #else
 #include <zlib.h>
 class JagZlibCompress
 {
   public:
-	static  AbaxDataString compress(const AbaxDataString& str, 
+	static  Jstr compress(const Jstr& str, 
 			int compressionlevel = Z_BEST_COMPRESSION );
 
-	static  AbaxDataString uncompress(const AbaxDataString& str);
+	static  Jstr uncompress(const Jstr& str);
 
 };
 #endif

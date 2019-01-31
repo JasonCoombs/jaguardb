@@ -26,7 +26,7 @@
 class JagFamilyKeyChecker 
 {
     public: 
-        JagFamilyKeyChecker( const AbaxDataString &fpath, int klen, int vlen );
+        JagFamilyKeyChecker( const Jstr &fpath, int klen, int vlen );
         virtual ~JagFamilyKeyChecker();
         virtual bool addKeyValue( const char *kv ) = 0;
         virtual bool addKeyValueNoLock( const char *kv ) = 0;
@@ -39,7 +39,7 @@ class JagFamilyKeyChecker
         virtual abaxint arrayLength() const = 0;
 		virtual const char *array() const = 0;
 		virtual int buildInitKeyCheckerFromSigFile() = 0;
-		AbaxDataString getPath() { return _pathName; }
+		Jstr getPath() { return _pathName; }
 
     protected:
 		// void  destroy();
@@ -49,7 +49,7 @@ class JagFamilyKeyChecker
 		int	  _UKLEN;
 		bool  _useHash;
 		JagReadWriteLock    *_lock;
-		AbaxDataString     _pathName;
+		Jstr     _pathName;
 
 };
 

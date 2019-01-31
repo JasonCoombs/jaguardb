@@ -30,7 +30,7 @@
 #include <JagSingleBuffReader.h>
 #include <JagFileMgr.h>
 
-JagFixKeyChecker::JagFixKeyChecker( const AbaxDataString &pathName, int klen, int vlen )
+JagFixKeyChecker::JagFixKeyChecker( const Jstr &pathName, int klen, int vlen )
 : JagFamilyKeyChecker( pathName, klen, vlen )
 {
 	if ( _useHash ) {
@@ -118,8 +118,8 @@ int JagFixKeyChecker::buildInitKeyCheckerFromSigFile()
 	char buf[klen+vlen+1];
 	memset( buf, 0, klen+vlen+1 );
 
-	AbaxDataString sigfpath = _pathName + ".sig";
-	AbaxDataString hdbfpath = _pathName + ".hdb";
+	Jstr sigfpath = _pathName + ".sig";
+	Jstr hdbfpath = _pathName + ".hdb";
 	abaxint hdbsize = JagFileMgr::fileSize( hdbfpath );
 	if ( hdbsize > 0 && JagFileMgr::fileSize( sigfpath ) < 1 ) {
 		// read from hdb 
@@ -144,7 +144,7 @@ int JagFixKeyChecker::buildInitKeyCheckerFromSigFile()
 		return 1;
 	}
 
-	AbaxDataString keyCheckerPath = _pathName + ".sig";
+	Jstr keyCheckerPath = _pathName + ".sig";
 	int fd = jagopen((char *)keyCheckerPath.c_str(), O_RDONLY|JAG_NOATIME );
 	if ( fd < 0 ) {
 		// prt(("s2283 keyCheckerPath=[%s] not found\n", keyCheckerPath.c_str() ));
@@ -174,7 +174,7 @@ int JagFixKeyChecker::buildInitKeyCheckerFromSigFile()
 	abaxint mem1 = availableMemory( callCounts, lastBytes );
 	prt(("s1421 availmem=%lld MB begin keycheck\n", mem1/ONE_MEGA_BYTES ));
 	raydebug( stdout, JAG_LOG_LOW, "begin reading sig file ...\n" );
-	AbaxFixString vstr;
+	JagFixString vstr;
 	memset( buf, 0, klen+vlen+1 );
 	bool rc;
 	while ( br.getNext( buf ) ) {

@@ -36,11 +36,11 @@ class JagLang
 	abaxint parse( const char *instr, const char *ENCODE );
 	abaxint length();
 	abaxint size();
-	AbaxDataString  at( int i);
-	void rangeFixString( int buflen, int start, int len, AbaxFixString &res );
+	Jstr  at( int i);
+	void rangeFixString( int buflen, int start, int len, JagFixString &res );
 
   protected:
-  	JagVector<AbaxDataString> *_vec;
+  	JagVector<Jstr> *_vec;
 
 	abaxint _parseUTF8( const char *instr );
 	abaxint _parseGB2312( const char *instr );

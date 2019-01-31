@@ -1175,7 +1175,7 @@ bool JagDiskArrayServer::checkSetPairCondition( const JagRequest &req, JagDBPair
 	memset( tbuf, 0, KEYVALLEN+1 );
 	ExprElementNode *updroot;
 	Jstr errmsg;
-	AbaxFixString strres;
+	JagFixString strres;
 	int typeMode = 0, treelength = 0;
 	Jstr treetype = " ";
 	const JagSchemaAttribute *attrs[1];
@@ -1221,7 +1221,7 @@ bool JagDiskArrayServer::checkSetPairCondition( const JagRequest &req, JagDBPair
 
 abaxint JagDiskArrayServer::removeMatchKey( const char *kstr, int klen )
 {
-	AbaxFixString fixs(kstr, klen);
+	JagFixString fixs(kstr, klen);
 	JagDBPair pair(fixs);
 	Jstr keys =  getListKeys();
 
@@ -1364,7 +1364,7 @@ Jstr JagDiskArrayServer::getListKeys()
 	abaxint rlimit = getBuffReaderWriterMemorySize( _garrlen*KEYVALLEN/1024/1024 );
 	JagBuffReader ntr( this, _garrlen, KEYLEN, VALLEN, 0, 0, rlimit );
 	while ( ntr.getNext( buf ) ) {
-		AbaxFixString key ( buf, KEYLEN );
+		JagFixString key ( buf, KEYLEN );
 		res += Jstr( key.c_str() ) + "\n";
 	}
 	free( buf );
@@ -1454,7 +1454,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 	abaxint oldelem = _elements;
 	_elements = 0;
 	JagDBPair tpair;
-	AbaxFixString data;
+	JagFixString data;
 	int rc01, rc02, rc12, cursuccess;
 	abaxint pos0, pos1, pos2;
 	abaxint lastBlock = -1, errorcnt = 0;

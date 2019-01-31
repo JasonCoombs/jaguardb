@@ -51,7 +51,7 @@ struct JagPolyPass
 	int getxmin, getymin, getzmin, getxmax, getymax, getzmax;
 	int getid, getcol, getm, getn, geti, getx, gety, getz; 
 	bool is3D;
-	AbaxDataString colname, lsuuid;
+	Jstr colname, lsuuid;
 	int  col, m, n, i;
 };
 
@@ -60,14 +60,14 @@ class JagTable
 
   public:
  
-  	JagTable( int replicateType, const JagDBServer *servobj, const AbaxDataString &dbname, const AbaxDataString &tableName, 
+  	JagTable( int replicateType, const JagDBServer *servobj, const Jstr &dbname, const Jstr &tableName, 
 				const JagSchemaRecord &record, bool buildInitIndex=true );
   	~JagTable();
 	inline int getNumIndexes() { return _indexlist.size(); }
 	inline int getnumCols() { return _numCols; }
 	inline int getnumKeys() { return _numKeys; }	
-	inline AbaxDataString getdbName() { return _dbname; }
-	inline AbaxDataString getTableName() { return _tableName; }
+	inline Jstr getdbName() { return _dbname; }
+	inline Jstr getTableName() { return _tableName; }
 	inline JagHashStrInt *getTableMap() { return _tablemap; }
 	inline JagSchemaAttribute *getSchemaAttributes() { return _schAttr; }
 	const JagSchemaRecord *getRecord() { return &_tableRecord; }
@@ -75,46 +75,46 @@ class JagTable
 			{ _darrFamily->debugJDBFile( flag, limit, hold, instart, inend ); }
 	bool getPair( JagDBPair &pair );
 	void getlimitStart( abaxint &startlen, abaxint limitstart, abaxint& soffset, abaxint &foffset ); 
-	int insert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct );
-	int sinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct );
-	int cinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct );
-	int dinsert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct );
-	// int upsert( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode, bool direct );
-	int parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &pairVec, AbaxDataString &errmsg );
+	int insert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
+	int sinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
+	int cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
+	int dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
+	// int upsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
+	int parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &pairVec, Jstr &errmsg );
 	int insertPair( JagDBPair &pair, int &insertCode, bool direct, int mode ); 
-	AbaxDataString drop( AbaxDataString &errmsg, bool isTruncate=false );
-	int renameIndexColumn ( const JagParseParam *parseParam, AbaxDataString &errmsg );
-	void dropFromIndexList( const AbaxDataString &indexName );
+	Jstr drop( Jstr &errmsg, bool isTruncate=false );
+	int renameIndexColumn ( const JagParseParam *parseParam, Jstr &errmsg );
+	void dropFromIndexList( const Jstr &indexName );
 	void buildInitIndexlist();
-	void setGetFileAttributes( const AbaxDataString &hdir, JagParseParam *parseParam, const char *buffers[] );
+	void setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, const char *buffers[] );
 
-	abaxint update( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, int &insertCode );
-	abaxint remove( const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg );	
-	abaxint count( const char *cmd, const JagRequest &req, JagParseParam *parseParam, AbaxDataString &errmsg, abaxint &keyCheckerCnt );
+	abaxint update( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode );
+	abaxint remove( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );	
+	abaxint count( const char *cmd, const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, abaxint &keyCheckerCnt );
 	abaxint select( JagDataAggregate *&jda, const char *cmd, const JagRequest &req, JagParseParam *parseParam, 
-					AbaxDataString &errmsg, bool nowherecnt=true, bool isInsertSelect=false );
+					Jstr &errmsg, bool nowherecnt=true, bool isInsertSelect=false );
 	
 	static void *parallelSelectStatic( void * ptr );
 	static int buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 										 const JagRequest &req, const char *buffers[], 
 										JagParseParam *parseParam, JagMemDiskSortArray *gmdarr, char *gbvbuf );
 	static void groupByFinalCalculation( char *gbvbuf, bool nowherecnt, abaxint finalsendlen, std::atomic<abaxint> &cnt, abaxint actlimit, 
-										const JagRequest &req, const AbaxDataString &writeName, JagParseParam *parseParam, 
+										const JagRequest &req, const Jstr &writeName, JagParseParam *parseParam, 
 										JagDataAggregate *jda, JagMemDiskSortArray *gmdarr, const JagSchemaRecord *nrec );
 	static void nonAggregateFinalbuf( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 										const JagRequest &req, const char *buffers[], JagParseParam *parseParam, char *finalbuf, abaxint finalsendlen,
-										JagDataAggregate *jda, const AbaxDataString &writeName, std::atomic<abaxint> &cnt, bool nowherecnt, 
+										JagDataAggregate *jda, const Jstr &writeName, std::atomic<abaxint> &cnt, bool nowherecnt, 
 										const JagSchemaRecord *nrec, bool oneLine );
 	static void aggregateDataFormat( JagMergeReaderBase *ntr,  const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 									 const JagRequest &req, const char *buffers[], JagParseParam *parseParam, bool init );
-	static void aggregateFinalbuf( const JagRequest &req, const AbaxDataString &sendhdr, abaxint len, JagParseParam *parseParam[], 
-		char *finalbuf, abaxint finalsendlen, JagDataAggregate *jda, const AbaxDataString &writeName, 
+	static void aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, abaxint len, JagParseParam *parseParam[], 
+		char *finalbuf, abaxint finalsendlen, JagDataAggregate *jda, const Jstr &writeName, 
 		std::atomic<abaxint> &cnt, bool nowherecnt, const JagSchemaRecord *nrec );
 	static void doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam, const JagRequest &req,
-		const AbaxDataString &host, const char *buf, abaxint buflen, const JagSchemaRecord *nrec=NULL );
+		const Jstr &host, const char *buf, abaxint buflen, const JagSchemaRecord *nrec=NULL );
 	static void formatInsertFromSelect( const JagParseParam *parseParam, const JagSchemaAttribute *attrs, 
 		const char *finalbuf, const char *buffers, abaxint finalsendlen, abaxint numCols,
-		JaguarCPPClient *pcli, std::atomic<abaxint> &cnt, const AbaxDataString &iscmd );
+		JaguarCPPClient *pcli, std::atomic<abaxint> &cnt, const Jstr &iscmd );
 
 	int formatIndexCmd( JagDBPair &pair, int mode );
 	int formatCreateIndex( JagIndex *pindex );
@@ -127,7 +127,7 @@ class JagTable
 	/**** hit invalid fastbin entry bug
 	static void fillCmdParse( int objType, void *objPtr, int i, abaxint gbvsendlen, JagParseParam *pparam[], 
 							 JagMemDiskSortArray *lgmdarr, const JagRequest &req, JagDataAggregate *jda, 
-							 const AbaxDataString &dbobj, std::atomic<abaxint> *pcnt, abaxint nm, 
+							 const Jstr &dbobj, std::atomic<abaxint> *pcnt, abaxint nm, 
 							 bool nowherecnt, JagSchemaRecord *prec, abaxint memlim, 
 							 JagMinMax minmaxbuf[], 
 							 abaxint bsec, abaxint KEYVALLEN, const JagDBServer *servobj, abaxint numthrds,
@@ -140,7 +140,7 @@ class JagTable
 
 	void   flushBlockIndexToDisk();
 	void   copyAndInsertBufferAndClean( JagIndex *ipindex=NULL );
-	AbaxDataString getIndexNameList();
+	Jstr getIndexNameList();
 	int refreshSchema();
 	void setupSchemaMapAttr( int numCols );
 	bool hasSpareColumn();
@@ -150,7 +150,7 @@ class JagTable
   	static const int _THREAD_NUM = 4;
 	std::atomic<abaxint>					_actualInsert;
 	std::atomic<int>					_isExporting;
-	AbaxDataString 						_dbtable;
+	Jstr 						_dbtable;
 	abaxint 								KEYLEN;
 	abaxint 								VALLEN;
 	abaxint 								KEYVALLEN;
@@ -163,7 +163,7 @@ class JagTable
 	JagHashStrInt 					 	*_tablemap;
 	JagSchemaAttribute					*_schAttr;
 	JagVector<int>				_defvallist;
-	JagVector<AbaxDataString>	_indexlist;
+	JagVector<Jstr>	_indexlist;
 	const JagDBServer			*_servobj;
 
 	JagTableSchema				*_tableschema;
@@ -175,8 +175,8 @@ class JagTable
 	time_t  					_schemaRefreshTime;
 	time_t  					_indexRefreshTime;
 	const JagCfg  				*_cfg;
-	AbaxDataString  			_dbname;
-	AbaxDataString 				_tableName;
+	Jstr  			_dbname;
+	Jstr 				_tableName;
 	JagBlockLock				*_mergeLock;
 	int  						_objectType;
 
@@ -190,10 +190,10 @@ class JagTable
 	int refreshIndexList();
 	int _removeIndexRecords( const char *buf );
 	int  removeColFiles(const char *kvbuf );
-	bool isFileColumn( const AbaxDataString &colname );
+	bool isFileColumn( const Jstr &colname );
 	void formatPointsInLineString( const JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
-								   JagVector<JagDBPair> &retpair, AbaxDataString &errmg );
-	void getColumnIndex( const AbaxDataString &dbtab, const AbaxDataString &colname, bool is3D,
+								   JagVector<JagDBPair> &retpair, Jstr &errmg );
+	void getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D,
                          int &getx, int &gety, int &getz, int &getxmin, int &getymin, int &getzmin,
                          int &getxmax, int &getymax, int &getzmax,
                          int &getid, int &getcol, int &getm, int &getn, int &geti );

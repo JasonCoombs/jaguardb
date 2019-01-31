@@ -31,8 +31,8 @@ class JagDBPair
 
     public:
 
-        AbaxFixString  key;
-        AbaxFixString  value;
+        JagFixString  key;
+        JagFixString  value;
 		bool           upsertFlag;
 		static  JagDBPair  NULLVALUE;
 
@@ -53,14 +53,14 @@ class JagDBPair
 		}
 		
 		JagDBPair( ) { upsertFlag = 0; } 
-        JagDBPair( const AbaxFixString &k ) : key(k) { upsertFlag = 0; }
-        JagDBPair( const AbaxFixString &k, const AbaxFixString &v ) : key(k), value(v) { upsertFlag = 0; } 
-		void point( const AbaxFixString &k, const AbaxFixString &v ) {
+        JagDBPair( const JagFixString &k ) : key(k) { upsertFlag = 0; }
+        JagDBPair( const JagFixString &k, const JagFixString &v ) : key(k), value(v) { upsertFlag = 0; } 
+		void point( const JagFixString &k, const JagFixString &v ) {
 			key.point(k.addr(), k.size() );
 			value.point( v.addr(), v.size() );
 		}
 
-		void point( const AbaxFixString &k ) {
+		void point( const JagFixString &k ) {
 			key.point(k.addr(), k.size() );
 		}
 		void point( const char *k, abaxint klen,  const char *v, abaxint vlen ) {
@@ -70,13 +70,13 @@ class JagDBPair
 		void point( const char *k, abaxint klen ) {
 			key.point( k, klen);
 		}
-        JagDBPair( const AbaxFixString &k, const AbaxFixString &v, bool ref ) 
+        JagDBPair( const JagFixString &k, const JagFixString &v, bool ref ) 
 		{
 			upsertFlag = 0;
 			key.point(k.addr(), k.size() );
 			value.point( v.addr(), v.size() );
 		}
-        JagDBPair( const AbaxFixString &k, bool point ) 
+        JagDBPair( const JagFixString &k, bool point ) 
 		{
 			upsertFlag = 0;
 			key.point(k.addr(), k.size() );
@@ -85,8 +85,8 @@ class JagDBPair
         JagDBPair( const char *kstr, abaxint klen, const char *vstr, abaxint vlen ) 
 		{
 			upsertFlag = 0;
-			key = AbaxFixString(kstr, klen);
-			value = AbaxFixString(vstr, vlen);
+			key = JagFixString(kstr, klen);
+			value = JagFixString(vstr, vlen);
 		}
 
         JagDBPair( const char *kstr, abaxint klen, const char *vstr, abaxint vlen, bool point ) 
@@ -99,7 +99,7 @@ class JagDBPair
         JagDBPair( const char *kstr, abaxint klen ) 
 		{
 			upsertFlag = 0;
-			key = AbaxFixString(kstr, klen);
+			key = JagFixString(kstr, klen);
 		}
 
         JagDBPair( const char *kstr, abaxint klen, bool point ) 

@@ -30,7 +30,7 @@
 #include <JagUtil.h>
 		
 // ctor
-JagLocalDiskHash::JagLocalDiskHash( const AbaxDataString &filepath, int keylength, int vallength, int arrlength )
+JagLocalDiskHash::JagLocalDiskHash( const Jstr &filepath, int keylength, int vallength, int arrlength )
 {
 	KEYLEN = keylength;
 	VALLEN = vallength;
@@ -44,7 +44,7 @@ JagLocalDiskHash::JagLocalDiskHash( const AbaxDataString &filepath, int keylengt
 
 /**
 // ctor with schema record
-JagLocalDiskHash::JagLocalDiskHash( const AbaxDataString &filepath, JagSchemaRecord *record, int arrlength )
+JagLocalDiskHash::JagLocalDiskHash( const Jstr &filepath, JagSchemaRecord *record, int arrlength )
 {
 	KEYLEN = record->keyLength;
 	VALLEN = record->valueLength;
@@ -62,7 +62,7 @@ void JagLocalDiskHash::drop( )
 }
 
 // ctor
-void JagLocalDiskHash::init( const AbaxDataString &filePathPrefix, int length )
+void JagLocalDiskHash::init( const Jstr &filePathPrefix, int length )
 {
 	// _lock = NULL; 
 

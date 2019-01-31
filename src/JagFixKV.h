@@ -18,8 +18,8 @@
  */
 /***************************************************
 ** Used as a fixed-size key-value store
-**  key:  AbaxDataString   (max 256 bytes)
-**  value: AbaxDataString  (max 4096 bytes)
+**  key:  Jstr   (max 256 bytes)
+**  value: Jstr  (max 4096 bytes)
 **
 ** This class uses JagDiskArrayServer.h for storage
 **
@@ -39,7 +39,7 @@ class JagDBServer;
 class JagFixKV
 {
   public:
-    JagFixKV( JagDBServer *servobj, const AbaxDataString &dbname, const AbaxDataString & tabname, int replicateType );
+    JagFixKV( JagDBServer *servobj, const Jstr &dbname, const Jstr & tabname, int replicateType );
 	virtual ~JagFixKV();
 	virtual void destroy( bool removelock=true );
 	virtual void init( );
@@ -48,7 +48,7 @@ class JagFixKV
 	AbaxString      getValue( const AbaxString &key, const AbaxString& name ) const;
 	bool  	        setValue( const AbaxString &key,  const AbaxString& name, const AbaxString& value );
 	bool 	        dropKey( const AbaxString &key, bool doLock=true ); 
-	AbaxDataString  getListKeys();
+	Jstr  getListKeys();
 
   protected:
 	JagHashMap<AbaxString, AbaxString> 	*_hashmap;
@@ -57,8 +57,8 @@ class JagFixKV
 	JagDiskArrayServer  				*_darr;
 	int									_replicateType;
 	abaxint								KLEN, VLEN, KVLEN;
-	AbaxDataString  					_dbname;
-	AbaxDataString  					_tabname;
+	Jstr  					_dbname;
+	Jstr  					_tabname;
 	JagSchemaRecord   					_onerecord;
 };
 

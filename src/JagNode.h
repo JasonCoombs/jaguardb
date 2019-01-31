@@ -38,7 +38,7 @@ class JagNode : public JagFixKV
     JagNode( JagDBServer *servobj=NULL );
 	bool 	addNode( const AbaxString &nodeid, const AbaxString& usedGB, const AbaxString& freeGB );
 	bool 	dropNode( const AbaxString &nodeid ); 
-	AbaxDataString  getListNodes();
+	Jstr  getListNodes();
 
 	~JagNode();
 

@@ -61,8 +61,8 @@ JagReplicateBackup::~JagReplicateBackup()
 
 bool JagReplicateBackup::setConnAttributes( int replicateCopy, int deltaRecoverConnection,
 	unsigned int port, uabaxint clientFlag, bool fromServ,
-	JagVector<AbaxDataString> &hostlist, AbaxDataString &username, AbaxDataString &password,
-	AbaxDataString &dbname, AbaxDataString &unixSocket )
+	JagVector<Jstr> &hostlist, Jstr &username, Jstr &password,
+	Jstr &dbname, Jstr &unixSocket )
 {
 	int success = 0;
 	_replicateCopy = replicateCopy;
@@ -82,7 +82,7 @@ bool JagReplicateBackup::setConnAttributes( int replicateCopy, int deltaRecoverC
 }
 
 // method to update dbname after sucssfully "use db"
-void JagReplicateBackup::updateDBName( AbaxDataString &dbname )
+void JagReplicateBackup::updateDBName( Jstr &dbname )
 {
 	for ( int i = 0; i < _replicateCopy; ++i ) {
 		_conn[i]._dbname = dbname;
@@ -90,7 +90,7 @@ void JagReplicateBackup::updateDBName( AbaxDataString &dbname )
 }
 
 // method to update password after sucssfully "changepass uid password"
-void JagReplicateBackup::updatePassword( AbaxDataString &password )
+void JagReplicateBackup::updatePassword( Jstr &password )
 {
 	for ( int i = 0; i < _replicateCopy; ++i ) {
 		_conn[i]._password = password;
@@ -114,11 +114,11 @@ int JagReplicateBackup::makeConnection( int i )
 	if ( rc < 0 ) { return 0; }
 	len = simpleReply( i, _conn[i]._hdr, _conn[i]._dbuf );
 	if ( len <= 0 || _conn[i]._dbuf == NULL ) { return 0; }
-	AbaxDataString pubkey =  _conn[i]._dbuf;
+	Jstr pubkey =  _conn[i]._dbuf;
 	// prt(("c4203 replicate reply() rc=%d  got data=[%s]\n", rc, _conn[i]._dbuf ));
 	while( simpleReply( i, _conn[i]._hdr, _conn[i]._dbuf ) > 0 ) {}
 
-    AbaxDataString encPass;
+    Jstr encPass;
     encPass = JagEncryptStr( pubkey, _conn[i]._password.c_str() );
 
 	// do authenticate user
@@ -220,7 +220,7 @@ abaxint JagReplicateBackup::sendQuery( const char *querys, abaxint len, bool has
 	/***
 	thpool_wait( _sendPool );
 	for ( int i = 0; i < _replicateCopy; ++i ) {
-		_conn[i]._querys = AbaxDataString(querys, len);
+		_conn[i]._querys = Jstr(querys, len);
 		_conn[i]._len = len;
 		_conn[i]._hasReply = hasReply;
 		_conn[i]._bulkSend = bulkSend;
@@ -229,7 +229,7 @@ abaxint JagReplicateBackup::sendQuery( const char *querys, abaxint len, bool has
 	thpool_wait( _sendPool );
 	***/
 	for ( int i = 0; i < _replicateCopy; ++i ) {
-		_conn[i]._querys = AbaxDataString(querys, len);
+		_conn[i]._querys = Jstr(querys, len);
 		_conn[i]._len = len;
 		_conn[i]._hasReply = hasReply;
 		_conn[i]._bulkSend = bulkSend;
@@ -307,7 +307,7 @@ abaxint JagReplicateBackup::recvDirectFromSockAll( char *&buf, abaxint len )
 
 // method only called by client "insert" command
 // return 0: all server send error; return 1: else
-bool JagReplicateBackup::sendFilesToServer( const AbaxDataString &inpath )
+bool JagReplicateBackup::sendFilesToServer( const Jstr &inpath )
 {
 	int rc = 0;
 	
@@ -471,7 +471,7 @@ abaxint JagReplicateBackup::simpleQuery( int i, const char *querys, bool checkCo
 		batchReply = true;
 	}
 	
-	AbaxDataString compressedStr;
+	Jstr compressedStr;
 	if ( compress ) {
 		JagFastCompress::compress( querys, compressedStr );
 		if ( batchReply ) {
@@ -540,8 +540,8 @@ abaxint JagReplicateBackup::simpleReply( int i, char *hdr, char *&buf )
 		
 		// if compressed, uncompress data
 		if ( hdr[JAG_SOCK_MSG_HDR_LEN-4] == 'Z' ) { 
-			AbaxDataString compressed( buf, len );
-			AbaxDataString unCompressed;
+			Jstr compressed( buf, len );
+			Jstr unCompressed;
 			JagFastCompress::uncompress( compressed, unCompressed );
 			free( buf );
 			buf = (char*)jagmalloc( unCompressed.size()+1 );
@@ -683,7 +683,7 @@ abaxint JagReplicateBackup::recvReply( char *hdr, char *&buf )
 }
 
 // receive one file
-bool JagReplicateBackup::recvFilesFromServer( const AbaxDataString &outpath )
+bool JagReplicateBackup::recvFilesFromServer( const Jstr &outpath )
 {
 	// read related query, simple reply from replypos socket
 	if ( _replypos < 0 ) return 0;

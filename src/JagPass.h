@@ -27,15 +27,15 @@ class JagPass {
 	public:
 		JagDBServer *servobj;
 		JAGSOCK sock;
-		AbaxDataString  ip;
-		AbaxDataString  passwd;
+		Jstr  ip;
+		Jstr  passwd;
 };
 
 class JagCliCmdPass {
 	public:
 		JagDBServer *servobj;
 		JaguarCPPClient *cli;
-		AbaxDataString cmd;
+		Jstr cmd;
 };
 
 #endif

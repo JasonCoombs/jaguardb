@@ -32,12 +32,12 @@ class JagIndexSchema : public JagSchema
   public:
 	JagIndexSchema( JagDBServer *serv, int replicateType );
 	virtual ~JagIndexSchema();
-	int getIndexNames( const AbaxDataString &dbname, const AbaxDataString &tablename, JagVector<AbaxDataString> &vec );
-	int getIndexNamesFromMem( const AbaxDataString &dbname, const AbaxDataString &tabname, JagVector<AbaxDataString> &vec );
-	bool tableExist( const AbaxDataString &dbname, JagParseParam *parseParam ); 
-	bool tableExist( const AbaxDataString &dbname, const AbaxDataString &tabname );
-	bool indexExist( const AbaxDataString &dbname, JagParseParam *parseParam ); 
-	bool indexExist( const AbaxDataString &dbname, const AbaxDataString &tabname );
+	int getIndexNames( const Jstr &dbname, const Jstr &tablename, JagVector<Jstr> &vec );
+	int getIndexNamesFromMem( const Jstr &dbname, const Jstr &tabname, JagVector<Jstr> &vec );
+	bool tableExist( const Jstr &dbname, JagParseParam *parseParam ); 
+	bool tableExist( const Jstr &dbname, const Jstr &tabname );
+	bool indexExist( const Jstr &dbname, JagParseParam *parseParam ); 
+	bool indexExist( const Jstr &dbname, const Jstr &tabname );
 };
 
 #endif

@@ -28,7 +28,7 @@ class JagSingleMergeReader
   public:
 	JagSingleMergeReader( JagVector<OnefileRangeFD> &fRange, int veclen, int keylen, int vallen );
   	~JagSingleMergeReader(); 	
-  	int getNext ( JagVector<AbaxFixString> &vec );
+  	int getNext ( JagVector<JagFixString> &vec );
 	bool getNext( char *buf );
 	bool getNext( char *buf, abaxint &pos );
 

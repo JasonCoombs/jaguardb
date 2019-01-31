@@ -35,7 +35,7 @@ void JagNodeMgr::init()
 	_curClusterNumber = 0;
 	_totalClusterNumber = 0;
 
-	AbaxDataString vfpath;
+	Jstr vfpath;
 	vfpath = jaguarHome() + "/conf/cluster.conf";
 	FILE *fv = jagfopen( vfpath.c_str(), "r" );
 	if ( ! fv ) { 
@@ -47,19 +47,19 @@ void JagNodeMgr::init()
 	char line[2048];
 	int len, first = true, cnt = 0, isPound = false;
 	abaxint cnum = 0, cpos = -1;
-	AbaxDataString sline;
+	Jstr sline;
 	memset( line, 0, 2048 );
 
 	JagHashMap<AbaxString, abaxint> checkMap;
 	JagHashMap<AbaxString, abaxint> clusterNumMap;
 
-	JagVector<AbaxDataString> checkVec;
-	JagVector<AbaxDataString> nicvec;
+	JagVector<Jstr> checkVec;
+	JagVector<Jstr> nicvec;
 	JagNet::getLocalIPs( nicvec );
-	AbaxDataString  curHost = JagNet::getLocalHost();
-	// AbaxDataString curHostUpper = makeUpperString( curHost );
-	AbaxDataString curHostIP = JagNet::getIPFromHostName( curHost );
-	AbaxDataString ip;
+	Jstr  curHost = JagNet::getLocalHost();
+	// Jstr curHostUpper = makeUpperString( curHost );
+	Jstr curHostIP = JagNet::getIPFromHostName( curHost );
+	Jstr ip;
 	_numAllNodes = 0;
 
 	// prt(("s1800 nicvec:\n" ));
@@ -105,7 +105,7 @@ void JagNodeMgr::init()
 	// checkVec has all IP addresses now
 
 	// get self host ip
-	AbaxDataString up1, up2;
+	Jstr up1, up2;
 	cnt = 0;
 	for ( int i = 0; i < checkVec.size(); ++i ) {
 		/***
@@ -169,7 +169,7 @@ void JagNodeMgr::init()
 				// prt(("s0233 _sendNodes add[%s]\n", checkVec[i].c_str() ));
 				isPound = false;
 			} else {
-				_sendNodes += AbaxDataString("|") + checkVec[i];
+				_sendNodes += Jstr("|") + checkVec[i];
 				// prt(("s0235 _sendNodes add[%s]\n", checkVec[i].c_str() ));
 			}
 
@@ -177,7 +177,7 @@ void JagNodeMgr::init()
 				_allNodes += checkVec[i];
 				first = false;
 			} else {
-				_allNodes += AbaxDataString("|") + checkVec[i];
+				_allNodes += Jstr("|") + checkVec[i];
 			}
 			++ _numAllNodes;
 
@@ -201,7 +201,7 @@ void JagNodeMgr::init()
 				_curClusterNodes += checkVec[i];
 				first = false;
 			} else {
-				_curClusterNodes += AbaxDataString("|") + checkVec[i];
+				_curClusterNodes += Jstr("|") + checkVec[i];
 			}
 			++ _numNodes;
 		}
@@ -232,10 +232,10 @@ void JagNodeMgr::init()
 // public methods
 // rename original file to .backup, write newhost list to file, then redo init
 // str has the form of: #\nip1\nip2\n#\nip3\nip4\n...
-void JagNodeMgr::refreshFile( AbaxDataString &str )
+void JagNodeMgr::refreshFile( Jstr &str )
 {
-	AbaxDataString vfpath = jaguarHome() + "/conf/cluster.conf";
-	AbaxDataString bvfpath = vfpath + ".backup";
+	Jstr vfpath = jaguarHome() + "/conf/cluster.conf";
+	Jstr bvfpath = vfpath + ".backup";
 	jagrename( vfpath.c_str(), bvfpath.c_str() );
 	FILE *fv = jagfopen( vfpath.c_str(), "w" );
 	if ( ! fv ) { 
@@ -246,7 +246,7 @@ void JagNodeMgr::refreshFile( AbaxDataString &str )
 	jagfclose( fv );
 
 	// if cluster.conf changes, require do sshsetup in install script
-	AbaxDataString setup = AbaxDataString(getenv("HOME")) + "/.jagsetupssh";
+	Jstr setup = Jstr(getenv("HOME")) + "/.jagsetupssh";
 	jagunlink( setup.c_str() );
 
 	init();

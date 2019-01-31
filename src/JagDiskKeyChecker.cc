@@ -23,7 +23,7 @@
 #include <JagMD5lib.h>
 #include <JagFileMgr.h>
 
-JagDiskKeyChecker::JagDiskKeyChecker( const AbaxDataString &fpath, int klen, int vlen )
+JagDiskKeyChecker::JagDiskKeyChecker( const Jstr &fpath, int klen, int vlen )
 : JagFamilyKeyChecker( fpath, klen, vlen )
 {
 	// fpath:  /home/jaguar/jaguar/data/DB/tab1/mytable123
@@ -57,8 +57,8 @@ bool JagDiskKeyChecker::addKeyValueNoLock( const char *kv )
 {
 	char ukey[_UKLEN+1];
 	getUniqueKey( kv, ukey );  //md5 and hash of kv
-	AbaxFixString key( ukey, _UKLEN );
-	AbaxFixString val( kv+_KLEN, JAG_KEYCHECKER_VLEN );
+	JagFixString key( ukey, _UKLEN );
+	JagFixString val( kv+_KLEN, JAG_KEYCHECKER_VLEN );
 
 	JagDBPair pair( key, val );
 	bool rc = _keyCheckArr->insert( pair );
@@ -71,8 +71,8 @@ bool JagDiskKeyChecker::getValue( const char *key, char *value )
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey ); 
 	// value was provided buffer, data is copied to value
-	AbaxFixString pkey( ukey, _UKLEN );
-	AbaxFixString pval( "00", JAG_KEYCHECKER_VLEN );
+	JagFixString pkey( ukey, _UKLEN );
+	JagFixString pval( "00", JAG_KEYCHECKER_VLEN );
 	JagDBPair pair( pkey, pval );
 	bool rc =  _keyCheckArr->get( pair );
 	// prt(("s6374 JagDiskKeyChecker::getValue key=[%s] rc=%d\n", key, rc ));
@@ -87,7 +87,7 @@ bool JagDiskKeyChecker::removeKey( const char *key )
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey ); 
 
-	AbaxFixString pkey( ukey, _UKLEN );
+	JagFixString pkey( ukey, _UKLEN );
 	JagDBPair pair( pkey );
 	return _keyCheckArr->remove( pair );
 }
@@ -98,7 +98,7 @@ bool JagDiskKeyChecker::exist( const char *key )
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey ); 
 
-	AbaxFixString pkey( ukey, _UKLEN );
+	JagFixString pkey( ukey, _UKLEN );
 	JagDBPair pair( pkey );
 	bool rc = _keyCheckArr->exist( pair );
 	// prt(("s6474 JagDiskKeyChecker::exist key=[%s] rc=%d\n", key, rc ));
@@ -116,8 +116,8 @@ int JagDiskKeyChecker::buildInitKeyCheckerFromSigFile()
 	raydebug( stdout, JAG_LOG_LOW, "diskkcheck buildInitKeyCheckerFromSigFile ...\n" );
 
 	int rc = 0;
-	AbaxDataString sigfpath = _fpath + ".sig";
-	AbaxDataString hdbfpath = _fpath + ".hdb";
+	Jstr sigfpath = _fpath + ".sig";
+	Jstr hdbfpath = _fpath + ".hdb";
 	abaxint sigsize = JagFileMgr::fileSize( sigfpath );
 	abaxint hdbsize = _keyCheckArr->elements();
 	raydebug( stdout, JAG_LOG_LOW, "sigfile=%s\n", sigfpath.c_str() );
@@ -148,7 +148,7 @@ int JagDiskKeyChecker::buildInitKeyCheckerFromSigFile()
 }
 
 // read sig file, write to hdb file
-int JagDiskKeyChecker::readSigToHDB( const AbaxDataString &sigfpath, const AbaxDataString &hdbfpath )
+int JagDiskKeyChecker::readSigToHDB( const Jstr &sigfpath, const Jstr &hdbfpath )
 {
 	int fd = jagopen((char *)sigfpath.c_str(), O_RDONLY|JAG_NOATIME );
 	if ( fd < 0 ) {

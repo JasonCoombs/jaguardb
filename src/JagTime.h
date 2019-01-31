@@ -29,26 +29,26 @@ class JagTime
 		static int getTimeZoneDiff();  //  minutes
 		static abaxint mtime();  //  time(NULL) + milliseconds
 		static abaxint utime();  //  time(NULL) + microseconds
-		static AbaxDataString makeRandDateTimeString( int N);
-		static AbaxDataString makeRandTimeString();
-		static AbaxDataString YYYYMMDDHHMM();
-		static AbaxDataString YYYYMMDD();
+		static Jstr makeRandDateTimeString( int N);
+		static Jstr makeRandTimeString();
+		static Jstr YYYYMMDDHHMM();
+		static Jstr YYYYMMDD();
 
-		static AbaxDataString makeNowTimeStringSeconds();
-		static AbaxDataString makeNowTimeStringMilliSeconds();
-		static AbaxDataString makeNowTimeStringMicroSeconds();
+		static Jstr makeNowTimeStringSeconds();
+		static Jstr makeNowTimeStringMilliSeconds();
+		static Jstr makeNowTimeStringMicroSeconds();
 		static abaxint nowMilliSeconds();
-		static AbaxDataString nowYear();
+		static Jstr nowYear();
 
-		//static AbaxDataString rawToServerString( const JagParseAttribute &jpa, time_t rawSeconds, const AbaxDataString &ttype );
+		//static Jstr rawToServerString( const JagParseAttribute &jpa, time_t rawSeconds, const Jstr &ttype );
 		static void setTimeInfo( const JagParseAttribute &jpa , const char *str, struct tm &timeinfo, int isTime );
 
-		static AbaxFixString getValueFromTimeOrDate( const JagParseAttribute &jpa, const AbaxFixString &str,
- 													 const AbaxFixString &str2, int op, const AbaxDataString &ddif );
+		static JagFixString getValueFromTimeOrDate( const JagParseAttribute &jpa, const JagFixString &str,
+ 													 const JagFixString &str2, int op, const Jstr &ddif );
 
-		static void convertDateTimeToLocalStr( const AbaxDataString& instr, AbaxDataString& outstr, bool isnano=false );
-		static void convertTimeToStr( const AbaxDataString& instr, AbaxDataString& outstr, int tmtype=2 );
-		static void convertDateToStr( const AbaxDataString& instr, AbaxDataString& outstr );
+		static void convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool isnano=false );
+		static void convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype=2 );
+		static void convertDateToStr( const Jstr& instr, Jstr& outstr );
 		static int convertDateTimeFormat( const JagParseAttribute &jpa, char *outbuf, const char *inbuf, 
 										  const int offset, const int length, bool isnano=false );
 

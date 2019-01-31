@@ -29,26 +29,26 @@ class JagRange
   public:
 
    	static bool 
-	doRangeWithin( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, 
-				   const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2, 
+	doRangeWithin( const JagParseAttribute &jpa, const Jstr &mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, 
+				   const Jstr &mk2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
 				   bool strict=true );
    	static bool 
-	doRangeIntersect( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, int srid1, const JagStrSplit &sp1, 
-				   const AbaxDataString &mk2, const AbaxDataString &colType2, int srid2, const JagStrSplit &sp2 );
+	doRangeIntersect( const JagParseAttribute &jpa, const Jstr &mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, 
+				   const Jstr &mk2, const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
 
-	static bool rangeWithinRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, const AbaxDataString &begin1, const AbaxDataString &end1,
-	                              AbaxDataString &begin2, AbaxDataString &end2, bool strict );
+	static bool rangeWithinRange( const JagParseAttribute &jpa, const Jstr &subtype, const Jstr &begin1, const Jstr &end1,
+	                              Jstr &begin2, Jstr &end2, bool strict );
 
-	static bool pointWithinRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, const AbaxDataString &data,
-	                              AbaxDataString &begin2, AbaxDataString &end2, bool strict );
+	static bool pointWithinRange( const JagParseAttribute &jpa, const Jstr &subtype, const Jstr &data,
+	                              Jstr &begin2, Jstr &end2, bool strict );
 
-	static bool rangeIntersectRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, const AbaxDataString &begin1, const AbaxDataString &end1,
-	                              AbaxDataString &begin2, AbaxDataString &end2 );
-   	static bool doRangeSame( const JagParseAttribute &jpa, const AbaxDataString &mk1, const AbaxDataString &colType1, 
-							 int srid1, const JagStrSplit &sp1, const AbaxDataString &mk2, const AbaxDataString &colType2, 
+	static bool rangeIntersectRange( const JagParseAttribute &jpa, const Jstr &subtype, const Jstr &begin1, const Jstr &end1,
+	                              Jstr &begin2, Jstr &end2 );
+   	static bool doRangeSame( const JagParseAttribute &jpa, const Jstr &mk1, const Jstr &colType1, 
+							 int srid1, const JagStrSplit &sp1, const Jstr &mk2, const Jstr &colType2, 
 							 int srid2, const JagStrSplit &sp2 );
-	static bool rangeSameRange( const JagParseAttribute &jpa, const AbaxDataString &subtype, const AbaxDataString &begin1, const AbaxDataString &end1,
-	                              AbaxDataString &begin2, AbaxDataString &end2 );
+	static bool rangeSameRange( const JagParseAttribute &jpa, const Jstr &subtype, const Jstr &begin1, const Jstr &end1,
+	                              Jstr &begin2, Jstr &end2 );
 
 };
 

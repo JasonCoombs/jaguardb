@@ -30,7 +30,7 @@
 #include  "JagCrypt.h"
 
 void usage();
-int  parseArgs( int argc, char *argv[], AbaxDataString &publickeyfile, AbaxDataString &privatekeyfile );
+int  parseArgs( int argc, char *argv[], Jstr &publickeyfile, Jstr &privatekeyfile );
 
 /****************************************************************************************
 	printf("Usage: makeclicense.exe <numberofNodes> <applyid> <months> \n");
@@ -42,15 +42,15 @@ int main( int argc, char *argv[] )
 	srand(time(NULL) );
 
 	ecc_key ecckey;
-	AbaxDataString pubkey, privkey;
+	Jstr pubkey, privkey;
 	ecc_key *ptrkey = JagMakeEccKey( &ecckey, pubkey, privkey );
 	if ( NULL == ptrkey ) {
 		printf("error make keys\n");
 		exit(1);
 	}
 
-	AbaxDataString publickeyfile = "public.key";
-	AbaxDataString privatekeyfile = "private.key";
+	Jstr publickeyfile = "public.key";
+	Jstr privatekeyfile = "private.key";
 	parseArgs( argc, argv, publickeyfile, privatekeyfile );
 
 	FILE *fp = fopen( publickeyfile.c_str(), "w");
@@ -72,7 +72,7 @@ int main( int argc, char *argv[] )
 	printf("Private key is saved in %s\n", privatekeyfile.c_str() );
 }
 
-int  parseArgs( int argc, char *argv[], AbaxDataString &publickeyfile, AbaxDataString &privatekeyfile )
+int  parseArgs( int argc, char *argv[], Jstr &publickeyfile, Jstr &privatekeyfile )
 {
 	int i = 0;
 	for ( i = 1; i < argc; ++i )

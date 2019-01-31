@@ -44,7 +44,7 @@ class JagMemDiskSortArray
 	
 	void init( int memlimit=0, const char *diskhdr=NULL, const char *opstr=NULL );
 	void setJDA( JagDataAggregate *jda, bool isback=0 );
-	void setClientUseStr( const AbaxDataString &selcnt, const AbaxDataString &selhdr, const AbaxFixString &aggstr );
+	void setClientUseStr( const Jstr &selcnt, const Jstr &selhdr, const JagFixString &aggstr );
 	void clean();
 	int beginWrite();
 	int insert( JagDBPair &pair );
@@ -52,7 +52,7 @@ class JagMemDiskSortArray
 	int beginRead( bool isback=0 );
 	int setDataLimit( abaxint num );
 	int ignoreNumData( abaxint num );
-	// int get( AbaxFixString &str );
+	// int get( JagFixString &str );
 	int get( char *buf );
 	int endRead();
 
@@ -70,8 +70,8 @@ class JagMemDiskSortArray
 
 	JagDataAggregate *_jda;
 	
-	AbaxDataString _diskhdr;
-	AbaxDataString _opstr;
+	Jstr _diskhdr;
+	Jstr _opstr;
 	
 	abaxint _mempos;
 	JagSchemaRecord *_srecord;
@@ -91,9 +91,9 @@ class JagMemDiskSortArray
 	abaxint _cntlimit;
 
 	// data members for client reply use
-	AbaxDataString _cntstr;
-	AbaxDataString _selhdr;
-	AbaxFixString _aggstr;
+	Jstr _cntstr;
+	Jstr _selhdr;
+	JagFixString _aggstr;
 
 };
 

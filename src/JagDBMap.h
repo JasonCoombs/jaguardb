@@ -22,9 +22,9 @@
 #include <JagTime.h>
 #include <JagDBPair.h>
 
-typedef	std::pair<AbaxFixString,char>  FixValuePair;
-typedef std::pair<AbaxFixString,FixValuePair>  FixPair;
-typedef	std::map<AbaxFixString,FixValuePair>  FixMap;
+typedef	std::pair<JagFixString,char>  FixValuePair;
+typedef std::pair<JagFixString,FixValuePair>  FixPair;
+typedef	std::map<JagFixString,FixValuePair>  FixMap;
 
 class JagDBMap
 {
@@ -46,7 +46,7 @@ class JagDBMap
 		abaxint size() const { return _map->size(); }
 		abaxint elements() { return _map->size(); }
 		void   print();
-		std::map<AbaxFixString, FixValuePair> *_map; 
+		std::map<JagFixString, FixValuePair> *_map; 
 
 	protected:
 		void init();

@@ -29,24 +29,24 @@ class JagSchemaRecord
 {
 	public:
 		JagSchemaRecord( bool newVec = false );
-		// JagSchemaRecord( const AbaxDataString &dbobj );
+		// JagSchemaRecord( const Jstr &dbobj );
 		~JagSchemaRecord();
 		void destroy(  AbaxDestroyAction act=ABAX_NOOP);
 		JagSchemaRecord( const JagSchemaRecord& other );
 		JagSchemaRecord& operator=( const JagSchemaRecord& other );
 		bool print();
 		bool renameKey( const AbaxString &oldKeyName, const AbaxString & newKeyName );
-		bool addValueColumnFromSpare( const AbaxString &colName, const AbaxDataString &type, 
+		bool addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 
 									  abaxint length, abaxint sig );
-		AbaxDataString getString() const;
+		Jstr getString() const;
 		int parseRecord( const char *str );
 		// int formatHeadRecord( char *buf );
-		AbaxDataString formatHeadRecord() const;
+		Jstr formatHeadRecord() const;
 		//int formatColumnRecord( char *buf, const char *name, const char *type, int offset, int length, int sig, bool isKey=false );
 		//int formatTailRecord( char *buf );
-		AbaxDataString formatColumnRecord( const char *name, const char *type, int offset, int length, 
+		Jstr formatColumnRecord( const char *name, const char *type, int offset, int length, 
 										   int sig, bool isKey=false ) const;
-		AbaxDataString formatTailRecord( ) const;
+		Jstr formatTailRecord( ) const;
 
 		int getKeyMode() const;
 		int getPosition( const AbaxString& colName ) const;
@@ -55,13 +55,13 @@ class JagSchemaRecord
 
 
 
-		// AbaxDataString dbobj;
+		// Jstr dbobj;
 
 		char        type[2];
 		int 		keyLength;
 		int 		valueLength;
 		int 		ovalueLength;
-		AbaxDataString tableProperty;
+		Jstr tableProperty;
 		int		    numKeys;
 		int		    numValues;
 		bool        hasMute;

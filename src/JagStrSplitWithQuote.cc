@@ -129,7 +129,7 @@ void JagStrSplitWithQuote::init(const char* str, char sep)
 		}
 	}
 
-	list_ = new AbaxDataString[tokens];
+	list_ = new Jstr[tokens];
 	length_ = tokens;
 
 	for ( int i = 0; i < length_; ++i ) {
@@ -137,8 +137,8 @@ void JagStrSplitWithQuote::init(const char* str, char sep)
 			// list_[i] == ""; // bug
 			list_[i] = "";
 		} else {
-		 	// list_[i] = AbaxDataString(savestart[i], saveend[i]-savestart[i]);
-		 	list_[i] = AbaxDataString(pos[i]->savestart, pos[i]->saveend - pos[i]->savestart );
+		 	// list_[i] = Jstr(savestart[i], saveend[i]-savestart[i]);
+		 	list_[i] = Jstr(pos[i]->savestart, pos[i]->saveend - pos[i]->savestart );
 		}
 	}
 
@@ -163,7 +163,7 @@ void JagStrSplitWithQuote::destroy()
 }
 
 
-const AbaxDataString& JagStrSplitWithQuote::operator[](int i ) const
+const Jstr& JagStrSplitWithQuote::operator[](int i ) const
 {
 	if ( i < length_ )
 	{
@@ -180,7 +180,7 @@ abaxint JagStrSplitWithQuote::length() const
 	return length_;
 }
 
-bool JagStrSplitWithQuote::exists(const AbaxDataString &token) const
+bool JagStrSplitWithQuote::exists(const Jstr &token) const
 {
 	for (int i=0; i < length_; i++) {
 		if ( 0==strcmp( token.c_str(), list_[i].c_str() ) ) {

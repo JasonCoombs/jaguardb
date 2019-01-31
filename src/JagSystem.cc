@@ -33,7 +33,7 @@ int JagSystem::getStat6( abaxint &totalDiskGB, abaxint &usedDiskGB, abaxint &fre
 	nproc = 1; loadvg = 0.1; tcp = 10;
 
 	// get rdbhome usage
-	AbaxDataString jaghome= jaguarHome();
+	Jstr jaghome= jaguarHome();
 	abaxint usedDisk, freeDisk;
 	JagFileMgr::getPathUsage( jaghome.c_str(), usedDisk, freeDisk );
 	// prt(("s2010 getStat6 jaghome=[%s] usedDisk=%lld freeDisk=%lld\n",  jaghome.c_str(), usedDisk, freeDisk ));
@@ -59,7 +59,7 @@ int JagSystem::getCPUStat( abaxint &user, abaxint &sys, abaxint &idle )
 	idle = 1;
 	FILE *fp = jagfopen( "/proc/stat", "rb" );
 	if ( ! fp ) return 0;
-	AbaxDataString line;
+	Jstr line;
 
 	abaxint tot = 0;
 	char buf[1024];

@@ -901,7 +901,7 @@ int test_fixstring( int N)
 
 	clock.start();
 	for ( int i = 0; i < N; ++i ) {
-		AbaxFixString str("  0123456789  ", 14 );
+		JagFixString str("  0123456789  ", 14 );
 		str.ltrim();
 		// printf("ltrim=[%s]\n", str.c_str() );
 	}
@@ -911,7 +911,7 @@ int test_fixstring( int N)
 
 	clock.start();
 	for ( int i = 0; i < N; ++i ) {
-		AbaxFixString str("  0123456789  ", 14 );
+		JagFixString str("  0123456789  ", 14 );
 		str.rtrim();
 		// printf("rtrim=[%s]\n", str.c_str() );
 	}
@@ -921,14 +921,14 @@ int test_fixstring( int N)
 
 	clock.start();
 	for ( int i = 0; i < N; ++i ) {
-		AbaxFixString str("  0123456789  ", 14 );
+		JagFixString str("  0123456789  ", 14 );
 		str.trim();
 		// printf("trim=[%s]\n", str.c_str() );
 	}
 	clock.stop();
 	printf("%d  trim=%d usec \n", N,  clock.elapsedusec() );
 
-	AbaxFixString str("  0123456789  ", 14 );
+	JagFixString str("  0123456789  ", 14 );
 	str.substr(2);
 	printf("subdstr(2)=[%s]\n", str.c_str() );
 
@@ -1363,7 +1363,7 @@ void test_blockindex()
 	printf("done new bi\n");
 
 	JagDBPair pair;
-	AbaxFixString k;
+	JagFixString k;
 	abaxint idx;
 	
 	k = "k5";
@@ -1392,8 +1392,8 @@ void test_blockindex()
 	printf("done k2\n");
 
 
-	AbaxFixString min = _blockIndex->getMinKey();
-	AbaxFixString max = _blockIndex->getMaxKey();
+	JagFixString min = _blockIndex->getMinKey();
+	JagFixString max = _blockIndex->getMaxKey();
 	_blockIndex->print();
 
 	printf("min=[%s]  max=[%s]\n", min.c_str(), max.c_str() );
@@ -1406,7 +1406,7 @@ void test_fixblockindex()
 	printf("done new bi\n");
 
 	JagDBPair pair;
-	AbaxFixString k;
+	JagFixString k;
 	abaxint idx;
 	
 	k = "k5";
@@ -1435,8 +1435,8 @@ void test_fixblockindex()
 	printf("done k2\n");
 
 
-	AbaxFixString min = _blockIndex->getMinKey();
-	AbaxFixString max = _blockIndex->getMaxKey();
+	JagFixString min = _blockIndex->getMinKey();
+	JagFixString max = _blockIndex->getMaxKey();
 	_blockIndex->print();
 
 	printf("min=[%s]  max=[%s]\n", min.c_str(), max.c_str() );
@@ -1571,8 +1571,8 @@ void test_size()
 	printf("size of JagDBPair=%d  pair.size=%d sizeof(dbvec)=%d\n", sizeof(JagDBPair), sizeof(pair), sizeof(dbvec) );
 	printf("vectotsize=%d\n", vectot );
 
-	AbaxFixString key("01234567890123456789", 20 );
-	AbaxFixString val("01234567890123456789", 20 );
+	JagFixString key("01234567890123456789", 20 );
+	JagFixString val("01234567890123456789", 20 );
 	JagDBPair pair2(key, val);
 	dbvec.append(pair2);
 	vectot =  sizeof(dbvec) + dbvec.size() * sizeof(JagDBPair);
@@ -1649,7 +1649,7 @@ void test_localdiskhash( int N )
 	JagLocalDiskHash dh( "test", klen, vlen );
 
 	AbaxString k, v;
-	AbaxFixString  key, val;
+	JagFixString  key, val;
 	int rc;
 	srand( 0 );
 	int num = 0;
@@ -1657,8 +1657,8 @@ void test_localdiskhash( int N )
 		k = AbaxString::randomValue( klen );
 		// printf("insert key=[%s]\n", k.c_str() );
 		v = AbaxString::randomValue( vlen );
-		AbaxFixString key( k.c_str(), klen );
-		AbaxFixString val( v.c_str(), vlen );
+		JagFixString key( k.c_str(), klen );
+		JagFixString val( v.c_str(), vlen );
 		JagDBPair pair( key, val);
 
 		rc = dh.insert( pair );
@@ -1676,7 +1676,7 @@ void test_localdiskhash( int N )
 		k = AbaxString::randomValue( klen );
 		//printf("read key=[%s]\n", k.c_str() );
 		v = AbaxString::randomValue( vlen );
-		AbaxFixString key( k.c_str(), klen );
+		JagFixString key( k.c_str(), klen );
 		JagDBPair pair( key );
 		rc = dh.get( pair );
 		if ( rc ) {
@@ -1694,8 +1694,8 @@ void test_localdiskhash( int N )
 		k = AbaxString::randomValue( klen );
 		v = AbaxString::randomValue( vlen );
 		v = "00000000000000000000009292929999****************929293939339";
-		AbaxFixString key( k.c_str(), klen );
-		AbaxFixString val( v.c_str(), vlen );
+		JagFixString key( k.c_str(), klen );
+		JagFixString val( v.c_str(), vlen );
 		JagDBPair pair( key, val);
 		rc = dh.set( pair );
 		if ( rc ) {
@@ -1714,8 +1714,8 @@ void test_localdiskhash( int N )
 	for ( int i = 0; i < N; ++i ) {
 		k = AbaxString::randomValue( klen );
 		v = AbaxString::randomValue( vlen );
-		AbaxFixString key( k.c_str(), klen );
-		AbaxFixString val( v.c_str(), vlen );
+		JagFixString key( k.c_str(), klen );
+		JagFixString val( v.c_str(), vlen );
 		JagDBPair pair( key, val);
 		// printf("s2239 remove key=[%s] ...\n", k.c_str() );
 		rc = dh.remove( pair );
@@ -1870,12 +1870,12 @@ void test_keychecker( int N )
 	vbuf[0] = '2';
 	vbuf[1] = '3';
 	vbuf[2] = '\0';
-	AbaxFixString vstr(  vbuf, 2, 1 ); // point to vbuf
+	JagFixString vstr(  vbuf, 2, 1 ); // point to vbuf
 
    	JagKeyChecker * _keyChecker = new JagKeyChecker();
    	for ( int i = 0; i < N; ++i ) {
    		AbaxString str  = AbaxString::randomValue(30);
-   		AbaxFixString k  = Jstr( str.c_str() );
+   		JagFixString k  = Jstr( str.c_str() );
    		_keyChecker->addKeyValue( k, vstr );
    	}
 
@@ -1896,9 +1896,9 @@ void test_map ( int N )
 	JagDBMap *jmap = new JagDBMap();
 
 	AbaxString k, v;
-	AbaxFixString key("k1");
-	AbaxFixString val("v1");
-	AbaxFixString fk, fv;
+	JagFixString key("k1");
+	JagFixString val("v1");
+	JagFixString fk, fv;
 
 	time_t t1 = time(NULL);
 	v = AbaxString::randomValue(3000);
@@ -1917,11 +1917,11 @@ void test_map ( int N )
 void test_veconly ( int N )
 {
 	AbaxString k, v;
-	AbaxFixString key("k1");
-	AbaxFixString val("v1");
-	AbaxFixString fk, fv;
+	JagFixString key("k1");
+	JagFixString val("v1");
+	JagFixString fk, fv;
 	char buf[12];
-	std::vector<AbaxFixString> *vec = new std::vector<AbaxFixString>(20000);
+	std::vector<JagFixString> *vec = new std::vector<JagFixString>(20000);
 
 	time_t t1 = time(NULL);
 	v = AbaxString::randomValue(3000);
@@ -1943,11 +1943,11 @@ void test_mapvec ( int N )
 	JagDBMap *jmap = new JagDBMap();
 
 	AbaxString k, v;
-	AbaxFixString key("k1");
-	AbaxFixString val("v1");
-	AbaxFixString fk, fv;
+	JagFixString key("k1");
+	JagFixString val("v1");
+	JagFixString fk, fv;
 	char buf[12];
-	std::vector<AbaxFixString> *vec = new std::vector<AbaxFixString>(20000);
+	std::vector<JagFixString> *vec = new std::vector<JagFixString>(20000);
 
 
 	time_t t1 = time(NULL);
@@ -2074,7 +2074,7 @@ void test_array ( int N )
 	//JagArray<JagDBPair> *arr = new JagArray<JagDBPair>(32, 1);
 	JagArray<JagDBPair> *arr = new JagArray<JagDBPair>(32, 0);
 	AbaxString k, v;
-	AbaxFixString fk, fv;
+	JagFixString fk, fv;
 
 	std::vector<AbaxString> *vec = new std::vector<AbaxString>(N);
 	JagClock clock;
@@ -2213,9 +2213,9 @@ void test_jaghashmap ( int N )
 {
 	JagClock clock;
 	clock.start();
-	JagHashMap<AbaxString, AbaxFixString> *map = new JagHashMap<AbaxString,AbaxFixString>();
+	JagHashMap<AbaxString, JagFixString> *map = new JagHashMap<AbaxString,JagFixString>();
 	AbaxString rs;
-	AbaxFixString v("aa", 2, 1 );
+	JagFixString v("aa", 2, 1 );
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(20);
 		map->addKeyValue(rs, v );
@@ -2256,9 +2256,9 @@ void test_jagunordmap ( int N )
 {
 	JagClock clock;
 	clock.start();
-	JagUnordMap<Jstr, AbaxFixString> *map = new JagUnordMap<Jstr, AbaxFixString>();
+	JagUnordMap<Jstr, JagFixString> *map = new JagUnordMap<Jstr, JagFixString>();
 	AbaxString rs;
-	AbaxFixString v("aa", 2, 1 );
+	JagFixString v("aa", 2, 1 );
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(20);
 		map->addKeyValue( rs.c_str(), v );
@@ -2301,12 +2301,12 @@ void test_stdhashmap ( int N )
 {
 	JagClock clock;
 	clock.start();
-	std::unordered_map<Jstr,AbaxFixString> *map = new std::unordered_map< Jstr,AbaxFixString>();
+	std::unordered_map<Jstr,JagFixString> *map = new std::unordered_map< Jstr,JagFixString>();
 	AbaxString rs;
-	AbaxFixString v("aa", 2, 1 );
+	JagFixString v("aa", 2, 1 );
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(20);
-		map->insert( std::make_pair<Jstr,AbaxFixString>( Jstr(rs.c_str()), v) );
+		map->insert( std::make_pair<Jstr,JagFixString>( Jstr(rs.c_str()), v) );
 	}
 	clock.stop();
 	printf("%d  StdHashMap(addKeyValue)=%d msec \n", N,  clock.elapsed() );
@@ -2420,7 +2420,7 @@ void test_diskkeychecker( int N )
 	char value[JAG_KEYCHECKER_VLEN+1];
 
 	AbaxString k, v;
-	AbaxFixString  key, val;
+	JagFixString  key, val;
 	int rc;
 	srand( 0 );
 	int num = 0;

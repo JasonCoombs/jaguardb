@@ -25,10 +25,10 @@ class JagMinMax
 	char *maxbuf;
 	unsigned int buflen;
 
-	AbaxDataString type;
-	AbaxDataString dbcol;
-	AbaxDataString objcol;
-	AbaxDataString colname;
+	Jstr type;
+	Jstr dbcol;
+	Jstr objcol;
+	Jstr colname;
 	unsigned int offset;
 	unsigned int length;
 	unsigned int sig;

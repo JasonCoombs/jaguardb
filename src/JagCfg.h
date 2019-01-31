@@ -37,11 +37,11 @@ class JagCfg
 	int init( int type );
 	int destroy();
 	int refresh();
-	AbaxDataString  getValue( const AbaxString &name, const AbaxDataString &defaultValue="" ) const;
-	AbaxDataString  getConfHOME() const;
-	AbaxDataString  getJDBDataHOME( int objType=0 ) const;
-	AbaxDataString  getTEMPDataHOME( int objType=0 ) const;
-	AbaxDataString 	getTEMPJoinHOME() const;
+	Jstr  getValue( const AbaxString &name, const Jstr &defaultValue="" ) const;
+	Jstr  getConfHOME() const;
+	Jstr  getJDBDataHOME( int objType=0 ) const;
+	Jstr  getTEMPDataHOME( int objType=0 ) const;
+	Jstr 	getTEMPJoinHOME() const;
 	
 	static const int _BLOCK= JAG_BLOCK_SIZE;
 	int			_type;

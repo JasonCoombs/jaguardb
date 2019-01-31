@@ -25,17 +25,17 @@
 class JagNodeMgr
 {
   public:
-  	JagNodeMgr( const AbaxDataString& listenIP ) { _listenIP = listenIP; init(); }
+  	JagNodeMgr( const Jstr& listenIP ) { _listenIP = listenIP; init(); }
   	~JagNodeMgr() { destroy(); }
-	void refreshFile( AbaxDataString &hostlist );
+	void refreshFile( Jstr &hostlist );
 
-	AbaxDataString                  _listenIP;
+	Jstr                  _listenIP;
 
 	bool							_isHost0OfCluster0;
-	AbaxDataString					_selfIP;
-	AbaxDataString					_sendNodes;
-	AbaxDataString					_allNodes;
-	AbaxDataString					_curClusterNodes;
+	Jstr					_selfIP;
+	Jstr					_sendNodes;
+	Jstr					_allNodes;
+	Jstr					_curClusterNodes;
 	abaxint							_curClusterNumber;
 	abaxint							_totalClusterNumber;
 	int                             _numNodes;

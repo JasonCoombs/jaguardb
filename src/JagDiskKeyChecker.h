@@ -27,7 +27,7 @@
 class JagDiskKeyChecker  : public JagFamilyKeyChecker
 {
     public: 
-        JagDiskKeyChecker( const AbaxDataString &fpath, int klen, int vlen );
+        JagDiskKeyChecker( const Jstr &fpath, int klen, int vlen );
         virtual ~JagDiskKeyChecker() { destroy(); }
         virtual bool addKeyValue( const char *kv );
         virtual bool addKeyValueNoLock( const char *kv );
@@ -47,9 +47,9 @@ class JagDiskKeyChecker  : public JagFamilyKeyChecker
 		//void  getUniqueKey( const char *key, char *ukey );
 		//int   KLEN;
 		// JagReadWriteLock    *_lock;
-		int readSigToHDB( const AbaxDataString &sigfpath, const AbaxDataString &hdbfpath );
+		int readSigToHDB( const Jstr &sigfpath, const Jstr &hdbfpath );
 		bool _addSigKeyValue( const char *kv );
-		AbaxDataString  _fpath;
+		Jstr  _fpath;
 
 };
 

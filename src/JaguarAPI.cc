@@ -23,10 +23,10 @@
 #include <JagUtil.h>
 #include <JagHashMap.h>
 
-static void readInputFile( const char *inputFile, int maxLines, AbaxDataString &xname, AbaxDataString &yname, 
-			JagVector<AbaxDataString> &xvec, JagVector<AbaxDataString> &yvec, bool &xisvalue, bool &yisvalue );
-static void readInputLine( const char *buf, AbaxDataString &xname, AbaxDataString &yname, 
-			JagVector<AbaxDataString> &xvec, JagVector<AbaxDataString> &yvec, bool &xisvaliue, bool &yisvalue );
+static void readInputFile( const char *inputFile, int maxLines, Jstr &xname, Jstr &yname, 
+			JagVector<Jstr> &xvec, JagVector<Jstr> &yvec, bool &xisvalue, bool &yisvalue );
+static void readInputLine( const char *buf, Jstr &xname, Jstr &yname, 
+			JagVector<Jstr> &xvec, JagVector<Jstr> &yvec, bool &xisvaliue, bool &yisvalue );
 
 static int make2DBarChart( const char *title, int width, int height,
                     const char *inputFile, const char *outputFile, const char *options );
@@ -422,15 +422,15 @@ int  JaguarAPI::makeGraph( const char *type, const char *title, int width, int h
 int make2DBarChart( const char *title, int width, int height,
 			    const char *inputFile, const char *outputFile, const char *options )
 {
-	AbaxDataString page, str;
+	Jstr page, str;
 	/***
 	JagHashMap<AbaxString, AbaxString> omap;
 	makeMapFromOpt( options, omap );
 	AbaxString xtype;
 	omap.getValue("xtype", xtype);
 	***/
-	JagVector<AbaxDataString> xvec, yvec;
-	AbaxDataString xname, yname, res;
+	JagVector<Jstr> xvec, yvec;
+	Jstr xname, yname, res;
 	bool isxvalue, isyvalue;
 	readInputFile( inputFile, 10000, xname, yname, xvec, yvec, isxvalue, isyvalue );
 	// inputFile a:[ddd]  b:[eee]   
@@ -458,9 +458,9 @@ int make2DBarChart( const char *title, int width, int height,
     page += " var chart = document.getElementById('chart');\n";
     page += " var myChart = echarts.init(chart);\n";
     page += " var option = {\n";
-    page += " 	title: { text: '" + AbaxDataString(title) + "' },\n";
+    page += " 	title: { text: '" + Jstr(title) + "' },\n";
     page += "  	tooltip: { },\n";
-    page += AbaxDataString("  		legend: { data: [ '") + xname + "' ] },\n";
+    page += Jstr("  		legend: { data: [ '") + xname + "' ] },\n";
     // page += "  		xAxis: { data: [ "shirt", "cardign", "chiffon shirt", "pants", "heels", "socks" ] },\n";
     page += "  	xAxis: [\n";
     page += "  	         {\n";
@@ -476,7 +476,7 @@ int make2DBarChart( const char *title, int width, int height,
     page += "  		],\n";
     page += "  		yAxis: { type: 'value' },\n";
     page += "  		series: [{\n";
-    page += AbaxDataString("  			name: '") + yname + "',\n";
+    page += Jstr("  			name: '") + yname + "',\n";
     page += "  			type: 'bar',\n";
     page += "  			data: [ ";
 	if ( isxvalue ) {
@@ -527,8 +527,8 @@ int make3DBarChart( const char *title, int width, int height,
 // inputFile a:[ddd]  b:[eee]   
 // xname: "a"  yname: "b"
 // xvec: "ddd3" "ccc2"     yvec: "aaa1"  "ddd3"
-void readInputFile( const char *inputFile, int maxLines, AbaxDataString &xname, AbaxDataString &yname, 
-			JagVector<AbaxDataString> &xvec, JagVector<AbaxDataString> &yvec, bool &xisvalue, bool &yisvalue )
+void readInputFile( const char *inputFile, int maxLines, Jstr &xname, Jstr &yname, 
+			JagVector<Jstr> &xvec, JagVector<Jstr> &yvec, bool &xisvalue, bool &yisvalue )
 {
 	xisvalue = false;
 	FILE *fp = fopen( inputFile, "r" );
@@ -560,8 +560,8 @@ void readInputFile( const char *inputFile, int maxLines, AbaxDataString &xname, 
 // input buf a:[ddd]  b:[eee]   
 // xname: "a"  yname: "b"
 // xvec: "ddd3" "ccc2"     yvec: "aaa1"  "ddd3"
-void readInputLine( const char *buf, AbaxDataString &xname, AbaxDataString &yname, 
-			JagVector<AbaxDataString> &xvec, JagVector<AbaxDataString> &yvec, bool &xisvalue, bool &yisvalue )
+void readInputLine( const char *buf, Jstr &xname, Jstr &yname, 
+			JagVector<Jstr> &xvec, JagVector<Jstr> &yvec, bool &xisvalue, bool &yisvalue )
 {
 	if ( buf == NULL ) return;
 	if ( *buf == '\0' ) return;
@@ -629,11 +629,11 @@ void readInputLine( const char *buf, AbaxDataString &xname, AbaxDataString &ynam
 // static 
 void  makeErrorPage( const char *title, const char *outputFile )
 {
-	AbaxDataString page;
+	Jstr page;
 	page = "<!doctype html>\n";
 	page += "<html><head><title>Jaguar Chart</title>\n";
 	page += "</head>\n";
-	page += AbaxDataString("<body leftmargin=20><h3>") + title + "</h3>\n";
+	page += Jstr("<body leftmargin=20><h3>") + title + "</h3>\n";
     page += " <input type=button value=' << Back ' onclick='window.history.back()' style='width: 200px;height:30px'></form>\n";
     page += "</body>\n";
     page += "</html>\n";

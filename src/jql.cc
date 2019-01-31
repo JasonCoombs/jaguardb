@@ -40,29 +40,29 @@
 
 class PassParam {
 	public:
-		AbaxDataString username;
-		AbaxDataString passwd;
-		AbaxDataString host;
-		AbaxDataString port;
-		AbaxDataString dbname;
-		AbaxDataString session;
+		Jstr username;
+		Jstr passwd;
+		Jstr host;
+		Jstr port;
+		Jstr dbname;
+		Jstr session;
 };
 PassParam g_param;
 int  _debug = 0;
 
 // void 	sig_int(int sig);
 int  	parseArgs( int argc, char *argv[], 
-				AbaxDataString &username, AbaxDataString &passwd, AbaxDataString &host, AbaxDataString &port,
-				AbaxDataString& dbname, AbaxDataString &sqlcmd, int &echo, AbaxDataString &exclusive, 
-				AbaxDataString &fullConnect, AbaxDataString &mcmd, AbaxDataString &clearex, 
-				AbaxDataString &vvdebug, AbaxDataString &quiet, AbaxDataString &keepNewline, AbaxDataString &sqlFile );
+				Jstr &username, Jstr &passwd, Jstr &host, Jstr &port,
+				Jstr& dbname, Jstr &sqlcmd, int &echo, Jstr &exclusive, 
+				Jstr &fullConnect, Jstr &mcmd, Jstr &clearex, 
+				Jstr &vvdebug, Jstr &quiet, Jstr &keepNewline, Jstr &sqlFile );
 
 int queryAndReply( JaguarCPPClient& jcli, const char *query, bool ishello=false );
 void usage( const char *prog );
 void* sendStopSignal(void *p);
 void  printResult( const JaguarCPPClient &jcli, const JagClock &clock, abaxint cnt );
-int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPClient &jcli, 
-					 const AbaxDataString &quiet, int echo, int saveNewline, const AbaxDataString &username );
+int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli, 
+					 const Jstr &quiet, int echo, int saveNewline, const Jstr &username );
 
 void printit( FILE *outf, const char *fmt, ... );
 
@@ -77,8 +77,8 @@ int main(int argc, char *argv[])
 	char *pcmd;
 	int rc;
 	JaguarCPPClient jcli;
-	AbaxDataString username, passwd, host, port, dbname, exclusive, fullconnect; 
-	AbaxDataString sqlcmd, mcmd, clearex, vvdebug, quiet, keepNewline, sqlFile;
+	Jstr username, passwd, host, port, dbname, exclusive, fullconnect; 
+	Jstr sqlcmd, mcmd, clearex, vvdebug, quiet, keepNewline, sqlFile;
 	int  echo;
 	int  isEx = 0;
 	int  saveNewline = 1;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
 	JagNet::socketStartup();
 
-	AbaxDataString argPort, unixSocket;
+	Jstr argPort, unixSocket;
 	JagClock clock;
 	parseArgs( argc, argv, username, passwd, host, argPort, dbname, sqlcmd, echo, exclusive, 
 			   fullconnect,  mcmd, clearex, vvdebug, quiet, keepNewline, sqlFile );
@@ -223,10 +223,10 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int  parseArgs( int argc, char *argv[], AbaxDataString &username, AbaxDataString &passwd, 
-				AbaxDataString &host, AbaxDataString &port, AbaxDataString &dbname, AbaxDataString &sqlcmd,
-				int &echo, AbaxDataString &exclusive, AbaxDataString &fullconnect, AbaxDataString &mcmd, AbaxDataString &clearex,
-				AbaxDataString & vvdebug, AbaxDataString &quiet, AbaxDataString &keepNewline, AbaxDataString &sqlFile )
+int  parseArgs( int argc, char *argv[], Jstr &username, Jstr &passwd, 
+				Jstr &host, Jstr &port, Jstr &dbname, Jstr &sqlcmd,
+				int &echo, Jstr &exclusive, Jstr &fullconnect, Jstr &mcmd, Jstr &clearex,
+				Jstr & vvdebug, Jstr &quiet, Jstr &keepNewline, Jstr &sqlFile )
 {
 	int i = 0;
 	char *p;
@@ -385,12 +385,12 @@ void printResult( const JaguarCPPClient &jcli, const JagClock &clock, abaxint cn
 
 // return -1 for fatal eror
 // 0: for OK
-int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPClient &jcli, 
-                     const AbaxDataString &quiet, int echo, int saveNewline, const AbaxDataString &username )
+int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli, 
+                     const Jstr &quiet, int echo, int saveNewline, const Jstr &username )
 {
 	// prt(("c29393 executeCommands sqlFile=[%s]\n", sqlFile.c_str() ));
 	char *pcmd;
-	AbaxDataString sqlcmd;
+	Jstr sqlcmd;
 	FILE *infp = stdin;
 	if ( sqlFile.size() > 0 ) {
 		infp = jagfopen( sqlFile.c_str(), "rb" );
@@ -400,8 +400,8 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
 		}
 	}
 
-	AbaxDataString pass1, pass2;
-	AbaxDataString passwd;
+	Jstr pass1, pass2;
+	Jstr passwd;
 	int rc = 0;
 
 	lastCmdIsExpect = false;
@@ -435,8 +435,8 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
 
 		if ( pcmd[0] == 27 ) { continue; } 
 		if ( strncasecmp( pcmd, "changepass", 9 ) == 0 ) {
-			AbaxDataString tcmd1 = trimTailChar( pcmd, ';' );
-			AbaxDataString tcmd2 = trimTailChar( tcmd1, ' ' );
+			Jstr tcmd1 = trimTailChar( pcmd, ';' );
+			Jstr tcmd2 = trimTailChar( tcmd1, ' ' );
 			const char *passtr = NULL;
 			if ( ! (passtr = strchr( tcmd2.c_str(), ' ')) ) {
     			// no password is provided
@@ -453,9 +453,9 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
 			} else {
 				while ( isspace(*passtr) ) ++passtr;
 				if ( strchr(passtr, ':') ) {
-					sqlcmd = AbaxDataString("changepass ") + passtr;
+					sqlcmd = Jstr("changepass ") + passtr;
 				} else {
-					sqlcmd = AbaxDataString("changepass ") + username + ":" + passtr;
+					sqlcmd = Jstr("changepass ") + username + ":" + passtr;
 				}
 				pcmd = (char*) sqlcmd.c_str();
 			}
@@ -468,7 +468,7 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
 				}
 			} else {
     			// no password is provided
-    			AbaxDataString cmd = trimTailChar( sqlcmd, ';' );
+    			Jstr cmd = trimTailChar( sqlcmd, ';' );
     			JagStrSplit sp( cmd, ' ', true );
     			if ( sp.length() < 2 ) {
     				prt(("E6300 Error createuser syntax. Please try again\n"));
@@ -498,7 +498,7 @@ int executeCommands( JagClock &clock, const AbaxDataString &sqlFile, JaguarCPPCl
 			++pcmd;
 			while ( isspace(*pcmd) ) ++pcmd;
 			if ( *pcmd == '\r' || *pcmd == '\n' || *pcmd == ';' || *pcmd == '\0' ) continue;
-			AbaxDataString outs = psystem(pcmd);
+			Jstr outs = psystem(pcmd);
 			printit( jcli._outf, "%s\n", outs.c_str() );
 			continue;
 		} else if ( strncasecmp( pcmd, "source ", 7 ) == 0 ) {

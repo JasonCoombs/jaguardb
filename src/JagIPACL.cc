@@ -22,7 +22,7 @@
 #include <JagUtil.h>
 #include <JagStrSplit.h>
 
-JagIPACL::JagIPACL( const AbaxDataString  &fpath )
+JagIPACL::JagIPACL( const Jstr  &fpath )
 {
 	_map = new JagHashMap<AbaxString, AbaxString>( 16 );
 
@@ -44,14 +44,14 @@ void JagIPACL::destroy()
 	}
 }
 
-bool JagIPACL::readFile( const AbaxDataString &fpath )
+bool JagIPACL::readFile( const Jstr &fpath )
 {
 	// prt(("s7331 readFile fpath=[%s]\n", fpath.c_str() ));
 	FILE *fp = jagfopen( fpath.c_str(), "r" );
 	if ( ! fp ) return false;
 
 	char buf[256];
-	AbaxDataString line;
+	Jstr line;
 	_data = "";
 	while ( NULL != fgets(buf, 256, fp ) ) {
 		line = buf;
@@ -67,7 +67,7 @@ bool JagIPACL::readFile( const AbaxDataString &fpath )
 }
 
 // ip:  192.178.2.123  in hashmap:  192.168
-bool JagIPACL::match(  const AbaxDataString& ip )
+bool JagIPACL::match(  const Jstr& ip )
 {
 	// 192.178.2.123 in hashmap?
 	// 192.178.2 in hashmap?
@@ -95,7 +95,7 @@ bool JagIPACL::match(  const AbaxDataString& ip )
 	return false;
 }
 
-void JagIPACL::refresh( const AbaxDataString &newdata )
+void JagIPACL::refresh( const Jstr &newdata )
 {
 	_data = newdata;
 	delete _map;

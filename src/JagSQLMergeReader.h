@@ -28,9 +28,9 @@ typedef JagSQLFileBuffReader* JagSQLFileBuffReaderPtr;
 class JagSQLMergeReader
 {
   public:
-	JagSQLMergeReader( const AbaxDataString & fpaths );
+	JagSQLMergeReader( const Jstr & fpaths );
   	~JagSQLMergeReader(); 	
-  	bool getNextSQL( AbaxDataString &sql );
+  	bool getNextSQL( Jstr &sql );
 
   protected:
 	JagSQLFileBuffReaderPtr  *_reader;

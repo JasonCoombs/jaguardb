@@ -331,7 +331,7 @@ static int encode( FILE *infile, FILE *outfile, int linesize )
 }
 
 // public
-int base64EncodeFile2String( FILE *infile, AbaxDataString &outStr )
+int base64EncodeFile2String( FILE *infile, Jstr &outStr )
 {
 	int linesize = B64_DEF_LINE_SIZE;
     unsigned char in[3];
@@ -450,7 +450,7 @@ static int decode( FILE *infile, FILE *outfile )
 
 // public
 // decode into string
-int base64DecodeFile2String( FILE *infile, AbaxDataString &outStr )
+int base64DecodeFile2String( FILE *infile, Jstr &outStr )
 {
 	int retcode = 0;
     unsigned char in[4];
@@ -700,24 +700,24 @@ static int base64main( int argc, char **argv )
 }
 
 
-static const AbaxDataString abax_base64_symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static AbaxDataString abax_base64_encode(unsigned char const* rawstr, unsigned int inlen) ;
+static const Jstr abax_base64_symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static Jstr abax_base64_encode(unsigned char const* rawstr, unsigned int inlen) ;
 
 // public
-AbaxDataString abaxEncodeBase64( const AbaxDataString &src )
+Jstr abaxEncodeBase64( const Jstr &src )
 {
 	return abax_base64_encode( (unsigned char const*) src.c_str(), src.size() );
 }
 
 // public
-AbaxDataString abaxDecodeBase64(AbaxDataString const& encstr) 
+Jstr abaxDecodeBase64(Jstr const& encstr) 
 {
   int inlen = encstr.size();
   int i = 0;
   int j = 0;
   int in_ = 0;
   unsigned char char_array_4[4], char_array_3[3];
-  AbaxDataString ret;
+  Jstr ret;
 
   while (inlen-- && ( encstr[in_] != '=') && abax_isbase64(encstr[in_])) {
     char_array_4[i++] = encstr[in_]; in_++;
@@ -758,9 +758,9 @@ static inline bool abax_isbase64(unsigned char c)
   return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
-static AbaxDataString abax_base64_encode(unsigned char const* rawstr, unsigned int inlen) 
+static Jstr abax_base64_encode(unsigned char const* rawstr, unsigned int inlen) 
 {
-  AbaxDataString ret;
+  Jstr ret;
   int i = 0;
   int j = 0;
   unsigned char char_array_3[3];

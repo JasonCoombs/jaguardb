@@ -171,11 +171,11 @@ int JagParallelParse::parseSame( const JagParseAttribute &jpa, const char *cmd, 
 void *parseSQLFunction( void *p )
 {
 	ParallelPass *pass = (ParallelPass*)p;
-	AbaxDataString sql = pass->sql;
+	Jstr sql = pass->sql;
 	JagParseParam **param = pass->pparam;
 	JagParseAttribute *jpa = pass->jpa;
 	bool rc;
-	AbaxDataString errmsg;
+	Jstr errmsg;
 
     jaguar_mutex_lock( & pass->obj->_mutex );
 	// prt(("s3024 parseSQLFunction parseCommand(%s) ...\n", sql.c_str() ));

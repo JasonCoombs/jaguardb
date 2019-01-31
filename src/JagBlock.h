@@ -51,9 +51,9 @@ class JagBlock
 		bool findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset ); 
 		abaxint getPartElements( abaxint pos ) { return _vec[0].getPartElements( pos ); }
 		void cleanPartBlockIndex( abaxint pos, bool dolock=true );
-		AbaxFixString getMinKey();
-		AbaxFixString getMaxKey();
-		void  flushBottomLevel( const AbaxDataString &outPath, abaxint elemts, abaxint arln, abaxint minindx, abaxint maxindx );
+		JagFixString getMinKey();
+		JagFixString getMaxKey();
+		void  flushBottomLevel( const Jstr &outPath, abaxint elemts, abaxint arln, abaxint minindx, abaxint maxindx );
 		abaxint getBottomCapacity() const { return _vec[0].capacity(); }
 
 		// debug purpose
@@ -107,12 +107,12 @@ void JagBlock<Pair>::destroy( )
 }
 
 template <class Pair>
-AbaxFixString JagBlock<Pair>::getMinKey()
+JagFixString JagBlock<Pair>::getMinKey()
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 
 	/**
-	AbaxFixString getnull;
+	JagFixString getnull;
 	for ( int i = 0; i < _vec[0].capacity(); ++i ) {
  		if ( _vec[0][i] != Pair::NULLVALUE ) return _vec[0][i].key;
 	}
@@ -122,7 +122,7 @@ AbaxFixString JagBlock<Pair>::getMinKey()
 }
 
 template <class Pair>
-AbaxFixString JagBlock<Pair>::getMaxKey()
+JagFixString JagBlock<Pair>::getMaxKey()
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	return _maxKey.key;
@@ -443,7 +443,7 @@ bool JagBlock<Pair>::findFirstLast( const Pair &pair, abaxint *retfirst, abaxint
 
 // write bottom level of block index to a file
 template <class Pair> 
-void JagBlock<Pair>::flushBottomLevel( const AbaxDataString &outFPath, abaxint elements, abaxint arrlen, abaxint minindex, abaxint maxindex )
+void JagBlock<Pair>::flushBottomLevel( const Jstr &outFPath, abaxint elements, abaxint arrlen, abaxint minindex, abaxint maxindex )
 {
 	if ( _topLevel == 0 &&  _vec[0].size() < 1 ) {
 		return;

@@ -47,7 +47,7 @@ class JagParallelParse
 class ParallelPass
 {
   public:
-  	AbaxDataString  sql;
+  	Jstr  sql;
 	JagParseParam  **pparam;
 	JagParallelParse  *obj;
 	JagParseAttribute  *jpa;

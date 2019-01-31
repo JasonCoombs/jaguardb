@@ -51,22 +51,22 @@ JagDBLogger::~JagDBLogger()
 	delete _timemap;
 }
 
-void JagDBLogger::logmsg( const JagRequest &req, const AbaxDataString &msg, const AbaxDataString &cmd )
+void JagDBLogger::logmsg( const JagRequest &req, const Jstr &msg, const Jstr &cmd )
 {
 	if ( ! _dologmsg ) return;
-	AbaxDataString fpath = _logDir + req.session->dbname + ".log";
+	Jstr fpath = _logDir + req.session->dbname + ".log";
 	logit( req, fpath, msg, cmd );
 }
 
-void JagDBLogger::logerr( const JagRequest &req, const AbaxDataString &errmsg, const AbaxDataString &cmd )
+void JagDBLogger::logerr( const JagRequest &req, const Jstr &errmsg, const Jstr &cmd )
 {
 	if ( ! _dologerr ) return;
-	AbaxDataString fpath = _logDir + req.session->dbname + ".err";
+	Jstr fpath = _logDir + req.session->dbname + ".err";
 	logit( req, fpath, errmsg, cmd );
 }
 
-void JagDBLogger::logit( const JagRequest &req, const AbaxDataString &fpath, 
-						 const AbaxDataString &hdr, const AbaxDataString &cmd )
+void JagDBLogger::logit( const JagRequest &req, const Jstr &fpath, 
+						 const Jstr &hdr, const Jstr &cmd )
 {
 	FILE *fp = NULL;
 	AbaxBuffer bfr;

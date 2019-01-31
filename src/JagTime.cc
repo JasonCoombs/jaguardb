@@ -68,7 +68,7 @@ abaxint JagTime::utime()
 }
 
 //  N: years back
-AbaxDataString JagTime::makeRandDateTimeString( int N )
+Jstr JagTime::makeRandDateTimeString( int N )
 {
 	time_t rawtime;
   	struct tm * timeinfo;
@@ -85,7 +85,7 @@ AbaxDataString JagTime::makeRandDateTimeString( int N )
 	return buffer;
 }
 
-AbaxDataString JagTime::makeRandTimeString()
+Jstr JagTime::makeRandTimeString()
 {
 	time_t rawtime;
   	struct tm * timeinfo;
@@ -98,7 +98,7 @@ AbaxDataString JagTime::makeRandTimeString()
 	return buffer;
 }
 
-AbaxDataString JagTime::YYYYMMDDHHMM()
+Jstr JagTime::YYYYMMDDHHMM()
 {
 	time_t rawtime;
   	struct tm * timeinfo;
@@ -112,7 +112,7 @@ AbaxDataString JagTime::YYYYMMDDHHMM()
 	return buffer;
 }
 
-AbaxDataString JagTime::YYYYMMDD()
+Jstr JagTime::YYYYMMDD()
 {
 	time_t rawtime;
   	struct tm * timeinfo;
@@ -125,7 +125,7 @@ AbaxDataString JagTime::YYYYMMDD()
 	return buffer;
 }
 
-AbaxDataString JagTime::makeNowTimeStringSeconds()
+Jstr JagTime::makeNowTimeStringSeconds()
 {
 	time_t rawtime;
   	struct tm * timeinfo;
@@ -138,7 +138,7 @@ AbaxDataString JagTime::makeNowTimeStringSeconds()
 	return buffer;
 }
 
-AbaxDataString JagTime::makeNowTimeStringMilliSeconds()
+Jstr JagTime::makeNowTimeStringMilliSeconds()
 {
 	char  buffer[80];
 	char  endbuf[8];
@@ -157,7 +157,7 @@ AbaxDataString JagTime::makeNowTimeStringMilliSeconds()
 	return buffer;
 }
 
-AbaxDataString JagTime::makeNowTimeStringMicroSeconds()
+Jstr JagTime::makeNowTimeStringMicroSeconds()
 {
 	char  buffer[80];
 	char  endbuf[8];
@@ -183,7 +183,7 @@ abaxint JagTime::nowMilliSeconds()
 	return (abaxint)now.tv_usec * 1000 + now.tv_sec/1000;
 }
 
-AbaxDataString JagTime::nowYear()
+Jstr JagTime::nowYear()
 {
 	time_t rawtime;
   	struct tm * timeinfo;
@@ -198,7 +198,7 @@ AbaxDataString JagTime::nowYear()
 
 #if 0
 // input: rawSeconds "1538282828"
-AbaxDataString JagTime::rawToClientString( const JagParseAttribute &jpa, time_t seconds, const AbaxDataString &ttype )
+Jstr JagTime::rawToClientString( const JagParseAttribute &jpa, time_t seconds, const Jstr &ttype )
 {
 	//abaxint  defTZDiffMin = jpa.timediff;
 	//abaxint servTZDiffMin = jpa.servtimediff;
@@ -229,7 +229,7 @@ AbaxDataString JagTime::rawToClientString( const JagParseAttribute &jpa, time_t 
 
 #if 0
 // input: rawSeconds "1538282828"
-AbaxDataString JagTime::rawToServerString( const JagParseAttribute &jpa, time_t seconds, const AbaxDataString &ttype )
+Jstr JagTime::rawToServerString( const JagParseAttribute &jpa, time_t seconds, const Jstr &ttype )
 {
 	//abaxint  defTZDiffMin = jpa.timediff;
 	//abaxint servTZDiffMin = jpa.servtimediff;
@@ -323,8 +323,8 @@ void JagTime::setTimeInfo( const JagParseAttribute &jpa , const char *str, struc
 }
 
 
-AbaxFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, const AbaxFixString &str, 
-									const AbaxFixString &str2, int op, const AbaxDataString& ddiff ) 
+JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, const JagFixString &str, 
+									const JagFixString &str2, int op, const Jstr& ddiff ) 
 {
 	// prt(("s2839 getValueFromTimeOrDate str=[%s] str2=[%s] op=%d ddiff=%d\n", str.c_str(), str2.c_str(), op, ddiff ));
 	char *p;
@@ -417,15 +417,15 @@ AbaxFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, con
 		snprintf(buf, timelen+1, "%lld", diff);
 	}
 	
-	AbaxFixString res(buf, timelen);
+	JagFixString res(buf, timelen);
 	return res;	
 }
 
  
  // tzdiff in minutes
 // convert GMT time microsecs or nanosecs to caller Local time (usually client)
-// void convertDateTimeToLocalStr( int tzdiff, const AbaxDataString& instr, AbaxDataString& outstr, bool isnano )
-void JagTime::convertDateTimeToLocalStr( const AbaxDataString& instr, AbaxDataString& outstr, bool isnano )
+// void convertDateTimeToLocalStr( int tzdiff, const Jstr& instr, Jstr& outstr, bool isnano )
+void JagTime::convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool isnano )
 {
 	// print keys
 	char tmstr[48];
@@ -466,7 +466,7 @@ void JagTime::convertDateTimeToLocalStr( const AbaxDataString& instr, AbaxDataSt
 // tmtype=0: no micro/o/nano sub-seconds
 // tmtype=1: micro subseconds
 // tmtype=2: nano subseconds
-void JagTime::convertTimeToStr( const AbaxDataString& instr, AbaxDataString& outstr, int tmtype )
+void JagTime::convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype )
 {
 	// print keys
 	char tmstr[24];
@@ -513,7 +513,7 @@ void JagTime::convertTimeToStr( const AbaxDataString& instr, AbaxDataString& out
 
 // instr: "yyyymmdd"
 // outstr: "yyyy-mm-dd"
-void JagTime::convertDateToStr( const AbaxDataString& instr, AbaxDataString& outstr )
+void JagTime::convertDateToStr( const Jstr& instr, Jstr& outstr )
 {
 	char  buf[11];
 	memset( buf, 0, 11 );

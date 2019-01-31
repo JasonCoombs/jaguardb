@@ -35,7 +35,7 @@ JagHashStrStr::~JagHashStrStr()
 	jag_hash_destroy( &_hash );
 }
 
-bool JagHashStrStr::addKeyValue( const AbaxDataString & key, const AbaxDataString &val )
+bool JagHashStrStr::addKeyValue( const Jstr & key, const Jstr &val )
 {
 	if ( key.size() < 1 ) return 0;
 	int rc = jag_hash_insert( &_hash, key.c_str(), val.c_str() );
@@ -47,7 +47,7 @@ bool JagHashStrStr::addKeyValue( const AbaxDataString & key, const AbaxDataStrin
 	return false;
 }
 
-void JagHashStrStr::removeKey( const AbaxDataString & key )
+void JagHashStrStr::removeKey( const Jstr & key )
 {
 	if ( key.size() < 1 ) return;
 	int rc = jag_hash_delete( &_hash, key.c_str() );
@@ -57,7 +57,7 @@ void JagHashStrStr::removeKey( const AbaxDataString & key )
 	}
 }
 
-bool JagHashStrStr::keyExist( const AbaxDataString & key ) const
+bool JagHashStrStr::keyExist( const Jstr & key ) const
 {
 	if ( key.size() < 1 ) return false;
 	char *pval = jag_hash_lookup( &_hash, key.c_str() );
@@ -65,12 +65,12 @@ bool JagHashStrStr::keyExist( const AbaxDataString & key ) const
 	return false;
 }
 
-char* JagHashStrStr::getValue( const AbaxDataString &key ) const
+char* JagHashStrStr::getValue( const Jstr &key ) const
 {
 	return jag_hash_lookup( &_hash, key.c_str() );
 }
 
-AbaxDataString JagHashStrStr::getValue( const AbaxDataString &key, bool &rc ) const
+Jstr JagHashStrStr::getValue( const Jstr &key, bool &rc ) const
 {
 	char *p = jag_hash_lookup( &_hash, key.c_str() );
 	if ( p ) {
@@ -82,7 +82,7 @@ AbaxDataString JagHashStrStr::getValue( const AbaxDataString &key, bool &rc ) co
 	}
 }
 
-bool JagHashStrStr::getValue( const AbaxDataString &key, AbaxDataString &val ) const
+bool JagHashStrStr::getValue( const Jstr &key, Jstr &val ) const
 {
 	char *p = jag_hash_lookup( &_hash, key.c_str() );
 	if ( p ) {
@@ -138,19 +138,19 @@ JagHashStrStr& JagHashStrStr:: operator= ( const JagHashStrStr &o )
 }
 
 /***
-JagVector<AbaxPair<AbaxDataString,AbaxDataString>> JagHashStrStr::getStrStrVector()
+JagVector<AbaxPair<Jstr,Jstr>> JagHashStrStr::getStrStrVector()
 {
-	JagVector<AbaxPair<AbaxDataString,AbaxDataString>> vec;
+	JagVector<AbaxPair<Jstr,Jstr>> vec;
 
 	HashNodeT *node;
-	AbaxDataString key;
-	AbaxDataString val;
+	Jstr key;
+	Jstr val;
 	for ( int i = 0; i < _hash.size; ++i ) {
 		node = _hash.bucket[i];
 		while ( node != NULL ) {
 			key = node->key;
 			val = node->value;
-			AbaxPair<AbaxDataString,AbaxDataString> pair(key, val);
+			AbaxPair<Jstr,Jstr> pair(key, val);
 			vec.append( pair );
 			node = node->next;
 		}
@@ -161,18 +161,18 @@ JagVector<AbaxPair<AbaxDataString,AbaxDataString>> JagHashStrStr::getStrStrVecto
 ***/
 
 // return "a=1|c=3|f=34" if sep is |
-AbaxDataString JagHashStrStr::getKVStrings( const char *sep)
+Jstr JagHashStrStr::getKVStrings( const char *sep)
 {
-	AbaxDataString res;
+	Jstr res;
 
 	HashNodeT *node;
 	for ( int i = 0; i < _hash.size; ++i ) {
 		node = _hash.bucket[i];
 		while ( node != NULL ) {
 			if ( res.size() < 1 ) {
-				res = AbaxDataString(node->key) + "=" + node->value;
+				res = Jstr(node->key) + "=" + node->value;
 			} else {
-				res += AbaxDataString(sep) + AbaxDataString(node->key) + "=" + node->value;
+				res += Jstr(sep) + Jstr(node->key) + "=" + node->value;
 			}
 			node = node->next;
 		}
@@ -182,18 +182,18 @@ AbaxDataString JagHashStrStr::getKVStrings( const char *sep)
 }
 
 // return "a|c|f" if sep is |
-AbaxDataString JagHashStrStr::getKeyStrings( const char *sep)
+Jstr JagHashStrStr::getKeyStrings( const char *sep)
 {
-	AbaxDataString res;
+	Jstr res;
 
 	HashNodeT *node;
 	for ( int i = 0; i < _hash.size; ++i ) {
 		node = _hash.bucket[i];
 		while ( node != NULL ) {
 			if ( res.size() < 1 ) {
-				res = AbaxDataString(node->key);
+				res = Jstr(node->key);
 			} else {
-				res += AbaxDataString(sep) + AbaxDataString(node->key);
+				res += Jstr(sep) + Jstr(node->key);
 			}
 			node = node->next;
 		}

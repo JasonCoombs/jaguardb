@@ -72,13 +72,13 @@ class JagVector
 			}	
 		}
 
-		AbaxDataString asString() const {
-			AbaxDataString str;
+		Jstr asString() const {
+			Jstr str;
 			for ( abaxint i = 0; i < _elements; ++i ) {
 				if (  0 == i ) {
 					str =  _arr[i];
 				} else {
-					str += AbaxDataString("|") +  _arr[i];
+					str += Jstr("|") +  _arr[i];
 				}
 			}
 			return str;

@@ -21,7 +21,7 @@
 
 JagColumn::JagColumn()
 {
-	// name = AbaxDataString("");
+	// name = Jstr("");
 	// printf("c1920 JagColumn::JagColumn() ...\n");
 
 	type = JAG_C_COL_TYPE_STR;

@@ -43,8 +43,8 @@ class AbaxDiskHash
 {
 	public:
 
-		AbaxDiskHash( RayDBServer *servobj, const AbaxDataString &filename, int keylength=16, int vallength=16, int arrlength=32 );
-		void init( const AbaxDataString &fileName, int arrlength );
+		AbaxDiskHash( RayDBServer *servobj, const Jstr &filename, int keylength=16, int vallength=16, int arrlength=32 );
+		void init( const Jstr &fileName, int arrlength );
 		~AbaxDiskHash();
 		// JDFS  		*_jdfs;
 
@@ -70,7 +70,7 @@ class AbaxDiskHash
 		inline int keyLength() const { return KEYLEN; }
 		inline int valueLength() const { return VALLEN; }
 		inline int keyValueLength() const { return KEYVALLEN; }
-		AbaxDataString getName() { return _hashname; }
+		Jstr getName() { return _hashname; }
 
 		abaxint elements() { return _elements; }
 		abaxint countCells( );
@@ -116,8 +116,8 @@ class AbaxDiskHash
 		abaxint  	_arrlen;
 		abaxint  	_newarrlen;
 		abaxint  	_elements;
-		AbaxDataString _hashname;
-		AbaxDataString _newhashname;
+		Jstr _hashname;
+		Jstr _newhashname;
 		
 		int KEYLEN; 
 		int VALLEN;
@@ -138,7 +138,7 @@ class AbaxDiskHash
 
 // ctor
 template <class Pair> 
-AbaxDiskHash<Pair>::AbaxDiskHash( RayDBServer *servobj, const AbaxDataString &filename, int keylength, int vallength, int arrlength )
+AbaxDiskHash<Pair>::AbaxDiskHash( RayDBServer *servobj, const Jstr &filename, int keylength, int vallength, int arrlength )
 {
 	_servobj = servobj;
 	KEYLEN = keylength;
@@ -158,15 +158,15 @@ void AbaxDiskHash<Pair>::drop( )
 
 // ctor
 template <class Pair> 
-void AbaxDiskHash<Pair>::init( const AbaxDataString &fileName, int length )
+void AbaxDiskHash<Pair>::init( const Jstr &fileName, int length )
 {
 	_lock = NULL; 
 
 	memset(_NullKeyValBuf, 0, KEYVALLEN+1);
 	Pair t_pair = Pair::NULLVALUE;
 	
-	AbaxDataString dk_hash = ".hdb";
-	AbaxDataString dk_hash2 = "Hash7392938.hdb";
+	Jstr dk_hash = ".hdb";
+	Jstr dk_hash2 = "Hash7392938.hdb";
 
 	_hashname = fileName; 
 	_hashname += dk_hash;

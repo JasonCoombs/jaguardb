@@ -33,7 +33,7 @@ JagUserRole::~JagUserRole()
 	// this->destroy();
 }
 
-AbaxDataString JagUserRole::getListRoles()
+Jstr JagUserRole::getListRoles()
 {
 	return this->getListKeys();
 }
@@ -63,9 +63,9 @@ bool JagUserRole::addRole( const AbaxString &userid, const AbaxString& db, const
     char *kv = (char*)jagmalloc(KVLEN+1);
     JagDBPair retpair;
 	int rc, insertCode;
-	AbaxDataString lower; 
+	Jstr lower; 
 
-	AbaxDataString perm;
+	Jstr perm;
 	JagStrSplit sp( role.c_str(), ',', true );
 	for ( int i = 0; i < sp.length(); ++i ) {
 		// normalize
@@ -114,10 +114,10 @@ bool JagUserRole::addRole( const AbaxString &userid, const AbaxString& db, const
 bool JagUserRole::dropRole( const AbaxString &userid, const AbaxString &db, const AbaxString &tab, const AbaxString &col, const AbaxString &ops )
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	// AbaxDataString lower = makeLowerString( op );
+	// Jstr lower = makeLowerString( op );
 	bool rc;
 	AbaxString mkey, key;
-	AbaxDataString op;
+	Jstr op;
 	JagStrSplit sp(ops.c_str(), ',', true );
 	for ( int i=0; i < sp.length(); ++i ) {
 		op = sp[i];
@@ -154,13 +154,13 @@ bool JagUserRole::dropRole( const AbaxString &userid, const AbaxString &db, cons
 // true: OK   false: error
 /// n is 0 for single table ops; n=0 n=1 for two table/index join
 bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
-	const JagParseParam &parseParam, int n, AbaxDataString &rowFilter, AbaxDataString &errmsg )
+	const JagParseParam &parseParam, int n, Jstr &rowFilter, Jstr &errmsg )
 {
 	bool rc = true;
-	AbaxDataString oneFilter;
+	Jstr oneFilter;
 	rowFilter = "";
 
-	AbaxDataString op, db, tab, col;
+	Jstr op, db, tab, col;
 	if ( JAG_INSERT_OP == parseParam.opcode ) {
 		op = JAG_ROLE_INSERT;
 	} else if ( JAG_UPDATE_OP == parseParam.opcode ) {
@@ -182,7 +182,7 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
 	} else if ( JAG_ALTER_OP == parseParam.opcode ) {
 		op = JAG_ROLE_ALTER;
 	} else {
-		errmsg = AbaxDataString("E3207 operation not allowed");
+		errmsg = Jstr("E3207 operation not allowed");
 		return false;
 	}
 
@@ -335,9 +335,9 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
 }
 
 // consider op and all cases
-bool JagUserRole::isAuthed( const AbaxDataString &op, const AbaxDataString &userid,  	
-						  const AbaxDataString &db, const AbaxDataString &tab, 
-						  const AbaxDataString &col, AbaxDataString &rowFilter )
+bool JagUserRole::isAuthed( const Jstr &op, const Jstr &userid,  	
+						  const Jstr &db, const Jstr &tab, 
+						  const Jstr &col, Jstr &rowFilter )
 {
 	rowFilter = "";
 	if ( col == "spare_" ) return true;
@@ -412,14 +412,14 @@ bool JagUserRole::isAuthed( const AbaxDataString &op, const AbaxDataString &user
 	return false;
 }
 
-AbaxDataString JagUserRole::showRole( const AbaxString &uid )
+Jstr JagUserRole::showRole( const AbaxString &uid )
 {
 	AbaxString perm;
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	AbaxString matchKey = uid + "|";
     const AbaxPair<AbaxString, AbaxString> *arr = _hashmap->array();
     abaxint len = _hashmap->arrayLength();
-	AbaxDataString db, tab, col, pm, permStr;
+	Jstr db, tab, col, pm, permStr;
 	for ( abaxint i = 0; i < len; ++i ) {
 		if ( _hashmap->isNull(i) ) continue;
 		const AbaxPair<AbaxString, AbaxString> &kv = arr[i];
@@ -444,9 +444,9 @@ AbaxDataString JagUserRole::showRole( const AbaxString &uid )
 	return perm.c_str();
 }
 
-AbaxDataString JagUserRole::convertToStr( const AbaxDataString  &pm )
+Jstr JagUserRole::convertToStr( const Jstr  &pm )
 {
-	AbaxDataString str;
+	Jstr str;
 	if ( pm == JAG_ROLE_SELECT  ) {
 		str = "select";
 	} else if ( pm == JAG_ROLE_INSERT ) {
@@ -469,9 +469,9 @@ AbaxDataString JagUserRole::convertToStr( const AbaxDataString  &pm )
 }
 
 // pms "A,U,D"
-AbaxDataString JagUserRole::convertManyToStr( const AbaxDataString &pms )
+Jstr JagUserRole::convertManyToStr( const Jstr &pms )
 {
-	AbaxDataString str;
+	Jstr str;
 	JagStrSplit sp( pms, ',', true );
 	for ( int i=0; i < sp.length(); ++i ) {
 		str += convertToStr( sp[i] ) + ",";
@@ -481,7 +481,7 @@ AbaxDataString JagUserRole::convertManyToStr( const AbaxDataString &pms )
 
 
 void JagUserRole::getDbTabCol( const JagParseParam &parseParam, int i, const JagStrSplit &sp2, 
-								AbaxDataString &db, AbaxDataString &tab, AbaxDataString &col )
+								Jstr &db, Jstr &tab, Jstr &col )
 {
 	if ( sp2.length() == 1 ) {
 		db = parseParam.objectVec[i].dbName;
@@ -504,17 +504,17 @@ void JagUserRole::getDbTabCol( const JagParseParam &parseParam, int i, const Jag
 
 
 
-AbaxDataString JagUserRole::getError( const AbaxDataString &code, const AbaxDataString &action, 
-				const AbaxDataString &db, const AbaxDataString &tab, const AbaxDataString &col, const AbaxDataString &uid )
+Jstr JagUserRole::getError( const Jstr &code, const Jstr &action, 
+				const Jstr &db, const Jstr &tab, const Jstr &col, const Jstr &uid )
 {
-	AbaxDataString errmsg = code + " ";
-	errmsg += AbaxDataString("database:") + db + " ";
-	errmsg += AbaxDataString("table:") + tab + " ";
-	errmsg += AbaxDataString("column:") + col + " ";
+	Jstr errmsg = code + " ";
+	errmsg += Jstr("database:") + db + " ";
+	errmsg += Jstr("table:") + tab + " ";
+	errmsg += Jstr("column:") + col + " ";
 	if ( action.size() > 0 ) {
-		errmsg += AbaxDataString(" not allowed for ") + action + " by " + uid;
+		errmsg += Jstr(" not allowed for ") + action + " by " + uid;
 	} else {
-		errmsg += AbaxDataString(" operation not allowed by ") + uid;
+		errmsg += Jstr(" operation not allowed by ") + uid;
 	}
 	return errmsg;
 }

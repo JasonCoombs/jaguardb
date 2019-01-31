@@ -3727,7 +3727,7 @@ void *JagDBServer::monitorRemoteBackup( void *ptr )
 	JagPass *jp = (JagPass*)ptr;
 	int period;
 	Jstr bcastCmd;
-	AbaxFixString data;
+	JagFixString data;
 	JagRequest req;
 
 	while ( 1 ) {
@@ -9436,7 +9436,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	Jstr ttype = " ";
 	char *newbuf = NULL;
 	bool hasValCol = 0, needInit = 1, timeout = 0, isagg, hasagg = 0, dfSorted[num];
-	AbaxFixString rstr, tstr, fkey, fval;
+	JagFixString rstr, tstr, fkey, fval;
 	Jstr jname, jpath, jdapath, jdapath2, sigpath, sigpath2, sigpath3, newhdr, gbvhdr;
 	Jstr unixSocket = Jstr("/TOKEN=") + servobj->_servToken;
 	ExprElementNode *root = NULL;
@@ -9773,7 +9773,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		// use hash join
 		JagStrSplit srv( servobj->_dbConnector->_nodeMgr->_allNodes, '|' );	
 		if ( srv.length() < numCPUs ) numCPUs = srv.length();
-		JagHashMap<AbaxFixString, AbaxFixString> hmaps[numCPUs];
+		JagHashMap<JagFixString, JagFixString> hmaps[numCPUs];
 		if ( 0 == useHash ) {
 			st = 1;
 			nst = 0;
@@ -10296,7 +10296,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		// then, setup finalbuf and gbvbuf if needed
 		// finalbuf, hasColumn len or KEYVALLEN*n if !hasColumn
 		// gbvbuf, if has group by
-		bool hasFirst = 0; std::atomic<abaxint> cnt; cnt = 0; AbaxFixString data;
+		bool hasFirst = 0; std::atomic<abaxint> cnt; cnt = 0; JagFixString data;
 		char *finalbuf = (char*)jagmalloc(finalsendlen+1);
 		char *gbvbuf = (char*)jagmalloc(gbvsendlen+1);
 		const char *buffers[num];
@@ -10671,7 +10671,7 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 	if ( mlimit <= 0 ) mlimit = 1;
 	if ( dend > pass->df->_darrlistlen ) dend = pass->df->_darrlistlen;
 	Jstr fpath, tpath; 
-	AbaxFixString sres, value;
+	JagFixString sres, value;
 	ExprElementNode *root;
 	JagDataAggregate jda;
 	char *buf = (char*)jagmalloc(pass->kvlen+1);
@@ -10694,8 +10694,8 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 	for ( i = dstart; i < dend; ++i ) {
 		tmpcnt = 0;
 		JagDiskArrayServer *darr = pass->df->_darrlist[i];
-		JagDBPair minpair( AbaxFixString( pass->minbuf, darr->KEYLEN ), value );
-		JagDBPair maxpair( AbaxFixString( pass->maxbuf, darr->KEYLEN ), value );
+		JagDBPair minpair( JagFixString( pass->minbuf, darr->KEYLEN ), value );
+		JagDBPair maxpair( JagFixString( pass->maxbuf, darr->KEYLEN ), value );
 		rc = darr->exist( minpair, &index, retpair );
 		if ( !rc ) ++index;
 		slimit = index;
@@ -10826,10 +10826,10 @@ void *JagDBServer::joinHashStatic( void *ptr )
     else darr = pass->pindex->_darrFamily->_darrlist[pass->pos];
 	
     JagDBPair retpair;
-    AbaxFixString key, value;
+    JagFixString key, value;
 	abaxint i, aoffset = 0, alen = 0, callCounts = -1, lastBytes = 0, mlimit, slimit = 0, rlimit = darr->_arrlen;
 	ExprElementNode *root;
-	AbaxFixString sres;
+	JagFixString sres;
 	Jstr jdapath = pass->jpath + "/alldata";
 	int rc, tmode = 0, tlength = 0, insertCode;
 	bool needInit = 1;
@@ -10865,9 +10865,9 @@ void *JagDBServer::joinHashStatic( void *ptr )
 	}
 
     if ( pass->parseParam->hasWhere ) {
-        AbaxFixString minkey( pass->minbuf, darr->KEYLEN );
+        JagFixString minkey( pass->minbuf, darr->KEYLEN );
         JagDBPair minpair( minkey, value );
-        AbaxFixString maxkey( pass->maxbuf, darr->KEYLEN );
+        JagFixString maxkey( pass->maxbuf, darr->KEYLEN );
         JagDBPair maxpair( maxkey, value );
         darr->exist( minpair, &slimit, retpair );
         if ( slimit < 0 ) slimit = 0;
@@ -10952,7 +10952,7 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 	if ( useHash ) {
 		// hash join, get data and store to hashmap
 		abaxint hpos = pass->pos % pass->numCPUs;
-		AbaxFixString key, val, val2, val3;
+		JagFixString key, val, val2, val3;
 		key.point( jbuf, pass->jlen );
 		// first, check if request host is same as self host, if not, send request to other servers
 		// otherwise, read current server's small table and store them to hashmap
@@ -10962,7 +10962,7 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 
 			if ( ntr ) {
 				ExprElementNode *root;
-				AbaxFixString sres;
+				JagFixString sres;
 				int rc, tmode = 0, tlength = 0;
 				bool needInit = 1;
 				char *buf = (char*)jagmalloc( pass->kvlen2+1 );
@@ -11051,7 +11051,7 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 			pass->df->setFamilyRead( jntr, pass->minbuf, pass->maxbuf );
 		}
 		if ( jntr ) {
-			Jstr jdapath = pass->jpath + "/alldata"; AbaxFixString sres;
+			Jstr jdapath = pass->jpath + "/alldata"; JagFixString sres;
 			int wrc, rc, tmode = 0, tlength = 0, hostLeft = pass->tabnum, vnumKeys[2];
 			bool needInit = 1;
 			const char *buffers[2], *buffers2[2];
@@ -11347,7 +11347,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 	if ( ntr ) {
 		// malloc a large block of memory to store batch block
 		ExprElementNode *root;
-		AbaxFixString sres;
+		JagFixString sres;
 		int rc, tmode = 0, tlength = 0;
 		abaxint boffset = 0, totlen = sklen+kvlen, totbytes = jagatoll(_cfg->getValue("JOIN_BATCH_LINE", "100000").c_str())*totlen;
 		bool needInit = 1;
@@ -12884,7 +12884,7 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
 		//prt(("s1283 in processSelectConstData parseParam->selColVec.size()=%d\n", parseParam->selColVec.size() ));
 		for ( int i=0; i < parseParam->selColVec.size(); ++i ) {
     	    root = parseParam->selColVec[i].tree->getRoot();
-    		AbaxFixString str;
+    		JagFixString str;
     		root->checkFuncValidConstantOnly( str, typeMode, type, length );
     		prt(("s7372 checkFuncValidConstantOnly str=[%s] typeMode=%d type=[%s] length=%d name=%s asname=%s\n",
     			 str.c_str(), typeMode, type.c_str(), length, 

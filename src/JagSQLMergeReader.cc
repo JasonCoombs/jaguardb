@@ -21,7 +21,7 @@
 #include <JagSQLMergeReader.h>
 #include <JagStrSplit.h>
 
-JagSQLMergeReader::JagSQLMergeReader( const AbaxDataString & fpaths )
+JagSQLMergeReader::JagSQLMergeReader( const Jstr & fpaths )
 {
 	JagStrSplit sp( fpaths, '|', true );
 	_numReaders = sp.length();
@@ -46,7 +46,7 @@ JagSQLMergeReader::~JagSQLMergeReader()
 	}
 }
 
-bool JagSQLMergeReader::getNextSQL( AbaxDataString &sql )
+bool JagSQLMergeReader::getNextSQL( Jstr &sql )
 {
 	if ( ! _reader ) return false;
 	bool rc;

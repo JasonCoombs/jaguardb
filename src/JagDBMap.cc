@@ -49,7 +49,7 @@ void JagDBMap::init()
 // otherwise returns true
 bool JagDBMap::insert( const JagDBPair &newpair )
 {
-	std::pair<std::map<AbaxFixString,FixValuePair>::iterator,bool> ret;
+	std::pair<std::map<JagFixString,FixValuePair>::iterator,bool> ret;
 	FixValuePair vpair ( newpair.value, newpair.upsertFlag );
 	FixPair pair( newpair.key, vpair );
     ret = _map->insert ( pair );
@@ -88,7 +88,7 @@ bool JagDBMap::get( JagDBPair &pair )
 
 bool JagDBMap::set( const JagDBPair &pair )
 {
-	// std::map<AbaxFixString, AbaxFixString>::iterator it = _map->find( pair.key );
+	// std::map<JagFixString, JagFixString>::iterator it = _map->find( pair.key );
 	FixMap::iterator it = _map->find( pair.key );
 	if ( it == _map->end() ) {
 		return false;

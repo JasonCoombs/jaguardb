@@ -67,7 +67,7 @@ JagSingleMergeReader::~JagSingleMergeReader()
 //        buf:  [kvlen][kvlen]\0\0\0\0\0
 //        buf is buffer of _veclen*kvlen bytes
 // int JagSingleMergeReader::getNext( char *retbuf )
-int JagSingleMergeReader::getNext( JagVector<AbaxFixString> &vec )
+int JagSingleMergeReader::getNext( JagVector<JagFixString> &vec )
 {
 
 	int rc, cnt = 0, minpos = -1;
@@ -106,7 +106,7 @@ int JagSingleMergeReader::getNext( JagVector<AbaxFixString> &vec )
 		if ( _goNext[i] != -1 ) {
 			rc = memcmp( _buf+i*KEYVALLEN, _buf+minpos*KEYVALLEN, KEYLEN );
 			if ( 0 == rc ) {
-				vec.append( AbaxFixString( _buf+i*KEYVALLEN, KEYVALLEN ) ); // append another min data
+				vec.append( JagFixString( _buf+i*KEYVALLEN, KEYVALLEN ) ); // append another min data
 				++cnt;
 				_goNext[i] = 1;
 			}
@@ -153,7 +153,7 @@ int JagSingleMergeReader::getNext( JagVector<AbaxFixString> &vec )
 					if ( _goNext[smallestnum] != -1 ) {
 						_goNext[smallestnum] = 1;
 					}
-					vec.append( AbaxFixString( _buf+i*KEYVALLEN, KEYVALLEN ) );
+					vec.append( JagFixString( _buf+i*KEYVALLEN, KEYVALLEN ) );
 					++cnt;
 				} else {
 					cnt = 0;

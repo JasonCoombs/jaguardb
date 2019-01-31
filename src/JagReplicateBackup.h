@@ -53,13 +53,13 @@ class JagReplicateConnAttr
 	int _port;
 	int _cliservSameProcess;
 	abaxint _len;
-	AbaxDataString _host;
-	AbaxDataString _username;
-	AbaxDataString _password;
-	AbaxDataString _dbname;
-	AbaxDataString _unixSocket;
-	AbaxDataString _session;
-	AbaxDataString _querys;
+	Jstr _host;
+	Jstr _username;
+	Jstr _password;
+	Jstr _dbname;
+	Jstr _unixSocket;
+	Jstr _session;
+	Jstr _querys;
 	uabaxint _clientFlag;
 	char _qbuf[2048];
 	char _hdr[JAG_SOCK_MSG_HDR_LEN+1];
@@ -74,11 +74,11 @@ class JagReplicateBackup
 	
 	bool setConnAttributes( int replicateCopy, int deltaRecoverConnection,
 		unsigned int port, uabaxint clientFlag, bool fromServ,
-		JagVector<AbaxDataString> &hostlist, AbaxDataString &username, AbaxDataString &passwd,
-		AbaxDataString &dbname, AbaxDataString &unixSocket );
+		JagVector<Jstr> &hostlist, Jstr &username, Jstr &passwd,
+		Jstr &dbname, Jstr &unixSocket );
 
-	void updateDBName( AbaxDataString &dbname );
-	void updatePassword( AbaxDataString &password );
+	void updateDBName( Jstr &dbname );
+	void updatePassword( Jstr &password );
 
 	int makeConnection( int i );
 
@@ -91,9 +91,9 @@ class JagReplicateBackup
 	abaxint sendDirectToSockAll( const char *mesg, abaxint len, bool nohdr=false );
 	abaxint recvDirectFromSockAll( char *&buf, char *hdr );
 	abaxint recvDirectFromSockAll( char *&buf, abaxint len );
-	bool sendFilesToServer( const AbaxDataString &inpath );
+	bool sendFilesToServer( const Jstr &inpath );
 	static void *sendFilesToServerStatic( void *conn );
-	bool recvFilesFromServer( const AbaxDataString &outpath );
+	bool recvFilesFromServer( const Jstr &outpath );
 
 	// reply method
 	// simpleQuery --> simpleReply

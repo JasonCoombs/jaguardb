@@ -1588,7 +1588,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Jstr
 	maps[0] = _tablemap;
 	attrs[0] = _schAttr;
 	
-	AbaxFixString strres, treestr;
+	JagFixString strres, treestr;
 	bool needInit = true;
 	
 	// check updSetVec validation
@@ -1677,7 +1677,7 @@ abaxint JagTable::update( const JagRequest &req, JagParseParam *parseParam, Jstr
 
 	if ( memcmp(minmax[0].minbuf, minmax[0].maxbuf, KEYLEN) == 0 ) {
 		JagDBPair setpair;
-		AbaxFixString getkey ( minmax[0].minbuf, KEYLEN );
+		JagFixString getkey ( minmax[0].minbuf, KEYLEN );
 		JagDBPair getpair( getkey );
 		if ( setKey ) {  // set key to new key, may need to disable later
 			if ( _darrFamily->get( getpair ) ) {
@@ -1846,7 +1846,7 @@ abaxint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Jstr
 	AbaxBuffer bfr;
 	memset( buf, 0, KEYVALLEN+1 );	
 	buffers[0] = buf;
-	AbaxFixString strres;
+	JagFixString strres;
 	
 	int keylen[1];
 	int numKeys[1];
@@ -1858,7 +1858,7 @@ abaxint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Jstr
 	maps[0] = _tablemap;
 	attrs[0] = _schAttr;
 	minmax[0].setbuflen( keylen[0] );
-	AbaxFixString treestr;
+	JagFixString treestr;
 
 	ExprElementNode *root = parseParam->whereVec[0].tree->getRoot();
 	rc = root->setWhereRange( maps, attrs, keylen, numKeys, 1, uniqueAndHasValueCol, minmax, treestr, typeMode, tabnum );
@@ -1976,7 +1976,7 @@ abaxint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	abaxint finalsendlen = 0;
 	abaxint gbvsendlen = 0;
 	JagSchemaRecord nrec;
-	AbaxFixString treestr, strres;
+	JagFixString treestr, strres;
 	ExprElementNode *root = NULL;
 
 	minmax[0].setbuflen( keylen[0] ); // KEYLEN
@@ -2381,7 +2381,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 	JagMinMax minmax[1];
 	const JagHashStrInt *maps[1];
 	const JagSchemaAttribute *attrs[1];	
-	AbaxFixString strres, treestr;
+	JagFixString strres, treestr;
 	Jstr treetype;
 
 	if ( pass->ptab ) {
@@ -2773,7 +2773,7 @@ void JagTable::aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, ab
 	int rc = aggrec.parseRecord( sendhdr.c_str() );
 	char *aggbuf = (char*)jagmalloc(finalsendlen+1);
 	memset(aggbuf, 0, finalsendlen+1);
-	JagVector<AbaxFixString> oneSetData;
+	JagVector<JagFixString> oneSetData;
 	JagVector<int> selectPartsOpcode;
 	
 	Jstr type;
@@ -2794,7 +2794,7 @@ void JagTable::aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, ab
 				offset, length, sig, type );
 			if ( 0 == m ) selectPartsOpcode.append( root->getBinaryOp() );
 		}
-		oneSetData.append( AbaxFixString(finalbuf, finalsendlen) );		
+		oneSetData.append( JagFixString(finalbuf, finalsendlen) );		
 	}
 
 	JaguarCPPClient::doAggregateCalculation( aggrec, selectPartsOpcode, oneSetData, aggbuf, finalsendlen, 0 );
@@ -3273,7 +3273,7 @@ int  JagTable::removeColFiles(const char *kvbuf )
 	if ( *kvbuf == '\0' ) return 0;
 	int rc = 0;
 	Jstr fpath, db, tab, fname;
-	AbaxFixString fstr = AbaxFixString( kvbuf, KEYLEN );
+	JagFixString fstr = JagFixString( kvbuf, KEYLEN );
 	Jstr hdir = fileHashDir( fstr );
 	for ( int i = 0; i < _numCols; ++i ) {
 		if ( _schAttr[i].isFILE ) {

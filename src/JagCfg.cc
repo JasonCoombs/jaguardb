@@ -52,7 +52,7 @@ int JagCfg::init( int type )
 	} 
 
 	// into HashMap
-	AbaxDataString  home = jaguarHome();
+	Jstr  home = jaguarHome();
 	if ( type == JAG_SERVER ) {
 		strcpy(fn, "server.conf" );
 	} else {
@@ -127,7 +127,7 @@ int JagCfg::refresh()
 }
 
 // if not found, return defValue
-AbaxDataString  JagCfg::getValue( const AbaxString &name, const AbaxDataString &defValue ) const
+Jstr  JagCfg::getValue( const AbaxString &name, const Jstr &defValue ) const
 {
 	AbaxString  value;
 
@@ -138,14 +138,14 @@ AbaxDataString  JagCfg::getValue( const AbaxString &name, const AbaxDataString &
 	}
 }
 
-AbaxDataString JagCfg::getConfHOME() const
+Jstr JagCfg::getConfHOME() const
 {
 	AbaxString  value;
 	value = jaguarHome() +  "/conf";
 	return value.c_str();
 }
 
-AbaxDataString JagCfg::getJDBDataHOME( int objType ) const
+Jstr JagCfg::getJDBDataHOME( int objType ) const
 {
 	AbaxString  value;
 	if ( 0 == objType ) {
@@ -158,7 +158,7 @@ AbaxDataString JagCfg::getJDBDataHOME( int objType ) const
 	return value.c_str();
 }
 
-AbaxDataString JagCfg::getTEMPDataHOME( int objType ) const
+Jstr JagCfg::getTEMPDataHOME( int objType ) const
 {
 	AbaxString  value;
 	if ( 0 == objType ) {
@@ -171,7 +171,7 @@ AbaxDataString JagCfg::getTEMPDataHOME( int objType ) const
 	return value.c_str();
 }
 
-AbaxDataString JagCfg::getTEMPJoinHOME() const
+Jstr JagCfg::getTEMPJoinHOME() const
 {
 	AbaxString  value;
 	value = jaguarHome() + "/tmp/join";

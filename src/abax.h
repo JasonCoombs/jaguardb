@@ -45,7 +45,6 @@
 
 typedef long long abaxint;
 typedef unsigned long long uabaxint;
-typedef AbaxCStr AbaxDataString;
 typedef AbaxCStr Jstr;
 
 /////////////// Enum Types //////////////////
@@ -70,7 +69,7 @@ class abaxstream
 	abaxstream & operator<< ( double d);
 	abaxstream & operator<< ( long long l );
 	abaxstream & operator<< ( unsigned long long l );
-	// abaxstream & operator<< ( const AbaxDataString &str );
+	// abaxstream & operator<< ( const Jstr &str );
 
 };
 extern abaxstream abaxcout;
@@ -99,7 +98,7 @@ class AbaxNumeric
 		}
         inline abaxint toLong() const { return (uabaxint)_data; }
         inline void destroy( AbaxDestroyAction action ) { };
-		// inline AbaxDataString toString() const { char buf[16]; sprintf(buf, "%lld", _data ); return buf; }
+		// inline Jstr toString() const { char buf[16]; sprintf(buf, "%lld", _data ); return buf; }
 		inline void valueDestroy( AbaxDestroyAction action ) {}
         inline AbaxNumeric&  operator= ( const AbaxNumeric &s2 ) {
             _data = s2._data;
@@ -159,7 +158,7 @@ class AbaxNumeric2
         inline abaxint toLong() const { return (abaxint)data1; }
 
         inline void destroy( AbaxDestroyAction action ) { };
-		inline AbaxDataString toString() const { char buf[32]; sprintf(buf, "%lld%lld", data1, data2 ); return buf; }
+		inline Jstr toString() const { char buf[32]; sprintf(buf, "%lld%lld", data1, data2 ); return buf; }
 		inline void valueDestroy( AbaxDestroyAction action ) {}
 
         inline AbaxNumeric2&  operator= ( const AbaxNumeric2 &s2 ) {
@@ -176,7 +175,7 @@ class AbaxString
 {
     friend abaxstream & operator<< ( abaxstream &os, const AbaxString& );
     public:
-        static AbaxDataString randomValue( int size=4)
+        static Jstr randomValue( int size=4)
 		{
             int i, j;
             static char cset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"; // 62 total
@@ -186,7 +185,7 @@ class AbaxString
                 mem[i] = cset[j];
             }
             mem[i] = '\0';
-            AbaxDataString str = mem;
+            Jstr str = mem;
             if ( mem ) free( mem );
             mem = 0;
             return str;
@@ -196,14 +195,14 @@ class AbaxString
 		static AbaxString NULLVALUE; 
 
         AbaxString( ) { };
-        AbaxString( const AbaxDataString &str ) { _str = str; }
+        AbaxString( const Jstr &str ) { _str = str; }
         AbaxString( const char *str ) { if ( str ) _str = str; }
         AbaxString( const char *str, unsigned int len ) {
-			_str = AbaxDataString( str, len );
+			_str = Jstr( str, len );
 		}
 
-        inline const AbaxDataString &value() const { return _str; }
-		inline const AbaxDataString &toString()  const { return _str; }
+        inline const Jstr &value() const { return _str; }
+		inline const Jstr &toString()  const { return _str; }
 		inline const char *addr() const { return _str.c_str(); }
 		inline abaxint addrlen() const { return _str.size(); }
 		inline const char *c_str() const { return _str.c_str(); }
@@ -226,7 +225,7 @@ class AbaxString
         inline void destroy( AbaxDestroyAction action ) { };
 		inline void valueDestroy( AbaxDestroyAction action ) {}
         inline  AbaxString&  operator= ( const AbaxString &s2 ) {
-            _str = AbaxDataString( s2._str ); 
+            _str = Jstr( s2._str ); 
 			return *this;
         }
         inline  int operator== ( const AbaxString &s2 )  const {
@@ -262,35 +261,35 @@ class AbaxString
         inline abaxint toLong() const { return atol(_str.c_str()); }
 
     private:
-        AbaxDataString _str;
+        Jstr _str;
 };
 
-class AbaxFixString 
+class JagFixString 
 {
     public:
-		static AbaxFixString NULLVALUE; 
-        AbaxFixString();
-        AbaxFixString( const char *str, unsigned int len ); 
-        AbaxFixString( const char *str ); 
-        // AbaxFixString( unsigned int len );
-        AbaxFixString( const AbaxFixString &str ); 
-		AbaxFixString( const AbaxDataString &str );
-        AbaxFixString& operator=( const char *str );
-        AbaxFixString& operator=( const AbaxFixString &str );
-		AbaxFixString& operator=( const AbaxDataString &str ); 
-        int operator== ( const AbaxFixString &s2 )  const;
-        int operator< ( const AbaxFixString &s2 ) const;
-        int operator<= ( const AbaxFixString &s2 ) const;
-        int operator> ( const AbaxFixString &s2 ) const;
-        int operator>= ( const AbaxFixString &s2 ) const;
-		AbaxFixString& operator+= (const AbaxFixString &s );
-		AbaxFixString operator+ (const AbaxFixString &s ) const;
+		static JagFixString NULLVALUE; 
+        JagFixString();
+        JagFixString( const char *str, unsigned int len ); 
+        JagFixString( const char *str ); 
+        // JagFixString( unsigned int len );
+        JagFixString( const JagFixString &str ); 
+		JagFixString( const Jstr &str );
+        JagFixString& operator=( const char *str );
+        JagFixString& operator=( const JagFixString &str );
+		JagFixString& operator=( const Jstr &str ); 
+        int operator== ( const JagFixString &s2 )  const;
+        int operator< ( const JagFixString &s2 ) const;
+        int operator<= ( const JagFixString &s2 ) const;
+        int operator> ( const JagFixString &s2 ) const;
+        int operator>= ( const JagFixString &s2 ) const;
+		JagFixString& operator+= (const JagFixString &s );
+		JagFixString operator+ (const JagFixString &s ) const;
 		void point(const char *str, unsigned int len );
-		void point(const AbaxFixString &str );
-        AbaxFixString( const char *str, unsigned int len, bool ref );
+		void point(const JagFixString &str );
+        JagFixString( const char *str, unsigned int len, bool ref );
 		// caller make sure length(data) <= _length
 		void strcpy( const char *data );
-		~AbaxFixString();
+		~JagFixString();
 		inline const char *addr() const { return _buf; }
 		inline const char *c_str() const { return _buf; }
 		inline abaxint addrlen() const { return _length; }
@@ -303,10 +302,10 @@ class AbaxFixString
 		void rtrim();
 		void trim();
 		void substr( abaxint start, abaxint length = -1 );
-		AbaxFixString concat( const AbaxFixString& secondStr );
+		JagFixString concat( const JagFixString& secondStr );
 		void  dump() const;
 		void replace( char oldc, char newc );
-		AbaxDataString firstToken(char sep) const;
+		Jstr firstToken(char sep) const;
 
 	private:
 		char   *_buf;
@@ -330,7 +329,7 @@ class AbaxBuffer
         inline const char *addr() const { return (const char *)_ptr; }
 		inline const char *c_str() const { return (const char *)_ptr; }
         inline const int addrlen() const { return 0; }
-		inline const AbaxDataString toString()  const { return ""; }
+		inline const Jstr toString()  const { return ""; }
 
         abaxint hashCode() const { return 1; } 
         void destroy( AbaxDestroyAction action ) { 

@@ -837,9 +837,9 @@ Jstr makeLowerString( const Jstr &str )
 	return res;
 }
 
-AbaxFixString makeUpperOrLowerFixString( const AbaxFixString &str, bool isUpper )
+JagFixString makeUpperOrLowerFixString( const JagFixString &str, bool isUpper )
 {
-	AbaxFixString res;
+	JagFixString res;
 	if ( str.length() < 1 ) return res;
 	char * p = (char*)jagmalloc( str.length() + 1 );
 	p[str.length()] = '\0';
@@ -850,7 +850,7 @@ AbaxFixString makeUpperOrLowerFixString( const AbaxFixString &str, bool isUpper 
 			p[i] = tolower( *(str.c_str()+i) );
 		}
 	}
-	res = AbaxFixString( p, str.length() );
+	res = JagFixString( p, str.length() );
 	if ( p ) free( p );
 	p = NULL;
 	return res;
@@ -1487,7 +1487,7 @@ ssize_t raysafewrite( int fd, const char *buf, abaxint len )
 // find mid point of min-max, check if inkey is > midpoint
 // 0: use the min-side server
 // 1: use the max-side server
-int selectServer( const AbaxFixString &min, const AbaxFixString &max, const AbaxFixString &inkey )
+int selectServer( const JagFixString &min, const JagFixString &max, const JagFixString &inkey )
 {
 	const char *p1, *p2, *t;
 	int i, mid;
@@ -3383,7 +3383,7 @@ int isValidSciNotation(const char *str )
 }
 
 // hash fstr and return  "ddd/ddd"
-Jstr fileHashDir( const AbaxFixString &fstr )
+Jstr fileHashDir( const JagFixString &fstr )
 {
 	abaxint hcode = fstr.hashCode();
 	char buf[8];
@@ -3391,7 +3391,7 @@ Jstr fileHashDir( const AbaxFixString &fstr )
 	return buf;
 }
 
-char lastChar( const AbaxFixString &str )
+char lastChar( const JagFixString &str )
 {
 	return *( str.c_str() + str.size()-1);
 }

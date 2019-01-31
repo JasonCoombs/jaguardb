@@ -69,7 +69,7 @@ bool JagNode::dropNode( const AbaxString &nodeid )
 }
 #endif
 
-AbaxDataString JagNode::getListNodes()
+Jstr JagNode::getListNodes()
 {
 	return this->getListKeys();
 }

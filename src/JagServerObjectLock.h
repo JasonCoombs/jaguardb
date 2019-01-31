@@ -37,37 +37,37 @@ class JagServerObjectLock
 	~JagServerObjectLock();
 
 	void rebuildObjects();
-	void setInitDatabases( const AbaxDataString &dblist, int replicateType );
+	void setInitDatabases( const Jstr &dblist, int replicateType );
 	abaxint getnumObjects( int objType, int replicateType );
 
 	int readLockSchema( int replicateType );
 	int readUnlockSchema( int replicateType );
 	int writeLockSchema( int replicateType );
 	int writeUnlockSchema( int replicateType );
-	int readLockDatabase( abaxint opcode, const AbaxDataString &dbName, int replicateType );
-	int readUnlockDatabase( abaxint opcode, const AbaxDataString &dbName, int replicateType );
-	int writeLockDatabase( abaxint opcode, const AbaxDataString &dbName, int replicateType );
-	int writeUnlockDatabase( abaxint opcode, const AbaxDataString &dbName, int replicateType );
-	JagTable *readLockTable( abaxint opcode, const AbaxDataString &dbName, 
-		const AbaxDataString &tableName, int replicateType, bool lockSelfLevel=0 );
-	int readUnlockTable( abaxint opcode, const AbaxDataString &dbName, 
-		const AbaxDataString &tableName, int replicateType, bool lockSelfLevel=0 );
-	JagTable *writeLockTable( abaxint opcode, const AbaxDataString &dbName, const AbaxDataString &tableName, 
+	int readLockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
+	int readUnlockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
+	int writeLockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
+	int writeUnlockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
+	JagTable *readLockTable( abaxint opcode, const Jstr &dbName, 
+		const Jstr &tableName, int replicateType, bool lockSelfLevel=0 );
+	int readUnlockTable( abaxint opcode, const Jstr &dbName, 
+		const Jstr &tableName, int replicateType, bool lockSelfLevel=0 );
+	JagTable *writeLockTable( abaxint opcode, const Jstr &dbName, const Jstr &tableName, 
 		const JagTableSchema *tschema, int replicateType, bool lockSelfLevel=0 );
-	int writeUnlockTable( abaxint opcode, const AbaxDataString &dbName, const AbaxDataString &tableName, 
+	int writeUnlockTable( abaxint opcode, const Jstr &dbName, const Jstr &tableName, 
 		const JagTableSchema *tschema, int replicateType, bool lockSelfLevel=0 );
-	JagTable *writeTruncateTable( abaxint opcode, const AbaxDataString &dbName, const AbaxDataString &tableName, 
+	JagTable *writeTruncateTable( abaxint opcode, const Jstr &dbName, const Jstr &tableName, 
 		const JagTableSchema *tschema, int replicateType, bool lockSelfLevel=0 );
-	JagIndex *readLockIndex( abaxint opcode, const AbaxDataString &dbName, AbaxDataString &tableName, const AbaxDataString &indexName,
+	JagIndex *readLockIndex( abaxint opcode, const Jstr &dbName, Jstr &tableName, const Jstr &indexName,
 		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
-	int readUnlockIndex( abaxint opcode, const AbaxDataString &dbName, const AbaxDataString &tableName, const AbaxDataString &indexName,
+	int readUnlockIndex( abaxint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
 		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
-	JagIndex *writeLockIndex( abaxint opcode, const AbaxDataString &dbName, const AbaxDataString &tableName, const AbaxDataString &indexName,
+	JagIndex *writeLockIndex( abaxint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
 		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
-	int writeUnlockIndex( abaxint opcode, const AbaxDataString &dbName, const AbaxDataString &tableName, const AbaxDataString &indexName,
+	int writeUnlockIndex( abaxint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
 		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
 		
-	AbaxDataString getAllTableNames( int replicateType );
+	Jstr getAllTableNames( int replicateType );
 
 	
   protected:

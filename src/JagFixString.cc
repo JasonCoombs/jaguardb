@@ -21,14 +21,14 @@
 #include <abax.h>
 #include <JagUtil.h>
 
-AbaxFixString::AbaxFixString() 
+JagFixString::JagFixString() 
 {
 	_buf = NULL;
 	_length = 0;
 	_readOnly = false;
 }
 
-AbaxFixString::AbaxFixString( const char *str ) 
+JagFixString::JagFixString( const char *str ) 
 {
 	unsigned int len = strlen( str );
 	_readOnly = false;
@@ -39,7 +39,7 @@ AbaxFixString::AbaxFixString( const char *str )
 	_length = len;
 }
 
-AbaxFixString::AbaxFixString( const char *str, unsigned int len ) 
+JagFixString::JagFixString( const char *str, unsigned int len ) 
 { 
 	_readOnly = false;
 
@@ -50,17 +50,17 @@ AbaxFixString::AbaxFixString( const char *str, unsigned int len )
 }
 
 /***
-// AbaxFixString::AbaxFixString( unsigned int len ) 
+// JagFixString::JagFixString( unsigned int len ) 
 { 
 		_readOnly = false;
 		_buf = (char*)jagmalloc(len+1);
 		memset( _buf, 0, len+1);
 		_length = len;
-		printf("s3939 AbaxFixString(int) called\n"); fflush( stdout );
+		printf("s3939 JagFixString(int) called\n"); fflush( stdout );
 }
 ******/
 
-AbaxFixString::AbaxFixString( const AbaxFixString &str ) 
+JagFixString::JagFixString( const JagFixString &str ) 
 { 
 		_readOnly = false;
 		int len = str._length;
@@ -70,7 +70,7 @@ AbaxFixString::AbaxFixString( const AbaxFixString &str )
 		_length = len;
 }
 	
-AbaxFixString::AbaxFixString( const AbaxDataString &str ) 
+JagFixString::JagFixString( const Jstr &str ) 
 { 
 		_readOnly = false;
 		int len = str.size();
@@ -78,10 +78,10 @@ AbaxFixString::AbaxFixString( const AbaxDataString &str )
 		memcpy( _buf, str.c_str(), len );
 		_buf[len] = '\0';
 		_length = len;
-		// printf("s3929 AbaxFixString(int) called\n"); fflush( stdout );
+		// printf("s3929 JagFixString(int) called\n"); fflush( stdout );
 }
 
-AbaxFixString& AbaxFixString::operator=( const char *str ) 
+JagFixString& JagFixString::operator=( const char *str ) 
 { 
 		if ( _buf == str ) {
 			return *this;
@@ -100,7 +100,7 @@ AbaxFixString& AbaxFixString::operator=( const char *str )
 		return *this;
 }
 
-AbaxFixString& AbaxFixString::operator=( const AbaxFixString &str ) 
+JagFixString& JagFixString::operator=( const JagFixString &str ) 
 { 
 		if ( _buf == str._buf ) {
 			return *this;
@@ -119,7 +119,7 @@ AbaxFixString& AbaxFixString::operator=( const AbaxFixString &str )
 		return *this;
 }
  		
-AbaxFixString& AbaxFixString:: operator=( const AbaxDataString &str ) 
+JagFixString& JagFixString:: operator=( const Jstr &str ) 
 { 
 		if ( _buf && ! _readOnly ) {
 			free ( _buf );
@@ -134,13 +134,13 @@ AbaxFixString& AbaxFixString:: operator=( const AbaxDataString &str )
 		return *this;
 }
 
-int AbaxFixString::operator== ( const AbaxFixString &s2 )  const 
+int JagFixString::operator== ( const JagFixString &s2 )  const 
 {
     return (memcmp(_buf, s2._buf, _length ) == 0);
 }
 
 
-int AbaxFixString::operator< ( const AbaxFixString &s2 ) const 
+int JagFixString::operator< ( const JagFixString &s2 ) const 
 {
 		if ( ! _buf && ! s2._buf ) return 0;
 		if ( ! _buf ) return 1;
@@ -148,7 +148,7 @@ int AbaxFixString::operator< ( const AbaxFixString &s2 ) const
     return (memcmp(_buf, s2._buf, _length ) < 0);
 }
 
-int AbaxFixString::operator<= ( const AbaxFixString &s2 ) const 
+int JagFixString::operator<= ( const JagFixString &s2 ) const 
 {
 		if ( ! _buf && ! s2._buf ) return 1;
 		if ( ! _buf ) return 1;
@@ -156,7 +156,7 @@ int AbaxFixString::operator<= ( const AbaxFixString &s2 ) const
     return (memcmp(_buf, s2._buf, _length ) <= 0);
 }
 
-int AbaxFixString::operator> ( const AbaxFixString &s2 ) const 
+int JagFixString::operator> ( const JagFixString &s2 ) const 
 {
 		if ( ! _buf && ! s2._buf ) return 0;
 		if ( ! _buf ) return 0;
@@ -164,7 +164,7 @@ int AbaxFixString::operator> ( const AbaxFixString &s2 ) const
    	return (memcmp(_buf, s2._buf, _length ) > 0);
 }
 
-int AbaxFixString::operator>= ( const AbaxFixString &s2 ) const 
+int JagFixString::operator>= ( const JagFixString &s2 ) const 
 {
 		if ( ! _buf && ! s2._buf ) return 1;
 		if ( ! _buf ) return 0;
@@ -172,7 +172,7 @@ int AbaxFixString::operator>= ( const AbaxFixString &s2 ) const
    	return (memcmp(_buf, s2._buf, _length ) >= 0);
 }
 
-AbaxFixString& AbaxFixString::operator+= (const AbaxFixString &s ) 
+JagFixString& JagFixString::operator+= (const JagFixString &s ) 
 {
 		_buf = (char*)realloc( (void*)_buf, _length+s._length+1 );
 		memcpy( _buf+_length, s._buf, s._length );
@@ -182,19 +182,19 @@ AbaxFixString& AbaxFixString::operator+= (const AbaxFixString &s )
 		return *this;
 }
 
-AbaxFixString AbaxFixString::operator+ (const AbaxFixString &s ) const 
+JagFixString JagFixString::operator+ (const JagFixString &s ) const 
 {
-		AbaxFixString res = *this;
+		JagFixString res = *this;
 		res += s;
 		return res;
 }
 
-void AbaxFixString::point( const AbaxFixString &fs )
+void JagFixString::point( const JagFixString &fs )
 {
 	point( fs.c_str(), fs.length() );
 }
 
-void AbaxFixString::point(const char *str, unsigned int len )
+void JagFixString::point(const char *str, unsigned int len )
 {
 		if ( _buf && ! _readOnly ) {
 			free( _buf );
@@ -205,19 +205,19 @@ void AbaxFixString::point(const char *str, unsigned int len )
 		_readOnly = true;
 }
 
-AbaxFixString::AbaxFixString( const char *str, unsigned int len, bool ref ) 
+JagFixString::JagFixString( const char *str, unsigned int len, bool ref ) 
 {
 		_readOnly = true;
 		point( str, len );
 }
 
 // caller make sure length(data) <= _length
-void AbaxFixString::strcpy( const char *data )
+void JagFixString::strcpy( const char *data )
 {
 	::strcpy(_buf, data );
 }
 
-AbaxFixString::~AbaxFixString()
+JagFixString::~JagFixString()
 {
 	if ( _readOnly ) {
 		return;
@@ -233,7 +233,7 @@ AbaxFixString::~AbaxFixString()
 
 /********
 // inline abaxint hashCode64() const 
-abaxint AbaxFixString::hashCode() const 
+abaxint JagFixString::hashCode() const 
 {
     unsigned int hash[4];                
     unsigned int seed = 42;             
@@ -246,7 +246,7 @@ abaxint AbaxFixString::hashCode() const
 }
 *******/
 // inline abaxint hashCode64() const 
-abaxint AbaxFixString::hashCode() const 
+abaxint JagFixString::hashCode() const 
 {
     unsigned int hash[4];                
     unsigned int seed = 42;             
@@ -269,13 +269,13 @@ abaxint AbaxFixString::hashCode() const
 
     uint64_t res2 = ((uint64_t*)hash)[0]; 
     abaxint res = res2 % LLONG_MAX;
-	// printf("s9226 AbaxFixString::hashCode() buf=[%s] newbuf=[%s] hashcode=%lld _length=[%lld]\n", _buf, newbuf, res, _length );
+	// printf("s9226 JagFixString::hashCode() buf=[%s] newbuf=[%s] hashcode=%lld _length=[%lld]\n", _buf, newbuf, res, _length );
 	free( newbuf );
     return res;
 }
 
 
-void AbaxFixString::ltrim()
+void JagFixString::ltrim()
 {
 	int i;
 	char *p = _buf;
@@ -290,7 +290,7 @@ void AbaxFixString::ltrim()
 	}
 }
 
-void AbaxFixString::rtrim()
+void JagFixString::rtrim()
 {
 	if ( _buf[0] == '\0' ) return;
 	char *p = _buf + _length - 1;
@@ -299,13 +299,13 @@ void AbaxFixString::rtrim()
 	while ( *p == ' ' || *p == '\t' && *p == '\r' && *p == '\n' ) { *p = '\0'; --p; }
 }
 
-void AbaxFixString::trim()
+void JagFixString::trim()
 {
 	ltrim();
 	rtrim();
 }
 
-void AbaxFixString::substr( abaxint start, abaxint len )
+void JagFixString::substr( abaxint start, abaxint len )
 {
 	int i;
 	if ( start < 0 ) start = 0;
@@ -342,7 +342,7 @@ void AbaxFixString::substr( abaxint start, abaxint len )
 	}
 }
 
-AbaxFixString AbaxFixString::concat( const AbaxFixString& s2 )
+JagFixString JagFixString::concat( const JagFixString& s2 )
 {
 	int s2len = s2.length();
 	char newbuf[_length + s2len + 1 ];
@@ -357,11 +357,11 @@ AbaxFixString AbaxFixString::concat( const AbaxFixString& s2 )
 	}
 	*pb = '\0';
 
-	return AbaxFixString( newbuf, _length + s2len );
+	return JagFixString( newbuf, _length + s2len );
 }
 
 
-void AbaxFixString::dump() const
+void JagFixString::dump() const
 {
 	printf("fixstr: ");
 	for ( int i=0; i < _length; ++i ) {
@@ -374,7 +374,7 @@ void AbaxFixString::dump() const
 	printf("\n"); fflush( stdout );
 }
 
-void AbaxFixString::replace( char oldc, char newc )
+void JagFixString::replace( char oldc, char newc )
 {
 	for ( int i=0; i < _length; ++i ) {
 		if ( oldc == _buf[i] ) {
@@ -384,7 +384,7 @@ void AbaxFixString::replace( char oldc, char newc )
 }
 
 
-AbaxDataString AbaxFixString::firstToken( char sep ) const
+Jstr JagFixString::firstToken( char sep ) const
 {
     if ( _length < 1 ) return "";
     char *p = _buf;

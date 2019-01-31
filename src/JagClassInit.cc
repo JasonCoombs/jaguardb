@@ -33,9 +33,9 @@
 
 template<> AbaxInt AbaxInt::NULLVALUE = AbaxInt(INT_MIN);
 template<> AbaxLong AbaxLong::NULLVALUE = AbaxLong(LLONG_MIN);
-AbaxString AbaxString::NULLVALUE = AbaxDataString();
-AbaxFixString AbaxFixString::NULLVALUE = AbaxDataString();
-JagDBPair JagDBPair::NULLVALUE = JagDBPair(AbaxFixString::NULLVALUE);
+AbaxString AbaxString::NULLVALUE = Jstr();
+JagFixString JagFixString::NULLVALUE = Jstr();
+JagDBPair JagDBPair::NULLVALUE = JagDBPair(JagFixString::NULLVALUE);
 JagLineSeg2D JagLineSeg2D::NULLVALUE = JagLineSeg2D(LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN);
 JagLineSeg2DPair JagLineSeg2DPair::NULLVALUE = JagLineSeg2DPair( JagLineSeg2D::NULLVALUE );
 JagLineSeg3D JagLineSeg3D::NULLVALUE = JagLineSeg3D(LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN);
@@ -61,20 +61,20 @@ template<> AbaxPair<AbaxString,AbaxLong2> AbaxPair<AbaxString,AbaxLong2>::NULLVA
 template<> AbaxPair<AbaxString,AbaxString> AbaxPair<AbaxString,AbaxString>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,AbaxBuffer> AbaxPair<AbaxString,AbaxBuffer>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,abaxint> AbaxPair<AbaxString,abaxint>::NULLVALUE = AbaxString::NULLVALUE;
-template<> AbaxPair<AbaxString,AbaxDataString> AbaxPair<AbaxString,AbaxDataString>::NULLVALUE = AbaxString::NULLVALUE;
+template<> AbaxPair<AbaxString,Jstr> AbaxPair<AbaxString,Jstr>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,char> AbaxPair<AbaxString,char>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,JagColumn> AbaxPair<AbaxString,JagColumn>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,JagSchemaRecord> AbaxPair<AbaxString,JagSchemaRecord>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,JagTableOrIndexAttrs> AbaxPair<AbaxString,JagTableOrIndexAttrs>::NULLVALUE = AbaxString::NULLVALUE;
-template<> AbaxPair<AbaxString,AbaxFixString> AbaxPair<AbaxString,AbaxFixString>::NULLVALUE = AbaxString::NULLVALUE;
+template<> AbaxPair<AbaxString,JagFixString> AbaxPair<AbaxString,JagFixString>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,AbaxPair<AbaxString,AbaxBuffer>> AbaxPair<AbaxString,AbaxPair<AbaxString,AbaxBuffer>>::NULLVALUE = AbaxString::NULLVALUE;
-template<> AbaxPair<AbaxString,AbaxPair<AbaxFixString,AbaxBuffer>> AbaxPair<AbaxString,AbaxPair<AbaxFixString,AbaxBuffer>>::NULLVALUE = AbaxString::NULLVALUE;
+template<> AbaxPair<AbaxString,AbaxPair<JagFixString,AbaxBuffer>> AbaxPair<AbaxString,AbaxPair<JagFixString,AbaxBuffer>>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,AbaxPair<AbaxString,abaxint>> AbaxPair<AbaxString,AbaxPair<AbaxString,abaxint>>::NULLVALUE = AbaxString::NULLVALUE;
 template<> AbaxPair<AbaxString,AbaxPair<AbaxPair<AbaxLong,AbaxPair<AbaxLong,AbaxLong>>,AbaxPair<JagDBPair,AbaxPair<AbaxBuffer,AbaxPair<AbaxBuffer, AbaxBuffer>>>>> AbaxPair<AbaxString,AbaxPair<AbaxPair<AbaxLong,AbaxPair<AbaxLong,AbaxLong>>,AbaxPair<JagDBPair,AbaxPair<AbaxBuffer,AbaxPair<AbaxBuffer,AbaxBuffer>>>>>::NULLVALUE = AbaxString::NULLVALUE;
 
-template<> AbaxPair<AbaxFixString,AbaxDouble> AbaxPair<AbaxFixString,AbaxDouble>::NULLVALUE = AbaxFixString::NULLVALUE;
-template<> AbaxPair<AbaxFixString,AbaxFixString> AbaxPair<AbaxFixString,AbaxFixString>::NULLVALUE = AbaxFixString::NULLVALUE;
-template<> AbaxPair<AbaxFixString,JagBlock<JagDBPair>*> AbaxPair<AbaxFixString,JagBlock<JagDBPair>*>::NULLVALUE = AbaxFixString::NULLVALUE;
+template<> AbaxPair<JagFixString,AbaxDouble> AbaxPair<JagFixString,AbaxDouble>::NULLVALUE = JagFixString::NULLVALUE;
+template<> AbaxPair<JagFixString,JagFixString> AbaxPair<JagFixString,JagFixString>::NULLVALUE = JagFixString::NULLVALUE;
+template<> AbaxPair<JagFixString,JagBlock<JagDBPair>*> AbaxPair<JagFixString,JagBlock<JagDBPair>*>::NULLVALUE = JagFixString::NULLVALUE;
 
 template<> AbaxPair<JagDBPair,AbaxBuffer> AbaxPair<JagDBPair,AbaxBuffer>::NULLVALUE = JagDBPair::NULLVALUE;
 template<> AbaxPair<JagDBPair,AbaxPair<AbaxInt,AbaxBuffer>> AbaxPair<JagDBPair,AbaxPair<AbaxInt,AbaxBuffer>>::NULLVALUE = JagDBPair::NULLVALUE;

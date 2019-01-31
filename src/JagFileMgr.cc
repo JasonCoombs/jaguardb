@@ -39,7 +39,7 @@
 #include <JagStrSplit.h>
 #include <JagUtil.h>
 
-void JagFileMgr::makedirPath( const AbaxDataString &fullpath, int mode )
+void JagFileMgr::makedirPath( const Jstr &fullpath, int mode )
 {
 	if ( fullpath.length()<1) return;
 
@@ -51,9 +51,9 @@ void JagFileMgr::makedirPath( const AbaxDataString &fullpath, int mode )
 		isabs = 1; // absolute path
 	}
 
-	AbaxDataString tok;
-	AbaxDataString path;
-	AbaxDataString seg;
+	Jstr tok;
+	Jstr path;
+	Jstr seg;
 
 	for ( int i=0; i<len; i++) {
 		if (isabs ) path="/"; else path="";
@@ -67,7 +67,7 @@ void JagFileMgr::makedirPath( const AbaxDataString &fullpath, int mode )
 	}
 }
 
-int JagFileMgr::isFile( const AbaxDataString &fullpath )
+int JagFileMgr::isFile( const Jstr &fullpath )
 {
 	struct stat   	statbuf;
 	if ( stat( fullpath.c_str(), &statbuf) < 0 )
@@ -79,7 +79,7 @@ int JagFileMgr::isFile( const AbaxDataString &fullpath )
 	return 0;
 }
 
-int JagFileMgr::isDir( const AbaxDataString &fullpath )
+int JagFileMgr::isDir( const Jstr &fullpath )
 {
 	struct stat   	statbuf;
 	if ( stat( fullpath.c_str(), &statbuf) < 0 )
@@ -93,12 +93,12 @@ int JagFileMgr::isDir( const AbaxDataString &fullpath )
 
 // remove recursively an dir (also remove if fullpath is a file)
 // finally rmdir top level empty dir if rmtop is true 
-void JagFileMgr::rmdir( const AbaxDataString &fullpath, bool rmtop )
+void JagFileMgr::rmdir( const Jstr &fullpath, bool rmtop )
 {
 	struct stat   	statbuf;
 	DIR 			*dp;
 	struct dirent  	*dirp;
-	AbaxDataString nextlevelpath;
+	Jstr nextlevelpath;
 
 	// prt(("s9293 rmdir fullpath=[%s]\n", fullpath.c_str() ));
 	if ( stat( fullpath.c_str(), &statbuf) < 0 ) {
@@ -138,14 +138,14 @@ void JagFileMgr::rmdir( const AbaxDataString &fullpath, bool rmtop )
 
 // remove folders and files with history longer than historySeconds
 // including self fullpath
-int JagFileMgr::cleanDir( const AbaxDataString &fullpath, time_t historySeconds )
+int JagFileMgr::cleanDir( const Jstr &fullpath, time_t historySeconds )
 {
 	struct stat   	statbuf;
 	DIR 			*dp;
 	struct dirent  	*dirp;
 	time_t   		modtime;
 	time_t   		nowtime;
-	AbaxDataString nextlevelpath;
+	Jstr nextlevelpath;
 
 	if ( stat( fullpath.c_str(), &statbuf) < 0 ) {
 		return 0;
@@ -188,7 +188,7 @@ int JagFileMgr::cleanDir( const AbaxDataString &fullpath, time_t historySeconds 
 }
 
 // in bytes
-abaxint JagFileMgr:: fileSize( const AbaxDataString &fullpath )
+abaxint JagFileMgr:: fileSize( const Jstr &fullpath )
 {
 	struct stat   	statbuf;
 	if ( stat( fullpath.c_str(), &statbuf) < 0 )
@@ -198,7 +198,7 @@ abaxint JagFileMgr:: fileSize( const AbaxDataString &fullpath )
 }
 
 // static
-int JagFileMgr::exist( const AbaxDataString &fullpath )
+int JagFileMgr::exist( const Jstr &fullpath )
 {
 	struct stat   	statbuf;
 	if ( stat( fullpath.c_str(), &statbuf) < 0 ) {
@@ -208,7 +208,7 @@ int JagFileMgr::exist( const AbaxDataString &fullpath )
 }
 
 // static
-void JagFileMgr::readTextFile(const AbaxDataString &fpath, AbaxDataString &content )
+void JagFileMgr::readTextFile(const Jstr &fpath, Jstr &content )
 {
 	content = "";
     char buf[2];
@@ -228,7 +228,7 @@ void JagFileMgr::readTextFile(const AbaxDataString &fpath, AbaxDataString &conte
 }
 
 // static
-void JagFileMgr::writeTextFile(const AbaxDataString &fname, const AbaxDataString &content )
+void JagFileMgr::writeTextFile(const Jstr &fname, const Jstr &content )
 {
     FILE *fp = jagfopen(fname.c_str(), "w");
     if ( ! fp ) return;
@@ -238,7 +238,7 @@ void JagFileMgr::writeTextFile(const AbaxDataString &fname, const AbaxDataString
 }
 
 // static
-void JagFileMgr::writeTextFile(const AbaxDataString &fname, const char *content )
+void JagFileMgr::writeTextFile(const Jstr &fname, const char *content )
 {
     FILE *fp = jagfopen(fname.c_str(), "wb");
     if ( ! fp ) return;
@@ -298,18 +298,18 @@ int JagFileMgr::getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &free
 }
 #endif
 
-AbaxDataString JagFileMgr::makeLocalLogDir( const AbaxDataString &subdir )
+Jstr JagFileMgr::makeLocalLogDir( const Jstr &subdir )
 {
-    AbaxDataString fpath = getLocalLogDir( subdir );
+    Jstr fpath = getLocalLogDir( subdir );
 	if ( ! isDir( fpath ) ) {
     	jagmkdir( fpath.c_str(), 0700 );
 	}
     return fpath;
 }
 
-AbaxDataString JagFileMgr::getLocalLogDir( const AbaxDataString &subdir )
+Jstr JagFileMgr::getLocalLogDir( const Jstr &subdir )
 {
-    AbaxDataString fpath;
+    Jstr fpath;
 	if ( subdir.size() > 0 ) {
     	fpath = jaguarHome() + "/log/" + subdir;
 	} else {
@@ -326,7 +326,7 @@ int JagFileMgr::getIOStat( uabaxint &reads, uabaxint & writes )
 	reads = writes = 0;
 	FILE *fp = jagfopen( "/proc/diskstats", "rb" );
 	if ( ! fp ) return 0;
-	AbaxDataString line;
+	Jstr line;
 
 	char buf[1024];
 	while ( NULL != ( fgets(buf, 1024, fp ) ) ) {
@@ -352,7 +352,7 @@ int JagFileMgr::getIOStat( uabaxint &reads, uabaxint & writes )
 }
 #endif
 
-bool JagFileMgr::dirEmpty( const AbaxDataString &fullpath )
+bool JagFileMgr::dirEmpty( const Jstr &fullpath )
 {
 	struct stat   	statbuf;
 	if ( stat( fullpath.c_str(), &statbuf) < 0 )
@@ -382,15 +382,15 @@ int   JagFileMgr::fallocate(int fd, abaxint offset, abaxint len)
 // fullpath  /path/aaa
 // objname: tab123.jdb  or tab123.idx123.jdb
 // return: "/path/aaa/t1.1.jdb|/path/aaa/t1.2.jdb|/path/aaa/t1.3.jdb|/path/aaa/t3.idx1.5.jdb"
-AbaxDataString JagFileMgr::getFileFamily( const AbaxDataString &fullpath, const AbaxDataString &objname, bool fnameOnly )
+Jstr JagFileMgr::getFileFamily( const Jstr &fullpath, const Jstr &objname, bool fnameOnly )
 {
 	struct stat   	statbuf;
 	DIR 			*dp;
 	struct dirent  	*dirp;
-	AbaxDataString  onepath, tabname, idxname, suffix;
+	Jstr  onepath, tabname, idxname, suffix;
 	int             parts = 0;
 
-	AbaxDataString res;
+	Jstr res;
 	if ( stat( fullpath.c_str(), &statbuf) < 0 ) {
 		return res;
 	}
@@ -435,8 +435,8 @@ AbaxDataString JagFileMgr::getFileFamily( const AbaxDataString &fullpath, const 
 					if ( fnameOnly ) res = dirp->d_name;
 					else res = onepath;
 				} else {
-					if ( fnameOnly ) res += AbaxDataString("|") + dirp->d_name;
-					else res += AbaxDataString("|") + onepath;
+					if ( fnameOnly ) res += Jstr("|") + dirp->d_name;
+					else res += Jstr("|") + onepath;
 				}
 			}
 		} else if ( sp.length() == 2 && parts == 2 ) {
@@ -445,8 +445,8 @@ AbaxDataString JagFileMgr::getFileFamily( const AbaxDataString &fullpath, const 
 					if ( fnameOnly ) res = dirp->d_name;
 					else res = onepath;
 				} else {
-					if ( fnameOnly ) res += AbaxDataString("|") + dirp->d_name;
-					else res += AbaxDataString("|") + onepath;
+					if ( fnameOnly ) res += Jstr("|") + dirp->d_name;
+					else res += Jstr("|") + onepath;
 				}
 			}
 		} else if ( sp.length() == 4 && parts == 3 ) {
@@ -455,8 +455,8 @@ AbaxDataString JagFileMgr::getFileFamily( const AbaxDataString &fullpath, const 
 					if ( fnameOnly ) res = dirp->d_name;
 					else res = onepath;
 				} else {
-					if ( fnameOnly ) res += AbaxDataString("|") + dirp->d_name;
-					else res += AbaxDataString("|") + onepath;
+					if ( fnameOnly ) res += Jstr("|") + dirp->d_name;
+					else res += Jstr("|") + onepath;
 				}
 			}
 		} else if ( sp.length() == 3 && parts == 3 ) {
@@ -465,8 +465,8 @@ AbaxDataString JagFileMgr::getFileFamily( const AbaxDataString &fullpath, const 
 					if ( fnameOnly ) res = dirp->d_name;
 					else res = onepath;
 				} else {
-					if ( fnameOnly ) res += AbaxDataString("|") + dirp->d_name;
-					else res += AbaxDataString("|") + onepath;
+					if ( fnameOnly ) res += Jstr("|") + dirp->d_name;
+					else res += Jstr("|") + onepath;
 				}
 			}
 		}
@@ -478,14 +478,14 @@ AbaxDataString JagFileMgr::getFileFamily( const AbaxDataString &fullpath, const 
 }
 
 // objects in fullpath dir
-abaxint JagFileMgr::numObjects( const AbaxDataString &fullpath )
+abaxint JagFileMgr::numObjects( const Jstr &fullpath )
 {
 	abaxint num = 0;
 
 	struct stat   	statbuf;
 	DIR 			*dp;
 	struct dirent  	*dirp;
-	AbaxDataString nextlevelpath;
+	Jstr nextlevelpath;
 
 	if ( stat( fullpath.c_str(), &statbuf) < 0 ) {
 		return 0;
@@ -510,12 +510,12 @@ abaxint JagFileMgr::numObjects( const AbaxDataString &fullpath )
 	return num;
 }
 
-AbaxDataString JagFileMgr::listObjects( const AbaxDataString &fullpath )
+Jstr JagFileMgr::listObjects( const Jstr &fullpath )
 {
 	struct stat   	statbuf;
 	DIR 			*dp;
 	struct dirent  	*dirp;
-	AbaxDataString nextlevelpath;
+	Jstr nextlevelpath;
 
 	if ( stat( fullpath.c_str(), &statbuf) < 0 ) {
 		return "";
@@ -536,7 +536,7 @@ AbaxDataString JagFileMgr::listObjects( const AbaxDataString &fullpath )
 		if ( nextlevelpath.size() < 1 ) {
 			nextlevelpath += dirp->d_name;
 		} else {
-			nextlevelpath += AbaxDataString("|") + dirp->d_name;
+			nextlevelpath += Jstr("|") + dirp->d_name;
 		}
 	}
 
@@ -547,12 +547,12 @@ AbaxDataString JagFileMgr::listObjects( const AbaxDataString &fullpath )
 // recursively remove everything in fullpath dir, except files with suffix of exsuffix
 // exsuffix ".tar.gz"
 // fullpath is kept
-int JagFileMgr::cleanDirExclude( const AbaxDataString &fullpath, const AbaxDataString &exsuffix )
+int JagFileMgr::cleanDirExclude( const Jstr &fullpath, const Jstr &exsuffix )
 {
 	struct stat   	statbuf;
 	DIR 			*dp;
 	struct dirent  	*dirp;
-	AbaxDataString   nextlevelpath;
+	Jstr   nextlevelpath;
 
 	if (  exsuffix.size() > 0 && endWithStr( fullpath, exsuffix )  ) {
 		return 0;
@@ -587,7 +587,7 @@ int JagFileMgr::cleanDirExclude( const AbaxDataString &fullpath, const AbaxDataS
 }
 
 
-int JagFileMgr::pathWritable( const AbaxDataString &fullpath )
+int JagFileMgr::pathWritable( const Jstr &fullpath )
 {
 	char buf[1024];
 	if ( fullpath.size() >= 1024 ) return 0;

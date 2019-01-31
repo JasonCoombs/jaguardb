@@ -25,7 +25,7 @@ class JagDiskArrayClient : public JagDiskArrayBase
 {
 	public:
 	
-		JagDiskArrayClient( const AbaxDataString &fpathname, 
+		JagDiskArrayClient( const Jstr &fpathname, 
 							const JagSchemaRecord *record, bool dropClean=false, abaxint length=32 );
 		virtual ~JagDiskArrayClient();
 

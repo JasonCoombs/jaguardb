@@ -62,8 +62,8 @@ bool JagUserID::addUser( const AbaxString &userid, const AbaxString& passwd,
 	return 1;
 }
 
-bool JagUserID::isAuth( char op,  const AbaxDataString &dbname, 
-						const AbaxDataString &tabname, const AbaxDataString &uid )
+bool JagUserID::isAuth( char op,  const Jstr &dbname, 
+						const Jstr &tabname, const Jstr &uid )
 {
 
 	AbaxString role = this->getValue( uid, JAG_ROLE );
@@ -94,7 +94,7 @@ bool JagUserID::dropUser( const AbaxString &userid )
 	return dropKey( userid );
 }
 
-AbaxDataString JagUserID::getListUsers()
+Jstr JagUserID::getListUsers()
 {
 	return this->getListKeys();
 }

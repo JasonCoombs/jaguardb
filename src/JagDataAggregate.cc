@@ -131,7 +131,7 @@ void JagDataAggregate::clean()
 // method to open files for write and init part of data members of _dbPairFileVec
 // followed by writeit, done by main thread
 // get ready for write, initialization
-void JagDataAggregate::setwrite( const JagVector<AbaxDataString> &hostlist )
+void JagDataAggregate::setwrite( const JagVector<Jstr> &hostlist )
 {
 	clean();
 	JagDBPairFile dbpfile;
@@ -166,7 +166,7 @@ void JagDataAggregate::setwrite( abaxint num )
 
 // the third method to set write file ( one file only ); if the file path has some special meaning
 // if flag is true, use filestr + .dbp for file name, and use /jaguar/export/ for path, also keep this file;
-void JagDataAggregate::setwrite( const AbaxDataString &mapstr, const AbaxDataString &filestr, int keepFile )
+void JagDataAggregate::setwrite( const Jstr &mapstr, const Jstr &filestr, int keepFile )
 {
 	clean();
 	JagDBPairFile dbpfile;
@@ -204,7 +204,7 @@ void JagDataAggregate::setMemoryLimit( abaxint maxLimitBytes )
 // from server get dbpair, write to writebuf, then flush to disk
 // if keep file, write each line of data to sql file for export, format to insert cmd mode instead of dbpair mode
 // need 4th argument for parse
-bool JagDataAggregate::writeit( const AbaxDataString &host, const char *buf, abaxint len, 
+bool JagDataAggregate::writeit( const Jstr &host, const char *buf, abaxint len, 
 								const JagSchemaRecord *rec, bool noUnlock, abaxint membytes )
 {
 	if ( !_isSetWriteDone ) {
@@ -247,7 +247,7 @@ bool JagDataAggregate::writeit( const AbaxDataString &host, const char *buf, aba
 		if ( !_sqlarr ) {
 			if ( _datalen <= 0 ) _datalen = len;
 			abaxint maxlens = jagatoll(_cfg->getValue("SHUFFLE_MEM_SIZE_MB", "1024").c_str())*1024*1024/_datalen;
-			_sqlarr = new AbaxDataString[maxlens];
+			_sqlarr = new Jstr[maxlens];
 			_dbPairFileVec[0].memlen = maxlens-1;
 			_dbPairFileVec[0].mempos = 0;
 			_dbPairFileVec[0].memstart = 0;
@@ -256,9 +256,9 @@ bool JagDataAggregate::writeit( const AbaxDataString &host, const char *buf, aba
 
 		if ( !rec ) return 0;
 		abaxint offset, length;
-		AbaxDataString type;
+		Jstr type;
 		// prt(("s4829 format insert into ...\n"));
-		AbaxDataString outstr, cmd = AbaxDataString("insert into ") + _dbobj + "(";
+		Jstr outstr, cmd = Jstr("insert into ") + _dbobj + "(";
 		bool isLast = 0;
 		for ( int i = 0; i < rec->columnVector->size(); ++i ) {
 			if ( i == rec->columnVector->size()-2 ) {
@@ -267,9 +267,9 @@ bool JagDataAggregate::writeit( const AbaxDataString &host, const char *buf, aba
 			} else if ( i==rec->columnVector->size()-1 ) { isLast = 1; }
 
 			if ( ! isLast ) {
-				cmd += AbaxDataString(" ") + (*(rec->columnVector))[i].name.c_str() + ",";
+				cmd += Jstr(" ") + (*(rec->columnVector))[i].name.c_str() + ",";
 			} else {
-				cmd += AbaxDataString(" ") + (*(rec->columnVector))[i].name.c_str() + " ) values (";
+				cmd += Jstr(" ") + (*(rec->columnVector))[i].name.c_str() + " ) values (";
 			}
 			if ( isLast ) break;
 		}
@@ -286,9 +286,9 @@ bool JagDataAggregate::writeit( const AbaxDataString &host, const char *buf, aba
 			type = (*(rec->columnVector))[i].type;
 			outstr = formOneColumnNaturalData( buf, offset, length, type );
 			if ( ! isLast ) {
-				cmd += AbaxDataString(" '") + outstr + "',";
+				cmd += Jstr(" '") + outstr + "',";
 			} else {
-				cmd += AbaxDataString(" '") + outstr + "' );\n";
+				cmd += Jstr(" '") + outstr + "' );\n";
 			}
 			if ( isLast ) break;
 		}
@@ -386,7 +386,7 @@ bool JagDataAggregate::flushwrite()
 
 // method to read data one by one of _datalen, done by main thread
 // read from write buf, if thhere is disk, freeed writebuf. readbuf from disk
-bool JagDataAggregate::readit( AbaxFixString &buf )
+bool JagDataAggregate::readit( JagFixString &buf )
 {
 	buf = "";
 	if ( 0 == _datalen || !_isFlushWriteDone ) {
@@ -399,7 +399,7 @@ bool JagDataAggregate::readit( AbaxFixString &buf )
 			if ( _numIdx >= _numHosts ) break;
 			if ( _dbPairFileVec[_numIdx].memoff + _datalen > _dbPairFileVec[_numIdx].mempos ) ++_numIdx;
 			else {
-				buf = AbaxFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
+				buf = JagFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
 				_dbPairFileVec[_numIdx].memoff += _datalen;
 				break;
 			}
@@ -435,14 +435,14 @@ bool JagDataAggregate::readit( AbaxFixString &buf )
 			}
 		}
 		// otherwise, get data from memory buffer
-		buf = AbaxFixString( _readbuf+_readpos, _datalen );
+		buf = JagFixString( _readbuf+_readpos, _datalen );
 		_readpos += _datalen;
 		return true;
 	}
 }
 
 // method to read data one by one of _datalen, done by main thread
-bool JagDataAggregate::backreadit( AbaxFixString &buf )
+bool JagDataAggregate::backreadit( JagFixString &buf )
 {
 	buf = "";
 	if ( 0 == _datalen || !_isFlushWriteDone ) {
@@ -454,7 +454,7 @@ bool JagDataAggregate::backreadit( AbaxFixString &buf )
 		while ( _numIdx < _numHosts ) {
 			if ( _dbPairFileVec[_numHosts-_numIdx-1].memoff + _datalen > _dbPairFileVec[_numHosts-_numIdx-1].mempos ) ++_numIdx;
 			else {
-				buf = AbaxFixString( _writebuf+(_dbPairFileVec[_numHosts-_numIdx-1].mempos-_dbPairFileVec[_numHosts-_numIdx-1].memoff-_datalen+_dbPairFileVec[_numHosts-_numIdx-1].memstart), _datalen );
+				buf = JagFixString( _writebuf+(_dbPairFileVec[_numHosts-_numIdx-1].mempos-_dbPairFileVec[_numHosts-_numIdx-1].memoff-_datalen+_dbPairFileVec[_numHosts-_numIdx-1].memstart), _datalen );
 				_dbPairFileVec[_numHosts-_numIdx-1].memoff += _datalen;
 				break;
 			}
@@ -490,7 +490,7 @@ bool JagDataAggregate::backreadit( AbaxFixString &buf )
 			}
 		}
 		// otherwise, get data from memory buffer
-		buf = AbaxFixString( _readbuf+(_readlen-_readpos-_datalen), _datalen );
+		buf = JagFixString( _readbuf+(_readlen-_readpos-_datalen), _datalen );
 		_readpos += _datalen;
 		return true;
 	}
@@ -498,7 +498,7 @@ bool JagDataAggregate::backreadit( AbaxFixString &buf )
 }
 
 // method to read data one by one of _datalen parallel, done by main thread
-bool JagDataAggregate::pallreadit( AbaxFixString &buf )
+bool JagDataAggregate::pallreadit( JagFixString &buf )
 {
 	buf = "";
 	if ( 0 == _datalen || !_isFlushWriteDone ) {
@@ -517,7 +517,7 @@ bool JagDataAggregate::pallreadit( AbaxFixString &buf )
 				}
 				++numcounts;
 			} else {
-				buf = AbaxFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
+				buf = JagFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
 				_dbPairFileVec[_numIdx].memoff += _datalen;
 				++_numIdx;
 				if ( _numIdx >= _numHosts ) _numIdx = 0;
@@ -567,7 +567,7 @@ bool JagDataAggregate::pallreadit( AbaxFixString &buf )
 		}
 		
 		// otherwise, get data from memory buffer
-		buf = AbaxFixString( _readbuf+_pallreadpos[_numIdx], _datalen );
+		buf = JagFixString( _readbuf+_pallreadpos[_numIdx], _datalen );
 		_pallreadpos[_numIdx] += _datalen;
 		++_numIdx;
 		if ( _numIdx >= _numHosts ) _numIdx = 0;
@@ -768,7 +768,7 @@ abaxint JagDataAggregate::pallreadNextBlock()
 }
 
 // method only available for setwrite third method path for now
-int JagDataAggregate::readRangeOffsetLength( AbaxFixString &data, abaxint offset, abaxint length )
+int JagDataAggregate::readRangeOffsetLength( JagFixString &data, abaxint offset, abaxint length )
 {
 	if ( _datalen == 0 || !_isFlushWriteDone ) {
 		clean();
@@ -777,7 +777,7 @@ int JagDataAggregate::readRangeOffsetLength( AbaxFixString &data, abaxint offset
 
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	if ( !_useDisk ) {
-		data = AbaxFixString( _writebuf+offset, length );
+		data = JagFixString( _writebuf+offset, length );
 		return 1;
 	} else {
 		char *buf = (char*)jagmalloc( length+1 );
@@ -786,7 +786,7 @@ int JagDataAggregate::readRangeOffsetLength( AbaxFixString &data, abaxint offset
 			clean();
 			return 0;
 		}
-		data = AbaxFixString( buf, length );
+		data = JagFixString( buf, length );
 		free( buf );
 		return 1;
 	}
@@ -823,7 +823,7 @@ abaxint JagDataAggregate::getUsableMemory()
 
 // join-read the dbpair files with matching keys.
 // returns 1 if valid data is read; 0 if no more data (vec.length() should be zero)
-int JagDataAggregate::joinReadNext( JagVector<AbaxFixString> &vec )
+int JagDataAggregate::joinReadNext( JagVector<JagFixString> &vec )
 {
 	if ( 0 == _datalen || ! _isFlushWriteDone ) {
 		clean();
@@ -849,7 +849,7 @@ int JagDataAggregate::joinReadNext( JagVector<AbaxFixString> &vec )
 				}
 				++numcounts;
 			} else {
-				buf = AbaxFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
+				buf = JagFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
 				_dbPairFileVec[_numIdx].memoff += _datalen;
 				++_numIdx;
 				if ( _numIdx >= _numHosts ) _numIdx = 0;
@@ -905,7 +905,7 @@ int JagDataAggregate::joinReadNext( JagVector<AbaxFixString> &vec )
 		}
 		
 		// otherwise, get data from memory buffer
-		buf = AbaxFixString( _readbuf+_pallreadpos[_numIdx], _datalen );
+		buf = JagFixString( _readbuf+_pallreadpos[_numIdx], _datalen );
 		_pallreadpos[_numIdx] += _datalen;
 		++_numIdx;
 		if ( _numIdx >= _numHosts ) _numIdx = 0;
@@ -949,7 +949,7 @@ void JagDataAggregate::endJoinRead()
 
 
 // read from _writebuf
-int JagDataAggregate::_joinReadFromMem( JagVector<AbaxFixString> &vec )
+int JagDataAggregate::_joinReadFromMem( JagVector<JagFixString> &vec )
 {
 	int rc, cnt = 0, minpos = -1;
 	
@@ -998,7 +998,7 @@ int JagDataAggregate::_joinReadFromMem( JagVector<AbaxFixString> &vec )
 	int smallestnum = 0;
 	int beginpos = 0;
 	int rc;
-	AbaxFixString kv;
+	JagFixString kv;
 	int  smallMoved = 0;
 
 	for ( int i = 0; i < _numHosts; ++i ) {
@@ -1081,7 +1081,7 @@ int JagDataAggregate::_getNextDataOfHostFromMem( int i  )
 		return 0; // no more data
 	}
 	
-	_dbPairFileVec[i].kv  = AbaxFixString( _writebuf+memoff, _datalen );
+	_dbPairFileVec[i].kv  = JagFixString( _writebuf+memoff, _datalen );
 	_dbPairFileVec[i].memoff += _datalen;
 
 	return 1;
@@ -1091,7 +1091,7 @@ int JagDataAggregate::_getNextDataOfHostFromMem( int i  )
 // get next record from multiple dbpair files
 // return n: n==vec.length()
 //        0: no more, caller should call endJoinRead()
-int JagDataAggregate::_joinReadFromDisk( JagVector<AbaxFixString> &vec )
+int JagDataAggregate::_joinReadFromDisk( JagVector<JagFixString> &vec )
 {
 	int cnt = _mergeReader->getNext( vec );
 

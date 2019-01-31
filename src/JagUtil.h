@@ -41,7 +41,6 @@
 typedef double abaxdouble;
 #else
 typedef long double abaxdouble;
-// typedef double abaxdouble;
 #endif
 
 class JDFS;
@@ -51,7 +50,7 @@ template <class K> class JagVector;
 template <class K, class V> class JagHashMap;
 class JagStrSplit;
 
-int  str_str(const char *longstr, const char *shortstr );
+//int  str_str(const char *longstr, const char *shortstr );
 int  str_str_ch(const char *longstr, char ch, const char *shortstr );
 int  str_print( const char *ptr, int len );
 
@@ -112,7 +111,7 @@ Jstr filePathFromFD( int fd );
 Jstr makeUpperString( const Jstr &str );
 Jstr makeLowerString( const Jstr &str );
 Jstr removeCharFromString( const Jstr &str, char dropc );
-AbaxFixString makeUpperOrLowerFixString( const AbaxFixString &str, bool isUpper );
+JagFixString makeUpperOrLowerFixString( const JagFixString &str, bool isUpper );
 Jstr trimChar( const Jstr &str, char c );
 Jstr trimHeadChar( const Jstr &str, char c );
 Jstr trimTailChar( const Jstr &str, char c='\n' );
@@ -167,7 +166,7 @@ Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbname, const Jstr &objname );
 Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbdotname );
 Jstr jaguarHome();
 Jstr renameFilePath( const Jstr& fpath, const Jstr &newLast );
-int selectServer( const AbaxFixString &min, const AbaxFixString &max, const AbaxFixString &inkey );
+int selectServer( const JagFixString &min, const JagFixString &max, const JagFixString &inkey );
 int trimEndWithChar ( char *msg, int len, char c );
 int trimEndToChar ( char *msg, int len, char stopc );
 int trimEndWithCharKeepNewline ( char *msg, int len, char c );
@@ -259,8 +258,8 @@ abaxint sendDirectToSock( JAGSOCK sock, const char *mesg, abaxint len, bool nohd
 abaxint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr );
 abaxint sendDirectToSockWithHdr( JAGSOCK sock, const char *hdr, const char *mesg, abaxint len );
 int isValidSciNotation(const char *str );
-Jstr fileHashDir( const AbaxFixString &fstr );
-char lastChar( const AbaxFixString &str );
+Jstr fileHashDir( const JagFixString &fstr );
+char lastChar( const JagFixString &str );
 
 #define jagfree(x) free(x); x=NULL
 #define jagiffree(x) if (x) {free(x); x=NULL;}

@@ -371,7 +371,7 @@ void JagGapVector<Pair>::setValue( int val, bool isSet, abaxint index )
 	char c = val;
 	buf[0] = c;
 	buf[1] = '\0';
-	AbaxFixString value( buf, 1);
+	JagFixString value( buf, 1);
 	_arr[index].value = value;
 }		
 

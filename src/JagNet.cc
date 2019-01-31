@@ -51,7 +51,7 @@
 
 int JagNet::_socketHasBeenSetup = 0;
 
-AbaxDataString JagNet::getLocalHost()
+Jstr JagNet::getLocalHost()
 {
 	char buf[128];
 	memset( buf, 0, 128 );
@@ -94,7 +94,7 @@ void rayclose ( JAGSOCK sock )
 
 
 #ifdef _WINDOWS64_
-void JagNet::getLocalIPs( JagVector<AbaxDataString> &vec )
+void JagNet::getLocalIPs( JagVector<Jstr> &vec )
 {
     char ac[180];
     if (gethostname(ac, sizeof(ac)) == SOCKET_ERROR) { return; }
@@ -103,7 +103,7 @@ void JagNet::getLocalIPs( JagVector<AbaxDataString> &vec )
     for (int i = 0; phe->h_addr_list[i] != 0; ++i) {
         struct in_addr addr;
         memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
-		vec.append( AbaxDataString(inet_ntoa(addr)) );
+		vec.append( Jstr(inet_ntoa(addr)) );
     }
 }
 JAGSOCK JagNet::connect2Host( const char *host, short port, int timeoutsecs, bool errPrint )
@@ -138,7 +138,7 @@ JAGSOCK JagNet::connect2Host( const char *host, short port, int timeoutsecs, boo
 
 #else
 // Linux
-void JagNet::getLocalIPs( JagVector<AbaxDataString> &vec )
+void JagNet::getLocalIPs( JagVector<Jstr> &vec )
 {
     struct ifconf ifconf;
     struct ifreq ifr[50];
@@ -171,7 +171,7 @@ void JagNet::getLocalIPs( JagVector<AbaxDataString> &vec )
         }
         // printf("%s - %s\n", ifr[i].ifr_name, ip);
 		if ( strlen(ip) > 0 ) {
-  	    	vec.append( AbaxDataString(ip) );
+  	    	vec.append( Jstr(ip) );
 		}
     }
   
@@ -247,7 +247,7 @@ JAGSOCK JagNet::connect2Host( const char *host, short port, int timeoutsecs, boo
 
 #ifndef _WINDOWS64_
 // Linux
-AbaxDataString JagNet::getMacAddress()
+Jstr JagNet::getMacAddress()
 {
     struct ifreq ifr;
     struct ifconf ifc;
@@ -280,7 +280,7 @@ AbaxDataString JagNet::getMacAddress()
     unsigned char mac_address[7];
 	memset( mac_address, 0, 7 );
     if (success) memcpy(mac_address, ifr.ifr_hwaddr.sa_data, 6);
-	return AbaxDataString( (char*)mac_address );
+	return Jstr( (char*)mac_address );
 }
 void beginBulkSend( JAGSOCK sock ) 
 { 
@@ -295,9 +295,9 @@ void endBulkSend( JAGSOCK sock )
 }
 #else
 // windows
-AbaxDataString JagNet::getMacAddress()
+Jstr JagNet::getMacAddress()
 {
-	AbaxDataString firstMac;
+	Jstr firstMac;
 	char buf[64];
 
     IP_ADAPTER_INFO AdapterInfo[16];       // Allocate information 
@@ -504,7 +504,7 @@ int JagNet::getNetStat( uabaxint & reads, uabaxint &writes )
     reads = writes = 0;
     FILE *fp = fopen( "/proc/net/dev", "rb" );
     if ( ! fp ) return 0;
-    AbaxDataString line;
+    Jstr line;
 
     char buf[1024];
     while ( NULL != ( fgets(buf, 1024, fp ) ) ) {
@@ -675,9 +675,9 @@ void JagNet::getIPFromEtcFile( const char *hostname, char *ip )
 
 	*ip = '\0';
 	char buf[1024];
-	AbaxDataString line;
-	AbaxDataString hostnameUpper = makeUpperString( hostname );
-	AbaxDataString upper;
+	Jstr line;
+	Jstr hostnameUpper = makeUpperString( hostname );
+	Jstr upper;
 	int i;
 	while ( NULL != fgets( buf, 1024, fp ) ) {
 		if ( strlen( buf ) < 4 ) continue;
@@ -699,7 +699,7 @@ void JagNet::getIPFromEtcFile( const char *hostname, char *ip )
 	// ip would be empty
 }
 
-AbaxDataString JagNet::getIPFromHostName( const AbaxDataString &hostname )
+Jstr JagNet::getIPFromHostName( const Jstr &hostname )
 {
 	char buf[64];
 	memset( buf, 0, 64 );

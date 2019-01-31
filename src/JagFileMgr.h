@@ -27,28 +27,28 @@ class JagFileMgr
 {
 	public:
 
-		static void 	makedirPath( const AbaxDataString &fullpath, int mode=0755 );
-		static void 	rmdir( const AbaxDataString &fullpath, bool rmtop=true );
-		static abaxint 	fileSize( const AbaxDataString &fullpath );
+		static void 	makedirPath( const Jstr &fullpath, int mode=0755 );
+		static void 	rmdir( const Jstr &fullpath, bool rmtop=true );
+		static abaxint 	fileSize( const Jstr &fullpath );
 		static int 		getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &freeGB );
-		static int 		isFile( const AbaxDataString &fullpath );
-		static int 		isDir( const AbaxDataString &fullpath );
-		// static size_t 	dirSize( const AbaxDataString &fullpath );
-		static bool 	dirEmpty( const AbaxDataString &fullPathDir );
-		static int 		exist( const AbaxDataString &fullpath );
-		static void 	readTextFile(const AbaxDataString &fname, AbaxDataString &content );
-		static void 	writeTextFile(const AbaxDataString &fname, const AbaxDataString &content );
-		static void 	writeTextFile(const AbaxDataString &fname, const char *content );
-		static int 		cleanDir( const AbaxDataString &fullpath, time_t historySeconds );
-		static int 		cleanDirExclude( const AbaxDataString &fullpath, const AbaxDataString &exsuffix );
-		static abaxint 	numObjects( const AbaxDataString &fullpath );
-		static AbaxDataString 	listObjects( const AbaxDataString &fullpath );
-		static AbaxDataString     makeLocalLogDir( const AbaxDataString &subdir="" );
-		static AbaxDataString     getLocalLogDir( const AbaxDataString &subdir="" );
+		static int 		isFile( const Jstr &fullpath );
+		static int 		isDir( const Jstr &fullpath );
+		// static size_t 	dirSize( const Jstr &fullpath );
+		static bool 	dirEmpty( const Jstr &fullPathDir );
+		static int 		exist( const Jstr &fullpath );
+		static void 	readTextFile(const Jstr &fname, Jstr &content );
+		static void 	writeTextFile(const Jstr &fname, const Jstr &content );
+		static void 	writeTextFile(const Jstr &fname, const char *content );
+		static int 		cleanDir( const Jstr &fullpath, time_t historySeconds );
+		static int 		cleanDirExclude( const Jstr &fullpath, const Jstr &exsuffix );
+		static abaxint 	numObjects( const Jstr &fullpath );
+		static Jstr 	listObjects( const Jstr &fullpath );
+		static Jstr     makeLocalLogDir( const Jstr &subdir="" );
+		static Jstr     getLocalLogDir( const Jstr &subdir="" );
 		static int 		getIOStat( uabaxint &reads, uabaxint & writes );
 		static    int   fallocate(int fd, abaxint offset, abaxint len);
-		static AbaxDataString getFileFamily( const AbaxDataString &fullpath, const AbaxDataString &objname, bool fnameOnly=false );
-		static    int   pathWritable( const AbaxDataString &fullpath );
+		static Jstr getFileFamily( const Jstr &fullpath, const Jstr &objname, bool fnameOnly=false );
+		static    int   pathWritable( const Jstr &fullpath );
 
 
 };
