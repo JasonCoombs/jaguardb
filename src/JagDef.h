@@ -19,7 +19,7 @@
 #ifndef _jag_def_h_
 #define _jag_def_h_
 
-#define JAG_VERSION			"2.9.7"
+#define JAG_VERSION			"2.9.8"
 #define JAG_BRAND			"jaguar"
 
 // File Defs
