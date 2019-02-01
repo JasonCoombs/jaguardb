@@ -3178,7 +3178,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 		ltmode = 1; // int
 		if (  _left && _left->_isElement ) {
 			// prt(("s0292 left->_srid=%d left->_name=%s left->_type=[%s]\n", _left->_srid, _left->_name.c_str(), _left->_type.c_str() ));
-			lstr = intToStr(JagGeo::getPolyDimension( _left->_type ) );
+			lstr = intToStr(JagGeo::getDimension( _left->_type ) );
 		} else {
 			lstr = "0";
 		}
@@ -3911,12 +3911,14 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		} else if ( op == JAG_FUNC_ADDPOINT ) {
 			// addpoint(lstr, point, [pos] )
 			// removepoint(lstr, pos )
+			//prt(("s2831 JAG_FUNC_ADDPOINT nargs=%d\n", nargs ));
 			if ( 2 == nargs ) {
 				carg1 = "-1";  // default -1, meaning add point at end . 1-based. 
 			} else {
 				t3 = operandStack.top();
 				if ( t3->getValue(p) ) { carg1 = p; } else throw 1319;
 				operandStack.pop();  // popped the third element
+				//prt(("s2383 JAG_FUNC_ADDPOINT popped p=[%s]\n", p ));
 			}
 		} else if ( op == JAG_FUNC_SETPOINT ) {
 			// setpoint(lstr, point, pos )
@@ -6742,7 +6744,7 @@ bool BinaryOpNode::doAllEndPoint( const Jstr& mk, const Jstr &colType, const Jag
 
 bool BinaryOpNode::doAllIsRing( const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, Jstr &value )
 {
-	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	//prt(("s3420 doAllIsRing() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
 	if ( JagParser::isVectorGeoType( colType ) ) {
 		value = "1";
 		return true;
@@ -6789,7 +6791,7 @@ bool BinaryOpNode::doAllIsPolygonCW( const Jstr& mk, const Jstr &colType, const 
 
 bool BinaryOpNode::doAllIsValid( const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, Jstr &value )
 {
-	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	//prt(("s3420 doAllIsValid() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
 	if ( JagParser::isVectorGeoType( colType ) ) {
 		value = "1";
 		return true;
@@ -6828,7 +6830,7 @@ bool BinaryOpNode::doAllIsValid( const Jstr& mk, const Jstr &colType, const JagS
 
 bool BinaryOpNode::doAllIsSimple( const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, Jstr &value )
 {
-	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	//prt(("s3420 doAllIsSimple() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
 	if ( JagParser::isVectorGeoType( colType ) ) {
 		value = "1";
 		return true;
@@ -6863,7 +6865,7 @@ bool BinaryOpNode::doAllIsSimple( const Jstr& mk, const Jstr &colType, const Jag
 
 bool BinaryOpNode::doAllIsConvex( const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, Jstr &value )
 {
-	//prt(("s3420 doAllIsClosed() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	//prt(("s3420 doAllIsConvex() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
 	if ( JagParser::isVectorGeoType( colType ) ) {
 		value = "1";
 		return true;
@@ -6906,28 +6908,36 @@ bool BinaryOpNode::doAllIsClosed( const Jstr& mk, const Jstr &colType, const Jag
 		return true;
 	}
 
-	if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D 
-	     ||  colType == JAG_C_COL_TYPE_MULTIPOINT || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-		// get first point, last point
-		Jstr first, last;
-    	JagStrSplit s( sp[1], ':' );
-    	if ( s.length() < 4 ) {
-    		first = sp[1]; 
-    	} else {
-    		first = JagGeo::safeGetStr(sp, 1);
-    	}
-		int len = sp.length();
-		last = sp[len-1];
-		if ( first == last ) {
+	Jstr first, last;
+   	first = sp[JAG_SP_START]; 
+	int len = sp.length();
+	last = sp[len-1];
+	double x1, y1, z1, x2, y2, z2;
+	const char *str; char *p;
+	if ( colType == JAG_C_COL_TYPE_LINESTRING ||  colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		str = first.c_str();
+		if ( strchrnum( str, ':') != 1 ) return true;
+		get2double(str, p, ':', x1, y1 );
+
+		str = last.c_str();
+		if ( strchrnum( str, ':') != 1 ) return true;
+		get2double(str, p, ':', x2, y2 );
+		if ( JagGeo::jagEQ(x1,x2) && JagGeo::jagEQ(y1,y2) ) {
 			value = "1";
-			return true;
-		} else {
-			value = "0";
-			return true;
+		}
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		str = first.c_str();
+		if ( strchrnum( str, ':') != 2 ) return true;
+		get3double(str, p, ':', x1, y1, z1 );
+
+		str = last.c_str();
+		if ( strchrnum( str, ':') != 2 ) return true;
+		get3double(str, p, ':', x2, y2, z2 );
+		if ( JagGeo::jagEQ(x1,x2) && JagGeo::jagEQ(y1,y2) && JagGeo::jagEQ(z1,z2) ) {
+			value = "1";
 		}
 	}
 
-	value = "0";
 	return true;
 }
 

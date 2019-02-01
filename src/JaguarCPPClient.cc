@@ -1348,7 +1348,7 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 			}
 		}
 
-		prt(("c1282 objAttr=%0x\n", objAttr ));
+		//prt(("c1282 objAttr=%0x\n", objAttr ));
 
 		bool hasFile = objAttr->hasFile, noQueryButReply = false;
 		JagVector<Jstr> *files = new JagVector<Jstr>();

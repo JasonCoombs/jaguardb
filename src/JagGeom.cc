@@ -15338,13 +15338,13 @@ bool JagGeo::doCircle3DDistance(const Jstr& mk1,  const JagStrSplit& sp1, const 
 
 double JagGeo::doSphereArea( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return r * r * 4.0 * JAG_PI;
 }
 
 double JagGeo::doSphereVolume( int srid1, const JagStrSplit& sp1 )
 {
-	double r = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double r = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	return r * r * r * 4.0 * JAG_PI/3.0;
 }
 
@@ -15354,7 +15354,7 @@ bool JagGeo::doSphereDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Js
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
 	double pz0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
-	double pr0 = jagatof( sp1[JAG_SP_START+2].c_str() ); 
+	double pr0 = jagatof( sp1[JAG_SP_START+3].c_str() ); 
 	if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
 		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
