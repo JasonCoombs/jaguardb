@@ -1,4 +1,40 @@
 
+JaguarDB 2.9.8 02/01/2019
+------------------------------------------------------------------
+added:
+
+ locatepoint(lstr,point) -- fraction where on linestring a point is closest to a given point
+ addpoint(lstr,point)    -- add a point to end of a linestring
+ addpoint(lstr,point,position)  -- add a point to the position of a linestring
+ setpoint(lstr,point,position)  -- change a point at position of a linestring
+ removepoint(lstr,position)     -- remove a point at position of a linestring
+ reverse(geom)                  -- reverse the order of points on a line, linestring, polygon, and multipolygon
+ scale(geom,factor)             -- scale the coordinates of geom by a factor
+ scale(geom,xfac,yfac)          -- scale the x-y coordinates of geom by factors
+ scale(geom,xfac,yfac,zfac)     -- scale the x-y-z coordinates of geom by factors
+ scaleat(geom,point,factor)     -- scale the coordinates of geom relative to a point by a factor
+ scaleat(geom,point,xfac,yfac)  -- scale the coordinates of geom relative to a point by a factor
+ scaleat(geom,point,xfac,yfac,zfac) -- scale the coordinates of geom relative to a point by a factor
+ scalesize(geom,factor)         -- scale the size of vector shapes by a factor
+ scalesize(geom,xfac,yfac)      -- scale the size of vector shapes by diffeent factors
+ scalesize(geom,xfac,yfac,zfac) -- scale the size of vector shapes by diffeent factors
+ translate(geom,dx,dy)          -- translate the location of 2D geom by dx,dy
+ translate(geom,dx,dy,dz)       -- translate the location of 3D geom by dx,dy,dz
+ transscale(geom,dx,dy,fac)     -- translate and then scale 2D geom
+ transscale(geom,dx,dy,xfac,yfac)  -- translate and then scale 2D geom with xfac, yfac factors
+ transscale(geom,dx,dy,dz,xfac,yfac,zfac)  -- translate and then scale 3D geom
+ rotate(geom,N)                 -- rotate 2D geom by N degrees counter-clock-wise with respect to point(0,0)
+ rotate(geom,N,'radian')        -- rotate 2D geom by N radians counter-clock-wise with respect to point(0,0)
+ rotate(geom,N,'degree')        -- rotate 2D geom by N degrees counter-clock-wise with respect to point(0,0)
+ rotateself(geom,N)             -- rotate 2D geom by N degrees counter-clock-wise with respect to self-center
+ rotateself(geom,N,'radian')    -- rotate 2D geom by N radians counter-clock-wise with respect to self-center
+ rotateself(geom,N,'degree')    -- rotate 2D geom by N degrees counter-clock-wise with respect to self-center
+ rotateat(geom,N,'radian',x,y)  -- rotate 2D geom by N radians counter-clock-wise with respect to point(x,y)
+ rotateat(geom,N,'degree',x,y)  -- rotate 2D geom by N degrees counter-clock-wise with respect to point(y,y)
+ affine(geom,a,b,d,e,dx,dy)     -- affine transformation on 2D geom
+ affine(geom,a,b,c,d,e,f,g,h,i,dx,dy,dz)  -- affine transformation on 3D geom
+
+
 JaguarDB 2.9.7 01/27/2019
 ------------------------------------------------------------------
 added:
