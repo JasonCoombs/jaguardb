@@ -2512,6 +2512,8 @@ int JagParser::setInsertVector()
 				if ( sp.length() >=6 ) { strcpy(other.point.nx, sp[5].c_str() ); }
 				if ( sp.length() >=7 ) { strcpy(other.point.ny, sp[6].c_str() ); }
 				q = _saveptr;
+				//prt(("s1051 other.point.x=[%s] other.point.y=[%s]\n", other.point.x, other.point.y ));
+				//prt(("s1051 other.point.z=[%s] other.point.z=[%s]\n", other.point.z, other.point.a ));
 			} else if (  strncasecmp( p, "box(", 4 )==0 || strncasecmp( p, "ellipsoid(", 10 )==0 ) {
 				// box( x y z width depth height nx ny ) 
 				if ( strncasecmp( p, "box", 3 )==0 ) {
@@ -2671,6 +2673,7 @@ int JagParser::setInsertVector()
 				q = _saveptr;
 				_ptrParam->hasPoly = true;
 				if ( 2 > _ptrParam->polyDim ) _ptrParam->polyDim = 2;
+				//prt(("s3990 polygon p=[%s]\n", p ));
 			} else if ( strncasecmp( p, "polygon3d(", 10 )==0 ) {
 				// polygon( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
 				//prt(("s3835 polygon3d( p=[%s] )\n", p ));
@@ -2684,7 +2687,7 @@ int JagParser::setInsertVector()
 				if ( 2 > _ptrParam->polyDim ) _ptrParam->polyDim = 2;
 			} else if ( strncasecmp( p, "multipolygon(", 13 )==0 ) {
 				// multipolygon( (( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...)), ( (..), (..) ) )
-				prt(("s3834 multipolygon( p=[%s]\n", p ));
+				//prt(("s3834 multipolygon( p=[%s]\n", p ));
 				while ( *p != '(' ) ++p;  // p: "(p ((...), (...), (...)), (...), ... )
 				rc = checkMultiPolygonData( p, true, false );
 				if ( rc < 0 ) return rc;
@@ -2850,7 +2853,7 @@ int JagParser::setInsertVector()
 			if ( other.valueData.size() < 1 ) {
 				other.valueData = p;
 			}
-			//prt(("s5347 other.valueData=[%s]\n", other.valueData.c_str() ));
+			prt(("s5347 other.valueData=[%s]\n", other.valueData.c_str() ));
 
 			other.hasQuote = hquote;
 
@@ -3600,22 +3603,22 @@ Jstr JagParser::fillDataType( const char* gettok )
 		rc = JAG_C_COL_TYPE_CIRCLE3D;
 	} else if (strcasecmp(gettok, "sphere") == 0) {
 		rc = JAG_C_COL_TYPE_SPHERE;
-	} else if (strcasecmp(gettok, "square") == 0) {
-		rc = JAG_C_COL_TYPE_SQUARE;
 	} else if (strcasecmp(gettok, "square3d") == 0) {
 		rc = JAG_C_COL_TYPE_SQUARE3D;
+	} else if (strcasecmp(gettok, "square") == 0) {
+		rc = JAG_C_COL_TYPE_SQUARE;
 	} else if (strcasecmp(gettok, "cube") == 0) {
 		rc = JAG_C_COL_TYPE_CUBE;
-	} else if (strcasecmp(gettok, "rectangle") == 0) {
-		rc = JAG_C_COL_TYPE_RECTANGLE;
 	} else if (strcasecmp(gettok, "rectangle3d") == 0) {
 		rc = JAG_C_COL_TYPE_RECTANGLE3D;
+	} else if (strcasecmp(gettok, "rectangle") == 0) {
+		rc = JAG_C_COL_TYPE_RECTANGLE;
 	} else if (strcasecmp(gettok, "box") == 0) {
 		rc = JAG_C_COL_TYPE_BOX;
-	} else if (strcasecmp(gettok, "triangle") == 0) {
-		rc = JAG_C_COL_TYPE_TRIANGLE;
 	} else if (strcasecmp(gettok, "triangle3d") == 0) {
 		rc = JAG_C_COL_TYPE_TRIANGLE3D;
+	} else if (strcasecmp(gettok, "triangle") == 0) {
+		rc = JAG_C_COL_TYPE_TRIANGLE;
 	} else if (strcasecmp(gettok, "cylinder") == 0) {
 		rc = JAG_C_COL_TYPE_CYLINDER;
 	} else if (strcasecmp(gettok, "cone") == 0) {

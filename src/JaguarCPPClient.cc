@@ -7154,6 +7154,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
+			//prt(("c5282 JAG_C_COL_TYPE_RECTANGLE colInOther=%d\n", colInOther ));
 			if ( colInOther ) {
 				newquery += get3DPlaneCoordStr( "rectangle", parseParam, otherPos, 1,1,0, 1,1,0, 1,0,0 );
 			} else {
@@ -7161,15 +7162,16 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
+			//prt(("c5283 JAG_C_COL_TYPE_RECTANGLE3D colInOther=%d\n", colInOther ));
 			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, otherPos, 1, 1, 1, 1,1,0, 1,1,1 );
+				newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, otherPos, 1, 1, 1, 1,1,0, 1,1,0 );
 			} else {
 				newquery += "''";
 			}
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
 			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, otherPos, 1,1,1, 1,1,0, 1,1,1 );
+				newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, otherPos, 1,1,1, 1,1,0, 1,1,0 );
 			} else {
 				newquery += "''";
 			}
@@ -7197,7 +7199,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSE ) {
 			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "ellipse", parseParam, otherPos, 1,1,0,  1,0,1, 1,0,0 );
+				newquery += get3DPlaneCoordStr( "ellipse", parseParam, otherPos, 1,1,0,  1,1,0, 1,0,0 );
 			} else {
 				newquery += "''";
 			}
@@ -7611,6 +7613,8 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			newquery += Jstr(",");
 		}
 
+		//prt(("c3408 i=%d ii=%d type=[%s]\n", i, ii, type.c_str() ));
+
 		if ( type == JAG_C_COL_TYPE_POINT ) {
 			newquery += getCoordStr( "point", parseParam, ii, 1, 1, 0, 0 );
 			lastIsGeo = true;
@@ -7644,23 +7648,24 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
-			newquery += get3DPlaneCoordStr( "rectangle", parseParam, ii, 1,1,0, 1,0,1, 1,0,0 );
+			newquery += get3DPlaneCoordStr( "rectangle", parseParam, ii, 1,1,0, 1,1,0, 1,0,0 );
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
-			newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, ii, 1, 1, 1, 1,0,1, 1,1,1 );
+			newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, ii, 1, 1, 1, 1,1,0, 1,1,0 );
+			//prt(("c3018 newquery=[%s]\n", newquery.s() ));
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
-			newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, ii, 1,1,1, 1,0,1, 1,1,1 );
+			newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, ii, 1,1,1, 1,1,0, 1,1,0 );
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_BOX ) {
-			newquery += get3DPlaneCoordStr( "box", parseParam, ii, 1, 1, 1, 1, 1, 1, 1,1,1 );
+			newquery += get3DPlaneCoordStr( "box", parseParam, ii, 1, 1, 1, 1, 1, 1, 1,1,0 );
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_CYLINDER ) {
-			newquery += get3DPlaneCoordStr( "cylinder", parseParam, ii, 1, 1, 1, 1, 0, 1, 1,1,1 );
+			newquery += get3DPlaneCoordStr( "cylinder", parseParam, ii, 1, 1, 1, 1, 0, 1, 1,1,0 );
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_CONE ) {
@@ -7668,7 +7673,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSE ) {
-			newquery += get3DPlaneCoordStr( "ellipse", parseParam, ii, 1,1,0,  1,0,1, 1,0,0 );
+			newquery += get3DPlaneCoordStr( "ellipse", parseParam, ii, 1,1,0,  1,1,0, 1,0,0 );
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSOID ) {
@@ -7676,14 +7681,14 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINE ) {
-			prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
+			//prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
 			newquery += getLineCoordStr( "line", parseParam, ii, 1, 1, 0, 1, 1, 0 );
-			prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
+			//prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
-			prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
+			//prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
 			newquery += getLineCoordStr( "line3d", parseParam, ii, 1, 1, 1, 1, 1, 1 );
-			prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
+			//prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
@@ -7719,9 +7724,10 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 			lastIsGeo = true;
 			continue;
 		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
+			//prt(("c4021 JAG_C_COL_TYPE_POLYGON ii=%d parseParam.otherVec[ii].valueData=[%s]\n", ii, parseParam.otherVec[ii].valueData.s() ));
 			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
 				newquery += Jstr("polygon(") + parseParam.otherVec[ii].valueData  + ")";
-				prt(("s2093 POLYGON valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
+				//prt(("s2093 POLYGON valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
 			} else {
 				newquery += Jstr("''");
 			}

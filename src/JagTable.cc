@@ -373,7 +373,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 				otherVec.append(  parseParam->otherVec[i] );
 				appendOther(  otherVec, JAG_TRIANGLE3D_DIM );  //x1y1z1 x2y2z2 x3y3z3
 				j += JAG_TRIANGLE3D_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D ) {
+			} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D || colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
 				otherVec.append(  parseParam->otherVec[i] );
 				appendOther(  otherVec, JAG_ELLIPSE3D_DIM );  // x y z a b nx ny
 				j += JAG_ELLIPSE3D_DIM;
@@ -749,6 +749,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 			dbcolumn = dbtab + "." + pointx;
 			rc = _tablemap->getValue(dbcolumn, getpos);
+			//prt(("s2838 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+			//prt(("s1028 otherAttr.point.x=[%s] otherAttr.point.y=[%s]\n", otherAttr.point.x, otherAttr.point.y ));
 			if ( rc ) {
 				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
 			 		pointx.c_str(), _schAttr[getpos].offset, 
@@ -756,6 +758,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 				dbcolumn = dbtab + "." + pointy;
 				rc = _tablemap->getValue(dbcolumn, getpos);
+				//prt(("s2830 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
 				if ( rc ) {
 					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
 			 			pointy.c_str(), _schAttr[getpos].offset, 
@@ -764,6 +767,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 				dbcolumn = dbtab + "." + pointz;
 				rc = _tablemap->getValue(dbcolumn, getpos);
+				//prt(("s2831 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
 				if ( rc ) {
 					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
 			 			pointz.c_str(), _schAttr[getpos].offset, 
@@ -773,6 +777,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 				dbcolumn = dbtab + "." + pointw;
 				rc = _tablemap->getValue(dbcolumn, getpos);
+				//prt(("s2832 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
 				if ( rc ) {
 					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
 			 			pointw.c_str(), _schAttr[getpos].offset, 
