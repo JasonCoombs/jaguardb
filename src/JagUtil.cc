@@ -374,16 +374,13 @@ void raydebug( FILE *outf, int level, const char *fmt, ... )
 {
     const char *p;
     va_list 	argp;
-    abaxint 		i;
+    abaxint 	i;
     char 		*s;
     char 		fmtbuf[256];
 	char        tstr[22];
 
 	if ( JAG_LOG_LEVEL < 1 ) JAG_LOG_LEVEL = 1;
-
 	if ( level > JAG_LOG_LEVEL ) {
-		// printf("raydebug level=%d  > JAG_LOG_LEVEL=%d  skip logging\n", level, JAG_LOG_LEVEL );
-		// fflush( stdout );
 		return;
 	}
 
@@ -397,7 +394,6 @@ void raydebug( FILE *outf, int level, const char *fmt, ... )
 	fprintf( outf, "%s %lld ", tstr, pthread_self() ); 
     
     va_start(argp, fmt);
-    
     for(p = fmt; *p != '\0'; p++) {
     	if(*p != '%') {
     		fputc(*p, outf);
@@ -3701,12 +3697,26 @@ char *secondTokenStart( const char *str, char sep )
 {
 	if ( NULL == str || *str == 0 ) return NULL;
 	char *p = (char*) str;
-	while ( *p == sep ) ++p;  // "  abc  cdef"  p is at a
+	while ( *p == sep ) ++p;  // "  abc  mdef"  p is at a
 	while ( *p != sep && *p != '\0' ) ++p; // p is at pos after c
 	if ( *p == '\0' ) return NULL;
-	while ( *p == sep ) ++p;  // p is at c
+	while ( *p == sep ) ++p;  // p is at m
 	return p;
 }
+
+char *secondTokenStartEnd( const char *str, char *&pend, char sep )
+{
+	if ( NULL == str || *str == 0 ) return NULL;
+	char *p = (char*) str;
+	while ( *p == sep ) ++p;  // "  abc  mdef"  p is at a
+	while ( *p != sep && *p != '\0' ) ++p; // p is at pos after c
+	if ( *p == '\0' ) return NULL;
+	while ( *p == sep ) ++p;  // p is at m
+	pend = p; 
+	while ( *pend != sep && *pend != '\0' ) ++pend;
+	return p;
+}
+
 
 //  xm, xh, xd, xw
 abaxint convertToSecond( const char *p )
@@ -3861,6 +3871,47 @@ void affine3d( double x1, double y1, double z1, double a, double b, double c, do
 	z = g*x1 + h*y1 + i*z1 + dz;
 }
 
+void ellipseBoundBox( double x0, double y0, double a, double b, double nx, 
+					  double &xmin, double &xmax, double &ymin, double &ymax )
+{
+	// nx is sin(phi) -- phi is angle of rotating shape clock-wise
+	// sqrt(1.0-nx*nx) is cos(phi)=ny
+	// x = x0+a*cos(t)*cos(phi) + b*sin(t)*sin(phi)  
+	// y = y0 + b*sin(t)*cos(phi) - a*cos(t)*sin(phi)
+	// 0 == dx/dt = -asin(t)*cos(phi) +bcos(t)sin(phi)  --> tan(t) = (b/a)*sin(phi)/cos(phi)=v
+	// t1 = atan(v)  t2=JAG_PI + t;
+	// x1 = .. y1 == use t1 
+	// x2 = .. y2 == use t2 
+	if ( nx > 1.0 ) nx = 1.0;
+	if ( nx < -1.0 ) nx = -1.0;
 
+	if ( JagGeo::jagEQ(nx, 0.0) ) {
+		xmin = x0-a;
+		xmax = x0+a;
+		ymin = y0-b;
+		ymax = y0+b;
+		return;
+	}
 
+	if ( JagGeo::jagEQ(fabs(nx), 1.0) ) {
+		xmin = x0-b;
+		xmax = x0+b;
+		ymin = y0-a;
+		ymax = y0+a;
+		return;
+	}
+
+	double ny = sqrt(1.0-nx*nx);
+	double v = (b/a)*(nx/ny);
+	double t1 = atan(v);
+	double t2 = t1 + JAG_PI;
+	double x1 = x0 + a*cos(t1)*ny + b*sin(t1)*nx;
+	double y1 = y0 + b*sin(t1)*ny - b*cos(t1)*nx;
+	double x2 = x0 + a*cos(t2)*ny + b*sin(t2)*nx;
+	double y2 = y0 + b*sin(t2)*ny - b*cos(t2)*nx;
+	xmin = jagmin(x1,x2);
+	xmax = jagmax(x1,x2);
+	ymin = jagmin(y1,y2);
+	ymax = jagmax(y1,y2);
+}
 

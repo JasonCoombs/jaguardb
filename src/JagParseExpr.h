@@ -58,7 +58,7 @@ class JagParser;
 class JagHashStrStr;
 class BinaryExpressionBuilder;
 
-class JagBox 
+class JagColumnBox 
 {
   public:
   	int col;
@@ -263,10 +263,10 @@ class BinaryOpNode: public ExprElementNode
 	bool doAllArea( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
 	bool doAllPerimeter( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
 	bool doAllVolume( const Jstr& mk1, const Jstr &colType1, int srid1, const JagStrSplit &sp1, double &val );
-	bool doAllMinMax( int op, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, double &val );
+	bool doAllMinMax( int op, int srid, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, double &val );
 	bool doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1, JagStrSplit &sp1, 
 					  const Jstr &carg, Jstr &val );
-	bool doAllBBox( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllBBox( int srid, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllStartPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllEndPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllConvexHull( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 

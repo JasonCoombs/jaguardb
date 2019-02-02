@@ -315,6 +315,7 @@ void prepareKMP(const char *pat, int M, int *lps);
 Jstr replaceChar( const Jstr& str, char oldc, char newc );
 void printStr( const Jstr &str );
 char *secondTokenStart( const char *str, char sep=' ' );
+char *secondTokenStartEnd( const char *str, char *&pend, char sep=' ' );
 abaxint convertToSecond( const char *str);
 abaxint convertToMicroSecond( const char *str);
 void rotateat( double oldx, double oldy, double alpha, double x0, double y0, double &x, double &y );
@@ -387,5 +388,22 @@ template <class T> T* newObjectArg( bool doPrint, ... )
 	return o;
 }
 
+#define bboxstr2D(srid, xmin, ymin, xmax, ymax) \
+	Jstr("OJAG=") + intToStr(srid) + "=0=RC=d " \
+    + d2s(xmin) + ":" + d2s(ymin) \
+	+ ":" + d2s(xmax) + ":" + d2s(ymax) \
+    + " " + d2s((xmax+xmin)/2.0) + " " + d2s((ymax+ymin)/2.0) \
+	+ " " + d2s((xmax-xmin)/2.0) + " " + d2s((ymax-ymin)/2.0) \
+
+#define bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax) \
+	Jstr("OJAG=") + intToStr(srid) + "=0=BX=d " \
+    + d2s(xmin) + ":" + d2s(ymin) + ":" + d2s(zmin) \
+	+ ":" + d2s(xmax) + ":" + d2s(ymax) + ":" + d2s(zmax) \
+    + " " + d2s((xmax+xmin)/2.0) + " " + d2s((ymax+ymin)/2.0) + " " + d2s((zmax+zmin)/2.0) \
+	+ " " + d2s((xmax-xmin)/2.0) + " " + d2s((ymax-ymin)/2.0) + " " +  d2s((zmax-zmin)/2.0)
+
+
+void ellipseBoundBox( double x0, double y0, double a, double b, double nx, 
+                   double &xmin, double &xmax, double &ymin, double &ymax );
 
 #endif

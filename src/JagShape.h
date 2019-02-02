@@ -12,7 +12,6 @@
 #define jagIsZero(a) (( fabs(a)<ZERO) ? 1 : 0)
 #define JAG_PI 3.141592653589793
 
-
 class JagPoint2D
 {
   public:
@@ -45,84 +44,6 @@ class JagPoint2D
 	 }
 
 };
-
-
-class JagSquare2D
-{
-  public:
-  	JagSquare2D(){ srid = 0; }
-  	JagSquare2D( double inx, double iny, double ina, double innx, int srid=0 );
-  	void init( double inx, double iny, double ina, double innx, int srid );
-  	JagSquare2D( const JagStrSplit &sp, int srid=0 );
-	double x0, y0, a, nx; 
-	int srid;
-	JagPoint2D point[4];  // counter-clockwise polygon points
-};
-
-class JagRectangle2D
-{
-  public:
-  	JagRectangle2D(){ srid=0;};
-  	JagRectangle2D( double inx, double iny, double ina, double inb, double innx, int srid=0 );
-  	JagRectangle2D( const JagStrSplit &sp, int srid=0 );
-  	void init( double inx, double iny, double ina, double inb, double innx, int srid );
-	static void setPoint( double x0, double y0, double a, double b, double nx, JagPoint2D point[] );
-	double x0, y0, a, b, nx; 
-	int srid;
-	JagPoint2D point[4];  // counter-clockwise polygon points
-};
-
-class JagCircle2D
-{
-  public:
-  	JagCircle2D(){ srid=0;};
-  	JagCircle2D( double inx, double iny, double inr, int srid=0 );
-  	void init( double inx, double iny, double inr, int srid );
-  	JagCircle2D( const JagStrSplit &sp, int srid=0 );
-	int srid;
-	double x0, y0, r;
-};
-
-class JagEllipse2D
-{
-  public:
-  	JagEllipse2D(){ srid = 0;};
-  	JagEllipse2D( double inx, double iny, double ina, double inb, double innx, int srid=0 );
-  	void init( double inx, double iny, double ina, double inb, double innx, int srid );
-  	JagEllipse2D( const JagStrSplit &sp, int srid=0 );
-	double x0, y0, a, b, nx; 
-	int srid;
-};
-
-class JagTriangle2D
-{
-  public:
-  	JagTriangle2D(){ srid=0;};
-  	JagTriangle2D( double inx1, double iny1, double inx2, double iny2, double inx3, double iny3, int srid=0 );
-  	void init( double inx1, double iny1, double inx2, double iny2, double inx3, double iny3, int srid );
-  	JagTriangle2D( const JagStrSplit &sp, int srid=0 );
-	double x1,y1, x2,y2, x3,y3;
-	int srid;
-};
-
-
-
-//////////// from old jaggeo.h ///////////
-class JagSortPoint2D
-{
-  public:
-     double x1, y1;
-     double x2, y2;
-	 unsigned char    end;
-	 unsigned char    color;
-	 bool operator < ( const JagSortPoint2D &o) const;
-	 bool operator <= ( const JagSortPoint2D &o) const;
-	 bool operator > ( const JagSortPoint2D &o) const;
-	 bool operator >= ( const JagSortPoint2D &o) const;
-	 void print() const { printf("x1=%.1f y1=%.1f x2=%.1f y2=%.1f ", x1, y1, x2, y2 ); }
-	 
-};
-
 
 class JagPoint3D
 {
@@ -159,6 +80,218 @@ class JagPoint3D
 	 	return ( fabs(x-p2.x) > 0.0000001 || fabs(y - p2.y) > 0.0000001 || fabs(z - p2.z ) > 0.0000001 );
 	 }
 };
+
+class JagBox2D
+{
+  public:
+     double xmin, ymin, xmax, ymax;
+};
+
+class JagBox3D
+{
+  public:
+     double xmin, ymin, zmin, xmax, ymax, zmax;
+};
+
+class JagSquare2D
+{
+  public:
+  	JagSquare2D(){ srid = 0; }
+  	JagSquare2D( double inx, double iny, double ina, double innx, int srid=0 );
+  	void init( double inx, double iny, double ina, double innx, int srid );
+  	JagSquare2D( const JagStrSplit &sp, int srid=0 );
+	double x0, y0, a, nx; 
+	int srid;
+	JagPoint2D point[4];  // counter-clockwise polygon points
+};
+
+class JagSquare3D
+{
+  public:
+  	JagSquare3D(){ srid = 0; }
+  	JagSquare3D( double inx, double iny, double inz, double ina, double innx, double inny, int srid=0 );
+  	void init( double inx, double iny, double inz, double ina, double innx, double inny, int srid );
+  	JagSquare3D( const JagStrSplit &sp, int srid=0 );
+	double x0, y0, z0, a, nx, ny; 
+	static void setPoint( double x0, double y0, double z0, double a, double b, double nx, double ny, JagPoint3D point[] );
+	int srid;
+	JagPoint3D point[4];  // counter-clockwise polygon points
+};
+
+class JagRectangle2D
+{
+  public:
+  	JagRectangle2D(){ srid=0;};
+  	JagRectangle2D( double inx, double iny, double ina, double inb, double innx, int srid=0 );
+  	JagRectangle2D( const JagStrSplit &sp, int srid=0 );
+  	void init( double inx, double iny, double ina, double inb, double innx, int srid );
+	static void setPoint( double x0, double y0, double a, double b, double nx, JagPoint2D point[] );
+	double x0, y0, a, b, nx; 
+	int srid;
+	JagPoint2D point[4];  // counter-clockwise polygon points
+};
+
+class JagRectangle3D
+{
+  public:
+  	JagRectangle3D(){ srid=0;};
+  	JagRectangle3D( double inx, double iny, double inz, 
+					double ina, double inb, double innx, double inny, int srid=0 );
+  	JagRectangle3D( const JagStrSplit &sp, int srid=0 );
+  	void init( double inx, double iny, double inz, double ina, double inb, double innx, double inny, int srid );
+	static void setPoint( double x0, double y0, double z0, double a, double b, double nx, double ny, 
+							JagPoint3D point[] );
+	void transform( double x0, double y0, double z0, double nx0, double ny0 );
+
+	double x0, y0, z0, a, b, nx, ny; 
+	int srid;
+	JagPoint3D point[4];  // counter-clockwise polygon points
+};
+
+class JagCircle2D
+{
+  public:
+  	JagCircle2D(){ srid=0;};
+  	JagCircle2D( double inx, double iny, double inr, int srid=0 );
+  	void init( double inx, double iny, double inr, int srid );
+  	JagCircle2D( const JagStrSplit &sp, int srid=0 );
+	int srid;
+	double x0, y0, r;
+};
+
+class JagCircle3D
+{
+  public:
+  	JagCircle3D(){ srid=0;};
+  	JagCircle3D( double inx, double iny, double inz, double inr, double nx, double ny, int srid=0 );
+  	void init( double inx, double iny, double inz, double inr, double nx, double ny, int srid );
+  	JagCircle3D( const JagStrSplit &sp, int srid=0 );
+	int srid;
+	double x0, y0, z0, r, nx, ny;
+};
+
+class JagEllipse2D
+{
+  public:
+  	JagEllipse2D(){ srid = 0;};
+  	JagEllipse2D( double inx, double iny, double ina, double inb, double innx, int srid=0 );
+  	void init( double inx, double iny, double ina, double inb, double innx, int srid );
+  	JagEllipse2D( const JagStrSplit &sp, int srid=0 );
+	void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
+	double x0, y0, a, b, nx; 
+	int srid;
+};
+
+class JagEllipse3D
+{
+  public:
+  	JagEllipse3D(){ srid = 0;};
+  	JagEllipse3D( double inx, double iny, double inz, double ina, double inb, double innx, double inny, int srid=0 );
+  	void init( double inx, double iny, double inz, double ina, double inb, double innx, double inny, int srid );
+  	JagEllipse3D( const JagStrSplit &sp, int srid=0 );
+	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	double x0, y0, z0, a, b, nx, ny; 
+	int srid;
+};
+
+class JagTriangle2D
+{
+  public:
+  	JagTriangle2D(){ srid=0;};
+  	JagTriangle2D( double inx1, double iny1, double inx2, double iny2, double inx3, double iny3, int srid=0 );
+  	void init( double inx1, double iny1, double inx2, double iny2, double inx3, double iny3, int srid );
+  	JagTriangle2D( const JagStrSplit &sp, int srid=0 );
+	double x1,y1, x2,y2, x3,y3;
+	int srid;
+};
+
+class JagTriangle3D
+{
+  public:
+  	JagTriangle3D(){ srid=0;};
+  	JagTriangle3D( double inx1, double iny1, double inz1, 
+					double inx2, double iny2, double inz2, 
+					double inx3, double iny3, double inz3, int srid=0 );
+  	void init( double inx1, double iny1, double inz1, double inx2, double iny2, double inz2, 
+			   double inx3, double iny3, double inz3, int srid );
+  	JagTriangle3D( const JagStrSplit &sp, int srid=0 );
+	void transform( double x0, double y0, double z0, double nx0, double ny0 );
+	double x1,y1,z1, x2,y2,z2, x3,y3,z3;
+	int srid;
+};
+
+class JagCube
+{
+  public:
+  	JagCube( const JagStrSplit &sp, int srid=0 );
+	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	JagPoint3D point[8];
+	double x0,y0,z0, a, nx, ny;
+	int srid;
+};
+
+class JagBox
+{
+  public:
+  	JagBox( const JagStrSplit &sp, int srid=0 );
+	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	JagPoint3D point[8];
+	double x0,y0,z0, a, b,c, nx, ny;
+	int srid;
+};
+
+class JagSphere
+{
+  public:
+  	JagSphere( const JagStrSplit &sp, int srid=0 );
+	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	double x0,y0,z0, r;
+	int srid;
+};
+
+class JagEllipsoid
+{
+  public:
+  	JagEllipsoid( const JagStrSplit &sp, int srid=0 );
+	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	double x0,y0,z0, a, b, c, nx, ny;
+	int srid;
+};
+
+class JagCylinder
+{
+  public:
+  	JagCylinder( const JagStrSplit &sp, int srid=0 );
+	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	double x0,y0,z0, a, c, nx, ny;
+	int srid;
+};
+
+class JagCone
+{
+  public:
+  	JagCone( const JagStrSplit &sp, int srid=0 );
+	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	double x0,y0,z0, a, c, nx, ny;
+	int srid;
+};
+
+class JagSortPoint2D
+{
+  public:
+     double x1, y1;
+     double x2, y2;
+	 unsigned char    end;
+	 unsigned char    color;
+	 bool operator < ( const JagSortPoint2D &o) const;
+	 bool operator <= ( const JagSortPoint2D &o) const;
+	 bool operator > ( const JagSortPoint2D &o) const;
+	 bool operator >= ( const JagSortPoint2D &o) const;
+	 void print() const { printf("x1=%.1f y1=%.1f x2=%.1f y2=%.1f ", x1, y1, x2, y2 ); }
+	 
+};
+
+
 
 class JagSortPoint3D
 {
@@ -351,6 +484,7 @@ class JagLineSeg3DPair
 };
 
 
+/***
 class JagRectangle3D
 {
   public:
@@ -365,6 +499,7 @@ class JagTriangle3D
   	double x1, y1, z1, x2,y2,z2, x3,y3,z3;
 	void transform( double x0, double y0, double z0, double nx0, double ny0 );
 };
+***/
 
 
 class JagPoint
@@ -477,7 +612,6 @@ class JagPolygon
 		void center3D( double &cx, double &cy, double &cz ) const;
 		bool bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
 		bool bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
-		JagVector<JagLineString3D> linestr;
 		void print() const { linestr.print(); }
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const;
@@ -511,33 +645,30 @@ class JagPolygon
 
 		JagPolygon( const JagSquare2D &sq );
 		JagPolygon( const JagRectangle2D &rect );
+		JagPolygon( const JagRectangle3D &rect );
 		JagPolygon( const JagCircle2D &cir, int samples = 100 );
+		JagPolygon( const JagCircle3D &cir, int samples = 100 );
 		JagPolygon( const JagEllipse2D &e, int samples = 100 );
+		//JagPolygon( const JagEllipse3D &e, int samples = 100 );
 		JagPolygon( const JagTriangle2D &t );
+		JagPolygon( const JagTriangle3D &t );
+		JagVector<JagLineString3D> linestr;
 		
 };
 
 
-class vector3 
+class jagvector3 
 {
   public:
   double _x, _y, _z;
-  vector3(double x, double y, double z = 1) throw()
-    : _x(x)
-    , _y(y)
-    , _z(z) {}
-
-  vector3 cross(const vector3& b) const throw() {
-    return vector3(_y * b._z - _z * b._y,
+  jagvector3(double x, double y, double z = 1):_x(x), _y(y),_z(z){}
+  jagvector3 cross(const jagvector3& b) const 
+  {
+    return jagvector3(_y * b._z - _z * b._y,
                    _z * b._x - _x * b._z,
                    _x * b._y - _y * b._x);
   }
-
-  void norm() throw() {
-    _x /= _z;
-    _y /= _z;
-    _z = 1;
-  }
+  void norm() { _x /= _z; _y /= _z; _z = 1; }
 };
 
 

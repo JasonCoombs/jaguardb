@@ -6223,6 +6223,15 @@ bool JagGeo::doPoint3DIntersect( int srid1, const JagStrSplit &sp1, const Jstr &
 		double nx = safeget(sp2, JAG_SP_START+5);
 		double ny = safeget(sp2, JAG_SP_START+6);
 		return point3DWithinCone( px0,py0,pz0, x, y, z, r, h, nx, ny, strict );
+	} else if ( colType2 == JAG_C_COL_TYPE_CYLINDER ) {
+		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
+		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
+		double z = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+		double r = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double h = jagatof( sp2[JAG_SP_START+4].c_str() );
+		double nx = safeget(sp2, JAG_SP_START+5);
+		double ny = safeget(sp2, JAG_SP_START+6);
+		return point3DWithinCylinder( px0,py0,pz0, x, y, z, r, h, nx, ny, strict );
 	}
 	return false;
 }
@@ -12279,7 +12288,7 @@ bool JagGeo::line3DIntersectNormalRectangle( const JagLine3D &line, double w, do
 
 bool JagGeo::line3DIntersectRectangle3D( const JagLine3D &line, const JagRectangle3D &rect )
 {
-	return line3DIntersectRectangle3D(line, rect.x, rect.y, rect.z, rect.w, rect.h, rect.nx, rect.ny );
+	return line3DIntersectRectangle3D(line, rect.x0, rect.y0, rect.z0, rect.a, rect.b, rect.nx, rect.ny );
 }
 
 // line has global coord
@@ -12529,76 +12538,38 @@ double JagGeo::distanceFromPoint3DToPlane(  double x, double y, double z,
 	return fabs( nx0*x + ny0*y + nz0*z - D);
 }
 
-void JagPoint2D::transform( double x0, double y0, double nx0 )
-{
-	JagGeo::transform2DCoordLocal2Global( x0,y0, x,y, nx0, x, y );
-}
-
-void JagPoint3D::transform( double x0, double y0, double z0, double nx0, double ny0 )
-{
-	JagGeo::transform3DCoordLocal2Global( x0,y0,z0, x,y,z, nx0, ny0, x, y, z );
-}
-
-void JagLine2D::transform( double x0, double y0, double nx0 )
-{
-	JagGeo::transform2DCoordLocal2Global( x0,y0, x1,y1, nx0, x1, y1 );
-	JagGeo::transform2DCoordLocal2Global( x0,y0, x2,y2, nx0, x2, y2 );
-}
-
-void JagLine3D::transform( double x0, double y0, double z0, double nx0, double ny0  )
-{
-	JagGeo::transform3DCoordLocal2Global( x0,y0,z0, x1,y1,z1, nx0,ny0, x1, y1, z1 );
-	JagGeo::transform3DCoordLocal2Global( x0,y0,z0, x2,y2,z2, nx0,ny0, x2,y2,z2 );
-}
-
-
-void JagRectangle3D::transform( double x0, double y0, double z0, double nx0, double ny0 )
-{
-	// xyx nx ny is self value
-	JagGeo::transform3DCoordLocal2Global( x0,y0,z0, x,y,z, nx0, ny0, x, y, z );
-	// transform3DDirection( double nx1, double ny1, double nx2, double ny2, double &nx, double &ny );
-	JagGeo::transform3DDirection( nx, ny, nx0, ny0, nx, ny );
-}
-
-void JagTriangle3D::transform( double x0, double y0, double z0, double nx0, double ny0 )
-{
-	JagGeo::transform3DCoordLocal2Global( x0,y0,z0, x1,y1,z1, nx0, ny0, x1, y1, z1 );
-	JagGeo::transform3DCoordLocal2Global( x0,y0,z0, x2,y2,z2, nx0, ny0, x2, y2, z2 );
-	JagGeo::transform3DCoordLocal2Global( x0,y0,z0, x3,y3,z3, nx0, ny0, x3, y3, z3 );
-}
-
 // local 6 six surfaces
 void JagGeo::surfacesOfBox(double w, double d, double h, JagRectangle3D rect[] )
 {
 	// top
-	rect[0].x = 0.0; rect[0].y = 0.0; rect[0].z = h;
+	rect[0].x0 = 0.0; rect[0].y0 = 0.0; rect[0].z0 = h;
 	rect[0].nx = 0.0; rect[0].ny = 0.0; 
-	rect[0].w = w; rect[0].h = d; 
+	rect[0].a = w; rect[0].b = d; 
 
 	// right
-	rect[1].x = w; rect[1].y = 0.0; rect[1].z = 0;
+	rect[1].x0 = w; rect[1].y0 = 0.0; rect[1].z0 = 0;
 	rect[1].nx = 1.0; rect[1].ny =0.0; 
-	rect[1].w = d; rect[0].h = h; 
+	rect[1].a = d; rect[0].b = h; 
 
 	// bottom
-	rect[2].x = 0; rect[2].y = 0.0; rect[2].z = -h;
+	rect[2].x0 = 0; rect[2].y0 = 0.0; rect[2].z0 = -h;
 	rect[2].nx = 0.0; rect[2].ny =0.0; 
-	rect[2].w = w; rect[2].h = d; 
+	rect[2].a = w; rect[2].b = d; 
 
 	// left
-	rect[3].x = -w; rect[3].y = 0.0; rect[3].z = 0.0;
+	rect[3].x0 = -w; rect[3].y0 = 0.0; rect[3].z0 = 0.0;
 	rect[3].nx = 1.0; rect[3].ny =0.0; 
-	rect[3].w = d; rect[3].h = h; 
+	rect[3].a = d; rect[3].b = h; 
 
 	// front
-	rect[4].x = 0.0; rect[4].y = -d; rect[4].z = 0.0;
+	rect[4].x0 = 0.0; rect[4].y0 = -d; rect[4].z0 = 0.0;
 	rect[4].nx = 0.0; rect[4].ny =1.0; 
-	rect[4].w = h; rect[4].h = w; 
+	rect[4].a = h; rect[4].b = w; 
 
 	// back
-	rect[5].x = 0.0; rect[5].y = d; rect[5].z = 0.0;
+	rect[5].x0 = 0.0; rect[5].y0 = d; rect[5].z0 = 0.0;
 	rect[5].nx = 0.0; rect[5].ny =1.0; 
-	rect[5].w = h; rect[5].h = w; 
+	rect[5].a = h; rect[5].b = w; 
 }
 
 // local 6 six surfaces
@@ -13797,130 +13768,6 @@ bool JagGeo::belowOrSame(double x, double y, double z, double x2, double y2, dou
 	return true;
 }
 
-
-////////////// JagLineSeg2D ///////////////
-bool JagLineSeg2D::operator>( const JagLineSeg2D &o) const
-{
-	if ( JagGeo::above(x1,y1, o.x1,o.y1,o.x2,o.y2) ) return true;
-	return false;
-}
-
-bool JagLineSeg2D::operator>=( const JagLineSeg2D &o) const
-{
-	if ( JagGeo::aboveOrSame(x1,y1, o.x1,o.y1,o.x2,o.y2) ) return true;
-	return false;
-}
-
-bool JagLineSeg2D::operator<( const JagLineSeg2D &o) const
-{
-	if ( JagGeo::below(x1,y1, o.x1,o.y1,o.x2,o.y2) ) return true;
-	return false;
-}
-
-bool JagLineSeg2D::operator<=( const JagLineSeg2D &o) const
-{
-	if ( JagGeo::belowOrSame(x1,y1, o.x1,o.y1,o.x2,o.y2) ) return true;
-	return false;
-}
-
-bool JagLineSeg2D::operator==( const JagLineSeg2D &o) const
-{
-	bool b1 =  isNull(); bool b2 =  o.isNull();
-	//prt(("s0284 JagLineSeg2D '==' b1=%d b2=%d\n", b1, b2 ));
-	if ( b1 && b2 ) return true;
-	if (  b1 || b2 ) return false;
-
-	//prt(("s0284 JagLineSeg2D '==' b1=%d b2=%d\n", b1, b2 ));
-	//prt(("s0284 x1=%.1f y1=%.1f o.x1=%.1f o.y1=%.1f o.x2=%.1f o.y2=%.1f\n", x1,y1, o.x1,o.y1,o.x2,o.y2 ));
-
-	if ( JagGeo::same(x1,y1, o.x1,o.y1,o.x2,o.y2) ) return true;
-	return false;
-}
-bool JagLineSeg2D::operator!=( const JagLineSeg2D &o) const
-{
-	bool b1 =  isNull(); bool b2 =  o.isNull();
-	//prt(("s0284 JagLineSeg2D '!=' b1=%d b2=%d\n", b1, b2 ));
-	if ( b1 && b2 ) return false;
-	if (  b1 || b2 ) return true;
-
-	//prt(("s1284 JagLineSeg2D '!=' b1=%d b2=%d\n", b1, b2 ));
-	//prt(("s1284 x1=%.1f y1=%.1f o.x1=%.1f o.y1=%.1f o.x2=%.1f o.y2=%.1f\n", x1,y1, o.x1,o.y1,o.x2,o.y2 ));
-
-	if ( JagGeo::same(x1,y1, o.x1,o.y1,o.x2,o.y2) ) return false;
-	return true;
-}
-
-abaxint JagLineSeg2D::hashCode() const
-{
-	return (x1+y1+x2+y2)*4129.293/7;
-}
-
-bool JagLineSeg2D::isNull() const 
-{
-	if ( JagGeo::jagEQ(x1, LONG_MIN) && JagGeo::jagEQ(x2, LONG_MIN) 
-		 && JagGeo::jagEQ(y1, LONG_MIN) && JagGeo::jagEQ(y2, LONG_MIN) ) {
-		return true;
-	}
-	return false;
-}
-
-////////////// JagLineSeg3D ///////////////
-bool JagLineSeg3D::operator>( const JagLineSeg3D &o) const
-{
-	if ( JagGeo::above(x1,y1,z1, o.x1,o.y1,o.z1,o.x2,o.y2,o.z2) ) return true;
-	return false;
-}
-
-bool JagLineSeg3D::operator>=( const JagLineSeg3D &o) const
-{
-	if ( JagGeo::aboveOrSame(x1,y1,z1, o.x1,o.y1,o.z1,o.x2,o.y2,o.z2) ) return true;
-	return false;
-}
-
-bool JagLineSeg3D::operator<( const JagLineSeg3D &o) const
-{
-	if ( JagGeo::below(x1,y1,z1, o.x1,o.y1,o.z1,o.x2,o.y2,o.z2) ) return true;
-	return false;
-}
-
-bool JagLineSeg3D::operator<=( const JagLineSeg3D &o) const
-{
-	if ( JagGeo::belowOrSame(x1,y1,z1, o.x1,o.y1,o.z1,o.x2,o.y2,o.z2) ) return true;
-	return false;
-}
-
-bool JagLineSeg3D::operator==( const JagLineSeg3D &o) const
-{
-	bool b1 =  isNull(); bool b2 =  o.isNull();
-	//prt(("s0284 JagLineSeg3D '==' b1=%d b2=%d\n", b1, b2 ));
-	if ( b1 && b2 ) return true;
-	if (  b1 || b2 ) return false;
-	if ( JagGeo::same(x1,y1,z1, o.x1,o.y1,o.z1,o.x2,o.y2,o.z2) ) return true;
-	return false;
-}
-bool JagLineSeg3D::operator!=( const JagLineSeg3D &o) const
-{
-	bool b1 =  isNull(); bool b2 =  o.isNull();
-	if ( b1 && b2 ) return false;
-	if (  b1 || b2 ) return true;
-	if ( JagGeo::same(x1,y1,z1, o.x1,o.y1,o.z1,o.x2,o.y2,o.z2) ) return false;
-	return true;
-}
-
-abaxint JagLineSeg3D::hashCode() const
-{
-	return (x1+y1+z1+x2+y2+z2)*49.293/7;
-}
-
-bool JagLineSeg3D::isNull() const 
-{
-	if ( JagGeo::jagEQ(x1, LONG_MIN) && JagGeo::jagEQ(x2, LONG_MIN) 
-		 && JagGeo::jagEQ(y1, LONG_MIN) && JagGeo::jagEQ(y2, LONG_MIN)
-		 && JagGeo::jagEQ(z1, LONG_MIN) && JagGeo::jagEQ(z2, LONG_MIN) ) {
-		return true;
-	}
-	return false;
-}
 
 ///////////////////////////////////////////////////////////////////
 bool JagGeo::isNull( double x, double y ) 
@@ -19986,11 +19833,12 @@ double JagGeo::pointToLineGeoDistance( double lata1, double lona1, double lata2,
 		gn.Forward(lat0, lon0, lata1, lona1, xa1, ya1);
 	    gn.Forward(lat0, lon0, lata2, lona2, xa2, ya2);
 	    gn.Forward(lat0, lon0, latb1, lonb1, xb1, yb1);
-	    vector3 va1(xa1, ya1); vector3 va2(xa2, ya2);
-	    vector3 la = va1.cross(va2);
-	    vector3 vb1(xb1, yb1);
-	    vector3 lb(la._y, -la._x, la._x * yb1 - la._y * xb1);
-	    vector3 p0 = la.cross(lb);
+	    jagvector3 va1(xa1, ya1); 
+		jagvector3 va2(xa2, ya2);
+	    jagvector3 la = va1.cross(va2);
+	    jagvector3 vb1(xb1, yb1);
+	    jagvector3 lb(la._y, -la._x, la._x * yb1 - la._y * xb1);
+	    jagvector3 p0 = la.cross(lb);
 	    p0.norm();
 	    gn.Reverse(lat0, lon0, p0._x, p0._y, lat1, lon1);
 	    lat0 = lat1;
@@ -20751,6 +20599,7 @@ bool JagGeo::getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, d
 }
 
 
+/********
 // convert vector 2D shapes to polygon
 JagPolygon::JagPolygon( const JagSquare2D &sq )
 {
@@ -20807,6 +20656,7 @@ JagPolygon::JagPolygon( const JagTriangle2D &t )
 	ls.add( t.x1, t.y1 ); 
 	linestr.append( ls );
 }
+*********/
 
 // return n>0: OK ,  <=0 error
 // instr: "point3d(...)"  "polygon((...),(...))"
@@ -21239,7 +21089,7 @@ double JagGeo::getGeoLength( const JagFixString &inlstr )
 	return 0.0;
 }
 
-Jstr JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing ) 
+Jstr JagGeo::bboxstr( const JagStrSplit &sp, bool skipInnerRings ) 
 {
 	prt(("s7330 JagGeo::bboxstr sp:\n" ));
 	//sp.print();
@@ -21257,7 +21107,7 @@ Jstr JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing )
 		if (  sp[i] == "!" ) { firstRing = true; continue; }
 		if (  sp[i] == "|" ) { firstRing = false; continue; }
 
-		if ( skipRing && ! firstRing ) { continue; }
+		if ( !firstRing && skipInnerRings ) { continue; }
 
 		cnum = strchrnum( sp[i].c_str(), ':');
 		if ( cnum < 1 ) continue;
@@ -21290,6 +21140,74 @@ Jstr JagGeo::bboxstr( const JagStrSplit &sp, bool skipRing )
 	prt(("s2239 is3D=%d res=[%s]\n", is3D, res.c_str() ));
 
 	return res;
+}
+
+void JagGeo::bbox2D( const JagStrSplit &sp, JagBox2D &bbox )
+{
+	double xmin, ymin, xmax, ymax ;
+	xmin = ymin = LONG_MAX;
+	xmax = ymax = LONG_MIN;
+	double dx, dy;
+	const char *str;
+	char *p;
+	int cnum;
+	bool firstRing = true;
+	for ( int i=0; i < sp.length(); ++i ) {
+		if (  sp[i] == "!" ) { firstRing = true; continue; }
+		if (  sp[i] == "|" ) { firstRing = false; continue; }
+
+		if ( !firstRing ) { continue; }
+
+		cnum = strchrnum( sp[i].c_str(), ':');
+		if ( cnum != 1 ) continue;
+		str = sp[i].c_str();
+		get2double(str, p, ':', dx, dy );
+		if ( dx < xmin ) xmin = dx;
+		if ( dx > xmax ) xmax = dx;
+		if ( dy < ymin ) ymin = dy;
+		if ( dy > ymax ) ymax = dy;
+	}
+
+	bbox.xmin = xmin;
+	bbox.ymin = ymin;
+	bbox.xmax = xmax;
+	bbox.ymax = ymax;
+}
+
+void JagGeo::bbox3D( const JagStrSplit &sp, JagBox3D &bbox )
+{
+	double xmin, ymin, zmin, xmax, ymax, zmax;
+	xmin = ymin = zmin = LONG_MAX;
+	xmax = ymax = zmax = LONG_MIN;
+	double dx, dy, dz;
+	const char *str;
+	char *p;
+	int cnum;
+	bool firstRing = true;
+	for ( int i=0; i < sp.length(); ++i ) {
+		if (  sp[i] == "!" ) { firstRing = true; continue; }
+		if (  sp[i] == "|" ) { firstRing = false; continue; }
+
+		if ( !firstRing ) { continue; }
+
+		cnum = strchrnum( sp[i].c_str(), ':');
+		if ( cnum != 2 ) continue;
+		str = sp[i].c_str();
+			get3double(str, p, ':', dx, dy, dz );
+			if ( dx < xmin ) xmin = dx;
+			if ( dx > xmax ) xmax = dx;
+			if ( dy < ymin ) ymin = dy;
+			if ( dy > ymax ) ymax = dy;
+			if ( dz < zmin ) zmin = dz;
+			if ( dz > zmax ) zmax = dz;
+	}
+
+	bbox.xmin = xmin;
+	bbox.ymin = ymin;
+	bbox.zmin = zmin;
+	bbox.xmax = xmax;
+	bbox.ymax = ymax;
+	bbox.zmax = zmax;
 }
 
 // of linestring/3d, multilinestring/3d

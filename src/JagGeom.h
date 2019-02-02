@@ -1561,7 +1561,9 @@ class JagGeo
 	static bool getBBox2DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 	static bool getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax );
 	static double getGeoLength( const JagFixString &lstr );
-	static Jstr bboxstr( const JagStrSplit &sp, bool skipRing );
+	static Jstr bboxstr( const JagStrSplit &sp, bool skipInnerRings );
+	static void bbox2D( const JagStrSplit &sp, JagBox2D &box );
+	static void bbox3D( const JagStrSplit &sp, JagBox3D &box );
 	static int convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr );
 	static int numberOfSegments( const JagStrSplit &sp );
 	static bool isPolygonCCW( const JagStrSplit &sp );

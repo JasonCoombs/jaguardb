@@ -613,7 +613,7 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	}
 
 	int BBUUIDLEN = 7;
-	JagBox bbox[BBUUIDLEN];  // bbox and uuid
+	JagColumnBox bbox[BBUUIDLEN];  // bbox and uuid
 	nm = db + "." + tab + ".geo:xmin";
 	if ( maps[_tabnum]->getValue( nm, acqpos) ) {
 		for ( int bi = 0; bi < BBUUIDLEN; ++bi ) {
@@ -5305,7 +5305,7 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const Jstr& mark1, const Jstr &colT
 		rc = doAllArea( mark1, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_XMIN || op == JAG_FUNC_YMIN || op == JAG_FUNC_ZMIN
 	            || op == JAG_FUNC_XMAX || op == JAG_FUNC_YMAX || op == JAG_FUNC_ZMAX ) {
-		rc = doAllMinMax( op, mark1, colType1, sp1, value );
+		rc = doAllMinMax( op, srid1, mark1, colType1, sp1, value );
 	} else if (  op == JAG_FUNC_VOLUME ) {
 		rc = doAllVolume( mark1, colType1, srid1, sp1, value );
 	} else if (  op == JAG_FUNC_PERIMETER ) {
@@ -5325,7 +5325,7 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 	if ( op == JAG_FUNC_POINTN ) {
 		rc = doAllPointN( mark1, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_BBOX ) {
-		rc = doAllBBox( mark1, colType1, sp1, value );
+		rc = doAllBBox( srid1, mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_STARTPOINT ) {
 		rc = doAllStartPoint( mark1, colType1, sp1, value );
 	} else if ( op == JAG_FUNC_ENDPOINT ) {
@@ -5857,7 +5857,8 @@ bool BinaryOpNode::doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1
 	return rc;
 }
 
-bool BinaryOpNode::doAllBBox( const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, Jstr &value )
+// return polygon in value
+bool BinaryOpNode::doAllBBox( int srid, const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, Jstr &value )
 {
 	//prt(("s3420 doAllBBox() colType=[%s] mk=[%s] sp1.print(): \n", colType.c_str(), mk.c_str()  ));
 	//sp.print();
@@ -5865,103 +5866,201 @@ bool BinaryOpNode::doAllBBox( const Jstr& mk, const Jstr &colType, const JagStrS
 	//prt(("s3539 sp1.length()=%d\n", sp1.length() ));
 	bool rc = false;
 	value = "";
-	if ( strchrnum( sp[JAG_SP_START+0].c_str(), ':' ) >= 4 ) {
-		value = sp[0];
-		value.replace(':', ' ' );
+	int nc = strchrnum( sp[1].c_str(), ':' );
+	if ( nc < 3 ) return false;
+	int dim = 2;
+	if ( nc >= 5 ) dim = 3;
+	double xmin,ymin,zmin,xmax,ymax,zmax;
+
+	if ( mk == JAG_OJAG && sp[1] != "0:0:0:0" && sp[1] != "0:0:0:0:0:0" ) {
+		Jstr bb = sp[1];
+		JagStrSplit ss(bb, ':');
+		if ( 2 == dim ) {
+			xmin = ss[0].tof();
+			ymin = ss[1].tof();
+			xmax = ss[2].tof();
+			ymax = ss[3].tof();
+			value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
+		} else if ( 3 == dim ) {
+			xmin = ss[0].tof();
+			ymin = ss[1].tof();
+			zmin = ss[2].tof();
+			xmax = ss[3].tof();
+			ymax = ss[4].tof();
+			zmax = ss[5].tof();
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else return false;
 		rc = true;
 	} else {
 		// CJAG
 		/**
 		i=0 [CJAG=0=0=LS=0]
-		     bbx
-		i=1 [0:0]
-		i=2 [2:3]
-		i=3 [4:5]
-		i=4 [9:3]
-		i=5 [33:22]
+		i=1 0:3:0:5
+		i=2 [0:0]
+		i=3 [2:3]
+		i=4 [4:5]
+		i=5 [9:3]
+		i=6 [33:22]
 		**/
-		Jstr bbox;
+		//Jstr bbox;
 		int rc2;
-		if ( colType == JAG_C_COL_TYPE_POLYGON ) {
-		    //prt(("s8383 sp.c_str()=[%s]\n", sp.c_str() ));
-			//char *sec = secondTokenStart( sp.c_str() );
-			//if ( ! sec ) return false;
+		if (  colType == JAG_C_COL_TYPE_POINT ) {
+			xmin = xmax = sp[JAG_SP_START+0].tof();
+			ymin = ymax = sp[JAG_SP_START+1].tof();
+			value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
+		} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
+			xmin = xmax = sp[JAG_SP_START+0].tof();
+			ymin = ymax = sp[JAG_SP_START+1].tof();
+			zmin = zmax = sp[JAG_SP_START+2].tof();
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_LINE ) {
+			xmin = sp[JAG_SP_START+0].tof();
+			ymin = sp[JAG_SP_START+1].tof();
+			xmax = sp[JAG_SP_START+2].tof();
+			ymax = sp[JAG_SP_START+3].tof();
+			xmin = jagmin(xmin, xmax);
+			xmax = jagmax(xmin, xmax);
+			ymin = jagmin(ymin, ymax);
+			ymax = jagmax(ymin, ymax);
+			value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
+		} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+			xmin = sp[JAG_SP_START+0].tof();
+			ymin = sp[JAG_SP_START+1].tof();
+			zmin = sp[JAG_SP_START+2].tof();
+			xmax = sp[JAG_SP_START+3].tof();
+			ymax = sp[JAG_SP_START+4].tof();
+			zmax = sp[JAG_SP_START+5].tof();
+			xmin = jagmin(xmin, xmax);
+			xmax = jagmax(xmin, xmax);
+			ymin = jagmin(ymin, ymax);
+			ymax = jagmax(ymin, ymax);
+			zmin = jagmin(zmin, zmax);
+			zmax = jagmax(zmin, zmax);
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+			JagTriangle2D s( sp, srid );
+			JagPolygon pgon( s );
+			if ( pgon.bbox2D( xmin, ymin, xmax, ymax ) ) {
+				value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
+			}
+		} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+			JagTriangle3D s( sp, srid );
+			JagPolygon pgon( s );
+			if ( pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax ) ) {
+				value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+			}
+		} else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+			JagSquare2D sq( sp, srid );
+			JagPolygon pgon( sq );
+			if ( pgon.bbox2D( xmin, ymin, xmax, ymax ) ) {
+				value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
+			}
+		} else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
+			JagRectangle3D sq( sp, srid );
+			JagPolygon pgon( sq );
+			if ( pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax ) ) {
+				value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+			}
+		} else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+			JagCircle2D sq( sp, srid );
+			JagPolygon pgon( sq );
+			if ( pgon.bbox2D( xmin, ymin, xmax, ymax ) ) {
+				value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
+			}
+		} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
+			JagCircle3D sq( sp, srid );
+			JagPolygon pgon( sq );
+			if ( pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax ) ) {
+				value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+			}
+		} else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+			JagEllipse2D e( sp, srid );
+			e.bbox2D( xmin, ymin, xmax, ymax );
+			value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
+		} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D ) {
+			JagEllipse3D e( sp, srid );
+			e.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_CUBE ) {
+			JagCube s( sp, srid );
+			s.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_BOX ) {
+			JagBox s( sp, srid );
+			s.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_SPHERE ) {
+			JagSphere s( sp, srid );
+			s.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_ELLIPSOID ) {
+			JagEllipsoid s( sp, srid );
+			s.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_CYLINDER ) {
+			JagCylinder s( sp, srid );
+			s.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_CONE ) {
+			JagCone s( sp, srid );
+			s.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
+		} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 			JagPolygon pgon;
-			// rc2 = JagParser::addPolygonData( pgon, sec, true, false );
 			rc2 = JagParser::addPolygonData( pgon, sp, true );
-			//rc = JagParser::addPolygon3DData( pgon, sec, false, false );
-			//rc1 = JagParser::addMultiPolygonData( pgvec, p1, false, false, false );
 			if ( rc2 <= 0 ) return false; 
-			double xmin,ymin,xmax,ymax;
 			pgon.bbox2D( xmin, ymin, xmax, ymax );
-			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(xmax) + " " + doubleToStr(ymax);
+			value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
 		} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
-			//char *sec = secondTokenStart( sp.c_str() );
-			//if ( ! sec ) return false;
 			JagPolygon pgon;
-			// rc2 = JagParser::addPolygon3DData( pgon, sec, true, false );
 			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
 			if ( rc2 <= 0 ) return false;
-			double xmin,ymin,zmin,xmax,ymax, zmax;
 			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
-			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(zmin) + " "
-			        + doubleToStr(xmax) + " " + doubleToStr(ymax) + " " + doubleToStr(zmax);
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
 		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
-			//char *sec = secondTokenStart( sp.c_str() );
-			//if ( ! sec ) return false;
 			JagPolygon pgon;
-			// rc2 = JagParser::addPolygonData( pgon, sec, true, false );
 			rc2 = JagParser::addPolygonData( pgon, sp, true );
 			if ( rc2 <= 0 ) return false;
-			double xmin,ymin,xmax,ymax;
 			pgon.bbox2D( xmin, ymin, xmax, ymax );
-			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(xmax) + " " + doubleToStr(ymax);
+			value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
 		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			//char *sec = secondTokenStart( sp.c_str() );
-			//if ( ! sec ) return false;
 			JagPolygon pgon;
-			// rc2 = JagParser::addPolygon3DData( pgon, sec, true, false );
 			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
 			if ( rc2 <= 0 ) return false;
-			double xmin,ymin,zmin,xmax,ymax, zmax;
 			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
-			value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(zmin) + " "
-			        + doubleToStr(xmax) + " " + doubleToStr(ymax) + " " + doubleToStr(zmax);
+			value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
 		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			//char *sec = secondTokenStart( sp.c_str() );
-			//if ( ! sec ) return false;
 			JagVector<JagPolygon> pgvec;
-			// rc2 = JagParser::addMultiPolygonData( pgvec, sec, true, false, false );
 			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, false );
 			if ( rc2 <= 0 ) return false;
-			double xmin,ymin,xmax,ymax;
 			bool rb = JagGeo::getBBox2D( pgvec, xmin,ymin,xmax,ymax );
 			if ( rb ) {
-				value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(xmax) + " " + doubleToStr(ymax);
+				value = bboxstr2D(srid, xmin, ymin, xmax, ymax);
 			} else {
 				return false;
 			}
 		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			//char *sec = secondTokenStart( sp.c_str() );
-			//if ( ! sec ) return false;
 			JagVector<JagPolygon> pgvec;
-			// rc2 = JagParser::addMultiPolygonData( pgvec, sec, true, false, true );
 			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, true );
 			if ( rc2 <= 0 ) return false;
-			double xmin,ymin,zmin,xmax,ymax,zmax;
 			bool rb = JagGeo::getBBox3D( pgvec, xmin,ymin,zmin, xmax,ymax,zmax );
 			if ( rb ) {
-				value = doubleToStr(xmin) + " " + doubleToStr(ymin) + " " + doubleToStr(zmin) + " "
-			            + doubleToStr(xmax) + " " + doubleToStr(ymax) + " " + doubleToStr(zmax);
+				value = bboxstr3D(srid, xmin, ymin, zmin, xmax, ymax, zmax );
 			} else {
 				return false;
 			}
 		} else {
-			value = JagGeo::bboxstr( sp, false );
+			if ( 2 == dim ) {
+				JagBox2D box;
+				JagGeo::bbox2D( sp, box );
+				value = bboxstr2D(srid, box.xmin, box.ymin, box.xmax, box.ymax);
+			} else {
+				JagBox3D box;
+				JagGeo::bbox3D( sp, box );
+				value = bboxstr3D(srid, box.xmin, box.ymin, box.zmin, box.xmax, box.ymax, box.zmax );
+			}
 		}
 		rc = true;
-
-		// static bool getBBox2D( const JagVector<JagPolygon> &pgvec, double &xmin, double &ymin, double &xmax, double &ymax );
 	}
 
 	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
@@ -5972,7 +6071,7 @@ bool BinaryOpNode::doAllBBox( const Jstr& mk, const Jstr &colType, const JagStrS
 
 bool BinaryOpNode::doAllStartPoint( const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, Jstr &value )
 {
-	//prt(("s3420 doAllBBox() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
+	//prt(("s3420 doAllStartPoint() colType1=[%s] carg=[%s] sp1.print(): \n", colType1.c_str(), carg.c_str() ));
 	value = "";
 	if ( JagParser::isVectorGeoType( colType ) 
 	     && colType != JAG_C_COL_TYPE_TRIANGLE 
@@ -7326,154 +7425,81 @@ bool BinaryOpNode::doAllPerimeter( const Jstr& mk1, const Jstr &colType1, int sr
 	return false;
 }
 
-bool BinaryOpNode::doAllMinMax( int op, const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, double &value )
+
+bool BinaryOpNode::doAllMinMax( int op, int srid, const Jstr& mk, const Jstr &colType, const JagStrSplit &sp, double &value )
 {
 	prt(("s2815 colType=[%s] sp.print(): \n", colType.c_str() ));
 	//sp.print();
 
 	// prt(("s2411 colType1=[%s] not handled, false\n", colType1.c_str() ));
 	value = 0.0;
-	bool rc = false;
-	if ( JagParser::isVectorGeoType( colType ) ) {
-		// todo for vector shapes, you can get min max coordinates by calculation
-		return rc;
-	}
-
-	if ( mk == JAG_OJAG ) {
-    	int len;
-    	for ( int i=0; i < sp.length(); ++i ) {
-    		JagStrSplit ss(sp[i], ':');
-    		len = ss.length();
-    		if ( len < 4 ) continue;
-    		if ( len == 4 ) {
-    			// xmin:ymin:xmax:ymax
-    			if (  op == JAG_FUNC_XMIN ) {
-    				value = jagatof( ss[0].c_str() );
-    			} else if ( op == JAG_FUNC_YMIN ) {
-    				value = jagatof( ss[1].c_str() );
-    			} else if ( op == JAG_FUNC_XMAX ) {
-    				value = jagatof( ss[2].c_str() );
-    			} else if ( op == JAG_FUNC_YMAX ) {
-    				value = jagatof( ss[3].c_str() );
-    			} 
-    		} else if ( len == 6 ) {
-    			if (  op == JAG_FUNC_XMIN ) {
-    				value = jagatof( ss[0].c_str() );
-    			} else if ( op == JAG_FUNC_YMIN ) {
-    				value = jagatof( ss[1].c_str() );
-    			} else if ( op == JAG_FUNC_ZMIN ) {
-    				value = jagatof( ss[2].c_str() );
-    			} else if ( op == JAG_FUNC_XMAX ) {
-    				value = jagatof( ss[3].c_str() );
-    			} else if ( op == JAG_FUNC_YMAX ) {
-    				value = jagatof( ss[4].c_str() );
-    			} else if ( op == JAG_FUNC_ZMAX ) {
-    				value = jagatof( ss[5].c_str() );
-    			} 
-    		}
-    		rc = true;
-    		break;
-    	}
-    	return rc;
+	Jstr val;
+	doAllBBox( srid, mk, colType, sp, val );
+	if ( val.size() < 1 ) return false;
+	char *pend;
+	char *pstart = secondTokenStartEnd( val.c_str(), pend, ' ');
+	if ( ! pstart ) return false;
+	Jstr bbstr(pstart, pend-pstart);
+	//prt(("s9303 val=[%s] bbstr=[%s] op=%d\n", val.s(), bbstr.c_str(), op ));
+	JagStrSplit ss(bbstr, ':');
+	int nc = ss.size();
+	//prt(("s2929 nc=%d\n", nc ));
+	double xmin, ymin, zmin, xmax, ymax, zmax;
+	bool is3D = false;
+	if ( 4 == nc ) {
+		// 2D
+		xmin = ss[0].tof();
+		ymin = ss[1].tof();
+		xmax = ss[2].tof();
+		ymax = ss[3].tof();
+	} else if ( 6 == nc ) {
+		// 3D
+		is3D = true;
+		xmin = ss[0].tof();
+		ymin = ss[1].tof();
+		zmin = ss[2].tof();
+		xmax = ss[3].tof();
+		ymax = ss[4].tof();
+		zmax = ss[5].tof();
 	} else {
-		// CJAG
-		/**
-		i=0 [CJAG=0=0=LS=0]
-		i=1 [0:0]
-		i=2 [2:3]
-		i=3 [4:5]
-		i=4 [9:3]
-		i=5 [33:22]
-		**/
-		Jstr bbox;
-		double xmin,ymin,xmax,ymax,zmin,zmax;
-		int rc2;
-		bool is3D = false;
-		if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
-			JagLineString lstr;
-			JagParser::addLineStringData( lstr, sp );
-			lstr.bbox2D( xmin, ymin, xmax, ymax );
-		} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
-			JagLineString3D lstr;
-			JagParser::addLineString3DData( lstr, sp );
-			lstr.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
-			is3D = true;
-		} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
-			JagPolygon pgon;
-			rc2 = JagParser::addPolygonData( pgon, sp, true );
-			if ( rc2 <= 0 ) return false; 
-			pgon.bbox2D( xmin, ymin, xmax, ymax );
-		} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
-			JagPolygon pgon;
-			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
-			if ( rc2 <= 0 ) return false;
-			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
-			is3D = true;
-		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
-			JagPolygon pgon;
-			rc2 = JagParser::addPolygonData( pgon, sp, true );
-			if ( rc2 <= 0 ) return false;
-			pgon.bbox2D( xmin, ymin, xmax, ymax );
-		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			JagPolygon pgon;
-			rc2 = JagParser::addPolygon3DData( pgon, sp, true );
-			if ( rc2 <= 0 ) return false;
-			pgon.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
-			is3D = true;
-		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			JagVector<JagPolygon> pgvec;
-			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, false );
-			if ( rc2 <= 0 ) return false;
-			bool rb = JagGeo::getBBox2D( pgvec, xmin,ymin,xmax,ymax );
-			if ( ! rb ) { return false; }
-		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			JagVector<JagPolygon> pgvec;
-			rc2 = JagParser::addMultiPolygonData( pgvec, sp, true, true );
-			if ( rc2 <= 0 ) return false;
-			is3D = true;
-			bool rb = JagGeo::getBBox3D( pgvec, xmin,ymin,zmin, xmax,ymax,zmax );
-			if ( ! rb ) { return false; }
-		} else {
-			return false;
-		}
-
-    	if ( ! is3D ) {
-    			// xmin:ymin:xmax:ymax
-    			if (  op == JAG_FUNC_XMIN ) {
-    				value = xmin;
-    			} else if ( op == JAG_FUNC_YMIN ) {
-    				value = ymin;
-    			} else if ( op == JAG_FUNC_XMAX ) {
-    				value = xmax;
-    			} else if ( op == JAG_FUNC_YMAX ) {
-    				value = ymax;
-    			} 
-   		} else {
-    			if (  op == JAG_FUNC_XMIN ) {
-    				value = xmin;
-    			} else if ( op == JAG_FUNC_YMIN ) {
-    				value = ymin;
-    			} else if ( op == JAG_FUNC_ZMIN ) {
-    				value = zmin;
-    			} else if ( op == JAG_FUNC_XMAX ) {
-    				value = xmax;
-    			} else if ( op == JAG_FUNC_YMAX ) {
-    				value = ymax;
-    			} else if ( op == JAG_FUNC_ZMAX ) {
-    				value = zmax;
-    			} 
-   		}
-
-		rc = true;
-		return rc;
+		return false;
 	}
+
+   	if ( ! is3D ) {
+    			// xmin:ymin:xmax:ymax
+    	if (  op == JAG_FUNC_XMIN ) {
+    		value = xmin;
+    	} else if ( op == JAG_FUNC_YMIN ) {
+    		value = ymin;
+    	} else if ( op == JAG_FUNC_XMAX ) {
+    		value = xmax;
+    	} else if ( op == JAG_FUNC_YMAX ) {
+    		value = ymax;
+    	} 
+   	} else {
+    	if (  op == JAG_FUNC_XMIN ) {
+    		value = xmin;
+    	} else if ( op == JAG_FUNC_YMIN ) {
+    		value = ymin;
+    	} else if ( op == JAG_FUNC_ZMIN ) {
+    		value = zmin;
+    	} else if ( op == JAG_FUNC_XMAX ) {
+    		value = xmax;
+    	} else if ( op == JAG_FUNC_YMAX ) {
+    		value = ymax;
+    	} else if ( op == JAG_FUNC_ZMAX ) {
+    		value = zmax;
+    	} 
+   	}
+
+	return true;
 }
 
 Jstr BinaryOpNode::doAllUnion( const Jstr& mark1, const Jstr &colType1, 
 										int srid1, const JagStrSplit &sp1, const Jstr& mark2, 
 										const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
-	prt(("s2410 doAllUnion colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	//prt(("s2410 doAllUnion colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return JagGeo::doPointAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
