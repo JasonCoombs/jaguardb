@@ -35,6 +35,7 @@ class JagVector
 		void init( int sz );
 		void destroy();
 		void clean();
+		void clear();
 		~JagVector();
 		inline bool append( const Pair &newpair, abaxint sz=0 ) { abaxint idx; return append(newpair, &idx, sz); }
 		inline const Pair & operator[] ( abaxint i ) const { return _arr[i]; }
@@ -189,6 +190,12 @@ JagVector<Pair>& JagVector<Pair>::operator=( const JagVector<Pair>& other )
 
 template <class Pair> 
 void JagVector<Pair>::clean( )
+{
+	destroy();
+	init(4);
+}
+template <class Pair> 
+void JagVector<Pair>::clear( )
 {
 	destroy();
 	init(4);

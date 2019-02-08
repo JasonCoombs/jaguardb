@@ -1110,6 +1110,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_AFFINE ) str = "affine";
 	else if ( binaryOp == JAG_FUNC_VORONOIPOLYGONS ) str = "voronoipolygons";
 	else if ( binaryOp == JAG_FUNC_VORONOILINES ) str = "voronoilines";
+	else if ( binaryOp == JAG_FUNC_DELAUNAYTRIANGLES ) str = "delaunaytriangles";
 	return str;
 }
 
@@ -1160,7 +1161,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		 || _binaryOp == JAG_FUNC_SCALE || _binaryOp == JAG_FUNC_SCALEAT || _binaryOp == JAG_FUNC_SCALESIZE
 		 || _binaryOp == JAG_FUNC_TRANSSCALE || _binaryOp == JAG_FUNC_ROTATE || _binaryOp == JAG_FUNC_ROTATEAT
 		 || _binaryOp == JAG_FUNC_ROTATESELF || _binaryOp == JAG_FUNC_AFFINE || _binaryOp == JAG_FUNC_VORONOIPOLYGONS
-		 || _binaryOp == JAG_FUNC_VORONOILINES
+		 || _binaryOp == JAG_FUNC_VORONOILINES || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
 		 || _binaryOp == JAG_FUNC_ASTEXT ||  _binaryOp == JAG_FUNC_DIFFERENCE || _binaryOp == JAG_FUNC_SYMDIFFERENCE
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
@@ -3153,7 +3154,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 				 || _binaryOp == JAG_FUNC_SCALE ||  _binaryOp == JAG_FUNC_SCALESIZE
 				 || _binaryOp == JAG_FUNC_TRANSLATE || _binaryOp == JAG_FUNC_TRANSSCALE
 				 || _binaryOp == JAG_FUNC_ROTATE || _binaryOp == JAG_FUNC_ROTATEAT || _binaryOp == JAG_FUNC_ROTATESELF
-				 || _binaryOp == JAG_FUNC_AFFINE 
+				 || _binaryOp == JAG_FUNC_AFFINE  || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		//ltmode = 0; // string
 		ltmode = getTypeMode( _binaryOp );
@@ -3223,7 +3224,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 		}
 	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT ||  _binaryOp == JAG_FUNC_SYMDIFFERENCE
 				 || _binaryOp == JAG_FUNC_CLOSESTPOINT ||  _binaryOp == JAG_FUNC_ANGLE
-				 || _binaryOp == JAG_FUNC_SCALEAT
+				 || _binaryOp == JAG_FUNC_SCALEAT 
 				 || _binaryOp == JAG_FUNC_LOCATEPOINT || _binaryOp == JAG_FUNC_ADDPOINT || _binaryOp == JAG_FUNC_SETPOINT
 				 || _binaryOp == JAG_FUNC_VORONOIPOLYGONS || _binaryOp == JAG_FUNC_VORONOILINES
 	             || _binaryOp == JAG_FUNC_INTERSECTION || _binaryOp == JAG_FUNC_DIFFERENCE ) {
@@ -4396,6 +4397,13 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     			carg1 = Jstr(p) + ":" + carg1;  
     			operandStack.pop(); 
 			}
+		}  else if ( op == JAG_FUNC_DELAUNAYTRIANGLES ) {
+			int nargs = operandStackTopSize();
+			if (  2 == nargs ) {
+				t3 = operandStack.top();
+				if ( t3->getValue(p) ) { carg1 = p; } else throw 1332;
+				operandStack.pop();  // popped the third element
+			} 
 		}
 
 		// left child
@@ -4538,7 +4546,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_TOMICROSECOND || fop == JAG_FUNC_LINELENGTH || fop == JAG_FUNC_INTERPOLATE || 
 		fop == JAG_FUNC_LINESUBSTRING || fop == JAG_FUNC_REVERSE || fop == JAG_FUNC_TRANSLATE ||
 		fop == JAG_FUNC_TRANSSCALE || fop == JAG_FUNC_AFFINE || fop == JAG_FUNC_VORONOIPOLYGONS ||
-		fop == JAG_FUNC_VORONOILINES ||
+		fop == JAG_FUNC_VORONOILINES || fop == JAG_FUNC_DELAUNAYTRIANGLES ||
 		fop == JAG_FUNC_ROTATE || fop == JAG_FUNC_ROTATESELF || fop == JAG_FUNC_ROTATEAT ||
 		fop == JAG_FUNC_LOCATEPOINT || fop == JAG_FUNC_ADDPOINT || fop == JAG_FUNC_SETPOINT || 
 		fop == JAG_FUNC_REMOVEPOINT || fop == JAG_FUNC_SCALE || fop == JAG_FUNC_SCALEAT ||
@@ -4892,6 +4900,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_VORONOIPOLYGONS; len = 15; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "voronoilines", 12 ) ) {
 		fop = JAG_FUNC_VORONOILINES; len = 12; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "delaunaytriangles", 17 ) ) {
+		fop = JAG_FUNC_DELAUNAYTRIANGLES; len = 17; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -5497,6 +5507,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllRotateSelf( srid1, colType1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_AFFINE ) {
 		rc = doAllAffine( srid1, colType1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_DELAUNAYTRIANGLES ) {
+		rc = doAllDelaunayTriangles( srid1, colType1, sp1, carg, value );
 	} else {
 	}
 	//prt(("s2337 rc=%d\n", rc ));
@@ -9215,6 +9227,26 @@ bool BinaryOpNode::doAllAffine( int srid, const Jstr &colType1, const JagStrSpli
 	return true;
 }
 
+bool BinaryOpNode::doAllDelaunayTriangles( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val )
+{
+	prt(("s1727 doAllDelaunayTriangles sp1.size()=%d carg=[%s]\n", sp1.size(), carg.c_str() ));
+	if ( sp1.size() < 1 ) return false;
+	double tolerance = carg.tof();
+
+	if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT  ) {
+		val = "CJAG=" + intToStr(srid) + "=0=MG=d 0:0:0:0";
+		Jstr mpg;
+		JagCGAL::getDelaunayTriangles2D( srid, sp1, tolerance, mpg );
+		val += mpg;
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D  ) {
+		val = "CJAG=" + intToStr(srid) + "=0=MG3=d 0:0:0:0:0:0";
+	} else {
+		return false;
+	}
+
+	return true;
+}
+
 Jstr BinaryOpNode::doAllVoronoiPolygons( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
 										 const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg )
 {
@@ -9248,13 +9280,13 @@ Jstr BinaryOpNode::doAllVoronoiPolygons( int srid, const Jstr &colType1, const J
 	if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT  ) {
 		val = "CJAG=" + intToStr(srid) + "=0=MG=d 0:0:0:0";
 		Jstr vor;
-		//prt(("s1023 getVeronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f\n", xmin, ymin, xmax, ymax ));
-		JagCGAL::getVeronoiPolygons2D( srid, sp1, tolerance, xmin, ymin, xmax, ymax, JAG_C_COL_TYPE_MULTIPOLYGON, vor );
+		//prt(("s1023 getVoronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f\n", xmin, ymin, xmax, ymax ));
+		JagCGAL::getVoronoiPolygons2D( srid, sp1, tolerance, xmin, ymin, xmax, ymax, JAG_C_COL_TYPE_MULTIPOLYGON, vor );
 		val += vor;
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D  ) {
 		val = "CJAG=" + intToStr(srid) + "=0=MG3=d 0:0:0:0:0:0";
 		Jstr vor;
-		//val += JagCGAL::getVeronoiMultiPolygons3D( sp1, tolerance, xmin, ymin,zmin, xmax, ymax, zmax, vor );
+		//val += JagCGAL::getVoronoiMultiPolygons3D( sp1, tolerance, xmin, ymin,zmin, xmax, ymax, zmax, vor );
 		val += vor;
 	} else {
 		return "";
@@ -9296,13 +9328,13 @@ Jstr BinaryOpNode::doAllVoronoiLines( int srid, const Jstr &colType1, const JagS
 	if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT  ) {
 		val = "CJAG=" + intToStr(srid) + "=0=ML=d 0:0:0:0";
 		Jstr vor;
-		//prt(("s1023 getVeronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f\n", xmin, ymin, xmax, ymax ));
-		JagCGAL::getVeronoiPolygons2D( srid, sp1, tolerance, xmin, ymin, xmax, ymax, JAG_C_COL_TYPE_MULTILINESTRING, vor );
+		//prt(("s1023 getVoronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f\n", xmin, ymin, xmax, ymax ));
+		JagCGAL::getVoronoiPolygons2D( srid, sp1, tolerance, xmin, ymin, xmax, ymax, JAG_C_COL_TYPE_MULTILINESTRING, vor );
 		val += vor;
 	} else if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT3D  ) {
 		val = "CJAG=" + intToStr(srid) + "=0=ML3=d 0:0:0:0:0:0";
 		Jstr vor;
-		//val += JagCGAL::getVeronoiMultiPolygons3D( sp1, tolerance, xmin, ymin,zmin, xmax, ymax, zmax, vor );
+		//val += JagCGAL::getVoronoiMultiPolygons3D( sp1, tolerance, xmin, ymin,zmin, xmax, ymax, zmax, vor );
 		val += vor;
 	} else {
 		return "";

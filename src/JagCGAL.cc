@@ -1213,10 +1213,10 @@ bool JagCGAL::convertPolygonJ2B( const JagPolygon &pgon, BoostPolygon2D &bgon )
 }
 
 
-void JagCGAL::getVeronoiPolygons2D( int srid, const JagStrSplit &sp, double tolerance,
+void JagCGAL::getVoronoiPolygons2D( int srid, const JagStrSplit &sp, double tolerance,
 	                                double xmin, double ymin, double xmax, double ymax, const Jstr &retType, Jstr &vor )
 {
-	prt(("s1028 getVeronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f tolerance=%f\n", xmin, ymin, xmax, ymax, tolerance ));
+	prt(("s1028 getVoronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f tolerance=%f\n", xmin, ymin, xmax, ymax, tolerance ));
 	if ( jagLE(tolerance, JAG_ZERO ) ) {
 		tolerance = 1.0;
 	}
@@ -1546,5 +1546,83 @@ void JagCGAL::fillInCorners(const JagBox2D &bbox, const JagVector<JagVoronoiPoin
 		} 
 	}
 }
+
+void JagCGAL::getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double tolerance, Jstr &mpg )
+{
+	if ( sp.size() < 3 ) return;
+	if ( jagLE(tolerance, JAG_ZERO ) ) {
+		tolerance = 1.0;
+	}
+
+	double factor = 100.0;
+	double vx, vy;
+	const char *str; char *p;
+	long long ix, iy;
+	std::vector<BoostPointLong2D> points;
+
+	double unitlon;
+	double unitlat;
+	if ( srid > 0 ) {
+		str = sp[JAG_SP_START].c_str();
+		if ( strchrnum( str, ':') != 1 ) { return; }
+		get2double(str, p, ':', vx, vy );
+		unitlon = JagGeo::meterToLon( srid, tolerance, vx, vy );
+		unitlat = JagGeo::meterToLat( srid, tolerance, vx, vy );
+	}
+
+	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':') != 1 ) continue;
+		get2double(str, p, ':', vx, vy );
+		if ( 0 == srid  ) {
+			ix = (vx/tolerance) * factor;
+			iy = (vy/tolerance) * factor;
+		} else {
+			// tolerance is meters, change to lon lat
+			ix = (vx/unitlon) * factor;
+			iy = (vy/unitlat) * factor;
+		}
+		points.push_back(BoostPointLong2D(ix, iy));
+	}
+
+	voronoi_diagram<double> vd;
+	construct_voronoi(points.begin(), points.end(), &vd);
+   	const voronoi_diagram<double>::edge_type *edge; 
+	JagVector<JagVector<JagPoint2D> > allTriangles;
+	for (const auto& vertex: vd.vertices()) {
+    	edge = vertex.incident_edge();
+		if ( ! edge ) { continue; }
+		JagVector<JagPoint2D> triangle;
+		while ( true ) {
+			auto cell = edge->cell();
+			const BoostPointLong2D &pt = points[cell->source_index()];
+			triangle.append( JagPoint2D(pt.x, pt.y) );
+			if ( 3 == triangle.size() ) {
+				allTriangles.append( triangle );
+				triangle.clear();
+			}
+      		edge = edge->rot_next(); 
+			if ( edge == vertex.incident_edge() ) break;
+    	} 
+    } // next vertex
+
+	if ( allTriangles.size() > 0 ) {
+		for ( int k=0; k < allTriangles.size(); ++k ) {
+			if ( k > 0 ) { mpg += Jstr(" !"); }
+			JagVector<JagPoint2D> &vec3 = allTriangles[k];
+			for ( int i=0; i < vec3.size(); ++i ) {
+       			if ( 0 == srid  ) {
+       				vec3[i].x *= tolerance; vec3[i].y *= tolerance;
+       			} else {
+       				vec3[i].x *= unitlon; vec3[i].y *= unitlat;
+       			}
+   				vec3[i].x /= factor;  vec3[i].y /= factor;
+   				mpg += Jstr(" ") + d2s(vec3[i].x) + ":" + d2s(vec3[i].y);
+			}
+   			mpg += Jstr(" ") + d2s(vec3[0].x) + ":" + d2s(vec3[0].y);
+		}
+	}
+}
+
 
 

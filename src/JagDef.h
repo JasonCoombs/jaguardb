@@ -486,6 +486,7 @@
 #define JAG_FUNC_VORONOIPOLYGONS    314  // affine op on 3D or 2D coordinates
 #define JAG_FUNC_VORONOILINES   315  // affine op on 3D or 2D coordinates
 #define JAG_FUNC_NUMLINES       316  // total number of line strings in multilinestring
+#define JAG_FUNC_DELAUNAYTRIANGLES       317  // Delaunay triangles 
 
 
 // string functions 

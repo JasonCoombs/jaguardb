@@ -160,10 +160,11 @@ class JagCGAL
 	static void getTwoGeomDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt );
 	template <class GEOM1, class GEOM2, class RESULT> 
 	static void getTwoGeomSymDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt );
-	static void getVeronoiPolygons2D( int srid, const JagStrSplit &sp, double tolerance, 
+	static void getVoronoiPolygons2D( int srid, const JagStrSplit &sp, double tolerance, 
 									  double xmin, double ymin, double xmax, double ymax, const Jstr &retType, Jstr &vor );
-	static void getVeronoiMultiPolygons3D( const JagStrSplit &sp, double tolerance, 
+	static void getVoronoiMultiPolygons3D( const JagStrSplit &sp, double tolerance, 
 									  double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, Jstr &vor );
+	static void getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double tolerance, Jstr &mpg );
 
 
   protected:

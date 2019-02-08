@@ -345,6 +345,7 @@ class BinaryOpNode: public ExprElementNode
 	bool doAllRotateAt( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllRotateSelf( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllAffine( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	bool doAllDelaunayTriangles( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	Jstr doAllVoronoiPolygons( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
 							   const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
 	Jstr doAllVoronoiLines( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
