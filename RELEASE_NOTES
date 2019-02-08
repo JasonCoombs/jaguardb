@@ -1,4 +1,23 @@
 
+JaguarDB 2.9.9 02/08/2019
+------------------------------------------------------------------
+added:
+ voronoipolygons(mpoint)                 -- find Voronoi polygons from multipoints
+ voronoipolygons(mpoint,tolerance)       -- find Voronoi polygons from multipoints with tolerance
+ voronoipolygons(mpoint,tolerance,bbox)  -- find Voronoi polygons from multipoints with tolerance and bounding box
+ voronoilines(mpoint)                    -- find Voronoi lines from multipoints
+ voronoilines(mpoint,tolerance)          -- find Voronoi lines from multipoints with tolerance
+ voronoilines(mpoint,tolerance,bbox)     -- find Voronoi lines from multipoints with tolerance and bounding box
+ delaunaytriangles(mpoint)               -- find Delaunay triangles from multipoints
+ delaunaytriangles(mpoint,tolerance)     -- find Delaunay triangles from multipoints with tolerance
+ geojson(geom)                  -- GeoJSON string of geom
+ geojson(geom,N)                -- GeoJSON string of geom, sending maximum of N points (default 3000)
+ geojson(geom,N,n)              -- GeoJSON string, receiving maximum of N points, n samples on 2D vector shapes
+ numlines(geom,N,n)             -- number of linestrings in multilinestring, polygons
+
+ union/collect/difference/intersection of 2D vector shapes
+
+
 JaguarDB 2.9.8 02/01/2019
 ------------------------------------------------------------------
 added:
