@@ -3071,6 +3071,9 @@ int JagParser::setCreateVector( short setType )
 		int firstCol = 1;
 		int doneAddBBox = 0;
 		int numCol = 0;
+		int keyCols = 0;
+		int valCols = 0;
+		int geoCols = 0;
 		while ( 1 ) {
 			_gettok = jag_strtok_r(NULL, " :\t\r\n", &_saveptr);
 			if ( ! _gettok ) break;
@@ -3122,8 +3125,13 @@ int JagParser::setCreateVector( short setType )
 
 			if ( rc <= 0 ) { prt(("s2883 rc <= 0 return rc=%d\n", rc )); return rc; }
 			//prt(("s5040 isValue=%d\n", isValue ));
-			if ( !isValue ) *(cattr.spare) = JAG_C_COL_KEY;
-			else  *(cattr.spare) = JAG_C_COL_VALUE;
+			if ( !isValue ) {
+				*(cattr.spare) = JAG_C_COL_KEY;
+				++keyCols;
+			} else {
+				*(cattr.spare) = JAG_C_COL_VALUE;
+				++valCols;
+			}
 
 			if ( ! missingKey ) { *(cattr.spare+2) = keymode; }
 			//prt(("s0361 coloffset=%d cattr.length=%d\n", coloffset, cattr.length ));
@@ -3163,6 +3171,7 @@ int JagParser::setCreateVector( short setType )
 					cattr = save;
 					coloffset = offset;
 					cattr.offset = coloffset;
+					++geoCols;
 				}
 			}
 
@@ -3178,6 +3187,11 @@ int JagParser::setCreateVector( short setType )
 
 		//prt(("s2528 after loop  _ptrParam->keyLength=%d\n",  _ptrParam->keyLength ));
 
+		//prt(("s2837 hasPoly=%d valCols=%d doneAddBBox=%d\n", hasPoly, valCols, doneAddBBox ));
+		if ( hasPoly && valCols < 1 && ! doneAddBBox ) {
+			//prt(("E5081 error no value column is provied\n" ));
+			return -5315;
+		}
 
 		// check duplicate column name
 		//prt(("s2038  _ptrParam->createAttrVec.length=%d\n",  _ptrParam->createAttrVec.length() ));
@@ -5027,7 +5041,7 @@ int JagParser::checkPolygonData( const char *p, bool mustClose )
 		}
 
 		if ( mustClose ) {
-			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) ) {
+			if ( ! jagEQ(x1, xn) || ! jagEQ(y1,yn) ) {
 				return -4630;
 			}
 		}
@@ -5391,7 +5405,7 @@ int JagParser::addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool m
 		}
 
 		if ( mustClose ) {
-			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) ) {
+			if ( ! jagEQ(x1, xn) || ! jagEQ(y1,yn) ) {
 				//prt(("s4530 x1=%f xn=%f   y1=%f  yn=%f\n", x1, xn, y1, yn ));
 				return -4530;
 			}
@@ -5471,7 +5485,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 		}
 
 		if ( mustClose ) {
-			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) ) {
+			if ( ! jagEQ(x1, xn) || ! jagEQ(y1,yn) ) {
 				//prt(("s4530 x1=%f xn=%f   y1=%f  yn=%f\n", x1, xn, y1, yn ));
 				return -4530;
 			}
@@ -5541,7 +5555,7 @@ int JagParser::checkPolygon3DData( const char *p, bool mustClose )
 		}
 
 		if ( mustClose ) {
-			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) || ! JagGeo::jagEQ(z1,zn) ) {
+			if ( ! jagEQ(x1, xn) || ! jagEQ(y1,yn) || ! jagEQ(z1,zn) ) {
 				//prt(("E4643 x1=%.3f xn=%.3f   y1=%.3f yn=%.3f z1=%.3f zn=%.3f \n", x1, xn, y1, yn, z1, zn ));
 				return -4643;
 			}
@@ -5675,7 +5689,7 @@ int JagParser::addPolygon3DData( Jstr &pgon, const char *p, bool firstOnly, bool
 		}
 
 		if ( mustClose ) {
-			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) || ! JagGeo::jagEQ(z1,zn) ) {
+			if ( ! jagEQ(x1, xn) || ! jagEQ(y1,yn) || ! jagEQ(z1,zn) ) {
 				return -4543;
 			}
 		}
@@ -5760,7 +5774,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 		}
 
 		if ( mustClose ) {
-			if ( ! JagGeo::jagEQ(x1, xn) || ! JagGeo::jagEQ(y1,yn) || ! JagGeo::jagEQ(z1,zn) ) {
+			if ( ! jagEQ(x1, xn) || ! jagEQ(y1,yn) || ! jagEQ(z1,zn) ) {
 				return -4543;
 			}
 		}

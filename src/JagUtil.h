@@ -326,6 +326,17 @@ void affine3d( double x1, double y1, double z1, double a, double b, double c, do
 				double f, double g, double h, double i, double dx, double dy, double dz, 
 				double &x, double &y, double &z );
 
+double dotProduct( double x1, double y1, double x2, double y2 );
+double dotProduct( double x1, double y1, double z1, double x2, double y2, double z2 );
+void crossProduct( double x1, double y1, double x2, double y2, double &x, double &y );
+void crossProduct( double x1, double y1, double z1, double x2, double y2, double z2,
+                   double &x, double &y, double &z );
+
+bool jagEQ( double f1, double f2 );
+bool jagLE( double f1, double f2 );
+bool jagGE( double f1, double f2 );
+
+
 template <class T> T* newObject( bool doPrint = true )
 {
 	T* o = NULL;

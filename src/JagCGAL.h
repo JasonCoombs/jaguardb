@@ -8,6 +8,8 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/algorithms/perimeter.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/polygon/voronoi.hpp>
+#include <boost/polygon/voronoi_geometry_type.hpp>
 
 //#define CGAL_HEADER_ONLY 1
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -21,6 +23,7 @@
 #include <CGAL/Memory_sizer.h>
 #include <CGAL/convex_hull_3.h>
 #include <CGAL/intersections.h>
+
 
 #include <JagGeom.h>
 
@@ -49,6 +52,45 @@ typedef boost::geometry::strategy::buffer::end_round JagEndRound;
 typedef boost::geometry::strategy::buffer::end_flat JagEndFlat;
 typedef boost::geometry::strategy::buffer::point_circle JagPointCircle;
 typedef boost::geometry::strategy::buffer::point_square JagPointSquare;
+
+using boost::polygon::voronoi_builder;
+using boost::polygon::voronoi_diagram;
+namespace boost {
+  namespace polygon {
+    struct PointLong2D 
+    {
+        long long x;
+        long long y;
+        PointLong2D(long long ix, long long iy) : x(ix), y(iy) {} 
+        PointLong2D() {} 
+    };
+    
+    template <> struct geometry_concept<PointLong2D> { typedef point_concept type; };
+    template <> struct point_traits<PointLong2D> 
+    {
+      	typedef long long coordinate_type;
+    	static inline coordinate_type get(const PointLong2D &point, orientation_2d orient) 
+    	{
+    	    return (orient == HORIZONTAL) ? point.x : point.y; 
+    	}
+    };
+} }
+typedef boost::polygon::PointLong2D BoostPointLong2D;
+
+class JagVoronoiPoint2D
+{
+  public:
+     JagVoronoiPoint2D() { side = 0; }
+     JagVoronoiPoint2D( double inx, double iny, int sd=0 ): x(inx), y(iny), side(sd) {}
+	 bool operator == ( const JagVoronoiPoint2D &o) const {
+	 	if ( jagEQ(x, o.x) && jagEQ(y,o.y) ) { return true; } else { return false; }
+	 }
+	 bool operator != ( const JagVoronoiPoint2D &o) const {
+	 	if ( ! (jagEQ(x, o.x) && jagEQ(y,o.y) ) ) { return true; } else { return false; }
+	 }
+     double x, y;
+	 int  side;
+};
 
 
 class JagStrategy
@@ -118,12 +160,21 @@ class JagCGAL
 	static void getTwoGeomDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt );
 	template <class GEOM1, class GEOM2, class RESULT> 
 	static void getTwoGeomSymDifference( const Jstr &wkt1, const Jstr &wkt2, Jstr &reswkt );
+	static void getVeronoiPolygons2D( int srid, const JagStrSplit &sp, double tolerance, 
+									  double xmin, double ymin, double xmax, double ymax, const Jstr &retType, Jstr &vor );
+	static void getVeronoiMultiPolygons3D( const JagStrSplit &sp, double tolerance, 
+									  double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, Jstr &vor );
 
 
   protected:
   	static bool createStrategies( JagStrategy *sptr[], const Jstr &arg );
   	static void destroyStrategies( JagStrategy *sptr[] );
-
+	static int getIntersectionPointWithBox( double vx, double vy,
+	                    				    const BoostPointLong2D &p1, const BoostPointLong2D &p2,
+						                    double xmin, double ymin, double xmax, double ymax, 
+											double &bx, double &by );
+	static int getIntersectionPointOfTwoLines( double x1, double y1, double x2, double y2, double vx, double vy, JagPoint2D &jp );
+	static void fillInCorners(const JagBox2D &bbox, const JagVector<JagVoronoiPoint2D> &vec1, JagVector<JagVoronoiPoint2D> &vec2);
 
 };
 

@@ -8,8 +8,8 @@
 #define jagmin3(a, b, c) jagmin(jagmin(a, b),(c))
 #define jagmax3(a, b, c) jagmax(jagmax(a, b),(c))
 #define jagsq2(a) ( (a)*(a) )
-#define jagIsPosZero(a) (((a)<ZERO) ? 1 : 0)
-#define jagIsZero(a) (( fabs(a)<ZERO) ? 1 : 0)
+#define jagIsPosZero(a) (((a)<JAG_ZERO) ? 1 : 0)
+#define jagIsZero(a) (( fabs(a)<JAG_ZERO) ? 1 : 0)
 #define JAG_PI 3.141592653589793
 
 class JagPoint2D
@@ -84,6 +84,9 @@ class JagPoint3D
 class JagBox2D
 {
   public:
+  	 JagBox2D() {}
+  	 JagBox2D( double d1, double d2, double d3, double d4 ) 
+	     : xmin(d1), ymin(d2), xmax(d3), ymax(d4) {}
      double xmin, ymin, xmax, ymax;
 };
 

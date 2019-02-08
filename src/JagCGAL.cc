@@ -1,6 +1,7 @@
 #include <JagGlobalDef.h>
 #include <JagCGAL.h>
 #include <JagParser.h>
+#include <JagUtil.h>
 
 
 void JagCGAL::getConvexHull2DStr( const JagLineString &line, const Jstr &hdr, const Jstr &bbox, Jstr &value )
@@ -1210,4 +1211,340 @@ bool JagCGAL::convertPolygonJ2B( const JagPolygon &pgon, BoostPolygon2D &bgon )
 	boost::geometry::read_wkt( ss, bgon );
 	return true;
 }
+
+
+void JagCGAL::getVeronoiPolygons2D( int srid, const JagStrSplit &sp, double tolerance,
+	                                double xmin, double ymin, double xmax, double ymax, const Jstr &retType, Jstr &vor )
+{
+	prt(("s1028 getVeronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f tolerance=%f\n", xmin, ymin, xmax, ymax, tolerance ));
+	if ( jagLE(tolerance, JAG_ZERO ) ) {
+		tolerance = 1.0;
+	}
+	//prt(("s7373 tolerance=%f\n", tolerance ));
+	if ( sp.size() < 3 ) return;
+
+	// discretize coordinates to long long
+	double factor = 100.0;
+	std::vector<BoostPointLong2D> points;
+	double x1, y1, x2, y2, bx, by;
+	double vx, vy;  // vortex point x y coord
+	double unitlon, unitlat;
+	const char *str; char *p;
+	long long ix, iy;
+
+	if ( 0 == srid  ) {
+		xmin = abaxint(xmin/tolerance) * factor;
+		ymin = abaxint(ymin/tolerance) * factor;
+		xmax = abaxint(xmax/tolerance) * factor;
+		ymax = abaxint(ymax/tolerance) * factor;
+	} else {
+		unitlon = JagGeo::meterToLon( srid, tolerance, (xmin+xmax)/2.0, (ymin+ymax)/2.0 );
+		unitlat = JagGeo::meterToLat( srid, tolerance, (xmin+xmax)/2.0, (ymin+ymax)/2.0 );
+		//prt(("s1029 unitlon=%f unitlat=%f\n", unitlon, unitlat ));
+		// tolerance is meters, change to lon lat
+		xmin = abaxint(xmin/unitlon) * factor;
+		ymin = abaxint(ymin/unitlat) * factor;
+		xmax = abaxint(xmax/unitlon) * factor;
+		ymax = abaxint(ymax/unitlat) * factor;
+	}
+	JagBox2D bbox(xmin, ymin, xmax, ymax );
+
+	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':') != 1 ) continue;
+		get2double(str, p, ':', vx, vy );
+		if ( 0 == srid  ) {
+			ix = (vx/tolerance) * factor;
+			iy = (vy/tolerance) * factor;
+		} else {
+			// tolerance is meters, change to lon lat
+			ix = (vx/unitlon) * factor;
+			iy = (vy/unitlat) * factor;
+		}
+		points.push_back(BoostPointLong2D(ix, iy));
+		//prt(("s1731 added point(%ld %ld)\n", ix, iy ));
+	}
+	
+	voronoi_diagram<double> vd;
+	construct_voronoi(points.begin(), points.end(), &vd);
+
+	const voronoi_diagram<double>::vertex_type *pv0;
+	const voronoi_diagram<double>::vertex_type *pv1;
+	int ncell = 0;
+   	const voronoi_diagram<double>::edge_type *edge; 
+	BoostPointLong2D p1, p2;
+	int rc;
+	int cnt;
+	int lastPoints = 0;
+
+	ncell = 0;
+	for (voronoi_diagram<double>::const_cell_iterator it = vd.cells().begin(); it != vd.cells().end(); ++it) {
+		++ncell;
+    	const voronoi_diagram<double>::cell_type &cell = *it;
+    	edge = cell.incident_edge();
+		if ( ! edge ) {
+			//prt(("s3818 cell.incident_edge is NULL, continue\n" ));
+			continue;
+		}
+
+		if ( ncell > 1 && lastPoints > 0 ) { 
+			if ( retType == JAG_C_COL_TYPE_MULTIPOLYGON  ) {
+				vor += Jstr(" !"); 
+			} else if ( retType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+				vor += Jstr(" |"); 
+			} else {
+				vor += Jstr(" |"); 
+			}
+		}
+
+		cnt = 0;
+		JagVector<JagVoronoiPoint2D> vec1, vec2;
+		lastPoints = 0;
+		while ( true ) {
+      		if (! edge->is_primary()) {
+				//prt(("s8823 cell %d : edge %d is NOT primary\n", ncell, cnt ));
+				continue;
+			}
+			++cnt;
+			//prt(("s8823 cell %d : edge %d is primary\n", ncell, cnt ));
+			pv0 = edge->vertex0();
+			pv1 = edge->vertex1();
+			//prt(("s2922 cell=%d edge=%d pv0=%0x pv1=%0x\n", ncell, cnt, pv0, pv1 ));
+			if ( pv0 && pv1 ) {
+				//prt(("s1928 finite edge, use it\n" ));
+				x1 = pv0->x(); y1 =  pv0->y();
+				x2 = pv1->x(); y2 =  pv1->y();
+				vec1.append( JagVoronoiPoint2D(x1,y1,0) );
+			} else {
+				if ( pv0 && ! pv1 ) {
+					p1 = points[edge->cell()->source_index()];
+					p2 = points[edge->twin()->cell()->source_index()];
+					vx = pv0->x(); vy =  pv0->y();
+					//prt(("s1022 pv0: x=%.2f y=%.2f \n", pv0->x(), pv0->y() ));
+					//prt(("s1022 from pv0  p1.x=%d p1.y=%d  p2.x=%d p2.y=%d\n", p1.x, p1.y, p2.x, p2.y ));
+   				} else if ( pv1 && ! pv0 ) {
+					// want to find pv0, switch p1 and p2
+					p2 = points[edge->cell()->source_index()];
+					p1 = points[edge->twin()->cell()->source_index()];
+					vx = pv1->x(); vy =  pv1->y();
+					//prt(("s1025 pv1: x=%.2f y=%.2f \n", pv1->x(), pv1->y() ));
+					//prt(("s1025 from pv1 p1.x=%d p1.y=%d  p2.x=%d p2.y=%d\n", p1.x, p1.y, p2.x, p2.y ));
+				} else {
+					//prt(("s2299 pv0 && pv1 all NULL !!!\n" ));
+					break;  // skip this cell
+				}
+
+				rc = getIntersectionPointWithBox( vx, vy, p1, p2, xmin, ymin, xmax, ymax, bx, by );
+				//prt(("s2810 getIntersectionPointWithBox rc=%d bx=%.2f by=%.2f\n", rc, bx, by ));
+				if ( rc < 0 ) break;
+				if ( pv0 ) {
+					x1 = vx; y1 = vy;
+					x2 = bx; y2 = by;
+					vec1.append( JagVoronoiPoint2D(x1,y1,0));
+					vec1.append( JagVoronoiPoint2D(x2,y2,rc));
+				} else {
+					x1 = bx; y1 = by;
+					x2 = vx; y2 = vy;
+					vec1.append( JagVoronoiPoint2D(x1,y1,rc));
+				}
+
+			}
+
+      		edge = edge->next(); // next CCW edge
+			if ( edge == cell.incident_edge() ) break;
+    	} // done with the cell
+
+		if ( vec1.size() > 0 ) {
+			if ( retType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+				fillInCorners(bbox, vec1, vec2);
+			} 
+
+			JagVector<JagVoronoiPoint2D> &vec3 = ( retType == JAG_C_COL_TYPE_MULTIPOLYGON ) ? vec2 : vec1;
+			for ( int i=0; i < vec3.size(); ++i ) {
+    			if ( 0 == srid  ) {
+    				vec3[i].x *= tolerance; vec3[i].y *= tolerance;
+    			} else {
+    				vec3[i].x *= unitlon; vec3[i].y *= unitlat;
+    			}
+				vec3[i].x /= factor;  vec3[i].y /= factor;
+
+				vor += Jstr(" ") + d2s(vec3[i].x) + ":" + d2s(vec3[i].y);
+				++lastPoints;
+			}
+
+			if ( retType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+				// close the polygon
+				if ( vec3[vec3.size()-1] != vec3[0] ) {
+					vor += Jstr(" ") + d2s(vec3[0].x) + ":" + d2s(vec3[0].y);
+				}
+			}
+		}
+    } // next cell
+    //prt(("s2811 vor=[%s]\n", vor.s() ));
+}
+
+
+// N: JAG_LEFT_SIDE/JAG_BOTTOM_SIDE/JAG_RIGHT_SIDE/JAG_TOP_SIDE > 0: OK  
+// < 0 error
+int JagCGAL::getIntersectionPointWithBox( double vx, double vy, 
+   					const BoostPointLong2D &p1, const BoostPointLong2D &p2, 
+   					double xmin, double ymin, double xmax, double ymax, double &bx, double &by )
+{
+	double k;
+	long long dx = p1.y - p2.y;
+	long long dy = p2.x - p1.x;
+
+	//prt(("s1730 delta dx=%ld dy=%ld\n", dx, dy ));
+	if (  0 == dy ) {
+		// look at left border
+		if ( dx < 0 ) {
+			bx = xmin; by = vy;
+			return JAG_LEFT_SIDE;
+		}
+
+		// look at right border
+		if ( dx > 0 ) {
+			bx = xmax; by = vy;
+			return JAG_RIGHT_SIDE;
+		}
+
+		return -1;
+	}
+
+	if ( 0 == dx ) {
+		// look at top border
+		if ( dy > 0 ) {
+			bx = vx; by = ymax;
+			return JAG_TOP_SIDE;
+		}
+
+		// look at bottom border
+		if ( dy < 0 ) {
+			bx = vx; by = ymin;
+			return JAG_BOTTOM_SIDE;
+		}
+
+		return -2;
+	}
+
+	// slant line
+	// k = dy/dx 
+	// pass vx and vy
+	// vy = k*vx + b   b=> vy - k*vx
+	// y = kx + vy-k*vx;   x = (y-vy+k*vx)/k;
+	k = (double)(dy)/ (double)(dx);
+	//prt(("s2038 vx=%.3f vy=%.3f k=%.6f xmin=%.3f ymin=%.3f xmax=%.3f ymax=%.3f\n", vx, vy, k, xmin, ymin, xmax, ymax ));
+
+	// check left side
+	if ( dx < 0 ) {
+		bx = xmin;
+		by = k*bx + vy - k*vx;
+		if (  jagGE(by, ymin ) && jagLE(by, ymax) ) { 
+	    	// found a intersection point
+			//prt(("s1002 got JAG_LEFT_SIDE bx=%.3f by=%.3f\n", bx, by ));
+			return JAG_LEFT_SIDE;
+		}
+		//prt(("s4020 not JAG_LEFT_SIDE dx=%.2f dy=%.2f\n", dx, dy ));
+	}
+
+	if ( dx > 0 ) {
+    	// check right side
+    	bx = xmax;
+    	by = k*bx + vy - k*vx;
+    	if (  jagGE(by, ymin ) && jagLE(by, ymax) ) {
+    	    // found a intersection point
+    		//prt(("s1002 got JAG_RIGHT_SIDE bx=%.3f by=%.3f\n", bx, by ));
+    		return JAG_RIGHT_SIDE;
+    	}
+    	//prt(("s4021 not JAG_RIGHT_SIDE dx=%.2f dy=%.2f\n", dx, dy ));
+	}
+    
+	if ( dy < 0 ) {
+    	// check bottom side
+    	by = ymin;
+    	bx = ( by - vy + k*vx)/k;
+    	if ( jagGE(bx, xmin) && jagLE(bx, xmax) ) {
+    		//prt(("s1002 got JAG_BOTTOM_SIDE bx=%.3f by=%.3f\n", bx, by ));
+    		return JAG_BOTTOM_SIDE;
+    	}
+    	//prt(("s4022 not JAG_BOTTOM_SIDE dx=%.2f dy=%.2f\n", dx, dy ));
+	}
+    
+	if ( dy > 0 ) {
+    	// check top side
+    	by = ymax;
+    	bx = ( by - vy + k*vx)/k;
+    	if ( jagGE(bx, xmin) && jagLE(bx, xmax) ) {
+    		//prt(("s1002 got JAG_TOP_SIDE bx=%.3f by=%.3f\n", bx, by ));
+    		return JAG_TOP_SIDE;
+    	}
+    	//prt(("s4023 not JAG_TOP_SIDE dx=%.2f dy=%.2f\n", dx, dy ));
+	}
+	
+	//prt(("s4028 return -10\n" ));
+	return -10;
+}
+
+void JagCGAL::fillInCorners(const JagBox2D &bbox, const JagVector<JagVoronoiPoint2D> &vec1, JagVector<JagVoronoiPoint2D> &vec2)
+{
+	int nexti;
+	int len1 = vec1.size();
+	JagVoronoiPoint2D p1(bbox.xmin, bbox.ymin, 0);
+	JagVoronoiPoint2D p2(bbox.xmax, bbox.ymin, 0);
+	JagVoronoiPoint2D p3(bbox.xmax, bbox.ymax, 0);
+	JagVoronoiPoint2D p4(bbox.xmin, bbox.ymax, 0);
+	for ( int i=0; i < len1; ++i ) {
+		vec2.append( JagVoronoiPoint2D(vec1[i].x, vec1[i].y, vec1[i].side ) );
+		nexti = (i+1)%len1;
+		prt(("s1228 vec1[%d].side=%d vec1[%d].side=%d\n", i, vec1[i].side, nexti, vec1[nexti].side ));
+		if ( vec1[i].side > 0 && vec1[nexti].side > 0 ) {
+			if ( JAG_TOP_SIDE == vec1[i].side ) {
+				if ( JAG_LEFT_SIDE == vec1[nexti].side ) {
+					if (   vec1[i] != p4 ) { vec2.append( p4 ); }
+				} else if ( JAG_BOTTOM_SIDE == vec1[nexti].side ) {
+					if (   vec1[i] != p4 ) { vec2.append( p4 ); }
+					if ( vec1[nexti] != p1 ) vec2.append( p1 );
+				} else if ( JAG_RIGHT_SIDE == vec1[nexti].side ) {
+					if (   vec1[i] != p4 ) { vec2.append( p4 ); }
+					if ( vec1[nexti] != p1 ) vec2.append( p1 );
+					if ( vec1[nexti] != p2 ) vec2.append( p2 );
+				}
+			} else if ( JAG_LEFT_SIDE == vec1[i].side ) {
+				if ( JAG_BOTTOM_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p1 ) { vec2.append( p1 ); }
+				} else if ( JAG_RIGHT_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p1 ) { vec2.append( p1 ); }
+					if (  vec1[nexti] != p2 ) vec2.append( p2 );
+				} else if ( JAG_TOP_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p1 ) { vec2.append( p1 ); }
+					if (  vec1[nexti] != p2 ) vec2.append( p2 );
+					if (  vec1[nexti] != p3 ) vec2.append( p3 );
+				}
+			} else if ( JAG_BOTTOM_SIDE == vec1[i].side ) {
+				if ( JAG_RIGHT_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p2 ) { vec2.append( p2 ); }
+				} else if ( JAG_TOP_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p2 ) { vec2.append( p2 ); }
+					if (  vec1[nexti] != p3 )vec2.append( p3 );
+				} else if ( JAG_LEFT_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p2 ) { vec2.append( p2 ); }
+					if (  vec1[nexti] != p3 )vec2.append( p3 );
+					if (  vec1[nexti] != p4 )vec2.append( p4 );
+				}
+			} else if ( JAG_RIGHT_SIDE == vec1[i].side ) {
+				if ( JAG_TOP_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p3 ) { vec2.append( p3 ); }
+				} else if ( JAG_LEFT_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p3 ) { vec2.append( p3 ); }
+					if (  vec1[nexti] != p4 ) vec2.append( p4 );
+				} else if ( JAG_BOTTOM_SIDE == vec1[nexti].side ) {
+					if ( vec1[i] != p3 ) { vec2.append( p3 ); }
+					if (  vec1[nexti] != p4 ) vec2.append( p4 );
+					if (  vec1[nexti] != p1 ) vec2.append( p1 );
+				}
+			}
+		} 
+	}
+}
+
 

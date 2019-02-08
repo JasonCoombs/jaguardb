@@ -1030,9 +1030,6 @@ class JagGeo
 									   double nx, double ny, int num2, JagVector<JagLine3D> &samples );
 
 	static Jstr convertType2Short( const Jstr &geotypeLong );
-	static bool jagLE (double f1, double f2 );
-	static bool jagGE (double f1, double f2 );
-	static bool jagEQ (double f1, double f2 );
 	static bool jagSquare(double f );
 
 	static void rotate2DCoordGlobal2Local( double inx, double iny, double nx, double &outx, double &outy );
@@ -1578,7 +1575,6 @@ class JagGeo
 
 
   protected:
-	static const double ZERO;
 	static const double NUM_SAMPLE;
 	static double doSign( const JagPoint2D &p1, const JagPoint2D &p2, const JagPoint2D &p3 );
 	static double distSquarePointToSeg( const JagPoint2D &p,
@@ -1736,11 +1732,6 @@ class JagGeo
 
 	static double dotProduct( const JagPoint2D &p1, const JagPoint2D &p2 ); 
 	static double dotProduct( const JagPoint3D &p1, const JagPoint3D &p2 ); 
-	static double dotProduct( double x1, double y1, double x2, double y2 );
-	static double dotProduct( double x1, double y1, double z1, double x2, double y2, double z2 );
-	static void crossProduct( double x1, double y1, double x2, double y2, double &x, double &y );
-	static void crossProduct( double x1, double y1, double z1, double x2, double y2, double z2,
-							  double &x, double &y, double &z );
 	static void minusVector( const JagPoint3D &v1, const JagPoint3D &v2, JagPoint3D &pt );
 
 	static int line3DIntersectTriangle3D( const JagLine3D& line3d, const JagPoint3D &p1, 

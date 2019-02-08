@@ -21,7 +21,6 @@
 #include <math.h>
 #include <JagGeom.h>
 #include <JagArray.h>
-const double JagGeo::ZERO = 0.0000000001;
 const double JagGeo::NUM_SAMPLE = 10;
 
 ///////////////////////////// Within methods ////////////////////////////////////////
@@ -84,15 +83,15 @@ bool JagGeo::pointWithinTriangle( const JagPoint2D &point,
 	}
 
 	// b1==b2==b3
- 	if (distSquarePointToSeg( point, point1, point2 ) <= ZERO) {
+ 	if (distSquarePointToSeg( point, point1, point2 ) <= JAG_ZERO) {
 		return true;
 	}
 
- 	if (distSquarePointToSeg( point, point2, point3 ) <= ZERO) {
+ 	if (distSquarePointToSeg( point, point2, point3 ) <= JAG_ZERO) {
 		return true;
 	}
 
- 	if (distSquarePointToSeg( point, point3, point1 ) <= ZERO) {
+ 	if (distSquarePointToSeg( point, point3, point1 ) <= JAG_ZERO) {
 		return true;
 	}
 
@@ -11515,6 +11514,8 @@ Jstr JagGeo::convertType2Short( const Jstr &geotypeLong )
 		return JAG_C_COL_TYPE_RECTANGLE;
 	} else if ( 0==strcasecmp(p, "rectangle3d" ) ) {
 		return JAG_C_COL_TYPE_RECTANGLE3D;
+	} else if ( 0==strcasecmp(p, "bbox" ) ) {
+		return JAG_C_COL_TYPE_BBOX;
 	} else if ( 0==strcasecmp(p, "box" ) ) {
 		return JAG_C_COL_TYPE_BOX;
 	} else if ( 0==strcasecmp(p, "cone" ) ) {
@@ -11604,14 +11605,14 @@ double JagGeo::doSign( const JagPoint2D &p1, const JagPoint2D &p2, const JagPoin
 double JagGeo::distSquarePointToSeg( const JagPoint2D &p, const JagPoint2D &p1, const JagPoint2D &p2 )
 {
     double sqlen =  (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y);
-    double dotProduct  = ((p.x - p1.x)*(p2.x - p1.x) + (p.y - p1.y)*(p2.y - p1.y)) / sqlen;
-	if ( dotProduct < 0 ) {
+    double dotproduct  = ((p.x - p1.x)*(p2.x - p1.x) + (p.y - p1.y)*(p2.y - p1.y)) / sqlen;
+	if ( dotproduct < 0 ) {
   		return (p.x - p1.x)*(p.x - p1.x) + (p.y - p1.y)*(p.y - p1.y);
  	}
 
- 	if ( dotProduct <= 1.0 ) {
+ 	if ( dotproduct <= 1.0 ) {
   		double p_p1_squareLen = (p1.x - p.x)*(p1.x - p.x) + (p1.y - p.y)*(p1.y - p.y);
-  		return ( p_p1_squareLen - dotProduct * dotProduct * sqlen );
+  		return ( p_p1_squareLen - dotproduct * dotproduct * sqlen );
  	}
 
     return (p.x - p2.x)*(p.x - p2.x) + (p.y - p2.y)*(p.y - p2.y);
@@ -11656,32 +11657,12 @@ double JagGeo::distance( double fx, double fy, double fz,
 	return res;
 }
 
-bool JagGeo::jagLE (double f1, double f2 )
-{
-	if ( f1 < f2 ) return true;
-	if ( fabs(f1-f2) < ZERO ) return true;
-	return false;
-}
-
-bool JagGeo::jagGE (double f1, double f2 )
-{
-	if ( f1 > f2 ) return true;
-	if ( fabs(f1-f2) < ZERO ) return true;
-	return false;
-}
-
-bool JagGeo::jagEQ (double f1, double f2 )
-{
-	if ( fabs(f1-f2) < ZERO ) return true;
-	return false;
-}
-
 // global to local new x'-y'  with just rotation
 // coord sys turn clock wise. inx iny was in old sys x-y. outx/out in new coord sys x'-y'
 // y' bcomes new unit vector direction
 void JagGeo::rotate2DCoordGlobal2Local( double inx, double iny, double nx, double &outx, double &outy )
 {
-	if ( jagLE(nx, ZERO) || fabs(nx) > 1.0  ) {
+	if ( jagLE(nx, JAG_ZERO) || fabs(nx) > 1.0  ) {
 		outx = inx;
 		outy = iny;
 		return;
@@ -11699,7 +11680,7 @@ void JagGeo::rotate2DCoordGlobal2Local( double inx, double iny, double nx, doubl
 // outx outy will be in x-y where unit vector is measured
 void JagGeo::rotate2DCoordLocal2Global( double inx, double iny, double nx, double &outx, double &outy )
 {
-	if ( jagLE(nx, ZERO) || fabs(nx) > 1.0 ) {
+	if ( jagLE(nx, JAG_ZERO) || fabs(nx) > 1.0 ) {
 		outx = inx;
 		outy = iny;
 		return;
@@ -13772,31 +13753,31 @@ bool JagGeo::belowOrSame(double x, double y, double z, double x2, double y2, dou
 ///////////////////////////////////////////////////////////////////
 bool JagGeo::isNull( double x, double y ) 
 {
-	if ( JagGeo::jagEQ(x, LONG_MIN) && JagGeo::jagEQ(x, LONG_MIN)  ) {
+	if ( jagEQ(x, LONG_MIN) && jagEQ(x, LONG_MIN)  ) {
 		return true;
 	}
 	return false;
 }
 bool JagGeo::isNull( double x1, double y1, double x2, double y2 ) 
 {
-	if ( JagGeo::jagEQ(x1, LONG_MIN) && JagGeo::jagEQ(x2, LONG_MIN) 
-		 && JagGeo::jagEQ(y1, LONG_MIN) && JagGeo::jagEQ(y2, LONG_MIN) ) {
+	if ( jagEQ(x1, LONG_MIN) && jagEQ(x2, LONG_MIN) 
+		 && jagEQ(y1, LONG_MIN) && jagEQ(y2, LONG_MIN) ) {
 		return true;
 	}
 	return false;
 }
 bool JagGeo::isNull( double x, double y, double z ) 
 {
-	if ( JagGeo::jagEQ(x, LONG_MIN) && JagGeo::jagEQ(x, LONG_MIN) && JagGeo::jagEQ(z, LONG_MIN)  ) {
+	if ( jagEQ(x, LONG_MIN) && jagEQ(x, LONG_MIN) && jagEQ(z, LONG_MIN)  ) {
 		return true;
 	}
 	return false;
 }
 bool JagGeo::isNull( double x1, double y1, double z1, double x2, double y2, double z2 ) 
 {
-	if ( JagGeo::jagEQ(x1, LONG_MIN) && JagGeo::jagEQ(x2, LONG_MIN) 
-		 && JagGeo::jagEQ(y1, LONG_MIN) && JagGeo::jagEQ(y2, LONG_MIN) 
-		 && JagGeo::jagEQ(z1, LONG_MIN) && JagGeo::jagEQ(z2, LONG_MIN) ) {
+	if ( jagEQ(x1, LONG_MIN) && jagEQ(x2, LONG_MIN) 
+		 && jagEQ(y1, LONG_MIN) && jagEQ(y2, LONG_MIN) 
+		 && jagEQ(z1, LONG_MIN) && jagEQ(z2, LONG_MIN) ) {
 		return true;
 	}
 	return false;
@@ -14606,23 +14587,6 @@ bool JagGeo::pointWithinPolygon( double x, double y, const JagPolygon &pgon )
 }
 
 
-double JagGeo::dotProduct( double x1, double y1, double x2, double y2 )
-{
-	return ( x1*x2 + y1*y2 );
-}
-double JagGeo::dotProduct( double x1, double y1, double z1, double x2, double y2, double z2 )
-{
-	return ( x1*x2 + y1*y2 + z1*z2 );
-}
-
-void JagGeo::crossProduct( double x1, double y1, double z1, double x2, double y2, double z2, 
-						   double &x, double &y, double &z )
-{
-	x = y1*z2 - z1*y2;
-	y = z1*x2 - x1*z2;
-	z = x1*y2 - y1*x2;
-}
-
 // return 0: not insersect
 // return 1: intersection falls inside the triagle
 // return 2: intersection does not fall in the triangle, but falls on the plane. atPoint returns coord
@@ -14648,7 +14612,7 @@ int JagGeo::line3DIntersectTriangle3D( const JagLine3D& line3d,
 
 	double crossx, crossy, crossz;
 	crossProduct( p01.x, p01.y, p01.z, p02.x, p02.y, p02.z, crossx, crossy, crossz );
-	double dotLow = dotProduct( negab.x, negab.y, negab.z, crossx, crossy, crossz );
+	double dotLow = ::dotProduct( negab.x, negab.y, negab.z, crossx, crossy, crossz );
 	// t = dotUp / dotLow;
 	if ( jagEQ( dotLow, 0.0 ) ) {
 		// either in plane or parallel
@@ -14657,16 +14621,16 @@ int JagGeo::line3DIntersectTriangle3D( const JagLine3D& line3d,
 		return 0;
 	}
 
-	double dotUp = dotProduct( crossx, crossy, crossz, LA0.x, LA0.y, LA0.z );
+	double dotUp = ::dotProduct( crossx, crossy, crossz, LA0.x, LA0.y, LA0.z );
 	double t = dotUp/dotLow;
 	if ( t < 0.0 || t > 1.0 ) return 0; // intersection is out of line segment  line3d
 
 	crossProduct( p02.x, p02.y, p02.z, negab.x, negab.y, negab.z, crossx, crossy, crossz );
-	dotUp = dotProduct( crossx, crossy, crossz, LA0.x, LA0.y, LA0.z );
+	dotUp = ::dotProduct( crossx, crossy, crossz, LA0.x, LA0.y, LA0.z );
 	double u = dotUp/dotLow;
 
 	crossProduct( negab.x, negab.y, negab.z, p01.x, p01.y, p01.z, crossx, crossy, crossz );
-	dotUp = dotProduct( crossx, crossy, crossz, LA0.x, LA0.y, LA0.z );
+	dotUp = ::dotProduct( crossx, crossy, crossz, LA0.x, LA0.y, LA0.z );
 	double v = dotUp/dotLow;
 	if ( jagLE( u+v, 1.0) ) return 1;
 
@@ -20223,7 +20187,7 @@ double JagGeo::minPoint2DToLineSegDistance( double px, double py, double x1, dou
 		return distance( px,py, x1, y2, srid );
 	}
 
-	double t = dotProduct( px-x1,py-y1, x2-x1,y2-y1 );
+	double t = ::dotProduct( px-x1,py-y1, x2-x1,y2-y1 );
 	t = jagmax( 0, jagmin(1, t/d2) );
 	projx = x1 + t*(x2-x1);
 	projy = y1 + t*(y2-y1);
@@ -20667,7 +20631,7 @@ int JagGeo::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 	Jstr othertype;
 	int rc = 0;
 	char *p = (char*)instr.c_str();
-	if ( ! p || *p == '\0' ) return -1;
+	if ( ! p || *p == '\0' ) return 0;
 	if ( strncasecmp( p, "point(", 6 ) == 0 || strncasecmp( p, "point3d(", 8 ) == 0 ) {
 		while ( *p != '(' ) ++p; ++p;  // (p
 		if ( *p == 0 ) return -10;
@@ -21007,7 +20971,6 @@ int JagGeo::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 		++cnt;
 	}
 
-	//return 0;
 	return cnt;
 }
 

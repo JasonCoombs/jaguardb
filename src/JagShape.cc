@@ -84,15 +84,15 @@ bool JagSortPoint2D::operator<=( const JagSortPoint2D &o) const
 
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x1, o.x1) ) return true;
+			if ( jagEQ(x1, o.x1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x1, o.x2) ) return true;
+			if ( jagEQ(x1, o.x2) ) return true;
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x2, o.x1) ) return true;
+			if ( jagEQ(x2, o.x1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x2, o.x2) ) return true;
+			if ( jagEQ(x2, o.x2) ) return true;
 		}
 	}
 	return false;
@@ -135,15 +135,15 @@ bool JagSortPoint2D::operator>=( const JagSortPoint2D &o) const
 
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x1, o.x1) ) return true;
+			if ( jagEQ(x1, o.x1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x1, o.x2) ) return true;
+			if ( jagEQ(x1, o.x2) ) return true;
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x2, o.x1) ) return true;
+			if ( jagEQ(x2, o.x1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x2, o.x2) ) return true;
+			if ( jagEQ(x2, o.x2) ) return true;
 		}
 	}
 
@@ -156,24 +156,24 @@ bool JagSortPoint3D::operator<( const JagSortPoint3D &o) const
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
 			if ( x1 < o.x1 ) return true;
-			if ( JagGeo::jagEQ( x1, o.x1) ) {
+			if ( jagEQ( x1, o.x1) ) {
 				if ( y1 < o.y1 ) return true;
 			}
 		} else {
 			if ( x1 < o.x2 ) return true;
-			if ( JagGeo::jagEQ( x1, o.x2) ) {
+			if ( jagEQ( x1, o.x2) ) {
 				if ( y1 < o.y2 ) return true;
 			}
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
 			if ( x2 < o.x1 ) return true;
-			if ( JagGeo::jagEQ( x2, o.x1) ) {
+			if ( jagEQ( x2, o.x1) ) {
 				if ( y2 < o.y1 ) return true;
 			}
 		} else {
 			if ( x2 < o.x2 ) return true;
-			if ( JagGeo::jagEQ( x2, o.x2) ) {
+			if ( jagEQ( x2, o.x2) ) {
 				if ( y2 < o.y2 ) return true;
 			}
 		}
@@ -188,24 +188,24 @@ bool JagSortPoint3D::operator<=( const JagSortPoint3D &o) const
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
 			if ( x1 < o.x1 ) return true;
-			if ( JagGeo::jagEQ( x1, o.x1) ) {
+			if ( jagEQ( x1, o.x1) ) {
 				if ( y1 < o.y1 ) return true;
 			}
 		} else {
 			if ( x1 < o.x2 ) return true;
-			if ( JagGeo::jagEQ( x1, o.x2) ) {
+			if ( jagEQ( x1, o.x2) ) {
 				if ( y1 < o.y2 ) return true;
 			}
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
 			if ( x2 < o.x1 ) return true;
-			if ( JagGeo::jagEQ( x2, o.x1) ) {
+			if ( jagEQ( x2, o.x1) ) {
 				if ( y2 < o.y1 ) return true;
 			}
 		} else {
 			if ( x2 < o.x2 ) return true;
-			if ( JagGeo::jagEQ( x2, o.x2) ) {
+			if ( jagEQ( x2, o.x2) ) {
 				if ( y2 < o.y2 ) return true;
 			}
 		}
@@ -214,15 +214,15 @@ bool JagSortPoint3D::operator<=( const JagSortPoint3D &o) const
 
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x1, o.x1) && JagGeo::jagEQ(y1, o.y1) ) return true;
+			if ( jagEQ(x1, o.x1) && jagEQ(y1, o.y1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x1, o.x2) && JagGeo::jagEQ(y1, o.y2) ) return true;
+			if ( jagEQ(x1, o.x2) && jagEQ(y1, o.y2) ) return true;
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x2, o.x1) && JagGeo::jagEQ(y2, o.y1) ) return true;
+			if ( jagEQ(x2, o.x1) && jagEQ(y2, o.y1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x2, o.x2) && JagGeo::jagEQ(y2, o.y2) ) return true;
+			if ( jagEQ(x2, o.x2) && jagEQ(y2, o.y2) ) return true;
 		}
 	}
 	return false;
@@ -233,24 +233,24 @@ bool JagSortPoint3D::operator>( const JagSortPoint3D &o) const
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
 			if ( x1 > o.x1 ) return 1;
-			if ( JagGeo::jagEQ( x1, o.x1) ) {
+			if ( jagEQ( x1, o.x1) ) {
 				if ( y1 > o.y1 ) return -1;
 			}
 		} else {
 			if ( x1 > o.x2 ) return 1;
-			if ( JagGeo::jagEQ( x1, o.x2) ) {
+			if ( jagEQ( x1, o.x2) ) {
 				if ( y1 > o.y2 ) return 1;
 			}
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
 			if ( x2 > o.x1 ) return 1;
-			if ( JagGeo::jagEQ( x2, o.x1) ) {
+			if ( jagEQ( x2, o.x1) ) {
 				if ( y2 > o.y1 ) return 1;
 			}
 		} else {
 			if ( x2 > o.x2 ) return 1;
-			if ( JagGeo::jagEQ( x2, o.x2) ) {
+			if ( jagEQ( x2, o.x2) ) {
 				if ( y2 > o.y2 ) return 1;
 			}
 		}
@@ -265,24 +265,24 @@ bool JagSortPoint3D::operator>=( const JagSortPoint3D &o) const
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
 			if ( x1 > o.x1 ) return true;
-			if ( JagGeo::jagEQ( x1, o.x1) ) {
+			if ( jagEQ( x1, o.x1) ) {
 				if ( y1 > o.y1 ) return true;
 			}
 		} else {
 			if ( x1 > o.x2 ) return true;
-			if ( JagGeo::jagEQ( x1, o.x2) ) {
+			if ( jagEQ( x1, o.x2) ) {
 				if ( y1 > o.y2 ) return true;
 			}
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
 			if ( x2 > o.x1 ) return true;
-			if ( JagGeo::jagEQ( x2, o.x1) ) {
+			if ( jagEQ( x2, o.x1) ) {
 				if ( y2 > o.y1 ) return true;
 			}
 		} else {
 			if ( x2 > o.x2 ) return true;
-			if ( JagGeo::jagEQ( x2, o.x2) ) {
+			if ( jagEQ( x2, o.x2) ) {
 				if ( y2 > o.y2 ) return true;
 			}
 		}
@@ -290,15 +290,15 @@ bool JagSortPoint3D::operator>=( const JagSortPoint3D &o) const
 
 	if ( JAG_LEFT == end ) {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x1, o.x1) && JagGeo::jagEQ(y1, o.y1) ) return true;
+			if ( jagEQ(x1, o.x1) && jagEQ(y1, o.y1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x1, o.x2) && JagGeo::jagEQ(y1, o.y2) ) return true;
+			if ( jagEQ(x1, o.x2) && jagEQ(y1, o.y2) ) return true;
 		}
 	} else {
 		if ( JAG_LEFT == o.end ) {
-			if ( JagGeo::jagEQ(x2, o.x1) && JagGeo::jagEQ(y2, o.y1) ) return true;
+			if ( jagEQ(x2, o.x1) && jagEQ(y2, o.y1) ) return true;
 		} else {
-			if ( JagGeo::jagEQ(x2, o.x2) && JagGeo::jagEQ(y2, o.y2) ) return true;
+			if ( jagEQ(x2, o.x2) && jagEQ(y2, o.y2) ) return true;
 		}
 	}
 
@@ -331,11 +331,11 @@ JagPoint& JagPoint::operator=( const JagPoint& p2 )
 
 bool JagPoint::equal2D(const JagPoint &p ) const
 {
-	return JagGeo::jagEQ( jagatof(x), jagatof(p.x) ) && JagGeo::jagEQ( jagatof(y), jagatof(p.y) );
+	return jagEQ( jagatof(x), jagatof(p.x) ) && jagEQ( jagatof(y), jagatof(p.y) );
 }
 bool JagPoint::equal3D(const JagPoint &p ) const
 {
-	return JagGeo::jagEQ( jagatof(x), jagatof(p.x) ) && JagGeo::jagEQ( jagatof(y), jagatof(p.y) ) && JagGeo::jagEQ( jagatof(z), jagatof(p.z) );
+	return jagEQ( jagatof(x), jagatof(p.x) ) && jagEQ( jagatof(y), jagatof(p.y) ) && jagEQ( jagatof(z), jagatof(p.z) );
 }
 
 
@@ -517,7 +517,7 @@ bool JagLineString3D::getBetweenPointsFromLen( short dim, double len, int srid, 
 		segsum += dist;
 		//prt(("s1028 dist=%.3f prevsegsum=%.3f segsum=%.3f\n", dist, prevsegsum, segsum ));
 
-		if ( segsum > len || JagGeo::jagEQ( segsum, len) ) {
+		if ( segsum > len || jagEQ( segsum, len) ) {
 			p1.x = point[i].x; p1.y = point[i].y; 
 			p2.x = point[i+1].x; p2.y = point[i+1].y; 
 			if ( JAG_3D == dim  ) { p1.z = point[i].z; p2.z = point[i+1].z; }
@@ -564,7 +564,7 @@ bool JagLineString3D::substring( short dim, int srid, double startFrac, double e
 		//prt(("s1028 dist=%.3f prevsegsum=%.3f segsum=%.3f\n", dist, prevsegsum, segsum ));
 
 		if ( ! inside ) {
-    		if ( segsum > len1 || JagGeo::jagEQ( segsum, len1) ) {
+    		if ( segsum > len1 || jagEQ( segsum, len1) ) {
     			p11.x = point[i].x; p11.y = point[i].y; 
     			p12.x = point[i+1].x; p12.y = point[i+1].y; 
     			if ( JAG_3D == dim  ) { p11.z = point[i].z; p12.z = point[i+1].z; }
@@ -576,7 +576,7 @@ bool JagLineString3D::substring( short dim, int srid, double startFrac, double e
 
 
 		if ( inside ) {
-    		if ( segsum > len2 || JagGeo::jagEQ( segsum, len2) ) {
+    		if ( segsum > len2 || jagEQ( segsum, len2) ) {
     			p21.x = point[i].x; p21.y = point[i].y; 
     			p22.x = point[i+1].x; p22.y = point[i+1].y; 
     			if ( JAG_3D == dim  ) { p21.z = point[i].z; p22.z = point[i+1].z; }
@@ -977,8 +977,8 @@ JagSquare2D::JagSquare2D( const JagStrSplit &sp, int insrid )
 
 void JagSquare2D::init(double inx, double iny, double ina, double innx, int insrid )
 {
-	if ( JagGeo::jagGE( innx, 1.0 ) ) innx = 1.0;
-	if ( JagGeo::jagLE( innx, -1.0 ) ) innx = -1.0;
+	if ( jagGE( innx, 1.0 ) ) innx = 1.0;
+	if ( jagLE( innx, -1.0 ) ) innx = -1.0;
 	double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
 	double uy = JagGeo::meterToLat( insrid, ina, inx, iny );
 	double a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
@@ -987,7 +987,7 @@ void JagSquare2D::init(double inx, double iny, double ina, double innx, int insr
 	x0 =inx; y0 = iny; a=ina; nx = innx; srid=insrid;
 	prt(("s9280 JagSquare2D::init a1=%.3f b1=%.3f a=%.3f nx=%.2f\n", a1, b1, a, nx ));
 
-	if ( nx < 0.00001 || JagGeo::jagGE(fabs(nx), 1.0) ) {
+	if ( nx < 0.00001 || jagGE(fabs(nx), 1.0) ) {
 		prt(("s9281 \n" ));
     	JagPoint2D p( -a1, -b1 ); 
     	point[0] = p;
@@ -1020,10 +1020,10 @@ JagSquare3D::JagSquare3D( const JagStrSplit &sp, int insrid )
 void JagSquare3D::init(double inx, double iny, double inz, double ina, double innx, double inny, int insrid )
 {
 	//prt(("s28039 JagRectangle2D::init inx=%f iny=%f ina=%f inb=%f innx=%f insrid=%d\n", inx, iny, ina, inb, innx, insrid ));
-	if ( JagGeo::jagGE( innx, 1.0 ) ) innx = 1.0;
-	if ( JagGeo::jagLE( innx, -1.0 ) ) innx = -1.0;
-	if ( JagGeo::jagGE( inny, 1.0 ) ) inny = 1.0;
-	if ( JagGeo::jagLE( inny, -1.0 ) ) inny = -1.0;
+	if ( jagGE( innx, 1.0 ) ) innx = 1.0;
+	if ( jagLE( innx, -1.0 ) ) innx = -1.0;
+	if ( jagGE( inny, 1.0 ) ) inny = 1.0;
+	if ( jagLE( inny, -1.0 ) ) inny = -1.0;
 	double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
 	double uy = JagGeo::meterToLat( insrid, ina, inx, iny );
 	double a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
@@ -1075,8 +1075,8 @@ JagRectangle2D::JagRectangle2D(double inx, double iny, double ina, double inb, d
 void JagRectangle2D::init(double inx, double iny, double ina, double inb, double innx, int insrid )
 {
 	//prt(("s28039 JagRectangle2D::init inx=%f iny=%f ina=%f inb=%f innx=%f insrid=%d\n", inx, iny, ina, inb, innx, insrid ));
-	if ( JagGeo::jagGE( innx, 1.0 ) ) innx = 1.0;
-	if ( JagGeo::jagLE( innx, -1.0 ) ) innx = -1.0;
+	if ( jagGE( innx, 1.0 ) ) innx = 1.0;
+	if ( jagLE( innx, -1.0 ) ) innx = -1.0;
 	double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
 	double uy = JagGeo::meterToLat( insrid, inb, inx, iny );
 	double a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
@@ -1084,7 +1084,7 @@ void JagRectangle2D::init(double inx, double iny, double ina, double inb, double
 
 	//prt(("s2049 JagRectangle2D::init ux=%f uy=%f a=%f b=%f\n", ux, uy, a, b ));
 	x0 =inx; y0 = iny; a=ina; b=inb; nx = innx; srid=insrid;
-	if ( nx < 0.00001 || JagGeo::jagGE(nx, 1.0) ) {
+	if ( nx < 0.00001 || jagGE(nx, 1.0) ) {
     	JagPoint2D p( -a1, -b1 ); 
     	point[0] = p;
     
@@ -1138,10 +1138,10 @@ JagRectangle3D::JagRectangle3D( const JagStrSplit &sp, int insrid )
 void JagRectangle3D::init(double inx, double iny, double inz, double ina, double inb, double innx, double inny, int insrid )
 {
 	//prt(("s28039 JagRectangle2D::init inx=%f iny=%f ina=%f inb=%f innx=%f insrid=%d\n", inx, iny, ina, inb, innx, insrid ));
-	if ( JagGeo::jagGE( innx, 1.0 ) ) innx = 1.0;
-	if ( JagGeo::jagLE( innx, -1.0 ) ) innx = -1.0;
-	if ( JagGeo::jagGE( inny, 1.0 ) ) inny = 1.0;
-	if ( JagGeo::jagLE( inny, -1.0 ) ) inny = -1.0;
+	if ( jagGE( innx, 1.0 ) ) innx = 1.0;
+	if ( jagLE( innx, -1.0 ) ) innx = -1.0;
+	if ( jagGE( inny, 1.0 ) ) inny = 1.0;
+	if ( jagLE( inny, -1.0 ) ) inny = -1.0;
 	double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
 	double uy = JagGeo::meterToLat( insrid, inb, inx, iny );
 	double a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
@@ -1603,10 +1603,10 @@ JagCube::JagCube( const JagStrSplit &sp, int insrid )
     ny = jagatof( sp[JAG_SP_START+5] );
 	srid = insrid;
 
-	if ( JagGeo::jagGE( nx, 1.0 ) ) nx = 1.0;
-	if ( JagGeo::jagLE( nx, -1.0 ) ) nx = -1.0;
-	if ( JagGeo::jagGE( ny, 1.0 ) ) ny = 1.0;
-	if ( JagGeo::jagLE( ny, -1.0 ) ) ny = -1.0;
+	if ( jagGE( nx, 1.0 ) ) nx = 1.0;
+	if ( jagLE( nx, -1.0 ) ) nx = -1.0;
+	if ( jagGE( ny, 1.0 ) ) ny = 1.0;
+	if ( jagLE( ny, -1.0 ) ) ny = -1.0;
 	double ux = JagGeo::meterToLon( insrid, a, x0, y0 );
 	double uy = JagGeo::meterToLat( insrid, a, x0, y0 );
 	double a1 = ux * ( 1.0-nx*nx ) + uy * nx * nx;
@@ -1678,10 +1678,10 @@ JagBox::JagBox( const JagStrSplit &sp, int insrid )
     ny = jagatof( sp[JAG_SP_START+7] );
 	srid = insrid;
 
-	if ( JagGeo::jagGE( nx, 1.0 ) ) nx = 1.0;
-	if ( JagGeo::jagLE( nx, -1.0 ) ) nx = -1.0;
-	if ( JagGeo::jagGE( ny, 1.0 ) ) ny = 1.0;
-	if ( JagGeo::jagLE( ny, -1.0 ) ) ny = -1.0;
+	if ( jagGE( nx, 1.0 ) ) nx = 1.0;
+	if ( jagLE( nx, -1.0 ) ) nx = -1.0;
+	if ( jagGE( ny, 1.0 ) ) ny = 1.0;
+	if ( jagLE( ny, -1.0 ) ) ny = -1.0;
 	double ux = JagGeo::meterToLon( insrid, a, x0, y0 );
 	double uy = JagGeo::meterToLat( insrid, b, x0, y0 );
 	double a1 = ux * ( 1.0-nx*nx ) + uy * nx * nx;
@@ -1975,8 +1975,8 @@ abaxint JagLineSeg2D::hashCode() const
 
 bool JagLineSeg2D::isNull() const 
 {
-	if ( JagGeo::jagEQ(x1, LONG_MIN) && JagGeo::jagEQ(x2, LONG_MIN) 
-		 && JagGeo::jagEQ(y1, LONG_MIN) && JagGeo::jagEQ(y2, LONG_MIN) ) {
+	if ( jagEQ(x1, LONG_MIN) && jagEQ(x2, LONG_MIN) 
+		 && jagEQ(y1, LONG_MIN) && jagEQ(y2, LONG_MIN) ) {
 		return true;
 	}
 	return false;
@@ -2032,9 +2032,9 @@ abaxint JagLineSeg3D::hashCode() const
 
 bool JagLineSeg3D::isNull() const 
 {
-	if ( JagGeo::jagEQ(x1, LONG_MIN) && JagGeo::jagEQ(x2, LONG_MIN) 
-		 && JagGeo::jagEQ(y1, LONG_MIN) && JagGeo::jagEQ(y2, LONG_MIN)
-		 && JagGeo::jagEQ(z1, LONG_MIN) && JagGeo::jagEQ(z2, LONG_MIN) ) {
+	if ( jagEQ(x1, LONG_MIN) && jagEQ(x2, LONG_MIN) 
+		 && jagEQ(y1, LONG_MIN) && jagEQ(y2, LONG_MIN)
+		 && jagEQ(z1, LONG_MIN) && jagEQ(z2, LONG_MIN) ) {
 		return true;
 	}
 	return false;

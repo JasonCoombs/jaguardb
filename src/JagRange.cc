@@ -125,8 +125,8 @@ bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const Jstr &subty
 				return true;
 			}
 		} else {
-			if ( ( (begin2n < begin1n) || JagGeo::jagEQ( begin2n, begin1n ) ) 
-			     && ( (end1n < end2n) || JagGeo::jagEQ( end2n, end1n ) ) ) {
+			if ( ( (begin2n < begin1n) || jagEQ( begin2n, begin1n ) ) 
+			     && ( (end1n < end2n) || jagEQ( end2n, end1n ) ) ) {
 				return true;
 			}
 		}
@@ -194,8 +194,8 @@ bool JagRange::pointWithinRange( const JagParseAttribute &jpa, const Jstr &subty
 				return true;
 			}
 		} else {
-			if ( ( (begin2n < datan ) || JagGeo::jagEQ( begin2n, datan ) ) 
-			     && ( (datan < end2n) || JagGeo::jagEQ( end2n, datan )  ) ) {
+			if ( ( (begin2n < datan ) || jagEQ( begin2n, datan ) ) 
+			     && ( (datan < end2n) || jagEQ( end2n, datan )  ) ) {
 				return true;
 			}
 		}
@@ -290,13 +290,13 @@ bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const Jstr &su
 		double end1n = jagatof( end1.c_str() );
 		double begin2n = jagatof( begin2.c_str() );
 		double end2n = jagatof( end2.c_str() );
-		if ( ( (begin2n < begin1n) || JagGeo::jagEQ( begin2n, begin1n ) ) 
-		     && ( (begin1n < end2n) || JagGeo::jagEQ( begin1n, end2n ) ) ) {
+		if ( ( (begin2n < begin1n) || jagEQ( begin2n, begin1n ) ) 
+		     && ( (begin1n < end2n) || jagEQ( begin1n, end2n ) ) ) {
 			return true;
 		}
 
-		if ( ( (begin2n < end1n) || JagGeo::jagEQ( begin2n, end1n ) ) 
-		     && ( (end1n < end2n) || JagGeo::jagEQ( end1n, end2n ) ) ) {
+		if ( ( (begin2n < end1n) || jagEQ( begin2n, end1n ) ) 
+		     && ( (end1n < end2n) || jagEQ( end1n, end2n ) ) ) {
 			return true;
 		}
 	}

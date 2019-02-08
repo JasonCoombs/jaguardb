@@ -266,7 +266,7 @@ class BinaryOpNode: public ExprElementNode
 	bool doAllMinMax( int op, int srid, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, double &val );
 	bool doAllPointN( const Jstr& mk1, const Jstr &colType1, int srid1, JagStrSplit &sp1, 
 					  const Jstr &carg, Jstr &val );
-	bool doAllBBox( int srid, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllExtent( int srid, const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllStartPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllEndPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllConvexHull( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
@@ -296,6 +296,7 @@ class BinaryOpNode: public ExprElementNode
 	bool doAllIsPolygonCW( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllNumPoints( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllNumSegments( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
+	bool doAllNumLines( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllNumRings( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllNumInnerRings( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllPolygonN( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
@@ -344,6 +345,12 @@ class BinaryOpNode: public ExprElementNode
 	bool doAllRotateAt( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllRotateSelf( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
 	bool doAllAffine( int srid, const Jstr &colType1, const JagStrSplit &sp1, const Jstr &carg, Jstr &val );
+	Jstr doAllVoronoiPolygons( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
+							   const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
+	Jstr doAllVoronoiLines( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
+							const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
+
+
 	static int getTypeMode( short fop );
 
 

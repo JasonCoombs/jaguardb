@@ -3885,7 +3885,7 @@ void ellipseBoundBox( double x0, double y0, double a, double b, double nx,
 	if ( nx > 1.0 ) nx = 1.0;
 	if ( nx < -1.0 ) nx = -1.0;
 
-	if ( JagGeo::jagEQ(nx, 0.0) ) {
+	if ( jagEQ(nx, 0.0) ) {
 		xmin = x0-a;
 		xmax = x0+a;
 		ymin = y0-b;
@@ -3893,7 +3893,7 @@ void ellipseBoundBox( double x0, double y0, double a, double b, double nx,
 		return;
 	}
 
-	if ( JagGeo::jagEQ(fabs(nx), 1.0) ) {
+	if ( jagEQ(fabs(nx), 1.0) ) {
 		xmin = x0-b;
 		xmax = x0+b;
 		ymin = y0-a;
@@ -3913,5 +3913,44 @@ void ellipseBoundBox( double x0, double y0, double a, double b, double nx,
 	xmax = jagmax(x1,x2);
 	ymin = jagmin(y1,y2);
 	ymax = jagmax(y1,y2);
+}
+
+
+double dotProduct( double x1, double y1, double x2, double y2 )
+{
+    return ( x1*x2 + y1*y2 );
+}
+double dotProduct( double x1, double y1, double z1, double x2, double y2, double z2 )
+{
+    return ( x1*x2 + y1*y2 + z1*z2 );
+}
+
+void crossProduct( double x1, double y1, double z1, double x2, double y2, double z2,
+                           double &x, double &y, double &z )
+{
+    x = y1*z2 - z1*y2;
+    y = z1*x2 - x1*z2;
+    z = x1*y2 - y1*x2;
+}
+
+
+bool jagLE (double f1, double f2 )
+{
+    if ( f1 < f2 ) return true;
+    if ( fabs(f1-f2) < JAG_ZERO ) return true;
+    return false;
+}
+
+bool jagGE (double f1, double f2 )
+{
+    if ( f1 > f2 ) return true;
+    if ( fabs(f1-f2) < JAG_ZERO ) return true;
+    return false;
+}
+
+bool jagEQ (double f1, double f2 )
+{
+    if ( fabs(f1-f2) < JAG_ZERO ) return true;
+    return false;
 }
 

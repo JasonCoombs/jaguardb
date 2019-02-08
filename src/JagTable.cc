@@ -225,6 +225,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	double xmin=dblmax, ymin=dblmax, zmin=dblmax, xmax=dblmin, ymax=dblmin, zmax=dblmin;
 	for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 		rc = 0;
+		prt(("s4928 parseParam->otherVec[%d].type=[%s]\n", i, parseParam->otherVec[i].type.s() ));
 		if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_LINESTRING 
 		     || parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOINT  ) {
 			rc = JagParser::getLineStringMinMax( ',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
@@ -278,7 +279,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			}
 
 			colType = parseParam->otherVec[i].type;
-			//prt(("s6761 i=%d colType=[%s]\n", i, colType.c_str() ));
+			prt(("s6761 i=%d colType=[%s]\n", i, colType.c_str() ));
 			if ( colType == JAG_C_COL_TYPE_POINT  ) {
 				otherVec.append(  parseParam->otherVec[i] );
 				appendOther(  otherVec, JAG_POINT_DIM );  // x y
@@ -1000,12 +1001,13 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			       ) {
 			//prt(("s7650 i=%d colType=[%s] colname=[%s] \n", i, colType.c_str(), colname.c_str() ));
 			//pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
+			prt(("s2181 colType=[%s] colname=[%s]\n", colType.s(), colname.s() ));
 			is3D = false;
 			if ( colType == JAG_C_COL_TYPE_LINESTRING3D || 
 			     colType == JAG_C_COL_TYPE_MULTIPOINT3D ) { is3D = true; }
 			getColumnIndex( dbtab, colname, is3D, getx, gety, getz, getxmin, getymin, getzmin,
 								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
-			//prt(("s2234 getColumnIndex is3D=%d getx=%d gety=%d getz=%d\n", is3D, getx, gety, getz ));
+			prt(("s2234 getColumnIndex is3D=%d getxmin=%d getx=%d gety=%d getz=%d\n", is3D, getxmin, getx, gety, getz ));
 			if ( getxmin >= 0 ) {
 				// char ibuf[32];
 				//OtherAttribute other;
@@ -3259,7 +3261,7 @@ void JagTable::setupSchemaMapAttr( int numCols )
 		_schAttr[i].isFILE = false;
 
 		_tablemap->addKeyValue(dbcolumn, i);
-		prt(("s4015 _tablemap->addKeyValue(dbcolumn=[%s] ==> i=%d\n", dbcolumn.c_str(), i ));
+		//prt(("s4015 _tablemap->addKeyValue(dbcolumn=[%s] ==> i=%d\n", dbcolumn.c_str(), i ));
 
 		rc = *((*(_tableRecord.columnVector))[i].spare+1);
 		rc2 = *((*(_tableRecord.columnVector))[i].spare+4);
@@ -3558,6 +3560,7 @@ void JagTable::getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D
 	getid = getcol = getm = getn = geti = -1;
 
 	dbcolumn = dbtab + ".geo:xmin";
+	prt(("s1029 in getColumnIndex() dbcolumn=[%s]\n", dbcolumn.s() ));
 	if ( _tablemap->getValue(dbcolumn, getpos) ) { getxmin = getpos; }
 
 	dbcolumn = dbtab + ".geo:ymin";

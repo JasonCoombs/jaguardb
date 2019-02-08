@@ -277,6 +277,7 @@
 #define JAG_C_COL_TYPE_ELLIPSE      "EL"
 #define JAG_C_COL_TYPE_ELLIPSE3D    "EL3"
 #define JAG_C_COL_TYPE_ELLIPSOID    "ES"
+#define JAG_C_COL_TYPE_BBOX         "BB"
 
 
 // temp column types
@@ -408,7 +409,7 @@
 #define JAG_FUNC_CONTAIN	    204  // T or F
 #define JAG_FUNC_INTERSECT	    206  // T or F
 #define JAG_FUNC_OVERLAP	    208  // T or F
-#define JAG_FUNC_BBOX 	        210  // bbox of shape  xmin ymin zmin xmax ymax zmax
+#define JAG_FUNC_EXTENT         210  // get bbox of shape  type is BB, xmin ymin zmin xmax ymax zmax
 #define JAG_FUNC_KM2MILE	    220  // km2mile(km)
 #define JAG_FUNC_MILE2KM 	    222  // mile2km(miles)
 #define JAG_FUNC_COVER 	        224  // 1 or 0
@@ -482,6 +483,9 @@
 #define JAG_FUNC_ROTATEAT       311  // rotate around (x0, y0)
 #define JAG_FUNC_ROTATESELF     312  // rotate around self-center
 #define JAG_FUNC_AFFINE         313  // affine op on 3D or 2D coordinates
+#define JAG_FUNC_VORONOIPOLYGONS    314  // affine op on 3D or 2D coordinates
+#define JAG_FUNC_VORONOILINES   315  // affine op on 3D or 2D coordinates
+#define JAG_FUNC_NUMLINES       316  // total number of line strings in multilinestring
 
 
 // string functions 
@@ -750,5 +754,13 @@
 #define JAG_SCHEMA_ADD 		10
 #define JAG_SCHEMA_RENAME 	20
 #define JAG_SCHEMA_SET 		30
+
+#define JAG_ZERO  0.00000001
+
+// 2D bbox 4 sides
+#define JAG_LEFT_SIDE 	10
+#define JAG_BOTTOM_SIDE 20
+#define JAG_RIGHT_SIDE 	30
+#define JAG_TOP_SIDE 	40
 
 #endif

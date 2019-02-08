@@ -2699,9 +2699,9 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    dimension(geom)         -- get dimension as integer of a shape geom \n";
 		str += "    geotype(geom)           -- get type as string of a shape geom\n";
 		str += "    pointn(geom,n)          -- get n-th point (1-based) of a shape geom. (x y [z])\n";
-		str += "    bbox(geom)              -- get bounding box of a shape geom, resulting rectangle or box\n";
+		str += "    extent(geom)            -- get bounding box of a shape geom, resulting rectangle or box\n";
 		str += "    startpoint(geom)        -- get start point of a line string geom. (x y [z])\n";
-		str += "    endtpoint(geom)         -- get end point of a line string geom. (x y [z])\n";
+		str += "    endpoint(geom)          -- get end point of a line string geom. (x y [z])\n";
 		str += "    isclosed(geom)          -- check if points of a line string geom is closed. (0 or 1)\n";
 		str += "    numpoints(geom)         -- get total number of points of a line string or polygon\n";
 		str += "    numsegments(geom)       -- get total number of line segments of linestring or polygon\n";
@@ -2777,6 +2777,12 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    rotateat(geom,N,'degree',x,y)  -- rotate 2D geom by N degrees counter-clock-wise with respect to point(y,y)\n";
 		str += "    affine(geom,a,b,d,e,dx,dy)     -- affine transformation on 2D geom\n";
 		str += "    affine(geom,a,b,c,d,e,f,g,h,i,dx,dy,dz)  -- affine transformation on 3D geom\n";
+		str += "    voronoipolygons(mpoint)        -- find Voronoi polygons from multipoints\n";
+		str += "    voronoipolygons(mpoint,tolerance)  -- find Voronoi polygons from multipoints with a tolerance\n";
+		str += "    voronoipolygons(mpoint,tolerance,bbox) -- find Voronoi polygons from multipoints with a tolerance and bounding box\n";
+		str += "    voronoilines(mpoint)           -- find Voronoi lines from multipoints\n";
+		str += "    voronoilines(mpoint,tolerance) -- find Voronoi lines from multipoints with a tolerance\n";
+		str += "    voronoilines(mpoint,tolerance,bbox) -- find Voronoi lines from multipoints with a tolerance and bounding box\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";
