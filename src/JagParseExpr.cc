@@ -1072,6 +1072,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_OUTERRINGS ) str = "outerrings";
 	else if ( binaryOp == JAG_FUNC_INNERRINGS ) str = "innerrings";
 	else if ( binaryOp == JAG_FUNC_RINGN ) str = "ringn";
+	else if ( binaryOp == JAG_FUNC_GEOJSON ) str = "geojson";
 	else if ( binaryOp == JAG_FUNC_POLYGONN ) str = "polygonn";
 	else if ( binaryOp == JAG_FUNC_ASTEXT ) str = "astext";
 	else if ( binaryOp == JAG_FUNC_UNIQUE ) str = "unique";
@@ -1168,7 +1169,15 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		type = JAG_C_COL_TYPE_STR;
 		collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN + 2;
 		siglen = 0;
-		// todo can we get number of points of lstr?
+		// can we get number of points of lstr?
+	} else if ( _binaryOp == JAG_FUNC_GEOJSON ) {
+		//prt(("s9283 JAG_FUNC_GEOJSON _carg1=[%s]\n", _carg1.s() ));
+		JagStrSplit ss( _carg1, ':');
+		ltmode = 0;
+		type = JAG_C_COL_TYPE_STR;
+		//collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN + 2;
+		collen = ss[0].toInt() * JAG_POINT_LEN + 2;
+		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_TOPOLYGON ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3155,6 +3164,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 				 || _binaryOp == JAG_FUNC_TRANSLATE || _binaryOp == JAG_FUNC_TRANSSCALE
 				 || _binaryOp == JAG_FUNC_ROTATE || _binaryOp == JAG_FUNC_ROTATEAT || _binaryOp == JAG_FUNC_ROTATESELF
 				 || _binaryOp == JAG_FUNC_AFFINE  || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
+				 || _binaryOp == JAG_FUNC_GEOJSON
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		//ltmode = 0; // string
 		ltmode = getTypeMode( _binaryOp );
@@ -3746,10 +3756,10 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		// value = Jstr("CJAG=0=0=") + geotype + "=0 " + val;
 		if ( isRaw ) {
 			value = typeStr + val;
-			prt(("s3627 isRaw value=%s\n", value.c_str() ));
+			//prt(("s3627 isRaw value=%s\n", value.c_str() ));
 		} else {
 			value = Jstr("CJAG=0=0=") + geotype + "=d 0:0:0:0 " + val;
-			prt(("s3628 !isRaw value=%s\n", value.c_str() ));
+			//prt(("s3628 !isRaw value=%s\n", value.c_str() ));
 		}
 
 		typeMode = 2;
@@ -4076,9 +4086,9 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		// process one column but may have some arguments
 		// if substr, pop and process first two top operands as length and offset of substr
 		if ( operandStack.empty() ) throw 3439;
+		const char *p;
 		if ( op == JAG_FUNC_SUBSTR ) {
 			ExprElementNode *targ = NULL;
-			const char *p = NULL;
 			int hasEncode = 0;
 			targ = operandStack.top();
 			if ( targ->getValue(p) ) {
@@ -4111,7 +4121,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			operandStack.pop();
 		} else if ( op == JAG_FUNC_LINESUBSTRING ) {
 			Jstr endf;
-			const char *p = NULL;
 			ExprElementNode *t3 = operandStack.top();
 			if ( t3->getValue(p) ) {
 				endf = p; 
@@ -4131,7 +4140,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     					 || op == JAG_FUNC_INTERPOLATE || op == JAG_FUNC_REMOVEPOINT
     		             || op == JAG_FUNC_RINGN || op == JAG_FUNC_INNERRINGN ) {
 	    	if ( operandStackTopSize() < 2 ) throw 2425;
-    		const char *p = NULL;
         	right = operandStack.top();
     		if ( right->getValue(p) ) {
     			carg1 = p;
@@ -4140,9 +4148,9 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			right = NULL;
     	} else if ( op == JAG_FUNC_TOPOLYGON ) {
 	    	if ( 1 == operandStackTopSize() ) {
+				// no arg, except the col itself
     			carg1 = "30";
     		} else {
-    			const char *p = NULL;
         		right = operandStack.top();
     			if ( right->getValue(p) ) {
     				carg1 = p;
@@ -4150,11 +4158,36 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     			operandStack.pop();
 				right = NULL;
     		}
+    	} else if ( op == JAG_FUNC_GEOJSON ) {
+			int nargs = operandStackTopSize();
+			if ( 1 == nargs ) {
+				carg1 = intToStr(JAG_MAX_POINTS_SENT) + ":30";
+			} else if ( 2 == nargs ) {
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = Jstr(p) + ":30";
+    			} else throw 2932;
+    			operandStack.pop();
+				right = NULL;
+			} else if ( 3 == nargs ) {
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = Jstr(p);
+    			} else throw 2933;
+    			operandStack.pop();
+
+    			if ( operandStack.empty() ) throw 3454;
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = Jstr(p) + ":" + carg1;
+    			} else throw 2934;
+    			operandStack.pop();
+				right = NULL;
+			}
     	} else if ( op == JAG_FUNC_BUFFER ) {
 	    	if ( 1 == operandStackTopSize() ) {
     			carg1 = "distance=symmetric:10,side=side,join=round:10,end=round:10,point=circle:10";
     		} else {
-    			const char *p = NULL;
         		right = operandStack.top();
     			if ( right->getValue(p) ) {
     				carg1 = p;
@@ -4551,6 +4584,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_LOCATEPOINT || fop == JAG_FUNC_ADDPOINT || fop == JAG_FUNC_SETPOINT || 
 		fop == JAG_FUNC_REMOVEPOINT || fop == JAG_FUNC_SCALE || fop == JAG_FUNC_SCALEAT ||
 		fop == JAG_FUNC_DEGREES || fop == JAG_FUNC_RADIANS || fop == JAG_FUNC_SCALESIZE ||
+		fop == JAG_FUNC_GEOJSON ||
 		fop == JAG_FUNC_LENGTH || fop == JAG_FUNC_COUNT ) {
 			return true;
 	}
@@ -4902,6 +4936,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_VORONOILINES; len = 12; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "delaunaytriangles", 17 ) ) {
 		fop = JAG_FUNC_DELAUNAYTRIANGLES; len = 17; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "geojson", 7 ) ) {
+		fop = JAG_FUNC_GEOJSON; len = 7; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -5471,6 +5507,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllInnerRings( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_RINGN ) {
 		rc = doAllRingN( mark1, hdr, colType1, srid1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_GEOJSON ) {
+		rc = doAllGeoJson( mark1, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_INNERRINGN ) {
 		rc = doAllInnerRingN( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_POLYGONN ) {
@@ -6696,6 +6734,36 @@ bool BinaryOpNode::doAllRingN( const Jstr& mk, const Jstr& hdr, const Jstr &colT
 		return false;
 	}
 
+	return true;
+}
+
+//qwer
+bool BinaryOpNode::doAllGeoJson( const Jstr& mk, const Jstr &colType, 
+								    int srid, JagStrSplit &sp, const Jstr &carg,  Jstr &value )
+{
+	//prt(("s3420 doAllRingN() mk=[%s] colType=[%s] carg=[%s] sp1.print(): \n", mk.c_str(), colType.c_str(), carg.c_str() ));
+	//sp.print();
+	int dim = JagGeo::getDimension(colType);
+	bool rc;
+	Jstr pgon;
+	if ( 2 == dim ) {
+		if ( JagParser::isVectorGeoType( colType ) ) {
+			JagStrSplit ssa( carg, ':');
+			rc = doAllToPolygon( mk, "", colType, srid, sp, ssa[1], pgon );
+			if ( ! rc ) return false;
+			sp.init( pgon.c_str(), ' ', true );
+			//prt(("s4033 colType1 pgon=[%s]\n", pgon.s() ));
+		}
+	}
+
+	JagStrSplit csp(sp[0], '=');
+	const char *data = thirdTokenStart( sp.c_str() );  // skip first two tokes, only data part
+	//prt(("s8383 sp.c_str()=[%s] data=[%s]\n", sp.c_str(), data ));
+	if ( ! data || strlen(data) < 1 ) {
+		//prt(("s7373 data is empty\n" ));
+		return false;
+	}
+	value = JagGeo::makeGeoJson(csp, data );
 	return true;
 }
 

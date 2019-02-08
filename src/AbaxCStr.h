@@ -43,6 +43,8 @@ class AbaxCStr
 		inline size_t  length() const { return length_; }
 		size_t find( int c) const;
 		double tof() const;
+		int   toInt() const;
+		long  toLong() const;
 
 		//AbaxCStr operator +( const AbaxCStr & cpstr) const;
 		AbaxCStr& operator +=( const AbaxCStr & cpstr);
@@ -60,8 +62,6 @@ class AbaxCStr
 		bool operator > ( const AbaxCStr &str) const;
 		bool operator >= ( const AbaxCStr &str) const;
 		int operator[] (int i) const;
-		int   toInt() const;
-		long  toLong() const;
 		int compare( const AbaxCStr &str) const;
 
 		AbaxCStr& trimSpaces(int end=1); // strip ' ', \t, \n, \r at both ends

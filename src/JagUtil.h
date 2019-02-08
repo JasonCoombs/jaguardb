@@ -315,6 +315,7 @@ void prepareKMP(const char *pat, int M, int *lps);
 Jstr replaceChar( const Jstr& str, char oldc, char newc );
 void printStr( const Jstr &str );
 char *secondTokenStart( const char *str, char sep=' ' );
+char *thirdTokenStart( const char *str, char sep=' ' );
 char *secondTokenStartEnd( const char *str, char *&pend, char sep=' ' );
 abaxint convertToSecond( const char *str);
 abaxint convertToMicroSecond( const char *str);

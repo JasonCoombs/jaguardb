@@ -3693,6 +3693,7 @@ void printStr( const Jstr &str )
 	printf("]\n\n");
 }
 
+// str: "tok1  tok2 ..."  return pointer to "tok2 .."
 char *secondTokenStart( const char *str, char sep )
 {
 	if ( NULL == str || *str == 0 ) return NULL;
@@ -3701,6 +3702,23 @@ char *secondTokenStart( const char *str, char sep )
 	while ( *p != sep && *p != '\0' ) ++p; // p is at pos after c
 	if ( *p == '\0' ) return NULL;
 	while ( *p == sep ) ++p;  // p is at m
+	return p;
+}
+
+// str: "tok1  tok2 tok3 ..."  return pointer to "tok3 .."
+char *thirdTokenStart( const char *str, char sep )
+{
+	if ( NULL == str || *str == 0 ) return NULL;
+	char *p = (char*) str;
+	while ( *p == sep ) ++p;  // "  abc  mdef nfe"  p is at a
+	while ( *p != sep && *p != '\0' ) ++p; // p is at pos after c
+	if ( *p == '\0' ) return NULL;
+	while ( *p == sep ) ++p;  // p is at m
+
+	while ( *p != sep && *p != '\0' ) ++p; // p is at pos after c
+	if ( *p == '\0' ) return NULL;
+	while ( *p == sep ) ++p;  // p is at n
+
 	return p;
 }
 
