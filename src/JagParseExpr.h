@@ -310,21 +310,22 @@ class BinaryOpNode: public ExprElementNode
 						  int srid, const JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
 	bool doAllUnique( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 					   const JagStrSplit &sp1, Jstr &val );
-    Jstr doAllUnion( const Jstr& mark1, const Jstr &colType1,
-				               int srid1, const JagStrSplit &sp1, const Jstr& mark2,
-				               const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
-    Jstr doAllCollect( const Jstr& mark1, const Jstr &colType1,
-				               int srid1, const JagStrSplit &sp1, const Jstr& mark2,
-				               const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
-    Jstr doAllIntersection( const Jstr& mark1, const Jstr &colType1,
-				               const JagStrSplit &sp1, const Jstr& mark2,
-				               const Jstr &colType2, const JagStrSplit &sp2 );
-    Jstr doAllDifference( const Jstr& mark1, const Jstr &colType1,
-				               const JagStrSplit &sp1, const Jstr& mark2,
-				               const Jstr &colType2, const JagStrSplit &sp2 );
-    Jstr doAllSymDifference( const Jstr& mark1, const Jstr &colType1,
-				               const JagStrSplit &sp1, const Jstr& mark2,
-				               const Jstr &colType2, const JagStrSplit &sp2 );
+    Jstr doAllUnion( Jstr mark1, Jstr colType1,
+				     int srid1, JagStrSplit &sp1, Jstr mark2,
+				     Jstr colType2, int srid2, JagStrSplit &sp2 );
+    Jstr doAllCollect( Jstr mark1, Jstr colType1,
+		               int srid1, JagStrSplit &sp1, Jstr mark2,
+		               Jstr colType2, int srid2, JagStrSplit &sp2 );
+    Jstr doAllIntersection( int srid, Jstr mark1, Jstr colType1,
+				               JagStrSplit &sp1, Jstr mark2,
+				               Jstr colType2, JagStrSplit &sp2 );
+    Jstr doAllDifference( int srid, Jstr mark1, Jstr colType1,
+			               JagStrSplit &sp1, Jstr mark2,
+			               Jstr colType2, JagStrSplit &sp2 );
+    Jstr doAllSymDifference( int srid, Jstr mark1, Jstr colType1,
+				             JagStrSplit &sp1, Jstr mark2,
+				             Jstr colType2, JagStrSplit &sp2 );
+
     Jstr doAllLocatePoint( int srid, const Jstr& mark1, const Jstr &colType1,
 				               const JagStrSplit &sp1, const Jstr& mark2,
 				               const Jstr &colType2, const JagStrSplit &sp2 );

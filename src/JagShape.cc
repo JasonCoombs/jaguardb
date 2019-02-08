@@ -979,26 +979,37 @@ void JagSquare2D::init(double inx, double iny, double ina, double innx, int insr
 {
 	if ( jagGE( innx, 1.0 ) ) innx = 1.0;
 	if ( jagLE( innx, -1.0 ) ) innx = -1.0;
-	double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
-	double uy = JagGeo::meterToLat( insrid, ina, inx, iny );
-	double a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
-	double b1 = uy * ( 1.0-innx*innx ) + ux * innx * innx;
+
+	double a1, b1;
+	if ( 0 == srid ) {
+		a1 = ina; b1 = ina;
+	} else {
+		double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
+		double uy = JagGeo::meterToLat( insrid, ina, inx, iny );
+		a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
+		b1 = uy * ( 1.0-innx*innx ) + ux * innx * innx;
+	}
 
 	x0 =inx; y0 = iny; a=ina; nx = innx; srid=insrid;
 	prt(("s9280 JagSquare2D::init a1=%.3f b1=%.3f a=%.3f nx=%.2f\n", a1, b1, a, nx ));
 
-	if ( nx < 0.00001 || jagGE(fabs(nx), 1.0) ) {
-		prt(("s9281 \n" ));
-    	JagPoint2D p( -a1, -b1 ); 
+	if ( fabs(nx) <= JAG_ZERO ) {
+    	JagPoint2D p( x0-a1, y0-b1 ); 
     	point[0] = p;
-    
-    	p.x = a1; p.y = -b1;
+    	p.x = x0+a1; p.y = y0-b1;
     	point[1] = p;
-    
-    	p.x = a1; p.y = b1;
+    	p.x = x0+a1; p.y = y0+b1;
     	point[2] = p;
-    
-    	p.x = -a1; p.y = b1;
+    	p.x = x0-a1; p.y = y0+b1;
+    	point[3] = p;
+	} else if ( jagGE(fabs(nx), 1.0) ) {
+    	JagPoint2D p( x0-b1, y0-a1 ); 
+    	point[0] = p;
+    	p.x = x0+b1; p.y = y0-a1;
+    	point[1] = p;
+    	p.x = x0+b1; p.y = y0+a1;
+    	point[2] = p;
+    	p.x = x0-b1; p.y = y0+a1;
     	point[3] = p;
 	} else {
 		JagRectangle2D::setPoint( x0, y0, a1, b1, nx, point );
@@ -1024,10 +1035,16 @@ void JagSquare3D::init(double inx, double iny, double inz, double ina, double in
 	if ( jagLE( innx, -1.0 ) ) innx = -1.0;
 	if ( jagGE( inny, 1.0 ) ) inny = 1.0;
 	if ( jagLE( inny, -1.0 ) ) inny = -1.0;
-	double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
-	double uy = JagGeo::meterToLat( insrid, ina, inx, iny );
-	double a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
-	double b1 = uy * ( 1.0-innx*innx ) + ux * innx * innx;
+	double a1, b1;
+
+	if ( 0 == srid ) {
+		a1 = ina; b1 = ina;
+	} else {
+		double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
+		double uy = JagGeo::meterToLat( insrid, ina, inx, iny );
+		a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
+		b1 = uy * ( 1.0-innx*innx ) + ux * innx * innx;
+	}
 
 	//prt(("s2049 JagRectangle2D::init ux=%f uy=%f a=%f b=%f\n", ux, uy, a, b ));
 	x0 =inx; y0 = iny; z0 = inz; a=ina; nx = innx; ny=inny; srid=insrid;
@@ -1074,27 +1091,39 @@ JagRectangle2D::JagRectangle2D(double inx, double iny, double ina, double inb, d
 
 void JagRectangle2D::init(double inx, double iny, double ina, double inb, double innx, int insrid )
 {
-	//prt(("s28039 JagRectangle2D::init inx=%f iny=%f ina=%f inb=%f innx=%f insrid=%d\n", inx, iny, ina, inb, innx, insrid ));
+	prt(("s28039 JagRectangle2D::init inx=%f iny=%f ina=%f inb=%f innx=%f insrid=%d\n", inx, iny, ina, inb, innx, insrid ));
 	if ( jagGE( innx, 1.0 ) ) innx = 1.0;
 	if ( jagLE( innx, -1.0 ) ) innx = -1.0;
-	double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
-	double uy = JagGeo::meterToLat( insrid, inb, inx, iny );
-	double a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
-	double b1 = uy * ( 1.0-innx*innx ) + ux * innx * innx;
+	double a1, b1;
+	if ( 0 == srid ) {
+		a1 = ina;
+		b1 = inb;
+	} else {
+		double ux = JagGeo::meterToLon( insrid, ina, inx, iny );
+		double uy = JagGeo::meterToLat( insrid, inb, inx, iny );
+		a1 = ux * ( 1.0-innx*innx ) + uy * innx * innx;
+		b1 = uy * ( 1.0-innx*innx ) + ux * innx * innx;
+		prt(("s2049 JagRectangle2D::init ux=%f uy=%f a1=%f b1=%f\n", ux, uy, a1, b1 ));
+	}
 
-	//prt(("s2049 JagRectangle2D::init ux=%f uy=%f a=%f b=%f\n", ux, uy, a, b ));
 	x0 =inx; y0 = iny; a=ina; b=inb; nx = innx; srid=insrid;
-	if ( nx < 0.00001 || jagGE(nx, 1.0) ) {
-    	JagPoint2D p( -a1, -b1 ); 
+	if ( fabs(nx) < JAG_ZERO ) {
+    	JagPoint2D p( x0-a1, y0-b1 ); 
     	point[0] = p;
-    
-    	p.x = a1; p.y = -b1;
+    	p.x = x0+a1; p.y = y0-b1;
     	point[1] = p;
-    
-    	p.x = a1; p.y = b1;
+    	p.x = x0+a1; p.y = y0+b1;
     	point[2] = p;
-    
-    	p.x = -a1; p.y = b1;
+    	p.x = x0-a1; p.y = y0+b1;
+    	point[3] = p;
+	} else if ( jagGE( fabs(nx), 1.0) ) {
+    	JagPoint2D p( x0-b1, y0-a1 ); 
+    	point[0] = p;
+    	p.x = x0+b1; p.y = y0-a1;
+    	point[1] = p;
+    	p.x = x0+b1; p.y = y0+a1;
+    	point[2] = p;
+    	p.x = x0-b1; p.y = y0+a1;
     	point[3] = p;
 	} else {
 		JagRectangle2D::setPoint( x0, y0, a1, b1, nx, point );

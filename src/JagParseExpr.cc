@@ -5589,11 +5589,11 @@ Jstr BinaryOpNode::doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, 
 	} else if ( op == JAG_FUNC_COLLECT ) {
 		return doAllCollect( mark1, colType1, srid1, sp1, mark2, colType2, srid2, sp2 );
 	} else if ( op == JAG_FUNC_INTERSECTION ) {
-		return doAllIntersection( mark1, colType1, sp1, mark2, colType2, sp2 );
+		return doAllIntersection( srid1, mark1, colType1, sp1, mark2, colType2, sp2 );
 	} else if ( op == JAG_FUNC_DIFFERENCE ) {
-		return doAllDifference( mark1, colType1, sp1, mark2, colType2, sp2 );
+		return doAllDifference( srid1, mark1, colType1, sp1, mark2, colType2, sp2 );
 	} else if ( op == JAG_FUNC_SYMDIFFERENCE ) {
-		return doAllSymDifference( mark1, colType1, sp1, mark2, colType2, sp2 );
+		return doAllSymDifference( srid1, mark1, colType1, sp1, mark2, colType2, sp2 );
 	} else if ( op == JAG_FUNC_LOCATEPOINT ) {
 		return doAllLocatePoint( srid1, mark1, colType1, sp1, mark2, colType2, sp2 );
 	} else if ( op == JAG_FUNC_ADDPOINT ) {
@@ -7653,11 +7653,40 @@ bool BinaryOpNode::doAllMinMax( int op, int srid, const Jstr& mk, const Jstr &co
 	return true;
 }
 
-Jstr BinaryOpNode::doAllUnion( const Jstr& mark1, const Jstr &colType1, 
-										int srid1, const JagStrSplit &sp1, const Jstr& mark2, 
-										const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
+Jstr BinaryOpNode::doAllUnion( Jstr mark1, Jstr colType1, 
+										int srid1, JagStrSplit &sp1, Jstr mark2, 
+										Jstr colType2, int srid2, JagStrSplit &sp2 )
 {
 	//prt(("s2410 doAllUnion colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	int dim1 = JagGeo::getDimension(colType1);
+	int dim2 = JagGeo::getDimension(colType2);
+	bool rc;
+	if ( 2 == dim1 && 2 == dim2 ) {
+		Jstr pgon;
+		if ( JagParser::isVectorGeoType( colType1 ) ) {
+			rc = doAllToPolygon( mark1, "", colType1, srid1, sp1, "30", pgon );
+			if ( ! rc ) return "";
+			sp1.init( pgon.c_str(), ' ', true );
+			prt(("s4033 colType1 pgon=[%s]\n", pgon.s() ));
+
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp1[0], '=');
+			mark1 = ss[0];
+			colType1 = ss[3];
+		}
+
+		pgon = "";
+		if ( JagParser::isVectorGeoType( colType2 ) ) {
+			rc = doAllToPolygon( mark2, "", colType2, srid2, sp2, "30", pgon );
+			if ( ! rc ) return "";
+			sp2.init( pgon.c_str(), ' ', true );
+			prt(("s4034 colType2 pgon=[%s]\n", pgon.s() ));
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp2[0], '=');
+			mark2 = ss[0];
+			colType2 = ss[3];
+		}
+	}
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return JagGeo::doPointAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
@@ -7690,11 +7719,40 @@ Jstr BinaryOpNode::doAllUnion( const Jstr& mark1, const Jstr &colType1,
 	}
 }
 
-Jstr BinaryOpNode::doAllCollect( const Jstr& mark1, const Jstr &colType1, 
-										int srid1, const JagStrSplit &sp1, const Jstr& mark2, 
-										const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
+Jstr BinaryOpNode::doAllCollect( Jstr mark1, Jstr colType1, 
+								int srid1, JagStrSplit &sp1, Jstr mark2, 
+								Jstr colType2, int srid2, JagStrSplit &sp2 )
 {
 	//prt(("s2410 doAllCollect colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	int dim1 = JagGeo::getDimension(colType1);
+	int dim2 = JagGeo::getDimension(colType2);
+	bool rc;
+	if ( 2 == dim1 && 2 == dim2 ) {
+		Jstr pgon;
+		if ( JagParser::isVectorGeoType( colType1 ) ) {
+			rc = doAllToPolygon( mark1, "", colType1, srid1, sp1, "30", pgon );
+			if ( ! rc ) return "";
+			sp1.init( pgon.c_str(), ' ', true );
+			prt(("s4033 colType1 pgon=[%s]\n", pgon.s() ));
+
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp1[0], '=');
+			mark1 = ss[0];
+			colType1 = ss[3];
+		}
+
+		pgon = "";
+		if ( JagParser::isVectorGeoType( colType2 ) ) {
+			rc = doAllToPolygon( mark2, "", colType2, srid2, sp2, "30", pgon );
+			if ( ! rc ) return "";
+			sp2.init( pgon.c_str(), ' ', true );
+			prt(("s4034 colType2 pgon=[%s]\n", pgon.s() ));
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp2[0], '=');
+			mark2 = ss[0];
+			colType2 = ss[3];
+		}
+	}
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return JagGeo::doPointAddition(  srid1, sp1, mark2, colType2, srid2, sp2 );
@@ -7725,11 +7783,40 @@ Jstr BinaryOpNode::doAllCollect( const Jstr& mark1, const Jstr &colType1,
 	}
 }
 
-Jstr BinaryOpNode::doAllIntersection( const Jstr& mark1, const Jstr &colType1, 
-										const JagStrSplit &sp1, const Jstr& mark2, 
-										const Jstr &colType2, const JagStrSplit &sp2 )
+Jstr BinaryOpNode::doAllIntersection( int srid1, Jstr mark1, Jstr colType1, 
+										JagStrSplit &sp1, Jstr mark2, 
+										Jstr colType2, JagStrSplit &sp2 )
 {
 	prt(("s2410 doAllIntersection colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	int dim1 = JagGeo::getDimension(colType1);
+	int dim2 = JagGeo::getDimension(colType2);
+	bool rc;
+	if ( 2 == dim1 && 2 == dim2 ) {
+		Jstr pgon;
+		if ( JagParser::isVectorGeoType( colType1 ) ) {
+			rc = doAllToPolygon( mark1, "", colType1, srid1, sp1, "30", pgon );
+			if ( ! rc ) return "";
+			sp1.init( pgon.c_str(), ' ', true );
+			prt(("s4033 colType1 pgon=[%s]\n", pgon.s() ));
+
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp1[0], '=');
+			mark1 = ss[0];
+			colType1 = ss[3];
+		}
+
+		pgon = "";
+		if ( JagParser::isVectorGeoType( colType2 ) ) {
+			rc = doAllToPolygon( mark2, "", colType2, srid1, sp2, "30", pgon );
+			if ( ! rc ) return "";
+			sp2.init( pgon.c_str(), ' ', true );
+			prt(("s4034 colType2 pgon=[%s]\n", pgon.s() ));
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp2[0], '=');
+			mark2 = ss[0];
+			colType2 = ss[3];
+		}
+	}
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
 		return JagGeo::doPointIntersection(  colType1,sp1, colType2,sp2 );
@@ -7758,11 +7845,40 @@ Jstr BinaryOpNode::doAllIntersection( const Jstr& mark1, const Jstr &colType1,
 	}
 }
 
-Jstr BinaryOpNode::doAllDifference( const Jstr& mark1, const Jstr &colType1, 
-										const JagStrSplit &sp1, const Jstr& mark2, 
-										const Jstr &colType2, const JagStrSplit &sp2 )
+Jstr BinaryOpNode::doAllDifference( int srid1, Jstr mark1, Jstr colType1, 
+									JagStrSplit &sp1, Jstr mark2, 
+									Jstr colType2, JagStrSplit &sp2 )
 {
 	prt(("s2410 doAllDifference colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	int dim1 = JagGeo::getDimension(colType1);
+	int dim2 = JagGeo::getDimension(colType2);
+	bool rc;
+	if ( 2 == dim1 && 2 == dim2 ) {
+		Jstr pgon;
+		if ( JagParser::isVectorGeoType( colType1 ) ) {
+			rc = doAllToPolygon( mark1, "", colType1, srid1, sp1, "30", pgon );
+			if ( ! rc ) return "";
+			sp1.init( pgon.c_str(), ' ', true );
+			prt(("s4033 colType1 pgon=[%s]\n", pgon.s() ));
+
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp1[0], '=');
+			mark1 = ss[0];
+			colType1 = ss[3];
+		}
+
+		pgon = "";
+		if ( JagParser::isVectorGeoType( colType2 ) ) {
+			rc = doAllToPolygon( mark2, "", colType2, srid1, sp2, "30", pgon );
+			if ( ! rc ) return "";
+			sp2.init( pgon.c_str(), ' ', true );
+			prt(("s4034 colType2 pgon=[%s]\n", pgon.s() ));
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp2[0], '=');
+			mark2 = ss[0];
+			colType2 = ss[3];
+		}
+	}
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
 		return JagGeo::doPointDifference(  colType1,sp1, colType2,sp2 );
@@ -7781,11 +7897,40 @@ Jstr BinaryOpNode::doAllDifference( const Jstr& mark1, const Jstr &colType1,
 	}
 }
 
-Jstr BinaryOpNode::doAllSymDifference( const Jstr& mark1, const Jstr &colType1, 
-										const JagStrSplit &sp1, const Jstr& mark2, 
-										const Jstr &colType2, const JagStrSplit &sp2 )
+Jstr BinaryOpNode::doAllSymDifference( int srid1, Jstr mark1, Jstr colType1, 
+										JagStrSplit &sp1, Jstr mark2, 
+										Jstr colType2, JagStrSplit &sp2 )
 {
 	prt(("s2410 doAllSymDifference colType1=[%s] colType2=[%s] \n", colType1.c_str(),  colType2.c_str() ));
+	int dim1 = JagGeo::getDimension(colType1);
+	int dim2 = JagGeo::getDimension(colType2);
+	bool rc;
+	if ( 2 == dim1 && 2 == dim2 ) {
+		Jstr pgon;
+		if ( JagParser::isVectorGeoType( colType1 ) ) {
+			rc = doAllToPolygon( mark1, "", colType1, srid1, sp1, "30", pgon );
+			if ( ! rc ) return "";
+			sp1.init( pgon.c_str(), ' ', true );
+			prt(("s4033 colType1 pgon=[%s]\n", pgon.s() ));
+
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp1[0], '=');
+			mark1 = ss[0];
+			colType1 = ss[3];
+		}
+
+		pgon = "";
+		if ( JagParser::isVectorGeoType( colType2 ) ) {
+			rc = doAllToPolygon( mark2, "", colType2, srid1, sp2, "30", pgon );
+			if ( ! rc ) return "";
+			sp2.init( pgon.c_str(), ' ', true );
+			prt(("s4034 colType2 pgon=[%s]\n", pgon.s() ));
+			// OJAG=srid=db.tab.col=TYPE=subtype
+			JagStrSplit ss(sp2[0], '=');
+			mark2 = ss[0];
+			colType2 = ss[3];
+		}
+	}
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
 		return JagGeo::doPointSymDifference(  colType1,sp1, colType2,sp2 );
