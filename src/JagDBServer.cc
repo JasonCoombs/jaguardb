@@ -2786,8 +2786,10 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    delaunaytriangles(mpoint)               -- find Delaunay triangles from multipoints\n";
 		str += "    delaunaytriangles(mpoint,tolerance)     -- find Delaunay triangles from multipoints with tolerance\n";
 		str += "    geojson(geom)                  -- GeoJSON string of geom\n";
-		str += "    geojson(geom,N)                -- GeoJSON string of geom, sending maximum of N points (default 3000)\n";
+		str += "    geojson(geom,N)                -- GeoJSON string of geom, receiving maximum of N points (default 3000)\n";
 		str += "    geojson(geom,N,n)              -- GeoJSON string, receiving maximum of N points, n samples on 2D vector shapes\n";
+		str += "    tomultipoint(geom)             -- converting geom to multipoint\n";
+		str += "    tomultipoint(geom,N)           -- converting geom to multipoint. N is number of points for vector shapes\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

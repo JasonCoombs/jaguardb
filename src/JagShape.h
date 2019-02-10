@@ -646,15 +646,16 @@ class JagPolygon
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].affine3d( a, b, c, d, e, f, g, h, i, dx, dy, dz ); 
 		}
 
-		JagPolygon( const JagSquare2D &sq );
-		JagPolygon( const JagRectangle2D &rect );
-		JagPolygon( const JagRectangle3D &rect );
-		JagPolygon( const JagCircle2D &cir, int samples = 100 );
-		JagPolygon( const JagCircle3D &cir, int samples = 100 );
-		JagPolygon( const JagEllipse2D &e, int samples = 100 );
-		//JagPolygon( const JagEllipse3D &e, int samples = 100 );
-		JagPolygon( const JagTriangle2D &t );
-		JagPolygon( const JagTriangle3D &t );
+		JagPolygon( const JagSquare2D &sq, bool isClosed=true );
+		JagPolygon( const JagSquare3D &sq, bool isClosed=true );
+		JagPolygon( const JagRectangle2D &rect, bool isClosed=true );
+		JagPolygon( const JagRectangle3D &rect, bool isClosed=true );
+		JagPolygon( const JagCircle2D &cir, int samples = 100, bool isClosed=true );
+		JagPolygon( const JagCircle3D &cir, int samples = 100, bool isClosed=true );
+		JagPolygon( const JagEllipse2D &e, int samples = 100, bool isClosed=true );
+		JagPolygon( const JagEllipse3D &e, int samples = 100, bool isClosed=true );
+		JagPolygon( const JagTriangle2D &t, bool isClosed=true );
+		JagPolygon( const JagTriangle3D &t, bool isClosed=true );
 		JagVector<JagLineString3D> linestr;
 		
 };

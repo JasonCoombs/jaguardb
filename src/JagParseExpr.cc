@@ -1062,6 +1062,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
 	else if ( binaryOp == JAG_FUNC_TOPOLYGON ) str = "topolygon";
+	else if ( binaryOp == JAG_FUNC_TOMULTIPOINT ) str = "tomultipoint";
 	else if ( binaryOp == JAG_FUNC_UNION ) str = "union";
 	else if ( binaryOp == JAG_FUNC_LOCATEPOINT ) str = "locatepoint";
 	else if ( binaryOp == JAG_FUNC_INTERSECTION ) str = "intersection";
@@ -1178,7 +1179,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		//collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN + 2;
 		collen = ss[0].toInt() * JAG_POINT_LEN + 2;
 		siglen = 0;
-	} else if ( _binaryOp == JAG_FUNC_TOPOLYGON ) {
+	} else if ( _binaryOp == JAG_FUNC_TOPOLYGON || _binaryOp == JAG_FUNC_TOMULTIPOINT ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
 		collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN/3 + 2;
@@ -1448,6 +1449,7 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 	
 	//prt(("s0939 end  BinaryOpNode::checkFuncValid tmp9999 result=%d\n", result ));
 	//prt(("s3008 str=[%s] setGlobal=%d typeMode=%d\n", str.c_str(), setGlobal, typeMode ));
+	prt(("s2043 operandStack.size=%d stacktopsize=%d\n", _builder->operandStack.size(), _builder->operandStackTopSize()  ));
 	return result;
 }
 
@@ -3148,6 +3150,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_EXTENT || _binaryOp == JAG_FUNC_STARTPOINT
 				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
 				 || _binaryOp == JAG_FUNC_TOPOLYGON  || _binaryOp == JAG_FUNC_ASTEXT
+				 || _binaryOp == JAG_FUNC_TOMULTIPOINT  
 				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS
 				 ||  _binaryOp == JAG_FUNC_INNERRINGS || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
@@ -3473,16 +3476,17 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 	}
 
     while (!operatorStack.empty()) {
-		//prt(("s2030 doBinary( operator.top )\n" ));
+		//prt(("s2030 in loop doBinary( operator.top )\n" ));
         doBinary( operatorStack.top(), jmap );
         operatorStack.pop();
+		//prt(("s1025 in loop operandStack.size=%d stacktopsize=%d\n", operandStack.size(), operandStackTopSize() ));
     }
 
     // Invariant: At this point the operandStack should have only one element
     // operandStack.size() == 1
     // otherwise, the expression is not well formed.
     if ( operandStack.size() != 1 ) {
-		//prt(("s2093 operandStack.size=%d !=1  throw 2326\n", operandStack.size() ));
+		//prt(("s2093 operandStack.size=%d !=1  stacktopsize=%d throw 2326\n", operandStack.size(), operandStackTopSize()  ));
         throw 2326;
     }
 
@@ -3894,7 +3898,7 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 			operatorStack.pop(); // remove '('
 			break;
 		} else if ( checkFuncType( fop ) ) {
-			//prt(("s4093 procRightParent see fop=%d(%s) doBinary, operatorStack.pop(); break\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
+			//prt(("s4093 see fop=%d(%s) doBinary, operStk.pop(); break\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
 			doBinary( fop, jmap );
 			operatorStack.pop();
 			break;
@@ -3913,7 +3917,7 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 {
 	Jstr opstr = BinaryOpNode::binaryOpStr(op);
-	//prt(("s3376 doBinary op=[%s]\n", opstr.c_str() ));
+	prt(("s3376 doBinary op=[%s]\n", opstr.c_str() ));
 
 	ExprElementNode *right = NULL;
 	ExprElementNode *left = NULL;
@@ -3976,7 +3980,9 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 
 		if ( op == JAG_FUNC_VORONOIPOLYGONS || op == JAG_FUNC_VORONOILINES ) {
-			//prt(("s2038 op JAG_FUNC_VORONOIPOLYGONS nargs=%d ...\n", nargs ));
+			prt(("s2038 op JAG_FUNC_VORONOIPOLYGONS nargs=%d stack.size=%d ...\n", nargs, operandStack.size() ));
+			if ( 0 == nargs && 1 == operandStack.size() ) { nargs = 1; }
+
 			if ( 1 == nargs ) {
 				right = NULL;
     			left = operandStack.top();
@@ -4146,7 +4152,8 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     		} else throw 1448;
     		operandStack.pop();
 			right = NULL;
-    	} else if ( op == JAG_FUNC_TOPOLYGON ) {
+    	} else if ( op == JAG_FUNC_TOPOLYGON || op == JAG_FUNC_TOMULTIPOINT ) {
+			prt(("s2043 operandStack.size=%d stacktopsize=%d\n", operandStack.size(), operandStackTopSize()  ));
 	    	if ( 1 == operandStackTopSize() ) {
 				// no arg, except the col itself
     			carg1 = "30";
@@ -4560,7 +4567,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_VOLUME || fop == JAG_FUNC_DIMENSION || fop == JAG_FUNC_GEOTYPE || fop == JAG_FUNC_POINTN || 
 		fop == JAG_FUNC_EXTENT || fop == JAG_FUNC_STARTPOINT || fop == JAG_FUNC_ENDPOINT || 
 		fop == JAG_FUNC_CONVEXHULL || 
-		fop == JAG_FUNC_TOPOLYGON || 
+		fop == JAG_FUNC_TOPOLYGON || fop == JAG_FUNC_TOMULTIPOINT  ||
 		fop == JAG_FUNC_UNION || fop == JAG_FUNC_DIFFERENCE || fop == JAG_FUNC_SYMDIFFERENCE || 
 		fop == JAG_FUNC_INTERSECTION || fop == JAG_FUNC_COLLECT || 
 		fop == JAG_FUNC_POLYGONN || fop == JAG_FUNC_OUTERRING || fop == JAG_FUNC_OUTERRINGS || 
@@ -4822,6 +4829,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "topolygon", 9 ) ) {
 		fop = JAG_FUNC_TOPOLYGON; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "tomultipoint", 12 ) ) {
+		fop = JAG_FUNC_TOMULTIPOINT; len = 12; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "union", 5 ) ) {
 		fop = JAG_FUNC_UNION; len = 5; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "difference", 10 ) ) {
@@ -5521,6 +5530,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllCentroid( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_TOPOLYGON ) {
 		rc = doAllToPolygon( mark1, hdr, colType1, srid1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_TOMULTIPOINT ) {
+		rc = doAllToMultipoint( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_ASTEXT ) {
 		rc = doAllAsText( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_INTERPOLATE ) {
@@ -6578,13 +6589,20 @@ bool BinaryOpNode::doAllToPolygon( const Jstr& mk, const Jstr& hdr, const Jstr &
 {
 	prt(("s3420 doAllToPolygon() srid=%d mk=[%s] colType=[%s] sp1.print(): \n", srid, mk.c_str(), colType.c_str() ));
 	//sp.print();
-	if ( ! JagParser::isVectorGeoType( colType ) ) {
+	if ( colType == JAG_C_COL_TYPE_POLYGON ||  colType == JAG_C_COL_TYPE_POLYGON3D ) {
 		value = sp.c_str();
 		return true;
 	}
 
-	value = "";
+	if ( ! JagParser::isVectorGeoType( colType ) ) {
+		//value = sp.c_str();
+		//return true;
+		// line, linestring, multipolygon, cannot be converted to polygon
+		value = "";
+		return false;
+	}
 
+	value = "";
 	double px, py;
     if ( colType == JAG_C_COL_TYPE_SQUARE ) {
 		JagSquare2D sq( sp, srid );
@@ -6606,6 +6624,84 @@ bool BinaryOpNode::doAllToPolygon( const Jstr& mk, const Jstr& hdr, const Jstr &
 		JagTriangle2D t( sp, srid );
 		JagPolygon pgon( t );
 		pgon.toJAG( false, true, "", srid, value );
+	}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllToMultipoint( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
+								    int srid, const JagStrSplit &sp, const Jstr& carg, Jstr &value )
+{
+	prt(("s3420 doAllToPolygon() srid=%d mk=[%s] colType=[%s] sp1.print(): \n", srid, mk.c_str(), colType.c_str() ));
+	//sp.print();
+	int dim = JagGeo::getDimension( colType );
+	if ( 3 == dim ) {
+		value = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
+	} else {
+		value = Jstr("CJAG=0=0=MP=d 0:0:0:0");
+	}
+
+	if ( ! JagParser::isVectorGeoType( colType ) ) {
+		//value = sp.c_str();
+		for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
+			if ( sp[i] == "|" || sp[i] == "!" ) { continue; }
+			value += Jstr(" ") + sp[i];
+		}
+		return true;
+	}
+
+	double px, py;
+	Jstr data;
+    if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+		JagSquare2D sq( sp, srid );
+		JagPolygon pgon( sq, false );
+		pgon.toJAG( false, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
+		JagSquare3D sq( sp, srid );
+		JagPolygon pgon( sq, false );
+		pgon.toJAG( true, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
+		JagRectangle2D rect( sp, srid );
+		JagPolygon pgon( rect, false );
+		pgon.toJAG( false, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		JagRectangle3D rect( sp, srid );
+		JagPolygon pgon( rect, false );
+		pgon.toJAG( true, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+		JagCircle2D cir( sp, srid );
+		JagPolygon pgon( cir, jagatoi( carg.c_str()), false );
+		pgon.toJAG( false, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
+		JagCircle3D cir( sp, srid );
+		JagPolygon pgon( cir, jagatoi( carg.c_str()), false );
+		pgon.toJAG( true, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+		JagEllipse2D e( sp, srid );
+		JagPolygon pgon( e, jagatoi( carg.c_str()), false );
+		pgon.toJAG( false, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D ) {
+		JagEllipse3D e( sp, srid );
+		JagPolygon pgon( e, jagatoi( carg.c_str()), false );
+		pgon.toJAG( true, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		JagTriangle2D t( sp, srid );
+		JagPolygon pgon( t, false );
+		pgon.toJAG( false, false, "", srid, data );
+		value += data;
+    } else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		JagTriangle3D t( sp, srid );
+		JagPolygon pgon( t, false );
+		pgon.toJAG( true, false, "", srid, data );
+		value += data;
 	}
 
 	return true;
@@ -9490,7 +9586,7 @@ Jstr BinaryOpNode::doAllVoronoiPolygons( int srid, const Jstr &colType1, const J
 		return "";
 	}
 
-	if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT  ) {
+	if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT || colType1 == JAG_C_COL_TYPE_LINESTRING  ) {
 		val = "CJAG=" + intToStr(srid) + "=0=MG=d 0:0:0:0";
 		Jstr vor;
 		//prt(("s1023 getVoronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f\n", xmin, ymin, xmax, ymax ));
@@ -9538,7 +9634,7 @@ Jstr BinaryOpNode::doAllVoronoiLines( int srid, const Jstr &colType1, const JagS
 		return "";
 	}
 
-	if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT  ) {
+	if ( colType1 == JAG_C_COL_TYPE_MULTIPOINT || colType1 == JAG_C_COL_TYPE_LINESTRING  ) {
 		val = "CJAG=" + intToStr(srid) + "=0=ML=d 0:0:0:0";
 		Jstr vor;
 		//prt(("s1023 getVoronoiPolygons2D xmin=%.2f ymin=%.2f xmax=%.2f ymax=%.2f\n", xmin, ymin, xmax, ymax ));

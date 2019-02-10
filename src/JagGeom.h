@@ -1022,6 +1022,7 @@ class JagGeo
 								   int num, JagVector<JagPoint3D> &samples );
 
 	static void samplesOn2DEllipse( double x0, double y0, double a, double b, double nx, int num, JagVector<JagPoint2D> &samples );
+	static void samplesOn3DEllipse( double x0, double y0, double z0, double a, double b, double nx, double ny, int num, JagVector<JagPoint3D> &samples );
 	static void samplesOnEllipsoid( double x0, double y0, double z0, double a, double b, double c,
 									   double nx, double ny, int num2, JagVector<JagPoint3D> &samples );
 	static void sampleLinesOnCone( double x0, double y0, double z0, double r, double h,

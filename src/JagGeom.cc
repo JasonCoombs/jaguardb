@@ -11372,6 +11372,7 @@ void JagGeo::transform2DDirection( double nx1, double nx2, double &nx )
 
 void JagGeo::samplesOn2DCircle( double x0, double y0, double r, int num, JagVector<JagPoint2D> &samples )
 {
+	if ( num < 1 ) return;
 	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0, x, y;
 	for ( int i=0; i < num; ++i ) {
@@ -11382,8 +11383,10 @@ void JagGeo::samplesOn2DCircle( double x0, double y0, double r, int num, JagVect
 	}
 }
 
-void JagGeo::samplesOn3DCircle( double x0, double y0, double z0, double r, double nx, double ny, int num, JagVector<JagPoint3D> &samples )
+void JagGeo::samplesOn3DCircle( double x0, double y0, double z0, double r, double nx, double ny, int num, 
+								JagVector<JagPoint3D> &samples )
 {
+	if ( num < 1 ) return;
 	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0;
 	double x,y,z, gx, gy, gz;
@@ -11397,8 +11400,10 @@ void JagGeo::samplesOn3DCircle( double x0, double y0, double z0, double r, doubl
 	}
 }
 
-void JagGeo::samplesOn2DEllipse( double x0, double y0, double a, double b, double nx, int num, JagVector<JagPoint2D> &samples )
+void JagGeo::samplesOn2DEllipse( double x0, double y0, double a, double b, double nx, int num, 
+								 JagVector<JagPoint2D> &samples )
 {
+	if ( num < 1 ) return;
 	double delta = 2*JAG_PI/(double)num;
 	double t = 0.0;
 	double x,y, gx, gy;
@@ -11407,6 +11412,23 @@ void JagGeo::samplesOn2DEllipse( double x0, double y0, double a, double b, doubl
 		y = b*sin(t);
 		transform2DCoordLocal2Global( x0, y0, x, y, nx, gx, gy ); 
 		samples.append(JagPoint2D( gx, gy) );
+		t += delta;
+	}
+}
+
+void JagGeo::samplesOn3DEllipse( double x0, double y0, double z0, double a, double b, double nx, double ny, 
+							     int num, JagVector<JagPoint3D> &samples )
+{
+	if ( num < 1 ) return;
+	double delta = 2*JAG_PI/(double)num;
+	double t = 0.0;
+	double x,y,z, gx, gy, gz;
+	for ( int i=0; i < num; ++i ) {
+		x = a*cos(t);
+		y = b*sin(t);
+		z = 0.0;
+		transform3DCoordLocal2Global( x0, y0, z0, x, y, z, nx, ny, gx, gy, gz );
+		samples.append(JagPoint3D( gx, gy, gz) );
 		t += delta;
 	}
 }
@@ -11443,6 +11465,7 @@ void JagGeo::samplesOnEllipsoid( double x0, double y0, double z0, double a, doub
 void JagGeo::sampleLinesOnCone( double x0, double y0, double z0, double r, double h, 
 								double nx, double ny, int num, JagVector<JagLine3D> &samples )
 {
+	if ( num < 1 ) return;
 	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0;
 	double x,y,z, gx, gy, gz;
@@ -11466,6 +11489,7 @@ void JagGeo::sampleLinesOnCone( double x0, double y0, double z0, double r, doubl
 void JagGeo::sampleLinesOnCylinder( double x0, double y0, double z0, double r, double h, 
 								    double nx, double ny, int num, JagVector<JagLine3D> &samples )
 {
+	if ( num < 1 ) return;
 	double delta = 2*JAG_PI/(double)num;
 	double alpha = 0.0;
 	double x,y,z, gx, gy, gz;
@@ -20561,66 +20585,6 @@ bool JagGeo::getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, d
 
 	return ( cnt > 0 );
 }
-
-
-/********
-// convert vector 2D shapes to polygon
-JagPolygon::JagPolygon( const JagSquare2D &sq )
-{
-	JagLineString3D ls;
-	for ( int i=0; i <4; ++i ) {
-		ls.add( sq.point[i].x, sq.point[i].y );
-	}
-	ls.add( sq.point[0].x, sq.point[0].y );
-	linestr.append( ls );
-}
-
-JagPolygon::JagPolygon( const JagRectangle2D &rect )
-{
-	JagLineString3D ls;
-	for ( int i=0; i <4; ++i ) {
-		ls.add( rect.point[i].x, rect.point[i].y );
-	}
-	ls.add( rect.point[0].x, rect.point[0].y );
-	linestr.append( ls );
-}
-
-JagPolygon::JagPolygon( const JagCircle2D &cir, int samples )
-{
-	prt(("s0125 JagPolygon JagCircle2D samples=%d cir.r=%f\n", samples, cir.r ));
-	JagLineString3D ls;
-	JagVector<JagPoint2D> vec;
-	JagGeo::samplesOn2DCircle( cir.x0, cir.y0, cir.r, samples, vec );
-	prt(("s0123 vec.size=%d\n", vec.size() ));
-	for ( int i=0; i < vec.size(); ++i ) {
-		ls.add( vec[i].x, vec[i].y );
-	}
-	ls.add( vec[0].x, vec[0].y );
-	linestr.append( ls );
-}
-
-JagPolygon::JagPolygon( const JagEllipse2D &e, int samples )
-{
-	JagLineString3D ls;
-	JagVector<JagPoint2D> vec;
-	JagGeo::samplesOn2DEllipse( e.x0, e.y0, e.a, e.b, e.nx, samples, vec );
-	for ( int i=0; i < vec.size(); ++i ) {
-		ls.add( vec[i].x, vec[i].y );
-	}
-	ls.add( vec[0].x, vec[0].y );
-	linestr.append( ls );
-}
-
-JagPolygon::JagPolygon( const JagTriangle2D &t )
-{
-	JagLineString3D ls;
-	ls.add( t.x1, t.y1 ); 
-	ls.add( t.x2, t.y2 ); 
-	ls.add( t.x3, t.y3 ); 
-	ls.add( t.x1, t.y1 ); 
-	linestr.append( ls );
-}
-*********/
 
 // return n>0: OK ,  <=0 error
 // instr: "point3d(...)"  "polygon((...),(...))"

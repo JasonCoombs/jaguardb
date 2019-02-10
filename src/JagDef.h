@@ -488,6 +488,7 @@
 #define JAG_FUNC_NUMLINES       316  // total number of line strings in multilinestring
 #define JAG_FUNC_DELAUNAYTRIANGLES       317  // Delaunay triangles 
 #define JAG_FUNC_GEOJSON        318  // make GeoJSon string from a shape
+#define JAG_FUNC_TOMULTIPOINT   319  // convert geom (vector and others) to multipoints
 
 
 // string functions 

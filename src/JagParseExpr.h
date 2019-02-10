@@ -273,6 +273,8 @@ class BinaryOpNode: public ExprElementNode
 						  int srid, const JagStrSplit &sp1, Jstr &val );
 	bool doAllToPolygon( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
+	bool doAllToMultipoint( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
 	bool doAllAsText( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
 	bool doAllOuterRing( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
@@ -384,13 +386,14 @@ class BinaryExpressionBuilder
 	JagParseAttribute _jpa;
 	JagParseParam *_pparam;
 
+	// operandStack is made up of BinaryOpNodes and StringElementNode
+	JagStack<ExprElementNode*> operandStack; 
+	int         operandStackTopSize() const;
+
   private:
 	// holds either (, +, -, *, /, %, ^ or any other function type  
 	JagStack<int> operatorStack;	
 
-	// operandStack is made up of BinaryOpNodes and StringElementNode
-	JagStack<ExprElementNode*> operandStack; 
-	int         operandStackTopSize() const;
 	int 		_datediffClause;
 	int			_substrClause;
 	int  		_lastOp;
