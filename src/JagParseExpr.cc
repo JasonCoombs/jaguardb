@@ -327,47 +327,6 @@ int StringElementNode::checkFuncValidConstantOnly( JagFixString &str, int &typeM
 	return 1;
 }
 
-#if 0
-// return str:  "OJAG=srid=tab=TYPE bbx  x y z"  3D
-// return str:  "OJAG=srid=tab=TYPE bbx  x y"  2D
-void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
-										const Jstr &colobjstr, JagFixString &str )
-{
-	char *pbuf;
-	int  ncols = _endcol - _begincol +1;
-	int offset[ncols];
-	int collen[ncols];
-	int totlen = 0;
-	for ( int i=0; i < ncols; ++i )
-	{
-		offset[i] = attrs[_tabnum][_begincol+i].offset;
-		collen[i] = attrs[_tabnum][_begincol+i].length;
-		totlen += collen[i];
-	}
-	int colobjsize = colobjstr.size();
-	int extra = colobjsize + 24; // max 24 args on buffer 
-	totlen += extra;
-	const char *colobjptr = colobjstr.c_str();
-
-	char *buf = jagmalloc( totlen );
-	memset( buf, ' ', totlen );
-	pbuf = buf;
-
-	memcpy( pbuf, colobjptr, colobjsize );
-	pbuf += colobjsize+1;
-
-	for ( int i = 0; i < ncols; ++i ) {
-		memcpy( pbuf, buffers[_tabnum]+offset[i], collen[i] );
-		pbuf += collen[i]+1;
-	}
-
-	buf[totlen-1] = '\0';
-	str = JagFixString( buf, totlen-1 );
-	free( buf );
-	//prt(("s0883 makeDataString str=[%s]\n", str.c_str() ));
-}
-#endif
-
 // return str:  "OJAG=srid=tab=TYPE bbx  x y z"  3D
 // return str:  "OJAG=srid=tab=TYPE bbx  x y"  2D
 void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
@@ -1260,7 +1219,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		}
 	} else {
 		// two children
-		prt(("s7102 two children JAG_NUM_ADD ltmode=%d rtmode=%d\n", ltmode, rtmode ));
+		//prt(("s7102 two children JAG_NUM_ADD ltmode=%d rtmode=%d\n", ltmode, rtmode ));
 		if ( 0 == ltmode && 0 == rtmode && _binaryOp == JAG_NUM_ADD ) {
 			type = ltype;
 			collen = lcollen + rcollen;
@@ -1418,9 +1377,8 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 			else result = 2;
 			// prt(("s2335 weird  result=%d\n", result ));
 		} else {
-			// prt(("s2039 in BinaryOpNode::checkFuncValid() \n" ));
-			prt(("s2039 _doCalculation _binaryOp=%d lstr=[%s] ltmd=%d ltp=%s\n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
-			// prt(("s2039 _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
+			prt(("s2639 _doCalculation _binaryOp=%d lstr=[%s] ltmd=%d ltp=%s\n", _binaryOp, lstr.c_str(), ltmode, ltype.c_str() ));
+			// prt(("s2639 _doCalculation rstr=[%s] ...\n", rstr.c_str() ));
 			result = _doCalculation( lstr, rstr, ltmode, rtmode, ltype, rtype, llength, rlength, first );
 			if ( result < 0 && setGlobal ) {
 				_opString = ""; _numCnts = _initK = _stddevSum = _stddevSumSqr = 0;
@@ -2100,8 +2058,8 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 	// match
 	else if ( _binaryOp == JAG_FUNC_MATCH ) {
 		// client side does this
-		//prt(("s2039 JAG_FUNC_MATCH  lstr=[%s]\n", lstr.c_str() ));
-		//prt(("s2039 JAG_FUNC_MATCH  rstr=[%s] coltype=%d\n", rstr.c_str(), coltype ));
+		//prt(("s4039 JAG_FUNC_MATCH  lstr=[%s]\n", lstr.c_str() ));
+		//prt(("s4039 JAG_FUNC_MATCH  rstr=[%s] coltype=%d\n", rstr.c_str(), coltype ));
 		if ( NULL == _reg ) {
 			try {
 			    _reg = new std::regex( rstr.c_str() );
@@ -3277,9 +3235,11 @@ void BinaryExpressionBuilder::init( const JagParseAttribute &jpa, JagParseParam 
 
 void BinaryExpressionBuilder::clean()
 {
+	//prt(("s8271 clean _jpa.clean operatorStack.clean operandStack.clean\n" ));
 	_jpa.clean();
-	operatorStack.clean();
 	operandStack.clean();
+	//operatorStack.clean();
+	while ( ! operatorStack.empty() ) { operatorStack.pop(); }
 }
 
 // BinaryExpressionBuilder methods for all
@@ -3291,7 +3251,6 @@ ExprElementNode* BinaryExpressionBuilder::getRoot() const
 	}
 
     ExprElementNode *topp = operandStack.top();
-    // return static_cast<BinaryOpNode *> (topp);
     return topp;
 }
 
@@ -3345,7 +3304,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		} else if ( *p == '(' ) {
 			if ( _isNot ) throw 2100;
 			if ( _datediffClause >= 0 || _substrClause >= 0 ) throw 2184;
-			//prt(("s9011 operatorStack.push (\n" ));
+			prt(("s9011 operatorStack.push (\n" ));
             operatorStack.push('(');
 			_lastOp ='(';
             ++p;
@@ -3357,7 +3316,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 				// no right parenthesis or "and/or" followed just after and/or
 				throw 2136;
 			}
-			//prt(("s9012 processRightParenthesis... \n" ));
+			prt(("s9012 processRightParenthesis... \n" ));
             processRightParenthesis( jmap );
             ++p;
 			isandor = 0;
@@ -3429,10 +3388,10 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 			_lastIsOperand = 1;
 			isandor = 0; 
 		} else if ( getCalculationType( p, fop, len, ctype ) ) {
-			//prt(("s9203 after getCalculationType p=[%s] ctype=%d _lastIsOperand=%d\n", p, ctype, _lastIsOperand ));
+			prt(("s9203 after getCalculationType p=[%s] ctype=%d _lastIsOperand=%d\n", p, ctype, _lastIsOperand ));
 			if ( 0 == ctype ) {
 				if ( !_lastIsOperand ) {
-					// special case, if last is not operand, check to make sure if current is negative value or invalid
+					// special case, if last is not operand, check if current is negative value or invalid
 					if ( isdigit(*(p+1)) ) {
 						// regard as negative number
 						if ( _isNot ) throw 2188;
@@ -3459,7 +3418,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 					//prt(("s8811 throw 2224\n" ));
 					throw 2224;
 				}
-				//prt(("s2039 operatorStack.push(%d)\n", fop ));
+				prt(("s2039 operatorStack.push(%s)\n", BinaryOpNode::binaryOpStr(fop).s() ));
 				operatorStack.push(fop);
 				_lastOp = fop;
 			}
@@ -3475,18 +3434,22 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		}
 	}
 
+	prt(("s3827 in parse() operatorStack.empty()=%d\n", operatorStack.empty() ));
     while (!operatorStack.empty()) {
-		//prt(("s2030 in loop doBinary( operator.top )\n" ));
+		prt(("s2030 in loop doBinary( operator.top=%s )\n", BinaryOpNode::binaryOpStr( operatorStack.top() ).c_str() ));
         doBinary( operatorStack.top(), jmap );
+		prt(("s2831 operatorStack.pop()\n" ));
         operatorStack.pop();
-		//prt(("s1025 in loop operandStack.size=%d stacktopsize=%d\n", operandStack.size(), operandStackTopSize() ));
+		prt(("s1025 in loop operandStack.size=%d stackTopSize=%d\n", operandStack.size(), operandStackTopSize() ));
     }
 
     // Invariant: At this point the operandStack should have only one element
     // operandStack.size() == 1
     // otherwise, the expression is not well formed.
-    if ( operandStack.size() != 1 ) {
-		//prt(("s2093 operandStack.size=%d !=1  stacktopsize=%d throw 2326\n", operandStack.size(), operandStackTopSize()  ));
+    //if ( operandStack.size() != 1 ) {
+	prt(("s1828 at end of parse() operandStack.size=%d operandStack.numOperators=%d\n", operandStack.size(), operandStack.numOperators ));
+    if ( operandStack.size() != operandStack.numOperators ) {
+		prt(("s2093 at end of parse(): operandStack.size=%d !=1  stacktopsize=%d throw 2326\n", operandStack.size(), operandStackTopSize()  ));
         throw 2326;
     }
 
@@ -3521,7 +3484,7 @@ void BinaryExpressionBuilder::processBetween( const JagParser *jpsr, const char 
 	StringElementNode *newNode = new StringElementNode( this, lastNode._name, lastNode._value, 
 														_jpa, lastNode._tabnum, lastNode._typeMode );
 
-    //prt(("s4440 new element, operandStack.push( newelement node )\n"));
+    prt(("s4440 operandStack.push( newelement ) name=[%s] value=[%s]\n", lastNode._name.s(),  lastNode._value.s()));
 	operandStack.push(newNode);
 	// and process operator <=, if "isNot", process operator >
 	if ( !_isNot ) processOperator( JAG_FUNC_LESSEQUAL, jmap );
@@ -3578,12 +3541,12 @@ void BinaryExpressionBuilder::processIn( const JagParser *jpsr, const char *&p, 
 void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char *&p, const char *&q, StringElementNode &lastNode,
 	const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, Jstr &colList )
 {
+	prt(("\ns3830 enter processOperand p=[%s]\n", p ));
 	Jstr name, value;
 	int typeMode = 1; // init as integer
 	const char *r;
 	q = p;
 
-	//prt(("\ns3830 enter processOperand p=[%s]\n", p ));
 	/**
 	// debug only
 	StringElementNode *topp = (StringElementNode*)getRoot();
@@ -3613,7 +3576,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		r = p+1;
 		value = Jstr(r, q-r);
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		//prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
+		prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		// prt(("s0393  new StringElementNode name=[%s] value=[%s] typeMode=%d\n", name.c_str(), value.c_str(), typeMode ));
 		if ( _substrClause >= 0 ) ++_substrClause;
@@ -3770,7 +3733,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		//prt(("s4502 new StrElemNode nme=[%s] val=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
+		prt(("s4502 new StrElemNode nme=[%s] val=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		++q; p = q;
 	} else {
@@ -3797,7 +3760,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			// for no quote operand, if all digits, regard as constant
 			value = Jstr(p, q-p);
 			StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		    //prt(("s4503 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
+		    prt(("s4503 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 			operandStack.push(newNode);
 			//operandStack.print();
 			if ( _substrClause >= 0 ) ++_substrClause;
@@ -3807,7 +3770,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			if ( 3 == _substrClause || 0 == _datediffClause ) {
 				value = Jstr(p, q-p);
 				StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-				//prt(("s5503 processOperand new StringElementNode name=[%s] value=[%s]\n", name.c_str(), value.c_str() ));
+				prt(("s5503 processOperand new StringElementNode name=[%s] value=[%s]\n", name.c_str(), value.c_str() ));
 				operandStack.push(newNode);
 				if ( _substrClause >= 0 ) ++_substrClause;
 				else if ( _datediffClause >= 0 ) ++_datediffClause;
@@ -3829,7 +3792,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 				}
 
 				StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, tabnum, typeMode );
-				//prt(("s5505 processOperand new StringElementNode name=[%s] value=[%s] operandStack.push()\n", name.c_str(), value.c_str() ));
+				prt(("s5505 processOperand new StringElementNode name=[%s] value=[%s] operandStack.push()\n", name.c_str(), value.c_str() ));
 				// name="test.el1.c1:y"
 
 				lastNode._name = newNode->_name;
@@ -3862,15 +3825,16 @@ void BinaryExpressionBuilder::processOperator( short op, JagHashStrInt &jmap )
 {
     // pop operators with higher precedence and create their BinaryOpNode
     short opPrecedence = precedence( op );
-	//prt(("s3084 enter processOperator op=%d opPrecedence=%d\n", op, opPrecedence ));
+	prt(("s3084 enter processOperator op=%d opPrecedence=%d\n", op, opPrecedence ));
     while ((!operatorStack.empty()) && (opPrecedence <= precedence( operatorStack.top() ))) {
-		//prt(("s2094 doBinary(%c) ...\n", operatorStack.top() ));
+		prt(("s2094 doBinary(%d) ...\n", operatorStack.top() ));
         doBinary( operatorStack.top(), jmap );
+		prt(("s3109 operatorStack.pop()\n" ));
         operatorStack.pop();
     }
 
     // lastly push the operator passed onto the operatorStack
-	//prt(("s0931 operatorStack.push(%c)\n", op ));
+	prt(("s0931 operatorStack.push(%d)\n", op ));
     operatorStack.push(op);
 	_lastOp = op;
 	// prt(("s2930 processOperator _lastOp=[%d]\n", _lastOp ));
@@ -3885,8 +3849,9 @@ void BinaryExpressionBuilder::processOperator( short op, JagHashStrInt &jmap )
 
 void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 {
+	prt(("s1833 processRightParenthesis )\n" ));
 	if ( operatorStack.empty() ) {
-		//prt(("s0018 in processRightParenthesis operatorStack.empty() true return\n" ));
+		prt(("s0018 in processRightParenthesis operatorStack.empty() true return\n" ));
 		return;
 	}
 
@@ -3894,18 +3859,20 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 	while ( 1 ) {
 		fop = operatorStack.top();
 		if ( fop == '(' ) {
-			//prt(("s8733 in processRightParenthesis see (, pop it and break\n" ));
+			prt(("s8733 in processRightParenthesis see (, pop it and break  operatorStack.pop()\n" ));
 			operatorStack.pop(); // remove '('
 			break;
 		} else if ( checkFuncType( fop ) ) {
-			//prt(("s4093 see fop=%d(%s) doBinary, operStk.pop(); break\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
+			prt(("s4093 see valid fop=%d(%s) doBinary\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
 			doBinary( fop, jmap );
+			prt(("s4093 opertorStk.pop(); break\n" ));
 			operatorStack.pop();
 			break;
 		} else {
-			//prt(("s4094 in procRightParent see fop=%d doBinary, operatorStack.pop(); loop\n", fop));
-			//prt(("s2736 checkFuncType(%d) is not valid, doBinary ...\n", fop ));
+			prt(("s4094 in procRightParent see fop=%d doBinary, in loop\n", fop));
+			prt(("s2736 checkFuncType(%d) is not valid, doBinary\n", fop ));
 			doBinary( fop, jmap );
+			prt(("s4093 opertorStk.pop(); no break\n" ));
 			operatorStack.pop();
 		}
 	}
@@ -3925,6 +3892,9 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 	Jstr carg1;
 	const char *p = NULL;;
 	ExprElementNode *t3;
+	int operandStackSize = operandStack.size();
+	int operandStackTSize = operandStackTopSize();
+
 	if ( funcHasTwoChildren(op) ) {
     	if ( operandStack.empty() ) { throw 1434; } 
 		int nargs = operandStackTopSize();
@@ -3981,34 +3951,43 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 		if ( op == JAG_FUNC_VORONOIPOLYGONS || op == JAG_FUNC_VORONOILINES ) {
 			prt(("s2038 op JAG_FUNC_VORONOIPOLYGONS nargs=%d stack.size=%d ...\n", nargs, operandStack.size() ));
+			/***
 			if ( 0 == nargs && 1 == operandStack.size() ) { nargs = 1; }
+			nargs = operandStackSize;
+			***/
 
 			if ( 1 == nargs ) {
 				right = NULL;
     			left = operandStack.top();
     			operandStack.pop();
+				prt(("s1025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 			} else if ( 2 == nargs ) {
 				right = NULL;
 
 				t3 = operandStack.top();
 				if ( t3->getValue(p) ) { carg1 = Jstr(p); } else throw 1342;
 				operandStack.pop();  // popped the toerlance element
+				prt(("s1025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 
     			if ( operandStack.empty() ) { throw 1434; } 
     			left = operandStack.top();
     			operandStack.pop();
+				prt(("s1325 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 			} else if ( 3 == nargs ) {
     			right = operandStack.top();
     			operandStack.pop();
+				prt(("s1425 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 
     			if ( operandStack.empty() ) { throw 1435; } 
 				t3 = operandStack.top();
-				if ( t3->getValue(p) ) { carg1 = Jstr(p); } else throw 1342;
+				if ( t3->getValue(p) ) { carg1 = Jstr(p); } else throw 1343;
 				operandStack.pop();  // popped the toerlance element
+				prt(("s1525 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 
     			if ( operandStack.empty() ) { throw 1446; } 
     			left = operandStack.top();
     			operandStack.pop();
+				prt(("s1625 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 			}
 		} else {
 			// all other cases, get right and left
@@ -4153,7 +4132,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     		operandStack.pop();
 			right = NULL;
     	} else if ( op == JAG_FUNC_TOPOLYGON || op == JAG_FUNC_TOMULTIPOINT ) {
-			prt(("s2043 operandStack.size=%d stacktopsize=%d\n", operandStack.size(), operandStackTopSize()  ));
+			prt(("s2043 see TOPOLYGON or TOMULTIPOINT operandStack.size=%d stacktopsize=%d\n", operandStack.size(), operandStackTopSize()  ));
 	    	if ( 1 == operandStackTopSize() ) {
 				// no arg, except the col itself
     			carg1 = "30";
@@ -4164,6 +4143,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     			} else throw 2932;
     			operandStack.pop();
 				right = NULL;
+				prt(("s2025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
     		}
     	} else if ( op == JAG_FUNC_GEOJSON ) {
 			int nargs = operandStackTopSize();
@@ -4450,6 +4430,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		if ( operandStack.empty() ) throw 4446;
 
 		left = operandStack.top();
+		prt(("s4281 left=%0x operandStack.pop()\n", left ));
 		operandStack.pop();
 	}
 
@@ -4461,8 +4442,15 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 	BinaryOpNode *pn = new BinaryOpNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	//operandStack.print();	
 	operandStack.push(pn);	
-	operandStack.resetTopArgs();	
+	//operandStack.resetTopArgs();	
+	// operandStack.topArgs = 0;
+	if (  BinaryOpNode::isMathOp( operatorStack.top() ) ) {
+		operandStack.topArgs = 0;
+	}
+
 	//operandStack.print();	
+	prt(( "s7202 pushed operatorStack.top=%s to operandStack, operandStack.size=%d left=%0x right=%0x\n", 
+		  BinaryOpNode::binaryOpStr(operatorStack.top()).c_str(), operandStack.size(), left, right ));
 }
 
 short BinaryExpressionBuilder::precedence( short fop )
@@ -5059,7 +5047,8 @@ bool BinaryExpressionBuilder::nameAndOpGood( const JagParser *jpsr, const Jstr &
 
 int BinaryExpressionBuilder::operandStackTopSize() const
 {
-	return operandStack.getTopArgs();
+	//return operandStack.getTopArgs();
+	return operandStack.topArgs;
 	/***
 	ExprElementNode *t;
 	int cnt = 0;
@@ -5347,7 +5336,7 @@ Jstr  BinaryOpNode::processTwoStrOp( int op, const JagFixString &inlstr, const J
 	JagStrSplit sp2( rstr.c_str(), ' ', true );
 
 	//sp1.shift();	
-	//sp2.shift();	
+	//sp2.shift(;	
 	//prt(("s1021 sp1.print sp2.print \n" ));
 	//sp1.print();
 	//sp2.print();
@@ -6215,7 +6204,7 @@ bool BinaryOpNode::doAllExtent( int srid, const Jstr& mk, const Jstr &colType, c
 	}
 
 	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
-	//prt(("s2039 sp[1]=[%s]\n", sp[1].c_str() ));
+	//prt(("s2059 sp[1]=[%s]\n", sp[1].c_str() ));
 	// prt(("s2411 colType=[%s] value=[%s] rc=%d\n",  colType.c_str(), value.c_str(), rc ));
 	return rc;
 }
@@ -6253,7 +6242,7 @@ bool BinaryOpNode::doAllStartPoint( const Jstr& mk, const Jstr &colType, const J
 	}
 
 	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
-	//prt(("s2039 sp[1]=[%s]\n", sp[1].c_str() ));
+	//prt(("s2239 sp[1]=[%s]\n", sp[1].c_str() ));
 	// prt(("s2411 colType=[%s] value=[%s]\n",  colType.c_str(), value.c_str() ));
 	return true;
 }
@@ -6632,7 +6621,7 @@ bool BinaryOpNode::doAllToPolygon( const Jstr& mk, const Jstr& hdr, const Jstr &
 bool BinaryOpNode::doAllToMultipoint( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
 								    int srid, const JagStrSplit &sp, const Jstr& carg, Jstr &value )
 {
-	prt(("s3420 doAllToPolygon() srid=%d mk=[%s] colType=[%s] sp1.print(): \n", srid, mk.c_str(), colType.c_str() ));
+	prt(("s3420 doAllToMultipoint() srid=%d mk=[%s] colType=[%s] carg=[%s]\n", srid, mk.c_str(), colType.c_str(), carg.s() ));
 	//sp.print();
 	int dim = JagGeo::getDimension( colType );
 	if ( 3 == dim ) {
@@ -6833,7 +6822,6 @@ bool BinaryOpNode::doAllRingN( const Jstr& mk, const Jstr& hdr, const Jstr &colT
 	return true;
 }
 
-//qwer
 bool BinaryOpNode::doAllGeoJson( const Jstr& mk, const Jstr &colType, 
 								    int srid, JagStrSplit &sp, const Jstr &carg,  Jstr &value )
 {
@@ -7102,7 +7090,7 @@ bool BinaryOpNode::doAllEndPoint( const Jstr& mk, const Jstr &colType, const Jag
 	}
 
 	//prt(("s2035 sp[0]=[%s]\n", sp[0].c_str() ));
-	//prt(("s2039 sp[1]=[%s]\n", sp[1].c_str() ));
+	//prt(("s2539 sp[1]=[%s]\n", sp[1].c_str() ));
 	//prt(("s2411 colType=[%s] value=[%s]\n",  colType.c_str(), value.c_str() ));
 	return true;
 }

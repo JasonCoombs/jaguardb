@@ -76,6 +76,7 @@ class ExprElementNode
 	virtual bool getValue( const char *&p ) = 0;
 	virtual void clear() = 0;
 	virtual void print( int mode ) = 0;
+	virtual bool isOperator() const { return false; }
 	
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -114,6 +115,7 @@ class StringElementNode: public ExprElementNode
 	virtual bool getValue( const char *&p ) { if ( _value.length() > 0 ) { p = _value.c_str(); return 1; } return 0; }
 	virtual void clear() {}
 	virtual void print( int mode );
+	virtual bool isOperator() const { return false; }
 	
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -173,6 +175,7 @@ class BinaryOpNode: public ExprElementNode
 	virtual bool getValue( const char *&p ) { return 0; }
 	virtual void clear();
 	virtual void print( int mode );
+	virtual bool isOperator() const { return true; }
 
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -392,7 +395,8 @@ class BinaryExpressionBuilder
 
   private:
 	// holds either (, +, -, *, /, %, ^ or any other function type  
-	JagStack<int> operatorStack;	
+	//JagStack<int> operatorStack;	
+	std::stack<int> operatorStack;	
 
 	int 		_datediffClause;
 	int			_substrClause;

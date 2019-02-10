@@ -31,8 +31,8 @@ class JagStack
 		void	clean( int initSize = 4 );
 		void 	push( const Pair &pair );
 		void 	pop();
-		const Pair &top() const;
-		const Pair & operator[](int i) const;
+		const   Pair &top() const;
+		const   Pair & operator[](int i) const;
 		inline  abaxint size() const { return _last+1; }
 		inline  abaxint capacity() const { return _arrlen; }
 		void 	destroy();
@@ -41,15 +41,16 @@ class JagStack
 		void 	reAllocShrink();
 		void    concurrent( bool flag = true );
 		inline bool    empty() { if ( _last >=0 ) return false; else return true; }
-		inline int 	getTopArgs() const { return _topArgs; }
-		inline void	resetTopArgs() { _topArgs = 0; }
+		//inline int 	getTopArgs() const { return _topArgs; }
+		//inline void	resetTopArgs() { _topArgs = 0; }
+		int    numOperators;
+		int    topArgs;
 
 	protected:
 
 		Pair   		*_arr;
 		abaxint  	_arrlen;
 		abaxint  	_last;
-		int         _topArgs;
 		static const int _GEO  = 2;
 };
 
@@ -61,7 +62,9 @@ JagStack<Pair>::JagStack( int initSize )
 	_arr = (Pair*)calloc( initSize, sizeof( Pair ) );
 	_arrlen = initSize;
 	_last = -1;
-	_topArgs = 0;
+
+	topArgs = 0;
+	numOperators = 0;
 }
 
 // copy ctor
@@ -73,7 +76,8 @@ JagStack<Pair>::JagStack( const JagStack<Pair> &str )
 
 	_arrlen = str._arrlen;
 	_last = str._last;
-	_topArgs = str._topArgs;
+	topArgs = str.topArgs;
+	numOperators = str.numOperators;
 	_arr = (Pair*)calloc( _arrlen, sizeof( Pair ) ); 
 	for ( int i = 0; i < _arrlen; ++i ) {
 		_arr[i] = str._arr[i];
@@ -89,7 +93,8 @@ JagStack<Pair>& JagStack<Pair>::operator=( const JagStack<Pair> &str )
 
 	_arrlen = str._arrlen;
 	_last = str._last;
-	_topArgs = str._topArgs;
+	topArgs = str.topArgs;
+	numOperators = str.numOperators;
 	_arr = (Pair*)calloc( _arrlen, sizeof( Pair ) ); 
 	for ( int i = 0; i < _arrlen; ++i ) {
 		_arr[i] = str._arr[i];
@@ -108,16 +113,30 @@ void JagStack<Pair>::destroy( )
 		_arrlen = 0;
 		_last = -1;
 		_arr = NULL;
-		_topArgs = 0;
+		topArgs = 0;
+		numOperators = 0;
 		return;
 	}
+
+	/*******
+	printf("s2287 stack _last=%d\n", _last );
+	fflush( stdout );
+	for ( int i=0; i <= _last; ++i ) {
+		//prt(("s8119 i=%d isOperator=%d\n", i, _arr[i]->isOperator() ));
+		if ( _arr[i]->isOperator() ) {
+			_arr[i]->clear();
+			delete _arr[i];
+		}
+	}
+	*******/
 
 	// delete [] _arr;
 	if ( _arr ) free ( _arr );
 	_arrlen = 0;
 	_last = -1;
 	_arr = NULL;
-	_topArgs = 0;
+	topArgs = 0;
+	numOperators = 0;
 }
 
 // dtor
@@ -182,7 +201,9 @@ void JagStack<Pair>::push( const Pair &newpair )
 
 	++ _last;
 	_arr[_last] = newpair;
-	++ _topArgs;
+	++ topArgs;
+
+	if ( newpair->isOperator() ) { ++ numOperators; }
 }
 
 // back: add end (enqueue end)
@@ -212,8 +233,9 @@ void JagStack<Pair>::pop()
     	}
 	} 
 
+	if ( _arr[_last]->isOperator() ) { -- numOperators; }
 	-- _last;
-	-- _topArgs;
+	-- topArgs;
 }
 
 
