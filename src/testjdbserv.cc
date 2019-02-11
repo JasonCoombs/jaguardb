@@ -219,7 +219,7 @@ int main(int argc, char *argv[] )
 	//testjaguarreader();
 	//testjaguarreader2();
 	// testUUID();
-	// testStrSplitWQuote();
+	testStrSplitWQuote();
 	// testAtomic( N );
 
 	// test_schema( argv[2] );
@@ -267,7 +267,7 @@ int main(int argc, char *argv[] )
 	// test_sys_getline();
 	// test_jag_getline();
 	// test_reply( argv[1] );
-	test_str( N );
+	//test_str( N );
 	//test_geo( N );
 	//test_sqrt( N );
 	// test_split( N );
@@ -279,7 +279,7 @@ int main(int argc, char *argv[] )
 	// test_cgal();
 	//test_new( N );
 	//test_equation();
-	test_intersection();
+	//test_intersection();
 }
 
 
@@ -650,6 +650,20 @@ void testStrSplitWQuote()
 	JagStrSplitWithQuote splitwq4(p+1, ',');
 	splitwq4.print();
 	printf("len [%d]\n", splitwq4.length());
+
+	Jstr aa = "(a1, f2, 'fdfdfd', 12, 'fdfdfd3333 () ')";
+	prt(("aa=[%s]\n", aa.s() ));
+	JagStrSplitWithQuote saa(aa.s(), ',', false );
+	saa.print();
+
+	aa = "sin(a1,cos(dd), 33), f2, 'fdfdfd', 12, 'fdfdfd3333 ()',99";
+	prt(("aa=[%s]\n", aa.s() ));
+	saa.init(aa.s(), ',', true );
+	saa.print();
+
+	JagStrSplitWithQuote q;
+	int nn = q.count(aa.s(), ',' );
+	prt(("aa count=%d\n", nn ));
 
 }
 
@@ -1292,15 +1306,15 @@ int test_misc()
 
 void test_stack()
 {
-	JagStack<int>  ints;
+	std::stack<int>  ints;
 
 	ints.push(11);
 	ints.push(19);
 	ints.push(21);
 	ints.push(29);
-	ints.print();
+	//ints.print();
 	ints.pop();
-	ints.print();
+	//ints.print();
 
 	struct A { int a; };
 }

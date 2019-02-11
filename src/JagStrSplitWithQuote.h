@@ -32,14 +32,17 @@ class JagStrSplitWithQuote
 	public:   
 
 		JagStrSplitWithQuote();
-		JagStrSplitWithQuote(const char* str, char sep = ';');
-		void init(const char* str, char sep);
+		//JagStrSplitWithQuote(const char* str, char sep = ';');
+		JagStrSplitWithQuote(const char* str, char sep, bool skipBracket=true );
+		void init(const char* str, char sep, bool skipBracket=true);
+		int count(const char* str, char sep, bool skipBracket=true);
 
 		void destroy();
 		~JagStrSplitWithQuote();
 
 	    const Jstr& operator[]( int i ) const;
 		abaxint length() const;
+		abaxint size() const;
 		bool  exists(const Jstr &token) const;
 		void	print();
 

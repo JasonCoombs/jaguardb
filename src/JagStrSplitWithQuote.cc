@@ -30,15 +30,15 @@ JagStrSplitWithQuote::JagStrSplitWithQuote()
 	length_ = 0;
 }
 
-JagStrSplitWithQuote::JagStrSplitWithQuote(const char* str, char sep)
+JagStrSplitWithQuote::JagStrSplitWithQuote(const char* str, char sep, bool skipBracket)
 {
 	list_ = NULL;
 	length_ = 0;
-	init( str, sep );
+	init( str, sep, skipBracket );
 }
 
 // skip ( ) and ' "
-void JagStrSplitWithQuote::init(const char* str, char sep)
+void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket )
 {
 	destroy();
 
@@ -71,16 +71,14 @@ void JagStrSplitWithQuote::init(const char* str, char sep)
 	while ( true ) {
 		if ( *trackpos == '\0' ) { 
 			pp = trackpos - 1;
-			//while ( *pp == ' ' ) --pp;
 			while ( isspace(*pp) ) --pp;
 			++pp;
-			// saveend[tokens] = pp;
 			pos[tokens]->saveend = pp;
 			++tokens; 
 			break;
 		} else if ( *trackpos == '\'' && (trackpos = jumptoEndQuote(trackpos)) && *trackpos != '\0' ) ++trackpos;
 		else if ( *trackpos == '"' && (trackpos = jumptoEndQuote(trackpos)) && *trackpos != '\0' ) ++trackpos;
-		else if ( *trackpos == '(' ) {
+		else if ( skipBracket && *trackpos == '(' ) {
 			++parencnt;
 			++trackpos;
 			while ( true ) {
@@ -94,22 +92,16 @@ void JagStrSplitWithQuote::init(const char* str, char sep)
 				else if ( *trackpos == '(' ) {
 					++parencnt;
 					++trackpos;
-				//} else if ( *trackpos != ')' && *trackpos != '\0' ) ++trackpos;
 				} else if ( *trackpos != '\0' ) ++trackpos;
 			}
 			if ( *trackpos == ')' ) ++trackpos;
 		} else if ( *trackpos == sep ) {
 			pp = trackpos - 1;
-			//while ( *pp == ' ' ) --pp;
 			while ( isspace(*pp) ) --pp;
 			++pp;
-			// saveend[tokens] = pp;
 			pos[tokens]->saveend = pp;
-			// *pp = '\0';
-			// *trackpos = '\0';
 			++trackpos;
 			++tokens;
-			// parsestart[tokens] = trackpos;
 			pos[tokens]->parsestart = trackpos;
 		} else ++trackpos;
 	}
@@ -117,12 +109,9 @@ void JagStrSplitWithQuote::init(const char* str, char sep)
 	len = tokens;
 	tokens = 0;
 	for ( int i = 0; i < len; ++i ) {
-		// trackpos = parsestart[i];
 		trackpos = pos[i]->parsestart;
 		while( isspace(*trackpos) ) ++trackpos;
 		if ( *trackpos != '\0' ) {
-			// savestart[tokens] = trackpos;
-			// saveend[tokens] = saveend[i];
 			pos[tokens]->savestart = trackpos;
 			pos[tokens]->saveend = pos[i]->saveend;
 			++tokens;
@@ -134,10 +123,8 @@ void JagStrSplitWithQuote::init(const char* str, char sep)
 
 	for ( int i = 0; i < length_; ++i ) {
 		if ( pos[i]->saveend - pos[i]->savestart <= 0 ) {
-			// list_[i] == ""; // bug
 			list_[i] = "";
 		} else {
-		 	// list_[i] = Jstr(savestart[i], saveend[i]-savestart[i]);
 		 	list_[i] = Jstr(pos[i]->savestart, pos[i]->saveend - pos[i]->savestart );
 		}
 	}
@@ -165,17 +152,18 @@ void JagStrSplitWithQuote::destroy()
 
 const Jstr& JagStrSplitWithQuote::operator[](int i ) const
 {
-	if ( i < length_ )
-	{
+	if ( i < length_ ) {
 		return list_[i];
-	}
-	else
-	{
+	} else {
 		return list_[ length_ -1];
 	}
 }
 
 abaxint JagStrSplitWithQuote::length() const
+{
+	return length_;
+}
+abaxint JagStrSplitWithQuote::size() const
 {
 	return length_;
 }
@@ -193,8 +181,90 @@ bool JagStrSplitWithQuote::exists(const Jstr &token) const
 
 void JagStrSplitWithQuote::print()
 {
-	for (int i=0; i < length_; i++)
-	{
+	for (int i=0; i < length_; i++) {
 		printf("%d=[%s]\n", i, list_[i].c_str() );
 	}
+}
+
+
+int JagStrSplitWithQuote::count(const char* str, char sep, bool skipBracket )
+{
+	destroy();
+
+	list_ = NULL;
+	length_ = 0;
+
+	sep_ = sep;
+	if ( str == NULL || *str == '\0' ) return 0;
+
+	int len = strchrnum(str, sep);
+	++len;
+	int tokens = 0;
+	int parencnt = 0;
+
+	JagSplitPosition *pos[len];
+	for ( int i = 0; i < len; ++i ) {
+		pos[i] = new JagSplitPosition();
+	}
+
+	char *trackpos, *token, *pp;
+	token = (char*)str;
+	pos[0]->parsestart = trackpos = token;
+	while ( true ) {
+		if ( *trackpos == '\0' ) { 
+			pp = trackpos - 1;
+			while ( isspace(*pp) ) --pp;
+			++pp;
+			pos[tokens]->saveend = pp;
+			++tokens; 
+			break;
+		} else if ( *trackpos == '\'' && (trackpos = jumptoEndQuote(trackpos)) && *trackpos != '\0' ) ++trackpos;
+		else if ( *trackpos == '"' && (trackpos = jumptoEndQuote(trackpos)) && *trackpos != '\0' ) ++trackpos;
+		else if ( skipBracket && *trackpos == '(' ) {
+			++parencnt;
+			++trackpos;
+			while ( true ) {
+				if ( *trackpos == '\0' ) break;
+				if ( *trackpos == ')' ) {
+					--parencnt;
+					if ( !parencnt ) break;
+					else ++trackpos;
+				} else if ( *trackpos == '\'' && (trackpos = jumptoEndQuote(trackpos)) && *trackpos != '\0' ) ++trackpos;
+				else if ( *trackpos == '"' && (trackpos = jumptoEndQuote(trackpos)) && *trackpos != '\0' ) ++trackpos;
+				else if ( *trackpos == '(' ) {
+					++parencnt;
+					++trackpos;
+				} else if ( *trackpos != '\0' ) ++trackpos;
+			}
+			if ( *trackpos == ')' ) ++trackpos;
+		} else if ( *trackpos == sep ) {
+			pp = trackpos - 1;
+			while ( isspace(*pp) ) --pp;
+			++pp;
+			pos[tokens]->saveend = pp;
+			++trackpos;
+			++tokens;
+			pos[tokens]->parsestart = trackpos;
+		} else ++trackpos;
+	}
+
+	len = tokens;
+	tokens = 0;
+	for ( int i = 0; i < len; ++i ) {
+		trackpos = pos[i]->parsestart;
+		while( isspace(*trackpos) ) ++trackpos;
+		if ( *trackpos != '\0' ) {
+			pos[tokens]->savestart = trackpos;
+			pos[tokens]->saveend = pos[i]->saveend;
+			++tokens;
+		}
+	}
+
+	//length_ = tokens;
+	length_ = 0;
+	for ( int i = 0; i < len; ++i ) {
+		delete pos[i];
+	}
+
+	return tokens;
 }

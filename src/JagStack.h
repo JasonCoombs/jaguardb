@@ -41,17 +41,14 @@ class JagStack
 		void 	reAllocShrink();
 		void    concurrent( bool flag = true );
 		inline bool    empty() { if ( _last >=0 ) return false; else return true; }
-		//inline int 	getTopArgs() const { return _topArgs; }
-		//inline void	resetTopArgs() { _topArgs = 0; }
 		int    numOperators;
-		int    topArgs;
 
 	protected:
-
 		Pair   		*_arr;
 		abaxint  	_arrlen;
 		abaxint  	_last;
 		static const int _GEO  = 2;
+		bool        _isDestroyed;
 };
 
 // ctor
@@ -60,10 +57,11 @@ JagStack<Pair>::JagStack( int initSize )
 {
 	//_arr = new Pair[initSize];
 	_arr = (Pair*)calloc( initSize, sizeof( Pair ) );
+	memset(_arr, initSize*sizeof(Pair), 0 );
 	_arrlen = initSize;
 	_last = -1;
+	_isDestroyed = false;
 
-	topArgs = 0;
 	numOperators = 0;
 }
 
@@ -71,34 +69,36 @@ JagStack<Pair>::JagStack( int initSize )
 template <class Pair> 
 JagStack<Pair>::JagStack( const JagStack<Pair> &str )
 {
+	throw 2345;
 	if ( _arr == str._arr ) return;
 	if ( _arr ) free( _arr );
 
 	_arrlen = str._arrlen;
 	_last = str._last;
-	topArgs = str.topArgs;
 	numOperators = str.numOperators;
 	_arr = (Pair*)calloc( _arrlen, sizeof( Pair ) ); 
 	for ( int i = 0; i < _arrlen; ++i ) {
 		_arr[i] = str._arr[i];
 	}
+	_isDestroyed = false;
 }
 
 // assignment operator
 template <class Pair> 
 JagStack<Pair>& JagStack<Pair>::operator=( const JagStack<Pair> &str )
 {
+	throw 2346;
 	if ( _arr == str._arr ) return *this;
 	if ( _arr ) free( _arr );
 
 	_arrlen = str._arrlen;
 	_last = str._last;
-	topArgs = str.topArgs;
 	numOperators = str.numOperators;
 	_arr = (Pair*)calloc( _arrlen, sizeof( Pair ) ); 
 	for ( int i = 0; i < _arrlen; ++i ) {
 		_arr[i] = str._arr[i];
 	}
+	_isDestroyed = false;
 	return *this;
 }
 
@@ -106,37 +106,36 @@ JagStack<Pair>& JagStack<Pair>::operator=( const JagStack<Pair> &str )
 template <class Pair> 
 void JagStack<Pair>::destroy( )
 {
-	if ( ! _arr ) return;
+	//prt(("s2727 this=%0x in destroy _arr=%0x _isDestroyed=%d\n", this, _arr, _isDestroyed ));
+	if ( ! _arr ) {
+		return;
+	}
+	if ( _isDestroyed ) {
+		return;
+	}
+
 	if ( _last < 0 ) {
-		// delete [] _arr;
 		if ( _arr ) free ( _arr );
 		_arrlen = 0;
 		_last = -1;
 		_arr = NULL;
-		topArgs = 0;
 		numOperators = 0;
 		return;
 	}
 
-	/*******
-	printf("s2287 stack _last=%d\n", _last );
-	fflush( stdout );
+	//prt(("s2287 stack ::destroy() _last=%d\n", _last ));
 	for ( int i=0; i <= _last; ++i ) {
-		//prt(("s8119 i=%d isOperator=%d\n", i, _arr[i]->isOperator() ));
-		if ( _arr[i]->isOperator() ) {
-			_arr[i]->clear();
-			delete _arr[i];
-		}
+		//prt(("s8119 i=%d address=%0x clear and delete\n", i, _arr[i] ));
+		//delete _arr[i];
 	}
-	*******/
 
 	// delete [] _arr;
 	if ( _arr ) free ( _arr );
 	_arrlen = 0;
 	_last = -1;
 	_arr = NULL;
-	topArgs = 0;
 	numOperators = 0;
+	_isDestroyed = true;
 }
 
 // dtor
@@ -149,10 +148,8 @@ JagStack<Pair>::~JagStack( )
 template <class Pair>
 void JagStack<Pair>::clean( int initSize )
 {
+	//prt(("s8282 stack cleaned this=%0x\n", this ));
 	destroy();
-	_arr = (Pair*)calloc( initSize, sizeof( Pair ) );
-	_arrlen = initSize;
-	_last = -1;
 }
 
 template <class Pair> 
@@ -197,11 +194,17 @@ void JagStack<Pair>::reAllocShrink()
 template <class Pair> 
 void JagStack<Pair>::push( const Pair &newpair )
 {
+	if ( NULL == _arr ) {
+		_arr = (Pair*)calloc( 4, sizeof( Pair ) );
+		memset(_arr, 4*sizeof(Pair), 0 );
+		_arrlen = 4;
+		_last = -1;
+	}
+
 	if ( _last == _arrlen-1 ) { reAlloc(); }
 
 	++ _last;
 	_arr[_last] = newpair;
-	++ topArgs;
 
 	if ( newpair->isOperator() ) { ++ numOperators; }
 }
@@ -212,7 +215,6 @@ const Pair &JagStack<Pair>::top() const
 {
 	if ( _last < 0 ) {
 		printf("s5004 stack empty, error top()\n");
-		//exit(1);
 		throw 2920;
 	} 
 	return _arr[ _last ];
@@ -235,7 +237,6 @@ void JagStack<Pair>::pop()
 
 	if ( _arr[_last]->isOperator() ) { -- numOperators; }
 	-- _last;
-	-- topArgs;
 }
 
 
@@ -245,7 +246,7 @@ void JagStack<Pair>::print()
 	abaxint i;
 	printf("c3012 JagStack this=%0x _arrlen=%d _last=%d \n", this, _arrlen, _last );
 	for ( i = 0; i  <= _last; ++i) {
-		printf("%09d  %d\n", i, _arr[i] );
+		printf("%09d  %0x\n", i, _arr[i] );
 	}
 	printf("\n");
 }

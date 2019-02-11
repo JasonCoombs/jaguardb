@@ -72,10 +72,12 @@
 // ctor
 ExprElementNode::ExprElementNode()
 {
+	_isDestroyed = false;
 }
 
 ExprElementNode::~ExprElementNode() 
 { 
+	_isDestroyed = false;
 }
  
 
@@ -84,18 +86,8 @@ ExprElementNode::~ExprElementNode()
 StringElementNode::StringElementNode() 
 {
 	_isElement = true;
+	_nargs = 0;
 }
-
-/***
-StringElementNode::StringElementNode(const StringElementNode& n) 
-{
-	_rowHash = NULL;
-}
-
-StringElementNode& StringElementNode::operator=(const StringElementNode& n) 
-{
-}
-***/
 
 // ctor
 StringElementNode::StringElementNode( BinaryExpressionBuilder *builder, const Jstr &name, 
@@ -106,9 +98,9 @@ StringElementNode::StringElementNode( BinaryExpressionBuilder *builder, const Js
 	_value = value; _jpa = jpa; _tabnum = tabnum; _typeMode = typeMode;
     _srid = _offset = _length = _sig = _nodenum = _begincol = _endcol = 0;
     _type = ""; 
-	// _columns =  columns;
 	_builder = builder;
 	_isElement = true;
+	_nargs = 0;
 	// prt(("s2075 StringElementNode ctor _columns=[%s]\n", _columns.c_str() ));
 
 	if ( _name.size() > 0 ) {
@@ -130,6 +122,13 @@ StringElementNode::~StringElementNode()
 	prt(( "s6726 StringElementNode dtor called. _name=[%s] _value=[%s] _columns=[%s]\n", 
 		  _name.c_str(), _value.c_str(), _columns.c_str() ));
     ***/
+	if ( _isDestroyed ) return;
+	clear();
+	_isDestroyed = true;
+}
+
+void StringElementNode::clear()
+{
 }
 
 void StringElementNode::print( int mode ) {
@@ -401,7 +400,7 @@ void StringElementNode::getPolyData( const Jstr &polyType, JagMergeReaderBase *n
 			_builder->_pparam->_allColumns = _builder->_pparam->_colHash->getKeyStrings();
 		}
 	}
-	prt(("s2283 allColumns=[%s]\n", _builder->_pparam->_allColumns.c_str() ));
+	//prt(("s2283 allColumns=[%s]\n", _builder->_pparam->_allColumns.c_str() ));
 	JagStrSplit sp( _builder->_pparam->_allColumns, '|' );
 
 	Jstr colType;
@@ -826,18 +825,29 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 
 ////////////////////////////////////////////// BinaryOpNode ////////////////////////////////////
 // ctor
-BinaryOpNode::BinaryOpNode( BinaryExpressionBuilder* builder, short op, ExprElementNode *l, ExprElementNode *r,
+BinaryOpNode::BinaryOpNode( BinaryExpressionBuilder* builder, short op, int opArgs, ExprElementNode *l, ExprElementNode *r,
     				const JagParseAttribute &jpa, int arg1, int arg2, Jstr carg1 )
 {
 	_binaryOp = op; _left = l; _right = r; _jpa = jpa; _arg1 = arg1; _arg2 = arg2; _carg1 = carg1;
 	_numCnts = _initK = _stddevSum = _stddevSumSqr = _nodenum = 0;
 	_builder = builder;
 	_isElement = false;
+	_nargs = opArgs;
 	_reg = NULL;
 }
 
+// dtor
+BinaryOpNode::~BinaryOpNode()
+{
+	if ( _isDestroyed ) return;
+	clear();
+	_isDestroyed = true;
+}
+
+
 void BinaryOpNode::clear()
 {
+	prt(("s3738 free _left=%0x _right=%0x\n", _left, _right ));
 	if ( _left ) { _left->clear(); if ( _left ) delete _left; _left = NULL; }
 	if ( _right ) { _right->clear(); if ( _right ) delete _right; _right = NULL; }
 	if ( _reg ) { delete _reg; _reg = NULL; }
@@ -1407,7 +1417,6 @@ int BinaryOpNode::checkFuncValid( JagMergeReaderBase *ntr, const JagHashStrInt *
 	
 	//prt(("s0939 end  BinaryOpNode::checkFuncValid tmp9999 result=%d\n", result ));
 	//prt(("s3008 str=[%s] setGlobal=%d typeMode=%d\n", str.c_str(), setGlobal, typeMode ));
-	prt(("s2043 operandStack.size=%d stacktopsize=%d\n", _builder->operandStack.size(), _builder->operandStackTopSize()  ));
 	return result;
 }
 
@@ -3219,11 +3228,15 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 BinaryExpressionBuilder::BinaryExpressionBuilder()
 {
 	//prt(("s8612 BinaryExpressionBuilder ctor called\n" ));
+	_isDestroyed = false;
 }
 
 BinaryExpressionBuilder::~BinaryExpressionBuilder()
 {
 	//prt(("s8613 BinaryExpressionBuilder dtor called\n" ));
+	if ( _isDestroyed ) return;
+	clean();
+	_isDestroyed = true;
 }
 
 void BinaryExpressionBuilder::init( const JagParseAttribute &jpa, JagParseParam *pparam )
@@ -3235,11 +3248,11 @@ void BinaryExpressionBuilder::init( const JagParseAttribute &jpa, JagParseParam 
 
 void BinaryExpressionBuilder::clean()
 {
-	//prt(("s8271 clean _jpa.clean operatorStack.clean operandStack.clean\n" ));
+	prt(("s8271 clean _jpa.clean operatorStack.clean operandStack.clean\n" ));
 	_jpa.clean();
 	operandStack.clean();
-	//operatorStack.clean();
 	while ( ! operatorStack.empty() ) { operatorStack.pop(); }
+	while ( ! operatorArgStack.empty() ) { operatorArgStack.pop(); }
 }
 
 // BinaryExpressionBuilder methods for all
@@ -3285,10 +3298,10 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 	}
 	//prt(("s2822 parse columns=[%s]\n", columns.c_str() ));
 
-    const char *p = str, *q;
+    const char *p = str, *q, *m;
+	int bcnt;
 	short fop = 0, len = 0, isandor = 0, ctype = 0;
 	StringElementNode lastNode;
-	//lastNode._columns = columns;
 	
 	while ( *p != '\0' ) {
 		while ( isspace(*p) ) ++p;
@@ -3304,8 +3317,21 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		} else if ( *p == '(' ) {
 			if ( _isNot ) throw 2100;
 			if ( _datediffClause >= 0 || _substrClause >= 0 ) throw 2184;
-			prt(("s9011 operatorStack.push (\n" ));
+			//prt(("s9011 operatorStack.push (\n" ));
+			bcnt = 1;
+			m = p+1;
+			while ( *m != '\0' ) {
+				if ( *m == '(' ) ++ bcnt;
+				else if ( *m == ')' ) -- bcnt;
+				if ( 0 == bcnt ) { break; }
+				++m;
+			}
+			Jstr args(p+1, m-p-1);
+			JagStrSplitWithQuote spq;
+			bcnt = spq.count( args.s(), ',', true );
+			//prt(("s1846 s=[%s] nargs=%d\n", args.s(), bcnt ));
             operatorStack.push('(');
+            operatorArgStack.push(bcnt);
 			_lastOp ='(';
             ++p;
 			isandor = 0;
@@ -3316,7 +3342,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 				// no right parenthesis or "and/or" followed just after and/or
 				throw 2136;
 			}
-			prt(("s9012 processRightParenthesis... \n" ));
+
             processRightParenthesis( jmap );
             ++p;
 			isandor = 0;
@@ -3335,7 +3361,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 			if ( !_lastIsOperand ) throw 2180;
 			// "and" condition
 			if ( isandor ) { throw 2189; }
-			processOperator( JAG_LOGIC_AND, jmap );
+			processOperator( JAG_LOGIC_AND, 2, jmap );
 			p += 4;
 			isandor = 1;
 			_lastIsOperand = 0;
@@ -3347,7 +3373,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 			if ( isandor ) {
 				throw 2112;
 			}
-			processOperator( JAG_LOGIC_AND, jmap );
+			processOperator( JAG_LOGIC_AND, 2, jmap );
 			p += 3;
 			isandor = 1;
 			_lastIsOperand = 0;
@@ -3359,7 +3385,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
             if ( isandor ) {
                 throw 2115;
             }
-            processOperator( JAG_LOGIC_OR, jmap );
+            processOperator( JAG_LOGIC_OR, 2, jmap );
             p += 2;
             isandor = 1;
 			_lastIsOperand = 0;
@@ -3371,7 +3397,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 			if ( isandor ) {
 				throw 2118;
 			}
-			processOperator( JAG_LOGIC_OR, jmap );
+			processOperator( JAG_LOGIC_OR, 2, jmap );
 			p += 3;
 			isandor = 1;
 			_lastIsOperand = 0;
@@ -3388,7 +3414,25 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 			_lastIsOperand = 1;
 			isandor = 0; 
 		} else if ( getCalculationType( p, fop, len, ctype ) ) {
-			prt(("s9203 after getCalculationType p=[%s] ctype=%d _lastIsOperand=%d\n", p, ctype, _lastIsOperand ));
+			//prt(("s9203 after getCalculationType p=[%s] ctype=%d _lastIsOperand=%d\n", p, ctype, _lastIsOperand ));
+			//  p=[numpolygons(voronoipolygons(tomultipoint(s1)))]
+			int nargs;
+			if ( BinaryOpNode::isMathOp(fop) ) {
+				nargs = 2;
+			} else {
+    			int bcnt = 1;
+    			const char *m = p+len+1;
+    			while ( *m != '\0' ) {
+    				if ( *m == '(' ) ++bcnt; else if ( *m == ')' ) --bcnt;
+    				if ( 0 == bcnt ) { break; }
+					++m;
+    			}
+    			Jstr args(p+len, m-p-len);
+    			JagStrSplitWithQuote spq;
+    			nargs = spq.count( args.s(), ',', true );
+				//prt(("s1928 args=[%s] size=%d\n", args.s(), nargs )); 
+			}
+
 			if ( 0 == ctype ) {
 				if ( !_lastIsOperand ) {
 					// special case, if last is not operand, check if current is negative value or invalid
@@ -3403,7 +3447,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 				}
 				// + - * / % math op
 				if ( _isNot ) throw 2221;
-				processOperator( *p, jmap );
+				processOperator( *p, nargs, jmap );
 			} else if ( 3 == ctype ) {
 				if ( !_lastIsOperand ) throw 2287;
 				// set "not" flag, may used for following "between ... and ..." or " in(..." syntax 
@@ -3418,8 +3462,9 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 					//prt(("s8811 throw 2224\n" ));
 					throw 2224;
 				}
-				prt(("s2039 operatorStack.push(%s)\n", BinaryOpNode::binaryOpStr(fop).s() ));
+				//prt(("s2039 operatorStack.push(%s) args=%d\n", BinaryOpNode::binaryOpStr(fop).s(), nargs ));
 				operatorStack.push(fop);
+				operatorArgStack.push( nargs );
 				_lastOp = fop;
 			}
 			p += len;
@@ -3434,22 +3479,17 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		}
 	}
 
-	prt(("s3827 in parse() operatorStack.empty()=%d\n", operatorStack.empty() ));
+	//prt(("s3827 in parse() operatorStack.empty()=%d\n", operatorStack.empty() ));
     while (!operatorStack.empty()) {
-		prt(("s2030 in loop doBinary( operator.top=%s )\n", BinaryOpNode::binaryOpStr( operatorStack.top() ).c_str() ));
-        doBinary( operatorStack.top(), jmap );
-		prt(("s2831 operatorStack.pop()\n" ));
+		//prt(("s2030 in loop doBinary( operator.top=%s )\n", BinaryOpNode::binaryOpStr( operatorStack.top() ).c_str() ));
+        doBinary( operatorStack.top(), operatorArgStack.top(), jmap );
+		//prt(("s2831 operatorStack.pop()\n" ));
         operatorStack.pop();
-		prt(("s1025 in loop operandStack.size=%d stackTopSize=%d\n", operandStack.size(), operandStackTopSize() ));
+        operatorArgStack.pop();
     }
 
-    // Invariant: At this point the operandStack should have only one element
-    // operandStack.size() == 1
-    // otherwise, the expression is not well formed.
-    //if ( operandStack.size() != 1 ) {
-	prt(("s1828 at end of parse() operandStack.size=%d operandStack.numOperators=%d\n", operandStack.size(), operandStack.numOperators ));
+	//prt(("s1828 at end of parse() operandStack.size=%d operandStack.numOperators=%d\n", operandStack.size(), operandStack.numOperators ));
     if ( operandStack.size() != operandStack.numOperators ) {
-		prt(("s2093 at end of parse(): operandStack.size=%d !=1  stacktopsize=%d throw 2326\n", operandStack.size(), operandStackTopSize()  ));
         throw 2326;
     }
 
@@ -3465,8 +3505,8 @@ void BinaryExpressionBuilder::processBetween( const JagParser *jpsr, const char 
 	StringElementNode lnode( this, lastNode._name, lastNode._value, _jpa, 
 							 lastNode._tabnum, lastNode._typeMode );
 	// process operator >=, if "isNot", process operator <
-	if ( !_isNot ) processOperator( JAG_FUNC_GREATEREQUAL, jmap );
-	else processOperator( JAG_FUNC_LESSTHAN, jmap );
+	if ( !_isNot ) processOperator( JAG_FUNC_GREATEREQUAL, 2, jmap );
+	else processOperator( JAG_FUNC_LESSTHAN, 2, jmap );
 	// get first operand after between
 	p += 7;
 	while ( isspace(*p) ) ++p;
@@ -3477,18 +3517,19 @@ void BinaryExpressionBuilder::processBetween( const JagParser *jpsr, const char 
 	p += 3;
 	while ( isspace(*p) ) ++p;
 	// and process LOGIC_AND, if "isNot", process LOGIC_OR
-	if ( !_isNot ) processOperator( JAG_LOGIC_AND, jmap );
-	else processOperator( JAG_LOGIC_OR, jmap );
+	if ( !_isNot ) processOperator( JAG_LOGIC_AND, 2, jmap );
+	else processOperator( JAG_LOGIC_OR, 2, jmap );
 	// get second operand after and
 	// push lnode to operand stack again, and get second operand
 	StringElementNode *newNode = new StringElementNode( this, lastNode._name, lastNode._value, 
 														_jpa, lastNode._tabnum, lastNode._typeMode );
 
-    prt(("s4440 operandStack.push( newelement ) name=[%s] value=[%s]\n", lastNode._name.s(),  lastNode._value.s()));
+    //prt(("s4440 operandStack.push( newelement ) name=[%s] value=[%s]\n", lastNode._name.s(),  lastNode._value.s()));
 	operandStack.push(newNode);
 	// and process operator <=, if "isNot", process operator >
-	if ( !_isNot ) processOperator( JAG_FUNC_LESSEQUAL, jmap );
-	else processOperator( JAG_FUNC_GREATERTHAN, jmap );
+	if ( !_isNot ) processOperator( JAG_FUNC_LESSEQUAL, 2, jmap );
+	else processOperator( JAG_FUNC_GREATERTHAN, 2, jmap );
+
 	processOperand( jpsr, p, q, lastNode, cmap, colList );
 	if ( _isNot ) _isNot = 0;
 }
@@ -3510,8 +3551,8 @@ void BinaryExpressionBuilder::processIn( const JagParser *jpsr, const char *&p, 
 		else if ( *p == ',' ) {
 			if ( first ) throw 29;
 			++p;
-			if ( !_isNot ) processOperator( JAG_LOGIC_OR, jmap );
-			else processOperator( JAG_LOGIC_AND, jmap );
+			if ( !_isNot ) processOperator( JAG_LOGIC_OR, 2, jmap );
+			else processOperator( JAG_LOGIC_AND, 2, jmap );
 			hasSep = 1;
 			continue;
 		}
@@ -3524,8 +3565,8 @@ void BinaryExpressionBuilder::processIn( const JagParser *jpsr, const char *&p, 
 			first = 0;
 		}
 
-		if ( !_isNot ) processOperator( JAG_FUNC_EQUAL, jmap );
-		else processOperator( JAG_FUNC_NOTEQUAL, jmap );
+		if ( !_isNot ) processOperator( JAG_FUNC_EQUAL, 2, jmap );
+		else processOperator( JAG_FUNC_NOTEQUAL, 2, jmap );
 		processOperand( jpsr, p, q, lastNode, cmap, colList );
 		hasSep = 0;
 	}
@@ -3576,7 +3617,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		r = p+1;
 		value = Jstr(r, q-r);
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
+		//prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		// prt(("s0393  new StringElementNode name=[%s] value=[%s] typeMode=%d\n", name.c_str(), value.c_str(), typeMode ));
 		if ( _substrClause >= 0 ) ++_substrClause;
@@ -3733,19 +3774,16 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		prt(("s4502 new StrElemNode nme=[%s] val=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
+		//prt(("s4502 new StrElemNode nme=[%s] val=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		++q; p = q;
 	} else {
 		// not geom shape
 		//prt(("s6028 processOperand q=[%s]\n", q ));
-		// if ( !isalnum(*q) && *q != '_' && *q != '-' && *q != '+' && *q != '.' ) throw 32;
 		if ( !isValidNameChar(*q) && *q != '_' && *q != '-' && *q != '+' && *q != '.' && *q != ':' ) throw 4132;
 		++q;
 		//prt(("s6029 q=[%s]\n", q ));
-		//while ( isalnum(*q) || *q == '_' || *q == '.' ) ++q;
 		while ( isValidNameChar(*q) || *q == '_' || *q == '.' || *q == ':' ) ++q;
-		//prt(("s6029 processOperand q=[%s]\n", q ));
 		r = p;
 		for ( r = p; r < q; ++r ) {
 			if ( !isdigit(*r) && *r != '.' && *r != '-' && *r != '+' ) {
@@ -3760,7 +3798,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			// for no quote operand, if all digits, regard as constant
 			value = Jstr(p, q-p);
 			StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		    prt(("s4503 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
+		    //prt(("s4503 in processOperand new StringElementNode name=[%s] value=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 			operandStack.push(newNode);
 			//operandStack.print();
 			if ( _substrClause >= 0 ) ++_substrClause;
@@ -3770,7 +3808,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			if ( 3 == _substrClause || 0 == _datediffClause ) {
 				value = Jstr(p, q-p);
 				StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-				prt(("s5503 processOperand new StringElementNode name=[%s] value=[%s]\n", name.c_str(), value.c_str() ));
+				//prt(("s5503 processOperand new StringElementNode name=[%s] value=[%s]\n", name.c_str(), value.c_str() ));
 				operandStack.push(newNode);
 				if ( _substrClause >= 0 ) ++_substrClause;
 				else if ( _datediffClause >= 0 ) ++_datediffClause;
@@ -3778,7 +3816,6 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 				// otherwise, must be regard as column name
 				int tabnum = 0;
 				name = Jstr(p, q-p);
-				//name = makeLowerString( name );
 				name.toLower();
 				//prt(("s0291 name=[%s] colList=[%s]\n", name.c_str(), colList.c_str() ));
 				//prt(("s0291 lastNode._name=[%s] lastNode._type=[%s]\n", lastNode._name.c_str(), lastNode._type.c_str() ));
@@ -3792,7 +3829,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 				}
 
 				StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, tabnum, typeMode );
-				prt(("s5505 processOperand new StringElementNode name=[%s] value=[%s] operandStack.push()\n", name.c_str(), value.c_str() ));
+				//prt(("s5505 processOperand new StringElementNode name=[%s] value=[%s] operandStack.push()\n", name.c_str(), value.c_str() ));
 				// name="test.el1.c1:y"
 
 				lastNode._name = newNode->_name;
@@ -3821,21 +3858,23 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 }
 
 // process +-*/%^ and or
-void BinaryExpressionBuilder::processOperator( short op, JagHashStrInt &jmap )
+void BinaryExpressionBuilder::processOperator( short op, int nargs, JagHashStrInt &jmap )
 {
     // pop operators with higher precedence and create their BinaryOpNode
     short opPrecedence = precedence( op );
-	prt(("s3084 enter processOperator op=%d opPrecedence=%d\n", op, opPrecedence ));
+	//prt(("s3084 enter processOperator op=%d opPrecedence=%d\n", op, opPrecedence ));
     while ((!operatorStack.empty()) && (opPrecedence <= precedence( operatorStack.top() ))) {
-		prt(("s2094 doBinary(%d) ...\n", operatorStack.top() ));
-        doBinary( operatorStack.top(), jmap );
-		prt(("s3109 operatorStack.pop()\n" ));
+		//prt(("s2094 doBinary(%d) ...\n", operatorStack.top() ));
+        doBinary( operatorStack.top(), operatorArgStack.top(), jmap );
+		//prt(("s3109 operatorStack.pop()\n" ));
         operatorStack.pop();
+        operatorArgStack.pop();
     }
 
     // lastly push the operator passed onto the operatorStack
-	prt(("s0931 operatorStack.push(%d)\n", op ));
+	//prt(("s0931 operatorStack.push(%d) operatorArgStack.push(%d)\n", op, nargs ));
     operatorStack.push(op);
+    operatorArgStack.push(nargs);
 	_lastOp = op;
 	// prt(("s2930 processOperator _lastOp=[%d]\n", _lastOp ));
 
@@ -3849,31 +3888,36 @@ void BinaryExpressionBuilder::processOperator( short op, JagHashStrInt &jmap )
 
 void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 {
-	prt(("s1833 processRightParenthesis )\n" ));
+	//prt(("s1833 processRightParenthesis )\n" ));
 	if ( operatorStack.empty() ) {
-		prt(("s0018 in processRightParenthesis operatorStack.empty() true return\n" ));
+		//prt(("s0018 in processRightParenthesis operatorStack.empty() true return\n" ));
 		return;
 	}
 
 	int fop;
+	int opargs;
 	while ( 1 ) {
 		fop = operatorStack.top();
+		opargs = operatorArgStack.top();
 		if ( fop == '(' ) {
-			prt(("s8733 in processRightParenthesis see (, pop it and break  operatorStack.pop()\n" ));
+			//prt(("s8733 in processRightParenthesis see (, pop it and break  operatorStack.pop()\n" ));
 			operatorStack.pop(); // remove '('
+			operatorArgStack.pop(); // remove '('
 			break;
 		} else if ( checkFuncType( fop ) ) {
-			prt(("s4093 see valid fop=%d(%s) doBinary\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
-			doBinary( fop, jmap );
-			prt(("s4093 opertorStk.pop(); break\n" ));
+			//prt(("s4093 see valid fop=%d(%s) doBinary\n", fop, BinaryOpNode::binaryOpStr(fop).c_str() ));
+			doBinary( fop, opargs, jmap );
+			//prt(("s4093 opertorStk.pop(); break\n" ));
 			operatorStack.pop();
+			operatorArgStack.pop(); // remove '('
 			break;
 		} else {
-			prt(("s4094 in procRightParent see fop=%d doBinary, in loop\n", fop));
-			prt(("s2736 checkFuncType(%d) is not valid, doBinary\n", fop ));
-			doBinary( fop, jmap );
-			prt(("s4093 opertorStk.pop(); no break\n" ));
+			//prt(("s4094 in procRightParent see fop=%d doBinary, in loop\n", fop));
+			//prt(("s2736 checkFuncType(%d) is not valid, doBinary\n", fop ));
+			doBinary( fop, opargs, jmap );
+			//prt(("s4093 opertorStk.pop(); no break\n" ));
 			operatorStack.pop();
+			operatorArgStack.pop(); // remove '('
 		}
 	}
 }
@@ -3881,10 +3925,10 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 // Creates a BinaryOpNode from the top two operands on operandStack
 // These top two operands are removed (poped), and the new BinaryOperation
 // takes their place on the top of the stack.
-void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
+void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap )
 {
 	Jstr opstr = BinaryOpNode::binaryOpStr(op);
-	prt(("s3376 doBinary op=[%s]\n", opstr.c_str() ));
+	prt(("s3376 doBinary op=[%s] nargs=%d\n", opstr.c_str(), nargs ));
 
 	ExprElementNode *right = NULL;
 	ExprElementNode *left = NULL;
@@ -3892,12 +3936,9 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 	Jstr carg1;
 	const char *p = NULL;;
 	ExprElementNode *t3;
-	int operandStackSize = operandStack.size();
-	int operandStackTSize = operandStackTopSize();
 
 	if ( funcHasTwoChildren(op) ) {
     	if ( operandStack.empty() ) { throw 1434; } 
-		int nargs = operandStackTopSize();
 		if ( op == JAG_FUNC_NEARBY ) {
 			t3 = operandStack.top();
 			if ( t3->getValue(p) ) { carg1 = p; } else throw 1318;
@@ -3950,44 +3991,39 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 
 
 		if ( op == JAG_FUNC_VORONOIPOLYGONS || op == JAG_FUNC_VORONOILINES ) {
-			prt(("s2038 op JAG_FUNC_VORONOIPOLYGONS nargs=%d stack.size=%d ...\n", nargs, operandStack.size() ));
-			/***
-			if ( 0 == nargs && 1 == operandStack.size() ) { nargs = 1; }
-			nargs = operandStackSize;
-			***/
-
+			//prt(("s2038 op JAG_FUNC_VORONOIPOLYGONS nargs=%d stack.size=%d ...\n", nargs, operandStack.size() ));
 			if ( 1 == nargs ) {
 				right = NULL;
     			left = operandStack.top();
     			operandStack.pop();
-				prt(("s1025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
+				//prt(("s1025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 			} else if ( 2 == nargs ) {
 				right = NULL;
 
 				t3 = operandStack.top();
 				if ( t3->getValue(p) ) { carg1 = Jstr(p); } else throw 1342;
 				operandStack.pop();  // popped the toerlance element
-				prt(("s1025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
+				//prt(("s1025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 
     			if ( operandStack.empty() ) { throw 1434; } 
     			left = operandStack.top();
     			operandStack.pop();
-				prt(("s1325 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
+				//prt(("s1325 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 			} else if ( 3 == nargs ) {
     			right = operandStack.top();
     			operandStack.pop();
-				prt(("s1425 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
+				//prt(("s1425 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 
     			if ( operandStack.empty() ) { throw 1435; } 
 				t3 = operandStack.top();
 				if ( t3->getValue(p) ) { carg1 = Jstr(p); } else throw 1343;
 				operandStack.pop();  // popped the toerlance element
-				prt(("s1525 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
+				//prt(("s1525 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 
     			if ( operandStack.empty() ) { throw 1446; } 
     			left = operandStack.top();
     			operandStack.pop();
-				prt(("s1625 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
+				//prt(("s1625 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
 			}
 		} else {
 			// all other cases, get right and left
@@ -4124,7 +4160,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		} else if ( op == JAG_FUNC_POINTN || op == JAG_FUNC_POLYGONN
     					 || op == JAG_FUNC_INTERPOLATE || op == JAG_FUNC_REMOVEPOINT
     		             || op == JAG_FUNC_RINGN || op == JAG_FUNC_INNERRINGN ) {
-	    	if ( operandStackTopSize() < 2 ) throw 2425;
+	    	if ( nargs  < 2 ) throw 2425;
         	right = operandStack.top();
     		if ( right->getValue(p) ) {
     			carg1 = p;
@@ -4132,8 +4168,8 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     		operandStack.pop();
 			right = NULL;
     	} else if ( op == JAG_FUNC_TOPOLYGON || op == JAG_FUNC_TOMULTIPOINT ) {
-			prt(("s2043 see TOPOLYGON or TOMULTIPOINT operandStack.size=%d stacktopsize=%d\n", operandStack.size(), operandStackTopSize()  ));
-	    	if ( 1 == operandStackTopSize() ) {
+			//prt(("s2043 see TOPOLYGON or TOMULTIPOINT operandStack.size=%d\n", operandStack.size() ));
+	    	if ( 1 == nargs ) {
 				// no arg, except the col itself
     			carg1 = "30";
     		} else {
@@ -4143,10 +4179,9 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     			} else throw 2932;
     			operandStack.pop();
 				right = NULL;
-				prt(("s2025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
+				//prt(("s2025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
     		}
     	} else if ( op == JAG_FUNC_GEOJSON ) {
-			int nargs = operandStackTopSize();
 			if ( 1 == nargs ) {
 				carg1 = intToStr(JAG_MAX_POINTS_SENT) + ":30";
 			} else if ( 2 == nargs ) {
@@ -4172,7 +4207,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				right = NULL;
 			}
     	} else if ( op == JAG_FUNC_BUFFER ) {
-	    	if ( 1 == operandStackTopSize() ) {
+	    	if ( 1 == nargs ) {
     			carg1 = "distance=symmetric:10,side=side,join=round:10,end=round:10,point=circle:10";
     		} else {
         		right = operandStack.top();
@@ -4183,7 +4218,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 				right = NULL;
     		}
 		}  else if ( op == JAG_FUNC_SCALE || op == JAG_FUNC_SCALESIZE ) {
-			int nargs = operandStackTopSize();
 			if (  nargs >= 2 ) {
 				t3 = operandStack.top();
 				if ( t3->getValue(p) ) { carg1 = p; } else throw 1332;
@@ -4204,7 +4238,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		}  else if ( op == JAG_FUNC_TRANSLATE ) {
 			// translate(geom, dx, dy)
 			// translate(geom, dx, dy, dz)
-			int nargs = operandStackTopSize();
 			t3 = operandStack.top();
 			if ( t3->getValue(p) ) { carg1 = p; } else throw 2332;
 			operandStack.pop();  // popped the third element
@@ -4223,7 +4256,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			// transscale(geom, dx, dy, fac )
 			// transscale(geom, dx, dy, xfac, yfac)
 			// translate(geom, dx, dy, dz, xfac, yfac, zfac )
-			int nargs = operandStackTopSize();
 			//prt(("s3663 nargs=%d\n", nargs ));
 			if ( 4 == nargs ) {
     			t3 = operandStack.top();
@@ -4293,7 +4325,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 			}
 		}  else if ( op == JAG_FUNC_ROTATE || op == JAG_FUNC_ROTATESELF ) {
 			//prt(("s2938 JAG_FUNC_ROTATE nargs=%d\n", operandStack.size() ));
-			//prt(("s2938 JAG_FUNC_ROTATE topsize=%d\n", operandStackTopSize() ));
 			// 2D only
 			// rotate(geom, 10 )  -- defualt is in degrees, counter-clock-wise
 			// rotate(geom, 10, 'degree')
@@ -4342,7 +4373,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		}  else if ( op == JAG_FUNC_AFFINE ) {
 			// 2D affine(geom, a, b, d, e, xoff, yoff) -- 6 args
 			// 3D Affine(geom, a, b, c, d, e, f, g, h, i, xoff, yoff, zoff)  -- 12 args
-			int nargs = operandStackTopSize();
 			if ( nargs >= 6 ) {
 				// 2D affine
     			t3 = operandStack.top();
@@ -4418,7 +4448,6 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     			operandStack.pop(); 
 			}
 		}  else if ( op == JAG_FUNC_DELAUNAYTRIANGLES ) {
-			int nargs = operandStackTopSize();
 			if (  2 == nargs ) {
 				t3 = operandStack.top();
 				if ( t3->getValue(p) ) { carg1 = p; } else throw 1332;
@@ -4430,7 +4459,7 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
 		if ( operandStack.empty() ) throw 4446;
 
 		left = operandStack.top();
-		prt(("s4281 left=%0x operandStack.pop()\n", left ));
+		//prt(("s4281 left=%0x operandStack.pop()\n", left ));
 		operandStack.pop();
 	}
 
@@ -4439,18 +4468,13 @@ void BinaryExpressionBuilder::doBinary( short op, JagHashStrInt &jmap )
     //opstr = BinaryOpNode::binaryOpStr(operatorStack.top());
 	//prt(("s4094 operatorStack.top()=[%d] [%s]\n", operatorStack.top(),  opstr.c_str() ));
 
-	BinaryOpNode *pn = new BinaryOpNode(this, operatorStack.top(), left, right, _jpa, arg1, arg2, carg1 );
-	//operandStack.print();	
+	BinaryOpNode *pn = new BinaryOpNode(this, operatorStack.top(), operatorArgStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	operandStack.push(pn);	
-	//operandStack.resetTopArgs();	
-	// operandStack.topArgs = 0;
-	if (  BinaryOpNode::isMathOp( operatorStack.top() ) ) {
-		operandStack.topArgs = 0;
-	}
-
 	//operandStack.print();	
+	/**
 	prt(( "s7202 pushed operatorStack.top=%s to operandStack, operandStack.size=%d left=%0x right=%0x\n", 
 		  BinaryOpNode::binaryOpStr(operatorStack.top()).c_str(), operandStack.size(), left, right ));
+    **/
 }
 
 short BinaryExpressionBuilder::precedence( short fop )
@@ -5043,30 +5067,6 @@ bool BinaryExpressionBuilder::nameAndOpGood( const JagParser *jpsr, const Jstr &
 	}
 
 	return true;
-}
-
-int BinaryExpressionBuilder::operandStackTopSize() const
-{
-	//return operandStack.getTopArgs();
-	return operandStack.topArgs;
-	/***
-	ExprElementNode *t;
-	int cnt = 0;
-	//prt(("s2737 operandStackTopSize size=%d\n", operandStack.size() ));
-	for ( int i = operandStack.size()-1; i >=0; --i ) {
-		t = operandStack[i];
-		//prt(("s2837 i=%d t->getBinaryOp()=%d\n", i, t->getBinaryOp() ));
-		if ( t->getBinaryOp() != 0  ) {
-			// operator element
-			//return cnt;
-			break;
-		}
-		++cnt;
-	}
-
-	prt(("s2663 computedcnt=%d  savedtopargs=%d\n", cnt, operandStack.getTopArgs() ));
-	return cnt;
-	****/
 }
 
 // return 0 for OK;  < 0 for error or false

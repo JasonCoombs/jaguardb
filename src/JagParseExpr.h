@@ -31,8 +31,8 @@
 #include <JagColumn.h>
 #include <JagSchemaRecord.h>
 #include <JagVector.h>
-#include <JagStack.h>
 #include <JagUtil.h>
+#include <JagStack.h>
 #include <JagTableUtil.h>
 #include <JagHashStrInt.h>
 #include <JagMergeReader.h>
@@ -57,6 +57,7 @@
 class JagParser;
 class JagHashStrStr;
 class BinaryExpressionBuilder;
+
 
 class JagColumnBox 
 {
@@ -97,10 +98,12 @@ class ExprElementNode
 
 	JagParseAttribute   		_jpa;
 	BinaryExpressionBuilder* 	_builder;
-	bool            			_isElement;
+	bool            	_isElement;
 	Jstr				_name;
-	unsigned int				_srid;
+	unsigned int		_srid;
 	Jstr				_type;
+	int					_nargs;
+	bool 	            _isDestroyed;
 };
 
 class StringElementNode: public ExprElementNode
@@ -113,7 +116,7 @@ class StringElementNode: public ExprElementNode
 	virtual int getBinaryOp() { return 0; }
 	virtual int getName( const char *&p ) { if ( _name.length() > 0 ) { p = _name.c_str(); return _tabnum; } return -1; }
 	virtual bool getValue( const char *&p ) { if ( _value.length() > 0 ) { p = _value.c_str(); return 1; } return 0; }
-	virtual void clear() {}
+	virtual void clear();
 	virtual void print( int mode );
 	virtual bool isOperator() const { return false; }
 	
@@ -166,9 +169,9 @@ class StringElementNode: public ExprElementNode
 class BinaryOpNode: public ExprElementNode
 {
   public:
-	BinaryOpNode( BinaryExpressionBuilder* builder, short op, ExprElementNode *l, ExprElementNode *r, 
+	BinaryOpNode( BinaryExpressionBuilder* builder, short op, int opArgs, ExprElementNode *l, ExprElementNode *r, 
 					    const JagParseAttribute &jpa, int arg1=0, int arg2=0, Jstr carg1="" );
-	virtual ~BinaryOpNode() {}
+	virtual ~BinaryOpNode();
 	BinaryOpNode &operator=(const BinaryOpNode& n) {}
 	virtual int getBinaryOp() { return _binaryOp; }
 	virtual int getName( const char *&p ) { return -1; }
@@ -209,7 +212,7 @@ class BinaryOpNode: public ExprElementNode
 	Jstr			_carg1; // use for substr and datediff (for now)
 	ExprElementNode	*_left;
 	ExprElementNode	*_right;
-	int						_nodenum; // a number set to distinguish each node of the tree
+	int				_nodenum; // a number set to distinguish each node of the tree
 	
   protected:
 	// current class object use only
@@ -391,18 +394,18 @@ class BinaryExpressionBuilder
 
 	// operandStack is made up of BinaryOpNodes and StringElementNode
 	JagStack<ExprElementNode*> operandStack; 
-	int         operandStackTopSize() const;
 
   private:
 	// holds either (, +, -, *, /, %, ^ or any other function type  
-	//JagStack<int> operatorStack;	
 	std::stack<int> operatorStack;	
+	std::stack<int> operatorArgStack;	
 
 	int 		_datediffClause;
 	int			_substrClause;
 	int  		_lastOp;
 	bool 		_isNot;
 	bool 		_lastIsOperand;
+	bool        _isDestroyed;
 	
 	// methods
 	void processBetween( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
@@ -414,9 +417,9 @@ class BinaryExpressionBuilder
 	void processOperand( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
 						const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, Jstr &colList );
 
-	void processOperator( short op, JagHashStrInt &jmap );
+	void processOperator( short op, int nargs, JagHashStrInt &jmap );
 	void processRightParenthesis( JagHashStrInt &jmap );
-	void doBinary( short op, JagHashStrInt &jmap );
+	void doBinary( short op, int nargs, JagHashStrInt &jmap );
 	short precedence( short fop );
 	bool funcHasZeroChildren( short fop );
 	bool funcHasOneConstant( short fop );
