@@ -302,7 +302,40 @@ void OnlyTreeAttribute::init( const JagParseAttribute &jpa, JagParseParam *pram 
 void OnlyTreeAttribute::destroy() 
 {
 	if ( tree ) {
-		prt(("s3028 selectExportClause=[%s]\n", selectExportClause.c_str() ));
+		tree->clean();
+		delete tree;
+		tree = NULL;
+	}
+}
+
+// rebuild select sql from internal saved statements
+Jstr JagParseParam::formSelectSQL()
+{
+	Jstr q;
+	formatInsertSelectCmdHeader( this, q );
+	q += "select " + selectColumnClause + " from " + selectTablistClause + " ";
+
+	if ( hasWhere ) {
+		q += Jstr(" where ") + selectWhereClause + " ";
+	}
+
+	if ( hasGroup ) {
+		q += Jstr(" group by ") + selectGroupClause + " ";
+	}
+
+	if ( hasOrder ) {
+		q += Jstr(" order by ") +  selectOrderClause + " ";
+	}
+
+	if ( hasLimit ) {
+		q += Jstr(" limit ") +  selectLimitClause + " ";
+	}
+
+	if ( hasTimeout ) {
+		q += Jstr(" timeout ") +  selectTimeoutClause + " ";
+	}
+
+	// prt(("s3028 selectExportClause=[%s]\n", selectExportClause.c_str() ));
 	if ( hasExport ) {
 		q +=  selectExportClause;
 	}

@@ -3249,7 +3249,7 @@ void BinaryExpressionBuilder::clean()
 {
 	if ( doneClean ) return;
 
-	prt(("s8271 clean _jpa.clean operatorStack.clean operandStack.clean\n" ));
+	//prt(("s8271 clean _jpa.clean operatorStack.clean operandStack.clean\n" ));
 	_jpa.clean();
 	operandStack.clean();
 	while ( ! operatorStack.empty() ) { operatorStack.pop(); }
