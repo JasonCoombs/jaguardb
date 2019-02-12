@@ -31,8 +31,8 @@ JagRange::doRangeWithin( const JagParseAttribute &jpa, const Jstr &mk1, const Js
 {
 	/***
 	prt(("s6683 doRangeWithin colType2=[%s]\n", colType2.c_str() ));
-	sp1.print();
-	sp2.print();
+	//sp1.print();
+	//sp2.print();
 	prt(("s2220 sp1[-1]=[%s]\n", sp1[-1].c_str() ));
 	prt(("s2220 sp2[-1]=[%s]\n", sp2[-1].c_str() ));
 	prt(("s2039 srid1=%d srid2=%d\n", srid1, srid2 ));
