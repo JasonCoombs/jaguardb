@@ -208,8 +208,10 @@ class UpdSetAttribute
 
 	void destroy() {
 		if ( tree ) {
+			/**
 			ExprElementNode *root = tree->getRoot();
-			if ( root ) { root->clear(); delete root; }
+			if ( root ) { root->clear(); delete root; root=NULL; }
+			**/
 			tree->clean();
 			delete tree;
 			tree = NULL;
@@ -273,8 +275,6 @@ class SelColAttribute
 
 	void destroy() {
 		if ( tree ) {
-			ExprElementNode *root = tree->getRoot();
-			if ( root ) { root->clear(); delete root; }
 			tree->clean();
 			delete tree;
 			tree = NULL;

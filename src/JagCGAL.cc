@@ -1496,7 +1496,7 @@ void JagCGAL::fillInCorners(const JagBox2D &bbox, const JagVector<JagVoronoiPoin
 	for ( int i=0; i < len1; ++i ) {
 		vec2.append( JagVoronoiPoint2D(vec1[i].x, vec1[i].y, vec1[i].side ) );
 		nexti = (i+1)%len1;
-		prt(("s1228 vec1[%d].side=%d vec1[%d].side=%d\n", i, vec1[i].side, nexti, vec1[nexti].side ));
+		//prt(("s1228 vec1[%d].side=%d vec1[%d].side=%d\n", i, vec1[i].side, nexti, vec1[nexti].side ));
 		if ( vec1[i].side > 0 && vec1[nexti].side > 0 ) {
 			if ( JAG_TOP_SIDE == vec1[i].side ) {
 				if ( JAG_LEFT_SIDE == vec1[nexti].side ) {

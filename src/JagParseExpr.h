@@ -32,7 +32,7 @@
 #include <JagSchemaRecord.h>
 #include <JagVector.h>
 #include <JagUtil.h>
-#include <JagStack.h>
+#include <JagExprStack.h>
 #include <JagTableUtil.h>
 #include <JagHashStrInt.h>
 #include <JagMergeReader.h>
@@ -77,7 +77,6 @@ class ExprElementNode
 	virtual bool getValue( const char *&p ) = 0;
 	virtual void clear() = 0;
 	virtual void print( int mode ) = 0;
-	virtual bool isOperator() const { return false; }
 	
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -118,7 +117,6 @@ class StringElementNode: public ExprElementNode
 	virtual bool getValue( const char *&p ) { if ( _value.length() > 0 ) { p = _value.c_str(); return 1; } return 0; }
 	virtual void clear();
 	virtual void print( int mode );
-	virtual bool isOperator() const { return false; }
 	
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -150,7 +148,6 @@ class StringElementNode: public ExprElementNode
 	                         const char *buffers[], const Jstr &uuid, const Jstr &db, const Jstr &tab, 
 							 const Jstr &col, bool isBoundBox3D, bool is3D=false );
 
-	//Jstr		_columns;
 	JagFixString		_value;
 	unsigned int		_tabnum;
 	int					_typeMode;
@@ -161,8 +158,6 @@ class StringElementNode: public ExprElementNode
 	unsigned int	_offset;
 	unsigned int	_length;
 	unsigned int	_sig;
-
-	// Jstr  _rowUUID;
 
 };  // end StringElementNode
 
@@ -178,7 +173,6 @@ class BinaryOpNode: public ExprElementNode
 	virtual bool getValue( const char *&p ) { return 0; }
 	virtual void clear();
 	virtual void print( int mode );
-	virtual bool isOperator() const { return true; }
 
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -206,9 +200,9 @@ class BinaryOpNode: public ExprElementNode
 	static short getFuncLength( short op );
 
 	// data members
-	short					_binaryOp;
-	int						_arg1; // use for substr and datediff (for now)
-	int						_arg2; // use for substr and datediff (for now)
+	short			_binaryOp;
+	int				_arg1; // use for substr and datediff (for now)
+	int				_arg2; // use for substr and datediff (for now)
 	Jstr			_carg1; // use for substr and datediff (for now)
 	ExprElementNode	*_left;
 	ExprElementNode	*_right;
@@ -365,7 +359,6 @@ class BinaryOpNode: public ExprElementNode
 
 	static int getTypeMode( short fop );
 
-
 	// data members
 	JagFixString 	_opString;
 	abaxint 		_numCnts; // use for calcuations
@@ -391,14 +384,14 @@ class BinaryExpressionBuilder
 	
 	JagParseAttribute _jpa;
 	JagParseParam *_pparam;
-
-	// operandStack is made up of BinaryOpNodes and StringElementNode
-	JagStack<ExprElementNode*> operandStack; 
+	bool doneClean;
 
   private:
 	// holds either (, +, -, *, /, %, ^ or any other function type  
 	std::stack<int> operatorStack;	
 	std::stack<int> operatorArgStack;	
+	// operandStack is made up of BinaryOpNodes and StringElementNode
+	JagExprStack operandStack; 
 
 	int 		_datediffClause;
 	int			_substrClause;

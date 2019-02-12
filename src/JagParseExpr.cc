@@ -844,12 +844,11 @@ BinaryOpNode::~BinaryOpNode()
 	_isDestroyed = true;
 }
 
-
 void BinaryOpNode::clear()
 {
-	prt(("s3738 free _left=%0x _right=%0x\n", _left, _right ));
-	if ( _left ) { _left->clear(); if ( _left ) delete _left; _left = NULL; }
-	if ( _right ) { _right->clear(); if ( _right ) delete _right; _right = NULL; }
+	//prt(("s3738 free _left=%0x _right=%0x\n", _left, _right ));
+	if ( _left ) { _left->clear(); delete _left; _left = NULL; }
+	if ( _right ) { _right->clear(); delete _right; _right = NULL; }
 	if ( _reg ) { delete _reg; _reg = NULL; }
 }
 
@@ -1259,8 +1258,6 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 	//prt(("s5882 collen=%d type=%s ltmode=%d\n", collen, type.c_str(), ltmode ));
     return 1;
 }
-
-
 
 int BinaryOpNode::getFuncAggregate( JagVector<Jstr> &selectParts, JagVector<int> &selectPartsOpcode, 
 	JagVector<int> &selColSetAggParts, JagHashMap<AbaxInt, AbaxInt> &selColToselParts, int &nodenum, int treenum )
@@ -3229,6 +3226,7 @@ BinaryExpressionBuilder::BinaryExpressionBuilder()
 {
 	//prt(("s8612 BinaryExpressionBuilder ctor called\n" ));
 	_isDestroyed = false;
+	doneClean = false;
 }
 
 BinaryExpressionBuilder::~BinaryExpressionBuilder()
@@ -3244,15 +3242,19 @@ void BinaryExpressionBuilder::init( const JagParseAttribute &jpa, JagParseParam 
 	_jpa = jpa; _datediffClause = _substrClause = -1; _isNot = 0; 
 	_lastIsOperand = 0;
 	_pparam = pparam;
+	doneClean = false;
 }
 
 void BinaryExpressionBuilder::clean()
 {
+	if ( doneClean ) return;
+
 	prt(("s8271 clean _jpa.clean operatorStack.clean operandStack.clean\n" ));
 	_jpa.clean();
 	operandStack.clean();
 	while ( ! operatorStack.empty() ) { operatorStack.pop(); }
 	while ( ! operatorArgStack.empty() ) { operatorArgStack.pop(); }
+	doneClean = true;
 }
 
 // BinaryExpressionBuilder methods for all
@@ -4470,6 +4472,7 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 
 	BinaryOpNode *pn = new BinaryOpNode(this, operatorStack.top(), operatorArgStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	operandStack.push(pn);	
+	//prt(("s0293 new BinaryOpNode pn=%0x  pushed into operandStack\n", pn ));
 	//operandStack.print();	
 	/**
 	prt(( "s7202 pushed operatorStack.top=%s to operandStack, operandStack.size=%d left=%0x right=%0x\n", 

@@ -43,7 +43,7 @@ CPP=$(GPP)  -ggdb
 include makefile.obj
 
 
-JagParseExpr.o: JagStack.h
+JagParseExpr.o: JagExprStack.h
 
 .cc.o: 
 	date

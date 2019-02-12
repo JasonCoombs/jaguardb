@@ -19,6 +19,7 @@
 #ifndef _jag_stack_h_
 #define _jag_stack_h_
 
+
 template <class Pair>
 class JagStack
 {
@@ -123,13 +124,6 @@ void JagStack<Pair>::destroy( )
 		return;
 	}
 
-	//prt(("s2287 stack ::destroy() _last=%d\n", _last ));
-	for ( int i=0; i <= _last; ++i ) {
-		//prt(("s8119 i=%d address=%0x clear and delete\n", i, _arr[i] ));
-		//delete _arr[i];
-	}
-
-	// delete [] _arr;
 	if ( _arr ) free ( _arr );
 	_arrlen = 0;
 	_last = -1;
@@ -164,7 +158,6 @@ void JagStack<Pair>::reAlloc()
 	for ( i = 0; i <= _last; ++i) {
 		newarr[i] = _arr[i];
 	}
-	// delete [] _arr;
 	if ( _arr ) free( _arr );
 	_arr = newarr;
 	newarr = NULL;
@@ -178,13 +171,11 @@ void JagStack<Pair>::reAllocShrink()
 	Pair *newarr;
 
 	abaxint newarrlen  = _arrlen/_GEO; 
-	// newarr = new Pair[newarrlen];
 	newarr = (Pair*)calloc( newarrlen, sizeof( Pair ) ); 
 	for ( i = 0; i <= _last; ++i) {
 		newarr[i] = _arr[i];
 	}
 
-	// delete [] _arr;
 	if ( _arr ) free( _arr );
 	_arr = newarr;
 	newarr = NULL;
@@ -206,7 +197,7 @@ void JagStack<Pair>::push( const Pair &newpair )
 	++ _last;
 	_arr[_last] = newpair;
 
-	if ( newpair->isOperator() ) { ++ numOperators; }
+	if ( ! newpair->_isElement ) { ++ numOperators; }
 }
 
 // back: add end (enqueue end)
@@ -235,7 +226,7 @@ void JagStack<Pair>::pop()
     	}
 	} 
 
-	if ( _arr[_last]->isOperator() ) { -- numOperators; }
+	if ( ! _arr[_last]->_isElement ) { -- numOperators; }
 	-- _last;
 }
 

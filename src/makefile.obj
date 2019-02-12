@@ -3,7 +3,7 @@ OBJS=JagRecord.o  JagClassInit.o murmur.o JagColumn.o \
      JagStrSplit.o JagStrSplitWithQuote.o JagMutex.o JagReplicateBackup.o JaguarCPPClient.o \
 	 JagCfg.o  JagSingleBuffReader.o JagBuffReader.o JagMergeReaderBase.o JagMergeReader.o JagMergeBackReader.o \
 	 JagFileMgr.o JagNet.o  jaghashtable.o jaghashset.o JagMD5lib.o   \
-	 JagSchema.o JagTableSchema.o JagParseExpr.o JagParseParam.o \
+	 JagSchema.o JagTableSchema.o JagExprStack.o JagParseExpr.o JagParseParam.o \
 	 JagParser.o JagSchemaRecord.o JagTime.o \
 	 JagNodeMgr.o JagDBConnector.o JagIndexString.o JagFixString.o  \
 	 JagTable.o  JagIndex.o JagIndexSchema.o \
