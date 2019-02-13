@@ -2109,7 +2109,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 	
 	// +
 	if ( _binaryOp == JAG_NUM_ADD ) {
-		prt(("s1928 JAG_NUM_ADD cmode=%d\n", cmode ));
+		//prt(("s1928 JAG_NUM_ADD cmode=%d\n", cmode ));
 		if ( 2 == cmode ) {
 			dnum = jagstrtold(lstr.c_str(), NULL) + jagstrtold(rstr.c_str(), NULL);
 			str = longDoubleToStr(dnum);
@@ -3491,9 +3491,12 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
     }
 
 	//prt(("s1828 at end of parse() operandStack.size=%d operandStack.numOperators=%d\n", operandStack.size(), operandStack.numOperators ));
-    if ( operandStack.size() != operandStack.numOperators ) {
-        throw 2326;
-    }
+	if ( operandStack.numOperators > 0 ) {
+    	if ( operandStack.size() != operandStack.numOperators ) { throw 2326; }
+	} else {
+		// selct lst:x, lst:y would not fail
+    	if ( operandStack.size() != 1 ) { throw 2327; }
+	}
 
     ExprElementNode *topp = operandStack.top();
     return static_cast<BinaryOpNode *> (topp);
@@ -3584,7 +3587,7 @@ void BinaryExpressionBuilder::processIn( const JagParser *jpsr, const char *&p, 
 void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char *&p, const char *&q, StringElementNode &lastNode,
 	const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, Jstr &colList )
 {
-	prt(("\ns3830 enter processOperand p=[%s]\n", p ));
+	//prt(("\ns3830 enter processOperand p=[%s]\n", p ));
 	Jstr name, value;
 	int typeMode = 1; // init as integer
 	const char *r;
@@ -3930,7 +3933,7 @@ void BinaryExpressionBuilder::processRightParenthesis( JagHashStrInt &jmap )
 void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap )
 {
 	Jstr opstr = BinaryOpNode::binaryOpStr(op);
-	prt(("s3376 doBinary op=[%s] nargs=%d\n", opstr.c_str(), nargs ));
+	//prt(("s3376 doBinary op=[%s] nargs=%d\n", opstr.c_str(), nargs ));
 
 	ExprElementNode *right = NULL;
 	ExprElementNode *left = NULL;
