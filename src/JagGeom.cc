@@ -10370,24 +10370,6 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 			double projx, projy;
 			minPoint2DToLineSegDistance( px, py, x1, y1, x2, y2, srid, projx, projy );
 			res += d2s(projx) + " " + d2s(projy);
-    	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_MULTIPOINT ) {
-			double mind = LONG_MAX, d;
-			Jstr xs, ys, t;
-			int imin = -1;
-			const char *str;
-			char *p;
-			for ( int i = JAG_SP_START; i < sp2.length(); ++i ) {
-				str = sp2[i].c_str();
-				if ( strchrnum( str, ':') != 1 ) continue;
-				get2double(str, p, ':', dx, dy );
-				d = JagGeo::distance( px, py, dx, dy, srid );
-				if ( d < mind ) { mind = d; imin = i; }
-			}
-			if ( imin >= 0 ) {
-				t = sp2[imin];
-				t.replace(':', ' ');
-				res += t;
-			} else return false;
     	} else if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 			double d1, d2, d3, p1x, p1y, p2x, p2y, p3x, p3y;
 			double x1 = jagatof( sp2[JAG_SP_START+0].c_str());
@@ -10470,14 +10452,21 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 			double projx, projy, dist;
 			minMaxPointOnNormalEllipse( srid, a, b, locx, locy, true, projx, projy, dist );
 			res += d2s(projx) + " " + d2s(projy);
-    	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
+    	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			double mindist, minx, miny;
+			getMinDist2DPointFraction(px,py, srid, sp2, mindist, minx, miny );
+			res += d2s(minx) + " " + d2s(miny);
+    	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING || colType2 == JAG_C_COL_TYPE_POLYGON ) {
+			JagPolygon pgon;
+    		int rc = JagParser::addPolygonData( pgon, sp2, false );
+    		if ( rc < 0 ) { return false; }
+			double minx, miny;
+			getMinDist2DPointOnPloygonAsLineStrings( srid, px, py, pgon, minx, miny );
+			res += d2s(minx) + " " + d2s(miny);
+    	} else if (  colType2 == JAG_C_COL_TYPE_MULTIPOINT
+					 || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 			Jstr t;
-			if ( closestPoint2DPolygon( srid, px, py, mark2, sp2, t ) ) {
-				res += t;
-			} else return false;
-    	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			Jstr t;
-			if ( closestPoint2DMultiPolygon( srid, px, py, mark2, sp2, t ) )  {
+			if ( closestPoint2DRaster( srid, px, py, mark2, sp2, t ) ) {
 				res += t;
 			} else return false;
     	} else {
@@ -10497,25 +10486,6 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 			double projx, projy, projz;
 			minPoint3DToLineSegDistance( px, py, pz, x1, y1, z1, x2, y2, z2, srid, projx, projy, projz );
 			res += d2s(projx) + " " + d2s(projy) + " " + d2s(projz);;
-    	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D || colType2 == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-            double mind = LONG_MAX, d;
-            Jstr xs, ys, zs;
-            int imin = -1;
-            const char *str;
-            char *p;
-            for ( int i = JAG_SP_START; i < sp2.length(); ++i ) {
-                str = sp2[i].c_str();
-                if ( strchrnum( str, ':') != 2 ) continue;
-                get3double(str, p, ':', dx, dy, dz );
-                d = JagGeo::distance( px, py, pz, dx, dy, dz, srid );
-                if ( d < mind ) { mind = d; imin = i; }
-            }
-            if ( imin >= 0 ) {
-				Jstr t;
-                t = sp2[imin];
-                t.replace(':', ' ');
-				res += t;
-            } else return false;
     	} else if (  colType2 == JAG_C_COL_TYPE_CUBE ) {
     		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
     		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
@@ -10614,14 +10584,21 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 			}
 			transform3DCoordLocal2Global( x0, y0, z0, locx, locy, locz, nx, ny, d1, d2, d3 );
 			res += d2s(d1) + " " + d2s(d2) + " " + d2s(d3);;
-    	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+    	} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
+			double mindist, minx, miny, minz;
+			getMinDist3DPointFraction(px,py,pz, srid, sp2, mindist, minx, miny, minz );
+			res += d2s(minx) + " " + d2s(miny) + " " + d2s(minz);
+    	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
+			JagPolygon pgon;
+    		int rc = JagParser::addPolygon3DData( pgon, sp2, false );
+    		if ( rc < 0 ) { return false; }
+			double minx, miny, minz;
+			getMinDist3DPointOnPloygonAsLineStrings( srid, px, py, pz, pgon, minx, miny, minz );
+			res += d2s(minx) + " " + d2s(miny);
+    	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOINT3D
+					 || colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 			Jstr t;
-			if ( closestPoint3DPolygon( srid, px, py, pz, mark2, sp2, t ) ) {
-				res += t;
-			} else return false;
-    	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			Jstr t;
-			if ( closestPoint3DMultiPolygon( srid, px, py, pz, mark2, sp2, t ) ) {
+			if ( closestPoint3DRaster( srid, px, py, pz, mark2, sp2, t ) ) {
 				res += t;
 			} else return false;
     	} else {
@@ -20242,14 +20219,6 @@ bool JagGeo::closestPoint2DPolygon( int srid, double px, double py, const Jstr &
 {
 	JagPolygon pgon;
 	bool rc;
-	/***
-    if ( mk == JAG_OJAG ) {
-        rc = JagParser::addPolygonData( pgon, sp, false );
-    } else {
-        const char *p2 = secondTokenStart( sp.c_str() );
-        rc = JagParser::addPolygonData( pgon, p2, false, false );
-    }
-	***/
     rc = JagParser::addPolygonData( pgon, sp, false );
 	if ( rc <= 0 ) return false;
 
@@ -20274,19 +20243,39 @@ bool JagGeo::closestPoint2DPolygon( int srid, double px, double py, const Jstr &
 	return true;
 }
 
+bool JagGeo::closestPoint2DRaster( int srid, double px, double py, const Jstr &mk,
+                                    const JagStrSplit &sp, Jstr &res )
+{
+	bool rc;
+
+	double x, y, projx, projy;
+	double d, mind = LONG_MAX;
+	bool found = false;
+	const char *str; char *p;
+	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':') != 1 ) continue;
+		get2double(str, p, ':', x, y );
+		d = distance( px, py, x, y, srid );
+		if ( d < mind ) {
+			mind = d;
+			projx = x;
+			projy = y;
+			found = true;
+		}
+	}
+
+	if ( ! found ) return false;
+	res = d2s( projx ) + " " + d2s( projy );
+	return true;
+}
+
 bool JagGeo::closestPoint3DPolygon( int srid, double px, double pz, double py, const Jstr &mk,
                                     const JagStrSplit &sp, Jstr &res )
 {
 	JagPolygon pgon;
 	bool rc;
-	/***
-    if ( mk == JAG_OJAG ) {
-        rc = JagParser::addPolygon3DData( pgon, sp, false );
-    } else {
-        const char *p2 = secondTokenStart( sp.c_str() );
-        rc = JagParser::addPolygon3DData( pgon, p2, false, false );
-    }
-	**/
     rc = JagParser::addPolygon3DData( pgon, sp, false );
 	if ( rc < 0 ) return false;
 
@@ -20304,6 +20293,35 @@ bool JagGeo::closestPoint3DPolygon( int srid, double px, double pz, double py, c
 				projz = lstr.point[j].z;
 				found = true;
 			}
+		}
+	}
+
+	if ( ! found ) return false;
+	res = d2s( projx ) + " " + d2s( projy ) + " " + d2s( projz );
+	return true;
+}
+
+bool JagGeo::closestPoint3DRaster( int srid, double px, double py, double pz, const Jstr &mk,
+                                    const JagStrSplit &sp, Jstr &res )
+{
+	bool rc;
+
+	double x, y, z, projx, projy, projz;
+	double d, mind = LONG_MAX;
+	bool found = false;
+	const char *str; char *p;
+	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		str = sp[i].c_str();
+		if ( strchrnum( str, ':') != 2 ) continue;
+		get3double(str, p, ':', x, y, z );
+		d = distance( px, py, pz, x, y, z, srid );
+		if ( d < mind ) {
+			mind = d;
+			projx = x;
+			projy = y;
+			projz = z;
+			found = true;
 		}
 	}
 
@@ -23426,26 +23444,29 @@ Jstr  JagGeo::doLocatePoint( int srid, const Jstr &colType1,const JagStrSplit &s
 		if ( jagEQ(d2, 0.0) ) return "0.0";
 		return d2s( ((projx-x1)*(projx-x1) + (projy-y1)*(projy-y1) + (projz-z1)*(projz-z1) ) / d2 );
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING ) {
-		double frac = getMinDist2DPointFraction(px,py, srid, sp1 );
+		double mindist, minx, miny;
+		double frac = getMinDist2DPointFraction(px,py, srid, sp1, mindist, minx, miny );
 		return d2s( frac );
 	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING3D ) {
-		double frac = getMinDist3DPointFraction(px,py,pz, srid, sp1 );
+		double mindist, minx, miny, minz;
+		double frac = getMinDist3DPointFraction(px,py,pz, srid, sp1, mindist, minx, miny, minz );
 		return d2s( frac );
 	}
 
 	return "";
 }
 
-double JagGeo::getMinDist2DPointFraction( double px, double py, int srid, const JagStrSplit &sp )
+double JagGeo::getMinDist2DPointFraction( double px, double py, int srid, const JagStrSplit &sp, 
+										  double &mindist, double &minx, double &miny )
 {
 	if ( sp.length() < 2 ) return 0.0;
-	double mindist = LONG_MAX;
+	mindist = LONG_MAX;
 	double d, projx, projy;
 	double x1, y1, x2, y2;
 	double sum = 0.0;
 	double minpointsum;
 	const char *str; char *p;
-	for ( int i=0; i < sp.length() -1; ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length() -1; ++i ) {
 		str = sp[i].c_str();
 		if ( strchrnum( str, ':' ) != 1 ) continue;
        	get2double(str, p, ':', x1, y1 );
@@ -23456,6 +23477,7 @@ double JagGeo::getMinDist2DPointFraction( double px, double py, int srid, const 
 		if ( d < mindist ) {
 			minpointsum = sum + distance( x1, y1, projx, projy, srid );
 			mindist = d;
+			minx = projx; miny = projy;
 		} 
 		sum += distance( x1, y1, x2, y2, srid );
 	}
@@ -23463,16 +23485,59 @@ double JagGeo::getMinDist2DPointFraction( double px, double py, int srid, const 
 	return minpointsum/sum;
 }
 
-double JagGeo::getMinDist3DPointFraction( double px, double py, double pz, int srid, const JagStrSplit &sp )
+void JagGeo::getMinDist2DPointOnPloygonAsLineStrings( int srid, double px, double py, const JagPolygon &pgon, double &minx, double &miny )
+{
+	minx = miny = 0.0;
+	if ( pgon.size() < 2 ) return;
+	double mindist = LONG_MAX;
+	double d, projx, projy;
+
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &lstr = pgon.linestr[i];
+		for ( int j=0; j < lstr.size() -1; ++j ) {
+			d = minPoint2DToLineSegDistance( px, py, lstr.point[j].x, lstr.point[j].y,  lstr.point[j+1].x, lstr.point[j+1].y, 
+											srid, projx, projy );
+			if ( d < mindist ) {
+				mindist = d;
+				minx = projx; miny = projy;
+			}
+		}
+	}
+}
+
+void JagGeo::getMinDist3DPointOnPloygonAsLineStrings( int srid, double px, double py, double pz, const JagPolygon &pgon, 
+								double &minx, double &miny, double &minz )
+{
+	minx = miny = minz = 0.0;
+	if ( pgon.size() < 2 ) return;
+	double mindist = LONG_MAX;
+	double d, projx, projy, projz;
+
+	for ( int i=0; i < pgon.size(); ++i ) {
+		const JagLineString3D &lstr = pgon.linestr[i];
+		for ( int j=0; j < lstr.size() -1; ++j ) {
+			d = minPoint3DToLineSegDistance( px, py, pz, lstr.point[j].x, lstr.point[j].y, lstr.point[j].z,
+											lstr.point[j+1].x, lstr.point[j+1].y,  lstr.point[j+1].z,
+											srid, projx, projy, projz );
+			if ( d < mindist ) {
+				mindist = d;
+				minx = projx; miny = projy; minz = projz;
+			}
+		}
+	}
+}
+
+double JagGeo::getMinDist3DPointFraction( double px, double py, double pz, int srid, const JagStrSplit &sp, 
+									  double &mindist, double &minx, double &miny, double &minz )
 {
 	if ( sp.length() < 2 ) return 0.0;
-	double mindist = LONG_MAX;
+	mindist = LONG_MAX;
 	double d, projx, projy, projz;
 	double x1, y1, z1, x2, y2, z2;
 	double sum = 0.0;
 	double minpointsum;
 	const char *str; char *p;
-	for ( int i=0; i < sp.length() -1; ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length() -1; ++i ) {
 		str = sp[i].c_str();
 		if ( strchrnum( str, ':' ) != 2 ) continue;
        	get3double(str, p, ':', x1, y1, z1 );
@@ -23483,6 +23548,7 @@ double JagGeo::getMinDist3DPointFraction( double px, double py, double pz, int s
 		if ( d < mindist ) {
 			minpointsum = sum + distance( x1, y1, z1, projx, projy, projz, srid );
 			mindist = d;
+			minx = projx; miny = projy; minz = projz;
 		} 
 		sum += distance( x1, y1, z1, x2, y2, z2, srid );
 	}

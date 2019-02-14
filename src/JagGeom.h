@@ -1765,7 +1765,11 @@ class JagGeo
 
 	static bool  closestPoint2DPolygon( int srid, double px, double py, const Jstr &mk, 
 										const JagStrSplit &sp, Jstr &res );
+	static bool  closestPoint2DRaster( int srid, double px, double py, const Jstr &mk, 
+										const JagStrSplit &sp, Jstr &res );
 	static bool  closestPoint3DPolygon( int srid, double px, double py, double pz, const Jstr &mk, 
+										const JagStrSplit &sp, Jstr &res );
+	static bool  closestPoint3DRaster( int srid, double px, double py, double pz, const Jstr &mk, 
 										const JagStrSplit &sp, Jstr &res );
 	static bool  closestPoint2DMultiPolygon( int srid, double px, double py, const Jstr &mk, 
 										const JagStrSplit &sp, Jstr &res );
@@ -1807,8 +1811,15 @@ class JagGeo
 
 	static void getVectorPoints( const JagStrSplit &sp, bool is3D, JagVector<JagPoint3D> &resvec );
 
-	static double getMinDist2DPointFraction( double px, double py, int srid, const JagStrSplit &sp );
-	static double getMinDist3DPointFraction( double px, double py, double pz, int srid, const JagStrSplit &sp );
+	static double getMinDist2DPointFraction( double px, double py, int srid, const JagStrSplit &sp, 
+							double &mindist, double &minx, double &miny );
+	static double getMinDist3DPointFraction( double px, double py, double pz, int srid, const JagStrSplit &sp, 
+							double &mindist, double &minx, double &miny, double &minz );
+
+	static void getMinDist2DPointOnPloygonAsLineStrings( int srid, double px, double py, const JagPolygon &pgon, 
+													     double &minx, double &miny );
+	static void getMinDist3DPointOnPloygonAsLineStrings( int srid, double px, double py, double pz, const JagPolygon &pgon, 
+													     double &minx, double &miny, double &minz );
 
 
 

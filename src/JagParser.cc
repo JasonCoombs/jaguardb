@@ -5246,7 +5246,7 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 	// "x:y x:y | x:y x:y x:y ! x:y x:y x:y | x:y x:y x:y"
 
 	bool skip = false;
-	for ( int i=1; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		prt(("s4089 sp[i=%d]=[%s]\n", i, str ));
 
@@ -5863,7 +5863,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	double dx,dy;
 	int nc;
 	int cnt = 0;
-	for ( int i=1; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		if ( sp[i] == "|" || sp[i] == "!" ) {
 			// start a new polygon
@@ -5895,7 +5895,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 	double dx,dy,dz;
 	int nc;
 	int cnt = 0;
-	for ( int i=1; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		if ( sp[i] == "|" || sp[i] == "!" ) {
 			if ( firstOnly ) break; 
