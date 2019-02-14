@@ -1042,6 +1042,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_INNERRINGS ) str = "innerrings";
 	else if ( binaryOp == JAG_FUNC_RINGN ) str = "ringn";
 	else if ( binaryOp == JAG_FUNC_GEOJSON ) str = "geojson";
+	else if ( binaryOp == JAG_FUNC_WKT ) str = "wkt";
 	else if ( binaryOp == JAG_FUNC_POLYGONN ) str = "polygonn";
 	else if ( binaryOp == JAG_FUNC_ASTEXT ) str = "astext";
 	else if ( binaryOp == JAG_FUNC_UNIQUE ) str = "unique";
@@ -1139,12 +1140,11 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN + 2;
 		siglen = 0;
 		// can we get number of points of lstr?
-	} else if ( _binaryOp == JAG_FUNC_GEOJSON ) {
+	} else if ( _binaryOp == JAG_FUNC_GEOJSON || _binaryOp == JAG_FUNC_WKT ) {
 		//prt(("s9283 JAG_FUNC_GEOJSON _carg1=[%s]\n", _carg1.s() ));
 		JagStrSplit ss( _carg1, ':');
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
-		//collen = JAG_MAX_POINTS_SENT*JAG_POINT_LEN + 2;
 		collen = ss[0].toInt() * JAG_POINT_LEN + 2;
 		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_TOPOLYGON || _binaryOp == JAG_FUNC_TOMULTIPOINT ) {
@@ -3131,7 +3131,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 				 || _binaryOp == JAG_FUNC_TRANSLATE || _binaryOp == JAG_FUNC_TRANSSCALE
 				 || _binaryOp == JAG_FUNC_ROTATE || _binaryOp == JAG_FUNC_ROTATEAT || _binaryOp == JAG_FUNC_ROTATESELF
 				 || _binaryOp == JAG_FUNC_AFFINE  || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
-				 || _binaryOp == JAG_FUNC_GEOJSON
+				 || _binaryOp == JAG_FUNC_GEOJSON ||  _binaryOp == JAG_FUNC_WKT
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		//ltmode = 0; // string
 		ltmode = getTypeMode( _binaryOp );
@@ -4186,7 +4186,7 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 				right = NULL;
 				//prt(("s2025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
     		}
-    	} else if ( op == JAG_FUNC_GEOJSON ) {
+    	} else if ( op == JAG_FUNC_GEOJSON || op == JAG_FUNC_WKT ) {
 			if ( 1 == nargs ) {
 				carg1 = intToStr(JAG_MAX_POINTS_SENT) + ":30";
 			} else if ( 2 == nargs ) {
@@ -4609,7 +4609,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_LOCATEPOINT || fop == JAG_FUNC_ADDPOINT || fop == JAG_FUNC_SETPOINT || 
 		fop == JAG_FUNC_REMOVEPOINT || fop == JAG_FUNC_SCALE || fop == JAG_FUNC_SCALEAT ||
 		fop == JAG_FUNC_DEGREES || fop == JAG_FUNC_RADIANS || fop == JAG_FUNC_SCALESIZE ||
-		fop == JAG_FUNC_GEOJSON ||
+		fop == JAG_FUNC_GEOJSON || fop == JAG_FUNC_WKT ||
 		fop == JAG_FUNC_LENGTH || fop == JAG_FUNC_COUNT ) {
 			return true;
 	}
@@ -4965,6 +4965,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_DELAUNAYTRIANGLES; len = 17; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "geojson", 7 ) ) {
 		fop = JAG_FUNC_GEOJSON; len = 7; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "wkt", 3 ) ) {
+		fop = JAG_FUNC_WKT; len = 3; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -5389,7 +5391,7 @@ bool BinaryOpNode::processSingleStrOp( int op, const JagFixString &inlstr, const
 	//sp1.shift();	
 
 	bool rc = doSingleStrOp( op, mark1, hdr, colType1, srid1, sp1, carg, value );
-	//prt(("s4480 doBooleanOp rc=%d value=%s\n", rc, value.c_str() ));
+	//prt(("s4480 doSingleStrOp rc=%d value=%s\n", rc, value.c_str() ));
 	return rc;
 }
 
@@ -5457,7 +5459,7 @@ bool BinaryOpNode::doSingleDoubleOp( int op, const Jstr& mark1, const Jstr &colT
 bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, const Jstr &colType1, int srid1, 
 										JagStrSplit &sp1, const Jstr &carg, Jstr &value )
 {
-	prt(("s2232 doSingleStrOp srid1=%d  sp1:\n", srid1 ));
+	//prt(("s2232 doSingleStrOp srid1=%d  sp1:\n", srid1 ));
 	//sp1.print();
 
 	bool rc = false;
@@ -5513,6 +5515,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllRingN( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_GEOJSON ) {
 		rc = doAllGeoJson( mark1, colType1, srid1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_WKT ) {
+		rc = doAllWKT( mark1, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_INNERRINGN ) {
 		rc = doAllInnerRingN( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_POLYGONN ) {
@@ -6831,7 +6835,7 @@ bool BinaryOpNode::doAllRingN( const Jstr& mk, const Jstr& hdr, const Jstr &colT
 bool BinaryOpNode::doAllGeoJson( const Jstr& mk, const Jstr &colType, 
 								    int srid, JagStrSplit &sp, const Jstr &carg,  Jstr &value )
 {
-	//prt(("s3420 doAllRingN() mk=[%s] colType=[%s] carg=[%s] sp1.print(): \n", mk.c_str(), colType.c_str(), carg.c_str() ));
+	//prt(("s3420 doAllGeoJson() mk=[%s] colType=[%s] carg=[%s] sp1.print(): \n", mk.c_str(), colType.c_str(), carg.c_str() ));
 	//sp.print();
 	int dim = JagGeo::getDimension(colType);
 	bool rc;
@@ -6854,6 +6858,166 @@ bool BinaryOpNode::doAllGeoJson( const Jstr& mk, const Jstr &colType,
 		return false;
 	}
 	value = JagGeo::makeGeoJson(csp, data );
+	return true;
+}
+
+bool BinaryOpNode::doAllWKT( const Jstr& mk, const Jstr &colType, 
+								    int srid, JagStrSplit &sp, const Jstr &carg,  Jstr &value )
+{
+	JagStrSplit ssa( carg, ':');
+	int samples = ssa[1].toInt();
+
+	//prt(("s3420 doAllWKT() mk=[%s] colType=[%s] carg=[%s] sp1.print(): \n", mk.c_str(), colType.c_str(), carg.c_str() ));
+	sp.print();
+    if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+		JagSquare2D sq( sp, srid );
+		JagPolygon pgon( sq );
+		pgon.print();
+		pgon.toWKT( false, true, "polygon", value );
+		//prt(("s9380 value=[%s]\n", value.s() ));
+		return true;
+    } else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
+		JagRectangle2D rect( sp, srid );
+		JagPolygon pgon( rect );
+		pgon.toWKT( false, true, "polygon", value );
+		return true;
+    } else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+		JagCircle2D cir( sp, srid );
+		JagPolygon pgon( cir, samples );
+		pgon.toWKT( false, true, "polygon", value );
+		return true;
+    } else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+		JagEllipse2D e( sp, srid );
+		JagPolygon pgon( e, samples );
+		pgon.toWKT( false, true, "polygon", value );
+		return true;
+    } else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		JagTriangle2D t( sp, srid );
+		JagPolygon pgon( t );
+		pgon.toWKT( false, true, "polygon", value );
+		return true;
+	}
+
+	if ( colType == JAG_C_COL_TYPE_POINT ) {
+		value = Jstr("point(") + sp[JAG_SP_START+0] + " " + sp[JAG_SP_START+1] + ")";
+	} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
+		value = Jstr("point(") + sp[JAG_SP_START+0] + " " + sp[JAG_SP_START+1] + " " + sp[JAG_SP_START+2] + ")";
+	} else if ( colType == JAG_C_COL_TYPE_LINE  ) {
+		value = Jstr("linestring(") + sp[JAG_SP_START+0] + " " + sp[JAG_SP_START+1] 
+					+ "," + sp[JAG_SP_START+2] + " " + sp[JAG_SP_START+3] + ")";
+	} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+		value = Jstr("linestring(") + sp[JAG_SP_START+0] + " " + sp[JAG_SP_START+1] + " " + sp[JAG_SP_START+2] 
+					+ "," + sp[JAG_SP_START+3] + " " + sp[JAG_SP_START+4] + " " + sp[JAG_SP_START+5] + ")";
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE  ) {
+		double x1 = jagatof( sp[JAG_SP_START+0] );
+		double y1 = jagatof( sp[JAG_SP_START+1] );
+		double x2 = jagatof( sp[JAG_SP_START+2] );
+		double y2 = jagatof( sp[JAG_SP_START+3] );
+		double x3 = jagatof( sp[JAG_SP_START+4] );
+		double y3 = jagatof( sp[JAG_SP_START+5] );
+		JagTriangle2D t(x1,y1, x2,y2, x3,y3 );
+		JagPolygon pgon( t );
+		//pgon.toWKT( bool is3D, bool hasHdr, const Jstr &objname, value );
+		pgon.toWKT( false, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D  ) {
+		double x1 = jagatof( sp[JAG_SP_START+0] );
+		double y1 = jagatof( sp[JAG_SP_START+1] );
+		double z1 = jagatof( sp[JAG_SP_START+2] );
+		double x2 = jagatof( sp[JAG_SP_START+3] );
+		double y2 = jagatof( sp[JAG_SP_START+4] );
+		double z2 = jagatof( sp[JAG_SP_START+5] );
+		double x3 = jagatof( sp[JAG_SP_START+6] );
+		double y3 = jagatof( sp[JAG_SP_START+7] );
+		double z3 = jagatof( sp[JAG_SP_START+8] );
+		JagTriangle3D t(x1,y1,z1, x2,y2,z2, x3,y3,z3 );
+		JagPolygon pgon( t );
+		pgon.toWKT( true, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
+		double px = jagatof( sp[JAG_SP_START+0].c_str() );
+		double py = jagatof( sp[JAG_SP_START+1].c_str() );
+		double pz = jagatof( sp[JAG_SP_START+2].c_str() );
+		double r = jagatof( sp[JAG_SP_START+3].c_str() );
+		double nx = JagGeo::safeget(sp, JAG_SP_START+4);
+		double ny = JagGeo::safeget(sp, JAG_SP_START+5);
+		JagSquare3D sq(px,py,pz, r, nx,ny );
+		JagPolygon pgon( sq );
+		pgon.toWKT( true, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		double x = jagatof( sp[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp[JAG_SP_START+2].c_str() );
+		double a = jagatof( sp[JAG_SP_START+3].c_str() );
+		double b = jagatof( sp[JAG_SP_START+4].c_str() );
+		double nx = JagGeo::safeget(sp, JAG_SP_START+5);
+		double ny = JagGeo::safeget(sp, JAG_SP_START+6);
+		JagRectangle3D rect(x,y,z, a, b, nx,ny );
+		JagPolygon pgon( rect );
+		pgon.toWKT( true, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
+		double x = jagatof( sp[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp[JAG_SP_START+2].c_str() );
+		double r = jagatof( sp[JAG_SP_START+3].c_str() );
+		double nx = JagGeo::safeget(sp, JAG_SP_START+4);
+		double ny = JagGeo::safeget(sp, JAG_SP_START+5);
+		JagCircle3D cir(x,y,z, r, nx,ny );
+		JagPolygon pgon( cir);
+		pgon.toWKT( true, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D ) {
+		double x = jagatof( sp[JAG_SP_START+0].c_str() );
+		double y = jagatof( sp[JAG_SP_START+1].c_str() );
+		double z = jagatof( sp[JAG_SP_START+2].c_str() );
+		double a = jagatof( sp[JAG_SP_START+3].c_str() );
+		double b = jagatof( sp[JAG_SP_START+4].c_str() );
+		double nx = JagGeo::safeget(sp, JAG_SP_START+5);
+		double ny = JagGeo::safeget(sp, JAG_SP_START+6);
+		JagEllipse3D cir(x,y,z, a,b,nx,ny );
+		JagPolygon pgon( cir);
+		pgon.toWKT( true, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygonData( pgon, sp, false );
+		if ( rc < 0 ) return false;
+		pgon.toWKT( false, true, "linestring", value );
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygon3DData( pgon, sp, false );
+		if ( rc < 0 ) return false;
+		pgon.toWKT( true, true, "linestring", value );
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygonData( pgon, sp, false );
+		if ( rc < 0 ) return false;
+		pgon.toWKT( false, true, "multipoint", value );
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygon3DData( pgon, sp, false );
+		if ( rc < 0 ) return false;
+		pgon.toWKT( true, true, "multipoint", value );
+	} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygonData( pgon, sp, false );
+		if ( rc < 0 ) return false;
+		pgon.toWKT( false, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		JagPolygon pgon;
+		int rc = JagParser::addPolygon3DData( pgon, sp, false );
+		if ( rc < 0 ) return false;
+		pgon.toWKT( true, true, "polygon", value );
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		JagVector<JagPolygon> pgvec;
+        int n = JagParser::addMultiPolygonData( pgvec, sp, false, false );
+        if ( n <= 0 ) return false;
+		JagGeo::multiPolygonToWKT( pgvec, false, value );
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		JagVector<JagPolygon> pgvec;
+        int n = JagParser::addMultiPolygonData( pgvec, sp, false, true );
+        if ( n <= 0 ) return false;
+		JagGeo::multiPolygonToWKT( pgvec, true, value );
+	} else {
+		return false;
+	}
+
 	return true;
 }
 

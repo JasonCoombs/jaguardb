@@ -312,6 +312,8 @@ class BinaryOpNode: public ExprElementNode
 						  int srid, const JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
 	bool doAllGeoJson( const Jstr &mk1, const Jstr &colType1, 
 						  int srid, JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
+	bool doAllWKT( const Jstr &mk1, const Jstr &colType1, 
+						  int srid, JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
 	bool doAllUnique( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 					   const JagStrSplit &sp1, Jstr &val );
     Jstr doAllUnion( Jstr mark1, Jstr colType1,

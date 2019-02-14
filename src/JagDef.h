@@ -489,6 +489,7 @@
 #define JAG_FUNC_DELAUNAYTRIANGLES       317  // Delaunay triangles 
 #define JAG_FUNC_GEOJSON        318  // make GeoJSon string from a shape
 #define JAG_FUNC_TOMULTIPOINT   319  // convert geom (vector and others) to multipoints
+#define JAG_FUNC_WKT            320  // output WKT text for point, mpoint, linestring, multilinestring, polygon, multipolygon
 
 
 // string functions 

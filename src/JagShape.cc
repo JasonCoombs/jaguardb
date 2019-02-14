@@ -1028,6 +1028,11 @@ JagSquare3D::JagSquare3D( const JagStrSplit &sp, int insrid )
     init(px,py, pz, a1, nx1, ny1, insrid );
 }
 
+JagSquare3D::JagSquare3D(double inx, double iny, double inz, double ina, double innx, double inny, int insrid )
+{
+    init(inx,iny,inz, ina, innx, inny, insrid );
+}
+
 void JagSquare3D::init(double inx, double iny, double inz, double ina, double innx, double inny, int insrid )
 {
 	//prt(("s28039 JagRectangle2D::init inx=%f iny=%f ina=%f inb=%f innx=%f insrid=%d\n", inx, iny, ina, inb, innx, insrid ));
@@ -1162,6 +1167,12 @@ JagRectangle3D::JagRectangle3D( const JagStrSplit &sp, int insrid )
     double nx = jagatof( sp[JAG_SP_START+5] );
     double ny = jagatof( sp[JAG_SP_START+6] );
     init(px,py, pz, a, b, nx, ny, insrid );
+}
+
+JagRectangle3D::JagRectangle3D(double inx, double iny, double inz, 
+			double ina, double inb, double innx, double inny, int insrid )
+{
+    init(inx,iny,inz, ina, inb, innx, inny, insrid );
 }
 
 void JagRectangle3D::init(double inx, double iny, double inz, double ina, double inb, double innx, double inny, int insrid )
