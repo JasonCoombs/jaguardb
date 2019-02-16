@@ -618,6 +618,7 @@ class JagPolygon
 		void print() const { linestr.print(); }
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const;
+		void toOneWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const;
 		void toJAG( bool is3D, bool hasHdr,  const Jstr &inbbox, int srid, Jstr &str ) const;
 		void reverse() { for (int i=0; i < linestr.size(); ++i ) linestr[i].reverse(); }
 		void   scale( double fx, double fy, double fz, bool is3D) { 
@@ -645,6 +646,8 @@ class JagPolygon
 						double dx, double dy, double dz ) {
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].affine3d( a, b, c, d, e, f, g, h, i, dx, dy, dz ); 
 		}
+		void toVector2D( JagVector<JagPoint2D> &vec, bool outerRingOnly );
+		void toVector3D( JagVector<JagPoint3D> &vec, bool outerRingOnly );
 
 		JagPolygon( const JagSquare2D &sq, bool isClosed=true );
 		JagPolygon( const JagSquare3D &sq, bool isClosed=true );

@@ -23867,3 +23867,60 @@ bool JagGeo::toJAG( const JagVector<JagPolygon> &pgvec, bool is3D, bool hasHdr, 
 	return true;
 	
 }
+
+void JagGeo::multiPolygonToVector2D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint2D> &vec )
+{
+	if ( pgvec.size() < 1 ) return;
+	for ( int k=0; k < pgvec.size(); ++k ) {
+		const JagPolygon &pgon = pgvec[k];
+    	for ( int i=0; i < pgon.linestr.size(); ++i ) {
+    		const JagLineString3D &lstr = pgon.linestr[i];
+    		for (  int j=0; j< lstr.size(); ++j ) {
+    			vec.append(JagPoint2D(lstr.point[j].x, lstr.point[j].y) );
+    		}
+			if ( outerRingOnly ) break;
+    	}
+	}
+}
+
+void JagGeo::multiPolygonToVector3D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint3D> &vec )
+{
+	if ( pgvec.size() < 1 ) return;
+	for ( int k=0; k < pgvec.size(); ++k ) {
+		const JagPolygon &pgon = pgvec[k];
+    	for ( int i=0; i < pgon.linestr.size(); ++i ) {
+    		const JagLineString3D &lstr = pgon.linestr[i];
+    		for (  int j=0; j< lstr.size(); ++j ) {
+    			vec.append(JagPoint3D(lstr.point[j].x, lstr.point[j].y, lstr.point[j].z ) );
+    		}
+			if ( outerRingOnly ) break;
+    	}
+	}
+}
+
+void JagGeo::lonLatAltToXYZ( int srid, double lon, double lat, double alt, double &x, double &y, double &z )
+{
+	if ( 0 == srid ) {
+		x = lon; y = lat; z = alt;
+		return;
+	}
+
+	const GeographicLib::Geocentric& earth = Geocentric::WGS84();
+	//LocalCartesian proj(lat0, lon0, 0, earth);
+	GeographicLib::LocalCartesian proj(0.0, 0.0, 0, earth);
+	proj.Forward(lat, lon, alt, x, y, z);
+}
+
+void JagGeo::XYZToLonLatAlt( int srid, double x, double y, double z, double &lon, double &lat, double &alt )
+{
+	if ( 0 == srid ) {
+		lon = x; lat = y;  alt = z;
+		return;
+	}
+
+	const GeographicLib::Geocentric& earth = Geocentric::WGS84();
+	GeographicLib::LocalCartesian proj(0.0, 0.0, 0, earth);
+	proj.Reverse(x,y,z, lat, lon, alt );
+}
+
+	 

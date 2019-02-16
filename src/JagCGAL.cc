@@ -1624,5 +1624,66 @@ void JagCGAL::getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double to
 	}
 }
 
+bool JagCGAL::getMinBoundCircle( const JagVector<JagPoint2D> &vec, Jstr &res )
+{
+	int len = vec.size();
+	if ( len < 1 ) return false;
+	std::vector<CGALCircle> C;
+	const int DIM = 2;
+	double cord[DIM];
+	for ( int i=0; i < len; ++i ) {
+		cord[0] = vec[i].x;
+		cord[1] = vec[i].y;
+		CGALCartPoint point(DIM, cord, cord+DIM );
+		C.push_back( CGALCircle(point, 0.0) );
+	}
+
+	CGAL_Min_circle mc(C.begin(),C.end());
+	if ( ! mc.is_valid() ) return false;
+	double r = mc.radius();
+	/***
+	for ( auto c = mc.center_cartesian_begin(); c != mc.center_cartesian_end(); ++c ) { x = *c; y = *c; }
+	***/
+	auto c =  mc.center_cartesian_begin();
+	double x = *c;
+	++c;
+	if ( c == mc.center_cartesian_end() ) return false;
+	double y = *c;
+	res = d2s(x) + " " + d2s(y) +  " " + d2s(r);
+	return true;
+}
 
 
+bool JagCGAL::getMinBoundSphere( const JagVector<JagPoint3D> &vec, Jstr &res )
+{
+	int len = vec.size();
+	if ( len < 1 ) return false;
+	std::vector<CGALSphere> S;
+	const int DIM = 3;
+	double cord[DIM];
+	for ( int i=0; i < len; ++i ) {
+		cord[0] = vec[i].x;
+		cord[1] = vec[i].y;
+		cord[2] = vec[i].z;
+		CGALCartPoint point(DIM, cord, cord+DIM );
+		S.push_back( CGALSphere(point, 0.0) );
+	}
+
+	CGAL_Min_sphere ms(S.begin(), S.end());
+	if ( ! ms.is_valid() ) return false;
+	double r = ms.radius();
+	/***
+	for ( auto c = mc.center_cartesian_begin(); c != mc.center_cartesian_end(); ++c ) { x = *c; y = *c; }
+	***/
+	auto c =  ms.center_cartesian_begin();
+	double x = *c;
+	++c;
+	if ( c == ms.center_cartesian_end() ) return false;
+	double y = *c;
+	++c;
+	if ( c == ms.center_cartesian_end() ) return false;
+	double z = *c;
+
+	res = d2s(x) + " " + d2s(y) +  " " + d2s(z) + " " + d2s(r);
+	return true;
+}

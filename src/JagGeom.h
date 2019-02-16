@@ -24,6 +24,7 @@
 #include <GeographicLib/Geocentric.hpp>
 #include <GeographicLib/PolygonArea.hpp>
 #include <GeographicLib/Constants.hpp>
+#include <GeographicLib/LocalCartesian.hpp>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 #include <JagDef.h>
@@ -1571,8 +1572,10 @@ class JagGeo
     static double meterToLat( int srid, double meter, double lon, double lat);
 	static bool interpolatePoint2D(double segdist, double segfrac, const JagPoint3D &p1, const JagPoint3D &p2, JagPoint3D &point );
 	static bool toJAG( const JagVector<JagPolygon> &pgvec, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str );
-
-
+	static void multiPolygonToVector2D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint2D> &vec );
+	static void multiPolygonToVector3D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint3D> &vec );
+	static void lonLatAltToXYZ( int srid,  double lon, double lat, double alt, double &x, double &y, double &z );
+	static void XYZToLonLatAlt(  int srid, double x, double y, double z , double &lon, double &lat, double &alt );
 
 
   protected:

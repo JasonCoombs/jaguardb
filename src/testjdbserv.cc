@@ -219,7 +219,7 @@ int main(int argc, char *argv[] )
 	//testjaguarreader();
 	//testjaguarreader2();
 	// testUUID();
-	testStrSplitWQuote();
+	// testStrSplitWQuote();
 	// testAtomic( N );
 
 	// test_schema( argv[2] );
@@ -276,7 +276,7 @@ int main(int argc, char *argv[] )
 	//test_linefile( N );
 	//test_json( N );
 	//test_distance();
-	// test_cgal();
+	test_cgal();
 	//test_new( N );
 	//test_equation();
 	//test_intersection();
@@ -3265,27 +3265,21 @@ void test_distance()
 	prt(("dist=%.3f meters\n", dist ));
 }
 
-
-//#include <CGAL/Simple_cartesian.h>
-#if 1
-//typedef CGAL::Exact_predicates_inexact_constructions_kernel CGALKernel;
-typedef CGALKernel::Point_2 Point_2;
-typedef CGALKernel::Point_3 Point_3;
-//typedef std::vector<Point_2> Points;
-
-/**
-typedef CGAL::Exact_predicates_inexact_constructions_kernel  K;
-typedef CGAL::Polyhedron_3<K>                     Polyhedron_3;
-typedef K::Point_3                                Point_3;
-typedef CGAL::Surface_mesh<Point_3>               Surface_mesh;
-**/
+const int DIM = 3;
+/***
+typedef CGAL::Cartesian_d<double>            CDK;
+typedef CGAL::Min_sphere_of_spheres_d_traits_d<CDK,double,DIM> K3Traits;
+typedef CGAL::Min_sphere_of_spheres_d<K3Traits> Min_sphere;
+typedef CDK::Point_d                      KPoint;
+typedef K3Traits::Sphere                  KSphere;
+***/
 
 void test_cgal()
 {
     // convex_hull_2
-    Point_2 points[5] = { Point_2(0,0), Point_2(10,0), Point_2(10,10), Point_2(6,5), Point_2(4,1) };
-    Point_2 result[5];
-    Point_2 *ptr = CGAL::convex_hull_2( points, points+5, result );
+    CGALPoint2D points[5] = { CGALPoint2D(0,0), CGALPoint2D(10,0), CGALPoint2D(10,10), CGALPoint2D(6,5), CGALPoint2D(4,1) };
+    CGALPoint2D result[5];
+    CGALPoint2D *ptr = CGAL::convex_hull_2( points, points+5, result );
     int len  = ptr - result;
     std::cout <<  len << " points on the convex hull:" << std::endl;
     for(int i = 0; i < len; i++){
@@ -3293,13 +3287,13 @@ void test_cgal()
     }
 
     // convex_hull_2 of vector of points
-    std::vector<Point_2> vpoints, vresult;
-    vpoints.push_back(Point_2(0,0));
-    vpoints.push_back(Point_2(10,0));
-    vpoints.push_back(Point_2(10,10));
-    vpoints.push_back(Point_2(6,5));
-    vpoints.push_back(Point_2(2,1));
-    vpoints.push_back(Point_2(4,8));
+    std::vector<CGALPoint2D> vpoints, vresult;
+    vpoints.push_back(CGALPoint2D(0,0));
+    vpoints.push_back(CGALPoint2D(10,0));
+    vpoints.push_back(CGALPoint2D(10,10));
+    vpoints.push_back(CGALPoint2D(6,5));
+    vpoints.push_back(CGALPoint2D(2,1));
+    vpoints.push_back(CGALPoint2D(4,8));
     CGAL::convex_hull_2( vpoints.begin(), vpoints.end(), std::back_inserter(vresult) );
     std::cout << vresult.size() << " points on the 2D convex hull:" << std::endl;
     for(int i = 0; i < vresult.size(); i++){
@@ -3328,14 +3322,13 @@ void test_cgal()
 	hull.print();
 
     /////// orientation ///////////////
-	/***
-    Point2 p(1,1), q(10,10);
+    CGALPoint2D p(1,1), q(10,10);
     std::cout << "p = " << p << std::endl;
     std::cout << "q = " << q.x() << " " << q.y() << std::endl;
     std::cout << "sqdist(p,q) = " << CGAL::squared_distance(p,q) << std::endl;
 
-    Segment2 s(p,q);
-    Point2 m(5, 9);
+    CGALSegment2D s(p,q);
+    CGALPoint2D m(5, 9);
     std::cout << "m = " << m << std::endl;
     std::cout << "sqdist(Segment2(p,q), m) = " << CGAL::squared_distance(s,m) << std::endl;
 
@@ -3352,32 +3345,71 @@ void test_cgal()
           std::cout << "make a right turn\n";
           break;
     }
-	***/
 
 	/***
-  std::vector<Point_3> points;
-  Point_3 p;
+  	std::vector<Point_3> points;
+  	CGALPoint3D p;
     points.push_back(p);
 
-  // define polyhedron to hold convex hull
-  Polyhedron_3 poly;
+  	// define polyhedron to hold convex hull
+  	Polyhedron_3 poly;
   
-  // compute convex hull of non-collinear points
-  CGAL::convex_hull_3(points.begin(), points.end(), poly);
+  	// compute convex hull of non-collinear points
+  	CGAL::convex_hull_3(points.begin(), points.end(), poly);
 
-  std::cout << "The convex hull contains " << poly.size_of_vertices() << " vertices" << std::endl;
+  	std::cout << "The convex hull contains " << poly.size_of_vertices() << " vertices" << std::endl;
   
-  Surface_mesh sm;
-  CGAL::convex_hull_3(points.begin(), points.end(), sm);
+  	Surface_mesh sm;
+  	CGAL::convex_hull_3(points.begin(), points.end(), sm);
 
-  std::cout << "The convex hull contains " << num_vertices(sm) << " vertices" << std::endl;
-***/
+  	std::cout << "The convex hull contains " << num_vertices(sm) << " vertices" << std::endl;
 
 	boost::geometry::model::multi_polygon<BoostPolygon2D> mbgon;
 	double ds = boost::geometry::perimeter( mbgon );
+	************/
+
+	std::vector<CGALSphere> S;
+	double coord[DIM];
+	for ( int i=0; i < 10; ++i ) {
+		coord[0] = i+4.5;
+		coord[1] = i+5.5;
+		coord[2] = i+8.5;
+		CGALCartPoint point(DIM, coord, coord+DIM );
+		S.push_back( CGALSphere(point, 3.0) );
+	}
+
+	CGAL_Min_sphere ms(S.begin(),S.end());
+	CGAL_assertion(ms.is_valid());
+	int cnt = 0;
+	double r = ms.radius();
+	prt(("radius=%f\n", r ));
+	for ( auto c = ms.center_cartesian_begin(); c != ms.center_cartesian_end(); ++c ) {
+		//std::cout << *c << std::endl;
+		prt(("cnt=%d coord=%f\n", cnt, *c ));
+		++cnt;
+	}
+
+	std::vector<CGALCircle> C;
+	double cord[2];
+	for ( int i=0; i < 10; ++i ) {
+		cord[0] = i+4.5;
+		cord[1] = i+9.5;
+		CGALCartPoint point(2, cord, cord+2 );
+		C.push_back( CGALCircle(point, 6.0) );
+	}
+
+	CGAL_Min_circle mc(C.begin(),C.end());
+	CGAL_assertion(mc.is_valid());
+	cnt = 0;
+	r = mc.radius();
+	prt(("radius=%f\n", r ));
+	for ( auto c = mc.center_cartesian_begin(); c != mc.center_cartesian_end(); ++c ) {
+		prt(("cnt=%d coord=%f\n", cnt, *c ));
+		++cnt;
+	}
+
 
 }
-#endif
 
 struct Intersection_visitor2 
 {

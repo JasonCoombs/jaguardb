@@ -490,17 +490,19 @@
 #define JAG_FUNC_GEOJSON        318  // make GeoJSon string from a shape
 #define JAG_FUNC_TOMULTIPOINT   319  // convert geom (vector and others) to multipoints
 #define JAG_FUNC_WKT            320  // output WKT text for point, mpoint, linestring, multilinestring, polygon, multipolygon
+#define JAG_FUNC_MINIMUMBOUNDINGCIRCLE 321  // minimum bounding circle of 2D geom
+#define JAG_FUNC_MINIMUMBOUNDINGSPHERE 322  // minimum bounding sphere of 3D geom
 
 
 // string functions 
-#define JAG_FUNC_SUBSTR			350  // substr(str, offset, len)  substr(str, offset )
-#define JAG_FUNC_UPPER			351
-#define JAG_FUNC_LOWER			352
-#define JAG_FUNC_LTRIM			353
-#define JAG_FUNC_RTRIM			354
-#define JAG_FUNC_TRIM			355
-#define JAG_FUNC_LENGTH			356
-#define JAG_FUNC_LINELENGTH		357
+#define JAG_FUNC_SUBSTR			390  // substr(str, offset, len)  substr(str, offset )
+#define JAG_FUNC_UPPER			391
+#define JAG_FUNC_LOWER			392
+#define JAG_FUNC_LTRIM			393
+#define JAG_FUNC_RTRIM			394
+#define JAG_FUNC_TRIM			395
+#define JAG_FUNC_LENGTH			396
+#define JAG_FUNC_LINELENGTH		397
 
 // date and time
 #define JAG_FUNC_SECOND			400 // 0-59

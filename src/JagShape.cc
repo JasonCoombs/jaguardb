@@ -1509,6 +1509,24 @@ void JagPolygon::toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str )
 	str += ")";
 }
 
+// linestring 
+void JagPolygon::toOneWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const
+{
+	if ( linestr.size() < 1 ) { str=""; return; }
+	if ( hasHdr ) {
+		str = objname +  "(";
+	} else {
+		str = "(";
+	}
+	const JagLineString3D &lstr = linestr[0];
+	for (  int j=0; j< lstr.size(); ++j ) {
+		if ( j>0) { str += Jstr(","); }
+		str += d2s(lstr.point[j].x) + " " +  d2s(lstr.point[j].y);
+		if ( is3D ) { str += Jstr(" ") + d2s(lstr.point[j].z); }
+	}
+	str += ")";
+}
+
 void JagPolygon::toJAG( bool is3D, bool hasHdr,  const Jstr &inbbox, int srid, Jstr &str ) const
 {
 	if ( linestr.size() < 1 ) { str=""; return; }
@@ -1683,6 +1701,31 @@ JagPolygon::JagPolygon( const JagTriangle3D &t, bool isClosed )
 	}
 	linestr.append( ls );
 }
+
+void JagPolygon::toVector2D( JagVector<JagPoint2D> &vec, bool outerRingOnly )
+{
+	if ( linestr.size() < 1 ) { return; }
+	for ( int i=0; i < linestr.size(); ++i ) {
+		const JagLineString3D &lstr = linestr[i];
+		for (  int j=0; j< lstr.size(); ++j ) {
+			vec.append( JagPoint2D(lstr.point[j].x, lstr.point[j].y) );
+		}
+		if ( outerRingOnly ) break;
+	}
+}
+
+void JagPolygon::toVector3D( JagVector<JagPoint3D> &vec, bool outerRingOnly )
+{
+	if ( linestr.size() < 1 ) { return; }
+	for ( int i=0; i < linestr.size(); ++i ) {
+		const JagLineString3D &lstr = linestr[i];
+		for (  int j=0; j< lstr.size(); ++j ) {
+			vec.append( JagPoint3D(lstr.point[j].x, lstr.point[j].y, lstr.point[j].z ) );
+		}
+		if ( outerRingOnly ) break;
+	}
+}
+
 
 // JagCube
 JagCube::JagCube( const JagStrSplit &sp, int insrid )

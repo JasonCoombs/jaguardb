@@ -11,7 +11,6 @@
 #include <boost/polygon/voronoi.hpp>
 #include <boost/polygon/voronoi_geometry_type.hpp>
 
-//#define CGAL_HEADER_ONLY 1
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/convex_hull_2.h>
 #include <CGAL/Surface_mesh.h>
@@ -24,6 +23,12 @@
 #include <CGAL/convex_hull_3.h>
 #include <CGAL/intersections.h>
 
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Cartesian_d.h>
+#include <CGAL/Min_sphere_of_spheres_d.h>
+#include <CGAL/Min_circle_2.h>
+#include <CGAL/Min_circle_2_traits_2.h>
+
 
 #include <JagGeom.h>
 
@@ -31,6 +36,17 @@ typedef CGAL::Exact_predicates_inexact_constructions_kernel CGALKernel;
 typedef CGALKernel::Point_2 CGALPoint2D;
 typedef CGALKernel::Point_3 CGALPoint3D;
 typedef CGAL::Surface_mesh<CGALKernel::Point_3> CGALSurfaceMesh;
+typedef CGALKernel::Segment_2 CGALSegment2D;
+
+typedef CGAL::Cartesian_d<double>  CGALCartDouble;
+typedef CGALCartDouble::Point_d  CGALCartPoint;
+typedef CGAL::Min_sphere_of_spheres_d_traits_d<CGALCartDouble,double,3> CGAL3DTraits;
+typedef CGAL::Min_sphere_of_spheres_d<CGAL3DTraits> CGAL_Min_sphere;
+typedef CGAL3DTraits::Sphere         CGALSphere;
+
+typedef CGAL::Min_sphere_of_spheres_d_traits_d<CGALCartDouble,double,2> CGAL2DTraits;
+typedef CGAL::Min_sphere_of_spheres_d<CGAL2DTraits> CGAL_Min_circle;
+typedef CGAL2DTraits::Sphere         CGALCircle;
 
 typedef boost::geometry::model::d2::point_xy<double> BoostPoint2D;
 typedef boost::geometry::model::linestring<BoostPoint2D> BoostLineString2D;
@@ -165,6 +181,8 @@ class JagCGAL
 	static void getVoronoiMultiPolygons3D( const JagStrSplit &sp, double tolerance, 
 									  double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, Jstr &vor );
 	static void getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double tolerance, Jstr &mpg );
+	static bool getMinBoundCircle( const JagVector<JagPoint2D> &vec, Jstr &res );
+	static bool getMinBoundSphere( const JagVector<JagPoint3D> &vec, Jstr &res );
 
 
   protected:
