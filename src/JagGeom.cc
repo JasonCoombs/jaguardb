@@ -15625,7 +15625,25 @@ double JagGeo::doTriangleArea( int srid1, const JagStrSplit& sp1 )
 	double By = jagatof( sp1[JAG_SP_START+3].c_str() );
 	double Cx = jagatof( sp1[JAG_SP_START+4].c_str() );
 	double Cy = jagatof( sp1[JAG_SP_START+5].c_str() );
-	return fabs( Ax*(By-Cy) + Bx*(Cy-Ay) + Cx*(Ay-By))/2.0;
+	if (  JAG_GEO_WGS84 == srid1 ) {
+		/***
+		double ax, ay bx, by cx cy;
+		JagGeo::lonLatToXY( srid, Ax, Ay, ax, ay );
+		JagGeo::lonLatToXY( srid, Bx, By, bx, by );
+		JagGeo::lonLatToXY( srid, Cx, Cy, cx, cy );
+		return fabs( ax*(by-cy) + bx*(cy-ay) + cx*(ay-by))/2.0;
+		***/
+		const Geodesic& geod = Geodesic::WGS84();
+		PolygonArea poly(geod);
+		poly.AddPoint( Ax, Ay );
+		poly.AddPoint( Bx, By );
+		poly.AddPoint( Cx, Cy );
+		double perim, area;
+		poly.Compute( false, false, perim, area );
+		return area;
+	} else {
+		return fabs( Ax*(By-Cy) + Bx*(Cy-Ay) + Cx*(Ay-By))/2.0;
+	}
 }
 
 double JagGeo::doTrianglePerimeter( int srid1, const JagStrSplit& sp1 )
@@ -15715,7 +15733,21 @@ double JagGeo::doTriangle3DArea( int srid1, const JagStrSplit& sp1 )
 	double x3 = jagatof( sp1[JAG_SP_START+6].c_str() );
 	double y3 = jagatof( sp1[JAG_SP_START+7].c_str() );
 	double z3 = jagatof( sp1[JAG_SP_START+8].c_str() );
-	return sqrt( jagsq2(x2*y3-x3*y2) + jagsq2(x3*y1-x1*y3) + jagsq2(x1*y2-x2*y1) )/2.0;
+	if (  JAG_GEO_WGS84 == srid1 ) {
+		double rx1, ry1, rz1, rx2, ry2, rz2, rx3, ry3, rz3;
+		JagGeo::lonLatAltToXYZ( srid1, x1, y1, z1, rx1, ry1, rz1 );
+		JagGeo::lonLatAltToXYZ( srid1, x2, y2, z2, rx2, ry2, rz2 );
+		JagGeo::lonLatAltToXYZ( srid1, x3, y3, z3, rx3, ry3, rz3 );
+		double dx1 = rx2-rx1; double dx2 = rx3-rx1;
+		double dy1 = ry2-ry1; double dy2 = ry3-ry1;
+		double dz1 = rz2-rz1; double dz2 = rz3-rz1;
+		return sqrt( jagsq2(dy1*dz2-dy2*dz1) + jagsq2(dx1*dz2-dx2*dz1) + jagsq2(dx1*dy2-dx2*dy1) )/2.0;
+	} else {
+		double dx1 = x2-x1; double dx2 = x3-x1;
+		double dy1 = y2-y1; double dy2 = y3-y1;
+		double dz1 = z2-z1; double dz2 = z3-z1;
+		return sqrt( jagsq2(dy1*dz2-dy2*dz1) + jagsq2(dx1*dz2-dx2*dz1) + jagsq2(dx1*dy2-dx2*dy1) )/2.0;
+	}
 }
 
 bool JagGeo::doTriangle3DDistance(const Jstr& mk1,  const JagStrSplit& sp1, const Jstr& mk2, 
@@ -23868,36 +23900,41 @@ bool JagGeo::toJAG( const JagVector<JagPolygon> &pgvec, bool is3D, bool hasHdr, 
 	
 }
 
-void JagGeo::multiPolygonToVector2D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint2D> &vec )
+void JagGeo::multiPolygonToVector2D( int srid, const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint2D> &vec )
 {
 	if ( pgvec.size() < 1 ) return;
+	double x, y;
 	for ( int k=0; k < pgvec.size(); ++k ) {
 		const JagPolygon &pgon = pgvec[k];
     	for ( int i=0; i < pgon.linestr.size(); ++i ) {
     		const JagLineString3D &lstr = pgon.linestr[i];
     		for (  int j=0; j< lstr.size(); ++j ) {
-    			vec.append(JagPoint2D(lstr.point[j].x, lstr.point[j].y) );
+				JagGeo::lonLatToXY( srid, lstr.point[j].x, lstr.point[j].y, x, y );
+    			vec.append(JagPoint2D(x,y));
     		}
 			if ( outerRingOnly ) break;
     	}
 	}
 }
 
-void JagGeo::multiPolygonToVector3D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint3D> &vec )
+void JagGeo::multiPolygonToVector3D( int srid, const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint3D> &vec )
 {
 	if ( pgvec.size() < 1 ) return;
+	double x, y, z;
 	for ( int k=0; k < pgvec.size(); ++k ) {
 		const JagPolygon &pgon = pgvec[k];
     	for ( int i=0; i < pgon.linestr.size(); ++i ) {
     		const JagLineString3D &lstr = pgon.linestr[i];
     		for (  int j=0; j< lstr.size(); ++j ) {
-    			vec.append(JagPoint3D(lstr.point[j].x, lstr.point[j].y, lstr.point[j].z ) );
+				JagGeo::lonLatAltToXYZ( srid, lstr.point[j].x, lstr.point[j].y, lstr.point[j].z, x, y, z );
+    			vec.append(JagPoint3D(x,y,z));
     		}
 			if ( outerRingOnly ) break;
     	}
 	}
 }
 
+// XYZ in meters
 void JagGeo::lonLatAltToXYZ( int srid, double lon, double lat, double alt, double &x, double &y, double &z )
 {
 	if ( 0 == srid ) {
@@ -23907,10 +23944,11 @@ void JagGeo::lonLatAltToXYZ( int srid, double lon, double lat, double alt, doubl
 
 	const GeographicLib::Geocentric& earth = Geocentric::WGS84();
 	//LocalCartesian proj(lat0, lon0, 0, earth);
-	GeographicLib::LocalCartesian proj(0.0, 0.0, 0, earth);
+	GeographicLib::LocalCartesian proj(0.0, 0.0, 0.0, earth);
 	proj.Forward(lat, lon, alt, x, y, z);
 }
 
+// Alt in meters above sea-level
 void JagGeo::XYZToLonLatAlt( int srid, double x, double y, double z, double &lon, double &lat, double &alt )
 {
 	if ( 0 == srid ) {
@@ -23919,8 +23957,47 @@ void JagGeo::XYZToLonLatAlt( int srid, double x, double y, double z, double &lon
 	}
 
 	const GeographicLib::Geocentric& earth = Geocentric::WGS84();
-	GeographicLib::LocalCartesian proj(0.0, 0.0, 0, earth);
+	GeographicLib::LocalCartesian proj(0.0, 0.0, 0.0, earth);
 	proj.Reverse(x,y,z, lat, lon, alt );
 }
 
+// lat lon in degrees
+void JagGeo::lonLatToXY( int srid, double lon, double lat, double &x, double &y )
+{
+	if ( 0 == srid ) {
+		x = lon; y = lat;
+		return;
+	}
+
+	x = JAG_METER_MAX_PER_LON_DEGREE * lon * cos(lat*JAG_RADIAN_PER_DEGREE) ;
+	y = JAG_METER_PER_LAT_DEGREE * lat;
+
+	/***
+	const Geodesic& geod = Geodesic::WGS84();
+	double s12;
+	geod.Inverse( lat, 0.0, lat, lon, s12 );
+	x = s12;
+	if ( lon < 0.0 ) x = -s12; else x= s12;
+
+	geod.Inverse( 0.0, lon, lat, lon, s12 );
+	y = s12;
+	if ( lat < 0.0 ) y = -s12; else y= s12;
+	****/
+}
+
+void JagGeo::XYToLonLat( int srid, double x, double y, double &lon, double &lat )
+{
+	if ( 0 == srid ) {
+		lon = x; lat = y;
+		return;
+	}
+
+	lat = y/JAG_METER_PER_LAT_DEGREE;
+	double cosv = cos(lat*JAG_RADIAN_PER_DEGREE);
+	if ( jagLE(fabs(cosv), JAG_ZERO) ) {
+		lon = 180.0;
+	} else {
+		lon = x/(JAG_METER_MAX_PER_LON_DEGREE*cosv);
+	}
 	 
+}

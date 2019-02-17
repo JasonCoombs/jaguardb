@@ -1702,25 +1702,30 @@ JagPolygon::JagPolygon( const JagTriangle3D &t, bool isClosed )
 	linestr.append( ls );
 }
 
-void JagPolygon::toVector2D( JagVector<JagPoint2D> &vec, bool outerRingOnly )
+void JagPolygon::toVector2D( int srid, JagVector<JagPoint2D> &vec, bool outerRingOnly )
 {
 	if ( linestr.size() < 1 ) { return; }
+	double x, y;
 	for ( int i=0; i < linestr.size(); ++i ) {
 		const JagLineString3D &lstr = linestr[i];
 		for (  int j=0; j< lstr.size(); ++j ) {
-			vec.append( JagPoint2D(lstr.point[j].x, lstr.point[j].y) );
+			JagGeo::lonLatToXY( srid, lstr.point[j].x, lstr.point[j].y, x, y );
+			vec.append( JagPoint2D(x,y));
 		}
 		if ( outerRingOnly ) break;
 	}
 }
 
-void JagPolygon::toVector3D( JagVector<JagPoint3D> &vec, bool outerRingOnly )
+void JagPolygon::toVector3D( int srid, JagVector<JagPoint3D> &vec, bool outerRingOnly )
 {
 	if ( linestr.size() < 1 ) { return; }
+	double x, y, z;
 	for ( int i=0; i < linestr.size(); ++i ) {
 		const JagLineString3D &lstr = linestr[i];
 		for (  int j=0; j< lstr.size(); ++j ) {
-			vec.append( JagPoint3D(lstr.point[j].x, lstr.point[j].y, lstr.point[j].z ) );
+			JagGeo::lonLatAltToXYZ( srid, lstr.point[j].x, lstr.point[j].y, lstr.point[j].z, x, y, z );
+			prt(("s3418 toVector3D point srid=%d j=%d x=%f y=%f z=%f  --> x=%f y=%f z=%f\n", srid, j,  lstr.point[j].x, lstr.point[j].y, lstr.point[j].z, x, y, z ) );
+			vec.append( JagPoint3D(x,y,z) );
 		}
 		if ( outerRingOnly ) break;
 	}

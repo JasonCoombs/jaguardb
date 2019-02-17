@@ -42,7 +42,6 @@ class JagStack
 		void 	reAllocShrink();
 		void    concurrent( bool flag = true );
 		inline bool    empty() { if ( _last >=0 ) return false; else return true; }
-		int    numOperators;
 
 	protected:
 		Pair   		*_arr;
@@ -63,7 +62,6 @@ JagStack<Pair>::JagStack( int initSize )
 	_last = -1;
 	_isDestroyed = false;
 
-	numOperators = 0;
 }
 
 // copy ctor
@@ -76,7 +74,6 @@ JagStack<Pair>::JagStack( const JagStack<Pair> &str )
 
 	_arrlen = str._arrlen;
 	_last = str._last;
-	numOperators = str.numOperators;
 	_arr = (Pair*)calloc( _arrlen, sizeof( Pair ) ); 
 	for ( int i = 0; i < _arrlen; ++i ) {
 		_arr[i] = str._arr[i];
@@ -94,7 +91,6 @@ JagStack<Pair>& JagStack<Pair>::operator=( const JagStack<Pair> &str )
 
 	_arrlen = str._arrlen;
 	_last = str._last;
-	numOperators = str.numOperators;
 	_arr = (Pair*)calloc( _arrlen, sizeof( Pair ) ); 
 	for ( int i = 0; i < _arrlen; ++i ) {
 		_arr[i] = str._arr[i];
@@ -120,7 +116,6 @@ void JagStack<Pair>::destroy( )
 		_arrlen = 0;
 		_last = -1;
 		_arr = NULL;
-		numOperators = 0;
 		return;
 	}
 
@@ -128,7 +123,6 @@ void JagStack<Pair>::destroy( )
 	_arrlen = 0;
 	_last = -1;
 	_arr = NULL;
-	numOperators = 0;
 	_isDestroyed = true;
 }
 
@@ -197,7 +191,6 @@ void JagStack<Pair>::push( const Pair &newpair )
 	++ _last;
 	_arr[_last] = newpair;
 
-	if ( ! newpair->_isElement ) { ++ numOperators; }
 }
 
 // back: add end (enqueue end)
@@ -226,7 +219,6 @@ void JagStack<Pair>::pop()
     	}
 	} 
 
-	if ( ! _arr[_last]->_isElement ) { -- numOperators; }
 	-- _last;
 }
 

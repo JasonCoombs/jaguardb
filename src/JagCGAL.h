@@ -181,8 +181,8 @@ class JagCGAL
 	static void getVoronoiMultiPolygons3D( const JagStrSplit &sp, double tolerance, 
 									  double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, Jstr &vor );
 	static void getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double tolerance, Jstr &mpg );
-	static bool getMinBoundCircle( const JagVector<JagPoint2D> &vec, Jstr &res );
-	static bool getMinBoundSphere( const JagVector<JagPoint3D> &vec, Jstr &res );
+	static bool getMinBoundCircle( int srid, const JagVector<JagPoint2D> &vec, Jstr &res );
+	static bool getMinBoundSphere( int srid, const JagVector<JagPoint3D> &vec, Jstr &res );
 
 
   protected:

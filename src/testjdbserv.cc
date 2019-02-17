@@ -268,7 +268,7 @@ int main(int argc, char *argv[] )
 	// test_jag_getline();
 	// test_reply( argv[1] );
 	//test_str( N );
-	//test_geo( N );
+	test_geo( N );
 	//test_sqrt( N );
 	// test_split( N );
 	//test_stdmap( N );
@@ -276,7 +276,7 @@ int main(int argc, char *argv[] )
 	//test_linefile( N );
 	//test_json( N );
 	//test_distance();
-	test_cgal();
+	//test_cgal();
 	//test_new( N );
 	//test_equation();
 	//test_intersection();
@@ -2756,8 +2756,16 @@ void test_str( int N )
 
 }
 
+#include <GeographicLib/Ellipsoid.hpp>
 void test_geo( int N )
 {
+	const Ellipsoid& wgs84 = Ellipsoid::WGS84();
+	prt(("s2929 MajorRadius()=%f minor=%f\n", wgs84.MajorRadius(), wgs84.MinorRadius() ));
+
+	double lonmaxmeter = JAG_PI * JAG_EARTH_MAJOR_RADIUS/180.0;
+	double latmeter = JAG_PI * JAG_EARTH_MINOR_RADIUS/180.0;
+	prt(("lonmaxmeter=%.10f latmeter=%.10f\n", lonmaxmeter, latmeter ));
+
 	JagClock clock;
 
 	clock.start();
@@ -2774,20 +2782,6 @@ void test_geo( int N )
 	}
 	clock.stop();
 	printf("test_geo %d computes ellipseWithinEllipse used %d millisecs true=%d\n", N, clock.elapsed(), cnt );
-
-	clock.start();
-	cnt = 0;
-	for ( int i=0; i < N; ++i ) {
-		// 22.2, 232.2, 22.2, 32.3, 0.3
-		// 29.2, 230.1, 84.5, 95.3, 0.6
-		// rc = JagGeo::ellipseWithinEllipse( 22.2, 232.2, 22.2, 32.3, 0.3, 1.2, 3.1, 34.5, 55.3, 0.6, true );
-		rc = JagGeo::coneWithinCube_test( 12.3, 23.1, 32.1, 23.5, 43.1, 0.1, 0.2,
-											13.3, 20.3, 30.2, 32.0, 0.3, 0.4, 
-											true );
-		if ( rc ) { ++cnt; }
-	}
-	clock.stop();
-	printf("test_geo %d computes coneWithinCube_test used %d millisecs true=%d\n", N, clock.elapsed(), cnt );
 
 	clock.start();
 	cnt = 0;
@@ -2820,12 +2814,65 @@ void test_geo( int N )
 		points[i].color = JAG_RED;
 	}
 
-	//JagGeo::_instantiate_sortLinePoints();
-
 	int nrc = JagGeo::sortLinePoints( points, N );
 	clock.stop();
 	printf("test_geo %d computes sortIntersectLinePoints used %d millisecs nrc=%d\n", N, clock.elapsed(), nrc );
 	delete [] points;
+
+	double lon1 = 10.293302838;
+	double lat1 = 10.73849879298;
+	double alt1 = 15.879298;
+
+	double lon2 = 11.0;
+	double lat2 = 11.0;
+	int srid = 4326;
+
+	double d1 = JagGeo::distance( lon1, lat1, lon2, lat2, srid );
+	prt(("geographic dist d1=%f\n", d1 ));
+
+
+	double x1, y1, z1, x2, y2;
+	JagGeo::lonLatToXY( srid, lon1, lat1, x1, y1 ); 
+	JagGeo::lonLatToXY( srid, lon2, lat2, x2, y2 ); 
+	prt(("point1(%f  %f)    point2(%f %f)\n", x1, y1, x2, y2 ));
+	prt(("(x1-x2)^2=%f  (y1=y2)^2=%f\n", (x1-x2)*(x1-x2), (y1-y2)*(y1-y2) ));
+	double d2 = JagGeo::distance( x1, y1, x2, y2, 0 );
+	prt(("jag dist d2=%f\n", d2 ));
+
+	double f1= 3.141592653589793/180.0;
+	prt(("JAG_RADIAN_PER_DEGREE=%.15f\n", f1 ));
+
+	double lon1b, lat1b, alt1b;
+	JagGeo::XYToLonLat( srid, x1, y1, lon1b, lat1b );
+	prt(("lon1=%f lat1=%f  lon1b=%f lat1b=%f\n", lon1, lat1, lon1b, lat1b ));
+
+	JagGeo::lonLatAltToXYZ( srid, lon1, lat1, alt1, x1, y1, z1 );
+	JagGeo::XYZToLonLatAlt( srid, x1,y1,z1, lon1b, lat1b, alt1b );
+	prt(("lon1=%f lat1=%f alt1=%f  lon1b=%f lat1b=%f alt1b=%f\n", lon1, lat1, alt1, lon1b, lat1b, alt1b ));
+
+	//const double lat0 = 48 + 50/60.0, lon0 = 2 + 20/60.0; // Paris
+	const double lat0 = 0.0, lon0 = 0.0; 
+	const Geocentric& earth = Geocentric::WGS84();
+    LocalCartesian proj(lat0, lon0, 0.0, earth);
+    {
+      // Sample forward calculation
+      //double lat = 50.992381, lon = 13.810288, h = 20.2838; // Calais
+      double lat = 23.220000, lon = 10.010000, h = 332.400000; // Calais
+      double x, y, z;
+      proj.Forward(lat, lon, h, x, y, z);
+      cout << "lat-lon-alt: " << lat << " " << lon << " " << h << "\n";
+      cout << "x-y-z: " << x << " " << y << " " << z << "\n";
+	  //-37518.6 229950 -4260.43
+      // Sample reverse calculation
+   	  LocalCartesian proj2(lat0, lon0, 0.0, earth);
+      proj2.Reverse(x, y, z, lat, lon, h);
+      cout << "back lat-lon-alt: " << lat << " " << lon << " " << h << "\n";
+	  // 50.9003 1.79318 264.915
+    }
+
+
+
+
 
 }
 

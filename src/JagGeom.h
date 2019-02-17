@@ -1572,8 +1572,10 @@ class JagGeo
     static double meterToLat( int srid, double meter, double lon, double lat);
 	static bool interpolatePoint2D(double segdist, double segfrac, const JagPoint3D &p1, const JagPoint3D &p2, JagPoint3D &point );
 	static bool toJAG( const JagVector<JagPolygon> &pgvec, bool is3D, bool hasHdr, const Jstr &inbbox, int srid, Jstr &str );
-	static void multiPolygonToVector2D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint2D> &vec );
-	static void multiPolygonToVector3D( const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint3D> &vec );
+	static void multiPolygonToVector2D( int srid, const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint2D> &vec );
+	static void multiPolygonToVector3D( int srid, const JagVector<JagPolygon> &pgvec, bool outerRingOnly, JagVector<JagPoint3D> &vec );
+	static void lonLatToXY( int srid, double lon, double lat, double &x, double &y );
+	static void XYToLonLat( int srid, double x, double y, double &lon, double &lat );
 	static void lonLatAltToXYZ( int srid,  double lon, double lat, double alt, double &x, double &y, double &z );
 	static void XYZToLonLatAlt(  int srid, double x, double y, double z , double &lon, double &lat, double &alt );
 

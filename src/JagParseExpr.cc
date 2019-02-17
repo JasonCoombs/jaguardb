@@ -7065,7 +7065,7 @@ bool BinaryOpNode::doAllMinimumBoundingCircle( const Jstr& mk, const Jstr &colTy
 		vec.append( JagPoint2D( sp[JAG_SP_START+2].tof(), sp[JAG_SP_START+3].tof() ) );
 		vec.append( JagPoint2D( sp[JAG_SP_START+4].tof(), sp[JAG_SP_START+5].tof() ) );
 		Jstr cir;
-		if ( ! JagCGAL::getMinBoundCircle( vec, cir ) ) return false;
+		if ( ! JagCGAL::getMinBoundCircle( srid, vec, cir ) ) return false;
 		value += cir;
 		return true;
 	}
@@ -7077,43 +7077,43 @@ bool BinaryOpNode::doAllMinimumBoundingCircle( const Jstr& mk, const Jstr &colTy
 		vec.append( JagPoint2D( sp[JAG_SP_START+0].tof(), sp[JAG_SP_START+1].tof() ) );
 		vec.append( JagPoint2D( sp[JAG_SP_START+2].tof(), sp[JAG_SP_START+3].tof() ) );
 		Jstr cir;
-		if ( ! JagCGAL::getMinBoundCircle( vec, cir ) ) return false;
+		if ( ! JagCGAL::getMinBoundCircle( srid, vec, cir ) ) return false;
 		value += cir;
 	} else if ( colType == JAG_C_COL_TYPE_LINESTRING || JAG_C_COL_TYPE_MULTILINESTRING ) {
 		JagPolygon pgon;
 		int rc = JagParser::addPolygonData( pgon, sp, false );
 		if ( rc < 0 ) return false;
 		JagVector<JagPoint2D> vec;
-		pgon.toVector2D( vec, true );
+		pgon.toVector2D( srid, vec, true );
 		Jstr cir;
-		if ( ! JagCGAL::getMinBoundCircle( vec, cir ) ) return false;
+		if ( ! JagCGAL::getMinBoundCircle( srid, vec, cir ) ) return false;
 		value += cir;
 	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 		JagPolygon pgon;
 		int rc = JagParser::addPolygonData( pgon, sp, false );
 		if ( rc < 0 ) return false;
 		JagVector<JagPoint2D> vec;
-		pgon.toVector2D( vec, true );
+		pgon.toVector2D( srid, vec, true );
 		Jstr cir;
-		if ( ! JagCGAL::getMinBoundCircle( vec, cir ) ) return false;
+		if ( ! JagCGAL::getMinBoundCircle( srid, vec, cir ) ) return false;
 		value += cir;
 	} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
 		JagPolygon pgon;
 		int rc = JagParser::addPolygonData( pgon, sp, false );
 		if ( rc < 0 ) return false;
 		JagVector<JagPoint2D> vec;
-		pgon.toVector2D( vec, true );
+		pgon.toVector2D( srid, vec, true );
 		Jstr cir;
-		if ( ! JagCGAL::getMinBoundCircle( vec, cir ) ) return false;
+		if ( ! JagCGAL::getMinBoundCircle( srid, vec, cir ) ) return false;
 		value += cir;
 	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		JagVector<JagPolygon> pgvec;
         int n = JagParser::addMultiPolygonData( pgvec, sp, false, false );
         if ( n <= 0 ) return false;
 		JagVector<JagPoint2D> vec;
-		JagGeo::multiPolygonToVector2D( pgvec, true, vec );
+		JagGeo::multiPolygonToVector2D( srid, pgvec, true, vec );
 		Jstr cir;
-		if ( ! JagCGAL::getMinBoundCircle( vec, cir ) ) return false;
+		if ( ! JagCGAL::getMinBoundCircle( srid, vec, cir ) ) return false;
 		value += cir;
 	} else {
 		return false;
@@ -7136,7 +7136,7 @@ bool BinaryOpNode::doAllMinimumBoundingSphere( const Jstr& mk, const Jstr &colTy
 		vec.append( JagPoint3D( sp[JAG_SP_START+0].tof(), sp[JAG_SP_START+1].tof(), sp[JAG_SP_START+2].tof() ) );
 		vec.append( JagPoint3D( sp[JAG_SP_START+3].tof(), sp[JAG_SP_START+4].tof(), sp[JAG_SP_START+5].tof() ) );
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D  ) {
 		JagVector<JagPoint3D> vec;
@@ -7144,7 +7144,7 @@ bool BinaryOpNode::doAllMinimumBoundingSphere( const Jstr& mk, const Jstr &colTy
 		vec.append( JagPoint3D( sp[JAG_SP_START+3].tof(), sp[JAG_SP_START+4].tof(), sp[JAG_SP_START+5].tof() ) );
 		vec.append( JagPoint3D( sp[JAG_SP_START+6].tof(), sp[JAG_SP_START+7].tof(), sp[JAG_SP_START+8].tof() ) );
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
 		double px = jagatof( sp[JAG_SP_START+0].c_str() );
@@ -7156,9 +7156,9 @@ bool BinaryOpNode::doAllMinimumBoundingSphere( const Jstr& mk, const Jstr &colTy
 		JagSquare3D sq(px,py,pz, r, nx,ny );
 		JagPolygon pgon( sq );
 		JagVector<JagPoint3D> vec;
-		pgon.toVector3D( vec, true );
+		pgon.toVector3D( srid, vec, true );
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
 		double x = jagatof( sp[JAG_SP_START+0].c_str() );
@@ -7171,9 +7171,9 @@ bool BinaryOpNode::doAllMinimumBoundingSphere( const Jstr& mk, const Jstr &colTy
 		JagRectangle3D rect(x,y,z, a, b, nx,ny );
 		JagPolygon pgon( rect );
 		JagVector<JagPoint3D> vec;
-		pgon.toVector3D( vec, true );
+		pgon.toVector3D( srid, vec, true );
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
 		value = sp.c_str();
@@ -7187,36 +7187,38 @@ bool BinaryOpNode::doAllMinimumBoundingSphere( const Jstr& mk, const Jstr &colTy
 		int rc = JagParser::addPolygon3DData( pgon, sp, false );
 		if ( rc < 0 ) return false;
 		JagVector<JagPoint3D> vec;
-		pgon.toVector3D( vec, true );
+		pgon.toVector3D( srid, vec, true );
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		JagPolygon pgon;
 		int rc = JagParser::addPolygon3DData( pgon, sp, false );
 		if ( rc < 0 ) return false;
 		JagVector<JagPoint3D> vec;
-		pgon.toVector3D( vec, true );
+		pgon.toVector3D( srid, vec, true );
+		prt(("s29238 ******** vec.print()\n" ));
+		vec.print();
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
 		JagPolygon pgon;
 		int rc = JagParser::addPolygon3DData( pgon, sp, false );
 		if ( rc < 0 ) return false;
 		JagVector<JagPoint3D> vec;
-		pgon.toVector3D( vec, true );
+		pgon.toVector3D( srid, vec, true );
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		JagVector<JagPolygon> pgvec;
         int n = JagParser::addMultiPolygonData( pgvec, sp, false, true );
         if ( n <= 0 ) return false;
 		JagVector<JagPoint3D> vec;
-		JagGeo::multiPolygonToVector3D( pgvec, true, vec );
+		JagGeo::multiPolygonToVector3D( srid, pgvec, true, vec );
 		Jstr sphere;
-		if ( ! JagCGAL::getMinBoundSphere( vec, sphere ) ) return false;
+		if ( ! JagCGAL::getMinBoundSphere( srid, vec, sphere ) ) return false;
 		value += sphere;
 	} else {
 		return false;

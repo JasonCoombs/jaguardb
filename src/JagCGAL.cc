@@ -1624,7 +1624,7 @@ void JagCGAL::getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double to
 	}
 }
 
-bool JagCGAL::getMinBoundCircle( const JagVector<JagPoint2D> &vec, Jstr &res )
+bool JagCGAL::getMinBoundCircle( int srid, const JagVector<JagPoint2D> &vec, Jstr &res )
 {
 	int len = vec.size();
 	if ( len < 1 ) return false;
@@ -1649,12 +1649,14 @@ bool JagCGAL::getMinBoundCircle( const JagVector<JagPoint2D> &vec, Jstr &res )
 	++c;
 	if ( c == mc.center_cartesian_end() ) return false;
 	double y = *c;
-	res = d2s(x) + " " + d2s(y) +  " " + d2s(r);
+	double lon, lat;
+	JagGeo::XYToLonLat(  srid, x, y, lon, lat );
+	res = d2s(lon) + " " + d2s(lat) +  " " + d2s(r);
 	return true;
 }
 
 
-bool JagCGAL::getMinBoundSphere( const JagVector<JagPoint3D> &vec, Jstr &res )
+bool JagCGAL::getMinBoundSphere( int srid, const JagVector<JagPoint3D> &vec, Jstr &res )
 {
 	int len = vec.size();
 	if ( len < 1 ) return false;
@@ -1684,6 +1686,9 @@ bool JagCGAL::getMinBoundSphere( const JagVector<JagPoint3D> &vec, Jstr &res )
 	if ( c == ms.center_cartesian_end() ) return false;
 	double z = *c;
 
-	res = d2s(x) + " " + d2s(y) +  " " + d2s(z) + " " + d2s(r);
+	double lon, lat, alt;
+	JagGeo::XYZToLonLatAlt(  srid, x, y, z , lon, lat, alt );
+	res = d2s(lon) + " " + d2s(lat) +  " " + d2s(alt) + " " + d2s(r);
+	prt(("s5812 x=%f y=%f z=%f ---> lon=%f lat=%f alt=%f r=%f\n", x, y, z, lon, lat, alt, r ));
 	return true;
 }

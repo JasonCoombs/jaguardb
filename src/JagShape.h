@@ -10,7 +10,6 @@
 #define jagsq2(a) ( (a)*(a) )
 #define jagIsPosZero(a) (((a)<JAG_ZERO) ? 1 : 0)
 #define jagIsZero(a) (( fabs(a)<JAG_ZERO) ? 1 : 0)
-#define JAG_PI 3.141592653589793
 
 class JagPoint2D
 {
@@ -646,8 +645,8 @@ class JagPolygon
 						double dx, double dy, double dz ) {
 			for (int i=0; i < linestr.size(); ++i ) linestr[i].affine3d( a, b, c, d, e, f, g, h, i, dx, dy, dz ); 
 		}
-		void toVector2D( JagVector<JagPoint2D> &vec, bool outerRingOnly );
-		void toVector3D( JagVector<JagPoint3D> &vec, bool outerRingOnly );
+		void toVector2D( int srid, JagVector<JagPoint2D> &vec, bool outerRingOnly );
+		void toVector3D( int srid, JagVector<JagPoint3D> &vec, bool outerRingOnly );
 
 		JagPolygon( const JagSquare2D &sq, bool isClosed=true );
 		JagPolygon( const JagSquare3D &sq, bool isClosed=true );
