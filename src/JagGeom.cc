@@ -3543,8 +3543,8 @@ bool JagGeo::lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &
 	delete [] points;
 	delete jarr;
 
-	prt(("s7740 no intersect\n"));
-	return false;
+	prt(("s7740 intersect found=%d\n", found ));
+	return found;
 }
 
 
