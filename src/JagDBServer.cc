@@ -2790,6 +2790,11 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    geojson(geom,N,n)              -- GeoJSON string, receiving maximum of N points, n samples on 2D vector shapes\n";
 		str += "    tomultipoint(geom)             -- converting geom to multipoint\n";
 		str += "    tomultipoint(geom,N)           -- converting geom to multipoint. N is number of points for vector shapes\n";
+		str += "    wkt(geom)                      -- Well Known Text of geom\n";
+		str += "    minimumboundingcircle(geom)    -- minimum bounding circle of 2D geom\n";
+		str += "    minimumboundingsphere(geom)    -- minimum bounding sphere of 3D geom\n";
+		str += "    isonleft(geom1,geom2)          -- check if geom1 is on the left of geom2 (point and linear objects)\n";
+		str += "    isonright(geom1,geom2)         -- check if geom1 is on the right of geom2 (point and linear objects)\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

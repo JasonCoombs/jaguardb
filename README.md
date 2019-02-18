@@ -1,7 +1,10 @@
 
-Jaguar -- NoSQL Database for Internet of Things, Artificial Intelligence, and Spatial Data
+JaguarDB -- NoSQL Spatial Database 
 
-Jaguar is an open source, highly scalable, fast NoSQL database for IoT and spatial data management.
-Is has full index support for fast data search. Also, during scaling of Jaguar database system, 
-a cluster of new nodes can be added in one-batch, instead of adding nodes one by one.
-Jaguar can manage many types of both vector and raster spatial data with a simple query language.
+JaguarDB is an open source, highly scalable, fast NoSQL database for spatial data management.
+JaguarDB is the only powerful database that supports both vector and raster spatial data.
+Vector spatial shapes include line, square, rectangle, circle, ellipse, triangle, sphere, ellipsoid, cone,
+cylinder, box, 3D line, 3D square, 3D rectangle, 3D circle, 3D ellipse, and 3D triangle.
+Raster spatial shapes include point, multipoint, linestring, multilinestring, polygon, multipolgon, 
+and their 3D counterparts. 
+

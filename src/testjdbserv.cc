@@ -268,7 +268,7 @@ int main(int argc, char *argv[] )
 	// test_jag_getline();
 	// test_reply( argv[1] );
 	//test_str( N );
-	test_geo( N );
+	//test_geo( N );
 	//test_sqrt( N );
 	// test_split( N );
 	//test_stdmap( N );
@@ -276,7 +276,7 @@ int main(int argc, char *argv[] )
 	//test_linefile( N );
 	//test_json( N );
 	//test_distance();
-	//test_cgal();
+	test_cgal();
 	//test_new( N );
 	//test_equation();
 	//test_intersection();
@@ -3369,13 +3369,13 @@ void test_cgal()
 	hull.print();
 
     /////// orientation ///////////////
-    CGALPoint2D p(1,1), q(10,10);
+    CGALPoint2D p(0,2), q(0,5);
     std::cout << "p = " << p << std::endl;
     std::cout << "q = " << q.x() << " " << q.y() << std::endl;
     std::cout << "sqdist(p,q) = " << CGAL::squared_distance(p,q) << std::endl;
 
     CGALSegment2D s(p,q);
-    CGALPoint2D m(5, 9);
+    CGALPoint2D m(1, 0);
     std::cout << "m = " << m << std::endl;
     std::cout << "sqdist(Segment2(p,q), m) = " << CGAL::squared_distance(s,m) << std::endl;
 

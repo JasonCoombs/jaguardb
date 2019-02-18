@@ -492,6 +492,8 @@
 #define JAG_FUNC_WKT            320  // output WKT text for point, mpoint, linestring, multilinestring, polygon, multipolygon
 #define JAG_FUNC_MINIMUMBOUNDINGCIRCLE 321  // minimum bounding circle of 2D geom
 #define JAG_FUNC_MINIMUMBOUNDINGSPHERE 322  // minimum bounding sphere of 3D geom
+#define JAG_FUNC_ISONLEFT 		   323  // 2D point, line, line on left side
+#define JAG_FUNC_ISONRIGHT 		   324  // 2D point, line, line on right side
 
 
 // string functions 
@@ -720,6 +722,7 @@
 #define JAG_BLUE   1
 #define JAG_LEFT    0
 #define JAG_RIGHT   1
+#define JAG_ISON    2
 
 #define JAG_COLINEAR   0
 #define JAG_CLOCKWISE   1

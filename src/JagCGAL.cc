@@ -1692,3 +1692,78 @@ bool JagCGAL::getMinBoundSphere( int srid, const JagVector<JagPoint3D> &vec, Jst
 	prt(("s5812 x=%f y=%f z=%f ---> lon=%f lat=%f alt=%f r=%f\n", x, y, z, lon, lat, alt, r ));
 	return true;
 }
+
+// infinite line
+int JagCGAL::pointRelateLine( double px, double py, double x1, double y1, double x2, double y2)
+{
+	CGALPoint2D pt(px,py);
+	CGALPoint2D p(x1,y1);
+	CGALPoint2D q(x2,y2);
+	CGAL::Orientation ort = CGAL::orientation(p,q, pt);
+	if ( ort == CGAL::LEFT_TURN ) return JAG_LEFT;
+	else if ( ort == CGAL::RIGHT_TURN ) return JAG_RIGHT;
+	else return JAG_ISON;
+}
+
+// infinite line
+//line1 (x1 y1 --> x2 y2 ) may be on left of line2 (mx1 my1-->mx2 my2)
+int JagCGAL::lineRelateLine( double x1, double y1, double x2, double y2, double mx1, double my1, double mx2, double my2 )
+{
+	CGALPoint2D pt1(x1,y1);
+	CGALPoint2D pt2(x2,y2);
+	CGALPoint2D p(mx1,my1);
+	CGALPoint2D q(mx2,my2);
+	CGAL::Orientation ort1 = CGAL::orientation(p,q, pt1);
+	CGAL::Orientation ort2 = CGAL::orientation(p,q, pt2);
+	if ( ort1 == CGAL::LEFT_TURN && ort2 == CGAL::LEFT_TURN ) return JAG_LEFT;
+	else if ( ort1 == CGAL::RIGHT_TURN && ort2 == CGAL::RIGHT_TURN ) return JAG_RIGHT;
+	else if ( ort1 == CGAL::COLLINEAR && ort2 ==  CGAL::COLLINEAR ) return JAG_ISON;
+	else return 0;
+}
+
+
+bool JagCGAL::pointOnLeftOfLineString( double px, double py, const JagLineString3D &linestr )
+{
+	CGALPoint2D pt(px,py);
+	for ( int i=0; i < linestr.size() -1; ++i ) {
+		CGALPoint2D p( linestr.point[i].x, linestr.point[i].y);
+		CGALPoint2D q( linestr.point[i+1].x, linestr.point[i+1].y);
+		if ( CGAL::LEFT_TURN !=  CGAL::orientation(p,q, pt) ) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool JagCGAL::pointOnRightOfLineString( double px, double py, const JagLineString3D &linestr )
+{
+	CGALPoint2D pt(px,py);
+	for ( int i=0; i < linestr.size() -1; ++i ) {
+		CGALPoint2D p( linestr.point[i].x, linestr.point[i].y);
+		CGALPoint2D q( linestr.point[i+1].x, linestr.point[i+1].y);
+		if ( CGAL::RIGHT_TURN !=  CGAL::orientation(p,q, pt) ) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool JagCGAL::pointOnLeftOfMultiLineString( double px, double py, const JagPolygon &pgon )
+{
+    for ( int k = 0; k < pgon.size(); ++k ) {
+		const JagLineString3D &linestr = pgon.linestr[k];
+		if ( ! pointOnLeftOfLineString( px, py, linestr ) ) return false;
+	}
+	return true;
+}
+
+bool JagCGAL::pointOnRightOfMultiLineString( double px, double py, const JagPolygon &pgon )
+{
+    for ( int k = 0; k < pgon.size(); ++k ) {
+		const JagLineString3D &linestr = pgon.linestr[k];
+		if ( ! pointOnRightOfLineString( px, py, linestr ) ) return false;
+	}
+	return true;
+}
+
+
