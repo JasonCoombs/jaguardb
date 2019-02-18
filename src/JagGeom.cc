@@ -2624,18 +2624,44 @@ bool JagGeo::lineStringWithinLineString(  const Jstr &mk1, const JagStrSplit &sp
 	return true;
 }
 
-bool JagGeo::sequenceSame(  const Jstr &mk1, const JagStrSplit &sp1,
+bool JagGeo::sequenceSame(  const Jstr &colType, const Jstr &mk1, const JagStrSplit &sp1,
 											const Jstr &mk2, const JagStrSplit &sp2 )
 {
 	int start1 = JAG_SP_START;
-	int start2 = JAG_SP_START;
-	if ( sp1.length() - start1 != sp2.length() - start2 ) {
+	if ( sp1.length() != sp2.length() ) {
 		return false;
 	}
 
-	int j = start2;
+	int dim = getDimension( colType ); 
+	double x1, y1, z1;
+	double x2, y2, z2;
+	const char *str; char *p;
+	int n;
 	for ( int i=start1; i < sp1.length(); ++i ) {
-		if ( sp1[i] != sp2[j++] ) return false;
+		if ( sp1[i] == "|" || sp1[i] == "|" ) continue;
+		str = sp1[i].c_str();
+		n = strchrnum(str, ':');
+		if ( 3 == dim ) { 
+			if ( n != 2 ) continue;
+			get3double(str, p, ':', x1, y1, z1 );
+
+			str = sp2[i].c_str();
+			n = strchrnum(str, ':');
+			if ( n != 2 ) continue;
+			get3double(str, p, ':', x2, y2, z2 );
+			
+			if ( !  ( jagEQ( x1, x2 ) && jagEQ( y1, y2 ) && jagEQ( z1, z2 ) ) ) return false;
+		} else {
+			if ( n != 1 ) continue;
+			get2double(str, p, ':', x1, y1 );
+
+			str = sp2[i].c_str();
+			n = strchrnum(str, ':');
+			if ( n != 1 ) continue;
+			get2double(str, p, ':', x2, y2 );
+			
+			if ( !  ( jagEQ( x1, x2 ) && jagEQ( y1, y2 ) ) ) return false;
+		}
 	}
 
 	return true;
@@ -11100,7 +11126,7 @@ bool JagGeo::doLineStringSame( const Jstr &mk1, int srid1, const JagStrSplit &sp
 {
 	// like point within
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
-		return sequenceSame( mk1, sp1, mk2, sp2 );
+		return sequenceSame(colType2, mk1, sp1, mk2, sp2 );
 	} else {
 		return false;
 	}
@@ -11110,7 +11136,7 @@ bool JagGeo::doLineString3DSame( const Jstr &mk1, int srid1, const JagStrSplit &
 									const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
-		return sequenceSame( mk1, sp1, mk2, sp2 );
+		return sequenceSame( colType2, mk1, sp1, mk2, sp2 );
 	} else {
 		return false;
 	}
@@ -11137,7 +11163,7 @@ bool JagGeo::doPolygonSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, 
 		return false;
 	} 
 
-	return sequenceSame( mk1, sp1, mk2, sp2 );
+	return sequenceSame( colType2, mk1, sp1, mk2, sp2 );
 }
 
 bool JagGeo::doMultiPolygonSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
@@ -11147,7 +11173,7 @@ bool JagGeo::doMultiPolygonSame( const Jstr &mk1, int srid1, const JagStrSplit &
 		return false;
 	} 
 
-	return sequenceSame( mk1, sp1, mk2, sp2 );
+	return sequenceSame( colType2, mk1, sp1, mk2, sp2 );
 }
 
 
@@ -11157,16 +11183,16 @@ bool JagGeo::doPolygon3DSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1
 	if ( colType2 != JAG_C_COL_TYPE_POLYGON ) {
 		return false;
 	} 
-	return sequenceSame( mk1, sp1, mk2, sp2 );
+	return sequenceSame( colType2, mk1, sp1, mk2, sp2 );
 }
 
 bool JagGeo::doMultiPolygon3DSame( const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
 									const Jstr &colType2, int srid2, const JagStrSplit &sp2 )
 {
-	if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+	if ( colType2 != JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		return false;
 	} 
-	return sequenceSame( mk1, sp1, mk2, sp2 );
+	return sequenceSame( colType2, mk1, sp1, mk2, sp2 );
 }
 
 

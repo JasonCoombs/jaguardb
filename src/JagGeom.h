@@ -954,7 +954,7 @@ class JagGeo
    	static bool doMultiPolygon3DSame(  const Jstr &mk1, int srid1, const JagStrSplit &sp1, const Jstr &mk2, 
 									const Jstr &colType2, int srid2, const JagStrSplit &sp2 );
 
-	static bool sequenceSame( const Jstr &mk1, const JagStrSplit &sp1, const Jstr &mk2, const JagStrSplit &sp2  );
+	static bool sequenceSame( const Jstr &colType, const Jstr &mk1, const JagStrSplit &sp1, const Jstr &mk2, const JagStrSplit &sp2  );
 	/*****
 	// polygon intersect
 	static bool multiPolygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1,
