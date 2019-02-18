@@ -2795,6 +2795,8 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    minimumboundingsphere(geom)    -- minimum bounding sphere of 3D geom\n";
 		str += "    isonleft(geom1,geom2)          -- check if geom1 is on the left of geom2 (point and linear objects)\n";
 		str += "    isonright(geom1,geom2)         -- check if geom1 is on the right of geom2 (point and linear objects)\n";
+		str += "    leftratio(geom1,geom2)         -- ratio of geom1 on the left of geom2 (point and linear objects)\n";
+		str += "    rightratio(geom1,geom2)        -- ratio of geom1 on the right of geom2 (point and linear objects)\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

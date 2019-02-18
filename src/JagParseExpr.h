@@ -365,6 +365,10 @@ class BinaryOpNode: public ExprElementNode
 							const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
 	Jstr doAllIsOnRightSide( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
 							const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
+	Jstr doAllLeftRatio( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
+							const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
+	Jstr doAllRightRatio( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
+							const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg );
 
 
 	static int getTypeMode( short fop );

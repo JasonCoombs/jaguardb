@@ -1027,6 +1027,8 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_ISCONVEX ) str = "isconvex";
 	else if ( binaryOp == JAG_FUNC_ISONLEFT ) str = "isonleft";
 	else if ( binaryOp == JAG_FUNC_ISONRIGHT ) str = "isonright";
+	else if ( binaryOp == JAG_FUNC_LEFTRATIO ) str = "leftratio";
+	else if ( binaryOp == JAG_FUNC_RIGHTRATIO ) str = "rightratio";
 	else if ( binaryOp == JAG_FUNC_POINTN ) str = "pointn";
 	else if ( binaryOp == JAG_FUNC_EXTENT ) str = "extent";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
@@ -1202,6 +1204,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		collen = 128; 
 		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_XMIN || _binaryOp == JAG_FUNC_YMIN || _binaryOp == JAG_FUNC_ZMIN
+			    || _binaryOp == JAG_FUNC_LEFTRATIO || _binaryOp == JAG_FUNC_RIGHTRATIO
 	            || _binaryOp == JAG_FUNC_XMAX || _binaryOp == JAG_FUNC_YMAX || _binaryOp == JAG_FUNC_ZMAX ) {
 		ltmode = 2;
 		type = JAG_C_COL_TYPE_DOUBLE;
@@ -3218,8 +3221,8 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 	} else if (  _binaryOp == JAG_FUNC_UNION || _binaryOp == JAG_FUNC_COLLECT ||  _binaryOp == JAG_FUNC_SYMDIFFERENCE
 				 || _binaryOp == JAG_FUNC_CLOSESTPOINT ||  _binaryOp == JAG_FUNC_ANGLE
 				 || _binaryOp == JAG_FUNC_SCALEAT 
-				 || _binaryOp == JAG_FUNC_ISONLEFT 
-				 || _binaryOp == JAG_FUNC_ISONRIGHT 
+				 || _binaryOp == JAG_FUNC_ISONLEFT  || _binaryOp == JAG_FUNC_LEFTRATIO
+				 || _binaryOp == JAG_FUNC_ISONRIGHT || _binaryOp == JAG_FUNC_RIGHTRATIO
 				 || _binaryOp == JAG_FUNC_LOCATEPOINT || _binaryOp == JAG_FUNC_ADDPOINT || _binaryOp == JAG_FUNC_SETPOINT
 				 || _binaryOp == JAG_FUNC_VORONOIPOLYGONS || _binaryOp == JAG_FUNC_VORONOILINES
 	             || _binaryOp == JAG_FUNC_INTERSECTION || _binaryOp == JAG_FUNC_DIFFERENCE ) {
@@ -4576,6 +4579,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_ADDPOINT || fop == JAG_FUNC_SETPOINT 
 		 || fop == JAG_FUNC_NEARBY || fop == JAG_FUNC_DISTANCE
 		 || fop == JAG_FUNC_ISONLEFT || fop == JAG_FUNC_ISONRIGHT
+		 || fop == JAG_FUNC_LEFTRATIO || fop == JAG_FUNC_RIGHTRATIO
 		 || fop == JAG_FUNC_VORONOIPOLYGONS || fop == JAG_FUNC_VORONOILINES
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
@@ -4614,6 +4618,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_ISCLOSED || fop == JAG_FUNC_ISSIMPLE || fop == JAG_FUNC_ISCONVEX || 
 		fop == JAG_FUNC_ISVALID || fop == JAG_FUNC_ISRING || 
 		fop == JAG_FUNC_ISONLEFT || fop == JAG_FUNC_ISONRIGHT || 
+		fop == JAG_FUNC_LEFTRATIO || fop == JAG_FUNC_RIGHTRATIO || 
 		fop == JAG_FUNC_ISPOLYGONCCW || fop == JAG_FUNC_ISPOLYGONCW || fop == JAG_FUNC_NUMPOINTS || 
 		fop == JAG_FUNC_NUMSEGMENTS || fop == JAG_FUNC_NUMRINGS || fop == JAG_FUNC_NUMPOLYGONS || 
 		fop == JAG_FUNC_NUMINNERRINGS || fop == JAG_FUNC_SRID || fop == JAG_FUNC_SUMMARY || 
@@ -4924,6 +4929,10 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ISONLEFT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "isonright", 9 ) ) {
 		fop = JAG_FUNC_ISONRIGHT; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "leftratio", 9 ) ) {
+		fop = JAG_FUNC_LEFTRATIO; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "rightratio", 10 ) ) {
+		fop = JAG_FUNC_RIGHTRATIO; len = 10; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numpoints", 9 ) ) {
 		fop = JAG_FUNC_NUMPOINTS; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "numsegments", 11 ) ) {
@@ -5687,6 +5696,10 @@ Jstr BinaryOpNode::doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, 
 		return doAllIsOnLeftSide( srid1, colType1, sp1, colType2, sp2, carg );
 	} else if ( op == JAG_FUNC_ISONRIGHT ) {
 		return doAllIsOnRightSide( srid1, colType1, sp1, colType2, sp2, carg );
+	} else if ( op == JAG_FUNC_LEFTRATIO ) {
+		return doAllLeftRatio( srid1, colType1, sp1, colType2, sp2, carg );
+	} else if ( op == JAG_FUNC_RIGHTRATIO ) {
+		return doAllRightRatio( srid1, colType1, sp1, colType2, sp2, carg );
 	} else {
 		return "";
 	}
@@ -10053,7 +10066,7 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr;
 			JagParser::addLineStringData( linestr, sp2 );
-			if ( ! JagCGAL::pointOnLeftOfLineString( px, py, linestr ) ) return "0";
+			if ( ! linestr.pointOnLeft(px,py) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			JagPolygon pgon;
@@ -10061,7 +10074,7 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 			if ( rc < 0 ) return "0";
 			for ( int k = 0; k < pgon.size(); ++k ) {
 				const JagLineString3D &linestr = pgon.linestr[k];
-				if ( ! JagCGAL::pointOnLeftOfLineString( px, py, linestr ) ) return "0";
+				if ( ! linestr.pointOnLeft(px,py) ) return "0";
 			}
 			val = "1";
 		} 
@@ -10087,8 +10100,8 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr;
 			JagParser::addLineStringData( linestr, sp2 );
-			if ( ! JagCGAL::pointOnLeftOfLineString( x1, y1, linestr ) ) return "0";
-			if ( ! JagCGAL::pointOnLeftOfLineString( x2, y2, linestr ) ) return "0";
+			if ( ! linestr.pointOnLeft(x1,y1) ) return "0";
+			if ( ! linestr.pointOnLeft(x2,y2) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			JagPolygon pgon;
@@ -10096,8 +10109,8 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 			if ( rc < 0 ) return "0";
 			for ( int k = 0; k < pgon.size(); ++k ) {
 				const JagLineString3D &linestr = pgon.linestr[k];
-				if ( ! JagCGAL::pointOnLeftOfLineString( x1, y1, linestr ) ) return "0";
-				if ( ! JagCGAL::pointOnLeftOfLineString( x2, y2, linestr ) ) return "0";
+				if ( ! linestr.pointOnLeft(x1,y1) ) return "0";
+				if ( ! linestr.pointOnLeft(x2,y2) ) return "0";
 			}
 			val = "1";
 		} 
@@ -10108,15 +10121,15 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
 			px = sp2[JAG_SP_START+0].tof(); 
 			py = sp2[JAG_SP_START+1].tof(); 
-			if ( ! JagCGAL::pointOnRightOfLineString( px, py, linestr1 ) ) return "0";
+			if ( ! linestr1.pointOnRight(px,py) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
 			mx1 = sp2[JAG_SP_START+0].tof(); 
 			my1 = sp2[JAG_SP_START+1].tof(); 
 			mx2 = sp2[JAG_SP_START+2].tof(); 
 			my2 = sp2[JAG_SP_START+3].tof(); 
-			if ( ! JagCGAL::pointOnRightOfLineString( mx1, my1, linestr1 ) ) return "0";
-			if ( ! JagCGAL::pointOnRightOfLineString( mx2, my2, linestr1 ) ) return "0";
+			if ( ! linestr1.pointOnRight(mx1,my1) ) return "0";
+			if ( ! linestr1.pointOnRight(mx2,my2) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr2;
@@ -10125,7 +10138,7 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 			for ( int i=0; i < linestr1.size(); ++i ) {
 				x = linestr1.point[i].x;
 				y = linestr1.point[i].y;
-				if ( ! JagCGAL::pointOnLeftOfLineString( x, y, linestr2) ) return "0";
+				if ( ! linestr2.pointOnLeft(x,y) ) return "0";
 			}
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
@@ -10136,7 +10149,7 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 			for ( int i=0; i < linestr1.size(); ++i ) {
 				x = linestr1.point[i].x;
 				y = linestr1.point[i].y;
-				if ( ! JagCGAL::pointOnLeftOfMultiLineString(x, y, pgon) ) return "0";
+				if ( ! pgon.pointOnLeft(x,y) ) return "0";
 			}
 			val = "1";
 		} 
@@ -10148,15 +10161,15 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
 			px = sp2[JAG_SP_START+0].tof(); 
 			py = sp2[JAG_SP_START+1].tof(); 
-			if ( ! JagCGAL::pointOnRightOfMultiLineString( px, py, pgon1 ) ) return "0";
+			if ( ! pgon1.pointOnRight(px,py) )  return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
 			mx1 = sp2[JAG_SP_START+0].tof(); 
 			my1 = sp2[JAG_SP_START+1].tof(); 
 			mx2 = sp2[JAG_SP_START+2].tof(); 
 			my2 = sp2[JAG_SP_START+3].tof(); 
-			if ( ! JagCGAL::pointOnRightOfMultiLineString( mx1, my1, pgon1 ) ) return "0";
-			if ( ! JagCGAL::pointOnRightOfMultiLineString( mx2, my2, pgon1 ) ) return "0";
+			if ( ! pgon1.pointOnRight(mx1,my1) )  return "0";
+			if ( ! pgon1.pointOnRight(mx2,my2) )  return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr2;
@@ -10165,7 +10178,7 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 			for ( int i=0; i < linestr2.size(); ++i ) {
 				x = linestr2.point[i].x;
 				y = linestr2.point[i].y;
-				if ( ! JagCGAL::pointOnRightOfMultiLineString( x, y, pgon1) ) return "0";
+				if ( ! pgon1.pointOnRight(x,y) )  return "0";
 			}
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
@@ -10178,7 +10191,7 @@ Jstr BinaryOpNode::doAllIsOnLeftSide( int srid, const Jstr &colType1, const JagS
 				for ( int i=0; i < linestr1.size(); ++i ) {
 					x = linestr1.point[i].x;
 					y = linestr1.point[i].y;
-					if ( ! JagCGAL::pointOnLeftOfMultiLineString(x, y, pgon2) ) return "0";
+					if ( ! pgon2.pointOnLeft(x,y) )  return "0";
 				}
 			}
 			val = "1";
@@ -10210,7 +10223,7 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr;
 			JagParser::addLineStringData( linestr, sp2 );
-			if ( ! JagCGAL::pointOnRightOfLineString( px, py, linestr ) ) return "0";
+			if ( ! linestr.pointOnRight(px,py) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			JagPolygon pgon;
@@ -10218,7 +10231,7 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 			if ( rc < 0 ) return "0";
 			for ( int k = 0; k < pgon.size(); ++k ) {
 				const JagLineString3D &linestr = pgon.linestr[k];
-				if ( ! JagCGAL::pointOnRightOfLineString( px, py, linestr ) ) return "0";
+				if ( ! linestr.pointOnRight(px,py) ) return "0";
 			}
 			val = "1";
 		} 
@@ -10244,8 +10257,8 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr;
 			JagParser::addLineStringData( linestr, sp2 );
-			if ( ! JagCGAL::pointOnRightOfLineString( x1, y1, linestr ) ) return "0";
-			if ( ! JagCGAL::pointOnRightOfLineString( x2, y2, linestr ) ) return "0";
+			if ( ! linestr.pointOnRight(x1,y1) ) return "0";
+			if ( ! linestr.pointOnRight(x2,y2) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			JagPolygon pgon;
@@ -10253,8 +10266,8 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 			if ( rc < 0 ) return "0";
 			for ( int k = 0; k < pgon.size(); ++k ) {
 				const JagLineString3D &linestr = pgon.linestr[k];
-				if ( ! JagCGAL::pointOnRightOfLineString( x1, y1, linestr ) ) return "0";
-				if ( ! JagCGAL::pointOnRightOfLineString( x2, y2, linestr ) ) return "0";
+				if ( ! linestr.pointOnRight(x1,y1) ) return "0";
+				if ( ! linestr.pointOnRight(x2,y2) ) return "0";
 			}
 			val = "1";
 		} 
@@ -10265,15 +10278,15 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
 			px = sp2[JAG_SP_START+0].tof(); 
 			py = sp2[JAG_SP_START+1].tof(); 
-			if ( ! JagCGAL::pointOnLeftOfLineString( px, py, linestr1 ) ) return "0";
+			if ( ! linestr1.pointOnLeft(px,py) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
 			mx1 = sp2[JAG_SP_START+0].tof(); 
 			my1 = sp2[JAG_SP_START+1].tof(); 
 			mx2 = sp2[JAG_SP_START+2].tof(); 
 			my2 = sp2[JAG_SP_START+3].tof(); 
-			if ( ! JagCGAL::pointOnLeftOfLineString( mx1, my1, linestr1 ) ) return "0";
-			if ( ! JagCGAL::pointOnLeftOfLineString( mx2, my2, linestr1 ) ) return "0";
+			if ( ! linestr1.pointOnLeft(mx1,my1) ) return "0";
+			if ( ! linestr1.pointOnLeft(mx2,my2) ) return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr2;
@@ -10282,7 +10295,7 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 			for ( int i=0; i < linestr1.size(); ++i ) {
 				x = linestr1.point[i].x;
 				y = linestr1.point[i].y;
-				if ( ! JagCGAL::pointOnRightOfLineString( x, y, linestr2) ) return "0";
+				if ( ! linestr2.pointOnRight(x,y) ) return "0";
 			}
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
@@ -10293,7 +10306,7 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 			for ( int i=0; i < linestr1.size(); ++i ) {
 				x = linestr1.point[i].x;
 				y = linestr1.point[i].y;
-				if ( ! JagCGAL::pointOnRightOfMultiLineString(x, y, pgon) ) return "0";
+				if ( ! pgon.pointOnRight(x,y) ) return "0";
 			}
 			val = "1";
 		} 
@@ -10305,15 +10318,15 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
 			px = sp2[JAG_SP_START+0].tof(); 
 			py = sp2[JAG_SP_START+1].tof(); 
-			if ( ! JagCGAL::pointOnLeftOfMultiLineString( px, py, pgon1 ) ) return "0";
+			if ( ! pgon1.pointOnLeft(px,py) )  return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
 			mx1 = sp2[JAG_SP_START+0].tof(); 
 			my1 = sp2[JAG_SP_START+1].tof(); 
 			mx2 = sp2[JAG_SP_START+2].tof(); 
 			my2 = sp2[JAG_SP_START+3].tof(); 
-			if ( ! JagCGAL::pointOnLeftOfMultiLineString( mx1, my1, pgon1 ) ) return "0";
-			if ( ! JagCGAL::pointOnLeftOfMultiLineString( mx2, my2, pgon1 ) ) return "0";
+			if ( ! pgon1.pointOnLeft(mx1,my1) )  return "0";
+			if ( ! pgon1.pointOnLeft(mx2,my2) )  return "0";
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
 			JagLineString3D linestr2;
@@ -10322,7 +10335,7 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 			for ( int i=0; i < linestr2.size(); ++i ) {
 				x = linestr2.point[i].x;
 				y = linestr2.point[i].y;
-				if ( ! JagCGAL::pointOnLeftOfMultiLineString( x, y, pgon1) ) return "0";
+				if ( ! pgon1.pointOnLeft(x,y) )  return "0";
 			}
 			val = "1";
 		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
@@ -10335,10 +10348,314 @@ Jstr BinaryOpNode::doAllIsOnRightSide( int srid, const Jstr &colType1, const Jag
 				for ( int i=0; i < linestr1.size(); ++i ) {
 					x = linestr1.point[i].x;
 					y = linestr1.point[i].y;
-					if ( ! JagCGAL::pointOnRightOfMultiLineString(x, y, pgon2) ) return "0";
+					if ( ! pgon2.pointOnRight(x,y) ) return "0";
 				}
 			}
 			val = "1";
+		} 
+	} 
+
+	return val;
+}
+
+Jstr BinaryOpNode::doAllLeftRatio( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
+								   const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg )
+{
+	//prt(("s1727 doAllLeftRatio sp1.size()=%d carg=[%s]\n", sp1.size(), carg.c_str() ));
+	if ( sp1.size() < 1 ) return "0";
+	Jstr val = "0";
+	double px, py, x1, y1, x2, y2;
+	double mx1, my1, mx2, my2;
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) { 
+		px = sp1[JAG_SP_START+0].tof(); 
+		py = sp1[JAG_SP_START+1].tof(); 
+		if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			x1 = sp2[JAG_SP_START+0].tof(); 
+			y1 = sp2[JAG_SP_START+1].tof(); 
+			x2 = sp2[JAG_SP_START+2].tof(); 
+			y2 = sp2[JAG_SP_START+3].tof(); 
+			if ( JAG_LEFT == JagCGAL::pointRelateLine(px,py, x1, y1, x2, y2) ) {
+				val = "1";
+			}
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr;
+			JagParser::addLineStringData( linestr, sp2 );
+			val = d2s(linestr.pointOnLeftRatio(px,py));
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			int rc = JagParser::addPolygonData( pgon, sp2, false );
+			if ( rc < 0 ) return "0";
+			val = pgon.pointOnLeftRatio(px,py);
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE  ) {
+		x1 = sp1[JAG_SP_START+0].tof(); 
+		y1 = sp1[JAG_SP_START+1].tof(); 
+		x2 = sp1[JAG_SP_START+2].tof(); 
+		y2 = sp1[JAG_SP_START+3].tof(); 
+		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+			px = sp2[JAG_SP_START+0].tof(); 
+			py = sp2[JAG_SP_START+1].tof(); 
+			if ( JAG_RIGHT == JagCGAL::pointRelateLine(px,py, x1, y1, x2, y2) ) {
+				val = "1";
+			}
+		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			mx1 = sp2[JAG_SP_START+0].tof(); 
+			my1 = sp2[JAG_SP_START+1].tof(); 
+			mx2 = sp2[JAG_SP_START+2].tof(); 
+			my2 = sp2[JAG_SP_START+3].tof(); 
+			int cnt = 0;
+			if ( JAG_LEFT == JagCGAL::pointRelateLine(x1,y1, mx1, my1, mx2, my2) ) ++cnt;
+			if ( JAG_LEFT == JagCGAL::pointRelateLine(x2,y2, mx1, my1, mx2, my2) ) ++cnt;
+			val = d2s( (double)cnt/2.0 );
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr;
+			JagParser::addLineStringData( linestr, sp2 );
+			double r1 = linestr.pointOnLeftRatio(x1,y1);
+			double r2 = linestr.pointOnLeftRatio(x2,y2);
+			val = d2s( (r1+r2)/2.0 );
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			int rc = JagParser::addPolygonData( pgon, sp2, false );
+			if ( rc < 0 ) return "0";
+			val = d2s(pgon.pointOnLeftRatio(px,py));
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING  ) {
+		JagLineString3D linestr1;
+		JagParser::addLineStringData( linestr1, sp1 );
+
+		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+			px = sp2[JAG_SP_START+0].tof(); 
+			py = sp2[JAG_SP_START+1].tof(); 
+			val = d2s(linestr1.pointOnRightRatio(px,py));
+		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			mx1 = sp2[JAG_SP_START+0].tof(); 
+			my1 = sp2[JAG_SP_START+1].tof(); 
+			mx2 = sp2[JAG_SP_START+2].tof(); 
+			my2 = sp2[JAG_SP_START+3].tof(); 
+			double r1 = linestr1.pointOnRightRatio(mx1,my1);
+			double r2 = linestr1.pointOnRightRatio(mx2,my2);
+			val = d2s(0.5*(r1+r2));
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr2;
+			JagParser::addLineStringData( linestr2, sp2 );
+			double x,y;
+			int tot = 0; double cnt = 0.0;
+			for ( int i=0; i < linestr1.size(); ++i ) {
+				x = linestr1.point[i].x;
+				y = linestr1.point[i].y;
+				cnt += linestr2.pointOnLeftRatio(x,y);
+				++tot;
+			}
+			val = ( tot > 0 ) ? d2s(cnt/tot) : "0.0";
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			double x,y;
+			int rc = JagParser::addPolygonData( pgon, sp2, false );
+			if ( rc < 0 ) return "0";
+			int tot = 0; double cnt = 0.0;
+			for ( int i=0; i < linestr1.size(); ++i ) {
+				x = linestr1.point[i].x;
+				y = linestr1.point[i].y;
+				cnt += pgon.pointOnLeftRatio(x,y);
+				++tot;
+			}
+			val = ( tot > 0 ) ? d2s(cnt/tot) : "0.0";
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING  ) {
+		JagPolygon pgon1;
+		int rc = JagParser::addPolygonData( pgon1, sp1, false );
+		if ( rc < 0 ) return "0";
+
+		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+			px = sp2[JAG_SP_START+0].tof(); 
+			py = sp2[JAG_SP_START+1].tof(); 
+			val = d2s(pgon1.pointOnRightRatio(px,py));
+		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			mx1 = sp2[JAG_SP_START+0].tof(); 
+			my1 = sp2[JAG_SP_START+1].tof(); 
+			mx2 = sp2[JAG_SP_START+2].tof(); 
+			my2 = sp2[JAG_SP_START+3].tof(); 
+			double r1 = pgon1.pointOnRightRatio(mx1,my1);
+			double r2 = pgon1.pointOnRightRatio(mx2,my2);
+			val = d2s( (r1+r2)/2.0);
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr2;
+			JagParser::addLineStringData( linestr2, sp2 );
+			double x,y;
+			int tot = 0; double cnt=0.0;
+			for ( int i=0; i < linestr2.size(); ++i ) {
+				x = linestr2.point[i].x;
+				y = linestr2.point[i].y;
+				cnt += pgon1.pointOnRightRatio(x,y);
+				++tot;
+			}
+			val = ( tot > 0 ) ? d2s(cnt/tot) : "0.0";
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon2;
+			double x,y;
+			int rc = JagParser::addPolygonData( pgon2, sp2, false );
+			if ( rc < 0 ) return "0";
+			int tot = 0; double cnt=0.0;
+			for ( int k=0; k < pgon1.size(); ++k ) {
+				const JagLineString3D &linestr1 = pgon1.linestr[k];
+				for ( int i=0; i < linestr1.size(); ++i ) {
+					x = linestr1.point[i].x;
+					y = linestr1.point[i].y;
+					cnt += pgon2.pointOnLeftRatio(x,y);
+				}
+			}
+		} 
+	} 
+
+	return val;
+}
+
+Jstr BinaryOpNode::doAllRightRatio( int srid, const Jstr &colType1, const JagStrSplit &sp1, 
+								   const Jstr &colType2, const JagStrSplit &sp2, const Jstr &carg )
+{
+	//prt(("s1727 doAllRightRatio sp1.size()=%d carg=[%s]\n", sp1.size(), carg.c_str() ));
+	if ( sp1.size() < 1 ) return "0";
+	Jstr val = "0";
+	double px, py, x1, y1, x2, y2;
+	double mx1, my1, mx2, my2;
+	if ( colType1 == JAG_C_COL_TYPE_POINT ) { 
+		px = sp1[JAG_SP_START+0].tof(); 
+		py = sp1[JAG_SP_START+1].tof(); 
+		if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			x1 = sp2[JAG_SP_START+0].tof(); 
+			y1 = sp2[JAG_SP_START+1].tof(); 
+			x2 = sp2[JAG_SP_START+2].tof(); 
+			y2 = sp2[JAG_SP_START+3].tof(); 
+			if ( JAG_RIGHT == JagCGAL::pointRelateLine(px,py, x1, y1, x2, y2) ) {
+				val = "1";
+			}
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr;
+			JagParser::addLineStringData( linestr, sp2 );
+			val = d2s(linestr.pointOnRightRatio(px,py));
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			int rc = JagParser::addPolygonData( pgon, sp2, false );
+			if ( rc < 0 ) return "0";
+			val = pgon.pointOnRightRatio(px,py);
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINE  ) {
+		x1 = sp1[JAG_SP_START+0].tof(); 
+		y1 = sp1[JAG_SP_START+1].tof(); 
+		x2 = sp1[JAG_SP_START+2].tof(); 
+		y2 = sp1[JAG_SP_START+3].tof(); 
+		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+			px = sp2[JAG_SP_START+0].tof(); 
+			py = sp2[JAG_SP_START+1].tof(); 
+			if ( JAG_LEFT == JagCGAL::pointRelateLine(px,py, x1, y1, x2, y2) ) {
+				val = "1";
+			}
+		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			mx1 = sp2[JAG_SP_START+0].tof(); 
+			my1 = sp2[JAG_SP_START+1].tof(); 
+			mx2 = sp2[JAG_SP_START+2].tof(); 
+			my2 = sp2[JAG_SP_START+3].tof(); 
+			int cnt = 0;
+			if ( JAG_RIGHT == JagCGAL::pointRelateLine(x1,y1, mx1, my1, mx2, my2) ) ++cnt;
+			if ( JAG_RIGHT == JagCGAL::pointRelateLine(x2,y2, mx1, my1, mx2, my2) ) ++cnt;
+			val = d2s( (double)cnt/2.0 );
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr;
+			JagParser::addLineStringData( linestr, sp2 );
+			double r1 = linestr.pointOnRightRatio(x1,y1);
+			double r2 = linestr.pointOnRightRatio(x2,y2);
+			val = d2s( (r1+r2)/2.0 );
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			int rc = JagParser::addPolygonData( pgon, sp2, false );
+			if ( rc < 0 ) return "0";
+			val = d2s(pgon.pointOnRightRatio(px,py));
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_LINESTRING  ) {
+		JagLineString3D linestr1;
+		JagParser::addLineStringData( linestr1, sp1 );
+
+		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+			px = sp2[JAG_SP_START+0].tof(); 
+			py = sp2[JAG_SP_START+1].tof(); 
+			val = d2s(linestr1.pointOnLeftRatio(px,py));
+		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			mx1 = sp2[JAG_SP_START+0].tof(); 
+			my1 = sp2[JAG_SP_START+1].tof(); 
+			mx2 = sp2[JAG_SP_START+2].tof(); 
+			my2 = sp2[JAG_SP_START+3].tof(); 
+			double r1 = linestr1.pointOnLeftRatio(mx1,my1);
+			double r2 = linestr1.pointOnLeftRatio(mx2,my2);
+			val = d2s(0.5*(r1+r2));
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr2;
+			JagParser::addLineStringData( linestr2, sp2 );
+			double x,y;
+			int tot = 0; double cnt = 0.0;
+			for ( int i=0; i < linestr1.size(); ++i ) {
+				x = linestr1.point[i].x;
+				y = linestr1.point[i].y;
+				cnt += linestr2.pointOnRightRatio(x,y);
+				++tot;
+			}
+			val = ( tot > 0 ) ? d2s(cnt/tot) : "0.0";
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			double x,y;
+			int rc = JagParser::addPolygonData( pgon, sp2, false );
+			if ( rc < 0 ) return "0";
+			int tot = 0; double cnt = 0.0;
+			for ( int i=0; i < linestr1.size(); ++i ) {
+				x = linestr1.point[i].x;
+				y = linestr1.point[i].y;
+				cnt += pgon.pointOnRightRatio(x,y);
+				++tot;
+			}
+			val = ( tot > 0 ) ? d2s(cnt/tot) : "0.0";
+		} 
+	} else if ( colType1 == JAG_C_COL_TYPE_MULTILINESTRING  ) {
+		JagPolygon pgon1;
+		int rc = JagParser::addPolygonData( pgon1, sp1, false );
+		if ( rc < 0 ) return "0";
+
+		if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+			px = sp2[JAG_SP_START+0].tof(); 
+			py = sp2[JAG_SP_START+1].tof(); 
+			val = d2s(pgon1.pointOnLeftRatio(px,py));
+		} else if ( colType2 == JAG_C_COL_TYPE_LINE ) {
+			mx1 = sp2[JAG_SP_START+0].tof(); 
+			my1 = sp2[JAG_SP_START+1].tof(); 
+			mx2 = sp2[JAG_SP_START+2].tof(); 
+			my2 = sp2[JAG_SP_START+3].tof(); 
+			double r1 = pgon1.pointOnLeftRatio(mx1,my1);
+			double r2 = pgon1.pointOnLeftRatio(mx2,my2);
+			val = d2s( (r1+r2)/2.0);
+		} else if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
+			JagLineString3D linestr2;
+			JagParser::addLineStringData( linestr2, sp2 );
+			double x,y;
+			int tot = 0; double cnt=0.0;
+			for ( int i=0; i < linestr2.size(); ++i ) {
+				x = linestr2.point[i].x;
+				y = linestr2.point[i].y;
+				cnt += pgon1.pointOnLeftRatio(x,y);
+				++tot;
+			}
+			val = ( tot > 0 ) ? d2s(cnt/tot) : "0.0";
+		} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon2;
+			double x,y;
+			int rc = JagParser::addPolygonData( pgon2, sp2, false );
+			if ( rc < 0 ) return "0";
+			int tot = 0; double cnt=0.0;
+			for ( int k=0; k < pgon1.size(); ++k ) {
+				const JagLineString3D &linestr1 = pgon1.linestr[k];
+				for ( int i=0; i < linestr1.size(); ++i ) {
+					x = linestr1.point[i].x;
+					y = linestr1.point[i].y;
+					cnt += pgon2.pointOnRightRatio(x,y);
+				}
+			}
 		} 
 	} 
 
@@ -11130,6 +11447,8 @@ int BinaryOpNode::getTypeMode( short fop )
 	 			 || fop == JAG_FUNC_YMAX
 	 			 || fop == JAG_FUNC_ZMAX
 	 			 || fop == JAG_FUNC_LOCATEPOINT
+	 			 || fop == JAG_FUNC_LEFTRATIO
+	 			 || fop == JAG_FUNC_RIGHTRATIO
 	           ) {
 	   tmode = 2;  // double
 	 } else {

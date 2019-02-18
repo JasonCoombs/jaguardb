@@ -185,10 +185,6 @@ class JagCGAL
 	static bool getMinBoundSphere( int srid, const JagVector<JagPoint3D> &vec, Jstr &res );
 	static int  pointRelateLine( double px, double py, double x1, double y1, double x2, double y2);
 	static int  lineRelateLine( double x1, double y1, double x2, double y2, double mx1, double my1, double mx2, double my2 );
-	static bool pointOnLeftOfLineString( double px, double py, const JagLineString3D &linestr );
-	static bool pointOnRightOfLineString( double px, double py, const JagLineString3D &linestr );
-	static bool pointOnLeftOfMultiLineString( double px, double py, const JagPolygon &pgon );
-	static bool pointOnRightOfMultiLineString( double px, double py, const JagPolygon &pgon );
 
 
   protected:

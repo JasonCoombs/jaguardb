@@ -631,6 +631,62 @@ bool JagLineString3D::substring( short dim, int srid, double startFrac, double e
 	return true;
 }
 
+bool JagLineString3D::pointOnLeft( double px, double py) const
+{
+    CGALPoint2D pt(px,py);
+    for ( int i=0; i < point.size() -1; ++i ) {
+        CGALPoint2D p( point[i].x, point[i].y);
+        CGALPoint2D q( point[i+1].x, point[i+1].y);
+        if ( CGAL::LEFT_TURN !=  CGAL::orientation(p,q, pt) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool JagLineString3D::pointOnRight( double px, double py) const
+{
+    CGALPoint2D pt(px,py);
+    for ( int i=0; i < point.size() -1; ++i ) {
+        CGALPoint2D p( point[i].x, point[i].y);
+        CGALPoint2D q( point[i+1].x, point[i+1].y);
+        if ( CGAL::RIGHT_TURN !=  CGAL::orientation(p,q, pt) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+double JagLineString3D::pointOnLeftRatio(double px, double py) const
+{
+	if ( point.size() < 1 ) { return 0.0; }
+	int cnt = 0; int tot = 0;
+	double x1,y1, x2,y2;
+	for ( int k=0; k < point.size()-1; ++k ) {
+		x1 = point[k].x; y1 = point[k].y;
+		x2 = point[k+1].x; y2 = point[k+1].y;
+		if ( JAG_LEFT == JagCGAL::pointRelateLine( px,py, x1,y1, x2,y2 ) ) ++cnt;
+		++tot;
+	}
+	if ( tot < 1 ) return 0.0;
+	return (double)cnt/(double)tot;
+}
+
+double JagLineString3D::pointOnRightRatio(double px, double py) const
+{
+	if ( point.size() < 1 ) { return 0.0; }
+	int cnt = 0; int tot = 0;
+	double x1,y1, x2,y2;
+	for ( int k=0; k < point.size()-1; ++k ) {
+		x1 = point[k].x; y1 = point[k].y;
+		x2 = point[k+1].x; y2 = point[k+1].y;
+		if ( JAG_RIGHT == JagCGAL::pointRelateLine( px,py, x1,y1, x2,y2 ) ) ++cnt;
+		++tot;
+	}
+	if ( tot < 1 ) return 0.0;
+	return (double)cnt/(double)tot;
+}
+
 void JagLineString::bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const
 {
 	xmin = ymin = LONG_MAX;
@@ -1729,6 +1785,50 @@ void JagPolygon::toVector3D( int srid, JagVector<JagPoint3D> &vec, bool outerRin
 		}
 		if ( outerRingOnly ) break;
 	}
+}
+
+double JagPolygon::pointOnLeftRatio(double px, double py) const
+{
+	if ( linestr.size() < 1 ) { return 0.0; }
+	int cnt = 0; int tot = 0;
+	for ( int k=0; k < linestr.size(); ++k ) {
+		const JagLineString3D &lstr = linestr[k];
+		if ( lstr.pointOnLeft(px,py) ) ++cnt;
+		++tot;
+	}
+	if ( tot < 1 ) return 0.0;
+	return (double)cnt/(double)tot;
+}
+
+double JagPolygon::pointOnRightRatio(double px, double py) const
+{
+	if ( linestr.size() < 1 ) { return 0.0; }
+	int cnt = 0; int tot = 0;
+	for ( int k=0; k < linestr.size(); ++k ) {
+		const JagLineString3D &lstr = linestr[k];
+		if ( lstr.pointOnRight(px,py) ) ++cnt;
+		++tot;
+	}
+	if ( tot < 1 ) return 0.0;
+	return (double)cnt/(double)tot;
+}
+
+bool JagPolygon::pointOnLeft( double px, double py) const
+{
+    for ( int k = 0; k < linestr.size(); ++k ) {
+        const JagLineString3D &lstr = linestr[k];
+        if ( ! lstr.pointOnLeft( px, py ) ) return false;
+    }
+    return true;
+}
+
+bool JagPolygon::pointOnRight( double px, double py) const
+{
+    for ( int k = 0; k < linestr.size(); ++k ) {
+        const JagLineString3D &lstr = linestr[k];
+        if ( ! lstr.pointOnRight( px, py ) ) return false;
+    }
+    return true;
 }
 
 
