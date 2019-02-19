@@ -271,6 +271,8 @@ class BinaryOpNode: public ExprElementNode
 	bool doAllEndPoint( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllConvexHull( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 						  int srid, const JagStrSplit &sp1, Jstr &val );
+	bool doAllConcaveHull( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, Jstr &val );
 	bool doAllToPolygon( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
 	bool doAllToMultipoint( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 

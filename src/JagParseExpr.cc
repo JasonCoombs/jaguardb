@@ -1033,6 +1033,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_EXTENT ) str = "extent";
 	else if ( binaryOp == JAG_FUNC_STARTPOINT ) str = "startpoint";
 	else if ( binaryOp == JAG_FUNC_CONVEXHULL ) str = "convexhull";
+	else if ( binaryOp == JAG_FUNC_CONCAVEHULL ) str = "concavehull";
 	else if ( binaryOp == JAG_FUNC_TOPOLYGON ) str = "topolygon";
 	else if ( binaryOp == JAG_FUNC_TOMULTIPOINT ) str = "tomultipoint";
 	else if ( binaryOp == JAG_FUNC_UNION ) str = "union";
@@ -1140,6 +1141,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		 || _binaryOp == JAG_FUNC_ROTATESELF || _binaryOp == JAG_FUNC_AFFINE || _binaryOp == JAG_FUNC_VORONOIPOLYGONS
 		 || _binaryOp == JAG_FUNC_VORONOILINES || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
 		 || _binaryOp == JAG_FUNC_ASTEXT ||  _binaryOp == JAG_FUNC_DIFFERENCE || _binaryOp == JAG_FUNC_SYMDIFFERENCE
+		 || _binaryOp == JAG_FUNC_CONCAVEHULL
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3132,7 +3134,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 	} else if ( _binaryOp == JAG_FUNC_POINTN || _binaryOp == JAG_FUNC_EXTENT || _binaryOp == JAG_FUNC_STARTPOINT
 				 || _binaryOp == JAG_FUNC_CONVEXHULL || _binaryOp == JAG_FUNC_BUFFER 
 				 || _binaryOp == JAG_FUNC_TOPOLYGON  || _binaryOp == JAG_FUNC_ASTEXT
-				 || _binaryOp == JAG_FUNC_TOMULTIPOINT  
+				 || _binaryOp == JAG_FUNC_TOMULTIPOINT  ||  _binaryOp == JAG_FUNC_CONCAVEHULL
 				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS
 				 ||  _binaryOp == JAG_FUNC_INNERRINGS || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
@@ -4607,7 +4609,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_AREA || fop == JAG_FUNC_CLOSESTPOINT || fop == JAG_FUNC_ANGLE || fop == JAG_FUNC_PERIMETER || 
 		fop == JAG_FUNC_VOLUME || fop == JAG_FUNC_DIMENSION || fop == JAG_FUNC_GEOTYPE || fop == JAG_FUNC_POINTN || 
 		fop == JAG_FUNC_EXTENT || fop == JAG_FUNC_STARTPOINT || fop == JAG_FUNC_ENDPOINT || 
-		fop == JAG_FUNC_CONVEXHULL || 
+		fop == JAG_FUNC_CONVEXHULL || fop == JAG_FUNC_CONCAVEHULL || 
 		fop == JAG_FUNC_TOPOLYGON || fop == JAG_FUNC_TOMULTIPOINT  ||
 		fop == JAG_FUNC_UNION || fop == JAG_FUNC_DIFFERENCE || fop == JAG_FUNC_SYMDIFFERENCE || 
 		fop == JAG_FUNC_INTERSECTION || fop == JAG_FUNC_COLLECT || 
@@ -4867,6 +4869,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_ENDPOINT; len = 8; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "convexhull", 10 ) ) {
 		fop = JAG_FUNC_CONVEXHULL; len = 10; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "concavehull", 11 ) ) {
+		fop = JAG_FUNC_CONCAVEHULL; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "topolygon", 9 ) ) {
 		fop = JAG_FUNC_TOPOLYGON; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "tomultipoint", 12 ) ) {
@@ -5533,6 +5537,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllSummary( mark1, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_CONVEXHULL ) {
 		rc = doAllConvexHull( mark1, hdr, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_CONCAVEHULL ) {
+		rc = doAllConcaveHull( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_OUTERRING ) {
 		rc = doAllOuterRing( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_UNIQUE ) {
@@ -6355,7 +6361,7 @@ bool BinaryOpNode::doAllCentroid( const Jstr& mk, const Jstr& hdr, const Jstr &c
 			//line.print();
 		} else if ( colType == JAG_C_COL_TYPE_POINT || colType == JAG_C_COL_TYPE_SQUARE
                     || colType == JAG_C_COL_TYPE_RECTANGLE 
-					|| JAG_C_COL_TYPE_CIRCLE || JAG_C_COL_TYPE_ELLIPSE ) {
+					|| colType == JAG_C_COL_TYPE_CIRCLE || colType == JAG_C_COL_TYPE_ELLIPSE ) {
 			cx = jagatof( sp1[JAG_SP_START+0].c_str() );
 			cy = jagatof( sp1[JAG_SP_START+1].c_str() );
 		} else if ( colType == JAG_C_COL_TYPE_LINE ) {
@@ -6380,7 +6386,7 @@ bool BinaryOpNode::doAllCentroid( const Jstr& mk, const Jstr& hdr, const Jstr &c
 			cx = jagatof( sp1[JAG_SP_START+0].c_str() );
 			cy = jagatof( sp1[JAG_SP_START+1].c_str() );
 			cz = jagatof( sp1[JAG_SP_START+2].c_str() );
-			//prt(("s7942 JAG_C_COL_TYPE_POINT3D cx=%f cy=%f cz=%f\n", cx, cy, cz ));
+			prt(("s7942 JAG_C_COL_TYPE_POINT3D cx=%f cy=%f cz=%f\n", cx, cy, cz ));
 			is3D = true;
 		} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
 			double cx1 = jagatof( sp1[JAG_SP_START+0].c_str() );
@@ -6428,9 +6434,10 @@ bool BinaryOpNode::doAllConvexHull( const Jstr& mk, const Jstr& hdr, const Jstr 
 {
 	//prt(("s3420 doAllConvexHull() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
 	//sp.print();
+	if ( sp.size() < 2 ) return false;
 	value = "";
 	Jstr bbox;
-	if ( mk == JAG_OJAG ) { bbox = sp[1]; } 
+	bbox = sp[1];
 
 		//prt(("s8830 JAG_OJAG\n" ));
 		//sp.print();
@@ -6478,6 +6485,43 @@ bool BinaryOpNode::doAllConvexHull( const Jstr& mk, const Jstr& hdr, const Jstr 
 			JagCGAL::getConvexHull3DStr( line, hdr, bbox, value );
 		} else  {
 		}
+
+	return true;
+}
+
+bool BinaryOpNode::doAllConcaveHull( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
+								    int srid, const JagStrSplit &sp, Jstr &value )
+{
+	//prt(("s3420 doAllConvexHull() mk=[%s] colType=[%s] sp1.print(): \n", mk.c_str(), colType.c_str() ));
+	//sp.print();
+	if ( sp.size() < 3 ) return false;
+	value = "";
+	Jstr bbox;
+	bbox = sp[1]; 
+
+	JagLineString3D line;
+    if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		JagParser::addLineStringData( line, sp );
+		JagCGAL::getConcaveHull2DStr( line, hdr, bbox, value );
+    } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		JagPolygon pgon;
+	    JagParser::addPolygonData( pgon, sp, true );
+		JagCGAL::getConcaveHull2DStr( pgon.linestr[0], hdr, bbox, value );
+    } else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		JagPolygon pgon;
+	    JagParser::addPolygonData( pgon, sp, false );
+		for ( int i=1; i < pgon.size(); ++i ) {
+			line.appendFrom( pgon.linestr[i], false );
+		}
+		JagCGAL::getConcaveHull2DStr( line, hdr, bbox, value );
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		JagVector<JagPolygon> pgvec;
+		JagParser::addMultiPolygonData( pgvec, sp, false, false );
+		for ( int i=0; i < pgvec.size(); ++i ) {
+			line.appendFrom( pgvec[i].linestr[0], true );
+		}
+		JagCGAL::getConcaveHull2DStr( line, hdr, bbox, value );
+	} 
 
 	return true;
 }

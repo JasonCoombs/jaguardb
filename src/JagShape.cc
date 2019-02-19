@@ -458,6 +458,17 @@ void JagLineString3D::toJAG( const Jstr &colType, bool is3D, bool hasHdr, const 
 	}
 }
 
+JagLineString3D& JagLineString3D::appendFrom( const JagLineString3D& L2, bool removeLast )
+{
+	//init();
+	int len =  L2.size();
+	if ( removeLast ) --len;
+	for ( int i=0; i < len; ++i ) {
+		add( L2.point[i] );
+	}
+	return *this;
+}
+
 double JagLineString3D::lineLength( bool removeLast, bool is3D, int srid )
 {
 	double sum = 0.0;

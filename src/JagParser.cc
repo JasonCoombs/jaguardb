@@ -5924,7 +5924,7 @@ void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp
 	char *p;
 	double dx,dy;
 	int nc;
-	for ( int i=0; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		nc = strchrnum( str, ':');
 		if ( nc != 1 ) continue;
@@ -5941,7 +5941,7 @@ void JagParser::addLineStringData( JagLineString3D &linestr, const JagStrSplit &
 	char *p;
 	double dx,dy;
 	int nc;
-	for ( int i=0; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		nc = strchrnum( str, ':');
 		if ( nc != 1 ) continue;
@@ -5957,7 +5957,7 @@ void JagParser::addLineString3DData( JagLineString3D &linestr, const JagStrSplit
 	const char *str;
 	char *p;
 	double dx,dy, dz;
-	for ( int i=0; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		if ( strchrnum( str, ':') != 2 ) continue;
 		get3double(str, p, ':', dx, dy, dz );

@@ -267,7 +267,7 @@ int main(int argc, char *argv[] )
 	// test_sys_getline();
 	// test_jag_getline();
 	// test_reply( argv[1] );
-	//test_str( N );
+	test_str( N );
 	//test_geo( N );
 	//test_sqrt( N );
 	// test_split( N );
@@ -276,7 +276,7 @@ int main(int argc, char *argv[] )
 	//test_linefile( N );
 	//test_json( N );
 	//test_distance();
-	test_cgal();
+	// test_cgal();
 	//test_new( N );
 	//test_equation();
 	//test_intersection();
@@ -2753,6 +2753,16 @@ void test_str( int N )
 	prt(("old a1=%s\n", a1.c_str() ));
 	a1.trimEndZeros();
 	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = "0.0000";
+	prt(("old a1=%s\n", a1.c_str() ));
+	a1.trimEndZeros();
+	prt(("a1=%s\n", a1.c_str() ));
+
+	a1 = "0.0000";
+	prt(("old a1=%s\n", a1.c_str() ));
+	Jstr a23 = trimEndZeros(a1);
+	prt(("a1=%s a2=[%s]\n", a1.c_str(), a23.s() ));
 
 }
 

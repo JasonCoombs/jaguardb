@@ -185,6 +185,7 @@ class JagCGAL
 	static bool getMinBoundSphere( int srid, const JagVector<JagPoint3D> &vec, Jstr &res );
 	static int  pointRelateLine( double px, double py, double x1, double y1, double x2, double y2);
 	static int  lineRelateLine( double x1, double y1, double x2, double y2, double mx1, double my1, double mx2, double my2 );
+    static void getConcaveHull2DStr( const JagLineString3D &lstr, const Jstr &hdr, const Jstr &bbox, Jstr &value );
 
 
   protected:

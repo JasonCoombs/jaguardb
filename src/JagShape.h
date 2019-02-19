@@ -569,6 +569,7 @@ class JagLineString3D
 		double pointOnRightRatio(double px, double py) const;
 		bool pointOnLeft( double px, double py ) const;
 		bool pointOnRight( double px, double py ) const;
+		JagLineString3D& appendFrom( const JagLineString3D& L2, bool removeLast = false );
 		JagVector<JagPoint3D> point;
 };
 

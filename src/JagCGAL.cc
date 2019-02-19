@@ -2,6 +2,7 @@
 #include <JagCGAL.h>
 #include <JagParser.h>
 #include <JagUtil.h>
+#include <ACConcaveHull.h>
 
 
 void JagCGAL::getConvexHull2DStr( const JagLineString &line, const Jstr &hdr, const Jstr &bbox, Jstr &value )
@@ -11,25 +12,17 @@ void JagCGAL::getConvexHull2DStr( const JagLineString &line, const Jstr &hdr, co
 	const JagVector<JagPoint> &point = hull.point;
 	Jstr sx, sy;
 
-	if ( bbox.size() < 1 ) {
-		double xmin, ymin, xmax, ymax;
-		Jstr s1, s2, s3, s4;
-		hull.bbox2D( xmin, ymin, xmax, ymax );
-		Jstr newbbox;
-		s1 = doubleToStr( xmin ).trimEndZeros();
-		s2 = doubleToStr( ymin ).trimEndZeros();
-		s3 = doubleToStr( xmax ).trimEndZeros();
-		s4 = doubleToStr( ymax ).trimEndZeros();
-		newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4;
-		value = hdr + " " + newbbox;
-	} else {
-		value = hdr + " " + bbox;
+	JagStrSplit ss(hdr, '=');
+	value = Jstr("CJAG=") + ss[1] + "=0=PL=d " + bbox;
+	int len = point.size();
+	for ( int i = 0; i <  len; ++i ) {
+		sx = point[i].x; sy = point[i].y; 
+		value += Jstr(" ") + sx + ":" + sy;
 	}
 
-	for ( int i = 0; i <  point.size(); ++i ) {
-		sx = point[i].x; sx.trimEndZeros();
-		sy = point[i].y; sy.trimEndZeros();
-		value += Jstr(" ") + sx + ":" + sy;
+	if ( ! (jagEQ(jagatof(point[0].x), jagatof(point[len-1].x) )
+	       && jagEQ(jagatof(point[0].y), jagatof(point[len-1].y) ) )) {
+		value += Jstr(" ") + point[0].x + ":" + point[0].y;
 	}
 }
 
@@ -73,62 +66,21 @@ void JagCGAL::getConvexHull3DStr( const JagLineString &line, const Jstr &hdr, co
 	getConvexHull3D( line, hull );
 	const JagVector<JagPoint> &point = hull.point;
 	Jstr sx, sy, sz;
+	JagStrSplit ss(hdr, '=');
+	value = Jstr("CJAG=") + ss[1] + "=0=PL3=d " + bbox;
 
-	if ( bbox.size() < 1 ) {
-		double xmin, ymin, zmin, xmax, ymax, zmax;
-		Jstr s1, s2, s3, s4, s5, s6;
-		hull.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
-		Jstr newbbox;
-		s1 = doubleToStr( xmin ).trimEndZeros();
-		s2 = doubleToStr( ymin ).trimEndZeros();
-		s3 = doubleToStr( zmin ).trimEndZeros();
-		s4 = doubleToStr( xmax ).trimEndZeros();
-		s5 = doubleToStr( ymax ).trimEndZeros();
-		s6 = doubleToStr( zmax ).trimEndZeros();
-		newbbox = s1 + ":" + s2 + ":" + s3 + ":" + s4 + ":" + s5 + ":" + s6;
-		value = hdr + " " + newbbox;
-	} else {
-		value = hdr + " " + bbox;
-	}
-
-	for ( int i = 0; i <  point.size(); ++i ) {
-		sx = point[i].x; sx.trimEndZeros();
-		sy = point[i].y; sy.trimEndZeros();
-		sz = point[i].z; sz.trimEndZeros();
+	int len = point.size();
+	for ( int i = 0; i <  len; ++i ) {
+		sx = point[i].x; sy = point[i].y; sz = point[i].z; 
 		value += Jstr(" ") + sx + ":" + sy + ":" + sz;
 	}
+	if ( ! (jagEQ(jagatof(point[0].x), jagatof(point[len-1].x) )
+	       && jagEQ(jagatof(point[0].y), jagatof(point[len-1].y) ) 
+	       && jagEQ(jagatof(point[0].z), jagatof(point[len-1].z) ) ) 
+		   ) {
+		value += Jstr(" ") + point[0].x + ":" + point[0].y + ":" +  point[0].z;
+	}
 }
-
-/***
-template<typename GeometryIn, typename MultiPolygon, typename DistanceStrategy, typename SideStrategy,
-         typename JoinStrategy, typename EndStrategy, typename PointStrategy>
-void buffer(GeometryIn const & geometry_in, MultiPolygon & geometry_out, DistanceStrategy const & distance_strategy,
-            SideStrategy const & side_strategy, JoinStrategy const & join_strategy, EndStrategy const & end_strategy,
-            PointStrategy const & point_strategy)
-
-distance_strategy: symmetric or assymetric, and positive or negative
-	JagDistanceSymmetric<double> distance_strategy(0.5);
-	JagDistanceASymmetric distance_strategy(1.0, 0.5); // left/right side distance
-
-
-side_strategy : JagSideStraight side_strategy;
-	JagSideStraight side_strategy;
-
-
-join_strategy : rounded or sharp
-	JagJoinRound join_strategy(72);  // # of points
-	JagJoinMiter join_strategy;
-
-end_strategy : rounded or flat
-	JagEndRound end_strategy(36);  // # of points
-	JagEndFlat end_strategy;
-
-point_strategy : circular or square
-	JagPointSquare point_strategy;
-	JagPointCircle point_strategy(360);  // # of points
-***/
-
-//bool JagCGAL::getBuffer2D( const JagLineString &line, const Jstr &arg, bool isMultiPoint, JagVector<JagPolygon> &mpgon )
 
 template <class TGeo>
 bool JagCGAL::getBuffer2D( const TGeo &ls, const Jstr &arg, JagVector<JagPolygon> &mpgon )
@@ -144,7 +96,6 @@ bool JagCGAL::getBuffer2D( const TGeo &ls, const Jstr &arg, JagVector<JagPolygon
 	boost::geometry::model::multi_polygon<BoostPolygon2D> result;
 	//boost::geometry::model::linestring<BoostPoint2D> ls;
 	//TGeo ls;
-
 	//line.print();
 	/***  do this in caller
 	for ( int i=0; i < line.size(); ++i ) {
@@ -1721,4 +1672,28 @@ int JagCGAL::lineRelateLine( double x1, double y1, double x2, double y2, double 
 	else return 0;
 }
 
+void JagCGAL::getConcaveHull2DStr( const JagLineString3D &line, const Jstr &hdr, const Jstr &bbox, Jstr &value )
+{
+	if ( line.size() < 2 ) return;
+
+	ACPointVector points;
+	ACPointVector hull;
+	for ( int i=0; i < line.size(); ++i ) {
+		points.push_back( ACPoint( line.point[i].x, line.point[i].y ) );
+	}
+
+	if ( ! ACConcaveHull( points, hull) ) { return; }
+
+	JagStrSplit ss(hdr, '=' );
+	value = Jstr("CJAG=") + ss[1] + "=0=PL=d " + bbox;
+	int len = hull.size();
+	for ( int i = 0; i < len; ++i ) {
+		value += Jstr(" ") + d2s(hull[i].x) + ":" + d2s(hull[i].y);
+	}
+
+	if ( ! (jagEQ(hull[0].x, hull[len-1].x )
+	       && jagEQ(hull[0].y, hull[len-1].y ) ) ) {
+		value += Jstr(" ") + d2s(hull[0].x) + ":" + d2s(hull[0].y);
+	}
+}
 

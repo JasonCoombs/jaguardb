@@ -496,6 +496,7 @@
 #define JAG_FUNC_ISONRIGHT 		   324  // 2D point, line, line on right side
 #define JAG_FUNC_LEFTRATIO 		   325  // 2D how much percentage geom1 is on the left of geom2
 #define JAG_FUNC_RIGHTRATIO 	   326  // 2D how much percentage geom1 is on the right of geom2
+#define JAG_FUNC_CONCAVEHULL       327  // concave hull of linestring/polygon
 
 
 // string functions 

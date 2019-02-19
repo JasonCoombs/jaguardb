@@ -5,7 +5,7 @@ test: testjdbserv
 BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include \
 		  -IWeb/Tencent/rapidjson/include -IWeb/TomCrypt/include \
 		  -IWeb/Snappy -IWeb/UTF -IWeb/Boost/boost_1_68_0/include \
-		  -IWeb/CGAL/CGAL-4.13/include \
+		  -IWeb/CGAL/CGAL-4.13/include -IWeb/ConcaveHull \
 	      -D_REENTRANT -std=c++11 -Wno-register \
 		  -DCHECK_LATENCY1 -DJAG_DEBUGCHECK1 -DDEVDEBUG1 -DTFM_DESC $(USER_DEFINE)
          
