@@ -25,6 +25,7 @@
 #include <GeographicLib/PolygonArea.hpp>
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/LocalCartesian.hpp>
+#include <GeographicLib/NearestNeighbor.hpp>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 #include <JagDef.h>
@@ -36,6 +37,8 @@
 #include <JagParser.h>
 #include <JagCGAL.h>
 using namespace GeographicLib;
+
+
 
 class JagGeo
 {
@@ -1578,6 +1581,13 @@ class JagGeo
 	static void XYToLonLat( int srid, double x, double y, double &lon, double &lat );
 	static void lonLatAltToXYZ( int srid,  double lon, double lat, double alt, double &x, double &y, double &z );
 	static void XYZToLonLatAlt(  int srid, double x, double y, double z , double &lon, double &lat, double &alt );
+	static void kNN2D(int srid, const std::vector<JagSimplePoint2D> &points, const JagSimplePoint2D &point, int K, 
+						const JagMinMaxDistance &minmax, std::vector<JagSimplePoint2D> &neighbors );
+	static void kNN3D(int srid, const std::vector<JagSimplePoint3D> &points, const JagSimplePoint3D &point, int K, 
+						const JagMinMaxDistance &minmax, std::vector<JagSimplePoint3D> &neighbors );
+	static void knnfromVec( const JagVector<JagPolygon> &pgvec, int dim, int srid, double px,double py,double pz,
+							int K, double min, double max, Jstr &val );
+
 
 
   protected:
@@ -1826,11 +1836,63 @@ class JagGeo
 	static void getMinDist3DPointOnPloygonAsLineStrings( int srid, double px, double py, double pz, const JagPolygon &pgon, 
 													     double &minx, double &miny, double &minz );
 
+	static void kNN2DCart(const std::vector<JagSimplePoint2D> &points, const JagSimplePoint2D &point, int K, 
+						const JagMinMaxDistance &minmax, std::vector<JagSimplePoint2D> &neighbors );
+	static void kNN2DWGS84(const std::vector<JagSimplePoint2D> &points, const JagSimplePoint2D &point, int K, 
+						const JagMinMaxDistance &minmax, std::vector<JagSimplePoint2D> &neighbors );
+
+	static void kNN3DCart( const std::vector<JagSimplePoint3D> &points, const JagSimplePoint3D &point, int K, 
+						const JagMinMaxDistance &minmax, std::vector<JagSimplePoint3D> &neighbors );
+	static void kNN3DWGS84( const std::vector<JagSimplePoint3D> &points, const JagSimplePoint3D &point, int K, 
+						const JagMinMaxDistance &minmax, std::vector<JagSimplePoint3D> &neighbors );
 
 
 };  // end of class JagGeo
 
+class DistanceCalculator2DWGS84 
+{
+  public:
+  	explicit DistanceCalculator2DWGS84() { }
+  	double operator() (const JagSimplePoint2D& a, const JagSimplePoint2D& b) const 
+	{
+    	double dist;
+    	_geod.Inverse(a.y, a.x, b.y, b.x, dist);
+    	return dist;
+  	}
+  private:
+    const Geodesic &_geod = Geodesic::WGS84();
+};
+
+class DistanceCalculator2DCart
+{
+  public:
+  	explicit DistanceCalculator2DCart() { }
+  	double operator() (const JagSimplePoint2D& a, const JagSimplePoint2D& b) const 
+	{
+    	return sqrt( (a.x-b.x)*(a.x-b.x) + (a.y-b.y )*(a.y-b.y) );
+  	}
+};
 
 
+class DistanceCalculator3DWGS84 
+{
+  public:
+  	explicit DistanceCalculator3DWGS84() { }
+  	double operator() (const JagSimplePoint3D& a, const JagSimplePoint3D& b) const 
+	{
+    	return JagGeo::distance( a.x, a.y, a.z, b.x, b.y, b.z, JAG_GEO_WGS84 );
+  	}
+  private:
+    const Geodesic &_geod = Geodesic::WGS84();
+};
+class DistanceCalculator3DCart
+{
+  public:
+  	explicit DistanceCalculator3DCart() { }
+  	double operator() (const JagSimplePoint3D& a, const JagSimplePoint3D& b) const 
+	{
+    	return sqrt( (a.x-b.x)*(a.x-b.x) + (a.y-b.y )*(a.y-b.y) + (a.z-b.z )*(a.z-b.z) );
+  	}
+};
 #include <JagSortLinePoints.h>
 #endif

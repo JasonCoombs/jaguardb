@@ -496,7 +496,8 @@
 #define JAG_FUNC_ISONRIGHT 		   324  // 2D point, line, line on right side
 #define JAG_FUNC_LEFTRATIO 		   325  // 2D how much percentage geom1 is on the left of geom2
 #define JAG_FUNC_RIGHTRATIO 	   326  // 2D how much percentage geom1 is on the right of geom2
-#define JAG_FUNC_CONCAVEHULL       327  // concave hull of linestring/polygon
+#define JAG_FUNC_CONCAVEHULL       327  // concave hull of multipoint/linestring/polygon
+#define JAG_FUNC_KNN       		   328  // k-NN K nearest neighbor of 2D and 3D point to multipoint/linestring/polygon
 
 
 // string functions 

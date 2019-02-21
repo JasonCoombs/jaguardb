@@ -11,6 +11,30 @@
 #define jagIsPosZero(a) (((a)<JAG_ZERO) ? 1 : 0)
 #define jagIsZero(a) (( fabs(a)<JAG_ZERO) ? 1 : 0)
 
+class JagSimplePoint2D
+{
+  public: 
+    JagSimplePoint2D() {}
+    JagSimplePoint2D(double x1, double y1) { x= x1; y = y1;}
+    double x, y;
+};
+
+class JagSimplePoint3D
+{
+  public:
+    JagSimplePoint3D() {}
+    JagSimplePoint3D(double x1, double y1, double z1) { x= x1; y = y1; z=z1;}
+  	double x, y, z;
+};
+
+class JagMinMaxDistance
+{
+  public: 
+  	JagMinMaxDistance() { min = -1.0; max = LONG_MAX; }
+  	JagMinMaxDistance( double mi, double ma ) { min = mi; max = ma; }
+  	double min, max;
+};
+
 class JagPoint2D
 {
   public:
@@ -666,6 +690,14 @@ class JagPolygon
 		double pointOnRightRatio(double px, double py) const;
 		bool pointOnLeft( double px, double py ) const;
 		bool pointOnRight( double px, double py ) const;
+		void add( const JagPoint3D &p ) { linestr[0].point.append( p ); }
+		void add( double x, double y, double z=0.0) { linestr[0].point.append( JagPoint3D(x,y,z) ); }
+		void knn( int dim, int srid, double x, double y, double z, int K, double min, double max, Jstr &value );
+		size_t numPoints() const {
+			size_t cnt = 0;
+			for (int i=0; i < linestr.size(); ++i ) cnt += linestr[i].size();
+			return cnt;
+		}
 
 
 		JagVector<JagLineString3D> linestr;

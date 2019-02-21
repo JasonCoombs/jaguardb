@@ -1089,6 +1089,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_DELAUNAYTRIANGLES ) str = "delaunaytriangles";
 	else if ( binaryOp == JAG_FUNC_MINIMUMBOUNDINGCIRCLE ) str = "minimumboundingcircle";
 	else if ( binaryOp == JAG_FUNC_MINIMUMBOUNDINGSPHERE ) str = "minimumboundingsphere";
+	else if ( binaryOp == JAG_FUNC_KNN ) str = "knn";
 	return str;
 }
 
@@ -1141,7 +1142,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		 || _binaryOp == JAG_FUNC_ROTATESELF || _binaryOp == JAG_FUNC_AFFINE || _binaryOp == JAG_FUNC_VORONOIPOLYGONS
 		 || _binaryOp == JAG_FUNC_VORONOILINES || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
 		 || _binaryOp == JAG_FUNC_ASTEXT ||  _binaryOp == JAG_FUNC_DIFFERENCE || _binaryOp == JAG_FUNC_SYMDIFFERENCE
-		 || _binaryOp == JAG_FUNC_CONCAVEHULL
+		 || _binaryOp == JAG_FUNC_CONCAVEHULL || _binaryOp == JAG_FUNC_KNN
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3227,6 +3228,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 				 || _binaryOp == JAG_FUNC_ISONRIGHT || _binaryOp == JAG_FUNC_RIGHTRATIO
 				 || _binaryOp == JAG_FUNC_LOCATEPOINT || _binaryOp == JAG_FUNC_ADDPOINT || _binaryOp == JAG_FUNC_SETPOINT
 				 || _binaryOp == JAG_FUNC_VORONOIPOLYGONS || _binaryOp == JAG_FUNC_VORONOILINES
+				 || _binaryOp == JAG_FUNC_KNN
 	             || _binaryOp == JAG_FUNC_INTERSECTION || _binaryOp == JAG_FUNC_DIFFERENCE ) {
 		prt(("s7140 before processTwoStrOp lstr=[%s]\n", lstr.c_str() ));
 		prt(("s7140 before processTwoStrOp rstr=[%s]\n", rstr.c_str() ));
@@ -3794,7 +3796,12 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 			value = typeStr + val;
 			//prt(("s3627 isRaw value=%s\n", value.c_str() ));
 		} else {
-			value = Jstr("CJAG=0=0=") + geotype + "=d 0:0:0:0 " + val;
+			int dim = JagGeo::getDimension( geotype );
+			if ( 2 == dim ) {
+				value = Jstr("CJAG=0=0=") + geotype + "=d 0:0:0:0 " + val;
+			} else {
+				value = Jstr("CJAG=0=0=") + geotype + "=d 0:0:0:0:0:0 " + val;
+			}
 			//prt(("s3628 !isRaw value=%s\n", value.c_str() ));
 		}
 
@@ -4015,8 +4022,29 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 				if ( t3->getValue(p) ) { carg1 = Jstr(p) + ":" + carg1; } else throw 1341;
 				operandStack.pop();  // popped the third element
 			}
+		} else if ( op == JAG_FUNC_KNN ) {
+			if ( 5 == nargs ) {
+				// knn(geo, point, K, min, max )
+				t3 = operandStack.top();
+				if ( t3->getValue(p) ) { carg1 = p; } else throw 4332;
+				operandStack.pop();  // popped the max
+
+				t3 = operandStack.top();
+				if ( t3->getValue(p) ) { carg1 = Jstr(p) + ":" +  carg1; } else throw 4333;
+				operandStack.pop();  // popped the min
+
+				t3 = operandStack.top();
+				if ( t3->getValue(p) ) { carg1 = Jstr(p) + ":" +  carg1; } else throw 4334;
+				operandStack.pop();  // popped the K
+			} else if ( 3 == nargs ) {
+				// knn(geo, point, K )
+				t3 = operandStack.top();
+				if ( t3->getValue(p) ) { carg1 = Jstr(p) + ":-1:" +  d2s(LONG_MAX); } else throw 4335;
+				operandStack.pop();  // popped the K
+			} else throw 4938;
 		}
 
+		// must be separate if else
 
 		if ( op == JAG_FUNC_VORONOIPOLYGONS || op == JAG_FUNC_VORONOILINES ) {
 			//prt(("s2038 op JAG_FUNC_VORONOIPOLYGONS nargs=%d stack.size=%d ...\n", nargs, operandStack.size() ));
@@ -4583,6 +4611,7 @@ bool BinaryExpressionBuilder::funcHasTwoChildren( short fop )
 		 || fop == JAG_FUNC_ISONLEFT || fop == JAG_FUNC_ISONRIGHT
 		 || fop == JAG_FUNC_LEFTRATIO || fop == JAG_FUNC_RIGHTRATIO
 		 || fop == JAG_FUNC_VORONOIPOLYGONS || fop == JAG_FUNC_VORONOILINES
+		 || fop == JAG_FUNC_KNN
 		 || BinaryOpNode::isCompareOp(fop) ) {
 		 	return true;
 	}
@@ -4636,7 +4665,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_LOCATEPOINT || fop == JAG_FUNC_ADDPOINT || fop == JAG_FUNC_SETPOINT || 
 		fop == JAG_FUNC_REMOVEPOINT || fop == JAG_FUNC_SCALE || fop == JAG_FUNC_SCALEAT ||
 		fop == JAG_FUNC_DEGREES || fop == JAG_FUNC_RADIANS || fop == JAG_FUNC_SCALESIZE ||
-		fop == JAG_FUNC_GEOJSON || fop == JAG_FUNC_WKT ||
+		fop == JAG_FUNC_GEOJSON || fop == JAG_FUNC_WKT || fop == JAG_FUNC_KNN ||
 		fop == JAG_FUNC_MINIMUMBOUNDINGCIRCLE || fop == JAG_FUNC_MINIMUMBOUNDINGSPHERE ||
 		fop == JAG_FUNC_LENGTH || fop == JAG_FUNC_COUNT ) {
 			return true;
@@ -5001,6 +5030,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_GEOJSON; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "wkt", 3 ) ) {
 		fop = JAG_FUNC_WKT; len = 3; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "knn", 3 ) ) {
+		fop = JAG_FUNC_KNN; len = 3; ctype = 2;
 	} else {
 		// ...more functions to be added
 		rc = 0;
@@ -5706,6 +5737,8 @@ Jstr BinaryOpNode::doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, 
 		return doAllLeftRatio( srid1, colType1, sp1, colType2, sp2, carg );
 	} else if ( op == JAG_FUNC_RIGHTRATIO ) {
 		return doAllRightRatio( srid1, colType1, sp1, colType2, sp2, carg );
+	} else if ( op == JAG_FUNC_KNN ) {
+		return doAllKNN( srid1, colType1, sp1, colType2, sp2, carg );
 	} else {
 		return "";
 	}
@@ -7140,9 +7173,7 @@ bool BinaryOpNode::doAllMinimumBoundingCircle( const Jstr& mk, const Jstr &colTy
 		if ( ! JagCGAL::getMinBoundCircle( srid, vec, cir ) ) return false;
 		value += cir;
 		return true;
-	}
-
-	if ( colType == JAG_C_COL_TYPE_POINT ) {
+	} else if ( colType == JAG_C_COL_TYPE_POINT ) {
 		value += sp[JAG_SP_START+0] + " " + sp[JAG_SP_START+1] + " 0.0";
 	} else if ( colType == JAG_C_COL_TYPE_LINE  ) {
 		JagVector<JagPoint2D> vec;
@@ -7297,6 +7328,138 @@ bool BinaryOpNode::doAllMinimumBoundingSphere( const Jstr& mk, const Jstr &colTy
 	}
 
 	return true;
+}
+
+Jstr BinaryOpNode::doAllKNN( int srid, const Jstr &colType, JagStrSplit &sp, 
+							 const Jstr &colType2, JagStrSplit &sp2, const Jstr &carg )
+{
+	int dim1 = JagGeo::getDimension(colType);
+	Jstr value;
+
+	//prt(("s3420 doAllKNN() colType=[%s] sp1.print(): carg=[%s] \n", colType.c_str(), carg.s() ));
+	//sp.print();
+	//sp2.print();
+	JagStrSplit ss(carg, ':');
+	if ( ss.size() < 3 ) return "";
+	int K = ss[0].toInt();
+	double min = ss[1].tof();
+	double max = ss[2].tof();
+
+	//sp.print();
+	if ( 2 == dim1 ) {
+		value = Jstr("CJAG=") + intToStr(srid) + "=0=MP=d 0:0:0:0 "; 
+	} else {
+		value = Jstr("CJAG=") + intToStr(srid) + "=0=MP3=d 0:0:0:0:0:0 "; 
+	}
+	// sp2 must be point or point3d
+	double px, py, pz;
+	if ( colType2 == JAG_C_COL_TYPE_POINT ) {
+		px = sp2[JAG_SP_START+0].tof();
+		py = sp2[JAG_SP_START+1].tof();
+	} else if ( colType2 == JAG_C_COL_TYPE_POINT3D ) {
+		px = sp2[JAG_SP_START+0].tof();
+		py = sp2[JAG_SP_START+1].tof();
+		pz = sp2[JAG_SP_START+2].tof();
+	} else {
+		return "";
+	}
+
+	int rc2;
+
+		if (  colType == JAG_C_COL_TYPE_POINT ) {
+			value += sp[JAG_SP_START+0] + ":" + sp[JAG_SP_START+1];
+		} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
+			value += sp[JAG_SP_START+0] + ":" + sp[JAG_SP_START+1] + ":" + sp[JAG_SP_START+2];
+		} else if ( colType == JAG_C_COL_TYPE_LINE ) {
+			JagPolygon pgon;
+			pgon.add( sp[JAG_SP_START+0].tof(), sp[JAG_SP_START+1].tof() );
+			pgon.add( sp[JAG_SP_START+2].tof(), sp[JAG_SP_START+3].tof() );
+			Jstr val; pgon.knn( 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+			JagPolygon pgon;
+			pgon.add( sp[JAG_SP_START+0].tof(), sp[JAG_SP_START+1].tof(), sp[JAG_SP_START+2].tof() );
+			pgon.add( sp[JAG_SP_START+3].tof(), sp[JAG_SP_START+4].tof(), sp[JAG_SP_START+5].tof() );
+			Jstr val; pgon.knn( 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+			JagTriangle2D s( sp, srid );
+			JagPolygon pgon( s );
+			Jstr val; pgon.knn( 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+			JagTriangle3D s( sp, srid );
+			JagPolygon pgon( s );
+			Jstr val; pgon.knn( 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+			JagSquare2D sq( sp, srid );
+			JagPolygon pgon( sq );
+			Jstr val; pgon.knn( 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
+			JagRectangle3D sq( sp, srid );
+			JagPolygon pgon( sq );
+			Jstr val; pgon.knn( 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+			JagCircle2D sq( sp, srid );
+			JagPolygon pgon( sq );
+			Jstr val; pgon.knn( 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
+			JagCircle3D sq( sp, srid );
+			JagPolygon pgon( sq );
+			Jstr val; pgon.knn( 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+			JagEllipse2D e( sp, srid );
+			JagPolygon pgon( e );
+			Jstr val; pgon.knn( 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D ) {
+			JagEllipse3D e( sp, srid );
+			JagPolygon pgon( e );
+			Jstr val; pgon.knn( 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygonData( pgon, sp, false );
+			if ( rc2 <= 0 ) return false; 
+			Jstr val; pgon.knn( 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_POLYGON3D || colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygon3DData( pgon, sp, false );
+			if ( rc2 <= 0 ) return false;
+			Jstr val; pgon.knn( 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygonData( pgon, sp, false );
+			if ( rc2 <= 0 ) return false;
+			Jstr val; pgon.knn( 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+			JagPolygon pgon;
+			rc2 = JagParser::addPolygon3DData( pgon, sp, false );
+			if ( rc2 <= 0 ) return false;
+			Jstr val; pgon.knn( 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+			JagVector<JagPolygon> pgvec;
+			rc2 = JagParser::addMultiPolygonData( pgvec, sp, false, false );
+			if ( rc2 <= 0 ) return false;
+			Jstr val; JagGeo::knnfromVec( pgvec, 2, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+			JagVector<JagPolygon> pgvec;
+			rc2 = JagParser::addMultiPolygonData( pgvec, sp, false, true );
+			if ( rc2 <= 0 ) return false;
+			Jstr val; JagGeo::knnfromVec( pgvec, 3, srid, px,py,pz,K, min, max, val );
+			value += val;
+		} 
+		return value;
 }
 
 bool BinaryOpNode::doAllInnerRingN( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 

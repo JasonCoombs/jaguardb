@@ -11647,15 +11647,11 @@ double JagGeo::distSquarePointToSeg( const JagPoint2D &p, const JagPoint2D &p1, 
 
 double JagGeo::distance( double fx, double fy, double gx, double gy, int srid )
 {
-	double res = 0.0;
-	if ( 0 == srid ) {
-		res = sqrt( (fx-gx)*(fx-gx) + (fy-gy )*(fy-gy) );
-	} else if ( JAG_GEO_WGS84 == srid )  {
+	double res;
+	if ( JAG_GEO_WGS84 == srid )  {
 		const Geodesic& geod = Geodesic::WGS84();
-		double s12;
 		// (fx fy) = ( lon, lat)
-		geod.Inverse(fy, fx, gy, gx, s12 ); 
-		res = s12;
+		geod.Inverse(fy, fx, gy, gx, res ); 
 	} else {
 		res = sqrt( (fx-gx)*(fx-gx) + (fy-gy )*(fy-gy) );
 	}
@@ -11666,21 +11662,15 @@ double JagGeo::distance( double fx, double fy, double gx, double gy, int srid )
 double JagGeo::distance( double fx, double fy, double fz, 
 						 double gx, double gy, double gz,  int srid )
 {
-	double res = 0.0;
-	/***
-	if ( 0 == srid ) {
-		res = sqrt( (fx-gx)*(fx-gx) + (fy-gy )*(fy-gy) + (fz-gz)*(fz-gz) );
-	} else if ( JAG_GEO_WGS84 == srid ) {
-		const Geodesic& geod = Geodesic::WGS84();
-		double s12;
-		// (fx fy, fz) = ( lon, lat, azimuth )
-		geod.Inverse(fy, fx, gy, gx, fz, gz, s12 ); 
-		res = s12;
+	double res;
+	if ( JAG_GEO_WGS84 == srid ) {
+		double x1,y1,z1, x2,y2,z2;
+		JagGeo::lonLatAltToXYZ( srid, fx,fy,fz, x1, y1, z1 );
+		JagGeo::lonLatAltToXYZ( srid, gx,gy,gz, x2, y2, z2 );
+		res = sqrt( (x1-x2)*(x1-x2) + (y1-y2 )*(y1-y2) + (z1-z2)*(z1-z2) );
 	} else {
 		res = sqrt( (fx-gx)*(fx-gx) + (fy-gy )*(fy-gy) + (fz-gz)*(fz-gz) );
 	}
-	***/
-	res = sqrt( (fx-gx)*(fx-gx) + (fy-gy )*(fy-gy) + (fz-gz)*(fz-gz) );
 	return res;
 }
 
@@ -24027,3 +24017,133 @@ void JagGeo::XYToLonLat( int srid, double x, double y, double &lon, double &lat 
 	}
 	 
 }
+
+void JagGeo::kNN2D( int srid, const std::vector<JagSimplePoint2D> &points, const JagSimplePoint2D &point, int K,
+                    const JagMinMaxDistance &minmax, std::vector<JagSimplePoint2D> &neighbors )
+{
+	if ( JAG_GEO_WGS84 == srid ) {
+		kNN2DWGS84(points, point, K, minmax, neighbors ); 
+	} else {
+		kNN2DCart(points, point, K, minmax, neighbors ); 
+	}
+}
+
+void JagGeo::kNN3D( int srid, const std::vector<JagSimplePoint3D> &points, const JagSimplePoint3D &point, int K,
+                    const JagMinMaxDistance &minmax, std::vector<JagSimplePoint3D> &neighbors )
+{
+	if ( JAG_GEO_WGS84 == srid ) {
+		kNN3DWGS84(points, point, K, minmax, neighbors ); 
+	} else {
+		kNN3DCart(points, point, K, minmax, neighbors ); 
+	}
+}
+
+
+void JagGeo::kNN2DCart(const std::vector<JagSimplePoint2D> &points, const JagSimplePoint2D &point, int K,
+                        const JagMinMaxDistance &minmax, std::vector<JagSimplePoint2D> &neighbors )
+{
+	std::vector<int> kvec;
+	DistanceCalculator2DCart distCalc;
+	NearestNeighbor<double, JagSimplePoint2D, DistanceCalculator2DCart> pointset;
+	pointset.Initialize( points, distCalc );
+	pointset.Search(points, distCalc, point, kvec, K, minmax.max, minmax.min );
+	for ( int i=0; i < kvec.size(); ++i ) {
+		neighbors.push_back( JagSimplePoint2D(points[kvec[i]].x, points[kvec[i]].y) );
+	}
+}
+
+void JagGeo::kNN2DWGS84(const std::vector<JagSimplePoint2D> &points, const JagSimplePoint2D &point, int K,
+                        const JagMinMaxDistance &minmax, std::vector<JagSimplePoint2D> &neighbors )
+{
+	std::vector<int> kvec;
+	DistanceCalculator2DWGS84 distCalc;
+	NearestNeighbor<double, JagSimplePoint2D, DistanceCalculator2DWGS84> pointset;
+	pointset.Initialize( points, distCalc );
+	pointset.Search(points, distCalc, point, kvec, K, minmax.max, minmax.min );
+	for ( int i=0; i < kvec.size(); ++i ) {
+		neighbors.push_back( JagSimplePoint2D(points[kvec[i]].x, points[kvec[i]].y) );
+	}
+}
+
+void JagGeo::kNN3DCart(const std::vector<JagSimplePoint3D> &points, const JagSimplePoint3D &point, int K,
+                        const JagMinMaxDistance &minmax, std::vector<JagSimplePoint3D> &neighbors )
+{
+	std::vector<int> kvec;
+	DistanceCalculator3DCart distCalc;
+	NearestNeighbor<double, JagSimplePoint3D, DistanceCalculator3DCart> pointset;
+	pointset.Initialize( points, distCalc );
+	pointset.Search(points, distCalc, point, kvec, K, minmax.max, minmax.min );
+	for ( int i=0; i < kvec.size(); ++i ) {
+		neighbors.push_back( JagSimplePoint3D(points[kvec[i]].x, points[kvec[i]].y, points[kvec[i]].z ) );
+	}
+}
+
+void JagGeo::kNN3DWGS84(const std::vector<JagSimplePoint3D> &points, const JagSimplePoint3D &point, int K,
+                        const JagMinMaxDistance &minmax, std::vector<JagSimplePoint3D> &neighbors )
+{
+	std::vector<int> kvec;
+	DistanceCalculator3DWGS84 distCalc;
+	NearestNeighbor<double, JagSimplePoint3D, DistanceCalculator3DWGS84> pointset;
+	pointset.Initialize( points, distCalc );
+	pointset.Search(points, distCalc, point, kvec, K, minmax.max, minmax.min );
+	for ( int i=0; i < kvec.size(); ++i ) {
+		neighbors.push_back( JagSimplePoint3D(points[kvec[i]].x, points[kvec[i]].y, points[kvec[i]].z ) );
+	}
+}
+
+void JagGeo::knnfromVec( const JagVector<JagPolygon> &pgvec, int dim, int srid, double px,double py,double pz,
+                         int K, double min, double max, Jstr &value )
+{
+	JagMinMaxDistance minmax(min,max);
+	if ( 2 == dim ) {
+		std::vector<JagSimplePoint2D> points;
+
+		for ( int k=0; k<pgvec.size(); ++k ) {
+			const JagPolygon &pgon = pgvec[k];
+    		for (int i=0; i < pgon.linestr.size(); ++i ) {
+    			const JagLineString3D &lstr = pgon.linestr[i];
+    			for ( int j=0; j < lstr.size(); ++j ) {
+    				points.push_back( JagSimplePoint2D(lstr.point[j].x, lstr.point[j].y) );
+    			}
+    		}
+		}
+
+		JagSimplePoint2D point(px,py);
+		std::vector<JagSimplePoint2D> neighb;
+		JagGeo::kNN2D(srid, points, point, K, minmax, neighb);
+		for (int i=0; i < neighb.size(); ++i ) {
+			if ( 0 == i ) {
+				value += d2s( neighb[i].x ) + ":" + d2s( neighb[i].y );
+			} else {
+				value += Jstr(" ") + d2s( neighb[i].x ) + ":" + d2s( neighb[i].y );
+			}
+		}
+
+	} else {
+		std::vector<JagSimplePoint3D> points;
+
+		for ( int k=0; k<pgvec.size(); ++k ) {
+			const JagPolygon &pgon = pgvec[k];
+    		for (int i=0; i < pgon.linestr.size(); ++i ) {
+    			const JagLineString3D &lstr = pgon.linestr[i];
+    			for ( int j=0; j < lstr.size(); ++j ) {
+    				points.push_back( JagSimplePoint3D(lstr.point[j].x, lstr.point[j].y, lstr.point[j].z) );
+    			}
+    		}
+		}
+
+		JagSimplePoint3D point(px,py,pz);
+		std::vector<JagSimplePoint3D> neighb;
+		JagGeo::kNN3D(srid, points, point, K, minmax, neighb);
+		for (int i=0; i < neighb.size(); ++i ) {
+			if ( 0 == i ) {
+				value += d2s( neighb[i].x ) + ":" + d2s( neighb[i].y ) + ":" + d2s( neighb[i].z );
+			} else {
+				value += Jstr(" ") + d2s( neighb[i].x ) + ":" + d2s( neighb[i].y ) + ":" + d2s( neighb[i].z );
+			}
+		}
+	}
+
+}
+
+

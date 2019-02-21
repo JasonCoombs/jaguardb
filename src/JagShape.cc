@@ -1842,6 +1842,49 @@ bool JagPolygon::pointOnRight( double px, double py) const
     return true;
 }
 
+void JagPolygon::knn( int dim, int srid, double px, double py, double pz, int K, double min, double max, Jstr &value )
+{
+	JagMinMaxDistance minmax(min,max);
+	if ( 2 == dim ) {
+		std::vector<JagSimplePoint2D> points;
+		for (int i=0; i < linestr.size(); ++i ) {
+			const JagLineString3D &lstr = linestr[i];
+			for ( int j=0; j < lstr.size(); ++j ) {
+				points.push_back( JagSimplePoint2D(lstr.point[j].x, lstr.point[j].y) );
+			}
+		}
+
+		JagSimplePoint2D point(px,py);
+		std::vector<JagSimplePoint2D> neighb;
+		JagGeo::kNN2D(srid, points, point, K, minmax, neighb);
+		for (int i=0; i < neighb.size(); ++i ) {
+			if ( 0 == i ) {
+				value += d2s( neighb[i].x ) + ":" + d2s( neighb[i].y );
+			} else {
+				value += Jstr(" ") + d2s( neighb[i].x ) + ":" + d2s( neighb[i].y );
+			}
+		}
+
+	} else {
+		std::vector<JagSimplePoint3D> points;
+		for (int i=0; i < linestr.size(); ++i ) {
+			const JagLineString3D &lstr = linestr[i];
+			for ( int j=0; j < lstr.size(); ++j ) {
+				points.push_back( JagSimplePoint3D(lstr.point[j].x, lstr.point[j].y, lstr.point[j].z) );
+			}
+		}
+		JagSimplePoint3D point(px,py,pz);
+		std::vector<JagSimplePoint3D> neighb;
+		JagGeo::kNN3D(srid, points, point, K, minmax, neighb);
+		for (int i=0; i < neighb.size(); ++i ) {
+			if ( 0 == i ) {
+				value += d2s( neighb[i].x ) + ":" + d2s( neighb[i].y ) + ":" + d2s( neighb[i].z );
+			} else {
+				value += Jstr(" ") + d2s( neighb[i].x ) + ":" + d2s( neighb[i].y ) + ":" + d2s( neighb[i].z );
+			}
+		}
+	}
+}
 
 // JagCube
 JagCube::JagCube( const JagStrSplit &sp, int insrid )

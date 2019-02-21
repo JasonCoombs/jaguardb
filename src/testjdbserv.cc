@@ -267,8 +267,8 @@ int main(int argc, char *argv[] )
 	// test_sys_getline();
 	// test_jag_getline();
 	// test_reply( argv[1] );
-	test_str( N );
-	//test_geo( N );
+	//test_str( N );
+	test_geo( N );
 	//test_sqrt( N );
 	// test_split( N );
 	//test_stdmap( N );
@@ -2881,8 +2881,27 @@ void test_geo( int N )
     }
 
 
+	std::vector<JagSimplePoint2D> rawPoints;
+	rawPoints.push_back( JagSimplePoint2D(32, 31) );
+	rawPoints.push_back( JagSimplePoint2D(3, 18) );
+	rawPoints.push_back( JagSimplePoint2D(3, 13) );
+	rawPoints.push_back( JagSimplePoint2D(32, 1) );
+	rawPoints.push_back( JagSimplePoint2D(39, 41) );
+	rawPoints.push_back( JagSimplePoint2D(3, 11) );
+	rawPoints.push_back( JagSimplePoint2D(8, 21) );
+	rawPoints.push_back( JagSimplePoint2D(18, 13) );
 
+	JagSimplePoint2D p(5, 5);
+	srid = 4326;
+	int K = 3;
+	JagMinMaxDistance mm(1, LONG_MAX);
+	std::vector<JagSimplePoint2D> neighb;
 
+	JagGeo::kNN2D( srid, rawPoints, p, K, mm, neighb );
+	prt(("neighb.size=%d\n", neighb.size() ));
+	for ( int i=0; i < neighb.size(); ++i ) {
+		prt(("neigh i=%d neighb.x=%f neighb.y=%f\n", neighb[i].x, neighb[i].y ));
+	}
 
 }
 
