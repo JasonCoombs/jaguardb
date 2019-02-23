@@ -96,7 +96,7 @@ StringElementNode::StringElementNode( BinaryExpressionBuilder *builder, const Js
 {
     _name = makeLowerString(name); 
 	_value = value; _jpa = jpa; _tabnum = tabnum; _typeMode = typeMode;
-    _srid = _offset = _length = _sig = _nodenum = _begincol = _endcol = 0;
+    _srid = _offset = _length = _sig = _nodenum = _begincol = _endcol = _measures = 0;
     _type = ""; 
 	_builder = builder;
 	_isElement = true;
@@ -162,6 +162,7 @@ int StringElementNode::setWhereRange( const JagHashStrInt *maps[], const JagSche
 			_begincol = attrs[_tabnum][acqpos].begincol;
 			_endcol = attrs[_tabnum][acqpos].endcol;
 			_srid = attrs[_tabnum][acqpos].srid;
+			_measures = attrs[_tabnum][acqpos].measures;
 			if ( !attrs[_tabnum][acqpos].isKey ) hasValue = 1;
 		} else {
 			//prt(("s6934 _name=[%s] return -1\n", _name.c_str() ));
@@ -193,6 +194,7 @@ int StringElementNode::setFuncAttribute( const JagHashStrInt *maps[], const JagS
 			_begincol = attrs[_tabnum][acqpos].begincol;
 			_endcol = attrs[_tabnum][acqpos].endcol;
 			_srid = attrs[_tabnum][acqpos].srid;
+			_measures = attrs[_tabnum][acqpos].measures;
 
 			#if 0
 			prt(("s0394  _name=[%s] type=[%s] collen=%d _begincol=%d _endcol=%d _srid=%d\n",  
@@ -256,7 +258,7 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 					const char *buffers[], JagFixString &str, int &typeMode, 
 					Jstr &type, int &length, bool &first, bool useZero, bool setGlobal ) 
 {
-	prt(( "s3039 StEleNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s]\n", _name.c_str(), _value.c_str(), _type.c_str() ));
+	prt(( "s3039 StEleNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s] _measures=%d _srid=%d\n", _name.c_str(), _value.c_str(), _type.c_str(), _measures, _srid ));
 
 	if ( _name.length() > 0 ) {
 		if (  ( buffers[_tabnum] == NULL || buffers[_tabnum][0] == '\0' ) ) {
@@ -527,7 +529,7 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 									const Jstr &db, const Jstr &tab, const Jstr &polyColumns,
 									bool isBoundBox3D, bool is3D )
 {
-	//prt(("s8410 savePolyData polyColumns=[%s] uuid=[%s] is3D=%d\n", polyColumns.c_str(), uuid.c_str(), is3D ));
+	prt(("s8410 savePolyData polyColumns=[%s] uuid=[%s] is3D=%d\n", polyColumns.c_str(), uuid.c_str(), is3D ));
 
 	JagStrSplit psp(polyColumns, '|', true);
 	int numCols = psp.length();
@@ -546,6 +548,7 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	bool rc;
 	for ( int k=0; k < numCols; ++k ) {
 		fullname[k] = db + "." + tab + "." + psp[k];
+		prt(("s1929 k=%d fullname=%s measures=%d srid=%d\n", k, fullname[k].c_str(), attrs[_tabnum][acqpos].measures,  attrs[_tabnum][acqpos].srid ));
 		if ( maps[_tabnum]->getValue( fullname[k], acqpos) ) {
 			colobjstr[k] = Jstr( JAG_OJAG ) + "=" + intToStr( attrs[_tabnum][acqpos].srid ) 
 			               + "=" + fullname[k] + "=" + attrs[_tabnum][acqpos].type + "=d";
@@ -5738,7 +5741,11 @@ Jstr BinaryOpNode::doTwoStrOp( int op, const Jstr& mark1, const Jstr &colType1, 
 	} else if ( op == JAG_FUNC_RIGHTRATIO ) {
 		return doAllRightRatio( srid1, colType1, sp1, colType2, sp2, carg );
 	} else if ( op == JAG_FUNC_KNN ) {
-		return doAllKNN( srid1, colType1, sp1, colType2, sp2, carg );
+		if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
+			return doAllKNN( srid1, colType1, sp1, colType2, sp2, carg );
+		} else if ( colType1 == JAG_C_COL_TYPE_POINT || colType1 == JAG_C_COL_TYPE_POINT3D ) {
+			return doAllKNN( srid2, colType2, sp2, colType1, sp1, carg );
+		}
 	} else {
 		return "";
 	}

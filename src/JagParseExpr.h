@@ -102,6 +102,7 @@ class ExprElementNode
 	unsigned int		_srid;
 	Jstr				_type;
 	int					_nargs;
+	int					_measures;
 	bool 	            _isDestroyed;
 };
 

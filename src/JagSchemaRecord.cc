@@ -292,7 +292,8 @@ Jstr JagSchemaRecord::getString() const
 		sprintf( buf, "%d!", (*columnVector)[i].srid ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].begincol ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].endcol ); strcat( mem, buf );
-		sprintf( buf, "%d!", (*columnVector)[i].dummy1 ); strcat( mem, buf );
+		//sprintf( buf, "%d!", (*columnVector)[i].dummy1 ); strcat( mem, buf );
+		sprintf( buf, "%d!", (*columnVector)[i].measures ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].dummy2 ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].dummy3 ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].dummy4 ); strcat( mem, buf );
@@ -525,7 +526,9 @@ int JagSchemaRecord::parseRecord( const char *str )
 			++q; p = q;
 			while ( isdigit(*q) ) ++q;
 			if ( *q != '!' ) return -180;
-			onecolrec.dummy1 = rayatoi(p, q-p);	
+			//onecolrec.dummy1 = rayatoi(p, q-p);	
+			onecolrec.measures = rayatoi(p, q-p);	
+			//prt(("s0182 onecolrec.measures=%d\n", onecolrec.measures ));
 
 			// get composite-col dummy2
 			++q; p = q;

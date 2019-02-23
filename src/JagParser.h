@@ -124,7 +124,7 @@ class JagParser
 	void addCreateAttrAndColumn( bool isValue, CreateAttribute &cattr, int &coloffset );
 	void addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other, int &numCols );
 	void setToRealType( const Jstr &rcs, CreateAttribute &cattr );
-	int getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig );
+	int getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &measures );
 	bool hasPolyGeoType( const char *createSQL, int &dim );
 	void addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool lead, int &offset ); 
 	int convertJsonToOther( OtherAttribute &other, const char *json, int jsonlen ); 

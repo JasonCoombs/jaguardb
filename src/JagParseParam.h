@@ -121,7 +121,8 @@ class CreateAttribute
 	int          srid;
 	int    begincol;
 	int    endcol;
-	int    dummy1;
+	int 	     measures;
+	//int    dummy1; becomes measures
 	int    dummy2;
 	int    dummy3;
 	int    dummy4;
@@ -138,10 +139,11 @@ class CreateAttribute
 		spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 		memset(spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN ); 
 		offset = length = sig = srid= 0; 
-		begincol = endcol = dummy1 = dummy2 = dummy3 = dummy4 = dummy5 = dummy6 = dummy7 = 0;
+		begincol = endcol = dummy2 = dummy3 = dummy4 = dummy5 = dummy6 = dummy7 = 0;
 		dummy8 = dummy9 = dummy10 = 0;
 		defValues = "";
 		type = "";
+		measures = 0;
 	}
 
 	CreateAttribute( const CreateAttribute& other )
@@ -169,12 +171,11 @@ class CreateAttribute
 		defValues = other.defValues;
 		srid = other.srid;
 		begincol = other.begincol;
+		measures = other.measures;
 		endcol = other.endcol;
-		dummy1 = other.dummy1;
+		//dummy1 = other.dummy1;
 		dummy2 = other.dummy2;
 		dummy3 = other.dummy3;
-		dummy4 = other.dummy4;
-		dummy5 = other.dummy5;
 		dummy6 = other.dummy6;
 		dummy7 = other.dummy7;
 		dummy8 = other.dummy8;
@@ -371,6 +372,8 @@ class JagParseParam
 	void clearRowHash();
 	void initColHash();
 	bool isSelectConst() const;
+
+	void addMeasures( const CreateAttribute &cattr, int isKey );
 
 	
 	// data memebers

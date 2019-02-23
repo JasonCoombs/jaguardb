@@ -33,8 +33,8 @@ JagColumn::JagColumn()
 	iskey = 0;
 	issubcol = 0;
 
-	srid = begincol = endcol = 0;
-	dummy1 = dummy2 = dummy3 = dummy4 = dummy5 = 0;
+	srid = begincol = endcol = measures = 0;
+	dummy2 = dummy3 = dummy4 = dummy5 = 0;
 	dummy6 = dummy7 = dummy8 = dummy9 = dummy10 = 0;
 	//record = NULL;
 }
@@ -87,7 +87,8 @@ void JagColumn::copyData( const JagColumn& other )
 	srid = other.srid;
 	begincol = other.begincol;
 	endcol = other.endcol;
-	dummy1 = other.dummy1;
+	measures = other.measures;
+	//dummy1 = other.dummy1; replaced by measures
 	dummy2 = other.dummy2;
 	dummy3 = other.dummy3;
 	dummy4 = other.dummy4;

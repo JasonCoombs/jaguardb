@@ -3257,6 +3257,8 @@ void JagTable::setupSchemaMapAttr( int numCols )
 		_schAttr[i].begincol = (*(_tableRecord.columnVector))[i].begincol;
 		_schAttr[i].endcol = (*(_tableRecord.columnVector))[i].endcol;
 		_schAttr[i].srid = (*(_tableRecord.columnVector))[i].srid;
+		_schAttr[i].measures = (*(_tableRecord.columnVector))[i].measures;
+		// dummy1 dummy2
 		_schAttr[i].isUUID = false;
 		_schAttr[i].isFILE = false;
 

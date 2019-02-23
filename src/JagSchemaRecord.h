@@ -29,7 +29,6 @@ class JagSchemaRecord
 {
 	public:
 		JagSchemaRecord( bool newVec = false );
-		// JagSchemaRecord( const Jstr &dbobj );
 		~JagSchemaRecord();
 		void destroy(  AbaxDestroyAction act=ABAX_NOOP);
 		JagSchemaRecord( const JagSchemaRecord& other );
@@ -41,10 +40,7 @@ class JagSchemaRecord
 									  abaxint length, abaxint sig );
 		Jstr getString() const;
 		int parseRecord( const char *str );
-		// int formatHeadRecord( char *buf );
 		Jstr formatHeadRecord() const;
-		//int formatColumnRecord( char *buf, const char *name, const char *type, int offset, int length, int sig, bool isKey=false );
-		//int formatTailRecord( char *buf );
 		Jstr formatColumnRecord( const char *name, const char *type, int offset, int length, 
 										   int sig, bool isKey=false ) const;
 		Jstr formatTailRecord( ) const;
@@ -55,23 +51,18 @@ class JagSchemaRecord
 		void setLastKeyColumn();
 
 
-
-		// Jstr dbobj;
-
 		char        type[2];
 		int 		keyLength;
 		int 		valueLength;
 		int 		ovalueLength;
-		Jstr tableProperty;
+		Jstr 		tableProperty;
 		int		    numKeys;
 		int		    numValues;
 		bool        hasMute;
 		JagVector<JagColumn> *columnVector;
 		int	        lastKeyColumn;
-		//int         polyDim;
 
 	protected:
-		// int getFuncType ( const AbaxString &colname, char &dataType );
 		JagHashStrInt _nameMap;
 		void copyData( const JagSchemaRecord& other ); 
 		void init( bool newVec );

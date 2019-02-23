@@ -315,7 +315,8 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		onecolrec.srid = parseParam->createAttrVec[i].srid;
 		onecolrec.begincol = parseParam->createAttrVec[i].begincol;
 		onecolrec.endcol = parseParam->createAttrVec[i].endcol;
-		onecolrec.dummy1 = parseParam->createAttrVec[i].dummy1;
+		//onecolrec.dummy1 = parseParam->createAttrVec[i].dummy1;
+		onecolrec.measures = parseParam->createAttrVec[i].measures;
 		onecolrec.dummy2 = parseParam->createAttrVec[i].dummy2;
 		onecolrec.dummy3 = parseParam->createAttrVec[i].dummy3;
 		onecolrec.dummy4 = parseParam->createAttrVec[i].dummy4;
@@ -355,7 +356,8 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		sprintf( ddd, "!%d!", onecolrec.srid ); strcat( buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.begincol ); strcat( buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.endcol ); strcat(  buf, ddd );
-		sprintf( ddd, "%d!", onecolrec.dummy1 ); strcat(  buf, ddd );
+		//sprintf( ddd, "%d!", onecolrec.dummy1 ); strcat(  buf, ddd );
+		sprintf( ddd, "%d!", onecolrec.measures ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy2 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy3 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy4 ); strcat(  buf, ddd );
@@ -365,6 +367,8 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		sprintf( ddd, "%d!", onecolrec.dummy8 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy9 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy10 ); strcat(  buf, ddd );
+
+		prt(("s7183 onecolrec.begincol=%d onecolrec.endcol=%d onecolrec.measures=%d\n", onecolrec.begincol, onecolrec.endcol, onecolrec.measures ));
 
 		// strcat( buf, "!|" );
 		strcat( buf, "|" );

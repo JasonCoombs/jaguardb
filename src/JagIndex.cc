@@ -149,6 +149,8 @@ void JagIndex::init( bool buildInitIndex )
 		_schAttr[i].length = (*(_indexRecord.columnVector))[i].length;
 		_schAttr[i].sig = (*(_indexRecord.columnVector))[i].sig;
 		_schAttr[i].type = (*(_indexRecord.columnVector))[i].type;
+		_schAttr[i].srid = (*(_indexRecord.columnVector))[i].srid;
+		_schAttr[i].measures = (*(_indexRecord.columnVector))[i].measures;
 
 		if ( _numKeys == 0 && !_schAttr[i].isKey ) {
 			_numKeys = i;

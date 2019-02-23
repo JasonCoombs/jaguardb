@@ -374,6 +374,7 @@ class JagDBServer
 	void refreshUserRole( abaxint seq );
 	Jstr  fillDescBuf( const JagSchema *schema, const JagColumn &column, const Jstr &dbobj ) const;
 	int processSelectConstData( const JagRequest &req, const JagParseParam *parseParam );
+	Jstr columnProperty(const char *ctype, int srid, int measures ) const;
 
 
 

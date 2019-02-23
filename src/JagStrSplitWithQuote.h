@@ -24,7 +24,7 @@
 class  JagSplitPosition
 {
    public:
-	   char *parsestart, *savestart, *saveend;
+	   const char *parsestart, *savestart, *saveend;
 };
 
 class JagStrSplitWithQuote
@@ -33,8 +33,8 @@ class JagStrSplitWithQuote
 
 		JagStrSplitWithQuote();
 		//JagStrSplitWithQuote(const char* str, char sep = ';');
-		JagStrSplitWithQuote(const char* str, char sep, bool skipBracket=true );
-		void init(const char* str, char sep, bool skipBracket=true);
+		JagStrSplitWithQuote(const char* str, char sep, bool skipBracket=true, bool ignorereagion=false );
+		void init(const char* str, char sep, bool skipBracket=true, bool ignorereagion=false );
 		int count(const char* str, char sep, bool skipBracket=true);
 
 		void destroy();

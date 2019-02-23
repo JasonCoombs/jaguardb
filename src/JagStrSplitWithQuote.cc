@@ -30,49 +30,47 @@ JagStrSplitWithQuote::JagStrSplitWithQuote()
 	length_ = 0;
 }
 
-JagStrSplitWithQuote::JagStrSplitWithQuote(const char* str, char sep, bool skipBracket)
+JagStrSplitWithQuote::JagStrSplitWithQuote(const char* str, char sep, bool skipBracket, bool ignoreregion )
 {
 	list_ = NULL;
 	length_ = 0;
-	init( str, sep, skipBracket );
+	init( str, sep, skipBracket, ignoreregion );
 }
 
 // skip ( ) and ' "
-void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket )
+void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket, bool ignoreregion )
 {
 	destroy();
 
 	list_ = NULL;
 	length_ = 0;
-
 	sep_ = sep;
 	if ( str == NULL || *str == '\0' ) return;
 
-	int len = strchrnum(str, sep);
+	int len;
+	if ( ignoreregion ) {
+		len = strchrnumskip(str, sep);
+	} else {
+		len = strchrnum(str, sep);
+	}
 	++len;
 	int tokens = 0;
 	int parencnt = 0;
-
-	JagSplitPosition *pos[len];
-	for ( int i = 0; i < len; ++i ) {
+	int llen = len;
+	JagSplitPosition *pos[llen];
+	for ( int i = 0; i < llen; ++i ) {
 		pos[i] = new JagSplitPosition();
 	}
 
 	// char *parsestart[len], *savestart[len], *saveend[len], *trackpos, *token, *pp;
-	char *trackpos, *token, *pp;
-	token = (char*)str;
-	pos[0]->parsestart = trackpos = token;
-	// find number of tokens separated by sep, using r_strtok_r
-	// aaa=ccc&b=xxx
-	// "aaa=" tokens=2
-	// "=" tokens=2
-	// "aaa=bb=" tokens=3
+	const char *trackpos, *pp;
+	pos[0]->parsestart = trackpos = str;
 	
 	while ( true ) {
 		if ( *trackpos == '\0' ) { 
 			pp = trackpos - 1;
-			while ( isspace(*pp) ) --pp;
-			++pp;
+			while ( isspace(*pp) && pp != str ) --pp;
+			++pp;  // "dddd kkkk(pp)   "
 			pos[tokens]->saveend = pp;
 			++tokens; 
 			break;
@@ -96,12 +94,20 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket )
 			}
 			if ( *trackpos == ')' ) ++trackpos;
 		} else if ( *trackpos == sep ) {
+		    // "dddd (sep) fdfdd(sep)"
 			pp = trackpos - 1;
-			while ( isspace(*pp) ) --pp;
+			while ( isspace(*pp) && pp != str ) --pp;
 			++pp;
 			pos[tokens]->saveend = pp;
-			++trackpos;
-			++tokens;
+
+			if ( ignoreregion ) {
+				while ( sep == *trackpos ) ++trackpos;
+				if ( pos[tokens]->saveend > pos[tokens]->parsestart ) ++tokens;
+			} else {
+				++trackpos;
+				++tokens;
+			}
+
 			pos[tokens]->parsestart = trackpos;
 		} else ++trackpos;
 	}
@@ -114,7 +120,13 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket )
 		if ( *trackpos != '\0' ) {
 			pos[tokens]->savestart = trackpos;
 			pos[tokens]->saveend = pos[i]->saveend;
-			++tokens;
+			if ( ignoreregion ) {
+				if ( pos[tokens]->saveend > pos[tokens]->savestart ) {
+					++tokens;
+				}
+			} else {
+				++tokens;
+			}
 		}
 	}
 
@@ -122,15 +134,16 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket )
 	length_ = tokens;
 
 	for ( int i = 0; i < length_; ++i ) {
-		if ( pos[i]->saveend - pos[i]->savestart <= 0 ) {
-			list_[i] = "";
+		if (  pos[i]->saveend > pos[i]->savestart ) {
+		 		list_[i] = Jstr(pos[i]->savestart, pos[i]->saveend - pos[i]->savestart );
 		} else {
-		 	list_[i] = Jstr(pos[i]->savestart, pos[i]->saveend - pos[i]->savestart );
+			if ( ! ignoreregion ) {
+				list_[i] = "";
+			}
 		}
 	}
 
-	// free ( token );
-	for ( int i = 0; i < len; ++i ) {
+	for ( int i = 0; i < llen; ++i ) {
 		delete pos[i];
 	}
 }
@@ -207,7 +220,7 @@ int JagStrSplitWithQuote::count(const char* str, char sep, bool skipBracket )
 		pos[i] = new JagSplitPosition();
 	}
 
-	char *trackpos, *token, *pp;
+	const char *trackpos, *token, *pp;
 	token = (char*)str;
 	pos[0]->parsestart = trackpos = token;
 	while ( true ) {

@@ -219,7 +219,7 @@ int main(int argc, char *argv[] )
 	//testjaguarreader();
 	//testjaguarreader2();
 	// testUUID();
-	// testStrSplitWQuote();
+	testStrSplitWQuote();
 	// testAtomic( N );
 
 	// test_schema( argv[2] );
@@ -268,7 +268,7 @@ int main(int argc, char *argv[] )
 	// test_jag_getline();
 	// test_reply( argv[1] );
 	//test_str( N );
-	test_geo( N );
+	//test_geo( N );
 	//test_sqrt( N );
 	// test_split( N );
 	//test_stdmap( N );
@@ -664,6 +664,12 @@ void testStrSplitWQuote()
 	JagStrSplitWithQuote q;
 	int nn = q.count(aa.s(), ',' );
 	prt(("aa count=%d\n", nn ));
+
+	q.init("aaaa, aaaa, , , ,,, 'fdfdfdfd'   'e    ff(())', dkdd ", ' ', true, true );
+	q.print();
+
+	q.init(" 2 4 'ddd dd'  'dddd44' ", ' ', true, true );
+	q.print();
 
 }
 

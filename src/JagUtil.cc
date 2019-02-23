@@ -1262,6 +1262,23 @@ abaxint strchrnum( const char *str, char ch )
     return cnt;
 }
 
+// "aabbb" --> 2, skip consecutive chars
+// also skip 'ijjj'  "xxx"
+abaxint strchrnumskip( const char *str, char ch )
+{
+    if ( ! str || *str == '\0' ) return 0;
+    abaxint cnt = 0;
+    while ( *str != '\0' ) {
+		if ( *str == '\'' ) { while ( *str != '\'' && *str != '\0' ) ++str; ++str; }
+		else if ( *str == '"' ) { while ( *str != '"' && *str != '\0' ) ++str; ++str; }
+		else if ( *str == ch ) { while ( *str == ch ) ++str; ++cnt; }
+
+		if ( *str != '\0' ) ++str;
+    }
+
+    return cnt;
+}
+
 void escapeNewline( const Jstr &instr, Jstr &outstr )
 {
 	if ( instr.size() < 1 ) return;

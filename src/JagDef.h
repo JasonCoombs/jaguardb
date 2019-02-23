@@ -783,5 +783,8 @@
 #define JAG_METER_MAX_PER_LON_DEGREE  111319.4907932736
 #define JAG_RADIAN_PER_DEGREE   0.017453292519943
 
+// cannot change after geo table is created
+#define JAG_MEASURE_LEN  4
+
 
 #endif

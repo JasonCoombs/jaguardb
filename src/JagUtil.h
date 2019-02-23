@@ -158,6 +158,7 @@ Jstr intToString( int i ) ;
 Jstr longToString( abaxint i ) ;
 Jstr ulongToString( uabaxint i ) ;
 abaxint  strchrnum( const char *str, char ch );
+abaxint  strchrnumskip( const char *str, char ch );
 char *strnchr(const char *s, int c, int n);
 int  strInStr( const char *str, int len, const char *str2 );
 void splitFilePath( const char *fpath, Jstr &first, Jstr &last );

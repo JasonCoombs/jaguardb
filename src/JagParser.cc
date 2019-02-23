@@ -2324,6 +2324,7 @@ int JagParser::setInsertVector()
 				// This is in insert
 				// met point( 10 20), 
 				//prt(("s2238 handling point p=[%s] ...\n", p ));
+				/***
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2859;
 				replaceChar(p, ',', ' ', ')' );
@@ -2342,6 +2343,17 @@ int JagParser::setInsertVector()
 				//prt(("s5601 JAG_C_COL_TYPE_POINT other.point.y=[%s]\n", other.point.y ));
 				q = _saveptr;
 				//prt(("s8210 q=[%s] p=[%s]\n", q, p ));
+				******/
+				while ( *p != '(' ) ++p; ++p;  // (p
+				if ( *p == 0 ) return -2859;
+				q = p;
+				while ( *q != ')' && *q != '\0' ) ++q;  // *q is ')'
+				if ( *q == 0 ) return -2854;
+				*q = '\0';
+				JagStrSplitWithQuote sp( p, ' ', true, true );
+				sp.print();
+				*q = ')';
+				return -10000;
 			} else if (  strncasecmp( p, "point3d(", 8 ) == 0 ) {
 				// This is in insert
 				while ( *p != '(' ) ++p; ++p;  // (p
@@ -3293,11 +3305,12 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 {
 	// prt(("\ns10282 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
 	//prt(("s1082 setOneCreateColumnAttribute\n"));
-	int rc, collen; char *p; Jstr defValue;
+	int rc, collen, measures; char *p; Jstr defValue;
 	Jstr s, rcs, colType, typeArg;
 	int srid = JAG_DEFAULT_SRID;
 	int  argcollen=0, argsig = 0;
 	bool isEnum = false;
+	measures = 0;
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
 	*(cattr.spare) = JAG_C_COL_VALUE;	
@@ -3337,14 +3350,15 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 	**/
 
 	// rc = getTypeNameArg( args[0].c_str(), colType, typeArg, argcollen, argsig );
-	rc = getTypeNameArg( _gettok, colType, typeArg, argcollen, argsig );
+	rc = getTypeNameArg( _gettok, colType, typeArg, argcollen, argsig, measures );
 	if ( rc < 0 ) {
-		//prt(("s2992 getTypeNameArg rc<0 rc=%d\n", rc ));
+		prt(("s2992 getTypeNameArg rc<0 rc=%d\n", rc ));
 		return rc;
 	}
 	srid = argcollen;
+	cattr.measures = measures;
 
-	//prt(("s1121 _gettok=[%s] colType=[%s]\n", _gettok, colType.c_str() ));
+	prt(("s1121 _gettok=[%s] colType=[%s] srid=%d measures=%d\n", _gettok, colType.c_str(), srid, measures ));
 	if ( strchr(colType.c_str(), ' ') ) colType.remove(' ');
 	if ( strchr(colType.c_str(), '\n') ) colType.remove('\n');
 	//prt(("s1122 _gettok=[%s] colType=[%s]\n", _gettok, colType.c_str() ));
@@ -4559,9 +4573,10 @@ void JagParser::setToRealType( const Jstr &rcs, CreateAttribute &cattr )
 // gettok: "line(2020)"  
 // gettok: "int default '1'"  
 // gettok: "enum('a','b', 'c', 'd') default 'b'"
-int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig )
+int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &measures )
 {
-	//prt(("s5503 getTypeNameArg gettok=[%s]\n", gettok ));
+	prt(("s5503 getTypeNameArg gettok=[%s]\n", gettok ));
+	measures = 0;
 	char save;
 	targ = "";
 	char *p1, *p2;
@@ -4592,8 +4607,10 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 		p2 = p1; while (*p2) ++p2;
 	} 
 	targ = Jstr( p1, p2-p1);
-	//prt(("s0238 typeArg=[%s]\n", targ.c_str() ));
-	if ( strchr(targ.c_str(), ',' ) ) {
+	prt(("s10938 targ=[%s]\n", targ.s() ));
+	if ( strchr(targ.c_str(), ',' ) && ! strstr(targ.c_str(), "srid") && ! strstr(targ.c_str(), "measures") ) {
+		// "srid:4326, measures:5"
+		// 13,4
 		JagStrSplit sp( targ, ',', true );
 		// prt(("s5123 sp.length=%d\n", sp.length() ));
 		if ( sp.length() >=1 ) {
@@ -4638,6 +4655,17 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 				} else {
 					collen = jagatoi( sp[1].c_str() );
 				}
+				prt(("s2838 collen=%d\n", collen ));
+
+				const char *pm = strstr( targ.c_str(), "measures:" );
+				if ( pm ) {
+					JagStrSplit sp2(pm, ':');
+					measures = jagatoi( sp2[1].c_str() );
+				}
+				prt(("s2838 pm=[%s] measures=%d\n", pm, measures ));
+			} else if ( 0==strncasecmp(targ.c_str(), "measures:", 9 ) ) {
+				JagStrSplit sp(targ, ':');
+				measures = jagatoi( sp[1].c_str() );
 			} else {
 				collen = jagatoi( targ.c_str() );
 			}

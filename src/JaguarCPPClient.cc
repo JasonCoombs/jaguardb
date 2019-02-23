@@ -6566,7 +6566,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, Jstr &ne
 
 			newquery = Jstr("changepass ") + parseParam.uid + ":" + parseParam.passwd;
 			if ( parseParam.passwd.length() < 12 ) {
-				errmsg = "E3088 Error length for password. It must have at least 12 letters.";
+				errmsg = "E3388 Error length for password. It must have at least 12 letters.";
 				return 0;
 			}
 		} else {
@@ -6594,7 +6594,7 @@ int JaguarCPPClient::checkSpecialCommandValidation( const char *querys, Jstr &ne
 			newquery = Jstr("createdb ") + parseParam.dbName;
 		} else {
 			//prt(("c2739 spleng=%d sp[1] = [%s] JAG_BRAND=[%s]\n", sp.length(), sp[1].c_str(), JAG_BRAND ));
-			errmsg = Jstr("E3088 Error name [") + sp[1] + "] for database";
+			errmsg = Jstr("E3089 Error name [") + sp[1] + "] for database";
 			return 0;
 		}
 	} else if ( parseParam.opcode == JAG_DROPDB_OP ) {
@@ -7044,7 +7044,7 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		
 	
 	bool hquote, useValueData;
-	int issubcol, begincol, endcol;
+	int issubcol;
 	Jstr colType;
 
 	// debug only
@@ -7082,8 +7082,8 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		length = objAttr->schAttr[i].length;
 		type = objAttr->schAttr[i].type;
 		issubcol = (*objAttr->schemaRecord.columnVector)[i].issubcol;
-		begincol = (*objAttr->schemaRecord.columnVector)[i].begincol;
-		endcol = (*objAttr->schemaRecord.columnVector)[i].endcol;
+		//begincol = (*objAttr->schemaRecord.columnVector)[i].begincol;
+		//endcol = (*objAttr->schemaRecord.columnVector)[i].endcol;
 		spare1 = (*objAttr->schemaRecord.columnVector)[i].spare[1];
 
 		//prt(("s6591 i=%d numCols=%d colName2=[%s] type=[%s]\n", i, numCols, colName2.c_str(), type.c_str() ));
@@ -7574,7 +7574,7 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 	//getTimebuf( objAttr, timebuf, timebuf2 );
 
 	bool hquote, useValueData;
-	int issubcol, begincol, endcol;
+	int issubcol;
 	Jstr colType;
 	bool lastIsGeo  = false;
 
@@ -7587,8 +7587,8 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 		type = objAttr->schAttr[i].type;
 		colName2 = (*objAttr->schemaRecord.columnVector)[i].name.c_str();
 		issubcol = (*objAttr->schemaRecord.columnVector)[i].issubcol;
-		begincol = (*objAttr->schemaRecord.columnVector)[i].begincol;
-		endcol = (*objAttr->schemaRecord.columnVector)[i].endcol;
+		//begincol = (*objAttr->schemaRecord.columnVector)[i].begincol;
+		//endcol = (*objAttr->schemaRecord.columnVector)[i].endcol;
 
 		if ( NULL != strchr( colName2.c_str(), ':' ) ) {
 			continue;  // skip all bbox and :x :y :z columns
