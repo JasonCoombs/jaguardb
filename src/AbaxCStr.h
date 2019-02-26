@@ -66,6 +66,7 @@ class AbaxCStr
 
 		AbaxCStr& trimSpaces(int end=1); // strip ' ', \t, \n, \r at both ends
 		AbaxCStr& trimEndChar( char chr ); // strip c at end
+		AbaxCStr& trimChar(char c); // strip c at both ends
 
 		//int  match(const AbaxCStr &regexp ) const;  // wheather the AbaxCStr matches a regular expression 
 		//int  match(char *regexp ) const;  // wheather the AbaxCStr matches a regular expression 

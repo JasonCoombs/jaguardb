@@ -1272,8 +1272,7 @@ abaxint strchrnumskip( const char *str, char ch )
 		if ( *str == '\'' ) { while ( *str != '\'' && *str != '\0' ) ++str; ++str; }
 		else if ( *str == '"' ) { while ( *str != '"' && *str != '\0' ) ++str; ++str; }
 		else if ( *str == ch ) { while ( *str == ch ) ++str; ++cnt; }
-
-		if ( *str != '\0' ) ++str;
+		else ++str;
     }
 
     return cnt;
@@ -3526,15 +3525,6 @@ int jagatoi(char *nptr, int len)
 	int n = atoi( nptr);
 	nptr[len] = save;
 	return n;
-}
-
-void appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub )
-{
-	OtherAttribute other; 
-	other.issubcol = isSub;
-	for ( int i=0; i < n; ++i ) {
-		otherVec.append( other ); 
-	}
 }
 
 // trim tailing zeroes but leave first zero untouched

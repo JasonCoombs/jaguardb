@@ -50,6 +50,7 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket, boo
 	int len;
 	if ( ignoreregion ) {
 		len = strchrnumskip(str, sep);
+		prt(("s8283 strchrnumskip str=[%s] sep=[%c] len=%d\n", str, sep, len ));
 	} else {
 		len = strchrnum(str, sep);
 	}
@@ -62,7 +63,6 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket, boo
 		pos[i] = new JagSplitPosition();
 	}
 
-	// char *parsestart[len], *savestart[len], *saveend[len], *trackpos, *token, *pp;
 	const char *trackpos, *pp;
 	pos[0]->parsestart = trackpos = str;
 	

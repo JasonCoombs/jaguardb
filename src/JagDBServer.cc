@@ -2074,7 +2074,7 @@ int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj,
 		createTemp.length = (*(trecord->columnVector))[getpos].length;
 		createTemp.sig = (*(trecord->columnVector))[getpos].sig;
 		createTemp.srid = (*(trecord->columnVector))[getpos].srid;
-		createTemp.measures = (*(trecord->columnVector))[getpos].measures;
+		createTemp.metrics = (*(trecord->columnVector))[getpos].metrics;
 		*(createTemp.spare+1) = (*(trecord->columnVector))[getpos].spare[1];
 		*(createTemp.spare+4) = (*(trecord->columnVector))[getpos].spare[4];
 		*(createTemp.spare+5) = (*(trecord->columnVector))[getpos].spare[5]; // mute
@@ -2094,7 +2094,7 @@ int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj,
 			createTemp.length = (*(trecord->columnVector))[i].length;
 			createTemp.sig = (*(trecord->columnVector))[i].sig;
 			createTemp.srid = (*(trecord->columnVector))[i].srid;
-			createTemp.measures = (*(trecord->columnVector))[i].measures;
+			createTemp.metrics = (*(trecord->columnVector))[i].metrics;
 			*(createTemp.spare+1) = (*(trecord->columnVector))[i].spare[1];
 			*(createTemp.spare+4) = (*(trecord->columnVector))[i].spare[4];
 			*(createTemp.spare+5) = (*(trecord->columnVector))[i].spare[5];
@@ -2123,7 +2123,7 @@ int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj,
 		createTemp.length = (*(trecord->columnVector))[getpos].length;
 		createTemp.sig = (*(trecord->columnVector))[getpos].sig;
 		createTemp.srid = (*(trecord->columnVector))[getpos].srid;
-		createTemp.measures = (*(trecord->columnVector))[getpos].measures;
+		createTemp.metrics = (*(trecord->columnVector))[getpos].metrics;
 		*(createTemp.spare+1) = (*(trecord->columnVector))[getpos].spare[1];
 		*(createTemp.spare+4) = (*(trecord->columnVector))[getpos].spare[4];
 		*(createTemp.spare+5) = (*(trecord->columnVector))[getpos].spare[5];
@@ -3283,7 +3283,7 @@ int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagD
 		len = (*(record->columnVector))[i].length;
 		//sig = (*(record->columnVector))[i].sig;
 		//srid = (*(record->columnVector))[i].srid;
-		//measures = (*(record->columnVector))[i].measures;
+		//metrics = (*(record->columnVector))[i].metrics;
 		dbcol = dbtable + "." + (*(record->columnVector))[i].name.c_str();
 
 		if ( *((*(record->columnVector))[i].spare+5) == JAG_KEY_MUTE ) {
@@ -12548,7 +12548,7 @@ Jstr JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column,
 	int  len = column.length;
 	int  sig = column.sig;
 	int  srid = column.srid;
-	int  measures = column.measures;
+	int  metrics = column.metrics;
 	Jstr dbcol = dbtable + "." + column.name.c_str();
 	//prt(("s5041 fillDescBuf type=[%s]\n", type.c_str() ));
 
@@ -12599,65 +12599,65 @@ Jstr JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column,
 			sprintf( buf, "date" );
 			res += buf;
 		} else if ( type == JAG_C_COL_TYPE_POINT ) {
-			res += columnProperty("point", srid, measures );
+			res += columnProperty("point", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_POINT3D ) {
-			res += columnProperty("point3d", srid, measures );
+			res += columnProperty("point3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_CIRCLE ) {
-			res += columnProperty("circle", srid, measures );
+			res += columnProperty("circle", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_CIRCLE3D ) {
-			res += columnProperty("circle3d", srid, measures );
+			res += columnProperty("circle3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_TRIANGLE ) {
-			res += columnProperty("triangle", srid, measures );
+			res += columnProperty("triangle", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_TRIANGLE3D ) {
-			res += columnProperty("triangle3d", srid, measures );
+			res += columnProperty("triangle3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_SPHERE ) {
-			res += columnProperty("sphere", srid, measures );
+			res += columnProperty("sphere", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_SQUARE ) {
-			res += columnProperty("square", srid, measures );
+			res += columnProperty("square", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_SQUARE3D ) {
-			res += columnProperty("square3d", srid, measures );
+			res += columnProperty("square3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_CUBE ) {
-			res += columnProperty("cube", srid, measures );
+			res += columnProperty("cube", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
-			res += columnProperty("rectangle", srid, measures );
+			res += columnProperty("rectangle", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
-			res += columnProperty("rectangle3d", srid, measures );
+			res += columnProperty("rectangle3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_BOX ) {
-			res += columnProperty("box", srid, measures );
+			res += columnProperty("box", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_CYLINDER ) {
-			res += columnProperty("cylinder", srid, measures );
+			res += columnProperty("cylinder", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_CONE ) {
-			res += columnProperty("cone", srid, measures );
+			res += columnProperty("cone", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_LINE ) {
-			res += columnProperty("line", srid, measures );
+			res += columnProperty("line", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
-			res += columnProperty("line3d", srid, measures );
+			res += columnProperty("line3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
-			res += columnProperty("linestring", srid, measures );
+			res += columnProperty("linestring", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_LINESTRING3D ) {
-			res += columnProperty("linestring3d", srid, measures );
+			res += columnProperty("linestring3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT ) {
-			res += columnProperty("multipoint", srid, measures );
+			res += columnProperty("multipoint", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-			res += columnProperty("multipoint3d", srid, measures );
+			res += columnProperty("multipoint3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
-			res += columnProperty("multilinestring", srid, measures );
+			res += columnProperty("multilinestring", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			res += columnProperty("multilinestring3d", srid, measures );
+			res += columnProperty("multilinestring3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
-			res += columnProperty("polygon", srid, measures );
+			res += columnProperty("polygon", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_POLYGON3D ) {
-			res += columnProperty("polygon3d", srid, measures );
+			res += columnProperty("polygon3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			res += columnProperty("multipolygon", srid, measures );
+			res += columnProperty("multipolygon", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			res += columnProperty("multipolygon3d", srid, measures );
+			res += columnProperty("multipolygon3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSE ) {
-			res += columnProperty("ellipse", srid, measures );
+			res += columnProperty("ellipse", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
-			res += columnProperty("ellipse3d", srid, measures );
+			res += columnProperty("ellipse3d", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_ELLIPSOID ) {
-			res += columnProperty("ellipsoid", srid, measures );
+			res += columnProperty("ellipsoid", srid, metrics );
 		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
 			if ( srid > 0 ) {
 				Jstr s = JagParser::getFieldTypeString( srid );
@@ -12701,16 +12701,24 @@ Jstr JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column,
 	return res;
 }
 
-Jstr JagDBServer::columnProperty(const char *ctype, int srid, int measures ) const
+Jstr JagDBServer::columnProperty(const char *ctype, int srid, int metrics ) const
 {
 	char buf[64];
+	/***
 	if ( srid > 0 ) {
-		sprintf( buf, "%s(srid:%d,measures:%d)", ctype, srid, measures );
-	} else if ( measures > 0 ) {
-		sprintf( buf, "%s(measures:%d)", ctype, measures );
+		sprintf( buf, "%s(srid:%d,metrics:%d)", ctype, srid, metrics );
+	} else if ( metrics > 0 ) {
+		sprintf( buf, "%s(metrics:%d)", ctype, metrics );
 	} else {
 		sprintf( buf, "%s", ctype );
 	}
+	***/
+	if ( srid > 0 || metrics > 0 ) {
+		sprintf( buf, "%s(srid:%d,metrics:%d)", ctype, srid, metrics );
+	} else {
+		sprintf( buf, "%s", ctype );
+	}
+
 	return buf;
 }
 

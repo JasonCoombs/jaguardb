@@ -277,7 +277,7 @@ double jagatof(const char *nptr );
 double jagatof(const Jstr &str );
 int jagatoi(const char *nptr );
 int jagatoi(char *nptr, int len );
-void appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true);
+//void appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true);
 void stripTailZeros( char *buf, int len );
 bool jagisspace( char c);
 Jstr trimEndZeros( const Jstr& str );

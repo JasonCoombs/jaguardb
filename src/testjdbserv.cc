@@ -87,6 +87,7 @@
 **/
 //#include <CGAL/Simple_cartesian.h>
 
+abaxint test_strchrnumskip( const char *str, char ch );
 
 using namespace std;
 
@@ -671,7 +672,27 @@ void testStrSplitWQuote()
 	q.init(" 2 4 'ddd dd'  'dddd44' ", ' ', true, true );
 	q.print();
 
+	q.init("2 4 'ddd dd'  'dddd44'", ' ', true, true );
+	q.print();
+
+
+
 }
+
+abaxint test_strchrnumskip( const char *str, char ch )
+{
+    if ( ! str || *str == '\0' ) return 0;
+    abaxint cnt = 0;
+    while ( *str != '\0' ) {
+        if ( *str == '\'' ) { while ( *str != '\'' && *str != '\0' ) ++str; ++str; }
+        else if ( *str == '"' ) { while ( *str != '"' && *str != '\0' ) ++str; ++str; }
+        else if ( *str == ch ) { while ( *str == ch ) ++str; ++cnt; }
+		else ++str;
+    }
+
+    return cnt;
+}
+
 
 void testAtomic( int N )
 {
@@ -2770,6 +2791,13 @@ void test_str( int N )
 	Jstr a23 = trimEndZeros(a1);
 	prt(("a1=%s a2=[%s]\n", a1.c_str(), a23.s() ));
 
+	Jstr a24 = "'fjdkjkdjfkdend'";
+	prt(("a24=[%s]\n", a24.s() ));
+	a24.trimChar('\'');
+	prt(("a24=[%s]\n", a24.s() ));
+
+    int naa = test_strchrnumskip( "1 2 3 'dddd' 'eeee'", ' ' );
+	prt(("naa=%d\n", naa ));
 }
 
 #include <GeographicLib/Ellipsoid.hpp>

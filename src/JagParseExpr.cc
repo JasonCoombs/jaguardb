@@ -96,7 +96,7 @@ StringElementNode::StringElementNode( BinaryExpressionBuilder *builder, const Js
 {
     _name = makeLowerString(name); 
 	_value = value; _jpa = jpa; _tabnum = tabnum; _typeMode = typeMode;
-    _srid = _offset = _length = _sig = _nodenum = _begincol = _endcol = _measures = 0;
+    _srid = _offset = _length = _sig = _nodenum = _begincol = _endcol = _metrics = 0;
     _type = ""; 
 	_builder = builder;
 	_isElement = true;
@@ -162,7 +162,7 @@ int StringElementNode::setWhereRange( const JagHashStrInt *maps[], const JagSche
 			_begincol = attrs[_tabnum][acqpos].begincol;
 			_endcol = attrs[_tabnum][acqpos].endcol;
 			_srid = attrs[_tabnum][acqpos].srid;
-			_measures = attrs[_tabnum][acqpos].measures;
+			_metrics = attrs[_tabnum][acqpos].metrics;
 			if ( !attrs[_tabnum][acqpos].isKey ) hasValue = 1;
 		} else {
 			//prt(("s6934 _name=[%s] return -1\n", _name.c_str() ));
@@ -194,7 +194,7 @@ int StringElementNode::setFuncAttribute( const JagHashStrInt *maps[], const JagS
 			_begincol = attrs[_tabnum][acqpos].begincol;
 			_endcol = attrs[_tabnum][acqpos].endcol;
 			_srid = attrs[_tabnum][acqpos].srid;
-			_measures = attrs[_tabnum][acqpos].measures;
+			_metrics = attrs[_tabnum][acqpos].metrics;
 
 			#if 0
 			prt(("s0394  _name=[%s] type=[%s] collen=%d _begincol=%d _endcol=%d _srid=%d\n",  
@@ -258,7 +258,7 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 					const char *buffers[], JagFixString &str, int &typeMode, 
 					Jstr &type, int &length, bool &first, bool useZero, bool setGlobal ) 
 {
-	prt(( "s3039 StEleNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s] _measures=%d _srid=%d\n", _name.c_str(), _value.c_str(), _type.c_str(), _measures, _srid ));
+	prt(( "s3039 StEleNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s] _metrics=%d _srid=%d\n", _name.c_str(), _value.c_str(), _type.c_str(), _metrics, _srid ));
 
 	if ( _name.length() > 0 ) {
 		if (  ( buffers[_tabnum] == NULL || buffers[_tabnum][0] == '\0' ) ) {
@@ -529,7 +529,8 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 									const Jstr &db, const Jstr &tab, const Jstr &polyColumns,
 									bool isBoundBox3D, bool is3D )
 {
-	prt(("s8410 savePolyData polyColumns=[%s] uuid=[%s] is3D=%d\n", polyColumns.c_str(), uuid.c_str(), is3D ));
+	prt(("s8410 savePolyData polyColumns=[%s] uuid=[%s]\n", polyColumns.c_str(), uuid.c_str() ));
+	prt(("s8410 is3D=%d op=%d _lastOp=%d\n", is3D, _builder->_pparam->opcode, _builder->_lastOp ));
 
 	JagStrSplit psp(polyColumns, '|', true);
 	int numCols = psp.length();
@@ -548,10 +549,10 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	bool rc;
 	for ( int k=0; k < numCols; ++k ) {
 		fullname[k] = db + "." + tab + "." + psp[k];
-		prt(("s1929 k=%d fullname=%s measures=%d srid=%d\n", k, fullname[k].c_str(), attrs[_tabnum][acqpos].measures,  attrs[_tabnum][acqpos].srid ));
 		if ( maps[_tabnum]->getValue( fullname[k], acqpos) ) {
 			colobjstr[k] = Jstr( JAG_OJAG ) + "=" + intToStr( attrs[_tabnum][acqpos].srid ) 
 			               + "=" + fullname[k] + "=" + attrs[_tabnum][acqpos].type + "=d";
+			prt(("s1929 k=%d colobjstr=[%s]\n", k, colobjstr[k].s() ));
 		} else {
 			//prt(("s6751 return\n"));
 			return;
@@ -963,6 +964,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_LOGIC_AND ) str = "and";
 	else if ( binaryOp == JAG_LOGIC_OR ) str = "or";
 	else if ( binaryOp == JAG_NUM_ADD ) str = "+";
+	else if ( binaryOp == JAG_STR_ADD ) str = ".";
 	else if ( binaryOp == JAG_NUM_SUB ) str = "-";
 	else if ( binaryOp == JAG_NUM_MULT ) str = "*";
 	else if ( binaryOp == JAG_NUM_DIV ) str = "/";
@@ -1256,6 +1258,10 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		if ( 0 == ltmode && 0 == rtmode && _binaryOp == JAG_NUM_ADD ) {
 			type = ltype;
 			collen = lcollen + rcollen;
+			siglen = 0;
+		} else if ( _binaryOp == JAG_STR_ADD ) {
+			type = ltype;
+			collen = JAG_MAX_STRLEN_SENT;
 			siglen = 0;
 		} else {
 			ltmode = 2;
@@ -2140,11 +2146,15 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 		} else if ( 1 == cmode ) {
 			num = jagatoll(lstr.c_str()) + jagatoll(rstr.c_str());
 			str = longToStr(num);
+		} else {
+			num = jagatoll(lstr.c_str()) + jagatoll(rstr.c_str());
+			str = longToStr(num);
 		}
 		return 1;
 	}	
 	// - 
 	else if ( _binaryOp == JAG_NUM_SUB ) {
+		/**
 		if ( 2 == cmode ) {
 			dnum = jagstrtold(lstr.c_str(), NULL) - jagstrtold(rstr.c_str(), NULL);
 			str = longDoubleToStr(dnum);
@@ -2152,10 +2162,13 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 			num = jagatoll(lstr.c_str()) - jagatoll(rstr.c_str());
 			str = longToStr(num);
 		}
+		***/
+		str = d2s( atof(lstr.c_str()) - atof(rstr.c_str()) ); 
 		return 1;
 	}	
 	// *
 	else if ( _binaryOp == JAG_NUM_MULT ) {
+		/***
 		if ( 2 == cmode ) {
 			dnum = jagstrtold(lstr.c_str(), NULL) * jagstrtold(rstr.c_str(), NULL);
 			str = longDoubleToStr(dnum);
@@ -2163,10 +2176,13 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 			num = jagatoll(lstr.c_str()) * jagatoll(rstr.c_str());
 			str = longToStr(num);
 		}
+		***/
+		str = d2s( atof(lstr.c_str()) * atof(rstr.c_str()) ); 
 		return 1;
 	}	
 	// /
 	else if ( _binaryOp == JAG_NUM_DIV ) {
+		/***
 		if ( 2 == cmode ) {
 			if ( jagstrtold(rstr.c_str(), NULL) == 0.0 ) return -1;
 			dnum = jagstrtold(lstr.c_str(), NULL) / jagstrtold(rstr.c_str(), NULL);
@@ -2176,11 +2192,15 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 			num = jagatoll(lstr.c_str()) / jagatoll(rstr.c_str());
 			str = longToStr(num);
 		}
+		***/
+		if ( jagEQ(atof(rstr.c_str()), 0.0) ) { str=""; return -1;}
+		str = d2s( atof(lstr.c_str()) / atof(rstr.c_str()) ); 
 		return 1;
 	}
 	// %
 	else if ( _binaryOp == JAG_NUM_REM ) {
-		if ( jagatoll(rstr.c_str()) == 0 ) return -1;
+		//if ( jagatoll(rstr.c_str()) == 0 ) return -1;
+		if ( jagEQ(atof(rstr.c_str()), 0.0) ) { str=""; return -1;}
 		num = jagatoll(lstr.c_str()) / jagatoll(rstr.c_str());
 		str = longToStr(num);
 		return 1;
@@ -2193,11 +2213,15 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 		} else if ( 1 == cmode ) {
 			num = pow(jagatoll(lstr.c_str()), jagatoll(rstr.c_str()));
 			str = longToStr(num);
+		} else {
+			num = pow(jagatoll(lstr.c_str()), jagatoll(rstr.c_str()));
+			str = longToStr(num);
 		}
 		return 1;
 	}
 	// MOD
 	else if ( _binaryOp == JAG_FUNC_MOD ) {
+		if ( jagEQ(atof(rstr.c_str()), 0.0) ) { str=""; return -1;}
 		dnum = fmod(jagstrtold(lstr.c_str(), NULL), jagstrtold(rstr.c_str(), NULL));
 		str = longDoubleToStr(dnum);
 		// prt(("s9301 JAG_FUNC_MOD calc dnum=%f lstr=[%s] rstr=[%s]\n", dnum, lstr.c_str(), rstr.c_str() ));
@@ -2210,6 +2234,8 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 			str = longDoubleToStr(jagstrtold(lstr.c_str(), NULL));
 		} else if ( 1 == cmode ) {
 			str = longToStr(jagatoll(lstr.c_str()));
+		} else {
+			str = longToStr(lstr.size());
 		}
 		return 1;
 	}
@@ -2765,9 +2791,14 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 			return 1;
 		} else {
 			// string addition, concat
-			lstr = lstr.concat(rstr);
+			//lstr = lstr.concat(rstr);
+			lstr = d2s( atof( lstr.s() ) + atof( rstr.s() ));
 			return 1;
 		}
+	}
+	else if ( _binaryOp == JAG_STR_ADD ) {
+		lstr = lstr.concat(rstr);
+		return 1;
 	}	
 	// - 
 	else if ( _binaryOp == JAG_NUM_SUB ) {
@@ -3347,7 +3378,6 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 		} else if ( *p == '(' ) {
 			if ( _isNot ) throw 2100;
 			if ( _datediffClause >= 0 || _substrClause >= 0 ) throw 2184;
-			//prt(("s9011 operatorStack.push (\n" ));
 			bcnt = 1;
 			m = p+1;
 			while ( *m != '\0' ) {
@@ -3652,7 +3682,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
 		//prt(("s2931 operandStack.push name=%s value=%s\n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
-		// prt(("s0393  new StringElementNode name=[%s] value=[%s] typeMode=%d\n", name.c_str(), value.c_str(), typeMode ));
+		// prt(("s0393  name=[%s] value=[%s] typeMode=%d\n", name.c_str(), value.c_str(), typeMode ));
 		if ( _substrClause >= 0 ) ++_substrClause;
 		else if ( _datediffClause >= 0 ) ++_datediffClause;
 	} else if ( 0 == strncasecmp(p, "point(", 6 ) 
@@ -4563,6 +4593,8 @@ short BinaryExpressionBuilder::precedence( short fop )
 			return mid;
 		case JAG_NUM_ADD:			// +
 			return midhigh;
+		case JAG_STR_ADD:			// .
+			return high;
 		case JAG_NUM_SUB:			// -
 			return midhigh;
 		case JAG_NUM_MULT:			// *
@@ -4685,6 +4717,9 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 
 	if ( JAG_NUM_ADD == short(*p) ) {
 		fop = JAG_NUM_ADD;
+		len = 1; ctype = 0;
+	} else if ( JAG_STR_ADD == short(*p) ) {
+		fop = JAG_STR_ADD;
 		len = 1; ctype = 0;
 	} else if ( JAG_NUM_SUB == short(*p) ) {
 		fop = JAG_NUM_SUB;
@@ -11555,7 +11590,7 @@ bool BinaryOpNode::isAggregateOp( short op )
 
 bool BinaryOpNode::isMathOp( short op ) 
 {
-	if (JAG_NUM_ADD == op || JAG_NUM_SUB == op || JAG_NUM_MULT == op || 
+	if (JAG_NUM_ADD == op || JAG_NUM_SUB == op || JAG_NUM_MULT == op || JAG_STR_ADD == op || 
 		JAG_NUM_DIV == op || JAG_NUM_REM == op || JAG_NUM_POW == op) {
 		return true;
 	}

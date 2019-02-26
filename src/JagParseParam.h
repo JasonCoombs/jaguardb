@@ -89,7 +89,6 @@ class OtherAttribute
 	void copyData( const OtherAttribute& other );
 	OtherAttribute& operator=( const OtherAttribute& other );
 	OtherAttribute( const OtherAttribute& other );
-	//void ensureMpgon();
 	void print();
 
 
@@ -102,9 +101,6 @@ class OtherAttribute
 	JagPoint 		point;
 	JagLineString 	linestr;
 	bool			is3D;
-	//JagPolygon 		pgon;
-	// JagVector<JagPolygon> mpgon;
-
 };
 
 class CreateAttribute
@@ -121,8 +117,8 @@ class CreateAttribute
 	int          srid;
 	int    begincol;
 	int    endcol;
-	int 	     measures;
-	//int    dummy1; becomes measures
+	int 	     metrics;
+	//int    dummy1; becomes metrics
 	int    dummy2;
 	int    dummy3;
 	int    dummy4;
@@ -143,7 +139,7 @@ class CreateAttribute
 		dummy8 = dummy9 = dummy10 = 0;
 		defValues = "";
 		type = "";
-		measures = 0;
+		metrics = 0;
 	}
 
 	CreateAttribute( const CreateAttribute& other )
@@ -171,7 +167,7 @@ class CreateAttribute
 		defValues = other.defValues;
 		srid = other.srid;
 		begincol = other.begincol;
-		measures = other.measures;
+		metrics = other.metrics;
 		endcol = other.endcol;
 		//dummy1 = other.dummy1;
 		dummy2 = other.dummy2;
@@ -373,7 +369,7 @@ class JagParseParam
 	void initColHash();
 	bool isSelectConst() const;
 
-	void addMeasures( const CreateAttribute &cattr, int isKey );
+	void addMetrics( const CreateAttribute &cattr, int offset, int isKey );
 
 	
 	// data memebers

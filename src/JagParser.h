@@ -124,7 +124,7 @@ class JagParser
 	void addCreateAttrAndColumn( bool isValue, CreateAttribute &cattr, int &coloffset );
 	void addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other, int &numCols );
 	void setToRealType( const Jstr &rcs, CreateAttribute &cattr );
-	int getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &measures );
+	int getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &metrics );
 	bool hasPolyGeoType( const char *createSQL, int &dim );
 	void addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool lead, int &offset ); 
 	int convertJsonToOther( OtherAttribute &other, const char *json, int jsonlen ); 
@@ -133,6 +133,7 @@ class JagParser
 	int convertJsonToPolygon( const rapidjson::Document &dom, OtherAttribute &other );
 	int convertJsonToMultiPolygon( const rapidjson::Document &dom, OtherAttribute &other );
 	int getEachRangeFieldLength( int srid ) const;
+	static void getMetrics( const JagStrSplitWithQuote &sp, int start, JagVector<Jstr> &metrics );
 
 
 	
@@ -146,6 +147,6 @@ class JagParser
 	const JagDBServer *_srv;
 	const JaguarCPPClient *_cli;
 	JagColumn   _dummy;
-};
+};  // end of JagParser
 
 #endif

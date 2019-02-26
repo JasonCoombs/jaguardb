@@ -35,7 +35,6 @@ class JagParseAttribute
 	{
 		timediff = 0;
 		servtimediff = 0;
-		//dfdbname = "";
 		cfg = NULL;
 		servobj = NULL;
 	}

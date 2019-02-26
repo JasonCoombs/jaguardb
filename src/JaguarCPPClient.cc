@@ -10071,6 +10071,11 @@ Jstr JaguarCPPClient::getCoordStr( const Jstr &shape, const JagParseParam &parse
 			res += Jstr(" ") + parseParam.otherVec[pos].point.b;
 		}
 	} 
+
+	prt(("c2930 point.metrics.size=%d\n", parseParam.otherVec[pos].point.metrics.size() ));
+	for ( int i=0; i < parseParam.otherVec[pos].point.metrics.size(); ++i ) {
+		res += Jstr(" ") + parseParam.otherVec[pos].point.metrics[i];
+	}
 	
 	res +=  ")";
 	return res;

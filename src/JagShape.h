@@ -43,8 +43,6 @@ class JagPoint2D
      JagPoint2D( double inx, double iny );
 	 void transform( double x0, double y0, double nx0 );
 	 void print() const { printf("x=%.1f y=%.1f ", x, y ); }
-     double x;
-	 double y;
 	 int operator< ( const JagPoint2D &p2 ) const 
 	 { 
 	 	return (x < p2.x && y < p2.y );
@@ -65,6 +63,9 @@ class JagPoint2D
 	 { 
 	 	return ( fabs(x-p2.x) > 0.0000001 || fabs(y - p2.y) > 0.0000001 );
 	 }
+     double x;
+	 double y;
+	 JagVector<Jstr> metrics;
 
 };
 
@@ -79,9 +80,6 @@ class JagPoint3D
 	 Jstr hashString() const;
 	 Jstr str3D() const { return d2s(x) + ":" + d2s(y) + ":" + d2s(z); }
 	 Jstr str2D() const { return d2s(x) + ":" + d2s(y); }
-     double x;
-	 double y;
-	 double z;
 	 int operator< ( const JagPoint3D &p2 ) const 
 	 { 
 	 	return (x < p2.x && y < p2.y && z < p2.z );
@@ -102,6 +100,11 @@ class JagPoint3D
 	 { 
 	 	return ( fabs(x-p2.x) > 0.0000001 || fabs(y - p2.y) > 0.0000001 || fabs(z - p2.z ) > 0.0000001 );
 	 }
+
+     double x;
+	 double y;
+	 double z;
+	 JagVector<Jstr> metrics;
 };
 
 class JagBox2D
@@ -183,6 +186,7 @@ class JagCircle2D
   	JagCircle2D( const JagStrSplit &sp, int srid=0 );
 	int srid;
 	double x0, y0, r;
+	JagVector<Jstr> metrics;
 };
 
 class JagCircle3D
@@ -194,6 +198,7 @@ class JagCircle3D
   	JagCircle3D( const JagStrSplit &sp, int srid=0 );
 	int srid;
 	double x0, y0, z0, r, nx, ny;
+	JagVector<Jstr> metrics;
 };
 
 class JagEllipse2D
@@ -206,6 +211,7 @@ class JagEllipse2D
 	void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
 	double x0, y0, a, b, nx; 
 	int srid;
+	JagVector<Jstr> metrics;
 };
 
 class JagEllipse3D
@@ -218,6 +224,7 @@ class JagEllipse3D
 	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 	double x0, y0, z0, a, b, nx, ny; 
 	int srid;
+	JagVector<Jstr> metrics;
 };
 
 class JagTriangle2D
@@ -229,6 +236,9 @@ class JagTriangle2D
   	JagTriangle2D( const JagStrSplit &sp, int srid=0 );
 	double x1,y1, x2,y2, x3,y3;
 	int srid;
+	JagVector<Jstr> metrics1;
+	JagVector<Jstr> metrics2;
+	JagVector<Jstr> metrics3;
 };
 
 class JagTriangle3D
@@ -244,6 +254,9 @@ class JagTriangle3D
 	void transform( double x0, double y0, double z0, double nx0, double ny0 );
 	double x1,y1,z1, x2,y2,z2, x3,y3,z3;
 	int srid;
+	JagVector<Jstr> metrics1;
+	JagVector<Jstr> metrics2;
+	JagVector<Jstr> metrics3;
 };
 
 class JagCube
@@ -273,6 +286,7 @@ class JagSphere
 	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 	double x0,y0,z0, r;
 	int srid;
+	JagVector<Jstr> metrics;
 };
 
 class JagEllipsoid
@@ -282,6 +296,7 @@ class JagEllipsoid
 	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 	double x0,y0,z0, a, b, c, nx, ny;
 	int srid;
+	JagVector<Jstr> metrics;
 };
 
 class JagCylinder
@@ -291,6 +306,7 @@ class JagCylinder
 	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 	double x0,y0,z0, a, c, nx, ny;
 	int srid;
+	JagVector<Jstr> metrics;
 };
 
 class JagCone
@@ -300,6 +316,7 @@ class JagCone
 	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 	double x0,y0,z0, a, c, nx, ny;
 	int srid;
+	JagVector<Jstr> metrics;
 };
 
 class JagSortPoint2D
@@ -345,6 +362,8 @@ class JagLine2D
 	 double y1;
      double x2;
 	 double y2;
+	 JagVector<Jstr> metrics1;
+	 JagVector<Jstr> metrics2;
 };
 
 class JagLine3D
@@ -353,14 +372,16 @@ class JagLine3D
   	 JagLine3D() { };
   	 JagLine3D( double ix1, double iy1, double iz1, double ix2, double iy2, double iz2 )
 	 { x1 = ix1; y1 = iy1; z1 = iz1; x2 = ix2; y2 = iy2; z2 = iz2; }
+	 void transform( double x0, double y0, double z0, double nx0, double ny0 );
+	 void center( double &cx, double &cy, double &cz ) const { cx=(x1+x2)/2.0; cy=(y1+y2)/2.0; cz=(z1+z2)/2.0; }
      double x1;
 	 double y1;
 	 double z1;
      double x2;
 	 double y2;
 	 double z2;
-	 void transform( double x0, double y0, double z0, double nx0, double ny0 );
-	 void center( double &cx, double &cy, double &cz ) const { cx=(x1+x2)/2.0; cy=(y1+y2)/2.0; cz=(z1+z2)/2.0; }
+	 JagVector<Jstr> metrics1;
+	 JagVector<Jstr> metrics2;
 
 };
 
@@ -540,6 +561,7 @@ class JagPoint
 		JagPoint( const JagPoint& p2 );
 		void init();
 		void copyData( const JagPoint& p2 );
+		void print() const;
 
 		char x[JAG_POINT_LEN]; // or longitue
 		char y[JAG_POINT_LEN]; // or latitude
@@ -551,7 +573,8 @@ class JagPoint
 
 		char nx[JAG_POINT_LEN];  // normalized basis vector in x
 		char ny[JAG_POINT_LEN];  // normalized basis vector in y
-		void print() const;
+		JagVector<Jstr> metrics;
+
 };
 
 class JagLineString3D

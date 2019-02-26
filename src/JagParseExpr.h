@@ -102,7 +102,7 @@ class ExprElementNode
 	unsigned int		_srid;
 	Jstr				_type;
 	int					_nargs;
-	int					_measures;
+	int					_metrics;
 	bool 	            _isDestroyed;
 };
 
@@ -405,6 +405,7 @@ class BinaryExpressionBuilder
 	JagParseAttribute _jpa;
 	JagParseParam *_pparam;
 	bool doneClean;
+	int  		_lastOp;
 
   private:
 	// holds either (, +, -, *, /, %, ^ or any other function type  
@@ -415,7 +416,6 @@ class BinaryExpressionBuilder
 
 	int 		_datediffClause;
 	int			_substrClause;
-	int  		_lastOp;
 	bool 		_isNot;
 	bool 		_lastIsOperand;
 	bool        _isDestroyed;

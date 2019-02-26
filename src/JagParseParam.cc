@@ -264,7 +264,6 @@ void OtherAttribute::copyData( const OtherAttribute& other )
 		type = other.type;
 		point = other.point;
 		linestr = other.linestr;
-		//pgon = other.pgon;
 		issubcol = other.issubcol;
 }
 
@@ -529,15 +528,14 @@ void JagParseParam::print()
 
 }
 
-void JagParseParam::addMeasures( const CreateAttribute &pointcattr, int isKey )
+void JagParseParam::addMetrics( const CreateAttribute &pointcattr, int offset, int isKey )
 {
-	if ( pointcattr.measures < 1 ) return;
-	int offset = pointcattr.offset;
-	for ( int i=0; i < pointcattr.measures; ++i ) {
+	if ( pointcattr.metrics < 1 ) return;
+	for ( int i=0; i < pointcattr.metrics; ++i ) {
 		CreateAttribute cattr;
 		cattr.objName.colName = pointcattr.objName.colName + ":m" + intToStr(i+1);  // col:m1, col:m2, ...
 		//fillStringSubData( cattr, offset, int isKey, int len, int isMute, int isSub )
-		fillStringSubData( cattr, offset, isKey, JAG_MEASURE_LEN, 0, true );
+		fillStringSubData( cattr, offset, isKey, JAG_METRIC_LEN, 0, true );
 	}
 }
 
@@ -560,7 +558,7 @@ int JagParseParam::addPointColumns( const CreateAttribute &pointcattr )
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
 	fillDoubleSubData( cattr, offset, iskey, 0 );
 
- 	addMeasures( pointcattr, iskey );
+ 	addMetrics( pointcattr, offset, iskey );
 	return 2;
 }
 
@@ -584,7 +582,7 @@ int JagParseParam::addPoint3DColumns( const CreateAttribute &pointcattr )
 	cattr.objName.colName = pointcattr.objName.colName + ":z";
 	fillDoubleSubData( cattr, offset, iskey, 0 );
 
- 	addMeasures( pointcattr, iskey );
+ 	addMetrics( pointcattr, offset, iskey );
 
 	return 3;
 }
@@ -609,7 +607,7 @@ int JagParseParam::addCircleColumns( const CreateAttribute &pointcattr )
 	cattr.objName.colName = pointcattr.objName.colName + ":a";
 	fillDoubleSubData( cattr, offset, iskey, 0 );
 
- 	addMeasures( pointcattr, iskey );
+ 	addMetrics( pointcattr, offset, iskey );
 
 	return 3;
 }
@@ -635,7 +633,7 @@ int JagParseParam::addSquareColumns( const CreateAttribute &pointcattr )
 	cattr.objName.colName = pointcattr.objName.colName + ":nx";
 	fillDoubleSubData( cattr, offset, iskey, 0 );
 
- 	addMeasures( pointcattr, iskey );
+ 	addMetrics( pointcattr, offset, iskey );
 
 	return 3;
 }
@@ -693,7 +691,7 @@ int JagParseParam::addColumns( const CreateAttribute &pointcattr,
 		fillDoubleSubData( cattr, offset, iskey, 0 );
 	}
 
- 	addMeasures( pointcattr, iskey );
+ 	addMetrics( pointcattr, offset, iskey );
 
 	return 4;
 }
@@ -734,7 +732,7 @@ int JagParseParam::addBoxColumns( const CreateAttribute &pointcattr )
 	cattr.objName.colName = pointcattr.objName.colName + ":ny";
 	fillDoubleSubData( cattr, offset, iskey, 0 );
 
- 	addMeasures( pointcattr, iskey );
+ 	addMetrics( pointcattr, offset, iskey );
 
 	return 6;
 }
@@ -775,7 +773,7 @@ int JagParseParam::addCylinderColumns( const CreateAttribute &pointcattr )
 	cattr.objName.colName = pointcattr.objName.colName + ":ny";
 	fillDoubleSubData( cattr, offset, iskey, 0 );
 
- 	addMeasures( pointcattr, iskey );
+ 	addMetrics( pointcattr, offset, iskey );
 	return 5;
 }
 
@@ -1030,6 +1028,8 @@ int JagParseParam::addLineColumns( const CreateAttribute &pointcattr, bool is3D 
 		fillDoubleSubData( cattr, offset, iskey, 0 );
 	}
 
+ 	addMetrics( pointcattr, offset, iskey );
+
 	return 4;
 }
 
@@ -1055,6 +1055,8 @@ int JagParseParam::addLineStringColumns( const CreateAttribute &pointcattr, bool
 		fillDoubleSubData( cattr, offset, iskey, 0 );
 	}
 
+ 	addMetrics( pointcattr, offset, iskey );
+
 	return 4;
 }
 
@@ -1079,6 +1081,8 @@ int JagParseParam::addPolygonColumns( const CreateAttribute &pointcattr, bool is
 		cattr.objName.colName = pointcattr.objName.colName + ":z";
 		fillDoubleSubData( cattr, offset, iskey, 0 );
 	}
+
+ 	addMetrics( pointcattr, offset, iskey );
 
 	return 4;
 }
@@ -1127,6 +1131,8 @@ int JagParseParam::addTriangleColumns( const CreateAttribute &pointcattr, bool i
 		cattr.objName.colName = pointcattr.objName.colName + ":z3";
 		fillDoubleSubData( cattr, offset, iskey, 0 );
 	}
+
+ 	addMetrics( pointcattr, offset, iskey );
 
 	return 4;
 }

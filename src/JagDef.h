@@ -365,6 +365,7 @@
 #define JAG_NUM_DIV			'/'
 #define JAG_NUM_REM			'%'
 #define JAG_NUM_POW			'^'
+#define JAG_STR_ADD			'.'
 
 // SQL functions -- be careful, do not use code 40 ( reserved for '(' character )
 #define JAG_FUNC_NOOP			0 // global no operation
@@ -758,6 +759,7 @@
 
 // max number of points to be sent to client for unspecified points
 #define JAG_MAX_POINTS_SENT  3000
+#define JAG_MAX_STRLEN_SENT  300
 
 #define  JAG_SP_START  2
 #define  JAG_3D        3
@@ -783,8 +785,6 @@
 #define JAG_METER_MAX_PER_LON_DEGREE  111319.4907932736
 #define JAG_RADIAN_PER_DEGREE   0.017453292519943
 
-// cannot change after geo table is created
-#define JAG_MEASURE_LEN  4
-
+#define JAG_METRIC_LEN  8
 
 #endif

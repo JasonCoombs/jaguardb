@@ -51,7 +51,7 @@ struct JagPolyPass
 	int getxmin, getymin, getzmin, getxmax, getymax, getzmax;
 	int getid, getcol, getm, getn, geti, getx, gety, getz; 
 	bool is3D;
-	Jstr colname, lsuuid;
+	Jstr dbtab, colname, lsuuid;
 	int  col, m, n, i;
 };
 
@@ -136,35 +136,36 @@ class JagTable
 							 bool lcpu,
 							 ParallelCmdPass psp[]  );
 	 *******/
-
-
-
 	void   flushBlockIndexToDisk();
 	void   copyAndInsertBufferAndClean( JagIndex *ipindex=NULL );
 	Jstr getIndexNameList();
 	int refreshSchema();
 	void setupSchemaMapAttr( int numCols );
 	bool hasSpareColumn();
+	void appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true);
+	void formatMetricCols(int tzdiff, int srvtmdiff, const Jstr &dbtab, const Jstr &colname, const JagVector<Jstr> &metrics, char *tablekvbuf );
+
+
 
 	static const abaxint keySchemaLen = JAG_SCHEMA_KEYLEN;
     static const abaxint valSchemaLen = JAG_SCHEMA_VALLEN;
   	static const int _THREAD_NUM = 4;
-	std::atomic<abaxint>					_actualInsert;
-	std::atomic<int>					_isExporting;
+	std::atomic<abaxint>		_actualInsert;
+	std::atomic<int>			_isExporting;
 	Jstr 						_dbtable;
-	abaxint 								KEYLEN;
-	abaxint 								VALLEN;
-	abaxint 								KEYVALLEN;
-	int									_replicateType;
-	JagSchemaRecord 					_tableRecord;
-	JagDiskArrayFamily						*_darrFamily;
+	abaxint 					KEYLEN;
+	abaxint 					VALLEN;
+	abaxint 					KEYVALLEN;
+	int							_replicateType;
+	JagSchemaRecord 			_tableRecord;
+	JagDiskArrayFamily			*_darrFamily;
 
-	int	    							_numCols;
-	int 								_numKeys;
-	JagHashStrInt 					 	*_tablemap;
-	JagSchemaAttribute					*_schAttr;
+	int	   						_numCols;
+	int 						_numKeys;
+	JagHashStrInt 			 	*_tablemap;
+	JagSchemaAttribute			*_schAttr;
 	JagVector<int>				_defvallist;
-	JagVector<Jstr>	_indexlist;
+	JagVector<Jstr>				_indexlist;
 	const JagDBServer			*_servobj;
 
 	JagTableSchema				*_tableschema;
@@ -176,8 +177,8 @@ class JagTable
 	time_t  					_schemaRefreshTime;
 	time_t  					_indexRefreshTime;
 	const JagCfg  				*_cfg;
-	Jstr  			_dbname;
-	Jstr 				_tableName;
+	Jstr  						_dbname;
+	Jstr 						_tableName;
 	JagBlockLock				*_mergeLock;
 	int  						_objectType;
 
@@ -192,7 +193,7 @@ class JagTable
 	int _removeIndexRecords( const char *buf );
 	int  removeColFiles(const char *kvbuf );
 	bool isFileColumn( const Jstr &colname );
-	void formatPointsInLineString( const JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
+	void formatPointsInLineString( JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
 								   JagVector<JagDBPair> &retpair, Jstr &errmg );
 	void getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D,
                          int &getx, int &gety, int &getz, int &getxmin, int &getymin, int &getzmin,

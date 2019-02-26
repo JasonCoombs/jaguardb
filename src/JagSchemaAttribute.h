@@ -34,7 +34,7 @@ class JagSchemaAttribute
 	unsigned int begincol;
 	unsigned int endcol;
 	unsigned int srid;
-	unsigned int measures;
+	unsigned int metrics;
 	bool isUUID;
 	bool isFILE;
 	bool isKey;
@@ -44,7 +44,7 @@ class JagSchemaAttribute
 	JagSchemaRecord record;
 	
 	JagSchemaAttribute() {
-		offset = length = sig = begincol = endcol = srid = measures = 0;
+		offset = length = sig = begincol = endcol = srid = metrics = 0;
 		type = JAG_C_COL_TYPE_STR;
 		isAscending = isUUID = isFILE = isKey = false;
 	}

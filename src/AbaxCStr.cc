@@ -287,6 +287,32 @@ AbaxCStr& AbaxCStr::trimSpaces( int end )
 	return *this;
 }
 
+AbaxCStr& AbaxCStr::trimChar( char C )
+{
+	if ( length_ < 1 ) return *this;
+
+	// remove trailing blanks first
+	int i = length_-1;
+	if ( C == buf_[i] ) {
+		buf_[i]='\0';
+		--length_;
+	}
+
+	if ( buf_[0] != C ) {
+		return *this;
+	}
+
+	--length_; 
+	AbaxCStr *ps = new AbaxCStr(length_+1 );
+	memcpy(ps->buf_, buf_+1, length_);
+
+	if ( buf_ ) free(buf_);
+	buf_ = ps->buf_;
+	buf_[length_] = '\0';
+	nseg_ = ps->nseg_;
+	return *this;
+}
+
 
 AbaxCStr & AbaxCStr::trimEndChar( char chr )
 {

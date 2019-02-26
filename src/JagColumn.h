@@ -47,8 +47,8 @@ class JagColumn
 		int			   srid;
 		int				begincol;
 		int				endcol;
-		int				measures;
-		//int				dummy1; replaced by measures
+		int				metrics;
+		//int				dummy1; replaced by metrics
 		int				dummy2;
 		int				dummy3;
 		int				dummy4;

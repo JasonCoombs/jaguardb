@@ -179,6 +179,7 @@ bool JagTable::getPair( JagDBPair &pair )
 int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &retpair, Jstr &errmsg )
 {
 	int getpos = 0;
+	int metrics;
 	int rc, rc2;
 	
 	Jstr dbcolumn, dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
@@ -487,6 +488,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 		} 
 
 		colType = (*_tableRecord.columnVector)[i].type;
+		metrics = (*_tableRecord.columnVector)[i].metrics;
 		//prt(("s5051 other i=%d dbcolumn=[%s] colType=[%s]\n", i, dbcolumn.c_str(), colType.c_str() ));
 		if ( colType == JAG_C_COL_TYPE_POINT ) {
 			pointx = colname + ":x"; pointy = colname + ":y";
@@ -504,6 +506,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			 			pointy.c_str(), _schAttr[getpos].offset, 
 						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 				}
+
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
 			}
 		} else if ( colType == JAG_C_COL_TYPE_RANGE ) {
 			pointx = colname + ":begin"; pointy = colname + ":end";
@@ -556,6 +560,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			 			pointz.c_str(), _schAttr[getpos].offset, 
 						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 				}
+
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
 			}
 		} else if ( colType == JAG_C_COL_TYPE_CIRCLE || colType == JAG_C_COL_TYPE_SQUARE ) {
 			pointx = colname + ":x"; pointy = colname + ":y"; pointr = colname + ":a"; 
@@ -591,6 +597,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     									   _schAttr[getpos].sig, _schAttr[getpos].type );
     					} 
 				}
+
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
 			} 
 		} else if ( colType == JAG_C_COL_TYPE_SPHERE || colType == JAG_C_COL_TYPE_CUBE ) {
 			pointx = colname + ":x"; pointy = colname + ":y";
@@ -646,6 +654,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 					}
 				}
 
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
+
 			}
 		} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D || colType == JAG_C_COL_TYPE_SQUARE3D ) {
 			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
@@ -698,6 +708,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			 			pointny.c_str(), _schAttr[getpos].offset, 
 						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 				}
+
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
 			}
 		} else if ( colType  == JAG_C_COL_TYPE_RECTANGLE || colType == JAG_C_COL_TYPE_ELLIPSE ) {
 			pointx = colname + ":x"; pointy = colname + ":y";
@@ -742,6 +754,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			 			pointnx.c_str(), _schAttr[getpos].offset, 
 						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 				}
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
 			}
 		} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D || colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
 			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
@@ -809,6 +822,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 				}
 
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
 			}
 		} else if ( colType == JAG_C_COL_TYPE_BOX || colType == JAG_C_COL_TYPE_ELLIPSOID ) {
 			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
@@ -879,6 +893,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 				}
 
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
+
 			}
 		} else if ( colType == JAG_C_COL_TYPE_CYLINDER || colType == JAG_C_COL_TYPE_CONE ) {
 			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
@@ -938,6 +954,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			 			pointny.c_str(), _schAttr[getpos].offset, 
 						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 				}
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.point.metrics, tablekvbuf );
 			}
 		} else if ( colType == JAG_C_COL_TYPE_LINE3D || colType == JAG_C_COL_TYPE_LINE ) {
 			pointx1 = colname + ":x1"; pointy1 = colname + ":y1"; pointz1 = colname + ":z1";
@@ -995,6 +1012,9 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 							_schAttr[getpos].type );
 					}
 				}
+
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.linestr.point[0].metrics, tablekvbuf );
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.linestr.point[1].metrics, tablekvbuf );
 			}
 		} else if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D
 					 || colType == JAG_C_COL_TYPE_MULTIPOINT || colType == JAG_C_COL_TYPE_MULTIPOINT3D
@@ -1009,8 +1029,6 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
 			prt(("s2234 getColumnIndex is3D=%d getxmin=%d getx=%d gety=%d getz=%d\n", is3D, getxmin, getx, gety, getz ));
 			if ( getxmin >= 0 ) {
-				// char ibuf[32];
-				//OtherAttribute other;
 				JagLineString line;
 				if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 					JagParser::addLineStringData(line, otherAttr.valueData.c_str() );
@@ -1018,12 +1036,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 				} else {
 					JagParser::addLineString3DData(line, otherAttr.valueData.c_str() );
 					prt(("s8033 addLineString3DData xmin=%0.3f ymin=%.3f zmin=%.3f valueData=[%s]\n", xmin, ymin, zmin, otherAttr.valueData.c_str() ));
-					//prt(("s8023 line.print():\n" ));
-					//line.print();
 				}
-				//prt(("s5373 i=%d otherAttr.linestr.size=%d valueData=[%s]\n", i, line.size(), otherAttr.valueData.c_str() ));
-				//if ( ! is3D ) { zmin = zmax = 0.0; }
-
 				JagPolyPass ppass;
 				ppass.is3D = is3D;
 				ppass.xmin = xmin; ppass.ymin = ymin; ppass.zmin = zmin;
@@ -1035,6 +1048,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
 				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
 				ppass.lsuuid = lsuuid;
+				ppass.dbtab = dbtab;
 				ppass.colname = colname;
 				ppass.m = 0;
 				ppass.n = 0;
@@ -1096,6 +1110,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
 				ppass.lsuuid = lsuuid;
+				ppass.dbtab = dbtab;
 				ppass.colname = colname;
 				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
 				ppass.col = i;
@@ -1109,7 +1124,6 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 					formatPointsInLineString( linestr, tablekvbuf, ppass, retpair, errmsg );
 				}
 
-				// formatPointsInLineString( line, tablekvbuf, ppass, retpair, errmsg );
 				rc = 1;
 
 				++mlineIndex;
@@ -1158,6 +1172,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
 				ppass.lsuuid = lsuuid;
+				ppass.dbtab = dbtab;
 				ppass.colname = colname;
 				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
 				ppass.col = i;
@@ -1270,6 +1285,10 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 						// prt(("s5203 formatOneCol rc=%d\n", rc ));
 					}
 				}
+
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.linestr.point[0].metrics, tablekvbuf );
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.linestr.point[1].metrics, tablekvbuf );
+				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, otherAttr.linestr.point[2].metrics, tablekvbuf );
 			} 
 		} else {
 			/***
@@ -3257,7 +3276,7 @@ void JagTable::setupSchemaMapAttr( int numCols )
 		_schAttr[i].begincol = (*(_tableRecord.columnVector))[i].begincol;
 		_schAttr[i].endcol = (*(_tableRecord.columnVector))[i].endcol;
 		_schAttr[i].srid = (*(_tableRecord.columnVector))[i].srid;
-		_schAttr[i].measures = (*(_tableRecord.columnVector))[i].measures;
+		_schAttr[i].metrics = (*(_tableRecord.columnVector))[i].metrics;
 		// dummy1 dummy2
 		_schAttr[i].isUUID = false;
 		_schAttr[i].isFILE = false;
@@ -3394,9 +3413,10 @@ void JagTable::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam
 	}
 }
 
-void JagTable::formatPointsInLineString( const JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
+void JagTable::formatPointsInLineString( JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
 										 JagVector<JagDBPair> &retpair, Jstr &errmsg )
 {
+	prt(("s4928 formatPointsInLineString line.size=%d\n", line.size() ));
 	int getpos;
 	Jstr point;
 	char ibuf[32];
@@ -3408,6 +3428,7 @@ void JagTable::formatPointsInLineString( const JagLineString &line, char *tablek
 	//prt(("s2935 pointx=[%s] pointz=[%s] pass.getxmin=%d pass.getymin=%d \n", pointx.c_str(), pointz.c_str(), pass.getxmin, pass.getymin ));
 
 	for ( int j=0; j < line.size(); ++j ) {
+		JagPoint &jPoint = line.point[j];
 		point = "geo:xmin";
 		getpos = pass.getxmin;
      	rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.xmin).c_str(), errmsg, point.c_str(), 
@@ -3494,7 +3515,7 @@ void JagTable::formatPointsInLineString( const JagLineString &line, char *tablek
         
        	if ( pass.getx >= 0 ) {
     		getpos = pass.getx;
-			#if 0
+			#if 1
 			prt(("s4005 getx=%d pointx=[%s] line.point[j].x=[%s]\n", getpos, pointx.c_str(), line.point[j].x ));
 			prt(("_schAttr[getpos].offset=%d _schAttr[getpos].length=%d type=[%s]\n", 
 					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.c_str() ));
@@ -3505,7 +3526,7 @@ void JagTable::formatPointsInLineString( const JagLineString &line, char *tablek
        	}
       	if ( pass.gety >= 0 ) {
     		getpos = pass.gety;
-			#if 0
+			#if 1
 			prt(("s4005 gety=%d pointy=[%s] line.point[j].y=[%s]\n", getpos, pointy.c_str(), line.point[j].y ));
 			prt(("_schAttr[getpos].offset=%d _schAttr[getpos].length=%d type=[%s]\n", 
 					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.c_str() ));
@@ -3518,11 +3539,19 @@ void JagTable::formatPointsInLineString( const JagLineString &line, char *tablek
 		//prt(("s7830 pass.is3D=%d pass.getz=%d\n", pass.is3D, pass.getz ));
        	if ( pass.is3D && pass.getz >= 0 ) {
     		getpos = pass.getz;
+			#if 1
+			prt(("s4005 getz=%d pointz=[%s] line.point[j].z=[%s]\n", getpos, pointz.c_str(), line.point[j].z ));
+			prt(("_schAttr[getpos].offset=%d _schAttr[getpos].length=%d type=[%s]\n", 
+					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.c_str() ));
+			#endif
        		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, 
 								line.point[j].z, errmsg, 
        							pointz.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
 								_schAttr[getpos].sig, _schAttr[getpos].type );
        	}
+
+		prt(("s2238 j=%d jPoint.metrics.size=%d\n", j, jPoint.metrics.size() ));
+		formatMetricCols( pass.tzdiff, pass.srvtmdiff, pass.dbtab, pass.colname, jPoint.metrics, tablekvbuf );
 
 		dbNaturalFormatExchange( tablekvbuf, _numKeys, _schAttr, 0, 0, " " ); // natural format -> db format
 		retpair.append( JagDBPair( tablekvbuf, KEYLEN, tablekvbuf+KEYLEN, VALLEN, true ) );
@@ -3531,6 +3560,7 @@ void JagTable::formatPointsInLineString( const JagLineString &line, char *tablek
 		prt(("s4105 tablekvbuf:\n" ));
 		dumpmem( tablekvbuf, KEYLEN+VALLEN);
 		**/
+
 
        	if ( pass.getx >= 0 ) {
 			memset(tablekvbuf+_schAttr[pass.getx].offset, 0, _schAttr[pass.getx].length );
@@ -3541,6 +3571,8 @@ void JagTable::formatPointsInLineString( const JagLineString &line, char *tablek
        	if ( pass.is3D && pass.getz >= 0 ) {
 			memset(tablekvbuf+_schAttr[pass.getz].offset, 0, _schAttr[pass.getz].length );
 		}
+
+
 
    	} // end of all points of this linestring column
 
@@ -3602,6 +3634,41 @@ void JagTable::getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D
 	if ( is3D ) {
 		dbcolumn = dbtab + "." + pointz;
 		if ( _tablemap->getValue(dbcolumn, getpos) ) { getz = getpos; }
+	}
+}
+
+
+void JagTable::appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub )
+{
+    OtherAttribute other;
+    other.issubcol = isSub;
+    for ( int i=0; i < n; ++i ) {
+        otherVec.append( other );
+    }
+}
+
+void JagTable::formatMetricCols( int tzdiff, int srvtmdiff, const Jstr &dbtab, const Jstr &colname, 
+								 const JagVector<Jstr> &metrics, char *tablekvbuf )
+{
+	int len = metrics.size();
+	prt(("s2008 formatMetricCols len=%d\n", len ));
+	if ( len < 1 ) return;
+
+	Jstr col, dbcolumn;
+	int getpos;
+	int rc;
+	Jstr errmsg;
+	for ( int i = 0; i < len; ++i ) {
+		col = colname + ":m" + intToStr(i+1);
+		dbcolumn = dbtab + "." + col;
+		rc = _tablemap->getValue(dbcolumn, getpos);
+		if ( ! rc ) continue;
+
+		prt(("s3874 i=%d col=[%s] metric=[%s] getpos=%d len=%d\n", i, col.c_str(), metrics[i].s(), getpos, _schAttr[getpos].length ));
+		prt(("s3874 offset=%d length=%d\n", _schAttr[getpos].offset, _schAttr[getpos].length ));
+		formatOneCol( tzdiff, srvtmdiff, tablekvbuf, metrics[i].s(), errmsg,
+		              col.c_str(), _schAttr[getpos].offset,
+		              _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 	}
 }
 

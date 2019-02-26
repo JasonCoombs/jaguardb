@@ -360,6 +360,7 @@ void JagPoint::copyData( const JagPoint& p2 )
 	memcpy( c, p2.c, JAG_POINT_LEN );
 	memcpy( nx, p2.nx, JAG_POINT_LEN );
 	memcpy( ny, p2.ny, JAG_POINT_LEN );
+	metrics = p2.metrics;
 }
 
 void JagPoint::print()  const
@@ -739,12 +740,14 @@ void JagLineString::bbox3D( double &xmin, double &ymin, double &zmin, double &xm
 void JagLineString::add( const JagPoint2D &p )
 {
 	JagPoint pp( d2s(p.x).c_str(),  d2s(p.y).c_str() );
+	pp.metrics = p.metrics;
 	point.append(pp);
 }
 
 void JagLineString::add( const JagPoint3D &p )
 {
 	JagPoint pp( d2s(p.x).c_str(),  d2s(p.y).c_str(), d2s(p.z).c_str() );
+	pp.metrics = p.metrics;
 	point.append(pp);
 }
 
@@ -794,12 +797,14 @@ void JagLineString::center3D( double &cx, double &cy, double &cz, bool dropLast 
 void JagLineString3D::add( const JagPoint2D &p )
 {
 	JagPoint3D pp( d2s(p.x).c_str(),  d2s(p.y).c_str(), "0.0" );
+	pp.metrics = p.metrics;
 	point.append(pp);
 }
 
 void JagLineString3D::add( const JagPoint3D &p )
 {
 	JagPoint3D pp( d2s(p.x).c_str(),  d2s(p.y).c_str(), d2s(p.z).c_str() );
+	pp.metrics = p.metrics;
 	point.append(pp);
 }
 

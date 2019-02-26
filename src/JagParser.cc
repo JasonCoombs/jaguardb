@@ -2242,6 +2242,7 @@ int JagParser::setInsertVector()
 	endSignal = 0;
 	c2 = 0;
 	bool hquote;
+	int dim;
 	//prt(("s2523 p=[%s] q=[%s]\n", p, q ));
 	while ( 1 ) {
 		while ( isspace(*q) ) ++q;
@@ -2351,22 +2352,31 @@ int JagParser::setInsertVector()
 				if ( *q == 0 ) return -2854;
 				*q = '\0';
 				JagStrSplitWithQuote sp( p, ' ', true, true );
-				sp.print();
 				*q = ')';
-				return -10000;
+				if ( sp.length() < 2 ) { 
+					return -2865; 
+				}
+				if ( sp[0].size() >= JAG_POINT_LEN || sp[1].size() >= JAG_POINT_LEN ) { return -2868; }
+				other.type =  JAG_C_COL_TYPE_POINT;
+				strcpy(other.point.x, sp[0].c_str() );
+				strcpy(other.point.y, sp[1].c_str() );
+				strcpy(other.point.z, "0");
+				getMetrics( sp, 2, other.point.metrics );
+				q = _saveptr;
 			} else if (  strncasecmp( p, "point3d(", 8 ) == 0 ) {
 				// This is in insert
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2855;
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
-				if ( sp.length() != 3 ) { return -2866; }
+				JagStrSplitWithQuote sp( p, ' ', true, true );
+				if ( sp.length() < 3 ) { return -2866; }
 				if ( sp[0].size() >= JAG_POINT_LEN || sp[1].size() >= JAG_POINT_LEN 
 					  || sp[2].size() >= JAG_POINT_LEN ) { return -2868; }
 				other.type =  JAG_C_COL_TYPE_POINT3D;
 				strcpy(other.point.x, sp[0].c_str() );
 				strcpy(other.point.y, sp[1].c_str() );
 				strcpy(other.point.z, sp[2].c_str() );
+				getMetrics( sp, 3, other.point.metrics );
 				q = _saveptr;
 			} else if ( strncasecmp( p, "circle(", 7 ) == 0 || strncasecmp( p, "square(", 7 )==0 ) {
 				// circle( x y radius)
@@ -2380,7 +2390,7 @@ int JagParser::setInsertVector()
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2856;
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() < 3 ) { 
 					//prt(("c2875 p=[%s] origcmd=[%s]\n", p, _ptrParam->origCmd.c_str() )); 
 					return -2875; 
@@ -2398,6 +2408,7 @@ int JagParser::setInsertVector()
 				if ( sp.length() >= 4 ) { 
 					strcpy(other.point.nx, sp[3].c_str() ); 
 				}
+				getMetrics( sp, 4, other.point.metrics );
 				q = _saveptr;
 			} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
 				// cube( x y z radius )   inner circle radius
@@ -2410,7 +2421,7 @@ int JagParser::setInsertVector()
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2857;
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() < 4 ) { 
 					//prt(("c3175 p=[%s] origcmd=[%s]\n", p, _ptrParam->origCmd.c_str() )); 
 					return -3175; 
@@ -2429,6 +2440,7 @@ int JagParser::setInsertVector()
 					if ( sp.length() >= 5 ) { strcpy(other.point.nx, sp[4].c_str() ); }
 					if ( sp.length() >= 6 ) { strcpy(other.point.ny, sp[5].c_str() ); }
 				}
+				getMetrics( sp, 6, other.point.metrics );
 
 				q = _saveptr;
 			} else if ( strncasecmp( p, "circle3d(", 9 )==0
@@ -2443,7 +2455,7 @@ int JagParser::setInsertVector()
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2858;
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() < 4 ) { return -3155; }
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3154; }
@@ -2458,6 +2470,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=5 ) { strcpy(other.point.nx, sp[4].c_str() ); }
 				if ( sp.length() >=6 ) { strcpy(other.point.ny, sp[5].c_str() ); }
+				getMetrics( sp, 6, other.point.metrics );
 
 				q = _saveptr;
 			} else if (  strncasecmp( p, "rectangle(", 10 )==0 || strncasecmp( p, "ellipse(", 8 )==0 ) {
@@ -2472,7 +2485,7 @@ int JagParser::setInsertVector()
 				//prt(("s2091 p=[%s]\n", p ));
 				replaceChar(p, ',', ' ', ')' );
 				//prt(("s2092 p=[%s]\n", p ));
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() < 4 ) { 
 					//prt(("c3275 p=[%s] origcmd=[%s]\n", p, _ptrParam->origCmd.c_str() )); 
 					return -3275; 
@@ -2494,6 +2507,7 @@ int JagParser::setInsertVector()
 				if ( sp.length() >= 5 ) {
 					strcpy(other.point.nx, sp[4].c_str() );
 				}
+				getMetrics( sp, 5, other.point.metrics );
 				//prt(("s3331 other.point.x=[%s] adrrsofother=%0x addrofppram=%0x\n", other.point.x, &other, _ptrParam ));
 				q = _saveptr;
 			} else if ( strncasecmp( p, "rectangle3d(", 12 )==0 || strncasecmp( p, "ellipse3d(", 10 )==0 ) {
@@ -2506,7 +2520,7 @@ int JagParser::setInsertVector()
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2552;
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() < 5 ) { return -3331; }
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3373; }
@@ -2523,6 +2537,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=6 ) { strcpy(other.point.nx, sp[5].c_str() ); }
 				if ( sp.length() >=7 ) { strcpy(other.point.ny, sp[6].c_str() ); }
+				getMetrics( sp, 7, other.point.metrics );
 				q = _saveptr;
 				//prt(("s1051 other.point.x=[%s] other.point.y=[%s]\n", other.point.x, other.point.y ));
 				//prt(("s1051 other.point.z=[%s] other.point.z=[%s]\n", other.point.z, other.point.a ));
@@ -2538,7 +2553,7 @@ int JagParser::setInsertVector()
 				if ( *p == 0 ) return -2553;
 				//prt(("s0283 got box p=[%s] ...\n", p  ));
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				//prt(("s2331 sp.len=%d\n", sp.length() ));
 				if (  sp.length() < 6 ) { return -3375; }
 				for ( int k=0; k < sp.length(); ++k ) {
@@ -2556,7 +2571,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=7 ) { strcpy(other.point.nx, sp[6].c_str() ); }
 				if ( sp.length() >=8 ) { strcpy(other.point.ny, sp[7].c_str() ); }
-
+				getMetrics( sp, 8, other.point.metrics );
 				q = _saveptr;
 				//prt(("s3039 copied box data q=[%s] p=[%s]\n", q, p ));
 			} else if ( strncasecmp( p, "cylinder(", 9 )==0 || strncasecmp( p, "cone(", 5 )==0 ) {
@@ -2570,7 +2585,7 @@ int JagParser::setInsertVector()
 				++p;  // (p
 				if ( *p == 0 ) return -2551;
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() < 5 ) { return -3475; }
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) {
@@ -2589,6 +2604,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=6 ) { strcpy(other.point.nx, sp[5].c_str() ); }
 				if ( sp.length() >=7 ) { strcpy(other.point.ny, sp[6].c_str() ); }
+				getMetrics( sp, 7, other.point.metrics );
 
 				q = _saveptr;
 			} else if ( strncasecmp( p, "line(", 5 )==0 ) {
@@ -2596,16 +2612,28 @@ int JagParser::setInsertVector()
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2651;
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
-				if (  sp.length() != 4 ) { return -3575; }
+				JagStrSplitWithQuote sp( p, ' ', true, true );
+				if (  sp.length() < 4 ) { return -3575; }
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3415; }
 				}
 				other.type =  JAG_C_COL_TYPE_LINE;
-				JagPoint p1( sp[0].c_str(), sp[1].c_str() );
-				JagPoint p2( sp[2].c_str(), sp[3].c_str() );
-				other.linestr.point.append(p1);
-				other.linestr.point.append(p2);
+				dim = 2;
+				if ( 4 == sp.size() ) {
+					JagPoint p1( sp[0].c_str(), sp[1].c_str() );
+					JagPoint p2( sp[2].c_str(), sp[3].c_str() );
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+				} else {
+					JagPoint p1( sp[0].c_str(), sp[1].c_str() );
+					getMetrics( sp, dim, p1.metrics );
+
+					int start = dim +  p1.metrics.size();
+					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str() );
+					getMetrics( sp, start+2, p2.metrics );
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+				}
 				q = _saveptr;
 				//prt(("s5510 appended p1.x=[%s] p1.y=[%s]\n", sp[0].c_str(), sp[1].c_str() ));
 				//prt(("s5510 appended p2.x=[%s] p2.y=[%s]\n", sp[2].c_str(), sp[3].c_str() ));
@@ -2615,16 +2643,30 @@ int JagParser::setInsertVector()
 				if ( *p == 0 ) return -2654;
 				//prt(("s4034 line3d p=[%s]\n", p ));
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
-				if (  sp.length() != 6 ) { return -3577; }
+				JagStrSplitWithQuote sp( p, ' ', true, true );
+				if (  sp.length() < 6 ) { return -3577; }
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3416; }
 				}
 				other.type =  JAG_C_COL_TYPE_LINE3D;
-				JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
-				JagPoint p2( sp[3].c_str(), sp[4].c_str(), sp[5].c_str() );
-				other.linestr.point.append(p1);
-				other.linestr.point.append(p2);
+
+				if ( 6 == sp.size() ) {
+					JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
+					JagPoint p2( sp[3].c_str(), sp[4].c_str(), sp[5].c_str() );
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+				} else {
+					dim = 3;
+					JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
+					getMetrics( sp, dim, p1.metrics );
+
+					int start = dim +  p1.metrics.size();
+					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
+					getMetrics( sp, start+dim, p2.metrics );
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+				}
+
 				q = _saveptr;
 			} else if ( strncasecmp( p, "linestring(", 11 )==0 ) {
 				// linestring( x1 y1, x2 y2, x3 y3, x4 y4)
@@ -2750,20 +2792,37 @@ int JagParser::setInsertVector()
 				if ( *p == 0 ) return -2412;
 				//prt(("s3481 triangle p=[%s]\n", p ));
 				replaceChar(p, ',', ' ', ')' );
-				JagStrSplit sp(p, ' ', true );
-				if (  sp.length() != 6 ) { return -3587; }
+				JagStrSplitWithQuote sp( p, ' ', true, true );
+				if (  sp.length() < 6 ) { return -3587; }
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3418; }
 				}
 				other.type =  JAG_C_COL_TYPE_TRIANGLE;
-				JagPoint p1( sp[0].c_str(), sp[1].c_str() );
-				JagPoint p2( sp[2].c_str(), sp[3].c_str() );
-				JagPoint p3( sp[4].c_str(), sp[5].c_str() );
-				//prt(("s3373 p2.y=[%s]\n",  sp[3].c_str() ));
+				if ( 6 == sp.length() ) {
+					JagPoint p1( sp[0].c_str(), sp[1].c_str() );
+					JagPoint p2( sp[2].c_str(), sp[3].c_str() );
+					JagPoint p3( sp[4].c_str(), sp[5].c_str() );
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+					other.linestr.point.append(p3);
+				} else {
+					dim = 2;
+					JagPoint p1( sp[0].c_str(), sp[1].c_str() );
+					getMetrics( sp, dim, p1.metrics );
 
-				other.linestr.point.append(p1);
-				other.linestr.point.append(p2);
-				other.linestr.point.append(p3);
+					int start = dim +  p1.metrics.size();
+					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str() );
+					getMetrics( sp, start+dim, p2.metrics );
+
+					start += dim + p2.metrics.size();
+					JagPoint p3( sp[start+0].c_str(), sp[start+1].c_str() );
+					getMetrics( sp, start+dim, p3.metrics );
+
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+					other.linestr.point.append(p3);
+				}
+
 				q = _saveptr;
 			} else if ( strncasecmp( p, "triangle3d(", 11 )==0 ) {
 				// triangle3d(x1 y1 z1 x2 y2 z2 x3 y3 z3 )
@@ -2771,7 +2830,7 @@ int JagParser::setInsertVector()
 				if ( *p == 0 ) return -2402;
 				replaceChar(p, ',', ' ', ')' );
 				// prt(("s0831 triangle3d p=[%s]\n", p ));
-				JagStrSplit sp(p, ' ', true );
+				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() != 9 ) { 
 					// prt(("s3590 sp.length()=%d p=[%s]\n", sp.length(), p ));
 					return -3590; 
@@ -2780,12 +2839,30 @@ int JagParser::setInsertVector()
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3592; }
 				}
 				other.type =  JAG_C_COL_TYPE_TRIANGLE3D;
-				JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
-				JagPoint p2( sp[3].c_str(), sp[4].c_str(), sp[5].c_str() );
-				JagPoint p3( sp[6].c_str(), sp[7].c_str(), sp[8].c_str() );
-				other.linestr.point.append(p1);
-				other.linestr.point.append(p2);
-				other.linestr.point.append(p3);
+				if ( 9 == sp.size() ) {
+					JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
+					JagPoint p2( sp[3].c_str(), sp[4].c_str(), sp[5].c_str() );
+					JagPoint p3( sp[6].c_str(), sp[7].c_str(), sp[8].c_str() );
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+					other.linestr.point.append(p3);
+				} else {
+					dim = 3;
+					JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
+					getMetrics( sp, dim, p1.metrics );
+
+					int start = dim +  p1.metrics.size();
+					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
+					getMetrics( sp, start+dim, p2.metrics );
+
+					start += dim + p2.metrics.size();
+					JagPoint p3( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
+					getMetrics( sp, start+dim, p3.metrics );
+
+					other.linestr.point.append(p1);
+					other.linestr.point.append(p2);
+					other.linestr.point.append(p3);
+				}
 				q = _saveptr;
 				// prt(("s5124 q=_saveptr=[%s]\n", q ));
 			} else if ( strncasecmp( p, "json(", 5 )==0 ) {
@@ -2870,7 +2947,6 @@ int JagParser::setInsertVector()
 			other.hasQuote = hquote;
 
 			//prt(("s5014 ****** otherVec.append(valueData=[%s]) otherVec.size=%d\n", p, _ptrParam->otherVec.size() ));
-			// qwer
 			_ptrParam->otherVec.append(other);
 
 			//prt(("s0821 _ptrParam=%0x print:\n", _ptrParam ));
@@ -2879,7 +2955,6 @@ int JagParser::setInsertVector()
 			//prt(("s5014 ****** _ptrParam->otherVec.append(other.point.x=[%s])\n", other.point.x ));
 			//prt(("s5014 ****** _ptrParam->otherVec.append(other.point.y=[%s])\n", other.point.y ));
 			//prt(("s5014 ****** _ptrParam->otherVec.append(other.point.z=[%s])\n", other.point.z ));
-
 			/***
 			prt(("s0395 colName=blank type=[%s] valueData=p=[%s] endSignal=%d otherVec.append(other) vec.size=%d\n", 
 			  	 other.type.c_str(), p, endSignal, _ptrParam->otherVec.size()  ));
@@ -3057,7 +3132,6 @@ int JagParser::setCreateVector( short setType )
     		}
     		_saveptr = p+1;
 		}
-
 		
 		CreateAttribute cattr;
 		cattr.objName.dbName = _ptrParam->objectVec[0].dbName;
@@ -3305,12 +3379,12 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 {
 	// prt(("\ns10282 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
 	//prt(("s1082 setOneCreateColumnAttribute\n"));
-	int rc, collen, measures; char *p; Jstr defValue;
+	int rc, collen, metrics; char *p; Jstr defValue;
 	Jstr s, rcs, colType, typeArg;
 	int srid = JAG_DEFAULT_SRID;
 	int  argcollen=0, argsig = 0;
 	bool isEnum = false;
-	measures = 0;
+	metrics = 0;
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
 	*(cattr.spare) = JAG_C_COL_VALUE;	
@@ -3350,15 +3424,15 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 	**/
 
 	// rc = getTypeNameArg( args[0].c_str(), colType, typeArg, argcollen, argsig );
-	rc = getTypeNameArg( _gettok, colType, typeArg, argcollen, argsig, measures );
+	rc = getTypeNameArg( _gettok, colType, typeArg, argcollen, argsig, metrics );
 	if ( rc < 0 ) {
 		prt(("s2992 getTypeNameArg rc<0 rc=%d\n", rc ));
 		return rc;
 	}
 	srid = argcollen;
-	cattr.measures = measures;
+	cattr.metrics = metrics;
 
-	prt(("s1121 _gettok=[%s] colType=[%s] srid=%d measures=%d\n", _gettok, colType.c_str(), srid, measures ));
+	prt(("s1121 _gettok=[%s] colType=[%s] srid=%d metrics=%d\n", _gettok, colType.c_str(), srid, metrics ));
 	if ( strchr(colType.c_str(), ' ') ) colType.remove(' ');
 	if ( strchr(colType.c_str(), '\n') ) colType.remove('\n');
 	//prt(("s1122 _gettok=[%s] colType=[%s]\n", _gettok, colType.c_str() ));
@@ -4549,6 +4623,8 @@ void JagParser::addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other,
 		_ptrParam->otherVec.append(other);
 		++numCols;
 	}
+
+	// qwer todo add metrics :m1  :m2  :m3 ...
 }
 
 void JagParser::setToRealType( const Jstr &rcs, CreateAttribute &cattr )
@@ -4573,10 +4649,10 @@ void JagParser::setToRealType( const Jstr &rcs, CreateAttribute &cattr )
 // gettok: "line(2020)"  
 // gettok: "int default '1'"  
 // gettok: "enum('a','b', 'c', 'd') default 'b'"
-int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &measures )
+int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &metrics )
 {
 	prt(("s5503 getTypeNameArg gettok=[%s]\n", gettok ));
-	measures = 0;
+	metrics = 0;
 	char save;
 	targ = "";
 	char *p1, *p2;
@@ -4608,8 +4684,8 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 	} 
 	targ = Jstr( p1, p2-p1);
 	prt(("s10938 targ=[%s]\n", targ.s() ));
-	if ( strchr(targ.c_str(), ',' ) && ! strstr(targ.c_str(), "srid") && ! strstr(targ.c_str(), "measures") ) {
-		// "srid:4326, measures:5"
+	if ( strchr(targ.c_str(), ',' ) && ! strstr(targ.c_str(), "srid") && ! strstr(targ.c_str(), "metrics") ) {
+		// "srid:4326, metrics:5"
 		// 13,4
 		JagStrSplit sp( targ, ',', true );
 		// prt(("s5123 sp.length=%d\n", sp.length() ));
@@ -4657,15 +4733,15 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 				}
 				prt(("s2838 collen=%d\n", collen ));
 
-				const char *pm = strstr( targ.c_str(), "measures:" );
+				const char *pm = strstr( targ.c_str(), "metrics:" );
 				if ( pm ) {
 					JagStrSplit sp2(pm, ':');
-					measures = jagatoi( sp2[1].c_str() );
+					metrics = jagatoi( sp2[1].c_str() );
 				}
-				prt(("s2838 pm=[%s] measures=%d\n", pm, measures ));
-			} else if ( 0==strncasecmp(targ.c_str(), "measures:", 9 ) ) {
+				prt(("s2838 pm=[%s] metrics=%d\n", pm, metrics ));
+			} else if ( 0==strncasecmp(targ.c_str(), "metrics:", 8 ) ) {
 				JagStrSplit sp(targ, ':');
-				measures = jagatoi( sp[1].c_str() );
+				metrics = jagatoi( sp[1].c_str() );
 			} else {
 				collen = jagatoi( targ.c_str() );
 			}
@@ -4921,12 +4997,13 @@ int JagParser::addLineStringData( JagLineString &linestr, const char *p )
 	char c;
 	for ( int i = 0; i < len; ++i ) {
 		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
-		JagStrSplit ss( sp[i], c, true );
+		//JagStrSplit ss( sp[i], c, true );
+		JagStrSplitWithQuote ss( sp[i].s(), c, true, true );
 		if ( ss.length() < 2 ) {  continue; }
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4416; }
 		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4417; }
 		JagPoint2D p( ss[0].c_str(), ss[1].c_str() );
-		//prt(("s7501 ss[0]=[%s] ss[1]=[%s]\n", ss[0].c_str(), ss[1].c_str() ));
+		getMetrics( ss, 2, p.metrics );
 		linestr3d.add(p);
 	}
 	linestr = linestr3d;
@@ -5004,14 +5081,16 @@ int JagParser::addLineString3DData( JagLineString &linestr, const char *p )
 	for ( int i = 0; i < len; ++i ) {
 		//prt(("s7712 sp[%d]=[%s]\n", i, sp[i].c_str() ));
 		if ( strchr( sp[i].c_str(), '(' ) )  { sp[i].remove('('); }
-		if ( strchr(sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
-		JagStrSplit ss( sp[i], c, true );
+		if ( strchr( sp[i].c_str(), ':') ) { c = ':'; } else { c = ' '; }
+		//JagStrSplit ss( sp[i], c, true );
+		JagStrSplitWithQuote ss( sp[i].s(), c, true, true );
 		// if ( ss.length() < 3 ) { return -4404; }
 		if ( ss.length() < 3 ) continue;
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4436; }
 		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4437; }
 		if ( ss[2].length() >= JAG_POINT_LEN ) { return -4438; }
 		JagPoint3D p( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
+		getMetrics( ss, 3, p.metrics );
 		linestr3d.add(p);
 	}
 	linestr = linestr3d;
@@ -5488,16 +5567,19 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 		Jstr polygon(p, q-p);
 		//prt(("s7252 one polygon=[%s] q=[%s] p=[%s]\n", polygon.c_str(), q, p ));
 		JagStrSplit sp( polygon, ',', true );
+
 		len = sp.length();
 		JagLineString3D linestr3d;
 		for ( int i = 0; i < len; ++i ) {
-			JagStrSplit ss( sp[i], ' ', true );
+			//JagStrSplit ss( sp[i], ' ', true );
+			JagStrSplitWithQuote ss( sp[i].s(), ' ', true, true );
 			//prt(("s2038 sp[i=%d]=[%s]\n", i, sp[i].c_str() ));
 			// if ( ss.length() < 2 ) { return -4523; }
 			if ( ss.length() < 2 ) continue;
 			if ( ss[0].length() >= JAG_POINT_LEN ) { return -4526; }
 			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4527; }
 			JagPoint2D p2d( ss[0].c_str(), ss[1].c_str() );
+			getMetrics( ss, 2, p2d.metrics );
 			linestr3d.add(p2d);
 			if ( mustClose ) {
     			if ( 0==i) {
@@ -5778,13 +5860,14 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 		len = sp.length();
 		JagLineString3D linestr3d;
 		for ( int i = 0; i < len; ++i ) {
-			JagStrSplit ss( sp[i], ' ', true );
-			// if ( ss.length() < 3 ) { return -4533; }
+			//JagStrSplit ss( sp[i], ' ', true );
+			JagStrSplitWithQuote ss( sp[i].s(), ' ', true, true );
 			if ( ss.length() < 3 ) continue;
 			if ( ss[0].length() >= JAG_POINT_LEN ) { return -4536; }
 			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4537; }
 			if ( ss[2].length() >= JAG_POINT_LEN ) { return -4538; }
 			JagPoint3D p3d( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
+			getMetrics( ss, 3, p3d.metrics );
 			linestr3d.add(p3d);
 			if ( mustClose ) {
     			if ( 0==i) {
@@ -6522,3 +6605,18 @@ Jstr JagParser::getFieldTypeString( int srid )
 
 	return ctype;
 }
+
+void JagParser::getMetrics( const JagStrSplitWithQuote &sp, int start, JagVector<Jstr> &metrics )
+{
+	Jstr t;
+	for ( int i = start; i < sp.size(); ++i ) {
+		t = sp[i];
+		if ( '\'' == *(t.c_str()) ) {
+			t.trimChar( '\'');
+		} else if ( '"' == *(t.c_str()) ) {
+			t.trimChar( '"');
+		}
+		metrics.append( t );
+	}
+}
+
