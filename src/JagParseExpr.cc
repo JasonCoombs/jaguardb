@@ -7922,22 +7922,22 @@ bool BinaryOpNode::doAllIsClosed( const Jstr& mk, const Jstr &colType, const Jag
 	const char *str; char *p;
 	if ( colType == JAG_C_COL_TYPE_LINESTRING ||  colType == JAG_C_COL_TYPE_MULTIPOINT ) {
 		str = first.c_str();
-		if ( strchrnum( str, ':') != 1 ) return true;
+		if ( strchrnum( str, ':') < 1 ) return true;
 		get2double(str, p, ':', x1, y1 );
 
 		str = last.c_str();
-		if ( strchrnum( str, ':') != 1 ) return true;
+		if ( strchrnum( str, ':') < 1 ) return true;
 		get2double(str, p, ':', x2, y2 );
 		if ( jagEQ(x1,x2) && jagEQ(y1,y2) ) {
 			value = "1";
 		}
 	} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		str = first.c_str();
-		if ( strchrnum( str, ':') != 2 ) return true;
+		if ( strchrnum( str, ':') < 2 ) return true;
 		get3double(str, p, ':', x1, y1, z1 );
 
 		str = last.c_str();
-		if ( strchrnum( str, ':') != 2 ) return true;
+		if ( strchrnum( str, ':') < 2 ) return true;
 		get3double(str, p, ':', x2, y2, z2 );
 		if ( jagEQ(x1,x2) && jagEQ(y1,y2) && jagEQ(z1,z2) ) {
 			value = "1";
@@ -8064,7 +8064,7 @@ bool BinaryOpNode::doAllNumLines( const Jstr& mk, const Jstr &colType, const Jag
 		|| colType == JAG_C_COL_TYPE_POLYGON
 		|| colType == JAG_C_COL_TYPE_POLYGON3D ) {
 		int cnt = 1;
-		for ( int i =0; i < sp.length(); ++i ) {
+		for ( int i =JAG_SP_START; i < sp.length(); ++i ) {
 			if ( sp[i] == "|" || sp[i] == "!" ) ++cnt;
 		}
 		value = intToStr(cnt);
@@ -8073,7 +8073,7 @@ bool BinaryOpNode::doAllNumLines( const Jstr& mk, const Jstr &colType, const Jag
 
 	if ( colType == JAG_C_COL_TYPE_MULTILINESTRING || colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 		int cnt = 1;
-		for ( int i =0; i < sp.length(); ++i ) {
+		for ( int i =JAG_SP_START; i < sp.length(); ++i ) {
 			if ( sp[i] == "|" ) ++cnt;
 		}
 		value = intToStr(cnt);
@@ -8091,7 +8091,7 @@ bool BinaryOpNode::doAllNumRings( const Jstr& mk, const Jstr &colType, const Jag
 		|| colType == JAG_C_COL_TYPE_POLYGON
 		|| colType == JAG_C_COL_TYPE_POLYGON3D ) {
 		int cnt = 1;
-		for ( int i =0; i < sp.length(); ++i ) {
+		for ( int i =JAG_SP_START; i < sp.length(); ++i ) {
 			if ( sp[i] == "|" || sp[i] == "!" ) ++cnt;
 		}
 		value = intToStr(cnt);
@@ -8109,7 +8109,7 @@ bool BinaryOpNode::doAllNumInnerRings( const Jstr& mk, const Jstr &colType, cons
 		|| colType == JAG_C_COL_TYPE_POLYGON
 		|| colType == JAG_C_COL_TYPE_POLYGON3D ) {
 		int cnt = 0;
-		for ( int i =0; i < sp.length(); ++i ) {
+		for ( int i =JAG_SP_START; i < sp.length(); ++i ) {
 			if ( sp[i] == "|" ) ++cnt;
 		}
 		value = intToStr(cnt);

@@ -5983,7 +5983,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 			linestr.init();
 		} else {
 			nc = strchrnum( str, ':');
-			if ( nc != 1 ) continue; // skip bbox
+			if ( nc < 1 ) continue; // skip bbox
 			get2double(str, p, ':', dx, dy );
 			JagPoint2D pt(dx,dy);
 			linestr.add( pt );
@@ -6014,7 +6014,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 			linestr.init();
 		} else {
 			nc = strchrnum( str, ':');
-			if ( nc != 2 ) continue; // skip bbox
+			if ( nc < 2 ) continue; // skip bbox
 			get3double(str, p, ':', dx, dy, dz );
 			JagPoint3D pt(dx,dy,dz);
 			linestr.add( pt );
@@ -6038,7 +6038,7 @@ void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		nc = strchrnum( str, ':');
-		if ( nc != 1 ) continue;
+		if ( nc < 1 ) continue;
 		get2double(str, p, ':', dx, dy );
 		linestr.add( dx, dy );
 		//prt(("s4028 addLineStringData add(%.2f %.2f)\n", dx, dy ));
@@ -6055,7 +6055,7 @@ void JagParser::addLineStringData( JagLineString3D &linestr, const JagStrSplit &
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		nc = strchrnum( str, ':');
-		if ( nc != 1 ) continue;
+		if ( nc < 1 ) continue;
 		get2double(str, p, ':', dx, dy );
 		linestr.add( dx, dy );
 		//prt(("s4028 addLineStringData add(%.2f %.2f)\n", dx, dy ));
@@ -6070,7 +6070,7 @@ void JagParser::addLineString3DData( JagLineString3D &linestr, const JagStrSplit
 	double dx,dy, dz;
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx, dy, dz );
 		linestr.add( dx, dy, dz );
 		prt(("s4048 addLineStringData add(%.2f %.2f %.2f)\n", dx, dy, dz ));

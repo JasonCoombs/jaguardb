@@ -969,13 +969,13 @@ void JagCGAL::getUniqueStr( const JagStrSplit &sp, const Jstr &hdr, const Jstr &
 	int num;
 	Jstr lastP;
 	const char *str;
-	for  ( int i=0; i < sp.length(); ++i ) {
+	for  ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) {
 			firstPoint = true;
 			value += Jstr(" ") + sp[i];
 		} else {
 			num = strchrnum( sp[i].c_str(), ':');
-			if ( num != 1 && num != 2 ) continue;
+			if ( num < 1 ) continue;
 			if ( ! firstPoint ) {
 				if ( sp[i] != lastP ) {
 					value += Jstr(" ") + sp[i];
@@ -1079,7 +1079,7 @@ void JagCGAL::split2DSPToVector( const JagStrSplit &sp, JagVector<JagPoint2D> &v
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		if ( *str == '|' || *str == '!' ) continue;
-		if ( strchrnum( str, ':') != 1 ) continue;
+		if ( strchrnum( str, ':') < 1 ) continue;
 		get2double(str, p, ':', x, y );
 		vec.append(JagPoint2D(x,y) );
 	}
@@ -1093,7 +1093,7 @@ void JagCGAL::split3DSPToVector( const JagStrSplit &sp, JagVector<JagPoint3D> &v
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		str = sp[i].c_str();
 		if ( *str == '|' || *str == '!' ) continue;
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', x, y,z );
 		vec.append(JagPoint3D(x,y,z) );
 	}
@@ -1202,7 +1202,7 @@ void JagCGAL::getVoronoiPolygons2D( int srid, const JagStrSplit &sp, double tole
 
 	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') != 1 ) continue;
+		if ( strchrnum( str, ':') < 1 ) continue;
 		get2double(str, p, ':', vx, vy );
 		if ( 0 == srid  ) {
 			ix = (vx/tolerance) * factor;
@@ -1515,7 +1515,7 @@ void JagCGAL::getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double to
 	double unitlat;
 	if ( srid > 0 ) {
 		str = sp[JAG_SP_START].c_str();
-		if ( strchrnum( str, ':') != 1 ) { return; }
+		if ( strchrnum( str, ':') < 1 ) { return; }
 		get2double(str, p, ':', vx, vy );
 		unitlon = JagGeo::meterToLon( srid, tolerance, vx, vy );
 		unitlat = JagGeo::meterToLat( srid, tolerance, vx, vy );
@@ -1523,7 +1523,7 @@ void JagCGAL::getDelaunayTriangles2D( int srid, const JagStrSplit &sp, double to
 
 	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') != 1 ) continue;
+		if ( strchrnum( str, ':') < 1 ) continue;
 		get2double(str, p, ':', vx, vy );
 		if ( 0 == srid  ) {
 			ix = (vx/tolerance) * factor;

@@ -1467,7 +1467,7 @@ double JagGeo::doMultiPolygonArea( const Jstr &mk1, int srid1, const JagStrSplit
 				else { ++ring; }
 			} else {
         		str = sp1[i].c_str();
-        		if ( strchrnum( str, ':') != 1 ) continue;
+        		if ( strchrnum( str, ':') < 1 ) continue;
         		get2double(str, p, ':', dx, dy );
     			vec.append(std::make_pair(dx, dy));
     		}
@@ -1537,7 +1537,7 @@ double JagGeo::doMultiPolygonPerimeter( const Jstr &mk1, int srid1, const JagStr
 				vec.clean();
 			} else {
         		str = sp1[i].c_str();
-        		if ( strchrnum( str, ':') != 1 ) continue;
+        		if ( strchrnum( str, ':') < 1 ) continue;
         		get2double(str, p, ':', dx, dy );
     			vec.append(std::make_pair(dx, dy));
     		}
@@ -1567,7 +1567,7 @@ double JagGeo::doMultiPolygon3DPerimeter( const Jstr &mk1, int srid1, const JagS
 				vec.clean();
 			} else {
         		str = sp1[i].c_str();
-        		if ( strchrnum( str, ':') != 2 ) continue;
+        		if ( strchrnum( str, ':') < 2 ) continue;
         		get3double(str, p, ':', dx, dy, dz );
     			vec.append(JagPoint3D(dx, dy, dz));
     		}
@@ -1970,10 +1970,10 @@ bool JagGeo::point3DWithinLineString3D( double x, double y, double z,
 	for ( int i=start; i < sp2.length()-1; ++i ) {
 		//prt(("s6658 sp1[%d]=[%s]\n", i, sp1[i].c_str() ));
 		str = sp2[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 		str = sp2[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( point3DWithinLine3D( x,y,z, dx1,dy1,dz1,dx2,dy2,dz2, strict) ) { return true; }
 	}
@@ -2642,22 +2642,22 @@ bool JagGeo::sequenceSame(  const Jstr &colType, const Jstr &mk1, const JagStrSp
 		str = sp1[i].c_str();
 		n = strchrnum(str, ':');
 		if ( 3 == dim ) { 
-			if ( n != 2 ) continue;
+			if ( n < 2 ) continue;
 			get3double(str, p, ':', x1, y1, z1 );
 
 			str = sp2[i].c_str();
 			n = strchrnum(str, ':');
-			if ( n != 2 ) continue;
+			if ( n < 2 ) continue;
 			get3double(str, p, ':', x2, y2, z2 );
 			
 			if ( !  ( jagEQ( x1, x2 ) && jagEQ( y1, y2 ) && jagEQ( z1, z2 ) ) ) return false;
 		} else {
-			if ( n != 1 ) continue;
+			if ( n < 1 ) continue;
 			get2double(str, p, ':', x1, y1 );
 
 			str = sp2[i].c_str();
 			n = strchrnum(str, ':');
-			if ( n != 1 ) continue;
+			if ( n < 1 ) continue;
 			get2double(str, p, ':', x2, y2 );
 			
 			if ( !  ( jagEQ( x1, x2 ) && jagEQ( y1, y2 ) ) ) return false;
@@ -3030,10 +3030,10 @@ bool JagGeo::polygonWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1,
     
     	if ( rc <  0 ) { return false; }
     	if ( pgon2.size() < 1 ) { return false; }
-    	for ( int i=0; i < sp1.length(); ++i ) {
+    	for ( int i=JAG_SP_START; i < sp1.length(); ++i ) {
     		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
     		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') != 1 ) continue;
+    		if ( strchrnum( str, ':') < 1 ) continue;
     		get2double(str, p, ':', dx, dy );
     		if ( ! pointWithinPolygon( dx, dy, pgon2.linestr[0] ) ) {
     			return false;
@@ -3110,7 +3110,7 @@ bool JagGeo::multiPolygonWithinSquare( const Jstr &mk1, const JagStrSplit &sp1,
 		else {
 			if ( skip ) continue;
     		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') != 1  ) continue;
+    		if ( strchrnum( str, ':') < 1  ) continue;
     		get2double(str, p, ':', dx, dy );
         	transform2DCoordGlobal2Local( x0, y0, dx, dy, nx, loc_x, loc_y );
     		prt(("s6783 dx=%f dy=%f loc_x=%f loc_y=%f r=%f\n", dx, dy, loc_x, loc_y, r ));
@@ -3148,7 +3148,7 @@ bool JagGeo::multiPolygonWithinRectangle( const Jstr &mk1, const JagStrSplit &sp
 		else {
 			if ( skip ) continue;
         	str = sp1[i].c_str();
-        	if ( strchrnum( str, ':') != 1 ) continue;
+        	if ( strchrnum( str, ':') < 1 ) continue;
         	get2double(str, p, ':', dx, dy );
     		transform2DCoordGlobal2Local( x0, y0, dx, dy, nx, loc_x, loc_y );
 			if ( ! locIn2DCenterBox( loc_x, loc_y, a,b, strict ) ) { return false; }
@@ -3183,7 +3183,7 @@ bool JagGeo::multiPolygonWithinCircle( const Jstr &mk1, const JagStrSplit &sp1,
 		else {
 			if ( skip ) continue;
             str = sp1[i].c_str();
-            if ( strchrnum( str, ':') != 1 ) continue;
+            if ( strchrnum( str, ':') < 1 ) continue;
             get2double(str, p, ':', dx, dy );
         	transform2DCoordGlobal2Local( x0, y0, dx, dy, nx, loc_x, loc_y );
     		if ( ! pointWithinCircle( loc_x, loc_y, 0.0, 0.0, r, strict ) ) { return false; }
@@ -3260,13 +3260,13 @@ bool JagGeo::multiPolygonWithinPolygon( const Jstr &mk1, const JagStrSplit &sp1,
     	// pgon has sp2 data parsed
     	// check first polygon only for now
 		bool skip = false;
-    	for ( int i=0; i < sp1.length(); ++i ) {
+    	for ( int i=JAG_SP_START; i < sp1.length(); ++i ) {
 			if ( sp1[i] == "|" ) {  skip = true; }
 			else if ( sp1[i] == "!" ) {  skip = false; }
 			else {
 				if ( skip ) continue;
     			str = sp1[i].c_str();
-    			if ( strchrnum( str, ':') != 1 ) continue;
+    			if ( strchrnum( str, ':') < 1 ) continue;
     			get2double(str, p, ':', dx, dy );
     			if ( ! pointWithinPolygon( dx, dy, pgon2.linestr[0] ) ) { return false; }
 			}
@@ -4470,10 +4470,10 @@ bool JagGeo::line3DWithinLineString3D( double x10, double y10, double z10, doubl
 	//prt(("s6790 start=%d len=%d  square: x0=%f y0=%f r=%f\n", start, sp1.length(), x0,y0,r ));
 	for ( int i=start; i < sp2.length()-1; ++i ) {
 		str = sp2[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 		str = sp2[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 
 		if ( jagEQ(x10, dx1) && jagEQ(y10, dy1)  && jagEQ(z10, dz1)
@@ -4636,7 +4636,7 @@ bool JagGeo::lineString3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
     char *p;
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
         transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
         if ( ! locIn3DCenterBox( loc_x, loc_y, loc_z,  r,r,r, strict ) ) { return false; }
@@ -4667,7 +4667,7 @@ bool JagGeo::lineString3DWithinBox( const Jstr &mk1, const JagStrSplit &sp1,
     char *p;
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
         transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
         if ( ! locIn3DCenterBox( loc_x, loc_y, loc_z,  w,d,h, strict ) ) { return false; }
@@ -4694,7 +4694,7 @@ bool JagGeo::lineString3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
     char *p;
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
 		if ( ! point3DWithinSphere( dx, dy, dz, x0, y0, z0, r, strict ) ) { return false; }
     }
@@ -4723,7 +4723,7 @@ bool JagGeo::lineString3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &s
     char *p;
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
 		transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
 		if ( ! point3DWithinNormalEllipsoid( loc_x, loc_y, loc_z, w,d,h, strict ) ) { return false; }
@@ -4751,7 +4751,7 @@ bool JagGeo::lineString3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
     char *p;
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
 		if ( ! point3DWithinCone( dx, dy, dz, x0,y0,z0, r, h, nx, ny, strict ) ) { return false; }
     }
@@ -4786,7 +4786,7 @@ bool JagGeo::polygon3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
     for ( int i=start; i < sp1.length(); ++i ) {
 		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
         transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
         if ( ! locIn3DCenterBox( loc_x, loc_y, loc_z,  r,r,r, strict ) ) { return false; }
@@ -4818,7 +4818,7 @@ bool JagGeo::polygon3DWithinBox( const Jstr &mk1, const JagStrSplit &sp1,
     for ( int i=start; i < sp1.length(); ++i ) {
 		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
         transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
         if ( ! locIn3DCenterBox( loc_x, loc_y, loc_z,  w,d,h, strict ) ) { return false; }
@@ -4846,7 +4846,7 @@ bool JagGeo::polygon3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp1,
     for ( int i=start; i < sp1.length(); ++i ) {
 		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
 		if ( ! point3DWithinSphere( dx, dy, dz, x0, y0, z0, r, strict ) ) { return false; }
     }
@@ -4876,7 +4876,7 @@ bool JagGeo::polygon3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit &sp1,
     for ( int i=start; i < sp1.length(); ++i ) {
 		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
 		transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
 		if ( ! point3DWithinNormalEllipsoid( loc_x, loc_y, loc_z, w,d,h, strict ) ) { return false; }
@@ -4905,7 +4905,7 @@ bool JagGeo::polygon3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
     for ( int i=start; i < sp1.length(); ++i ) {
 		if ( sp1[i] == "|" || sp1[i] == "!" ) break;
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx, dy, dz );
 		if ( ! point3DWithinCone( dx, dy, dz, x0,y0,z0, r, h, nx, ny, strict ) ) { return false; }
     }
@@ -4940,7 +4940,7 @@ bool JagGeo::multiPolygon3DWithinCube( const Jstr &mk1, const JagStrSplit &sp1,
         else {
             if ( skip ) continue;
         	str = sp1[i].c_str();
-        	if ( strchrnum( str, ':') != 2 ) continue;
+        	if ( strchrnum( str, ':') < 2 ) continue;
         	get3double(str, p, ':', dx, dy, dz );
         	transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
         	if ( ! locIn3DCenterBox( loc_x, loc_y, loc_z,  r,r,r, strict ) ) { return false; }
@@ -4977,7 +4977,7 @@ bool JagGeo::multiPolygon3DWithinBox( const Jstr &mk1, const JagStrSplit &sp1,
         else {
             if ( skip ) continue;
         	str = sp1[i].c_str();
-        	if ( strchrnum( str, ':') != 2 ) continue;
+        	if ( strchrnum( str, ':') < 2 ) continue;
         	get3double(str, p, ':', dx, dy, dz );
         	transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
         	if ( ! locIn3DCenterBox( loc_x, loc_y, loc_z,  w,d,h, strict ) ) { return false; }
@@ -5011,7 +5011,7 @@ bool JagGeo::multiPolygon3DWithinSphere(  const Jstr &mk1, const JagStrSplit &sp
         else {
             if ( skip ) continue;
         	str = sp1[i].c_str();
-        	if ( strchrnum( str, ':') != 2 ) continue;
+        	if ( strchrnum( str, ':') < 2 ) continue;
         	get3double(str, p, ':', dx, dy, dz );
 			if ( ! point3DWithinSphere( dx, dy, dz, x0, y0, z0, r, strict ) ) { return false; }
 		}
@@ -5047,7 +5047,7 @@ bool JagGeo::multiPolygon3DWithinEllipsoid(  const Jstr &mk1, const JagStrSplit 
         else {
             if ( skip ) continue;
         	str = sp1[i].c_str();
-        	if ( strchrnum( str, ':') != 2 ) continue;
+        	if ( strchrnum( str, ':') < 2 ) continue;
         	get3double(str, p, ':', dx, dy, dz );
 			transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, loc_x, loc_y, loc_z );
 			if ( ! point3DWithinNormalEllipsoid( loc_x, loc_y, loc_z, w,d,h, strict ) ) { return false; }
@@ -5082,7 +5082,7 @@ bool JagGeo::multiPolygon3DWithinCone(  const Jstr &mk1, const JagStrSplit &sp1,
         else {
             if ( skip ) continue;
         	str = sp1[i].c_str();
-        	if ( strchrnum( str, ':') != 2 ) continue;
+        	if ( strchrnum( str, ':') < 2 ) continue;
         	get3double(str, p, ':', dx, dy, dz );
 			if ( ! point3DWithinCone( dx, dy, dz, x0,y0,z0, r, h, nx, ny, strict ) ) { return false; }
 		}
@@ -8135,10 +8135,10 @@ bool JagGeo::line3DIntersectLineString3D( double x10, double y10, double z10, do
 	//prt(("s6790 start=%d len=%d  square: x0=%f y0=%f r=%f\n", start, sp1.length(), x0,y0,r ));
 	for ( int i=start; i < sp2.length()-1; ++i ) {
 		str = sp2[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 		str = sp2[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectLine3D( x10,y10,z10, x20,y20,z20, dx1,dy1,dz1,dx2,dy2,dz2 ) ) return true;
 	}
@@ -8246,11 +8246,11 @@ bool JagGeo::lineString3DIntersectLineString3D( const Jstr &mk1, const JagStrSpl
 	bool found = false;
 	for ( i=start1; i < sp1.length()-1; ++i ) {
 		str = sp1[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 
 		str = sp1[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 
 		if ( jagEQ(dx1, dx2)) {
@@ -8279,11 +8279,11 @@ bool JagGeo::lineString3DIntersectLineString3D( const Jstr &mk1, const JagStrSpl
 	for ( i=start2; i < sp2.length()-1; ++i ) {
 		str = sp2[i].c_str();
 
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 
 		str = sp2[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 
 		if ( jagEQ(dx1, dx2) )  {
@@ -8539,11 +8539,11 @@ bool JagGeo::lineString3DIntersectBox(  const Jstr &mk1, const JagStrSplit &sp1,
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinBox( dx1, dy1, dz1,  x0, y0, z0, w,d,h,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		line3d.x1=dx1; line3d.y1=dy1; line3d.z1=dz1;
 		line3d.x2=dx2; line3d.y2=dy2; line3d.z2=dz2;
@@ -8579,11 +8579,11 @@ bool JagGeo::lineString3DIntersectSphere(  const Jstr &mk1, const JagStrSplit &s
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinSphere( dx1, dy1, dz1,  x0, y0, z0, r, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectSphere(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, r, strict ) ) return true;
     }
@@ -8626,11 +8626,11 @@ bool JagGeo::lineString3DIntersectEllipsoid(  const Jstr &mk1, const JagStrSplit
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinEllipsoid( dx1, dy1, dz1,  x0, y0, z0, w,d,h,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectEllipsoid(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, w,d,h,nx,ny, strict ) ) return true;
     }
@@ -8662,11 +8662,11 @@ bool JagGeo::lineString3DIntersectCone(  const Jstr &mk1, const JagStrSplit &sp1
     char *p; int i;
     for ( int i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinCone( dx1, dy1, dz1,  x0, y0, z0, r,h,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectCone(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, r,h, nx,ny, strict ) ) return true;
     }
@@ -8697,11 +8697,11 @@ bool JagGeo::lineString3DIntersectCylinder(  const Jstr &mk1, const JagStrSplit 
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinCylinder( dx1, dy1, dz1,  x0, y0, z0, a,c,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectCylinder(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, a,b,c, nx,ny, strict ) ) return true;
     }
@@ -8749,12 +8749,12 @@ bool JagGeo::lineString3DIntersectTriangle3D(  const Jstr &mk1, const JagStrSpli
 	JagPoint3D p3(x3,y3,z3);
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 
 		//if ( point3DWithinCylinder( dx1, dy1, dz1,  x0, y0, z0, a,c,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		//if ( line3DIntersectCylinder(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, a,b,c, nx,ny, strict ) ) return true;
 		line3d.x1 = dx1; line3d.y1 = dy1; line3d.z1 = dz1;
@@ -8791,11 +8791,11 @@ bool JagGeo::lineString3DIntersectSquare3D(  const Jstr &mk1, const JagStrSplit 
 	JagLine3D line3d;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 
 		line3d.x1 = dx1; line3d.y1 = dy1; line3d.z1 = dz1;
@@ -8835,11 +8835,11 @@ bool JagGeo::lineString3DIntersectRectangle3D(  const Jstr &mk1, const JagStrSpl
 	JagLine3D line3d;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 
 		line3d.x1 = dx1; line3d.y1 = dy1; line3d.z1 = dz1;
@@ -8874,11 +8874,11 @@ bool JagGeo::polygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit 
 	int j = 0;
 	for ( i=start1; i < sp1.length()-1; ++i ) {
 		str = sp1[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 
 		str = sp1[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 
 		if ( jagEQ(dx1, dx2)) {
@@ -8927,11 +8927,11 @@ bool JagGeo::polygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit 
 	for ( i=start2; i < sp2.length()-1; ++i ) {
 		str = sp2[i].c_str();
 
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 
 		str = sp2[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 
 		if ( jagEQ(dx1, dx2) )  {
@@ -9124,11 +9124,11 @@ bool JagGeo::polygon3DIntersectBox(  const Jstr &mk1, const JagStrSplit &sp1,
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinBox( dx1, dy1, dz1,  x0, y0, z0, w,d,h,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		line3d.x1=dx1; line3d.y1=dy1; line3d.z1=dz1;
 		line3d.x2=dx2; line3d.y2=dy2; line3d.z2=dz2;
@@ -9167,11 +9167,11 @@ bool JagGeo::polygon3DIntersectSphere(  const Jstr &mk1, const JagStrSplit &sp1,
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinSphere( dx1, dy1, dz1,  x0, y0, z0, r, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectSphere(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, r, strict ) ) return true;
     }
@@ -9204,11 +9204,11 @@ bool JagGeo::polygon3DIntersectEllipsoid(  const Jstr &mk1, const JagStrSplit &s
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinEllipsoid( dx1, dy1, dz1,  x0, y0, z0, w,d,h,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectEllipsoid(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, w,d,h,nx,ny, strict ) ) return true;
     }
@@ -9240,11 +9240,11 @@ bool JagGeo::polygon3DIntersectCone(  const Jstr &mk1, const JagStrSplit &sp1,
     char *p; int i;
     for ( int i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinCone( dx1, dy1, dz1,  x0, y0, z0, r,h,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectCone(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, r,h, nx,ny, strict ) ) return true;
     }
@@ -9275,11 +9275,11 @@ bool JagGeo::polygon3DIntersectCylinder(  const Jstr &mk1, const JagStrSplit &sp
     char *p; int i;
     for ( i=start; i < sp1.length()-1; ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx1, dy1, dz1 );
 		if ( point3DWithinCylinder( dx1, dy1, dz1,  x0, y0, z0, a,c,nx,ny, strict ) ) return true;
         str = sp1[i+1].c_str();
-        if ( strchrnum( str, ':') != 2 ) continue;
+        if ( strchrnum( str, ':') < 2 ) continue;
         get3double(str, p, ':', dx2, dy2, dz2 );
 		if ( line3DIntersectCylinder(  dx1,dy1,dz1,dx2,dy2,dz2, x0, y0, z0, a,b,c, nx,ny, strict ) ) return true;
     }
@@ -9437,7 +9437,7 @@ double JagGeo::doPolygonArea( const Jstr &mk1, int srid1, const JagStrSplit &sp1
 				++ring;
 			}
     		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') != 1 ) continue;
+    		if ( strchrnum( str, ':') < 1 ) continue;
     		get2double(str, p, ':', dx, dy );
     		vec.append( std::make_pair(dx,dy) );
     	}
@@ -9509,7 +9509,7 @@ double JagGeo::doPolygonPerimeter( const Jstr &mk1, int srid1, const JagStrSplit
 				++ring;
 			}
     		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') != 1 ) continue;
+    		if ( strchrnum( str, ':') < 1 ) continue;
     		get2double(str, p, ':', dx, dy );
     		vec.append( std::make_pair(dx,dy) );
    	}
@@ -9549,7 +9549,7 @@ double JagGeo::doPolygon3DPerimeter( const Jstr &mk1, int srid1, const JagStrSpl
 				++ring;
 			}
     		str = sp1[i].c_str();
-    		if ( strchrnum( str, ':') != 2 ) continue;
+    		if ( strchrnum( str, ':') < 2 ) continue;
     		get3double(str, p, ':', dx, dy, dz );
     		vec.append( JagPoint3D(dx,dy,dz) );
    	}
@@ -14542,10 +14542,10 @@ void JagGeo::getPolygonBound( const Jstr &mk, const JagStrSplit &sp,
 		double xmin, ymin, xmax, ymax, dx, dy;
 		xmin = ymin = LONG_MAX; xmax = ymax = LONG_MIN;
 		const char *str; char *p; int nc;
-		for ( int i = 0; i < sp.length(); ++i ) {
+		for ( int i = JAG_SP_START; i < sp.length(); ++i ) {
 			str = sp[i].c_str();
 			nc = strchrnum( str, ':');
-			if ( nc != 1 ) continue; // skip bbox
+			if ( nc < 1 ) continue; // skip bbox
 			get2double(str, p, ':', dx, dy );
 			if ( dx < xmin ) xmin = dx;
 			if ( dx > xmax ) xmax = dx;
@@ -14566,10 +14566,10 @@ void JagGeo::getLineStringBound( const Jstr &mk, const JagStrSplit &sp,
 		double xmin, ymin, xmax, ymax, dx, dy;
 		xmin = ymin = LONG_MAX; xmax = ymax = LONG_MIN;
 		const char *str; char *p; int nc;
-		for ( int i = 0; i < sp.length(); ++i ) {
+		for ( int i = JAG_SP_START; i < sp.length(); ++i ) {
 			str = sp[i].c_str();
 			nc = strchrnum( str, ':');
-			if ( nc != 1 ) continue; // skip bbox
+			if ( nc < 1 ) continue; // skip bbox
 			get2double(str, p, ':', dx, dy );
 			if ( dx < xmin ) xmin = dx;
 			if ( dx > xmax ) xmax = dx;
@@ -16858,10 +16858,10 @@ bool JagGeo::point3DDistanceLineString3D(int srid,  double x, double y, double z
 	if ( arg.caseEqual("max") ) { isMax = true;	} else { isMax = false;	}
 	for ( int i = JAG_SP_START; i < sp2.length()-1; ++i ) {
 		str = sp2[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx1, dy1, dz1 );
 		str = sp2[i+1].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', dx2, dy2, dz2 );
 
 		if ( isMax ) {
@@ -17103,7 +17103,7 @@ bool JagGeo::circleDistancePolygon(int srid, double px0, double py0, double pr,
 	double min = LONG_MAX;
 	bool isMax;
 	if ( arg.caseEqual("max") ) { isMax = true;	} else { isMax = false;	}
-	for ( int i = 2; i < sp2.length(); ++i ) {
+	for ( int i = JAG_SP_START; i < sp2.length(); ++i ) {
 		str = sp2[i].c_str();
 		if ( strchrnum( str, ':') < 1 ) continue;
 		get2double(str, p, ':', dx, dy );
@@ -18304,13 +18304,13 @@ bool JagGeo::lineStringDistanceLineString(int srid, const Jstr &mk1, const JagSt
 
     for ( int i = start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') < 1 || strchrnum( str, ':') > 2 ) continue;
+        if ( strchrnum( str, ':') < 1 ) continue;
         get2double(str, p, ':', dx, dy );
 
         for ( int j = start2; j < sp2.length(); ++j ) {
                 str1 = sp2[j].c_str();
                 prt(("%s\n", str1));
-                if ( strchrnum( str, ':') < 1 || strchrnum( str, ':') > 2) continue;
+                if ( strchrnum( str, ':') < 1 ) continue;
                 get2double(str1, p1, ':', dx2, dy2 );
                 d = JagGeo::distance( dx, dy, dx2, dy2, srid );
                 prt(("dx:%f\n dy:%f\n dx2:%f\n dy2:%f\n d:%f\n", dx, dy, dx2, dy2,d));
@@ -18641,7 +18641,7 @@ bool JagGeo::lineString3DDistanceLineString3D(int srid, const Jstr &mk1, const J
 
     for ( int i=start; i < sp1.length(); ++i ) {
         str = sp1[i].c_str();
-        if ( strchrnum( str, ':') != 2  ) continue;
+        if ( strchrnum( str, ':') < 2  ) continue;
         get3double(str, p, ':', dx, dy, dz );
         for ( int i=start2; i < sp2.length(); ++i ) {
                 str2 = sp2[i].c_str();
@@ -19926,7 +19926,7 @@ bool JagGeo::lineString3DAverage( const Jstr &mk, const JagStrSplit &sp, double 
     char *p;
 	for (int i = start; i<sp.length(); ++i){
 		str = sp[i].c_str();
-		if(strchrnum(str, ':') != 2) continue;
+		if(strchrnum(str, ':') < 2) continue;
 		get3double(str,p,':', dx,dy,dz);
         xsum = xsum + dx;
         ysum = ysum + dy;
@@ -20303,7 +20303,7 @@ bool JagGeo::closestPoint2DRaster( int srid, double px, double py, const Jstr &m
 	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') != 1 ) continue;
+		if ( strchrnum( str, ':') < 1 ) continue;
 		get2double(str, p, ':', x, y );
 		d = distance( px, py, x, y, srid );
 		if ( d < mind ) {
@@ -20361,7 +20361,7 @@ bool JagGeo::closestPoint3DRaster( int srid, double px, double py, double pz, co
 	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':') != 2 ) continue;
+		if ( strchrnum( str, ':') < 2 ) continue;
 		get3double(str, p, ':', x, y, z );
 		d = distance( px, py, pz, x, y, z, srid );
 		if ( d < mind ) {
@@ -21053,24 +21053,24 @@ double JagGeo::getGeoLength( const JagFixString &inlstr )
 							 jagatof( sp[4]), jagatof( sp[5]), jagatof( sp[6]), srid );
 		} else if ( gtype == JAG_C_COL_TYPE_LINESTRING || gtype == JAG_C_COL_TYPE_MULTILINESTRING ) {
 			double x1, y1, x2, y2;
-			for ( int i = 2; i < sp.length()-1; ++i ) {
+			for ( int i = JAG_SP_START; i < sp.length()-1; ++i ) {
 				str = sp[i].c_str();
-				if ( strchrnum( str, ':') != 1 ) continue;
+				if ( strchrnum( str, ':') < 1 ) continue;
 				get2double(str, p, ':', x1, y1 );
 				str = sp[i+1].c_str();
-				if ( strchrnum( str, ':') != 1 ) continue;
+				if ( strchrnum( str, ':') < 1 ) continue;
 				get2double(str, p, ':', x2, y2 );
 				sum += distance( x1, y1, x2, y2, srid );
 			}
 			return sum;
 		} else if ( gtype == JAG_C_COL_TYPE_LINESTRING3D || gtype == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 			double x1, y1, z1, x2, y2, z2;
-			for ( int i = 2; i < sp.length()-1; ++i ) {
+			for ( int i = JAG_SP_START; i < sp.length()-1; ++i ) {
 				str = sp[i].c_str();
-				if ( strchrnum( str, ':') != 2 ) continue;
+				if ( strchrnum( str, ':') < 2 ) continue;
 				get3double(str, p, ':', x1, y1, z1 );
 				str = sp[i+1].c_str();
-				if ( strchrnum( str, ':') != 2 ) continue;
+				if ( strchrnum( str, ':') < 2 ) continue;
 				get3double(str, p, ':', x2, y2, z2 );
 				sum += distance( x1, y1, z1, x2, y2, z2, srid );
 			}
@@ -21096,7 +21096,7 @@ Jstr JagGeo::bboxstr( const JagStrSplit &sp, bool skipInnerRings )
 	char *p;
 	int cnum;
 	bool firstRing = true;
-	for ( int i=0; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if (  sp[i] == "!" ) { firstRing = true; continue; }
 		if (  sp[i] == "|" ) { firstRing = false; continue; }
 
@@ -21145,14 +21145,14 @@ void JagGeo::bbox2D( const JagStrSplit &sp, JagBox2D &bbox )
 	char *p;
 	int cnum;
 	bool firstRing = true;
-	for ( int i=0; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if (  sp[i] == "!" ) { firstRing = true; continue; }
 		if (  sp[i] == "|" ) { firstRing = false; continue; }
 
 		if ( !firstRing ) { continue; }
 
 		cnum = strchrnum( sp[i].c_str(), ':');
-		if ( cnum != 1 ) continue;
+		if ( cnum < 1 ) continue;
 		str = sp[i].c_str();
 		get2double(str, p, ':', dx, dy );
 		if ( dx < xmin ) xmin = dx;
@@ -21177,14 +21177,14 @@ void JagGeo::bbox3D( const JagStrSplit &sp, JagBox3D &bbox )
 	char *p;
 	int cnum;
 	bool firstRing = true;
-	for ( int i=0; i < sp.length(); ++i ) {
+	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if (  sp[i] == "!" ) { firstRing = true; continue; }
 		if (  sp[i] == "|" ) { firstRing = false; continue; }
 
 		if ( !firstRing ) { continue; }
 
 		cnum = strchrnum( sp[i].c_str(), ':');
-		if ( cnum != 2 ) continue;
+		if ( cnum < 2 ) continue;
 		str = sp[i].c_str();
 			get3double(str, p, ':', dx, dy, dz );
 			if ( dx < xmin ) xmin = dx;
@@ -21211,12 +21211,12 @@ int JagGeo::numberOfSegments( const JagStrSplit &sp )
 {
 	int num = 0;
 	int nc;
-   	for ( int i=0; i < sp.length(); ++i ) {
+   	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
    		if ( sp[i] == "|" || sp[i] == "!" ) { 
 			--num;
 		} else {
        		nc = strchrnum( sp[i].c_str(), ':');
-       		if ( nc != 1 && nc != 2 ) continue;
+       		if ( nc < 1 ) continue;
 			++num;
    		}
 	}
@@ -21237,7 +21237,7 @@ bool JagGeo::isPolygonCCW( const JagStrSplit &sp )
 	double lastx, lasty;
 	bool firstPoint = true;
 	int n = 0;
-   	for ( int i=0; i < sp.length(); ++i ) {
+   	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
    		if ( sp[i] == "!" ) { 
 			prt(("s1296 sum=%f\n", sum ));
 			if ( firstRing ) {
@@ -21259,7 +21259,7 @@ bool JagGeo::isPolygonCCW( const JagStrSplit &sp )
 			firstRing = false; firstPoint = true; 
 		} else {
        		str = sp[i].c_str();
-       		if ( strchrnum( str, ':') != 1 ) continue;
+       		if ( strchrnum( str, ':') < 1 ) continue;
        		get2double(str, p, ':', dx, dy );
 			if ( ! firstPoint ) {
 				sum += (dx - lastx )* (dy + lasty );
@@ -21295,7 +21295,7 @@ bool JagGeo::isPolygonCW( const JagStrSplit &sp )
 	double lastx, lasty;
 	bool firstPoint = true;
 	int n = 0;
-   	for ( int i=0; i < sp.length(); ++i ) {
+   	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
    		if ( sp[i] == "!" ) { 
 			prt(("s1294 sum=%f\n", sum ));
 			if ( firstRing ) {
@@ -21317,7 +21317,7 @@ bool JagGeo::isPolygonCW( const JagStrSplit &sp )
 			firstRing = false; firstPoint = true; 
 		} else {
        		str = sp[i].c_str();
-       		if ( strchrnum( str, ':') != 1 ) continue;
+       		if ( strchrnum( str, ':') < 1 ) continue;
        		get2double(str, p, ':', dx, dy );
 			if ( ! firstPoint ) {
 				sum += (dx - lastx )* (dy + lasty );
@@ -23516,10 +23516,10 @@ double JagGeo::getMinDist2DPointFraction( double px, double py, int srid, const 
 	const char *str; char *p;
 	for ( int i=JAG_SP_START; i < sp.length() -1; ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 1 ) continue;
+		if ( strchrnum( str, ':' ) < 1 ) continue;
        	get2double(str, p, ':', x1, y1 );
 		str = sp[i+1].c_str();
-		if ( strchrnum( str, ':' ) != 1 ) continue;
+		if ( strchrnum( str, ':' ) < 1 ) continue;
        	get2double(str, p, ':', x2, y2 );
 		d = minPoint2DToLineSegDistance( px, py, x1, y1, x2, y2, srid, projx, projy );
 		if ( d < mindist ) {
@@ -23587,10 +23587,10 @@ double JagGeo::getMinDist3DPointFraction( double px, double py, double pz, int s
 	const char *str; char *p;
 	for ( int i=JAG_SP_START; i < sp.length() -1; ++i ) {
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 2 ) continue;
+		if ( strchrnum( str, ':' ) < 2 ) continue;
        	get3double(str, p, ':', x1, y1, z1 );
 		str = sp[i+1].c_str();
-		if ( strchrnum( str, ':' ) != 2 ) continue;
+		if ( strchrnum( str, ':' ) < 2 ) continue;
        	get3double(str, p, ':', x2, y2, z2 );
 		d = minPoint3DToLineSegDistance( px, py, pz, x1, y1, z1, x2, y2, z2, srid, projx, projy, projz );
 		if ( d < mindist ) {
@@ -23614,7 +23614,7 @@ bool JagGeo::matchPoint2D( double px, double py, const JagStrSplit &sp, Jstr &xs
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 1 ) continue;
+		if ( strchrnum( str, ':' ) < 1 ) continue;
        	get2double(str, p, ':', x, y );
 		if ( jagEQ(px,x) && jagEQ(py,y) ) {
 			JagStrSplit ss(sp[i], ':');
@@ -23637,7 +23637,7 @@ bool JagGeo::matchPoint3D( double px, double py, double pz, const JagStrSplit &s
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 2 ) continue;
+		if ( strchrnum( str, ':' ) < 2 ) continue;
     	get3double(str, p, ':', x, y, z );
 		if ( jagEQ(px,x) && jagEQ(py,y) && jagEQ(pz,z) ) {
 			JagStrSplit ss(sp[i], ':');
@@ -23656,7 +23656,7 @@ void JagGeo::nonMatchPoint2DVec( double px, double py, const JagStrSplit &sp, Js
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 1 ) continue;
+		if ( strchrnum( str, ':' ) < 1 ) continue;
        	get2double(str, p, ':', x, y );
 		if ( ! (jagEQ(px,x) && jagEQ(py,y) ) ) {
 			vecs += Jstr(" ") + sp[i];
@@ -23671,7 +23671,7 @@ void JagGeo::nonMatchPoint3DVec( double px, double py, double pz, const JagStrSp
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 2 ) continue;
+		if ( strchrnum( str, ':' ) < 2 ) continue;
        	get3double(str, p, ':', x, y, z );
 		if ( ! (jagEQ(px,x) && jagEQ(py,y) && jagEQ(pz,z) ) ) {
 			vecs += Jstr(" ") + sp[i];
@@ -23686,7 +23686,7 @@ void JagGeo::nonMatchTwoPoint2DVec( double px1, double py1, double px2, double p
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 1 ) continue;
+		if ( strchrnum( str, ':' ) < 1 ) continue;
        	get2double(str, p, ':', x, y );
 		if ( ! (jagEQ(px1,x) && jagEQ(py1,y) ) && ! ( jagEQ(px2,x) && jagEQ(py2,y)  ) ) {
 			vecs += Jstr(" ") + sp[i];
@@ -23701,7 +23701,7 @@ void JagGeo::nonMatchTwoPoint3DVec( double px1, double py1, double pz1, double p
 	for ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) continue;
 		str = sp[i].c_str();
-		if ( strchrnum( str, ':' ) != 2 ) continue;
+		if ( strchrnum( str, ':' ) < 2 ) continue;
        	get3double(str, p, ':', x, y, z );
 		if ( ! (jagEQ(px1,x) && jagEQ(py1,y) && jagEQ(pz1,z) ) && ! ( jagEQ(px2,x) && jagEQ(py2,y) && jagEQ(pz2,z) ) ) {
 			vecs += Jstr(" ") + sp[i];
@@ -23850,11 +23850,11 @@ void JagGeo::getVectorPoints( const JagStrSplit &sp, bool is3D, JagVector<JagPoi
 		if (  sp[i] == "!" ||  sp[i] == "|" ) continue;
        	str = sp[i].c_str();
 		if ( is3D ) {
-        	if ( strchrnum( str, ':') != 2 ) continue;
+        	if ( strchrnum( str, ':') < 2 ) continue;
         	get3double(str, p, ':', x, y, z );
     		vec.append( JagPoint3D(x,y,z) );
 		} else {
-        	if ( strchrnum( str, ':') != 1 ) continue;
+        	if ( strchrnum( str, ':') < 1 ) continue;
         	get2double(str, p, ':', x, y );
     		vec.append( JagPoint3D(x,y,0) );
 		}
