@@ -287,6 +287,14 @@ AbaxCStr& AbaxCStr::trimSpaces( int end )
 	return *this;
 }
 
+AbaxCStr& AbaxCStr::trimnull()
+{
+	// trim end nulls
+	for ( int i = length_-1; i>=0; --i ) {
+		if ( buf_[i] == '\0' ) { --length_; }
+	}
+}
+
 AbaxCStr& AbaxCStr::trimChar( char C )
 {
 	if ( length_ < 1 ) return *this;

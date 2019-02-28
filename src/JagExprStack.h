@@ -43,6 +43,7 @@ class JagExprStack
 		void    concurrent( bool flag = true );
 		inline bool    empty() { if ( _last >=0 ) return false; else return true; }
 		int    numOperators;
+		int	   lastOp() const;
 
 	protected:
 		ExprElementNode **_arr;

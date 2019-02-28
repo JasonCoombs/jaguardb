@@ -406,13 +406,13 @@ class BinaryExpressionBuilder
 	JagParseParam *_pparam;
 	bool doneClean;
 	int  		_lastOp;
-
-  private:
 	// holds either (, +, -, *, /, %, ^ or any other function type  
 	std::stack<int> operatorStack;	
 	std::stack<int> operatorArgStack;	
 	// operandStack is made up of BinaryOpNodes and StringElementNode
 	JagExprStack operandStack; 
+
+  private:
 
 	int 		_datediffClause;
 	int			_substrClause;

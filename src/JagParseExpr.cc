@@ -258,7 +258,7 @@ int StringElementNode::checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrI
 					const char *buffers[], JagFixString &str, int &typeMode, 
 					Jstr &type, int &length, bool &first, bool useZero, bool setGlobal ) 
 {
-	prt(( "s3039 StEleNode::checkFuncValid _name=[%s] _value=[%s] _type=[%s] _metrics=%d _srid=%d\n", _name.c_str(), _value.c_str(), _type.c_str(), _metrics, _srid ));
+	prt(( "s3039 checkFuncValid _name=[%s] _value=[%s] _type=[%s] _metrics=%d _srid=%d\n", _name.c_str(), _value.c_str(), _type.c_str(), _metrics, _srid ));
 
 	if ( _name.length() > 0 ) {
 		if (  ( buffers[_tabnum] == NULL || buffers[_tabnum][0] == '\0' ) ) {
@@ -517,12 +517,12 @@ a=[2] geo:xmin=[0.0] geo:ymin=[0.0] geo:zmin=[1.0] id=[UvO0wdS3] geo:col=[21] ge
 a=[2] geo:xmin=[0.0] geo:ymin=[0.0] geo:zmin=[1.0] id=[UvO0wdS3] geo:col=[21] geo:m=[1] geo:n=[1] geo:i=[2] po2:x=[] po3:x=[] ls:x=[400.0] ls:y=[500.0]
 a=[2] geo:xmin=[0.0] geo:ymin=[0.0] geo:zmin=[1.0] id=[UvO0wdS3] geo:col=[21] geo:m=[1] geo:n=[1] geo:i=[3] po2:x=[] po3:x=[] ls:x=[500.0] ls:y=[600.0]
 ****************************************************************************************************************************/
-// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y ..."  linestring
-// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z ..."  linestring3d
-// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ..."  polygon or multilinestring
-// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z | ..."  polygon3d or multilinestring3d
-// return str "OJAG=srid=tab=TYPE  bbox[4]  x:y  x:y x:y | x:y x:y ... ! ...|...|...!...|...|..."  multipolygon
-// return str "OJAG=srid=tab=TYPE  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z ... ! ...|...|...!...|...|..."  multipolygon3d
+// return str "OJAG=srid=tab=TYPE=subtype  bbox[4]  x:y  x:y x:y ..."  linestring
+// return str "OJAG=srid=tab=TYPE=subtype  bbox[6]  x:y:z  x:y:z ..."  linestring3d
+// return str "OJAG=srid=tab=TYPE=subtype  bbox[4]  x:y  x:y x:y | x:y x:y ..."  polygon or multilinestring
+// return str "OJAG=srid=tab=TYPE=subtype  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z | ..."  polygon3d or multilinestring3d
+// return str "OJAG=srid=tab=TYPE=subtype  bbox[4]  x:y  x:y x:y | x:y x:y ... ! ...|...|...!...|...|..."  multipolygon
+// return str "OJAG=srid=tab=TYPE=subtype  bbox[6]  x:y:z  x:y:z x:y:z | x:y:z x:y:z ... ! ...|...|...!...|...|..."  multipolygon3d
 void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *ntr, const JagHashStrInt *maps[], 
 									const JagSchemaAttribute *attrs[], 
 									const char *buffers[],  const Jstr &uuid,
@@ -531,15 +531,22 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 {
 	prt(("s8410 savePolyData polyColumns=[%s] uuid=[%s]\n", polyColumns.c_str(), uuid.c_str() ));
 	prt(("s8410 is3D=%d op=%d _lastOp=%d\n", is3D, _builder->_pparam->opcode, _builder->_lastOp ));
+	//prt(("s8410 currentop=%s\n", BinaryOpNode::binaryOpStr(_builder->operatorStack.top()).s() ));
+	//int lastOp =  _builder->operandStack.lastOp();
 
 	JagStrSplit psp(polyColumns, '|', true);
 	int numCols = psp.length();
 	int offsetx[numCols];
 	int collenx[numCols];
+
 	int offsety[numCols];
 	int colleny[numCols];
+
 	int offsetz[numCols];
 	int collenz[numCols];
+	JagVector<int> metricoffset[numCols];
+	JagVector<int> metriclen[numCols];
+
 	Jstr colobjstr[numCols];
 	Jstr fullname[numCols];
 	Jstr str[numCols];
@@ -547,46 +554,52 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	int acqpos;
 	int xmincoloffset, xmincollen;
 	bool rc;
+	int metrics;
+	Jstr mstr;
+
 	for ( int k=0; k < numCols; ++k ) {
 		fullname[k] = db + "." + tab + "." + psp[k];
-		if ( maps[_tabnum]->getValue( fullname[k], acqpos) ) {
-			colobjstr[k] = Jstr( JAG_OJAG ) + "=" + intToStr( attrs[_tabnum][acqpos].srid ) 
-			               + "=" + fullname[k] + "=" + attrs[_tabnum][acqpos].type + "=d";
-			prt(("s1929 k=%d colobjstr=[%s]\n", k, colobjstr[k].s() ));
-		} else {
-			//prt(("s6751 return\n"));
-			return;
+		if ( ! maps[_tabnum]->getValue( fullname[k], acqpos) ) { 
+			return; 
 		}
 
+		colobjstr[k] = Jstr( JAG_OJAG ) + "=" + intToStr( attrs[_tabnum][acqpos].srid ) 
+			               + "=" + fullname[k] + "=" + attrs[_tabnum][acqpos].type + "=d";
+		metrics = attrs[_tabnum][acqpos].metrics;
+
 		nm = fullname[k] + ":x";
-		if ( maps[_tabnum]->getValue( nm, acqpos) ) {
-			offsetx[k] =  attrs[_tabnum][acqpos].offset;
-			collenx[k] =  attrs[_tabnum][acqpos].length;
-			offsety[k] =  attrs[_tabnum][acqpos+1].offset;
-			colleny[k] =  attrs[_tabnum][acqpos+1].length;
-			if ( is3D ) {
-				offsetz[k] =  attrs[_tabnum][acqpos+2].offset;
-				collenz[k] =  attrs[_tabnum][acqpos+2].length;
-			}
-		} else {
-			//prt(("s6752 return\n"));
-	        return;
+		if ( ! maps[_tabnum]->getValue( nm, acqpos) ) { return; }
+
+		offsetx[k] =  attrs[_tabnum][acqpos].offset;
+		collenx[k] =  attrs[_tabnum][acqpos].length;
+		offsety[k] =  attrs[_tabnum][acqpos+1].offset;  // y
+		colleny[k] =  attrs[_tabnum][acqpos+1].length;  // y
+		if ( is3D ) {
+			offsetz[k] =  attrs[_tabnum][acqpos+2].offset; // z
+			collenz[k] =  attrs[_tabnum][acqpos+2].length; // z
+		}
+
+		prt(("s1929 k=%d colobjstr=[%s] metrics=%d\n", k, colobjstr[k].s(), metrics ));
+		// m1.offset  m2.offset  m3.offset
+		// col1 may have 2 metrics, col2 may have 5 metrics
+		for ( int m=0; m < metrics; ++m ) {
+			nm = fullname[k] + ":m" + intToStr(m+1);
+			if ( ! maps[_tabnum]->getValue( nm, acqpos) ) { prt(("s29292\n")); return; }
+			metricoffset[k].append( attrs[_tabnum][acqpos].offset );
+			metriclen[k].append( attrs[_tabnum][acqpos].length );
 		}
 	}
 
 	int BBUUIDLEN = 7;
 	JagColumnBox bbox[BBUUIDLEN];  // bbox and uuid
 	nm = db + "." + tab + ".geo:xmin";
-	if ( maps[_tabnum]->getValue( nm, acqpos) ) {
-		for ( int bi = 0; bi < BBUUIDLEN; ++bi ) {
-			bbox[bi].col = acqpos;
-			bbox[bi].offset = attrs[_tabnum][acqpos].offset;
-			bbox[bi].len = attrs[_tabnum][acqpos].length;
-			++acqpos;
-		}
-	} else {
-		//prt(("s6753 return\n"));
-		return;
+	if ( ! maps[_tabnum]->getValue( nm, acqpos) ) { prt(("s29293\n")); return; }
+
+	for ( int bi = 0; bi < BBUUIDLEN; ++bi ) {
+		bbox[bi].col = acqpos;
+		bbox[bi].offset = attrs[_tabnum][acqpos].offset;
+		bbox[bi].len = attrs[_tabnum][acqpos].length;
+		++acqpos;
 	}
 
 	// read buffers[_tabnum] and get the uuid of this row
@@ -596,105 +609,74 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	//dumpmem( buffers[_tabnum], 700);
 
 	Jstr v1, v2, v3, v4;
-	int len = 0;
+	int offset, collen;
 	bool hasValue = 0;
-   	int bufsize;
-	char *buf;
-
 	for ( int k = 0; k < numCols; ++k ) {
-    	bufsize =  colobjstr[k].size() + 1 + 12*JAG_GEOM_TOTLEN + 16;
-    	buf = jagmalloc( bufsize );
-    	len = 0;
-    	memset(buf, ' ', bufsize );
-		buf[bufsize-1] = 0;
-    	memcpy( buf, colobjstr[k].c_str(), colobjstr[k].size() );
-    	len +=  colobjstr[k].size() + 1;
-		//prt(("s7001 len=%d\n", len ));
+		metrics = metricoffset[k].size();
+		str[k] = colobjstr[k] + " ";
     
 		if ( is3D ) {
     		for ( int j=0; j < BBUUIDLEN-1; ++j ) {
-        		v1 = Jstr(buffers[_tabnum]+ bbox[j].offset, bbox[j].len );
-        		v1.trimEndZeros();
-        		memcpy( buf+len, v1.c_str(), v1.size() );
-        		//len +=  v1.size();
-        		len +=  v1.size();
-    			if ( j < BBUUIDLEN-2 ) {
-               		memcpy( buf+len, ":", 1 );
-    			}
-        		len += 1;
-				//prt(("s7002 j=%d len=%d\n", j, len ));
+        		v1 = Jstr(buffers[_tabnum]+ bbox[j].offset, bbox[j].len ).trim0();
+				if ( 0 == j ) {
+					str[k] += v1;
+				} else {
+					str[k] += Jstr(":") + v1;
+				}
     		}
 		} else {
-			char bbuf[200];
-        	v1 = Jstr(buffers[_tabnum]+ bbox[0].offset, bbox[0].len ); v1.trimEndZeros();
-        	v2 = Jstr(buffers[_tabnum]+ bbox[1].offset, bbox[1].len ); v2.trimEndZeros();
-        	v3 = Jstr(buffers[_tabnum]+ bbox[3].offset, bbox[3].len ); v3.trimEndZeros();
-        	v4 = Jstr(buffers[_tabnum]+ bbox[4].offset, bbox[4].len ); v4.trimEndZeros();
-			sprintf( bbuf, "%s:%s:%s:%s", v1.c_str(), v2.c_str(), v3.c_str(), v4.c_str() );
-        	memcpy( buf+len, bbuf, strlen(bbuf) );
-			len += strlen(bbuf);
-        	len += 1;
-			//prt(("s7003 len=%d buf=[%s]\n", len, buf ));
+        	v1 = Jstr(buffers[_tabnum]+ bbox[0].offset, bbox[0].len ).trim0(); 
+        	v2 = Jstr(buffers[_tabnum]+ bbox[1].offset, bbox[1].len ).trim0();
+        	v3 = Jstr(buffers[_tabnum]+ bbox[3].offset, bbox[3].len ).trim0();
+        	v4 = Jstr(buffers[_tabnum]+ bbox[4].offset, bbox[4].len ).trim0();
+			str[k] += v1 + ":" + v2 + ":" + v3 + ":" + v4;
 		} 
     
-    	Jstr xval(buffers[_tabnum]+offsetx[k], collenx[k] );
-    	Jstr yval(buffers[_tabnum]+offsety[k], colleny[k] );
-		//prt(("s70035 xval=[%s] yval=[%s] xval.size=%d yval.size=%d\n", xval.c_str(),  yval.c_str(), xval.size(),  yval.size() ));
-    	xval.trimEndZeros();
-    	yval.trimEndZeros();
-		//prt(("s70036 xval=[%s] yval=[%s] xval.size=%d yval.size=%d\n", xval.c_str(),  yval.c_str(), xval.size(),  yval.size() ));
+    	Jstr xval(buffers[_tabnum]+offsetx[k],collenx[k] ); xval.trim0();
+    	Jstr yval(buffers[_tabnum]+offsety[k],colleny[k] ); yval.trim0();
     	if ( xval.isNotNull() && yval.isNotNull() ) {
-			/***
-			prt(("s70035 xval=[%s] yval=[%s] xval.size=%d yval.size=%d buf=[%s] len=%d\n", 
-					xval.c_str(),  yval.c_str(), xval.size(),  yval.size(), buf, len ));
-			***/
-           	memcpy( buf+len, xval.c_str(), xval.size() );
-           	len += xval.size();
-			//prt(("s7004 len=%d buf=[%s]\n", len, buf ));
-           	memcpy( buf+len, ":", 1 );
-           	len += 1;
-           	memcpy( buf+len, yval.c_str(), yval.size() );
-           	len +=  yval.size();
 			hasValue = 1;
-			//prt(("s7005 len=%d buf=[%s]\n", len, buf ));
+			str[k] += Jstr(" ") + xval + ":" + yval;
     	}
 
 		if ( is3D ) {
-    		Jstr zval(buffers[_tabnum]+offsetz[k], collenz[k] );
-    		zval.trimEndZeros();
+    		Jstr zval(buffers[_tabnum]+offsetz[k], collenz[k] ); zval.trim0();
 			if ( zval.isNotNull() ) {
-           		memcpy( buf+len, ":", 1 );
-           		len += 1;
-           		memcpy( buf+len, zval.c_str(), zval.size() );
-           		len += zval.size();
-				//prt(("s7006 len=%d buf=[%s]\n", len, buf ));
+				str[k] += Jstr(":") + zval;
 			}
 		}
 
-    	buf[len] = 0;
-    	// str[k] = Jstr(buf, len );  // "OJAG=srid=tab=type bbox x:y:z
-    	str[k] = Jstr(buf);  // "OJAG=srid=tab=type bbox x:y:z
-    	//str[k] = Jstr(buf );  // "OJAG=srid=tab=type bbox x:y:z
-		//prt(("s3408 len=%d strlen=%d\n", len, strlen( buf ) ));
-		//prt(("s3921 buf=[%s] len=%d strlen=%d\n", buf, len, strlen(buf) ));
-		free( buf );
-    
+		prt(("s3004 k=%d xval=[%s] yval=[%s] metrics=%d\n", k, xval.s(), yval.s(), metrics ));
+		prt(("s2830 (offsetx[k]=%d collenx[k]=%d) (offsety[k]=%d colleny[k]=%d)\n", offsetx[k], collenx[k], offsety[k], colleny[k] ));
+		if ( metrics > 0 ) { str[k] += Jstr(":"); }
+		for ( int m =0; m < metrics; ++m ) {
+			offset = metricoffset[k][m];
+			collen = metriclen[k][m];
+			prt(("s5318 offset=%d collen=%d acqpos=%d\n", offset, collen, acqpos ));
+    		Jstr mval(buffers[_tabnum]+offset, collen ); mval.trimnull();
+			prt(("s3082 m=%d offset=%d collen=%d mval=[%s]\n", m, offset, collen, mval.s() ));
+			if ( 0 == m ) {
+				mstr = mval;
+			} else {
+				mstr += Jstr("#") + mval;
+				prt(("s2727 m=%d mstr=[%s] mval=[%s]\n", m, mstr.s(), mval.s() ));
+			}
+		}
+		if ( metrics > 0 ) { str[k] += mstr; }
+		prt(("s2938 metrics=%d mstr=[%s]\n", metrics, mstr.s() ));
+
     	if ( ! ntr ) {
 			if ( hasValue ) {
     			_builder->_pparam->_rowHash->addKeyValue( fullname[k], str[k] );
 			}
     		_builder->_pparam->_rowUUID = uuid;
-			//prt(("s9393 return here\n" ));
+			prt(("s28380 return\n" ));
     		return;
     	}
 	} // end of numCols loop
 
 
-	char xyzbuf[3*JAG_GEOM_TOTLEN+4];
-	memset( xyzbuf, 0, 3*JAG_GEOM_TOTLEN+4);
-	char zbuf[JAG_GEOM_TOTLEN+4];
-	memset( zbuf, 0, JAG_GEOM_TOTLEN+4 );
-
+	Jstr xyzbuf;
 	int geocoloffset, geocollen;
 	int geomoffset, geomlen;
 	int geonoffset, geonlen;
@@ -710,6 +692,7 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	if ( maps[_tabnum]->getValue( nm, acqpos) ) {
 		geomoffset =  attrs[_tabnum][acqpos].offset;
 		geomlen =  attrs[_tabnum][acqpos].length;
+		prt(("s5918 geomoffset=%d geomlen=%d acqpos=%d\n", geomoffset, geomlen, acqpos ));
 	} else { return; }
 
 	nm = db + "." + tab + ".geo:n";
@@ -733,21 +716,29 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	// polygon1: ring1 has 4 points, ring2 has 9 points, ring3 has 7 points 
 	// polygon2: ring1 has 9 points, ring2 has 12 points, ring3 has 23 points 
 	// polygon3: ring1 has 8 points, ring2 has 12 points, ring3 has 21 points, ring4 has 234 points 
+	Jstr gf;
 	while ( ntr->getNext(kvbuf) ) {
-		//prt(("s2023 getNext kvbuf=:\n" ));
-		//dumpmem( kvbuf, ntr->KEYVALLEN );
-		//prt(("s8829 in savePolyData ntr->getNext(kvbuf) kvbuf=[%s]\n", kvbuf ));
 		if ( 0 == strncmp(kvbuf+bbox[BBUUIDLEN-1].offset, uuid.c_str(), uuid.size() ) ) {
-			newcol = jagatoi( kvbuf+geocoloffset, geocollen );
-			newm = jagatoi( kvbuf+geomoffset, geomlen );
-			newn = jagatoi( kvbuf+geonoffset, geonlen );
-			//prt(("s8540 newcol=%d newm=%d newn=%d\n", newcol, newm, newn ));
-			//prt(("s8540 newcol=%d lastm=%d lastn=%d\n", newcol, lastm, lastn ));
+			//newcol = jagatoi( kvbuf+geocoloffset, geocollen );
+			gf = Jstr(kvbuf+geocoloffset, geocollen ); gf.trimnull();
+			newcol = jagatoi( gf.s() );
+
+			//newm = jagatoi( kvbuf+geomoffset, geomlen );
+			gf = Jstr(  kvbuf+geomoffset, geomlen ); gf.trimnull();
+			newm = jagatoi( gf.s() );
+
+			//newn = jagatoi( kvbuf+geonoffset, geonlen );
+			gf = Jstr(  kvbuf+geonoffset, geonlen ); gf.trimnull();
+			newn = jagatoi( gf.s() );
+
+			prt(("s5090 geomoffset=%d geonoffset=%d\n", geomoffset, geonoffset ));
+			prt(("s8839 lastm=%d newm=%d newcol=%d lastcol=%d lastn=%d\n", lastm, newm, newcol, lastcol, lastn ));
 			if ( lastcol >=0 && newcol != lastcol ) {
 				lastcol = newcol;
 				lastm = -1;
 				lastn = -1;
 			} else if ( lastm >=0 && newm != lastm ) {
+				prt(("s2039 sep=! lastm=%d newm=%d lastm=%d\n", lastm, newm, lastm ));
 				lastcol = newcol;
 				lastm = newm;
 				lastn = -1;
@@ -765,42 +756,51 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 				sep = 0;
 			}
 
-			//prt(("s8540 newcol=%d newm=%d newn=%d lastcol=%d lastm=%d lastn=%d\n", newcol, newm, newn, lastcol, lastm, lastn ));
-			//prt(("s8543 numCols=%d\n", numCols ));
-
    			for ( int k=0; k < numCols; ++k ) {
     			// each column  col1 col2
     			if ( *(kvbuf+offsetx[k]) != '\0' && *(kvbuf+offsety[k]) != '\0' ) {
-    				v1 = Jstr( kvbuf+offsetx[k], collenx[k] );
-    				v2 = Jstr( kvbuf+offsety[k], colleny[k] );
-    				v1.trimEndZeros();
-    				v2.trimEndZeros();
-    				sprintf(xyzbuf, " %s:%s", v1.c_str(), v2.c_str() ); 
+    				v1 = Jstr( kvbuf+offsetx[k], collenx[k] ); v1.trim0();
+    				v2 = Jstr( kvbuf+offsety[k], colleny[k] ); v2.trim0();
+					xyzbuf = Jstr(" ") + v1 + ":" + v2;
 					if ( is3D ) {
-    					v3 = Jstr( kvbuf+offsetz[k], collenz[k] );
-    					v3.trimEndZeros();
-						sprintf(zbuf, ":%s", v3.c_str() );
-						strcat(xyzbuf, zbuf );
+    					v3 = Jstr( kvbuf+offsetz[k], collenz[k] ); v3.trim0();
+						xyzbuf += Jstr(":") + v3;
 					}
-					//prt(("s8203 xyzbuf=[%s] v1=[%s] v1size=%d v2=[%s] v2size=%d\n", xyzbuf, v1.c_str(), v1.size(), v2.c_str(), v2.size() ));
 
 					if (  v1.isNotNull() && v2.isNotNull() ) {
-						//prt(("s2209 sep=%c\n", sep ));
 						if ( sep ) { 
 							str[k] += ' ';
 							str[k] += sep; 
 						}
-    					str[k] += Jstr(xyzbuf); // xyzbuf has ' ' in front
-						//prt(("s2270 k=%d str[k]=[%s]\n", k, str[k].c_str() ));
+    					str[k] += xyzbuf; // xyzbuf has ' ' in front
 						++ numAdded[k];
 					} else {
 						//prt(("s7304 v1 v2 either is NULL\n"));
+					}
+
+					// metrics
+					metrics = metricoffset[k].size();
+					for ( int m=0; m < metrics; ++m ) {
+						offset = metricoffset[k][m];
+						collen = metriclen[k][m];
+    					//Jstr mval(buffers[_tabnum]+geomoffset, geomlen ); mval.trimnull();
+    					Jstr mval( kvbuf+offset, collen ); mval.trimnull();
+						prt(("s3981 m=%d offset=%d collen=%d mval=[%s]\n", m, offset, collen, mval.s() ));
+						if ( 0 == m ) {
+							mstr = mval;
+						} else {
+							mstr += Jstr("#") + mval;
+						}
+					}
+					prt(("s2948 metrics=%d mstr=[%s]\n", metrics, mstr.s() ));
+					if ( metrics > 0 ) {
+						str[k] += Jstr(":") + mstr;
 					}
     			}
    			}
 		} else {
 			ntr->putBack( kvbuf );
-			//prt(("s2040 putback kvbuf\n" ));
+			prt(("s2040 putback kvbuf\n" ));
 			break;
 		}
 	}  // end of getNext()
@@ -808,7 +808,8 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	for ( int k=0; k < numCols; ++k ) {
 		if ( str[k].size() > 0 && numAdded[k] > 0 ) {
 			rc = _builder->_pparam->_rowHash->addKeyValue( fullname[k], str[k] );
-			//prt(("s6713 add k=%d name=[%s] str=[%s] rc=%d _rHash=%0x\n", k, fullname[k].c_str(), str[k].c_str(), rc, _builder->_pparam->_rowHash ));
+			//prt(("s6713 name=[%s] str=[%s] rc=%d _rHah=%0x\n", fullname[k].c_str(), str[k].c_str(), rc, _builder->_pparam->_rowHash ));
+			prt(("s6713 name=[%s] str=[%s] rc=%d\n", fullname[k].c_str(), str[k].c_str(), rc ));
 		} else {
 			//prt(("s4691 str[%d].size() < 1 no _rowHash->addKeyValue\n", k ));
 		}
@@ -823,8 +824,6 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 	// str result: "HDR xmin:ymin:xmax:ymax x1:y1 x2:y2  x3:y3 ..."
 	free( kvbuf );
 }
-
-
 
 
 ////////////////////////////////////////////// BinaryOpNode ////////////////////////////////////
@@ -2410,7 +2409,6 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 	// TOSECOND
 	else if ( _binaryOp == JAG_FUNC_TOSECOND ) {
 		str = _carg1;
-		//prt(("s3082 JAG_FUNC_TOSECOND _carg1=[%s] str=[%s]\n", _carg1.c_str(), str.c_str() ));
 		return 1;
 	}
 	// TOMICROSECOND
@@ -3522,7 +3520,7 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 					//prt(("s8811 throw 2224\n" ));
 					throw 2224;
 				}
-				//prt(("s2039 operatorStack.push(%s) args=%d\n", BinaryOpNode::binaryOpStr(fop).s(), nargs ));
+				prt(("s2039 operatorStack.push(%s) args=%d\n", BinaryOpNode::binaryOpStr(fop).s(), nargs ));
 				operatorStack.push(fop);
 				operatorArgStack.push( nargs );
 				_lastOp = fop;
@@ -3541,9 +3539,9 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 
 	//prt(("s3827 in parse() operatorStack.empty()=%d\n", operatorStack.empty() ));
     while (!operatorStack.empty()) {
-		//prt(("s2030 in loop doBinary( operator.top=%s )\n", BinaryOpNode::binaryOpStr( operatorStack.top() ).c_str() ));
+		prt(("s2030 in loop doBinary( operator.top=%s )\n", BinaryOpNode::binaryOpStr( operatorStack.top() ).c_str() ));
         doBinary( operatorStack.top(), operatorArgStack.top(), jmap );
-		//prt(("s2831 operatorStack.pop()\n" ));
+		prt(("s2831 operatorStack.pop()\n" ));
         operatorStack.pop();
         operatorArgStack.pop();
     }
@@ -3842,7 +3840,7 @@ void BinaryExpressionBuilder::processOperand( const JagParser *jpsr, const char 
 		//prt(("s2739 name=[] value=[%s]\n", value.c_str() ));
 		// value is inside ( )  point(22 33 4 44)  "22 33 4 44" is saved in value. name is empty
 		StringElementNode *newNode = new StringElementNode( this, name, value, _jpa, 0, typeMode );
-		//prt(("s4502 new StrElemNode nme=[%s] val=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
+		prt(("s4502 new StrElemNode nme=[%s] val=[%s] operandStack.push \n", name.c_str(), value.c_str() ));
 		operandStack.push(newNode);
 		++q; p = q;
 	} else {
@@ -3932,15 +3930,15 @@ void BinaryExpressionBuilder::processOperator( short op, int nargs, JagHashStrIn
     short opPrecedence = precedence( op );
 	//prt(("s3084 enter processOperator op=%d opPrecedence=%d\n", op, opPrecedence ));
     while ((!operatorStack.empty()) && (opPrecedence <= precedence( operatorStack.top() ))) {
-		//prt(("s2094 doBinary(%d) ...\n", operatorStack.top() ));
+		prt(("s2094 doBinary(%d) ...\n", operatorStack.top() ));
         doBinary( operatorStack.top(), operatorArgStack.top(), jmap );
-		//prt(("s3109 operatorStack.pop()\n" ));
+		prt(("s3109 operatorStack.pop()\n" ));
         operatorStack.pop();
         operatorArgStack.pop();
     }
 
     // lastly push the operator passed onto the operatorStack
-	//prt(("s0931 operatorStack.push(%d) operatorArgStack.push(%d)\n", op, nargs ));
+	prt(("s0931 operatorStack.push(%d) operatorArgStack.push(%d)\n", op, nargs ));
     operatorStack.push(op);
     operatorArgStack.push(nargs);
 	_lastOp = op;
@@ -4413,7 +4411,6 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 				throw 2582;
 			}
 		}  else if ( op == JAG_FUNC_ROTATE || op == JAG_FUNC_ROTATESELF ) {
-			//prt(("s2938 JAG_FUNC_ROTATE nargs=%d\n", operandStack.size() ));
 			// 2D only
 			// rotate(geom, 10 )  -- defualt is in degrees, counter-clock-wise
 			// rotate(geom, 10, 'degree')
@@ -4548,7 +4545,7 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 		if ( operandStack.empty() ) throw 4446;
 
 		left = operandStack.top();
-		//prt(("s4281 left=%0x operandStack.pop()\n", left ));
+		prt(("s4281 left=%0x operandStack.pop()\n", left ));
 		operandStack.pop();
 	}
 
@@ -4559,7 +4556,7 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 
 	BinaryOpNode *pn = new BinaryOpNode(this, operatorStack.top(), operatorArgStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	operandStack.push(pn);	
-	//prt(("s0293 new BinaryOpNode pn=%0x  pushed into operandStack\n", pn ));
+	prt(("s0293 new BinaryOpNode pn=%0x operatorstack.top=%d  pushed into operandStack\n", pn, operatorStack.top() ));
 	//operandStack.print();	
 	/**
 	prt(( "s7202 pushed operatorStack.top=%s to operandStack, operandStack.size=%d left=%0x right=%0x\n", 
@@ -7013,7 +7010,7 @@ bool BinaryOpNode::doAllGeoJson( const Jstr& mk, const Jstr &colType,
 
 	JagStrSplit csp(sp[0], '=');
 	const char *data = thirdTokenStart( sp.c_str() );  // skip first two tokes, only data part
-	//prt(("s8383 sp.c_str()=[%s] data=[%s]\n", sp.c_str(), data ));
+	prt(("s8383 sp.c_str()=[%s] data=[%s]\n", sp.c_str(), data ));
 	if ( ! data || strlen(data) < 1 ) {
 		//prt(("s7373 data is empty\n" ));
 		return false;

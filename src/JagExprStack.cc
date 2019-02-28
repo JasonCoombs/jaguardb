@@ -100,7 +100,12 @@ void JagExprStack::reAllocShrink()
 
 void JagExprStack::push( ExprElementNode *newnode )
 {
-	//prt(("s9282 pushed %0x iselement=%d\n", newnode, newnode->_isElement ));
+	if ( newnode->_isElement ) {
+		prt(("s9282 ****** pushed %0x iselement\n", newnode ));
+	} else {
+		prt(("s9282 ****** pushed %0x isbinopnode op=%d\n", newnode, newnode->getBinaryOp() ));
+	} 
+
 	if ( NULL == _arr ) {
 		_arr = new ExprElementNode*[4];
 		_arrlen = 4;
@@ -116,7 +121,7 @@ void JagExprStack::push( ExprElementNode *newnode )
 }
 
 // back: add end (enqueue end)
-ExprElementNode * JagExprStack::top() const
+ExprElementNode* JagExprStack::top() const
 {
 	if ( _last < 0 ) {
 		//prt(("s5004 stack empty, error top()\n"));
@@ -140,7 +145,15 @@ void JagExprStack::pop()
 	***/
 	//prt(("s9283 popped %0x isElement=%d\n", _arr[_last], _arr[_last]->_isElement ));
 
-	if ( ! _arr[_last]->_isElement ) { -- numOperators; }
+	if ( _arr[_last]->_isElement ) {
+		prt(("s9283 ****** popped %0x iselement\n", _arr[_last] ));
+	} else {
+		prt(("s9283 ****** popped %0x isbinopnode\n", _arr[_last] ));
+	} 
+
+	if ( ! _arr[_last]->_isElement ) { 
+		-- numOperators; 
+	}
 	-- _last;
 }
 
@@ -154,6 +167,19 @@ void JagExprStack::print()
 	}
 	printf("\n");
 }
+
+int JagExprStack::lastOp() const
+{
+	int op = -1;
+	for ( int i = _last; i >=0; --i ) {
+		if ( ! _arr[i]->_isElement ) {
+			op =  _arr[i]->getBinaryOp();
+			break;
+		}
+	}
+	return op;
+}
+
 
 const ExprElementNode* JagExprStack::operator[](int i) const 
 { 

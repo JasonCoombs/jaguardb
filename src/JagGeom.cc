@@ -13880,7 +13880,7 @@ Jstr JagGeo::makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const
 {
 	//prt(("s2980 makeJsonLineString str=[%s]\n", str ));
 	const char *p = str;
-	while ( *p != ' ' && *p != '\0' ) ++p;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
 	if ( *p == '\0' ) return "";
 
 	Jstr s;
@@ -13913,6 +13913,7 @@ Jstr JagGeo::makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const
 
 	while ( isspace(*p) ) ++p; //  "x:y x:y x:y ..."
 	char *q = (char*)p;
+	prt(("s1038 p=[%s]\n", p ));
 
 	writer.Key("geometry");
 	writer.StartObject();
@@ -13928,8 +13929,8 @@ Jstr JagGeo::makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const
 				writer.EndArray(); 
 				break;
 			}
-			//*q = '\0';
 			s = Jstr(p, q-p);
+			prt(("s3941 s=[%s]\n", s.s() ));
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -13938,16 +13939,18 @@ Jstr JagGeo::makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const
 			++q;
 			//prt(("s2039 q=[%s]\n", q ));
 			p = q;
-			while (*q != ' ' && *q != '\0' ) ++q;
+			//while (*q != ' ' && *q != '\0' ) ++q;
+			while ( *q != ' ' && *q != ':' && *q != '\0' ) ++q;
 			if ( *q == '\0' ) {
 				//writer.String( p );
 				writer.Double( jagatof(p) );
 				writer.EndArray(); 
 				break;
 			}
+			// *q == ':' or ' '
 
-			//*q = '\0';
 			s = Jstr(p, q-p);
+			prt(("s3942 s=[%s]\n", s.s() ));
 			//prt(("s2339 q=[%s]\n", q ));
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
@@ -13955,6 +13958,7 @@ Jstr JagGeo::makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const
 			writer.EndArray(); 
 			//*q = ' ';
 
+			while (*q != ' ' && *q != '\0' ) ++q;
 			while (*q == ' ' ) ++q;
 			p = q;
 			//prt(("s1336 q=[%s]\n", q ));
@@ -13984,7 +13988,7 @@ Jstr JagGeo::makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, con
 	//prt(("s0823 makeJsonLineString3D str=[%s]\n", str ));
 
 	const char *p = str;
-	while ( *p != ' ' && *p != '\0' ) ++p;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
 	if ( *p == '\0' ) return "";
 
 	Jstr s;
@@ -14051,7 +14055,8 @@ Jstr JagGeo::makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, con
 			++q;
 			//prt(("s8104 q=[%s]\n", q ));
 			p = q;
-			while (*q != ' ' && *q != '\0' ) ++q;
+			//while (*q != ' ' && *q != '\0' ) ++q;
+			while ( *q != ' ' && *q != ':' && *q != '\0' ) ++q;
 			if ( *q == '\0' ) {
 				//writer.String( p );
 				writer.Double( jagatof(p) );
@@ -14067,6 +14072,7 @@ Jstr JagGeo::makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, con
 			writer.EndArray(); 
 			//*q = ' ';
 
+			while (*q != ' ' && *q != '\0' ) ++q;
 			while (*q == ' ' ) ++q;
 			//prt(("s8105 q=[%s]\n", q ));
 			p = q;
@@ -14103,7 +14109,7 @@ Jstr JagGeo::makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const c
 	//prt(("s7081 makeJsonPolygon str=[%s] is3D=%d\n", str, is3D ));
 
 	const char *p = str;
-	while ( *p != ' ' && *p != '\0' ) ++p;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
 	if ( *p == '\0' ) return "";
 
 	rapidjson::StringBuffer bs;
@@ -14197,7 +14203,8 @@ Jstr JagGeo::makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const c
 			if ( is3D ) {
 				while ( *q != ':' && *q != '\0' && *q != '|' ) ++q;
 			} else {
-				while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
+				//while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
+				while ( *q != ' ' && *q != ':' && *q != '\0' && *q != '|' ) ++q;
 			}
 
 			s = Jstr(p, q-p);
@@ -14209,7 +14216,8 @@ Jstr JagGeo::makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const c
 				++q;
 				p = q;
 				//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
-				while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
+				//while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
+				while ( *q != ' ' && *q != ':' && *q != '\0' && *q != '|' ) ++q;
 				//prt(("s6303 write zcoord s=[%s]\n", s.c_str() ));
 				s = Jstr(p, q-p);
 				//writer.String( s.c_str(), s.size() );   // z-coord
@@ -14236,6 +14244,7 @@ Jstr JagGeo::makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const c
 				continue;
 			}
 
+			while (*q != ' ' && *q != '\0' ) ++q;  // goto next x:y coord
 			while (*q == ' ' ) ++q;  // goto next x:y coord
 			//prt(("s2339 q=[%s]\n", q ));
 			if ( *q == '\0' ) {
@@ -14293,7 +14302,7 @@ Jstr JagGeo::makeJsonMultiPolygon( const Jstr &title,  const JagStrSplit &sp, co
 	//prt(("s7084 makeJsonMultiPolygon str=[%s] is3D=%d\n", str, is3D ));
 
 	const char *p = str;
-	while ( *p != ' ' && *p != '\0' ) ++p;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
 	if ( *p == '\0' ) return "";
 
 	rapidjson::StringBuffer bs;
