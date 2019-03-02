@@ -10031,6 +10031,11 @@ Jstr JaguarCPPClient::getSquareCoordStr( const Jstr &shape, const JagParseParam 
 	res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.a);
 	res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.b);
 	res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.nx);
+
+	for ( int i=0; i < parseParam.otherVec[pos].point.metrics.size() ; ++i ) {
+		res += Jstr(" ") + trimEndZeros(parseParam.otherVec[pos].point.metrics[i]);
+	}
+
 	res +=  ")";
 	return res;
 }
@@ -10072,7 +10077,6 @@ Jstr JaguarCPPClient::getCoordStr( const Jstr &shape, const JagParseParam &parse
 		}
 	} 
 
-	prt(("c2930 point.metrics.size=%d\n", parseParam.otherVec[pos].point.metrics.size() ));
 	for ( int i=0; i < parseParam.otherVec[pos].point.metrics.size(); ++i ) {
 		res += Jstr(" ") + parseParam.otherVec[pos].point.metrics[i];
 	}
@@ -10081,6 +10085,7 @@ Jstr JaguarCPPClient::getCoordStr( const Jstr &shape, const JagParseParam &parse
 	return res;
 }
 
+// line: p1 -- p2
 Jstr JaguarCPPClient::getLineCoordStr( const Jstr &shape, const JagParseParam &parseParam,
     											 int pos, bool hasX1, bool hasY1, bool hasZ1, bool hasX2, bool hasY2, bool hasZ2 )
 {
@@ -10110,6 +10115,11 @@ Jstr JaguarCPPClient::getLineCoordStr( const Jstr &shape, const JagParseParam &p
 	if ( hasZ2 ) {
 		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[1].z;
 	} 
+
+	// add metrics
+	for ( int i=0; i < parseParam.otherVec[pos].linestr.point[0].metrics.size(); ++i ) {
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[0].metrics[i];
+	}
 
 	res +=  ")";
 
@@ -10163,6 +10173,10 @@ Jstr JaguarCPPClient::getTriangleCoordStr( const Jstr &shape, const JagParsePara
 		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[2].z;
 	} 
 
+	for ( int i=0; i < parseParam.otherVec[pos].linestr.point[0].metrics.size(); ++i ) {
+		res += Jstr(" ") + parseParam.otherVec[pos].linestr.point[0].metrics[i];
+	}
+
 	res +=  ")";
 
 	// prt(("s5041 getTriCoordStr(): res=[%s]\n", res.c_str() ));
@@ -10210,6 +10224,10 @@ Jstr JaguarCPPClient::get3DPlaneCoordStr( const Jstr &shape, const JagParseParam
 	if ( hasNY ) {
 		res += Jstr(" ") + parseParam.otherVec[pos].point.ny;
 	} 
+
+	for ( int i=0; i < parseParam.otherVec[pos].point.metrics.size(); ++i ) {
+		res += Jstr(" ") + parseParam.otherVec[pos].point.metrics[i];
+	}
 
 	res +=  ")";
 	return res;

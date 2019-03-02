@@ -190,7 +190,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						rc = getAllClauses( 1 );
 						if ( rc > 0 ) rc = setAllClauses( 1 );
 					}
-				} else rc = -60;
+				} else rc = -2060;
 			} 
 		} else rc = -70;
 	} else if ( strcasecmp(_gettok, "delete") == 0 ) {
@@ -560,7 +560,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				if ( !_gettok ) rc = 1;
 				else rc = -580;
 			} else rc = -590;
-		} else rc = -600;
+		} else rc = -2600;
 	} else if ( strcasecmp(_gettok, "load") == 0 ) {
 		_ptrParam->opcode = JAG_LOAD_OP;
 		_ptrParam->optype = 'D';
@@ -2584,12 +2584,14 @@ int JagParser::setInsertVector()
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
 				} else {
+					// one line, one metrics
 					JagPoint p1( sp[0].c_str(), sp[1].c_str() );
-					if ( ! getMetrics( sp, dim, p1.metrics ) ) return -3891;
+					//if ( ! getMetrics( sp, dim, p1.metrics ) ) return -3891;
 
-					int start = dim +  p1.metrics.size();
+					//int start = dim +  p1.metrics.size();
+					int start = dim;
 					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str() );
-					if ( ! getMetrics( sp, start+2, p2.metrics ) ) return -2891;
+					if ( ! getMetrics( sp, start+2, p1.metrics ) ) return -2891;
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
 				}
@@ -2615,13 +2617,15 @@ int JagParser::setInsertVector()
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
 				} else {
+					// line3d(0 0 1 1 1000 2000 3000)
 					dim = 3;
 					JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
-					if ( ! getMetrics( sp, dim, p1.metrics ) ) return -6011;
+					//if ( ! getMetrics( sp, dim, p1.metrics ) ) return -6011;
 
-					int start = dim +  p1.metrics.size();
+					//int start = dim +  p1.metrics.size();
+					int start = dim;
 					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
-					if ( ! getMetrics( sp, start+dim, p2.metrics ) ) return -5810;
+					if ( ! getMetrics( sp, start+dim, p1.metrics ) ) return -5810;
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
 				}
@@ -2765,17 +2769,20 @@ int JagParser::setInsertVector()
 					other.linestr.point.append(p2);
 					other.linestr.point.append(p3);
 				} else {
+					// ( x1 y1 x2 y2 x3 y3 m1 m2 m3 m4 )
 					dim = 2;
 					JagPoint p1( sp[0].c_str(), sp[1].c_str() );
-					if ( ! getMetrics( sp, dim, p1.metrics ) ) return -6001;
+					//if ( ! getMetrics( sp, dim, p1.metrics ) ) return -6001;
 
-					int start = dim +  p1.metrics.size();
+					//int start = dim +  p1.metrics.size();
+					int start = dim;
 					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str() );
-					if ( ! getMetrics( sp, start+dim, p2.metrics ) ) return -6002;
+					//if ( ! getMetrics( sp, start+dim, p2.metrics ) ) return -6002;
 
-					start += dim + p2.metrics.size();
+					//start += dim + p2.metrics.size();
+					start += dim;
 					JagPoint p3( sp[start+0].c_str(), sp[start+1].c_str() );
-					if ( ! getMetrics( sp, start+dim, p3.metrics ) ) return -6003;
+					if ( ! getMetrics( sp, start+dim, p1.metrics ) ) return -6003;
 
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
@@ -2808,15 +2815,15 @@ int JagParser::setInsertVector()
 				} else {
 					dim = 3;
 					JagPoint p1( sp[0].c_str(), sp[1].c_str(), sp[2].c_str() );
-					if ( ! getMetrics( sp, dim, p1.metrics ) ) return -6004;
+					//if ( ! getMetrics( sp, dim, p1.metrics ) ) return -6004;
 
-					int start = dim +  p1.metrics.size();
+					int start = dim;
 					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
-					if ( ! getMetrics( sp, start+dim, p2.metrics ) ) return -6005;
+					//if ( ! getMetrics( sp, start+dim, p2.metrics ) ) return -6005;
 
-					start += dim + p2.metrics.size();
+					start += dim;
 					JagPoint p3( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
-					if ( ! getMetrics( sp, start+dim, p3.metrics ) ) return -6006;
+					if ( ! getMetrics( sp, start+dim, p1.metrics ) ) return -6006;
 
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
@@ -3243,10 +3250,8 @@ int JagParser::setCreateVector( short setType )
 		for ( int i = 0; i < _ptrParam->createAttrVec.length(); ++i ) {
 			for ( int j = i+1; j < _ptrParam->createAttrVec.length(); ++j ) {
 				if (  _ptrParam->createAttrVec[i].objName.colName == _ptrParam->createAttrVec[j].objName.colName ) {
-					/***
-					prt(("s2039 i=%d  objName.colName=[%s]\n", i, _ptrParam->createAttrVec[i].objName.colName.c_str() ));
-					prt(("s2049 j=%d  objName.colName=[%s]\n",  j, _ptrParam->createAttrVec[j].objName.colName.c_str() ));
-					***/
+					//prt(("s2039 i=%d  objName.colName=[%s] equal to below:\n", i, _ptrParam->createAttrVec[i].objName.colName.c_str() ));
+					//prt(("s2049 j=%d  objName.colName=[%s]\n",  j, _ptrParam->createAttrVec[j].objName.colName.c_str() ));
 					return -3050;
 				}
 			}
@@ -3949,17 +3954,45 @@ bool JagParser::isVectorGeoType( const Jstr &rcs )
 		 || rcs == JAG_C_COL_TYPE_TRIANGLE3D 
 		 || rcs == JAG_C_COL_TYPE_CYLINDER 
 		 || rcs == JAG_C_COL_TYPE_CONE 
+		 || rcs == JAG_C_COL_TYPE_BOX 
 		 || rcs == JAG_C_COL_TYPE_ELLIPSE
 		 || rcs == JAG_C_COL_TYPE_ELLIPSE3D
 		 || rcs == JAG_C_COL_TYPE_ELLIPSOID
 		 || rcs == JAG_C_COL_TYPE_RECTANGLE3D
-		 || rcs == JAG_C_COL_TYPE_RECTANGLE || rcs == JAG_C_COL_TYPE_BOX
+		 || rcs == JAG_C_COL_TYPE_RECTANGLE 
 	   ) 
 	 {
 		 return true;
 	 } 
  	 return false;
 }
+
+int JagParser::vectorShapeCoordinates( const Jstr &rcs )
+{
+	if ( rcs == JAG_C_COL_TYPE_POINT ) return 2; // x y
+	if ( rcs == JAG_C_COL_TYPE_POINT3D ) return 3; // x y z
+	if ( rcs == JAG_C_COL_TYPE_LINE ) return 4; // x1 y1 x2 y2
+	if ( rcs == JAG_C_COL_TYPE_LINE3D ) return 6; // x1 y1 z1 x2 y2 z2
+	if ( rcs == JAG_C_COL_TYPE_TRIANGLE ) return 6;  // x1 y1 x2 y2 x3 y3
+	if ( rcs == JAG_C_COL_TYPE_TRIANGLE3D ) return 9;
+	if ( rcs == JAG_C_COL_TYPE_SQUARE ) return 4;  // x y a nx
+	if ( rcs == JAG_C_COL_TYPE_SQUARE3D ) return 6; // x y z a nx ny
+	if ( rcs == JAG_C_COL_TYPE_RECTANGLE ) return 5; // x y a b nx
+	if ( rcs == JAG_C_COL_TYPE_RECTANGLE3D ) return 7;  // x y z a b nx ny
+	if ( rcs == JAG_C_COL_TYPE_CIRCLE ) return 3;  // x y a
+	if ( rcs == JAG_C_COL_TYPE_CIRCLE3D ) return 6; // x y z a nx ny
+	if ( rcs == JAG_C_COL_TYPE_ELLIPSE ) return 5; // x y a b nx
+	if ( rcs == JAG_C_COL_TYPE_ELLIPSE3D ) return 7; // x y z a b nx ny
+	if ( rcs == JAG_C_COL_TYPE_CYLINDER ) return 7; // x y z a h nx ny
+	if ( rcs == JAG_C_COL_TYPE_CONE ) return 7;  // x y z a h nx ny
+	if ( rcs == JAG_C_COL_TYPE_SPHERE ) return 4; // x y z a
+	if ( rcs == JAG_C_COL_TYPE_ELLIPSOID ) return 8; // x y z a b c nx ny
+	if ( rcs == JAG_C_COL_TYPE_CUBE ) return 6;  // x y z a nx ny
+	if ( rcs == JAG_C_COL_TYPE_BOX ) return 8; // x y z a b c nx ny
+
+	return 0;
+}
+
 
 
 // complex types: point, point3d, ciurcle, sphere, square, cube, ...
@@ -4041,199 +4074,199 @@ void JagParser::addCreateAttrAndColumn(bool isValue, CreateAttribute &cattr, int
 	if ( cattr.type == JAG_C_COL_TYPE_POINT ) {
 		//prt(("s5093 cattr.offset=%d\n", cattr.offset ));
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_POINT_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_POINT_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPointColumns( cattr );
-		 coloffset += JAG_POINT_DIM*JAG_GEOM_TOTLEN;
+		 coloffset += JAG_POINT_DIM*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;
     } else if ( cattr.type == JAG_C_COL_TYPE_POINT3D ) {
 		//prt(("s5094 cattr.offset=%d\n", cattr.offset ));
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_POINT3D_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_POINT3D_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPoint3DColumns( cattr );
-		 coloffset += JAG_POINT3D_DIM*JAG_GEOM_TOTLEN;
+		 coloffset += JAG_POINT3D_DIM*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;
     } else if ( cattr.type == JAG_C_COL_TYPE_CIRCLE ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_CIRCLE_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_CIRCLE_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addCircleColumns( cattr );
-		 coloffset += JAG_CIRCLE_DIM*JAG_GEOM_TOTLEN;  // 3 columns x,y,radius
+		 coloffset += JAG_CIRCLE_DIM*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;
     } else if ( cattr.type == JAG_C_COL_TYPE_SPHERE ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_SPHERE_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_SPHERE_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addColumns( cattr, 1,1,1, 1,0,0, 0,0 );
-		 coloffset += JAG_SPHERE_DIM*JAG_GEOM_TOTLEN;  // 4 columns x,y,z,radius
+		 coloffset += JAG_SPHERE_DIM*JAG_GEOM_TOTLEN + + cattr.metrics*JAG_METRIC_LEN;
 		 //prt(("s5003 JAG_C_COL_TYPE_SPHERE added 4 columns\n" ));
     } else if (  cattr.type == JAG_C_COL_TYPE_SQUARE3D
 				|| cattr.type == JAG_C_COL_TYPE_CIRCLE3D ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
 		 ncol = JAG_SQUARE3D_DIM;
-		 cattr.endcol = _ptrParam->createAttrVec.size() + ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() + ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addColumns( cattr, 1,1,1, 1,0,0, 1,1 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 6 columns x,y,z,radius nx ny 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + + cattr.metrics*JAG_METRIC_LEN; 
     } else if ( cattr.type == JAG_C_COL_TYPE_SQUARE ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_SQUARE_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_SQUARE_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addSquareColumns( cattr );
-		 coloffset += JAG_SQUARE_DIM*JAG_GEOM_TOTLEN;  // 3 columns x,y,radius
+		 coloffset += JAG_SQUARE_DIM*JAG_GEOM_TOTLEN + + cattr.metrics*JAG_METRIC_LEN;
     } else if ( cattr.type == JAG_C_COL_TYPE_CUBE ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_CUBE_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_CUBE_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addColumns( cattr, 1,1,1, 1,0,0, 1,1 );
-		 coloffset += JAG_CUBE_DIM*JAG_GEOM_TOTLEN;  // 6 columns x,y,z,radius nx ny
+		 coloffset += JAG_CUBE_DIM*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  
     } else if ( cattr.type == JAG_C_COL_TYPE_RECTANGLE || cattr.type == JAG_C_COL_TYPE_ELLIPSE ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_RECTANGLE_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_RECTANGLE_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addColumns( cattr, 1,1,0, 1,1,0, 1,0 );
-		 coloffset += JAG_RECTANGLE_DIM*JAG_GEOM_TOTLEN;  // 5 columns x,y,width, height nx
+		 coloffset += JAG_RECTANGLE_DIM*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 5 columns x,y,width, height nx
 		 //prt(("s5013 JAG_C_COL_TYPE_ELLIPSE added 6 columns\n" ));
     } else if ( cattr.type == JAG_C_COL_TYPE_RECTANGLE3D || cattr.type == JAG_C_COL_TYPE_ELLIPSE3D ) { 
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
 		 ncol = JAG_RECTANGLE3D_DIM;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addColumns( cattr, 1,1,1, 1,1,0, 1,1 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 7 columns x y z width height nx ny
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 7 columns x y z width height nx ny
     } else if ( cattr.type == JAG_C_COL_TYPE_BOX
 				|| cattr.type == JAG_C_COL_TYPE_ELLIPSOID ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
 		 ncol = JAG_ELLIPSOID_DIM;
-		 cattr.endcol = _ptrParam->createAttrVec.size() + ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() + ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addBoxColumns( cattr );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 8 columns x,y,z, width, depth, height, nx ny
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;
     } else if ( cattr.type == JAG_C_COL_TYPE_CYLINDER || cattr.type == JAG_C_COL_TYPE_CONE ) {
 		 ncol = JAG_CONE_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addCylinderColumns( cattr );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 5 columns x,y,z, a, c nx ny
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN; 
     } else if ( cattr.type == JAG_C_COL_TYPE_LINE ) {
 		 ncol=JAG_LINE_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addLineColumns( cattr, 0 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 4 columns x1 y1 x2 y2
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN; 
     } else if ( cattr.type == JAG_C_COL_TYPE_LINE3D ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_LINE3D_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_LINE3D_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addLineColumns( cattr, 1 );
-		 coloffset += JAG_LINE3D_DIM*JAG_GEOM_TOTLEN;  // 6 columns x1 y1 z1 x2 y2 z2
+		 coloffset += JAG_LINE3D_DIM*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 6 columns x1 y1 z1 x2 y2 z2
     } else if ( cattr.type == JAG_C_COL_TYPE_LINESTRING ) {
 		 ncol=JAG_LINESTRING_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addLineStringColumns( cattr, 0 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_LINESTRING3D ) {
 		 ncol=JAG_LINESTRING3D_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addLineStringColumns( cattr, 1 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_MULTIPOINT ) {
 		 ncol=JAG_MULTIPOINT_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addLineStringColumns( cattr, 0 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
 		 ncol=JAG_MULTIPOINT3D_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addLineStringColumns( cattr, 1 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_POLYGON ) {
 		 ncol=JAG_POLYGON_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPolygonColumns( cattr, 0 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_POLYGON3D ) {
 		 ncol=JAG_POLYGON3D_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPolygonColumns( cattr, 1 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_MULTILINESTRING ) {
 		 ncol=JAG_MULTILINESTRING_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPolygonColumns( cattr, 0 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
 		 ncol=JAG_MULTILINESTRING3D_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPolygonColumns( cattr, 1 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		 ncol=JAG_MULTIPOLYGON_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPolygonColumns( cattr, 0 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
 		 ncol=JAG_MULTIPOLYGON3D_DIM;
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +ncol + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addPolygonColumns( cattr, 1 );
-		 coloffset += ncol*JAG_GEOM_TOTLEN;  // 3 columns seg x y 
+		 coloffset += ncol*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 3 columns seg x y 
     } else if ( cattr.type == JAG_C_COL_TYPE_TRIANGLE ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +6;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +6 + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addTriangleColumns( cattr, 0 );
-		 coloffset += 6*JAG_GEOM_TOTLEN;  // 6 columns x1 y1 x2 y2 x3 y3
+		 coloffset += 6*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 6 columns x1 y1 x2 y2 x3 y3
     } else if ( cattr.type == JAG_C_COL_TYPE_TRIANGLE3D ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
-		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_TRIANGLE3D_DIM;
+		 cattr.endcol = _ptrParam->createAttrVec.size() +JAG_TRIANGLE3D_DIM + cattr.metrics;
 		 *(cattr.spare+2) = JAG_ASC;
 		 _ptrParam->createAttrVec.append( cattr );
 		 _ptrParam->addTriangleColumns( cattr, 1 );
-		 coloffset += JAG_TRIANGLE3D_DIM*JAG_GEOM_TOTLEN;  // 9 columns x1 y1 z1 x2 y2 z2 x3 y3 z3
+		 coloffset += JAG_TRIANGLE3D_DIM*JAG_GEOM_TOTLEN + cattr.metrics*JAG_METRIC_LEN;  // 9 columns x1 y1 z1 x2 y2 z2 x3 y3 z3
     } else if ( cattr.type == JAG_C_COL_TYPE_RANGE ) {
 		 cattr.begincol = _ptrParam->createAttrVec.size() +1;
 		 cattr.endcol = _ptrParam->createAttrVec.size() + JAG_RANGE_DIM;

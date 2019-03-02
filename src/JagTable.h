@@ -143,7 +143,8 @@ class JagTable
 	void setupSchemaMapAttr( int numCols );
 	bool hasSpareColumn();
 	void appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true);
-	void formatMetricCols(int tzdiff, int srvtmdiff, const Jstr &dbtab, const Jstr &colname, const JagVector<Jstr> &metrics, char *tablekvbuf );
+	void formatMetricCols( int tzdiff, int srvtmdiff, const Jstr &dbtab, const Jstr &colname, 
+						   int nmetrics, const JagVector<Jstr> &metrics, char *tablekvbuf );
 
 
 
@@ -193,7 +194,7 @@ class JagTable
 	int _removeIndexRecords( const char *buf );
 	int  removeColFiles(const char *kvbuf );
 	bool isFileColumn( const Jstr &colname );
-	void formatPointsInLineString( JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
+	void formatPointsInLineString( int nmerics, JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
 								   JagVector<JagDBPair> &retpair, Jstr &errmg );
 	void getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D,
                          int &getx, int &gety, int &getz, int &getxmin, int &getymin, int &getzmin,

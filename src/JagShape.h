@@ -236,9 +236,7 @@ class JagTriangle2D
   	JagTriangle2D( const JagStrSplit &sp, int srid=0 );
 	double x1,y1, x2,y2, x3,y3;
 	int srid;
-	JagVector<Jstr> metrics1;
-	JagVector<Jstr> metrics2;
-	JagVector<Jstr> metrics3;
+	JagVector<Jstr> metrics;
 };
 
 class JagTriangle3D
@@ -254,9 +252,7 @@ class JagTriangle3D
 	void transform( double x0, double y0, double z0, double nx0, double ny0 );
 	double x1,y1,z1, x2,y2,z2, x3,y3,z3;
 	int srid;
-	JagVector<Jstr> metrics1;
-	JagVector<Jstr> metrics2;
-	JagVector<Jstr> metrics3;
+	JagVector<Jstr> metrics;
 };
 
 class JagCube
@@ -362,8 +358,7 @@ class JagLine2D
 	 double y1;
      double x2;
 	 double y2;
-	 JagVector<Jstr> metrics1;
-	 JagVector<Jstr> metrics2;
+	 JagVector<Jstr> metrics;
 };
 
 class JagLine3D
@@ -380,8 +375,7 @@ class JagLine3D
      double x2;
 	 double y2;
 	 double z2;
-	 JagVector<Jstr> metrics1;
-	 JagVector<Jstr> metrics2;
+	 JagVector<Jstr> metrics;
 
 };
 

@@ -103,6 +103,7 @@ class AbaxCStr
 		AbaxCStr 	substr( char startc, char endc );
 		bool        containsChar( char c );
 		bool        isNumeric() const;  // 2 203 or 234.5
+		void   	    dump();
 
 
 	private:

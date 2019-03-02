@@ -54,6 +54,7 @@ class JagParser
 	static bool  isComplexType( const Jstr &rcs );
 	static bool  isGeoType( const Jstr &rcs );
 	static bool  isVectorGeoType( const Jstr &rcs );
+	static int   vectorShapeCoordinates( const Jstr &rcs );
 	static bool  isPolyType( const Jstr &rcs );
 	bool isIndexCol( const Jstr &db, const Jstr &colName ) const;
 	static Jstr getColumns( const char *str );

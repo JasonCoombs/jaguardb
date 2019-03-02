@@ -734,3 +734,16 @@ bool AbaxCStr::isNumeric() const
 	}
 	return true;
 }
+
+void AbaxCStr::dump()
+{
+	for ( int i=0; i < length_; ++i ) {
+		if ( buf_[i] == '\0' ) {
+			printf("@");
+		} else {
+			printf("%c", buf_[i] );
+		}
+	}
+	printf("\n");
+	fflush( stdout );
+}

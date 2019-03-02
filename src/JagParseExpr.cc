@@ -333,14 +333,58 @@ int StringElementNode::checkFuncValidConstantOnly( JagFixString &str, int &typeM
 void StringElementNode::makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[],
 										const Jstr &colobjstr, JagFixString &str )
 {
+	prt(("s7331 makeDataString _begincol=%d _endcol=%d\n", _begincol, _endcol ));
 	int  ncols = _endcol - _begincol +1;
 	Jstr bufstr = colobjstr;
-	for ( int i = 0; i < ncols; ++i ) {
-		bufstr += Jstr(" ") + Jstr(buffers[_tabnum]+attrs[_tabnum][_begincol+i].offset, attrs[_tabnum][_begincol+i].length ).trim0();
-	}
+	int begin;
+
+	begin = _begincol;
+	addDataStrting( buffers, attrs, begin, ncols - _metrics, bufstr );
+
+	begin += ncols - _metrics;
+	addMetricString( buffers, attrs, begin, bufstr  );
 
 	str = JagFixString( bufstr.c_str(), bufstr.size() );
 }
+
+void StringElementNode::addDataStrting( const char *buffers[], const JagSchemaAttribute *attrs[], int begincol, int ncols, Jstr &bufstr )
+{
+	if ( begincol < 0 ) return;
+	if ( ncols <= 0 ) return;
+
+	int offset, len;
+   	Jstr t;
+   	for ( int i = 0; i < ncols; ++i ) {
+   		offset = attrs[_tabnum][begincol+i].offset;
+   		len = attrs[_tabnum][begincol+i].length;
+   		t = Jstr(buffers[_tabnum]+offset, len );
+		t.trimnull();
+		t.trim0();
+   		bufstr += Jstr(" ") + t; 
+		//prt(("s883 i=%d t=[%s]\n", i, t.s() ));
+   	}
+}
+
+void StringElementNode::addMetricString(  const char *buffers[], const JagSchemaAttribute *attrs[], int begin, Jstr &bufstr  )
+{
+	if ( begin < 0 ) return;
+
+   	Jstr t;
+	int offset, len;
+   	for ( int m=0; m < _metrics; ++m ) {
+   		offset = attrs[_tabnum][begin+m].offset;
+   		len = attrs[_tabnum][begin+m].length;
+   		t = Jstr(buffers[_tabnum]+offset, len);
+   		t.trimnull();
+   		if ( t.size() > 0 ) {
+   			bufstr += Jstr(" ") + t;  
+   		} else {
+   			bufstr += Jstr(" ") + JAG_DEFAULT_METRIC;
+   		}
+   	}
+}
+
+
 
 // return str:  "OJAG=srid=tab=TYPE=subtype  x y z"  3D
 // return str:  "OJAG=srid=tab=TYPE=subtype  x y"  2D
@@ -646,31 +690,28 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 			}
 		}
 
-		prt(("s3004 k=%d xval=[%s] yval=[%s] metrics=%d\n", k, xval.s(), yval.s(), metrics ));
-		prt(("s2830 (offsetx[k]=%d collenx[k]=%d) (offsety[k]=%d colleny[k]=%d)\n", offsetx[k], collenx[k], offsety[k], colleny[k] ));
+		//prt(("s3004 k=%d xval=[%s] yval=[%s] metrics=%d\n", k, xval.s(), yval.s(), metrics ));
+		//prt(("s2830 (offsetx[k]=%d collenx[k]=%d) (offsety[k]=%d colleny[k]=%d)\n", offsetx[k], collenx[k], offsety[k], colleny[k] ));
 		if ( metrics > 0 ) { str[k] += Jstr(":"); }
 		for ( int m =0; m < metrics; ++m ) {
 			offset = metricoffset[k][m];
 			collen = metriclen[k][m];
-			prt(("s5318 offset=%d collen=%d acqpos=%d\n", offset, collen, acqpos ));
+			//prt(("s5318 offset=%d collen=%d acqpos=%d\n", offset, collen, acqpos ));
     		Jstr mval(buffers[_tabnum]+offset, collen ); mval.trimnull();
-			prt(("s3082 m=%d offset=%d collen=%d mval=[%s]\n", m, offset, collen, mval.s() ));
 			if ( 0 == m ) {
 				mstr = mval;
 			} else {
 				mstr += Jstr("#") + mval;
-				prt(("s2727 m=%d mstr=[%s] mval=[%s]\n", m, mstr.s(), mval.s() ));
 			}
 		}
 		if ( metrics > 0 ) { str[k] += mstr; }
-		prt(("s2938 metrics=%d mstr=[%s]\n", metrics, mstr.s() ));
+		//prt(("s2938 metrics=%d mstr=[%s]\n", metrics, mstr.s() ));
 
     	if ( ! ntr ) {
 			if ( hasValue ) {
     			_builder->_pparam->_rowHash->addKeyValue( fullname[k], str[k] );
 			}
     		_builder->_pparam->_rowUUID = uuid;
-			prt(("s28380 return\n" ));
     		return;
     	}
 	} // end of numCols loop
@@ -731,14 +772,14 @@ void StringElementNode::savePolyData( const Jstr &polyType, JagMergeReaderBase *
 			gf = Jstr(  kvbuf+geonoffset, geonlen ); gf.trimnull();
 			newn = jagatoi( gf.s() );
 
-			prt(("s5090 geomoffset=%d geonoffset=%d\n", geomoffset, geonoffset ));
-			prt(("s8839 lastm=%d newm=%d newcol=%d lastcol=%d lastn=%d\n", lastm, newm, newcol, lastcol, lastn ));
+			//prt(("s5090 geomoffset=%d geonoffset=%d\n", geomoffset, geonoffset ));
+			//prt(("s8839 lastm=%d newm=%d newcol=%d lastcol=%d lastn=%d\n", lastm, newm, newcol, lastcol, lastn ));
 			if ( lastcol >=0 && newcol != lastcol ) {
 				lastcol = newcol;
 				lastm = -1;
 				lastn = -1;
 			} else if ( lastm >=0 && newm != lastm ) {
-				prt(("s2039 sep=! lastm=%d newm=%d lastm=%d\n", lastm, newm, lastm ));
+				//prt(("s2039 sep=! lastm=%d newm=%d lastm=%d\n", lastm, newm, lastm ));
 				lastcol = newcol;
 				lastm = newm;
 				lastn = -1;
@@ -1050,6 +1091,7 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_OUTERRINGS ) str = "outerrings";
 	else if ( binaryOp == JAG_FUNC_INNERRINGS ) str = "innerrings";
 	else if ( binaryOp == JAG_FUNC_RINGN ) str = "ringn";
+	else if ( binaryOp == JAG_FUNC_METRICN ) str = "metricn";
 	else if ( binaryOp == JAG_FUNC_GEOJSON ) str = "geojson";
 	else if ( binaryOp == JAG_FUNC_WKT ) str = "wkt";
 	else if ( binaryOp == JAG_FUNC_POLYGONN ) str = "polygonn";
@@ -1146,7 +1188,7 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		 || _binaryOp == JAG_FUNC_ROTATESELF || _binaryOp == JAG_FUNC_AFFINE || _binaryOp == JAG_FUNC_VORONOIPOLYGONS
 		 || _binaryOp == JAG_FUNC_VORONOILINES || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
 		 || _binaryOp == JAG_FUNC_ASTEXT ||  _binaryOp == JAG_FUNC_DIFFERENCE || _binaryOp == JAG_FUNC_SYMDIFFERENCE
-		 || _binaryOp == JAG_FUNC_CONCAVEHULL || _binaryOp == JAG_FUNC_KNN
+		 || _binaryOp == JAG_FUNC_CONCAVEHULL || _binaryOp == JAG_FUNC_KNN || _binaryOp == JAG_FUNC_METRICN
 		 || _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS || _binaryOp == JAG_FUNC_INNERRINGS ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -1926,7 +1968,7 @@ int BinaryOpNode::_doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttr
 			} else {
 				str="1";
 			}
-			// prt(("s5003 JAG_FUNC_EQUAL 2 == coltype str=[%s] return 1\n", str.c_str() ));
+			// prt(("s5403 JAG_FUNC_EQUAL 2 == coltype str=[%s] return 1\n", str.c_str() ));
 			return 1;
 		} else {
 			// prt(("s0293 JAG_FUNC_EQUAL coltype=%d cmode=%d \n", coltype, cmode ));
@@ -2965,8 +3007,8 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 		//lstr = "ALL:ALL";
 		//prt(("s7824 JAG_FUNC_ALL \n" ));
 		// lstr = "999.876";
-		//prt(("s2831 lstr=[%s]\n", lstr.c_str() ));
-		//prt(("s2832 rstr=[%s]\n", rstr.c_str() ));
+		//prt(("s2431 lstr=[%s]\n", lstr.c_str() ));
+		//prt(("s2432 rstr=[%s]\n", rstr.c_str() ));
 		//lstr = "";
 		ltmode = 0;
 		//return 1;
@@ -3184,7 +3226,7 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 				 || _binaryOp == JAG_FUNC_TRANSLATE || _binaryOp == JAG_FUNC_TRANSSCALE
 				 || _binaryOp == JAG_FUNC_ROTATE || _binaryOp == JAG_FUNC_ROTATEAT || _binaryOp == JAG_FUNC_ROTATESELF
 				 || _binaryOp == JAG_FUNC_AFFINE  || _binaryOp == JAG_FUNC_DELAUNAYTRIANGLES 
-				 || _binaryOp == JAG_FUNC_GEOJSON ||  _binaryOp == JAG_FUNC_WKT
+				 || _binaryOp == JAG_FUNC_GEOJSON ||  _binaryOp == JAG_FUNC_WKT || _binaryOp == JAG_FUNC_METRICN
 				 || _binaryOp == JAG_FUNC_MINIMUMBOUNDINGCIRCLE ||  _binaryOp == JAG_FUNC_MINIMUMBOUNDINGSPHERE
 				 || _binaryOp == JAG_FUNC_NUMPOINTS || _binaryOp == JAG_FUNC_NUMRINGS ) {
 		//ltmode = 0; // string
@@ -3539,9 +3581,9 @@ BinaryOpNode* BinaryExpressionBuilder::parse( const JagParser *jagParser, const 
 
 	//prt(("s3827 in parse() operatorStack.empty()=%d\n", operatorStack.empty() ));
     while (!operatorStack.empty()) {
-		prt(("s2030 in loop doBinary( operator.top=%s )\n", BinaryOpNode::binaryOpStr( operatorStack.top() ).c_str() ));
+		//prt(("s2030 in loop doBinary( operator.top=%s )\n", BinaryOpNode::binaryOpStr( operatorStack.top() ).c_str() ));
         doBinary( operatorStack.top(), operatorArgStack.top(), jmap );
-		prt(("s2831 operatorStack.pop()\n" ));
+		//prt(("s2831 operatorStack.pop()\n" ));
         operatorStack.pop();
         operatorArgStack.pop();
     }
@@ -4020,7 +4062,7 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 		} else if ( op == JAG_FUNC_ADDPOINT ) {
 			// addpoint(lstr, point, [pos] )
 			// removepoint(lstr, pos )
-			//prt(("s2831 JAG_FUNC_ADDPOINT nargs=%d\n", nargs ));
+			//prt(("s4831 JAG_FUNC_ADDPOINT nargs=%d\n", nargs ));
 			if ( 2 == nargs ) {
 				carg1 = "-1";  // default -1, meaning add point at end . 1-based. 
 			} else {
@@ -4269,6 +4311,9 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 				//prt(("s2025 operandStack.pop() operandStack.size=%d\n", operandStack.size() ));
     		}
     	} else if ( op == JAG_FUNC_GEOJSON || op == JAG_FUNC_WKT ) {
+		    // geojson(geom)
+			// geojson(geom,N) -- N max points
+			// geojson(geom,N,n) -- n samples if circle/ellipse
 			if ( 1 == nargs ) {
 				carg1 = intToStr(JAG_MAX_POINTS_SENT) + ":30";
 			} else if ( 2 == nargs ) {
@@ -4290,6 +4335,33 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
     			if ( right->getValue(p) ) {
     				carg1 = Jstr(p) + ":" + carg1;
     			} else throw 2934;
+    			operandStack.pop();
+				right = NULL;
+			}
+    	} else if ( op == JAG_FUNC_METRICN ) {
+			// metricn(geom,N) -- N-th point
+			// mericn(geom,N,n) -- N-th point, m-th metric, 1 based 
+			if ( 1 == nargs ) {
+    			carg1 = "0:0";
+			} else if ( 2 == nargs ) {
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = Jstr(p) + ":0";
+    			} else throw 5012;
+    			operandStack.pop();
+				right = NULL;
+			} else if ( 3 == nargs ) {
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = Jstr(p);
+    			} else throw 5933;
+    			operandStack.pop();
+
+    			if ( operandStack.empty() ) throw 5454;
+        		right = operandStack.top();
+    			if ( right->getValue(p) ) {
+    				carg1 = Jstr(p) + ":" + carg1;
+    			} else throw 5934;
     			operandStack.pop();
 				right = NULL;
 			}
@@ -4545,7 +4617,7 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 		if ( operandStack.empty() ) throw 4446;
 
 		left = operandStack.top();
-		prt(("s4281 left=%0x operandStack.pop()\n", left ));
+		//prt(("s4281 left=%0x operandStack.pop()\n", left ));
 		operandStack.pop();
 	}
 
@@ -4556,7 +4628,7 @@ void BinaryExpressionBuilder::doBinary( short op, int nargs, JagHashStrInt &jmap
 
 	BinaryOpNode *pn = new BinaryOpNode(this, operatorStack.top(), operatorArgStack.top(), left, right, _jpa, arg1, arg2, carg1 );
 	operandStack.push(pn);	
-	prt(("s0293 new BinaryOpNode pn=%0x operatorstack.top=%d  pushed into operandStack\n", pn, operatorStack.top() ));
+	//prt(("s0293 new BinaryOpNode pn=%0x operatorstack.top=%d  pushed into operandStack\n", pn, operatorStack.top() ));
 	//operandStack.print();	
 	/**
 	prt(( "s7202 pushed operatorStack.top=%s to operandStack, operandStack.size=%d left=%0x right=%0x\n", 
@@ -4697,7 +4769,7 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_LOCATEPOINT || fop == JAG_FUNC_ADDPOINT || fop == JAG_FUNC_SETPOINT || 
 		fop == JAG_FUNC_REMOVEPOINT || fop == JAG_FUNC_SCALE || fop == JAG_FUNC_SCALEAT ||
 		fop == JAG_FUNC_DEGREES || fop == JAG_FUNC_RADIANS || fop == JAG_FUNC_SCALESIZE ||
-		fop == JAG_FUNC_GEOJSON || fop == JAG_FUNC_WKT || fop == JAG_FUNC_KNN ||
+		fop == JAG_FUNC_GEOJSON || fop == JAG_FUNC_WKT || fop == JAG_FUNC_KNN || fop == JAG_FUNC_METRICN ||
 		fop == JAG_FUNC_MINIMUMBOUNDINGCIRCLE || fop == JAG_FUNC_MINIMUMBOUNDINGSPHERE ||
 		fop == JAG_FUNC_LENGTH || fop == JAG_FUNC_COUNT ) {
 			return true;
@@ -4957,6 +5029,8 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_OUTERRING; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "ringn", 5 ) ) {
 		fop = JAG_FUNC_RINGN; len = 5; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "metricn", 7 ) ) {
+		fop = JAG_FUNC_METRICN; len = 7; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "interpolate", 11 ) ) {
 		fop = JAG_FUNC_INTERPOLATE; len = 11; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "linesubstring", 13 ) ) {
@@ -5615,6 +5689,8 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllInnerRings( mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_RINGN ) {
 		rc = doAllRingN( mark1, hdr, colType1, srid1, sp1, carg, value );
+	} else if ( op == JAG_FUNC_METRICN ) {
+		rc = doAllMetricN( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_GEOJSON ) {
 		rc = doAllGeoJson( mark1, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_WKT ) {
@@ -6987,6 +7063,73 @@ bool BinaryOpNode::doAllRingN( const Jstr& mk, const Jstr& hdr, const Jstr &colT
 		return false;
 	}
 
+	return true;
+}
+
+bool BinaryOpNode::doAllMetricN( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
+								    int srid, const JagStrSplit &sp, const Jstr &carg,  Jstr &value )
+{
+	prt(("s3420 doAllRingN() mk=[%s] colType=[%s] carg=[%s] sp1.print(): \n", mk.c_str(), colType.c_str(), carg.c_str() ));
+	//sp.print();
+	JagStrSplit ssa( carg, ':');
+	if ( ssa.size() < 2 ) return false;
+	int N = ssa[0].toInt();  // 1 based
+	int m = ssa[1].toInt();  // 1 based, 0 -- for all metrics of N-th point
+	bool found = false;
+	int cnt = 1;
+	Jstr mstr;
+	value = "";
+
+	int coords = JagParser::vectorShapeCoordinates( colType );
+	if ( coords > 0 ) {
+		// metrics are "... m1 m2 m3"
+		if ( N < 1 ) {
+    		for ( int i=JAG_SP_START + coords; i < sp.size(); ++i ) {
+    			if ( sp[i] == "|" || sp[i] == "!" ) continue;
+				if ( value.size() < 1 ) { value = sp[i]; } else { value += Jstr("#") + sp[i]; }
+			}
+			return true;
+		} else {
+			if ( N > sp.size() - JAG_SP_START - coords ) return false;
+    		cnt = 1;
+    		for ( int i=JAG_SP_START + coords; i < sp.size(); ++i ) {
+    			if ( sp[i] == "|" || sp[i] == "!" ) continue;
+    			if ( N == cnt ) {
+					value = sp[i];
+					return true;
+    			}
+    				++cnt;
+   			}
+			return false;
+		}
+	}
+
+	cnt = 1;
+	found = false;
+	// metrics are  x:y:m1#m2#m3 x:y:m1#m2#m3 x:y:m1#m2#m3 ...
+	for ( int i=JAG_SP_START; i < sp.size(); ++i ) {
+		if ( sp[i] == "|" || sp[i] == "!" ) continue;
+		if ( N == cnt ) {
+			found = true;
+			JagStrSplit ss(sp[i], ':');
+			mstr = ss[ ss.size() - 1 ];
+			break;
+		}
+		++cnt;
+	}
+
+	if ( ! found ) return false;
+	if ( m < 1 ) {
+		value = mstr;
+		return true;
+	}
+
+	JagStrSplit ss( mstr, '#' );
+	if ( m > ss.size() ) {
+		return false;
+	}
+
+	value = ss[m-1];
 	return true;
 }
 
@@ -8997,7 +9140,7 @@ Jstr BinaryOpNode::doAllScaleAt( int srid, const Jstr& mark1, const Jstr &colTyp
 		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
 		double a = jagatof( sp1[JAG_SP_START+2].c_str() )*fx;
 		double b = jagatof( sp1[JAG_SP_START+3].c_str() )*fy;
-		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		x = px + fx*(x-px); y = py + fy*(y-py);
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
 		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
@@ -9293,7 +9436,7 @@ bool BinaryOpNode::doAllScale( int srid, const Jstr &colType1, const JagStrSplit
 		double y = jagatof( sp1[JAG_SP_START+1].c_str() )*fy;
 		double a = jagatof( sp1[JAG_SP_START+2].c_str() )*fx;
 		double b = jagatof( sp1[JAG_SP_START+3].c_str() )*fy;
-		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
 		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
@@ -9523,7 +9666,7 @@ bool BinaryOpNode::doAllScaleSize( int srid, const Jstr &colType1, const JagStrS
 		double y = jagatof( sp1[JAG_SP_START+1].c_str() );
 		double a = jagatof( sp1[JAG_SP_START+2].c_str() )*fx;
 		double b = jagatof( sp1[JAG_SP_START+3].c_str() )*fy;
-		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
 		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
@@ -9752,7 +9895,7 @@ bool BinaryOpNode::doAllTranslate( int srid, const Jstr &colType1, const JagStrS
 		double y = jagatof( sp1[JAG_SP_START+1].c_str() )+dy;
 		double a = jagatof( sp1[JAG_SP_START+2].c_str() );
 		double b = jagatof( sp1[JAG_SP_START+3].c_str() );
-		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
 		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {
@@ -10017,7 +10160,7 @@ bool BinaryOpNode::doAllAffine( int srid, const Jstr &colType1, const JagStrSpli
 		y1 = jagatof( sp1[JAG_SP_START+1].c_str() )+dy;
 		double a1 = jagatof( sp1[JAG_SP_START+2].c_str() );
 		double b1 = jagatof( sp1[JAG_SP_START+3].c_str() );
-		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		affine2d(x1, y1, a, b, d, e, dx, dy, x, y );
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
 		val += d2s(x) + " " + d2s(y) + " " + d2s(a1) + " " + d2s(b1) + " " + d2s(nx);
@@ -10990,7 +11133,7 @@ bool BinaryOpNode::doAllRotateAt( int srid, const Jstr &colType1, const JagStrSp
 		double y1 = jagatof( sp1[JAG_SP_START+1].c_str() );
 		double a = jagatof( sp1[JAG_SP_START+2].c_str() );
 		double b = jagatof( sp1[JAG_SP_START+3].c_str() );
-		double oldnx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double oldnx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		rotateat( x1, y1, alpha, x0, y0, x, y );
 		rotatenx( oldnx, alpha, nx );
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
@@ -11116,7 +11259,7 @@ bool BinaryOpNode::doAllRotateSelf( int srid, const Jstr &colType1, const JagStr
 		y = jagatof( sp1[JAG_SP_START+1].c_str() );
 		double a = jagatof( sp1[JAG_SP_START+2].c_str() );
 		double b = jagatof( sp1[JAG_SP_START+3].c_str() );
-		double oldnx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double oldnx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		rotatenx( oldnx, alpha, nx );
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
 		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
@@ -11252,7 +11395,7 @@ bool BinaryOpNode::doAllTransScale( int srid, const Jstr &colType1, const JagStr
 		double y = (jagatof( sp1[JAG_SP_START+1].c_str() )+dy)*fy;
 		double a = jagatof( sp1[JAG_SP_START+2].c_str() )*fx;
 		double b = jagatof( sp1[JAG_SP_START+3].c_str() )*fy;
-		double nx = JagGeo::safeget(sp1, JAG_SP_START+3);
+		double nx = JagGeo::safeget(sp1, JAG_SP_START+4);
 		val = "CJAG=" + intToStr(srid) + "=0=RC=d 0:0:0:0 ";
 		val += d2s(x) + " " + d2s(y) + " " + d2s(a) + " " + d2s(b) + " " + d2s(nx);
 	} else if ( colType1 == JAG_C_COL_TYPE_RECTANGLE3D ) {

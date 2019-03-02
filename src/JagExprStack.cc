@@ -100,11 +100,13 @@ void JagExprStack::reAllocShrink()
 
 void JagExprStack::push( ExprElementNode *newnode )
 {
+	/***
 	if ( newnode->_isElement ) {
 		prt(("s9282 ****** pushed %0x iselement\n", newnode ));
 	} else {
 		prt(("s9282 ****** pushed %0x isbinopnode op=%d\n", newnode, newnode->getBinaryOp() ));
 	} 
+	***/
 
 	if ( NULL == _arr ) {
 		_arr = new ExprElementNode*[4];
@@ -145,11 +147,13 @@ void JagExprStack::pop()
 	***/
 	//prt(("s9283 popped %0x isElement=%d\n", _arr[_last], _arr[_last]->_isElement ));
 
+	/***
 	if ( _arr[_last]->_isElement ) {
 		prt(("s9283 ****** popped %0x iselement\n", _arr[_last] ));
 	} else {
 		prt(("s9283 ****** popped %0x isbinopnode\n", _arr[_last] ));
 	} 
+	***/
 
 	if ( ! _arr[_last]->_isElement ) { 
 		-- numOperators; 

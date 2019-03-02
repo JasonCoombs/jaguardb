@@ -19,7 +19,7 @@
 #ifndef _jag_def_h_
 #define _jag_def_h_
 
-#define JAG_VERSION			"3.0.0"
+#define JAG_VERSION			"3.0.1"
 #define JAG_BRAND			"jaguar"
 
 // File Defs
@@ -499,6 +499,7 @@
 #define JAG_FUNC_RIGHTRATIO 	   326  // 2D how much percentage geom1 is on the right of geom2
 #define JAG_FUNC_CONCAVEHULL       327  // concave hull of multipoint/linestring/polygon
 #define JAG_FUNC_KNN       		   328  // k-NN K nearest neighbor of 2D and 3D point to multipoint/linestring/polygon
+#define JAG_FUNC_METRICN   		   329  // metricN(geom, N, m ) metric of N-th point, m-th metric, 1-based. or metricN(g,N)
 
 
 // string functions 
@@ -785,6 +786,7 @@
 #define JAG_METER_MAX_PER_LON_DEGREE  111319.4907932736
 #define JAG_RADIAN_PER_DEGREE   0.017453292519943
 
-#define JAG_METRIC_LEN  8
+#define JAG_METRIC_LEN      8
+#define JAG_DEFAULT_METRIC  "0"
 
 #endif

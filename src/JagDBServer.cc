@@ -2505,6 +2505,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "show task;\n";
 	} else if ( 0 == strncasecmp( cmd, "create", 3 ) ) {
 		str += "create table [if not exists] TABLE ( key: KEY TYPE(size), ..., value: VALUE TYPE(size), ...  );\n";
+		str += "create table TABLE ( key: KEY TYPE(size), ..., value: VALUE TYPE(srid:ID,metrics:M), ...  );\n";
 		str += "create index INDEXNAEME on TABLE(COL1, COL2, ...[, value: COL,COL]);\n";
 		str += "create index INDEXNAEME on TABLE(key: COL1, COL2, ...[, value: COL,COL]);\n";
 		str += "\n";
@@ -2519,6 +2520,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "create table geo ( key: id bigint, value: ls linestring, sq square );\n";
 		str += "create table park ( key: id bigint, value: lake polygon(srid:wgs84), farm rectangle(srid:wgs84) );\n";
 		str += "create table tm ( key: id bigint, value: name char(32), range(datetime) );\n";
+		str += "create table pt ( key: id int, value: s linestring(srid:4326,metrics:5) );\n";
 		str += "create index addr_index on user( address );\n";
 		str += "create index addr_index on user( address, value: zipcode );\n";
 		str += "create index addr_index on user( key: address, value: zipcode, city );\n";
@@ -2802,6 +2804,9 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    rightratio(geom1,geom2)        -- ratio of geom1 on the right of geom2 (point and linear objects)\n";
 		str += "    knn(geom,point,K)              -- K-nearest neighbors in geom of point\n";
 		str += "    knn(geom,point,K,min,max)      -- K-nearest neighbors in geom of point within maximum and mininum distance\n";
+		str += "    metricn(geom)                  -- metrics of vector shapes\n";
+		str += "    metricn(geom,N)                -- metric of N-th point. If vector shape, N-th metric\n";
+		str += "    metricn(geom,N,m)              -- metric of N-th point, m-th metric. 1-based\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "select sum(amt) as amt_sum from sales limit 3;\n";

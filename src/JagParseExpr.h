@@ -149,6 +149,10 @@ class StringElementNode: public ExprElementNode
 	                         const char *buffers[], const Jstr &uuid, const Jstr &db, const Jstr &tab, 
 							 const Jstr &col, bool isBoundBox3D, bool is3D=false );
 
+	void addDataStrting( const char *buffers[], const JagSchemaAttribute *attrs[], int begin, int len, Jstr &bufstr );
+	void addMetricString( const char *buffers[], const JagSchemaAttribute *attrs[], int begin, Jstr &bufstr );
+
+
 	JagFixString		_value;
 	unsigned int		_tabnum;
 	int					_typeMode;
@@ -312,6 +316,8 @@ class BinaryOpNode: public ExprElementNode
 	bool doAllInnerRingN( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 						  int srid, const JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
 	bool doAllRingN( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
+	bool doAllMetricN( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 						  int srid, const JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
 	bool doAllGeoJson( const Jstr &mk1, const Jstr &colType1, 
 						  int srid, JagStrSplit &sp1, const Jstr& carg,  Jstr &val );
