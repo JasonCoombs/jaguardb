@@ -15,7 +15,9 @@ CCFLAGS_DYNAMIC=$(BASICFLAGS) -fPIC
 CCFLAGS=$(CCFLAGS_STATIC)
 CCFLAGS=$(CCFLAGS_DYNAMIC)
 
-STDLIBS_STATIC =  Web/GeographicLib-1.49/lib/libGeographic.a /usr/lib64/libpthread.a
+STDLIBS_STATIC =  Web/GeographicLib-1.49/lib/libGeographic.a /usr/lib64/libpthread.a \
+                  Web/CGAL/CGAL-4.13/lib64/libCGAL.a Web/Boost/boost_1_68_0/lib/libboost_system.a \
+				  Web/Boost/boost_1_68_0/lib/libboost_thread.a 
 STDLIBS_DYNAMIC = -LWeb/GeographicLib-1.49/lib -LWeb/CGAL/CGAL-4.13/lib64 -LWeb/Boost/boost_1_68_0/lib \
                   -lGeographic -lCGAL -lboost_thread -lboost_system 
 
@@ -35,9 +37,9 @@ CPP=$(GPP)  -pg -DJAG_DEBUGCHECK
 CPP=$(GPP)  -g3 -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -g -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -DJAG_DEBUGCHECK
-CPP=$(GPP)  -O3
 CPP=$(GPP) 
 CPP=$(GPP)  -ggdb
+CPP=$(GPP)  -O3
 
 #### makefile.obj has $(OBJS)
 include makefile.obj
