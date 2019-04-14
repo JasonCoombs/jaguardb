@@ -789,4 +789,9 @@
 #define JAG_METRIC_LEN      8
 #define JAG_DEFAULT_METRIC  "0"
 
+#define JAG_SOCK_SQL_HDR_LEN       9   // 4 + 5
+#define JAG_SOCK_MSG_HDR_LEN       13  // 9 + 4
+#define JAG_SOCK_TOTAL_HDR_LEN     (JAG_SOCK_SQL_HDR_LEN+JAG_SOCK_MSG_HDR_LEN)
+
+
 #endif

@@ -1446,10 +1446,12 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 
 	char rephdr[4];
 	rephdr[3] = '\0';
- 	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
- 	char hdr2[JAG_SOCK_MSG_HDR_LEN+1];
+	int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
+ 	char hdr[hdrsz+1];
+ 	char hdr2[hdrsz+1];
 	char *newbuf = NULL;
 	char *newbuf2 = NULL;
+	char sqlhdr[JAG_SOCK_SQL_HDR_LEN+1];
     for(;;)
     {
 		if ( ( cnt % 100000 ) == 0 ) { jagmalloc_trim( 0 ); }
@@ -1457,8 +1459,6 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 		// get new command and uncompress it if needed
 		JagRequest req;
 		req.session = &session;
-		memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
-		
 		// prt(("s3288 recvData from %s ...\n", session.ip.c_str() ));
 		len = recvData( sock, hdr, newbuf );
 		//prt(("s9310 recv() pid=%lld sock=%d len=%d hdr=[%s] newbuf=[%.200s] ...\n", pthread_self(), sock, len, hdr, newbuf ));
@@ -1485,19 +1485,22 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			break;
 		}
 		++cnt;
+		getXmitSQLHdr( hdr, sqlhdr );
+		prt(("s3809 receved sqlhdr=[%s]\n", sqlhdr ));
+
 		struct timeval now;
 		gettimeofday( &now, NULL );
 		threadQueryTime = now.tv_sec * (abaxint)1000000 + now.tv_usec;
 
-		// if recv hard bit, ignore
-		if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B' ) {
+		// if recv heartbeat, ignore
+		if ( hdr[hdrsz-3] == 'H' && hdr[hdrsz-2] == 'B' ) {
 			continue;
 		}
 
-		if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'N' ) {
+		if ( hdr[hdrsz-3] == 'N' ) {
 			req.hasReply = false;
 			req.batchReply = false;
-		} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'B' ) {
+		} else if ( hdr[hdrsz-3] == 'B' ) {
 			req.hasReply = true;
 			req.batchReply = true;
 		} else {
@@ -1505,21 +1508,12 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			req.batchReply = false;
 		}
 
-		if ( hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'Z' ) {
+		if ( hdr[hdrsz-2] == 'Z' ) {
 			req.doCompress = true;
 		} else {
 			req.doCompress = false;
 		}
 
-		/***
-		if ( hdr[JAG_SOCK_MSG_HDR_LEN-1] == 'N' ) {
-			req.norep = true;
-			// prt(("s7738 hdr=[%s] req.norep = true\n", hdr ));
-		} else {
-			req.norep = false;
-			// prt(("s7739 hdr=[%s] req.norep = false\n", hdr ));
-		}
-		***/
 		// if from GATE to HOST, then req.norep = true; ie, req.dorep = false
 		// if ( JAG_DATACENTER_GATE == req.session->dcfrom && JAG_DATACENTER_HOST == JAG_DATACENTER_GATE == req.session->dcto ) {
 		// prt(("s2038 req.session->dcfrom=%d req.session->dcto=%d\n", req.session->dcfrom, req.session->dcto ));
@@ -1783,9 +1777,11 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 
 		// if session.drecoverConn is 1 ( for delta recover commands )
 		// need to split first and second several bytes for timediff and batchReply
+		// logformat "timediff;isBatch;sqlmsg;...releat;..."
 		if ( 1 == session.drecoverConn ) {
 			char *p, *q;
 			int tdlen = 0;
+
 			p = q = pmesg;
 			while ( *q != ';' && *q != '\0' ) ++q;
 			if ( *q == '\0' ) {
@@ -1794,7 +1790,8 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			}
 			tdlen = q-p;
 			session.timediff = rayatoi( p, tdlen );
-			pmesg = q+1;
+
+			pmesg = q+1; // ;pmesg
 			len -= ( tdlen+1 );
 			++q;
 			p = q;
@@ -1805,6 +1802,8 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			}
 			tdlen = q-p;
 			req.batchReply = rayatoi( p, tdlen );
+
+
 			pmesg = q+1;
 			len -= ( tdlen+1 );
 		}
@@ -2157,7 +2156,7 @@ int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 		return 0;
 	}
 	// waiting for signal; if NG, reject and return
- 	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *newbuf = NULL;
 	if ( recvData( req.session->sock, hdr, newbuf ) < 0 || 
 					*(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
@@ -5053,9 +5052,6 @@ int JagDBServer::initConfigs()
 			keyExists = 1;
 		}
 	}
-
-
-
 }
 
 // dinsert log command to the command log file
@@ -5074,10 +5070,11 @@ void JagDBServer::dinsertlogCommand( JagSession *session, const char *mesg, abax
 // spMode = 2 : batch regular cmds, insert/cinsert/dinsert etc. 
 void JagDBServer::logCommand( JagSession *session, const char *mesg, abaxint len, int spMode )
 {
+	// new logformat  "clientIP;sqlhdr;replicatetype;clienttimediff;isbatch;ddddddddmessage"
 	JAG_BLURT jaguar_mutex_lock ( &g_logmutex ); JAG_OVER;
 	if ( session->servobj->_fpCommand ) {
 		fprintf( session->servobj->_fpCommand, "%d;%d;%d;%016ld%s",
-			session->replicateType, session->timediff, 2==spMode, len, mesg );
+			     session->replicateType, session->timediff, 2==spMode, len, mesg );
 		if ( 0 == spMode || 2 == spMode ) {
 			// fflush( session->servobj->_fpCommand );
 			jagfdatasync( fileno(session->servobj->_fpCommand ) );
@@ -5091,15 +5088,16 @@ void JagDBServer::logCommand( JagSession *session, const char *mesg, abaxint len
 // spMode = 2 : batch regular cmds, insert/cinsert/dinsert etc. 
 void JagDBServer::regSplogCommand( JagSession *session, const char *mesg, abaxint len, int spMode )
 {
+	// logformat
 	JAG_BLURT jaguar_mutex_lock ( &g_dlogmutex ); JAG_OVER;
 	if ( 0 == spMode && session->servobj->_recoverySpCommand ) {
 		fprintf( session->servobj->_recoverySpCommand, "%d;%d;0;%016ld%s",
-			session->replicateType, session->timediff, len, mesg );
+			     session->replicateType, session->timediff, len, mesg );
 		// fflush( session->servobj->_recoverySpCommand );
 		jagfdatasync( fileno(session->servobj->_recoverySpCommand ) );
 	} else if ( 0 != spMode && session->servobj->_recoveryRegCommand ) {
 		fprintf( session->servobj->_recoverySpCommand, "%d;%d;%d;%016ld%s",
-			session->replicateType, session->timediff, 2==spMode, len, mesg );
+			     session->replicateType, session->timediff, 2==spMode, len, mesg );
 		if ( 2 == spMode ) {
 			// fflush ( session->servobj->_recoveryRegCommand );
 			jagfdatasync( fileno(session->servobj->_recoveryRegCommand ) );
@@ -5110,8 +5108,7 @@ void JagDBServer::regSplogCommand( JagSession *session, const char *mesg, abaxin
 	jaguar_mutex_unlock ( &g_dlogmutex );
 }
 
-// mode: replicateType 012
-// 0: YYY; 1: YYN; 2: YNY; 3: YNN; 4: NYY; 5: NYN; 6: NNY;
+// mode: replicateType 012 0: YYY; 1: YYN; 2: YNY; 3: YNN; 4: NYY; 5: NYN; 6: NNY;
 void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *mesg, bool isBatch )
 {	
 	JAG_BLURT jaguar_mutex_lock ( &g_dlogmutex ); JAG_OVER;
@@ -5182,6 +5179,7 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 		}
 	}
 	
+	// deltalogformat
 	if ( f1 ) {
 		fprintf( f1, "%d;%d;%s\n", session->timediff, isBatch, cmd.c_str() );
 	}
@@ -5434,7 +5432,7 @@ int JagDBServer::fileTransmit( const Jstr &host, unsigned int port, const Jstr &
 		JaguarCPPClient pcli;
 		pcli._deltaRecoverConnection = 2;
 		if ( !pcli.connect( host.c_str(), port, "admin", passwd.c_str(), "test", unixSocket.c_str(), JAG_CONNECT_ONE ) ) {
-			raydebug( stdout, JAG_LOG_LOW, "s4058 recover failure, unable to make connection %s:%d ...\n", host.c_str(), _port );
+			raydebug( stdout, JAG_LOG_LOW, "s4058 recover failure, unable to connect %s:%d ...\n", host.c_str(), _port );
 			if ( !isAddCluster ) jagunlink( fpath.c_str() );
 			return 0;
 		}
@@ -5444,6 +5442,7 @@ int JagDBServer::fileTransmit( const Jstr &host, unsigned int port, const Jstr &
 		ssize_t rlen;
 		struct stat sbuf;
 		Jstr cmd;
+		int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
 		if ( 0 == stat(fpath.c_str(), &sbuf) && sbuf.st_size > 0 ) {
 			int fd = jagopen( fpath.c_str(), O_RDONLY, S_IRWXU);
 			if ( fd < 0 ) {
@@ -5459,10 +5458,12 @@ int JagDBServer::fileTransmit( const Jstr &host, unsigned int port, const Jstr &
 			} else {
 				cmd = "_serv_addbeginftransfer|" + intToStr( mode ) + "|" + longToStr(sbuf.st_size) + "|" + longToStr(THREADID);
 			}
-			memcpy( buf+JAG_SOCK_MSG_HDR_LEN, cmd.c_str(), cmd.size() );
-			sprintf( buf, "%0*lld", JAG_SOCK_MSG_HDR_LEN-4, cmd.size() );
-			memcpy( buf+JAG_SOCK_MSG_HDR_LEN-4, "ANCC", 4 );
-			rc = sendData( pcli.getSocket(), buf, JAG_SOCK_MSG_HDR_LEN+cmd.size() ); // 016ABCmessage client query mode
+
+			memcpy( buf+hdrsz, cmd.c_str(), cmd.size() );
+			sprintf( buf, "%0*lld", hdrsz-4, cmd.size() );
+			// width of buf os JAG_SOCK_TOTAL_HDR_LEN; number is cmd.size()
+			memcpy( buf+hdrsz-4, "ANCC", 4 );
+			rc = sendData( pcli.getSocket(), buf, hdrsz+cmd.size() ); // 016838ANCCmessage client query mode
 			if ( rc < 0 ) {
 				jagclose( fd );
 				pcli.close();
@@ -6018,6 +6019,7 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 				break;
 			} else {
 				if ( i > 0 ) {
+					// only 0-th byte is OK before ';'
 					jagclose( fd );
 					return cnt;
 				}
@@ -6074,12 +6076,14 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 		}
 		req.batchReply = atoi( buf16 );
 
+		// get mesg len
 		memset( buf16, 0, 17 );
-		read( fd, buf16, 16 );
+		raysaferead( fd, buf16, 16 );
 		len = jagatoll( buf16 );
+
 		buf = (char*)jagmalloc(len+1);
 		memset(buf, 0, len+1);
-		read( fd, buf, len );
+		raysaferead( fd, buf, len );
 		try {
 			processMultiCmd( req, buf, len, this, g_lastSchemaTime, g_lastHostTime, 0, true, 1 );
 		} catch ( const char *e ) {
@@ -6213,7 +6217,8 @@ int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr
 	//prt(("s4402 sendMessageLength() done ...\n" ));
 
 	// waiting for signal; if NG, reject and return
-	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+	int hdrsz = JAG_SOCK_TOTAL_HDR_LEN; 
+	char hdr[hdrsz+1];
 	char *newbuf = NULL;
 	// prt(("s5002 schemaChangeCommandSyncCheck() recvData ...\n" ));
 	// if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || *(newbuf+1) != 'K' ) {
@@ -6482,7 +6487,8 @@ void JagDBServer::noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+		int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
+ 		char hdr[hdrsz+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -6542,7 +6548,7 @@ void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj,
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -6608,7 +6614,7 @@ void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj,
 		}
 	
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -6673,7 +6679,7 @@ void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj,
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -6748,7 +6754,7 @@ void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj,
 		}
 		// prt(("s2209 sendMessageLength done \n" ));
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		prt(("s2204 recvData ...\n" ));
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
@@ -6805,7 +6811,7 @@ void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj,
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -6863,7 +6869,7 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -6949,7 +6955,7 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 		}
 	
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -7039,7 +7045,7 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Js
 		}
 	
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -7144,7 +7150,7 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr 
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		// prt(("s3052 recvData %s ...\n", scdbobj.c_str() ));
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
@@ -7254,7 +7260,7 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 			return 0;
 		}
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -7376,7 +7382,7 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &d
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -7472,7 +7478,7 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &d
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -7568,7 +7574,7 @@ int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jst
 		}
 	
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -9415,7 +9421,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	abaxint i, j, stime = now.tv_sec, totlen = 0, kcheckerCnt = 0, finalsendlen = 0, gbvsendlen = 0;
 	int pos;
 	abaxint offset = 0, objelem[num], jlen[num], sklen[num];
-	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	Jstr ttype = " ";
 	char *newbuf = NULL;
 	bool hasValCol = 0, needInit = 1, timeout = 0, isagg, hasagg = 0, dfSorted[num];
@@ -9541,7 +9547,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 
 	JagTable::sendMessage( req, elemInfo.c_str(), "OK" );
 
- 	char ehdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 	char ehdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *enewbuf = NULL;
 
 	abaxint clen = recvData( req.session->sock, ehdr, enewbuf );
@@ -11528,17 +11534,18 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 		}
 
 		abaxint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT; ssize_t rlen = 0;
-		char *newbuf = NULL, *nbuf = NULL; char hdr[JAG_SOCK_MSG_HDR_LEN+1], ebuf[JAG_ONEFILESIGNAL+1];
+		char *newbuf = NULL, *nbuf = NULL; 
+		int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
+		char hdr[hdrsz+1], ebuf[JAG_ONEFILESIGNAL+1];
 		while ( 1 ) {
 			// recv one peice from client, send to another server, then waiting for server's reply, send back to client;
 			// only repeat recv peices from client and send one by one to another server during file transfer
-			memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
 			// prt(("s2402 recvData ...\n" ));
 			rlen = recvData( req.session->sock, hdr, newbuf );
 			// prt(("s7734 recvData newbuf=[%s]\n", newbuf ));
 			if ( rlen < 0 ) {
 				break;
-			} else if ( rlen == 0 || ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B' ) ) {
+			} else if ( rlen == 0 || ( hdr[hdrsz-3] == 'H' && hdr[hdrsz-2] == 'B' ) ) {
 				// invalid info for file header, ignore
 				continue;
 			} else if ( 0 == strncmp( newbuf, "_onefile|", 9 ) ) {
@@ -11724,27 +11731,28 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 		// prt(("s7733 query(%s) done rc=%d\n",  mesg, rc ));
 		if ( rc > 0 ) {
 			abaxint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT; ssize_t rlen = 0;
-			char *newbuf = NULL, *nbuf = NULL;  char hdr[JAG_SOCK_MSG_HDR_LEN+1], ebuf[JAG_ONEFILESIGNAL+1];
+			int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
+			char *newbuf = NULL, *nbuf = NULL;  char hdr[hdrsz+1], ebuf[JAG_ONEFILESIGNAL+1];
 			while ( 1 ) {
 				// recv one peice from another HOST, send to client, then waiting for client's reply, send back to another HOST;
 				// only repeat recv peices from HOST and send one by one to client during file transfer
-				memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
+				memset( hdr, 0, hdrsz+1);
 				//prt(("s3039 _dataCenter useindex=%d recvDirectFromSockAll ....\n", useindex ));
 				rlen = _dataCenter[useindex]->recvDirectFromSockAll( newbuf, hdr );
 				// prt(("s6122 _dataCenter recvDirectFromSockAll hdr=[%s]  newbuf=[%s]\n", hdr, newbuf ));
 				if ( rlen < 0 ) {
 					// prt(("s4028 recvDirectFromSockAll rlen<0 break\n" ));
 					break;
-				} if ( rlen == 0 || ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B' ) ) {
+				} if ( rlen == 0 || ( hdr[hdrsz-3] == 'H' && hdr[hdrsz-2] == 'B' ) ) {
 					// invalid info for file header, ignore
 					continue;
-				} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'X' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == '1' ) {
+				} else if ( hdr[hdrsz-3] == 'X' && hdr[hdrsz-2] == '1' ) {
 					// "X1" message, send to client and continue to recv another buf
-					nbuf = (char*)jagmalloc( JAG_SOCK_MSG_HDR_LEN+rlen+1 );
-					memcpy( nbuf, hdr, JAG_SOCK_MSG_HDR_LEN );
-					memcpy( nbuf+JAG_SOCK_MSG_HDR_LEN, newbuf, rlen ); nbuf[rlen] = '\0';
+					nbuf = (char*)jagmalloc( hdrsz+rlen+1 );
+					memcpy( nbuf, hdr, hdrsz );
+					memcpy( nbuf+hdrsz, newbuf, rlen ); nbuf[rlen] = '\0';
 					//prt(("s5003 sendDirectToSock session.sock nbuf=[%s] ren=%d\n", nbuf, rlen ));
-					rc = sendDirectToSock( req.session->sock, nbuf, JAG_SOCK_MSG_HDR_LEN+rlen, true ); 
+					rc = sendDirectToSock( req.session->sock, nbuf, hdrsz+rlen, true ); 
 					//prt(("s5003 sendDirectToSock session.sock nbuf=[%s] done\n", nbuf ));
 					hasX1 = true;
 					//prt(("s3691 hasX1=true\n" ));
@@ -11797,19 +11805,6 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 					//prt(("s5892 sendDirectToSock nbuf=[%s] rlen=%d done\n", nbuf, rlen ));
 					if ( nbuf ) { free( nbuf ); nbuf = NULL; }
 					if ( 10 != rc && 20 != rc ) {
-						/***
-						rlen = recvDirectFromSock( req.session->sock, rbuf, hdr );
-						if ( rbuf ) _dataCenter[useindex]->sendDirectToSockAll( rbuf, rlen );
-						***/
-						/***
-						prt(("s0938************ unexpected hdr=[%s] newbuf=[%s]\n", hdr, newbuf ));
-						if  ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'E' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'D' &&
-						      0==strncmp(newbuf, "_END", 4 ) ) {
-								// JagTable::sendMessage( req, nbuf, "ED" );
-							  // continue;
-							  // break;
-					    }
-						***/
 					}
 
 					if ( 20 == rc ) {
@@ -12358,7 +12353,7 @@ void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj,
 		}
 
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
@@ -12435,7 +12430,7 @@ void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj,
 		}
 	
 		// waiting for signal; if NG, reject and return
- 		char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
 		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );

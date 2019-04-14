@@ -45,23 +45,19 @@ JagUUID::JagUUID()
 
 Jstr JagUUID::getString()
 {
-
-	/***
-    uuid_t id;
-    uuid_generate(id);
-	char str[40];
-    uuid_unparse(id, str);
-    Jstr res = str;
-    return res;
-	***/
 	char ds[41];
-	int n = time(NULL)%100000;
-
+	long n = time(NULL)%100000;
 	sprintf(ds, "%s%s%s%05d", AbaxString::randomValue(27).c_str(), _hostStr.c_str(), _pidStr.c_str(), n );
 	// 27+5+3+5=40 bytes
-	
 	return ds;
 }
+
+long JagUUID::getLong(long M)
+{
+	return time(NULL)%M + rand()%M;
+}
+
+
 
 // 5 bytes short string
 void JagUUID::_getHostStr()
@@ -93,5 +89,4 @@ void JagUUID::_getPidStr()
 	p4[2] = cset[ pid%10];
 	p4[3] = '\0';
 	_pidStr = p4;
-	//printf("_pidStr=[%s]\n", _pidStr.c_str() );
 }

@@ -1149,7 +1149,7 @@ void JagDataAggregate::sendDataToClient( abaxint cnt, const JagRequest &req )
 	JagTable::sendMessage( req, buf, "OK" );
 
 	memset(buf, 0, SELECT_DATA_REQUEST_LEN+1);
- 	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *newbuf = NULL;
 	abaxint clen = recvData( req.session->sock, hdr, newbuf );
 	//prt(("s3733 received hdr=[%s] newbuf=[%s]\n", hdr, newbuf ));

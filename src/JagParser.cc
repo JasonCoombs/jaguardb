@@ -4616,7 +4616,6 @@ void JagParser::addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other,
 		++numCols;
 	}
 
-	// qwer todo add metrics :m1  :m2  :m3 ...
 }
 
 void JagParser::setToRealType( const Jstr &rcs, CreateAttribute &cattr )

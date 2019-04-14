@@ -338,6 +338,13 @@ bool jagEQ( double f1, double f2 );
 bool jagLE( double f1, double f2 );
 bool jagGE( double f1, double f2 );
 
+void putXmitHdr( char *buf, const char *sqlhdr, int msglen, const char *code );
+void putXmitHdrAndData( char *buf, const char *sqlhdr, const char *msg, int msglen, const char *code );
+void getXmitSQLHdr( char *buf, char *sqlhdr );
+void getXmitCode( char *buf, char *code );
+long getXmitMsgLen( char *buf );
+void makeSQLHeader( char *sqlhdr );
+
 
 template <class T> T* newObject( bool doPrint = true )
 {

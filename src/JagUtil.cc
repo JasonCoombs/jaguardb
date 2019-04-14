@@ -1673,7 +1673,6 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 					abaxint &finalsendlen, abaxint &gbvsendlen, bool needGbvs )
 {
 	//prt(("u2033 rearrangeHdr num=%d parseParam->hasColumn=%d ...\n", num, parseParam->hasColumn ));
-	// qwer
 	gbvsendlen = 0;
 	int rc, collen, siglen, constMode = 0, typeMode = 0;
 	bool isAggregate;
@@ -2218,11 +2217,14 @@ abaxint sendData( JAGSOCK sock, const char *buf, abaxint len )
 			prt(("\n"));
 			//if ( 106 == len ) abort();
 		}
+		prt(("s2625 sendData sock=%d buf=[%s] len=%d dumpmem:\n", sock, buf, len ));
+		dumpmem(buf, len );
 	#endif
+
 	abaxint slen = _raysend( sock, buf, len );
 
 	/**
-	if ( slen > JAG_SOCK_MSG_HDR_LEN && *(buf+JAG_SOCK_MSG_HDR_LEN-3) == 'H' && *(buf+JAG_SOCK_MSG_HDR_LEN-2) == 'B' ) {
+	if ( slen > JAG_SOCK_TOTAL_HDR_LEN && *(buf+JAG_SOCK_TOTAL_HDR_LEN-3) == 'H' && *(buf+JAG_SOCK_TOTAL_HDR_LEN-2) == 'B' ) {
 		// no print HB
 	} else {
 		prt(("s7889 socket=%d len=%lld slen=%lld sendData=[%.200s]\n", sock, len, slen, buf));
@@ -2232,8 +2234,7 @@ abaxint sendData( JAGSOCK sock, const char *buf, abaxint len )
 	if ( slen < len ) { 
 		// prt(("sendData error 1=%d %d %d\n", sock, slen, len)); 
 		return -1; 
-	}
-	else return slen;
+	} else return slen;
 }
 
 // receive data from socket, with hdr
@@ -2242,32 +2243,25 @@ abaxint sendData( JAGSOCK sock, const char *buf, abaxint len )
 // with jagmalloc inside
 abaxint recvData( JAGSOCK sock, char *hdr, char *&buf )
 {
-	abaxint slen, slen2, len;
-	memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
-	slen2 = slen = _rayrecv( sock, hdr, JAG_SOCK_MSG_HDR_LEN ); 
-	if ( slen < JAG_SOCK_MSG_HDR_LEN ) { 
+	abaxint slen, len;
+	memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
+	slen = _rayrecv( sock, hdr, JAG_SOCK_TOTAL_HDR_LEN); 
+	if ( slen < JAG_SOCK_TOTAL_HDR_LEN) { 
 		// prt(("recvData error 1=%d %d\n", sock, slen)); 
 		return -1; 
 	}
-	len = jagatoll(hdr);
+	// len = jagatoll(hdr);
+	len = getXmitMsgLen( hdr );
+	//prt(("s3920 recvData slen=%d hdr=%s datalen=%d\n", slen, hdr, len )); 
 	if ( len < 0 ) { 
 		// prt(("recvData error 1=%d hdr=%s\n", sock, hdr)); 
 		return -1; 
-	}
-	else if ( len == 0 ) { return 0; }
+	} else if ( len == 0 ) { return 0; }
+
 	if ( buf ) { free( buf ); }
 	buf = (char*)jagmalloc( len+1 );
 	memset( buf, 0, len+1 );
 	slen = _rayrecv( sock, buf, len );
-
-	/**
-	if ( *(hdr+JAG_SOCK_MSG_HDR_LEN-3) == 'H' && *(hdr+JAG_SOCK_MSG_HDR_LEN-2) == 'B' ) {
-		// no print HB
-	} else {
-		prt(("s7890 socket=%d len=%lld slen=%lld recvDataAndHdr=[%s%.200s]\n", sock, len+JAG_SOCK_MSG_HDR_LEN, slen+slen2, hdr, buf));
-	}
-	**/
-
 	if ( slen < len ) { 
 		// prt(("recvData error 2=%d %d %d\n", sock, slen, len));
 		free( buf ); buf = NULL; 
@@ -2282,19 +2276,9 @@ abaxint recvData( JAGSOCK sock, char *hdr, char *&buf )
 abaxint recvData( JAGSOCK sock, char *buf, abaxint len )
 {
 	abaxint slen = _rayrecv( sock, buf, len );
-
-	/**
-	if ( slen > JAG_SOCK_MSG_HDR_LEN && *(buf+JAG_SOCK_MSG_HDR_LEN-3) == 'H' && *(buf+JAG_SOCK_MSG_HDR_LEN-2) == 'B' ) {
-		// no print HB
-	} else {
-		prt(("s7891 socket=%d len=%lld slen=%lld recvDataAndHdr=[%.200s]\n", sock, len, slen, buf));
-	}
-	**/
-
 	if ( slen < len ) { 
 		return -1; 
 	}
-
 	return slen;
 }
 
@@ -2386,7 +2370,10 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
     register abaxint len;
 	int errcnt = 0;
 
-	if ( N <= 0 ) { return 0; }
+	if ( N <= 0 ) { 
+		//prt(("s4429 _rayrecv  N <= 0 return 0\n" ));
+		return 0; 
+	}
 	if ( socket_bad( sock ) ) { return -1; } 
 	len = ::recv( sock, hdr, N, 0 );
 	if ( len < 0 && WSAGetLastError() == WSAEINTR ) {
@@ -2470,13 +2457,21 @@ abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N )
     register abaxint bytes = 0;
     register abaxint len;
 	int errcnt = 0;
+	/***
+	prt(("s2220 _raysend hdr=[%s] N=%d\n", hdr, N ));
+	dumpmem( hdr, N );
+	prt(("s2220\n" ));
+	***/
 
-	if ( N <= 0 ) { return 0; }
+	if ( N <= 0 ) { 
+		return 0;
+	}
 	if ( socket_bad( sock ) ) { return -1; } 
 	len = ::send( sock, hdr, N, MSG_NOSIGNAL );
 	if ( len < 0 && errno == EINTR ) {
     	len = ::send( sock, hdr, N, MSG_NOSIGNAL );
 	}
+
 	if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) { // send timeout
 		++errcnt;
 		while ( 1 ) {
@@ -2551,9 +2546,13 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
     register abaxint len;
 	int errcnt = 0;
 
-	if ( N <= 0 ) { return 0; }
+	if ( N <= 0 ) { 
+		prt(("s4429 _rayrecv  N <= 0 return 0\n" ));
+		return 0;
+	}
 	if ( socket_bad( sock ) ) { return -1; } 
 	len = ::recv( sock, hdr, N, 0 );
+	prt(("s4424 _rayrecv  len=%d hdr=[%s]\n", len, hdr ));
 	if ( len < 0 && errno == EINTR ) {
     	len = ::recv( sock, hdr, N, 0 );
 	}
@@ -2577,8 +2576,7 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 
 	// if len==0; remote end had a orderly shudown
 	if ( len == 0 ) {
-		// prt(("2302 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d DONE 0\n", 
-		// len, sock, hdr, N));
+		prt(("2302 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d DONE 0\n", len, sock, hdr, N));
 		return 0;
 	} else if ( len < 0 ) {
 		// prt(("2304 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d errnomsg=[%s] DONE -1\n", 
@@ -3166,7 +3164,7 @@ int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 	//prt(("\ns4009 oneFileSender sock=%d THRD=%lld inpath=[%s] ...\n", sock, THREADID, inpath.c_str() ));
 	int fileSuccess = 0; 
 	Jstr filename;
-	char *newbuf = NULL; char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+	char *newbuf = NULL; 
 	ssize_t rlen = 0; struct stat sbuf; Jstr cmd; int fd = -1;
 	abaxint filelen;
 
@@ -3203,14 +3201,20 @@ int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 	}
 
 	cmd = "_onefile|" + filename + "|" + longToStr( filelen ) + "|" + longToStr(THREADID);
-	char cmdbuf[cmd.size()+JAG_SOCK_MSG_HDR_LEN+1]; memset( cmdbuf, 0, cmd.size()+JAG_SOCK_MSG_HDR_LEN+1);
-	memcpy( cmdbuf+JAG_SOCK_MSG_HDR_LEN, cmd.c_str(), cmd.size() );
-	sprintf( cmdbuf, "%0*lld", JAG_SOCK_MSG_HDR_LEN-4, cmd.size() );
-	memcpy( cmdbuf+JAG_SOCK_MSG_HDR_LEN-4, "ATFC", 4 );
+	char cmdbuf[JAG_SOCK_TOTAL_HDR_LEN+cmd.size()+1]; 
+	memset( cmdbuf, ' ', JAG_SOCK_TOTAL_HDR_LEN+cmd.size()+1);
+	/***
+	//memcpy( cmdbuf+JAG_SOCK_TOTAL_HDR_LEN, cmd.c_str(), cmd.size() );
+	//sprintf( cmdbuf, "%0*lld", JAG_SOCK_TOTAL_HDR_LEN-4, cmd.size() );
+	//memcpy( cmdbuf+JAG_SOCK_TOTAL_HDR_LEN-4, "ATFC", 4 );
+	***/
+	char sqlhdr[10]; makeSQLHeader( sqlhdr );
+	//putXmitHdr( cmdbuf, sqlhdr, cmd.size(), "ATFC" );
+	putXmitHdrAndData( cmdbuf, sqlhdr, cmd.c_str(), cmd.size(), "ATFC" );
 
 	//prt(("s2309 sendData cmdbuf=[%s]\n", cmdbuf ));
-	rlen = sendData( sock, cmdbuf, JAG_SOCK_MSG_HDR_LEN+cmd.size() ); // 016ABCDmessage client query mode
-	if ( rlen < JAG_SOCK_MSG_HDR_LEN+cmd.size() ) {
+	rlen = sendData( sock, cmdbuf, JAG_SOCK_TOTAL_HDR_LEN+cmd.size() ); // 016ABCDmessage client query mode
+	if ( rlen < JAG_SOCK_TOTAL_HDR_LEN+cmd.size() ) {
 		prt(("s0822 sendData error\n" ));
 		sendFakeData = 1;
 	}
@@ -3243,19 +3247,19 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 	abaxint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT;
 	Jstr filename, senderID, recvpath;
 	char *newbuf = NULL; 
-	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	ssize_t rlen = 0;
 
 	// prt(("s3028 recvData() ...\n" ));
 	while ( 1 ) {
-		memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
+		//memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
     	rlen = recvData( sock, hdr, newbuf );
     	// prt(("s3028 recvData() done hdr=[%s] newbuf=[%s] ...\n", hdr, newbuf ));
 		if ( 0 == rlen ) {
 			continue;
 		}
 
-		if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B' ) {
+		if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B' ) {
 			continue;
 		}
 
@@ -3329,12 +3333,16 @@ abaxint sendDirectToSock( JAGSOCK sock, const char *mesg, abaxint len, bool nohd
 	if ( nohdr ) {
 		rlen = sendData( sock, mesg, len ); // 016ABCDmessage client query mode
 	} else {
-		char *buf =(char*)jagmalloc(len+JAG_SOCK_MSG_HDR_LEN+1);
-		memset( buf, 0, len+JAG_SOCK_MSG_HDR_LEN+1 );
-		memcpy( buf+JAG_SOCK_MSG_HDR_LEN, mesg, len );
-		sprintf( buf, "%0*lld", JAG_SOCK_MSG_HDR_LEN-4, len );
-		memcpy( buf+JAG_SOCK_MSG_HDR_LEN-4, "ATFC", 4 );
-		rlen = sendData( sock, buf, len+JAG_SOCK_MSG_HDR_LEN ); // 016ABCDmessage client query mode
+		char *buf =(char*)jagmalloc(len+JAG_SOCK_TOTAL_HDR_LEN+1);
+		//memset( buf, ' ', len+JAG_SOCK_TOTAL_HDR_LEN+1 );
+		char sqlhdr[10];  makeSQLHeader( sqlhdr );
+		putXmitHdrAndData( buf, sqlhdr, mesg, len, "ATFC" );
+		/***
+		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, mesg, len );
+		//sprintf( buf, "%0*lld", JAG_SOCK_TOTAL_HDR_LEN-4, len );
+		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN-4, "ATFC", 4 );
+		***/
+		rlen = sendData( sock, buf, len+JAG_SOCK_TOTAL_HDR_LEN ); // 016ABCDmessage client query mode
 		// prt(("c9910 sendDirectToSock sendData buf=[%s] len=%d rlen=%d\n", buf, len, rlen ));
 		if ( buf ) free( buf );
 	}
@@ -3348,7 +3356,7 @@ abaxint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr )
 	while ( 1 ) {
 		rlen = recvData( sock, hdr, buf );
 		// prt(("c2039 hdr=[%s] buf=[%s]\n", hdr, buf ));
-		if ( rlen > 0 && (hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B') ) { 
+		if ( rlen > 0 && (hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B') ) { 
 		    // heartbit alive, ignore
 			continue;
 		}
@@ -3365,13 +3373,13 @@ abaxint sendDirectToSockWithHdr( JAGSOCK sock, const char *hdr, const char *mesg
 	const char *p = mesg;
 	abaxint rlen;
 	Jstr comp;
-	if ( hdr[JAG_SOCK_MSG_HDR_LEN-4] == 'Z' ) {
+	if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-4] == 'Z' ) {
 		JagFastCompress::compress( mesg, len, comp );
 		p = comp.c_str();
 		len = comp.size();
     }
 
-	rlen = sendData( sock, hdr, JAG_SOCK_MSG_HDR_LEN );
+	rlen = sendData( sock, hdr, JAG_SOCK_TOTAL_HDR_LEN );
 	rlen = sendData( sock, p, len );
 	return rlen;
 }
@@ -3977,5 +3985,67 @@ bool jagEQ (double f1, double f2 )
 {
     if ( fabs(f1-f2) < JAG_ZERO ) return true;
     return false;
+}
+
+
+// strlen(code)  must be 4 code=XXXX
+// [               qlhdr][                        ]msgdata
+// [JAG_SOCK_SQL_HDR_LEN][JAG_SOCK_MSG_HDR_LENXXXX]msgdata
+// [               JAG_SOCK_TOTAL_HDR_LEN         ]msgdata
+void putXmitHdr( char *buf, const char *sqlhdr, int msglen, const char *code )
+{
+	int blanksz = JAG_SOCK_SQL_HDR_LEN-strlen(sqlhdr);
+    memset(buf, '#', blanksz );
+    sprintf( buf+blanksz, "%s", sqlhdr );
+    sprintf( buf+JAG_SOCK_SQL_HDR_LEN, "%0*lld%s", JAG_SOCK_MSG_HDR_LEN-4, msglen, code );
+}
+
+// strlen(code)  must be 4 code=XXXX
+// [               qlhdr][                        ]msgdata
+// [JAG_SOCK_SQL_HDR_LEN][JAG_SOCK_MSG_HDR_LENXXXX]msgdata
+// [               JAG_SOCK_TOTAL_HDR_LEN         ]msgdata
+void putXmitHdrAndData( char *buf, const char *sqlhdr, const char *msg, int msglen, const char *code )
+{
+	int blanksz = JAG_SOCK_SQL_HDR_LEN-strlen(sqlhdr);
+    memset(buf, '#', blanksz );
+    sprintf( buf+blanksz, "%s", sqlhdr );
+    sprintf( buf+JAG_SOCK_SQL_HDR_LEN, "%0*lld%s", JAG_SOCK_MSG_HDR_LEN-4, msglen, code );
+    memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, msg, msglen );
+    buf[JAG_SOCK_TOTAL_HDR_LEN+msglen] = '\0';
+}
+
+void getXmitSQLHdr( char *buf, char *sqlhdr )
+{
+	char *p = buf;
+	int blanklen;
+	while ( *p == '#' ) ++p;  // assume front is '#'
+	blanklen = p-buf;
+	for ( int i=0; i < JAG_SOCK_SQL_HDR_LEN-blanklen; ++i ) {
+		*sqlhdr = *p;
+		++p;
+		++sqlhdr;
+	}
+	*sqlhdr = '\0';
+}
+
+void getXmitCode( char *buf, char *code )
+{
+	memcpy( code, buf+JAG_SOCK_TOTAL_HDR_LEN-4, 4 );
+}
+
+long getXmitMsgLen( char *buf )
+{
+	char c = buf[JAG_SOCK_TOTAL_HDR_LEN-4];
+	buf[JAG_SOCK_TOTAL_HDR_LEN-4]='\0';
+	long n = atoll( buf+JAG_SOCK_SQL_HDR_LEN );
+	//prt(("s2093 getXmitMsgLen() dumpmem : n=%d\n", n ));
+	//dumpmem( buf+JAG_SOCK_SQL_HDR_LEN, JAG_SOCK_MSG_HDR_LEN );
+	buf[JAG_SOCK_TOTAL_HDR_LEN-4]=c;
+	return n;
+}
+
+void makeSQLHeader( char *sqlhdr )
+{
+	sprintf(sqlhdr, "%0*d", 5, rand()%100000);
 }
 

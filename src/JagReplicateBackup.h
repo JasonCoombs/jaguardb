@@ -39,7 +39,7 @@ class JagReplicateConnAttr
 		_cliservSameProcess = 0;
 		_bulkSend = _hasReply = true;
 		_result = 0; _len = 0;
-		memset(_hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
+		memset(_hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
 		memset(_qbuf, 0, 2048);
 		_dbuf = NULL;
 	}
@@ -62,7 +62,7 @@ class JagReplicateConnAttr
 	Jstr _querys;
 	uabaxint _clientFlag;
 	char _qbuf[2048];
-	char _hdr[JAG_SOCK_MSG_HDR_LEN+1];
+	char _hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *_dbuf;
 };
 

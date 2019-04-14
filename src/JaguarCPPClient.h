@@ -29,8 +29,6 @@
 #include <JagTableOrIndexAttrs.h>
 #include <JagHashStrStr.h>
 
-#define JAG_SOCK_MSG_HDR_LEN       20
-
 class JagCfg;
 class ADBROW;
 class CliPass;
@@ -502,8 +500,8 @@ class JaguarCPPClient
 	CliPass *_passmo;
 	CliPass *_passflush;
 	char _qbuf[2048];
-	char sendhdr[JAG_SOCK_MSG_HDR_LEN];
-	char recvhdr[JAG_SOCK_MSG_HDR_LEN+1];	
+	char _sendhdr[JAG_SOCK_TOTAL_HDR_LEN];
+	char _recvhdr[JAG_SOCK_TOTAL_HDR_LEN+1];	
 	int   _debug;
 	std::atomic<int>   _isFlushingInsertBuffer;
 	int  _compressFlag[4];

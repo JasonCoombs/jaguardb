@@ -225,6 +225,7 @@ void JaguarCPPClient::_init()
 // close and free up memory
 void JaguarCPPClient::close()
 {
+	_debug && prt(("c3210 JaguarCPPClient::close() this=%0x\n", this ));
 	if ( ! _destroyed ) {
 		destroy();
 	}
@@ -236,6 +237,7 @@ void JaguarCPPClient::destroy()
 	prt(("c4930 JaguarCPPClient::destroy() thrd=%lld this=%0x _isparent=%d _coectOK=%d _monitorDone=%d _oneConnect=%d...\n", 
 			THREADID, this, _isparent, _connectOK, (int)_monitorDone, _oneConnect ));
 	***/
+	_debug && prt(("c3215 JaguarCPPClient::destroy() this=%0x\n", this ));
 
 	_threadend = 1;
 	if ( _isparent && _connectOK && !_oneConnect ) {
@@ -1730,19 +1732,27 @@ int JaguarCPPClient::doquery( const char *querys, bool reply, bool compress, boo
 		
 		// send data part header
 		Jstr compressedStr;
+		char code4[5];
+		char sqlhdr[14]; makeSQLHeader( sqlhdr );
+		char sqlmsghdr[ JAG_SOCK_TOTAL_HDR_LEN+1];
+		sqlmsghdr[ JAG_SOCK_TOTAL_HDR_LEN] = '\0';
+
 		if ( compress ) {
+			JagFastCompress::compress( querys, compressedStr );
 			if ( reply ) {
-				JagFastCompress::compress( querys, compressedStr );
+				//JagFastCompress::compress( querys, compressedStr );
 				if ( batchReply ) {
-					sprintf( sendhdr, "%0*lldABZ%c", JAG_SOCK_MSG_HDR_LEN-4, compressedStr.size(), cbyte ); 
+					sprintf(code4, "ABZ%c", cbyte );
+					//sprintf( sendhdr, "%0*lldABZ%c", JAG_SOCK_TOTAL_HDR_LEN-4, compressedStr.size(), cbyte ); 
 					// ABZC  C is control byte
 				} else {
-					sprintf( sendhdr, "%0*lldACZ%c", JAG_SOCK_MSG_HDR_LEN-4, compressedStr.size(), cbyte ); 
+					sprintf(code4, "ACZ%c", cbyte );
+					//sprintf( sendhdr, "%0*lldACZ%c", JAG_SOCK_TOTAL_HDR_LEN-4, compressedStr.size(), cbyte ); 
 				}
 				_hasReply = true;
 			} else {
-				JagFastCompress::compress( querys, compressedStr );
-				sprintf( sendhdr, "%0*lldANZ%c", JAG_SOCK_MSG_HDR_LEN-4, compressedStr.size(), cbyte ); 
+				//JagFastCompress::compress( querys, compressedStr );
+				//sprintf( sendhdr, "%0*lldANZ%c", JAG_SOCK_TOTAL_HDR_LEN-4, compressedStr.size(), cbyte ); 
 				_hasReply = false;
 			}
 			p = compressedStr.c_str();
@@ -1750,13 +1760,16 @@ int JaguarCPPClient::doquery( const char *querys, bool reply, bool compress, boo
 		} else {
 			if ( reply ) {
 				if ( batchReply ) {
-					sprintf( sendhdr, "%0*lldABC%c", JAG_SOCK_MSG_HDR_LEN-4, len, cbyte );   
+					sprintf(code4, "ABC%c", cbyte );
+					//sprintf( sendhdr, "%0*lldABC%c", JAG_SOCK_TOTAL_HDR_LEN-4, len, cbyte );   
 				} else {
-					sprintf( sendhdr, "%0*lldACC%c", JAG_SOCK_MSG_HDR_LEN-4, len, cbyte );   
+					sprintf(code4, "ACC%c", cbyte );
+					//sprintf( sendhdr, "%0*lldACC%c", JAG_SOCK_TOTAL_HDR_LEN-4, len, cbyte );   
 				}
 				_hasReply = true;
 			} else {
-				sprintf( sendhdr, "%0*lldANC%c", JAG_SOCK_MSG_HDR_LEN-4, len, cbyte );  
+				sprintf(code4, "ANC%c", cbyte );
+				// sprintf( sendhdr, "%0*lldANC%c", JAG_SOCK_TOTAL_HDR_LEN-4, len, cbyte );  
 				_hasReply = false;
 			}
 			p = querys;
@@ -1766,17 +1779,17 @@ int JaguarCPPClient::doquery( const char *querys, bool reply, bool compress, boo
 		if ( _parentCli ) ftc = _parentCli->_faultToleranceCopy;
 		// prt(("c4562 ftc=%d host=[%s] sendhdr=[%s] query=[%s] dirConn=%d exc=%d ...\n", ftc, _host.c_str(), sendhdr, p, dirConn, _isExclusive ));
 		// prt(("c4563 compress=%d, bclen=%d, aflen=%d, bcquery=[%s] afquery=[%s]\n", compress, strlen( querys ), len, querys, p));
-		// _lastquery = querys;
+
+		putXmitHdr(sqlmsghdr, sqlhdr, len, code4 );
+
 		if ( dirConn || ftc < 2 || _isExclusive ) { // no replicate
 			_useJPB = 0;
-			if ( JAG_SOCK_MSG_HDR_LEN + len <= 2048 ) {
-				memset( _qbuf, 0, 2048 );
-				memcpy( _qbuf, sendhdr, JAG_SOCK_MSG_HDR_LEN);
-				memcpy( _qbuf+JAG_SOCK_MSG_HDR_LEN, p, len );
-				rc = sendData( _sock, _qbuf, JAG_SOCK_MSG_HDR_LEN + len );
+			if ( JAG_SOCK_TOTAL_HDR_LEN + len <= 2048 ) {
+				rc = sendData( _sock, sqlmsghdr, JAG_SOCK_TOTAL_HDR_LEN );
+				rc = sendData( _sock, p, len );
 			} else {
 				beginBulkSend( _sock );
-				rc = sendData( _sock, sendhdr, JAG_SOCK_MSG_HDR_LEN );
+				rc = sendData( _sock, sqlmsghdr, JAG_SOCK_TOTAL_HDR_LEN );
 				rc = sendData( _sock, p, len );
 				endBulkSend( _sock );
 			}
@@ -1788,17 +1801,16 @@ int JaguarCPPClient::doquery( const char *querys, bool reply, bool compress, boo
 		} else {
 			_useJPB = 1;
 			bool isWrite = checkReadOrWriteCommand( querys );
-			if ( JAG_SOCK_MSG_HDR_LEN + len <= 2048 ) {
-				memset( _qbuf, 0, 2048 );
-				memcpy( _qbuf, sendhdr, JAG_SOCK_MSG_HDR_LEN);
-				memcpy( _qbuf+JAG_SOCK_MSG_HDR_LEN, p, len );
-				rc = _jpb->sendQuery( _qbuf, JAG_SOCK_MSG_HDR_LEN+len, _hasReply, isWrite, false, forceConnection );
+			if ( JAG_SOCK_TOTAL_HDR_LEN + len <= 2048 ) {
+				memcpy( _qbuf, sqlmsghdr, JAG_SOCK_TOTAL_HDR_LEN);
+				memcpy( _qbuf+JAG_SOCK_TOTAL_HDR_LEN, p, len );
+				rc = _jpb->sendQuery( _qbuf, JAG_SOCK_TOTAL_HDR_LEN+len, _hasReply, isWrite, false, forceConnection );
 			} else {
 				// since sendQuery need a whole buffer to process, malloc now
-				char *allbuf = (char*)jagmalloc(JAG_SOCK_MSG_HDR_LEN + len);
-				memcpy( allbuf, sendhdr, JAG_SOCK_MSG_HDR_LEN);
-				memcpy( allbuf+JAG_SOCK_MSG_HDR_LEN, p, len );
-				rc = _jpb->sendQuery( allbuf, JAG_SOCK_MSG_HDR_LEN+len, _hasReply, isWrite, true, forceConnection );
+				char *allbuf = (char*)jagmalloc(JAG_SOCK_TOTAL_HDR_LEN + len);
+				memcpy( allbuf, sqlmsghdr, JAG_SOCK_TOTAL_HDR_LEN);
+				memcpy( allbuf+JAG_SOCK_TOTAL_HDR_LEN, p, len );
+				rc = _jpb->sendQuery( allbuf, JAG_SOCK_TOTAL_HDR_LEN+len, _hasReply, isWrite, true, forceConnection );
 				free( allbuf );
 			}
 		}
@@ -1918,7 +1930,7 @@ abaxint JaguarCPPClient::doRecvDirectFromSockAll( char *&buf, char *hdr )
 		rlen = _jpb->recvDirectFromSockAll( buf, hdr );
 	}
 	// process special case: if hdr has 'X1', set _end
-	if ( 'X' == hdr[JAG_SOCK_MSG_HDR_LEN-3] && '1' == hdr[JAG_SOCK_MSG_HDR_LEN-2] ) {
+	if ( 'X' == hdr[JAG_SOCK_TOTAL_HDR_LEN-3] && '1' == hdr[JAG_SOCK_TOTAL_HDR_LEN-2] ) {
 		_end = 1;
 	}
 	return rlen;
@@ -1960,7 +1972,7 @@ abaxint JaguarCPPClient::doRecvDirectFromSockAll( char *&buf, abaxint len )
 int JaguarCPPClient::sendFilesToServer( const JagVector<Jstr> &files )
 {	
 	// first need to send _BEGINFILEUPLOAD_ to server
-	_debug && prt(("c3394 this=%0x sendFilesToServer files.size=%d _debug=%d _useJPB=%d ...\n", this, files.size(), _debug, _useJPB ));
+	_debug && prt(("c3394 this=%0x files.size=%d _debug=%d _useJPB=%d ...\n", this, files.size(), _debug, _useJPB ));
 
 	int cnt = 0;
 	if ( _debug ) { prt(("c5509 files.size=%d\n", files.size() )); }
@@ -1992,8 +2004,8 @@ int JaguarCPPClient::sendFilesToServer( const JagVector<Jstr> &files )
 int JaguarCPPClient::recvFilesFromServer( const JagParseParam *parseParam )
 {	
 	int rc = 0;
-	char *rbuf = NULL; char hdr[JAG_SOCK_MSG_HDR_LEN+1];
-	memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1 );
+	char *rbuf = NULL; char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
+	memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1 );
 	// first need to send _BEGINFILEUPLOAD_ to server
 	recvDirectFromSockAll( rbuf, hdr );
 	// if ( rbuf ) { free( rbuf ); rbuf = NULL; }
@@ -2007,7 +2019,7 @@ int JaguarCPPClient::recvFilesFromServer( const JagParseParam *parseParam )
 			}
 		}
 
-		memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1 );
+		memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1 );
 		// last need to send _ENDFILEUPLOAD_ to server
 		if ( _debug ) { prt(("c9393 recvDirectFromSockAll ...\n" )); }
 		recvDirectFromSockAll( rbuf, hdr );
@@ -2601,7 +2613,7 @@ int JaguarCPPClient::doreply( bool headerOnly )
     	if ( _useJPB ) {
     		// use replicate object to send data, receive from replicate object
 			_debug && prt(( "c9032 this=%0x parent=%0x _jpb=%0x _jpb->recvReply ...\n", this, _parentCli, _jpb ));
-    		len = _jpb->recvReply( recvhdr, buf );
+    		len = _jpb->recvReply( _recvhdr, buf );
 			_debug && prt(( "c9032 _jpb->recvReply done len=%d buf=[%s]\n", len, buf ));
     		if ( len < 0 ) {
     			// error or no more data
@@ -2611,12 +2623,12 @@ int JaguarCPPClient::doreply( bool headerOnly )
     			return 0;
     		}
     	} else {
-    		memset( recvhdr, 0, JAG_SOCK_MSG_HDR_LEN+1 );
+    		memset( _recvhdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1 );
 			//if ( _debug ) { prt(( "c9132 recvData recvhdr=[%s] ...\n", recvhdr )); }
     		// len = recvData( _sock, recvhdr, buf );
 			_debug && prt(( "c9034 recvDirectFromSock ...\n" ));
-			len = recvDirectFromSock( _sock, buf, recvhdr );
-			_debug && prt(( "c9132 recvDirectFromSock done len=%d rcvhdr=[%s] buf=[%s]\n", len, recvhdr, buf ));
+			len = recvDirectFromSock( _sock, buf, _recvhdr );
+			_debug && prt(( "c9132 recvDirectFromSock done len=%d rcvhdr=[%s] buf=[%s]\n", len, _recvhdr, buf ));
     		if ( len < 0 ) {
     			// prt(("ERROR, recv all timeout host0=[%s]\n", _host.c_str()));
     			if ( buf ) jagfree( buf );
@@ -2631,7 +2643,7 @@ int JaguarCPPClient::doreply( bool headerOnly )
 				continue;
     		}
     		
-        	if ( recvhdr[JAG_SOCK_MSG_HDR_LEN-4] == 'Z' ) { 
+        	if ( _recvhdr[JAG_SOCK_TOTAL_HDR_LEN-4] == 'Z' ) { 
         		Jstr compressed( buf, len );
         		Jstr unCompressed;
         		JagFastCompress::uncompress( compressed, unCompressed );
@@ -2648,16 +2660,17 @@ int JaguarCPPClient::doreply( bool headerOnly )
 		// _debug && prt(("c8832 this=%0x _row=%0x _row->data=%0x freeRow()...\n", this, _row, _row->data ));
    		freeRow( 1 );
     
-		#if 1
+		#if 0
 		if ( 'Y' != *buf && _debug ) {
-    		prt(("c4930 recv sock=%d, thrd=%lld hdr=[%s] buf=[%s] type=[%c]\n", _sock, THREADID, recvhdr, buf, _row->type ));
+    		prt(("c4930 recv sock=%d, thrd=%lld hdr=[%s] buf=[%s] type=[%c]\n", _sock, THREADID, _recvhdr, buf, _row->type ));
 		}
 		#endif
 
-    	h1 = recvhdr[JAG_SOCK_MSG_HDR_LEN-3];
-    	h2 = recvhdr[JAG_SOCK_MSG_HDR_LEN-2];
-    	char *recvhdr2 = (char*)jagmalloc(JAG_SOCK_MSG_HDR_LEN+1);
-    	memcpy( recvhdr2, recvhdr, JAG_SOCK_MSG_HDR_LEN ); recvhdr2[JAG_SOCK_MSG_HDR_LEN] = '\0';
+    	h1 = _recvhdr[JAG_SOCK_TOTAL_HDR_LEN-3];
+    	h2 = _recvhdr[JAG_SOCK_TOTAL_HDR_LEN-2];
+    	char *recvhdr2 = (char*)jagmalloc(JAG_SOCK_TOTAL_HDR_LEN+1);
+    	memcpy( recvhdr2, _recvhdr, JAG_SOCK_TOTAL_HDR_LEN ); 
+		recvhdr2[JAG_SOCK_TOTAL_HDR_LEN] = '\0';
     	_row->hdr = recvhdr2;
     	// if _END_
 		// prt(("c2135 buf=[%s] h1=[%c] h2=[%c]\n", buf, h1, h2 ));
@@ -2815,12 +2828,12 @@ int JaguarCPPClient::doreply( bool headerOnly )
 			_row->datalen = len;
 			break;
 		} else if ( 'H' == h1 && 'B' == h2 ) {
-			// "HB" heartbeatt signal from server, to make sure server is still up and alive; prevent client timeout
+			// "HB" heartbeat signal from server, to make sure server is still up and alive; prevent client timeout
 			// prt(("c9999 HB recved, continue loop(%d)...\n", headerOnly ));
 			if ( _debug && ( ++heartbeat % 100 ) == 0 ) {
 				prt(("heartbeat %lld\n", heartbeat ));
 			}
-			_debug && prt(("c6380 recvhdr=[%s]\n", recvhdr ));
+			_debug && prt(("c6380 recvhdr=[%s]\n", _recvhdr ));
 			if ( buf ) jagfree( buf );
 		} else {
 			// currently, "XX" and "DS" will be here
@@ -5759,13 +5772,14 @@ int JaguarCPPClient::sendTwoBytes( const char *condition )
 	if ( _useJPB ) {
 		rc = _jpb->sendTwoBytes( condition );
 	} else {
-		char twobuf[JAG_SOCK_MSG_HDR_LEN+3];
-		// sprintf( twobuf, "%0*lldACC", JAG_SOCK_MSG_HDR_LEN-3, 2 );
-		sprintf( twobuf, "%0*lldACCC", JAG_SOCK_MSG_HDR_LEN-4, 2 );
-		twobuf[JAG_SOCK_MSG_HDR_LEN] = *condition;
-		twobuf[JAG_SOCK_MSG_HDR_LEN+1] = *(condition+1);
-		twobuf[JAG_SOCK_MSG_HDR_LEN+2] = '\0';
-		rc = sendData( _sock, twobuf, JAG_SOCK_MSG_HDR_LEN+2 );
+		char twobuf[JAG_SOCK_TOTAL_HDR_LEN+3];
+		//sprintf( twobuf, "%0*lldACCC", JAG_SOCK_TOTAL_HDR_LEN-4, 2 );
+		putXmitHdr( twobuf, "123", 2, "ACCC" );
+
+		twobuf[JAG_SOCK_TOTAL_HDR_LEN+0] = *condition;
+		twobuf[JAG_SOCK_TOTAL_HDR_LEN+1] = *(condition+1);
+		twobuf[JAG_SOCK_TOTAL_HDR_LEN+2] = '\0';
+		rc = sendData( _sock, twobuf, JAG_SOCK_TOTAL_HDR_LEN+2 );
 	}
 
 	return rc;
@@ -5781,7 +5795,7 @@ int JaguarCPPClient::recvTwoBytes( char *condition )
 		return rc;
 	} 
 	
-	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *buf = NULL;
 	condition[0] = 'N'; condition[1] = 'G';
 	abaxint hbs = 0;
@@ -5791,17 +5805,17 @@ int JaguarCPPClient::recvTwoBytes( char *condition )
 		_debug && prt(("c2839 hdr=[%s] buf=[%s]\n", hdr, buf ));
 		if ( rc < 0 ) {
 			break;
-		} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B' ) {
+		} else if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B' ) {
 			// HB ignore
 			++hbs; if ( hbs > 1000000000 ) hbs = 0;
 			if ( _debug && ( (hbs%100) == 0 ) ) {
 				prt(("c1280 JaguarCPPClient::recvTwoBytes() recevd too many HB\n" ));
 			}
 			continue;
-		} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'S' && *buf == 'O' && *(buf+1) == 'K' ) {
+		} else if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'S' && *buf == 'O' && *(buf+1) == 'K' ) {
 			condition[0] = 'O'; condition[1] = 'K';
 			break;
-		} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'S' && *buf == 'N' && *(buf+1) == 'G' ) {
+		} else if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'S' && *buf == 'N' && *(buf+1) == 'G' ) {
 			condition[0] = 'N'; condition[1] = 'G';
 			break;
 		}
@@ -6109,11 +6123,12 @@ void *JaguarCPPClient::broadcastAllSelectStatic2( void * ptr )
 			}
 		}
 
-		char sbuf2[JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN];
-		sprintf( sbuf2, "%0*lldACCC", JAG_SOCK_MSG_HDR_LEN-4, SELECT_DATA_REQUEST_LEN );
-		memcpy(sbuf2+JAG_SOCK_MSG_HDR_LEN, tcmd.c_str(), SELECT_DATA_REQUEST_LEN);
-		clen = sendData( pass->cli->getSocket(), sbuf2, JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN );
-		if ( clen < SELECT_DATA_REQUEST_LEN ) {
+		int sz = JAG_SOCK_TOTAL_HDR_LEN+10;
+		char sbuf2[ sz ];
+		char sqlhdr[12]; makeSQLHeader( sqlhdr );
+		putXmitHdrAndData( sbuf2, sqlhdr, tcmd.c_str(), tcmd.size(), "ACCC" );
+		clen = sendData( pass->cli->getSocket(), sbuf2, JAG_SOCK_TOTAL_HDR_LEN+ tcmd.size() );
+		if ( clen < JAG_SOCK_TOTAL_HDR_LEN+ tcmd.size() ) {
 			pass->isContinue = false;
 			return NULL;
 		}
@@ -6155,15 +6170,16 @@ void *JaguarCPPClient::broadcastAllSelectStatic3( void * ptr )
 {
 	CliPass *pass = (CliPass*)ptr;
 	if ( pass->isContinue ) {
-		char spcmdbuf[SELECT_DATA_REQUEST_LEN];
 		abaxint clen;
 		if ( pass->joinEachCnt && pass->recvJoinEnd && !pass->isToGate ) {
-			memset( spcmdbuf, 0, SELECT_DATA_REQUEST_LEN );
+			char spcmdbuf[10];
+			memset( spcmdbuf, 0, 10 );
 			memcpy( spcmdbuf, "JOINEND", 7 );
-			char sbuf[JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN];
-			sprintf( sbuf, "%0*lldACCC", JAG_SOCK_MSG_HDR_LEN-4, SELECT_DATA_REQUEST_LEN );
-			memcpy(sbuf+JAG_SOCK_MSG_HDR_LEN, spcmdbuf, SELECT_DATA_REQUEST_LEN);
-			clen = sendData( pass->cli->getSocket(), sbuf, JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN );
+			int sz = JAG_SOCK_TOTAL_HDR_LEN+10;
+			char sbuf[ sz ];
+			char sqlhdr[12]; makeSQLHeader( sqlhdr );
+			putXmitHdrAndData( sbuf, sqlhdr, spcmdbuf, strlen(spcmdbuf), "ACCC" );
+			sendData( pass->cli->getSocket(), sbuf, JAG_SOCK_TOTAL_HDR_LEN+strlen(spcmdbuf) );
 			while ( pass->cli->reply( true ) ) {};
 			pass->isContinue = false;
 			return NULL;
@@ -6261,13 +6277,14 @@ void *JaguarCPPClient::broadcastAllSelectStatic5( void * ptr )
 				}
 			}
 			
-			// send request buf and receive data
-			char sbuf[JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN];
-			sprintf( sbuf, "%0*lldACCC", JAG_SOCK_MSG_HDR_LEN-4, SELECT_DATA_REQUEST_LEN );
-			memcpy(sbuf+JAG_SOCK_MSG_HDR_LEN, spcmdbuf, SELECT_DATA_REQUEST_LEN);
-			// prt(("c8229 sendData sbuf=[%s]\n", sbuf ));
-			clen = sendData( pass->cli->getSocket(), sbuf, JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN );
-			if ( clen < SELECT_DATA_REQUEST_LEN ) {
+			int cmdlen = strlen( spcmdbuf );
+			char sqlhdr[11]; makeSQLHeader( sqlhdr );
+			int sz = JAG_SOCK_TOTAL_HDR_LEN+32;
+			char sbuf[sz];
+			putXmitHdrAndData( sbuf, sqlhdr, spcmdbuf, cmdlen, "ACCC" );
+
+			clen = sendData( pass->cli->getSocket(), sbuf, JAG_SOCK_TOTAL_HDR_LEN+cmdlen );
+			if ( clen < JAG_SOCK_TOTAL_HDR_LEN+cmdlen ) {
 				pass->isContinue = false;
 				return NULL;
 			}
@@ -6355,14 +6372,15 @@ void *JaguarCPPClient::broadcastAllSelectStatic6( void * ptr )
 {
 	CliPass *pass = (CliPass*)ptr;
 	if ( pass->isContinue && pass->recvJoinEnd && !pass->isToGate ) {
-		char spcmdbuf[SELECT_DATA_REQUEST_LEN];
-		char sbuf[JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN];
-		abaxint clen;
-		sprintf( sbuf, "%0*lldACCC", JAG_SOCK_MSG_HDR_LEN-4, SELECT_DATA_REQUEST_LEN );
-		memset( spcmdbuf, 0, SELECT_DATA_REQUEST_LEN );
+		char spcmdbuf[10];
+		memset( spcmdbuf, 0, 10 );
 		memcpy( spcmdbuf, "JOINEND", 7 );
-		memcpy(sbuf+JAG_SOCK_MSG_HDR_LEN, spcmdbuf, SELECT_DATA_REQUEST_LEN);
-		clen = sendData( pass->cli->getSocket(), sbuf, JAG_SOCK_MSG_HDR_LEN+SELECT_DATA_REQUEST_LEN );
+		int cmdlen = strlen( spcmdbuf );
+		int sz = JAG_SOCK_TOTAL_HDR_LEN+10;
+		char sbuf[ sz ];
+		char sqlhdr[11]; makeSQLHeader( sqlhdr );
+		putXmitHdrAndData( sbuf, sqlhdr, spcmdbuf, cmdlen, "ACCC" );
+		sendData( pass->cli->getSocket(), sbuf, JAG_SOCK_TOTAL_HDR_LEN+cmdlen );
 		while ( pass->cli->reply( true ) ) {}
 	} else if ( pass->isToGate ) {
 		while ( pass->cli->reply( true ) ) {}
@@ -6445,8 +6463,8 @@ void *JaguarCPPClient::recoverDeltaLogStatic( void *ptr )
 	abaxint rc;
 	Jstr cmd;
 	char *buf = NULL;
-	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
-	memset(hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
+	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
+	memset(hdr, ' ', JAG_SOCK_TOTAL_HDR_LEN+1);
 
 	// parse file path to get host name
 	JagStrSplit spp( sp[0].c_str(), '/' );

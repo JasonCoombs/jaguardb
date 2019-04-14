@@ -372,15 +372,15 @@ abaxint JagReplicateBackup::simpleSend( int i, const char *querys, abaxint len )
 // simple send two signal bytes to all connections, "OK" || "ON" || "NG"
 int JagReplicateBackup::sendTwoBytes( const char *condition )
 {
-	char twobuf[JAG_SOCK_MSG_HDR_LEN+3];
-	sprintf( twobuf, "%0*ldACCC", JAG_SOCK_MSG_HDR_LEN-4, 2 );
-	twobuf[JAG_SOCK_MSG_HDR_LEN] = *condition; 
-	twobuf[JAG_SOCK_MSG_HDR_LEN+1] = *(condition+1); 
-	twobuf[JAG_SOCK_MSG_HDR_LEN+2] = '\0';
+	char twobuf[JAG_SOCK_TOTAL_HDR_LEN+3];
+	sprintf( twobuf, "%0*ldACCC", JAG_SOCK_TOTAL_HDR_LEN-4, 2 );
+	twobuf[JAG_SOCK_TOTAL_HDR_LEN] = *condition; 
+	twobuf[JAG_SOCK_TOTAL_HDR_LEN+1] = *(condition+1); 
+	twobuf[JAG_SOCK_TOTAL_HDR_LEN+2] = '\0';
 	int rc, rc2 = 0;
 	for ( int i = 0; i < _replicateCopy; ++i ) {
 		if ( !socket_bad(_conn[i]._sock) ) {
-			rc = sendData( _conn[i]._sock, twobuf, JAG_SOCK_MSG_HDR_LEN+2 ); // 016ABCmessage format
+			rc = sendData( _conn[i]._sock, twobuf, JAG_SOCK_TOTAL_HDR_LEN+2 ); // 016ABCmessage format
 			if ( rc < 0 ) {
 				_conn[i]._sock = INVALID_SOCKET;
 				setConnectionBrokenTime();
@@ -395,7 +395,7 @@ int JagReplicateBackup::sendTwoBytes( const char *condition )
 int JagReplicateBackup::recvTwoBytes( char *condition )
 {
 	if ( _debug ) { prt(("c2201 JagReplicateBackup::recvTwoBytes _replicateCopy=%d...\n", _replicateCopy )); }
- 	char hdr[JAG_SOCK_MSG_HDR_LEN+1];
+ 	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *buf = NULL;
 	int rc, result = 0;
 	abaxint hbs = 0;
@@ -410,19 +410,19 @@ int JagReplicateBackup::recvTwoBytes( char *condition )
 					setConnectionBrokenTime();
 					// result = 0;
 					break;
-				} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B' ) { 
+				} else if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B' ) { 
 				    // HB alive, ignore
 					++hbs; if ( hbs > 1000000000 ) hbs = 0;
 					if ( _debug && ( (hbs%100) == 0 ) ) {
 						prt(("r1280 JagReplicateBackup::recvTwoBytes() recevd too many HB\n" ));
 					}
 					continue;
-				} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'S' && *buf == 'O' && *(buf+1) == 'K' ) {
+				} else if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'S' && *buf == 'O' && *(buf+1) == 'K' ) {
 					// special signal bytes and OK
 					// prt(("s3723 got SS OK break\n"));
 					result = 1;
 					break;
-				} else if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'S' && *buf == 'N' && *(buf+1) == 'G' ) {
+				} else if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'S' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'S' && *buf == 'N' && *(buf+1) == 'G' ) {
 					// special signal bytes and NG
 					break;
 				}
@@ -471,34 +471,52 @@ abaxint JagReplicateBackup::simpleQuery( int i, const char *querys, bool checkCo
 		batchReply = true;
 	}
 	
+	char sqlhdr[ 12]; memset( sqlhdr, 0, 12 );
+	sprintf( sqlhdr, "%d", 10000 );
 	Jstr compressedStr;
+	char code4[5];
 	if ( compress ) {
 		JagFastCompress::compress( querys, compressedStr );
 		if ( batchReply ) {
-			sprintf( _conn[i]._hdr, "%0*lldABZC", JAG_SOCK_MSG_HDR_LEN-4, compressedStr.size() ); 
+			sprintf( code4, "ABZC" );
+			//sprintf( _conn[i]._hdr, "%0*lldABZC", JAG_SOCK_TOTAL_HDR_LEN-4, compressedStr.size() ); 
 		} else {
-			sprintf( _conn[i]._hdr, "%0*lldACZC", JAG_SOCK_MSG_HDR_LEN-4, compressedStr.size() ); 
+			sprintf( code4, "ACZC" );
+			//sprintf( _conn[i]._hdr, "%0*lldACZC", JAG_SOCK_TOTAL_HDR_LEN-4, compressedStr.size() ); 
 		}
 		p = compressedStr.c_str();
 		len = compressedStr.size();
 	} else {
 		if ( batchReply ) {
-			sprintf( _conn[i]._hdr, "%0*lldABCC", JAG_SOCK_MSG_HDR_LEN-4, len );
+			sprintf( code4, "ABCC" );
+			//sprintf( _conn[i]._hdr, "%0*lldABCC", JAG_SOCK_TOTAL_HDR_LEN-4, len );
 		} else {
-			sprintf( _conn[i]._hdr, "%0*lldACCC", JAG_SOCK_MSG_HDR_LEN-4, len );   
+			sprintf( code4, "ACCC" );
+			//sprintf( _conn[i]._hdr, "%0*lldACCC", JAG_SOCK_TOTAL_HDR_LEN-4, len );   
 		}
 		p = querys;
 	}
 
-	if ( JAG_SOCK_MSG_HDR_LEN + len <= 2048 ) {
-		memset( _conn[i]._qbuf, 0, 2048 );
-		memcpy( _conn[i]._qbuf, _conn[i]._hdr, JAG_SOCK_MSG_HDR_LEN );
-		memcpy( _conn[i]._qbuf+JAG_SOCK_MSG_HDR_LEN, p, len );
-		rc = simpleSend( i, _conn[i]._qbuf, JAG_SOCK_MSG_HDR_LEN+len );
+
+	if ( JAG_SOCK_TOTAL_HDR_LEN + len <= 2048 ) {
+		/***
+		//memset( _conn[i]._qbuf, 0, 2048 );
+		//memcpy( _conn[i]._qbuf, _conn[i]._hdr, JAG_SOCK_MSG_HDR_LEN );
+		//memcpy( _conn[i]._qbuf+JAG_SOCK_MSG_HDR_LEN, sqlhdr, JAG_SOCK_SQL_HDR_LEN );
+		//memcpy( _conn[i]._qbuf+JAG_SOCK_TOTAL_HDR_LEN, p, len );
+		***/
+		putXmitHdrAndData( _conn[i]._qbuf, sqlhdr, p, len, code4 );
+		//memcpy( _conn[i]._qbuf+JAG_SOCK_TOTAL_HDR_LEN, p, len );
+		rc = simpleSend( i, _conn[i]._qbuf, JAG_SOCK_TOTAL_HDR_LEN+len );
 		if ( _debug ) { prt(("c2401 JagReplicateBackup::simpleSend rc=%d\n", rc )); }
 	} else {
 		beginBulkSend( _conn[i]._sock );
-		rc = simpleSend( i, _conn[i]._hdr, JAG_SOCK_MSG_HDR_LEN );
+		/**
+		//memcpy( _conn[i]._hdr+JAG_SOCK_MSG_HDR_LEN, sqlhdr, JAG_SOCK_SQL_HDR_LEN );
+		//rc = simpleSend( i, _conn[i]._hdr, JAG_SOCK_TOTAL_HDR_LEN );
+		***/
+		putXmitHdr( _conn[i]._hdr, sqlhdr, len, code4 );
+		rc = simpleSend( i, _conn[i]._hdr, JAG_SOCK_TOTAL_HDR_LEN );
 		if ( rc > 0 ) rc = simpleSend( i, p, len );
 		endBulkSend( _conn[i]._sock );
 		if ( _debug ) { prt(("c2404 JagReplicateBackup::simpleSend rc=%d\n", rc )); }
@@ -524,7 +542,7 @@ abaxint JagReplicateBackup::simpleReply( int i, char *hdr, char *&buf )
 			free( buf );
 			buf = NULL;
 		}
-		memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN );
+		memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN );
 		_debug && prt(("c2038 JagReplicateBackup recvData ...\n" ));
 		len = recvData( _conn[i]._sock, hdr, buf );
 		_debug && prt(("c2038 JagReplicateBackup recvData done len=%d\n", len ));
@@ -539,7 +557,7 @@ abaxint JagReplicateBackup::simpleReply( int i, char *hdr, char *&buf )
 		}
 		
 		// if compressed, uncompress data
-		if ( hdr[JAG_SOCK_MSG_HDR_LEN-4] == 'Z' ) { 
+		if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-4] == 'Z' ) { 
 			Jstr compressed( buf, len );
 			Jstr unCompressed;
 			JagFastCompress::uncompress( compressed, unCompressed );
@@ -551,7 +569,7 @@ abaxint JagReplicateBackup::simpleReply( int i, char *hdr, char *&buf )
 		}
 
 		// if receive 'HB', ignore and continue
-		if ( hdr[JAG_SOCK_MSG_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_MSG_HDR_LEN-2] == 'B' ) {
+		if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B' ) {
 			++hbs;
 			if ( _debug && ( (hbs%100) == 0 ) ) {
 				prt(("r1029 JagReplicateBackup simpleReply() recved too many HB\n" ));
@@ -639,15 +657,18 @@ abaxint JagReplicateBackup::recvReply( char *hdr, char *&buf )
 		}
 
 		// after receive all replys from servers, send serv signal to them to store/ignore delta information
-		char threebuf[JAG_SOCK_MSG_HDR_LEN+4];
-		sprintf( threebuf, "%0*ldACCC", JAG_SOCK_MSG_HDR_LEN-4, 3 );
-		threebuf[JAG_SOCK_MSG_HDR_LEN] = *_servsignal; 
-		threebuf[JAG_SOCK_MSG_HDR_LEN+1] = *(_servsignal+1); 
-		threebuf[JAG_SOCK_MSG_HDR_LEN+2] = *(_servsignal+2); 
-		threebuf[JAG_SOCK_MSG_HDR_LEN+3] = '\0';
+		char sqlhdr[10]; makeSQLHeader( sqlhdr );
+		char threebuf[JAG_SOCK_TOTAL_HDR_LEN+4];
+		//sprintf( threebuf, "%0*ldACCC", JAG_SOCK_TOTAL_HDR_LEN-4, 3 );
+		putXmitHdr( threebuf, sqlhdr, 3, "ACCC" );
+
+		threebuf[JAG_SOCK_TOTAL_HDR_LEN+0] = *_servsignal; 
+		threebuf[JAG_SOCK_TOTAL_HDR_LEN+1] = *(_servsignal+1); 
+		threebuf[JAG_SOCK_TOTAL_HDR_LEN+2] = *(_servsignal+2); 
+		threebuf[JAG_SOCK_TOTAL_HDR_LEN+3] = '\0';
 		for ( int i = 0; i < _replicateCopy; ++i ) {
 			if ( !socket_bad(_conn[i]._sock) && _conn[i]._result > 0 ) {
-				rc = sendData( _conn[i]._sock, threebuf, JAG_SOCK_MSG_HDR_LEN+3 ); // 016ABCCmessage format
+				rc = sendData( _conn[i]._sock, threebuf, JAG_SOCK_TOTAL_HDR_LEN+3 ); // 016ABCCmessage format
 				if ( rc < 0 ) {
 					_conn[i]._result = 0;
 					_conn[i]._sock = INVALID_SOCKET;

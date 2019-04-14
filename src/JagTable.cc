@@ -1445,8 +1445,8 @@ int JagTable::sinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &e
     			Jstr hdir = fileHashDir( pair[k].key );
     			jaguar_mutex_lock ( &req.session->dataMutex );
     			// receive _BEGINFILEUPLOAD_ to begin file transfer
-    			char *newbuf = NULL; char hdr[JAG_SOCK_MSG_HDR_LEN+1]; ssize_t rlen = 0;
-    			memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
+    			char *newbuf = NULL; char hdr[JAG_SOCK_TOTAL_HDR_LEN+1]; ssize_t rlen = 0;
+    			memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
     			rlen = recvData( req.session->sock, hdr, newbuf );
     			if ( rlen > 0 && 0 == strncmp( newbuf, "_BEGINFILEUPLOAD_", 17 ) ) {
     				for ( int i = 0; i < _numCols; ++i ) {
@@ -1455,7 +1455,7 @@ int JagTable::sinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &e
     						rc = oneFileReceiver( req.session->sock, _darrFamily->_sfilepath + "/" + hdir );
     					}
     				}
-    				memset( hdr, 0, JAG_SOCK_MSG_HDR_LEN+1);
+    				memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
     				rlen = recvData( req.session->sock, hdr, newbuf );
     				if ( rlen > 0 && 0 == strncmp( newbuf, "_ENDFILEUPLOAD_", 15 ) ) { rc = 1; }
     			} else {
@@ -3029,38 +3029,49 @@ abaxint JagTable::sendMessageLength2( JagSession *session, const char *mesg, aba
 	int isHB = false;
 	if ( type[0] == 'H' && type[1] == 'B' ) {
 		isHB = true;
+		// sendheartbeat
 	}
 
-	#if 0
-    if ( !isHB ) { 
-		prt(("s2800 THREADID=%ld sock=%d SENDMEGLEN [%s], len=%lld\n", THREADID, session->sock, mesg, len));
-	}
-	#endif
 
 	// compress or no: if no, len is original; if yes, use new length
+	char code4[5];
+	char sqlhdr[10]; makeSQLHeader( sqlhdr );
 	if ( len >= JAG_SOCK_COMPRSS_MIN ) {
 		Jstr comp;
 		JagFastCompress::compress( mesg, len, comp );
-		buf = (char*)jagmalloc( JAG_SOCK_MSG_HDR_LEN+comp.size()+1+64 );
-		sprintf( buf, "%0*lldZ%c%cC", JAG_SOCK_MSG_HDR_LEN-4, comp.size(), type[0], type[1] );
 		len = comp.size();
-		memcpy( buf+JAG_SOCK_MSG_HDR_LEN, comp.c_str(), len );
+		buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+comp.size()+1+64 );
+		sprintf( code4, "Z%c%cC", type[0], type[1] );
+		putXmitHdrAndData( buf, sqlhdr, comp.c_str(), len, code4 );
+		//sprintf( buf, "%0*lldZ%c%cC", JAG_SOCK_TOTAL_HDR_LEN-4, comp.size(), type[0], type[1] );
+		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, comp.c_str(), len );
 	} else {
- 		buf = (char*)jagmalloc( JAG_SOCK_MSG_HDR_LEN+len+1+64 );
-    	sprintf( buf, "%0*lldC%c%cC", JAG_SOCK_MSG_HDR_LEN-4, len, type[0], type[1] );
-		memcpy( buf+JAG_SOCK_MSG_HDR_LEN, mesg, len );
+ 		buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+len+1+64 );
+    	//sprintf( buf, "%0*lldC%c%cC", JAG_SOCK_TOTAL_HDR_LEN-4, len, type[0], type[1] );
+		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, mesg, len );
+		sprintf( code4, "C%c%cC", type[0], type[1] );
+		putXmitHdrAndData( buf, sqlhdr, mesg, len, code4 );
 	}
-    buf[JAG_SOCK_MSG_HDR_LEN+len] = '\0';
+    // buf[JAG_SOCK_TOTAL_HDR_LEN+len] = '\0';
+
+	#if 0
+    if ( !isHB ) { 
+		prt(("s2800 THREADID=%ld sock=%d SENDMEGLEN mesg=[%s], len=%lld\n", THREADID, session->sock, mesg, len));
+		prt(("s2800 THREADID=%ld buf=[%s]\n", THREADID, buf ));
+	}
+	#endif
 
 	jaguar_mutex_lock ( &session->dataMutex );
 	if ( !isHB ) {
-		rc = sendData( session->sock, buf, JAG_SOCK_MSG_HDR_LEN+len );
+		rc = sendData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+len );
+	} else if ( session->hasTimer ) {
+		rc = sendData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+len );
 	}
-	else if ( session->hasTimer ) rc = sendData( session->sock, buf, JAG_SOCK_MSG_HDR_LEN+len );
+
 	if ( rc < 0 ) session->sessionBroken = 1; // session send error, broken 
 	jaguar_mutex_unlock ( &session->dataMutex );
 
-	if ( rc < JAG_SOCK_MSG_HDR_LEN+len ) {
+	if ( rc < JAG_SOCK_TOTAL_HDR_LEN+len ) {
 		rc = -1;
 	}
 	if ( buf ) free( buf );
@@ -3074,7 +3085,7 @@ int JagTable::refreshSchema()
 	AbaxString schemaStr;
 	const JagSchemaRecord *record =  _tableschema->getAttr( dbtable );
 	if ( ! record ) {
-		prt(("s8912 _tableschema->getAttr(%s) error, return 0, _tableRecord is not updated\n", dbtable.c_str() ));
+		prt(("s8912 _tableschema->getAttr(%s) error, _tableRecord is not updated\n", dbtable.c_str() ));
 		return 0;
 	}
 
@@ -3090,17 +3101,7 @@ int JagTable::refreshSchema()
 
 	// prt(("s2008 _origHasSpare=%d _numCols=%d\n", _origHasSpare, _numCols ));
 	_numCols = record->columnVector->size();
-	/***
-	_origHasSpare = hasSpareColumn();
-	prt(("s2009 _origHasSpare=%d _numCols=%d\n", _origHasSpare, _numCols ));
-	if ( ! _origHasSpare ) {
-		++ _numCols; //add extram empty spare_ col
-	}
-	prt(("s2009 _origHasSpare=%d _numCols=%d\n", _origHasSpare, _numCols ));
-	***/
-
 	_schAttr = new JagSchemaAttribute[_numCols];
-
 	// refresh
 	_tableRecord = *record;
 
@@ -3167,7 +3168,8 @@ void JagTable::copyAndInsertBufferAndClean( JagIndex *ipindex )
 	// then flush related indexs
 	JagIndex *pindex;
 	for ( int i = 0; i < _indexlist.size(); ++i ) {
-		if ( ipindex && ipindex->getdbName() == _dbname && ipindex->getTableName() == _tableName && ipindex->getIndexName() == _indexlist[i] ) {
+		if ( ipindex && ipindex->getdbName() == _dbname && ipindex->getTableName() == _tableName 
+		     && ipindex->getIndexName() == _indexlist[i] ) {
 			ipindex->copyAndInsertBufferAndClean();
 		} else {
 			pindex = _servobj->_objectLock->readLockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i],
@@ -3182,7 +3184,8 @@ void JagTable::copyAndInsertBufferAndClean( JagIndex *ipindex )
 }
 
 // static
-// currently, doWriteIt has only one host name, so it can only been write one by one ( use mutex in jda to protect, with last flag true )
+// currently, doWriteIt has only one host name, so it can only been write one by one 
+// ( use mutex in jda to protect, with last flag true )
 void JagTable::doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam, const JagRequest &req, 
 						  const Jstr &host, const char *buf, abaxint buflen, const JagSchemaRecord *nrec )
 {

@@ -26,6 +26,7 @@ class JagUUID
   public:
   	JagUUID();
 	Jstr  getString();
+	long getLong(long M);
 
   protected:
 	void _getHostStr();
