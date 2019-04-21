@@ -1,5 +1,10 @@
 
-JaguarDB 3.0.1 03/03/2019
+JaguarDB 3.0.2 04/21/2019
+------------------------------------------------------------------
+. Refactored code to separate some client and server linraries
+. Client library does not depend on geolib and CGAL libraries
+. added PHP 7.3.3 extension support
+
 ------------------------------------------------------------------
 Added:
 tomultipoint(geom)             -- Well Known Text of geom
