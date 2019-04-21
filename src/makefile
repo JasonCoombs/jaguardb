@@ -18,9 +18,9 @@ CCFLAGS=$(CCFLAGS_DYNAMIC)
 STDLIBS_STATIC =  Web/GeographicLib-1.49/lib/libGeographic.a /usr/lib64/libpthread.a \
                   Web/CGAL/CGAL-4.13/lib64/libCGAL.a Web/Boost/boost_1_68_0/lib/libboost_system.a \
 				  Web/Boost/boost_1_68_0/lib/libboost_thread.a 
-STDLIBS_DYNAMIC = -LWeb/GeographicLib-1.49/lib -LWeb/CGAL/CGAL-4.13/lib64 -LWeb/Boost/boost_1_68_0/lib \
-                  -lGeographic -lCGAL -lboost_thread -lboost_system 
-
+STDLIBS_DYNAMIC_BASIC =  -LWeb/Boost/boost_1_68_0/lib -lboost_thread -lboost_system -lpthread
+GEOLIBS_DYNAMIC = -LWeb/GeographicLib-1.49/lib -LWeb/CGAL/CGAL-4.13/lib64 -lGeographic -lCGAL 
+STDLIBS_DYNAMIC = $(GEOLIBS_DYNAMIC) $(STDLIBS_DYNAMIC_BASIC)
 
 STDLIBS=$(STDLIBS_STATIC)
 STDLIBS=$(STDLIBS_DYNAMIC)
@@ -37,13 +37,14 @@ CPP=$(GPP)  -pg -DJAG_DEBUGCHECK
 CPP=$(GPP)  -g3 -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -g -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -DJAG_DEBUGCHECK
-CPP=$(GPP) 
 CPP=$(GPP)  -ggdb
+CPP=$(GPP) 
 CPP=$(GPP)  -O3
 
 #### makefile.obj has $(OBJS)
 include makefile.obj
 
+EXTOBJS=Web/TomCrypt/lib/*.o Web/Snappy/*.o
 
 JagParseExpr.o: JagExprStack.h
 
@@ -62,16 +63,16 @@ javahdr:
 	/bin/cp -f Jaguar.java $(DRIZZLE)/src/main/java/com/jaguar/jdbc/internal/jaguar/
 	cd $(DRIZZLE)/src/main/java; javah -jni com.jaguar.jdbc.internal.jaguar.Jaguar
 
-javalib: Jaguar.o  $(OBJS) 
-	$(CPP) $(CCFLAGS) -shared $(STDLIBS_DYNAMIC) -Wl,-soname,libJaguarClient.so -o libJaguarClient.so \
-	Jaguar.o $(OBJS) Web/TomCrypt/lib/*.o Web/Snappy/*.o
+javalib: Jaguar.o  $(CLIENTOBJS) 
+	$(CPP) $(CCFLAGS) -shared -Wl,-soname,libJaguarClient.so -o libJaguarClient.so \
+	Jaguar.o $(CLIENTOBJS) Web/TomCrypt/lib/*.o Web/Snappy/*.o 
 
 glibcversion: glibcversion.o
 	$(CPP) -o glibcversion glibcversion.o
 
-lib:  $(OBJS) jagserv.o jql.o javahdr javalib
-	$(CPP) -o jaguar.bin jagserv.o -L. -lJaguarClient $(STDLIBS)
-	$(CPP) -o jql.bin jql.o -L. -lJaguarClient $(STDLIBS)
+lib:  $(SERVEROBJS) jql.o JagParseExprClient.o JagParseExprServer.o jagserv.o javahdr javalib
+	$(CPP) -o jql.bin jql.o -L. -lJaguarClient -lpthread
+	$(CPP) -o jaguar.bin jagserv.o $(SERVEROBJS) $(EXTOBJS) $(STDLIBS) 
 
 
 createKeyPair: createKeyPair.o

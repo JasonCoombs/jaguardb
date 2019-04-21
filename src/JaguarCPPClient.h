@@ -34,7 +34,7 @@ class ADBROW;
 class CliPass;
 class JagRecord;
 class JagDBPair;
-class JagDBServer;
+//class JagDBServer;
 class JagBlockLock;
 class HostMinMaxKey;
 class JagParseParam;

@@ -2,6 +2,8 @@
 #define _jag_shape_h_
 
 #include <math.h>
+#include <JagVector.h>
+#include <JagUtil.h>
 
 #define jagmin(a, b) ( (a) < (b) ? (a) : (b))
 #define jagmax(a, b) ( (a) > (b) ? (a) : (b))

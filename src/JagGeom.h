@@ -33,7 +33,7 @@
 #include <JagUtil.h>
 #include <JagShape.h>
 #include <JagHashSetStr.h>
-#include <JaguarCPPClient.h>
+//#include <JaguarCPPClient.h>
 #include <JagParser.h>
 #include <JagCGAL.h>
 using namespace GeographicLib;
@@ -43,9 +43,9 @@ using namespace GeographicLib;
 class JagGeo
 {
   public:
-	template <class POINT> static int sortLinePoints( POINT arr[], int elements );
-	template <class POINT> static int JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
-	template <class POINT> static int JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
+	//template <class POINT> static int sortLinePoints( POINT arr[], int elements );
+	//template <class POINT> static int JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
+	//template <class POINT> static int JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
 
 	/////////////////////////////////////// Within function ////////////////////////////////////////////////////
    	static bool doPointWithin(  const JagStrSplit &sp1, const Jstr &mk2, 
@@ -1034,7 +1034,7 @@ class JagGeo
 	static void sampleLinesOnCylinder( double x0, double y0, double z0, double r, double h,
 									   double nx, double ny, int num2, JagVector<JagLine3D> &samples );
 
-	static Jstr convertType2Short( const Jstr &geotypeLong );
+	// static Jstr convertType2Short( const Jstr &geotypeLong );
 	static bool jagSquare(double f );
 
 	static void rotate2DCoordGlobal2Local( double inx, double iny, double nx, double &outx, double &outy );
@@ -1057,9 +1057,6 @@ class JagGeo
                              const Jstr& mark2, const Jstr &colType2, int srid2, const JagStrSplit &sp2, 
 							 const Jstr &carg );
 
-    static int getDimension( const Jstr& colType );
-    static Jstr getTypeStr( const Jstr& colType );
-    static int getPolyDimension( const Jstr& colType );
 	static bool above(double x, double y, double x2, double y2, double x3, double y3 );
 	static bool above(double x, double y, double z, double x2, double y2, double z2, double x3, double y3, double z3 );
 	static bool aboveOrSame(double x, double y, double x2, double y2, double x3, double y3 );
@@ -1074,12 +1071,14 @@ class JagGeo
 	static bool isNull( double x, double y, double z );
 	static bool isNull(double x1, double y1, double x2, double y2 );
 	static bool isNull(double x1, double y1, double z1, double x2, double y2, double z2 );
+	/**
 	static Jstr makeGeoJson( const JagStrSplit &sp, const char *str );
 	static Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *str );
 	static Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char *str );
 	static Jstr makeJsonPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
 	static Jstr makeJsonMultiPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
 	static Jstr makeJsonDefault( const JagStrSplit &sp, const char *str );
+	**/
 	static bool distance( const JagFixString &lstr, const JagFixString &rstr, const Jstr &arg, double &dist );
 
 
@@ -1894,5 +1893,5 @@ class DistanceCalculator3DCart
     	return sqrt( (a.x-b.x)*(a.x-b.x) + (a.y-b.y )*(a.y-b.y) + (a.z-b.z )*(a.z-b.z) );
   	}
 };
-#include <JagSortLinePoints.h>
+//#include <JagSortLinePoints.h>
 #endif

@@ -18,6 +18,8 @@
  */
 #include <JagGlobalDef.h>
 
+#define JAG_SERVER_SIDE 1
+
 #include <abax.h>
 #include <JagParallelParse.h>
 #include <JagThreadPool.h>
@@ -179,7 +181,7 @@ void *parseSQLFunction( void *p )
 
     jaguar_mutex_lock( & pass->obj->_mutex );
 	// prt(("s3024 parseSQLFunction parseCommand(%s) ...\n", sql.c_str() ));
-	JagParser parser;
+	JagParser parser((void*)NULL);
 	(*param)->jagParser = &parser;
 
 	rc = parser.parseCommand( *jpa, sql, *param, errmsg );

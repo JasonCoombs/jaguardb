@@ -27,6 +27,7 @@
 #include <JagClock.h>
 #include <JagTableUtil.h>
 #include <JaguarCPPClient.h>
+#include <JagSession.h>
 #include <time.h>
 
 
@@ -344,6 +345,23 @@ void getXmitSQLHdr( char *buf, char *sqlhdr );
 void getXmitCode( char *buf, char *code );
 long getXmitMsgLen( char *buf );
 void makeSQLHeader( char *sqlhdr );
+
+Jstr makeGeoJson( const JagStrSplit &sp, const char *str );
+Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *str );
+Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char *str );
+Jstr makeJsonPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
+Jstr makeJsonMultiPolygon( const Jstr &title, const JagStrSplit &sp, const char *str, bool is3D );
+Jstr makeJsonDefault( const JagStrSplit &sp, const char *str );
+int getDimension( const Jstr& colType );
+int getPolyDimension( const Jstr& colType );
+Jstr getTypeStr( const Jstr& colType );
+
+abaxint sendMessage( const JagRequest &req, const char *mesg, const char *type );
+abaxint sendMessageLength( const JagRequest &req, const char *mesg, abaxint len, const char *type );
+abaxint sendMessageLength2( JagSession *session, const char *mesg, abaxint len, const char *type );
+Jstr convertToStr( const Jstr  &pm );
+Jstr convertManyToStr( const Jstr &pms );
+Jstr convertType2Short( const Jstr &geotypeLong );
 
 
 template <class T> T* newObject( bool doPrint = true )

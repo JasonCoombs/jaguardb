@@ -19,7 +19,6 @@
 #include <JagGlobalDef.h>
 #include <sys/time.h>
 #include <JagRange.h>
-#include <JagGeom.h>
 #include <JagUtil.h>
 #include <JagTime.h>
 

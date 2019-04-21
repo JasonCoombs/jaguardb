@@ -19,7 +19,8 @@
 #include <JagGlobalDef.h>
 
 #include <JagSession.h>
-#include <JagTable.h>
+//#include <JagTable.h>
+#include <JagUtil.h>
 
 // ctor
 JagSession::JagSession( int timeout )
@@ -68,7 +69,7 @@ void *JagSession::sessionTimer( void *ptr )
 	JagSession *sn = (JagSession*)ptr;
 	while ( !sn->sessionBroken ) {
 		jagsleep(1, JAG_SEC);
-		JagTable::sendMessageLength2( sn, "Y", 1, "HB" );
+		sendMessageLength2( sn, "Y", 1, "HB" );
 	}
 
 	return NULL;

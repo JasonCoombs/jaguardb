@@ -21,7 +21,19 @@
 #include <math.h>
 #include <JagGeom.h>
 #include <JagArray.h>
+#include "JagSortLinePoints.h"
+#include "JagParser.h"
+
 const double JagGeo::NUM_SAMPLE = 10;
+
+
+JagLineSeg2D JagLineSeg2D::NULLVALUE = JagLineSeg2D(LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN);
+JagLineSeg2DPair JagLineSeg2DPair::NULLVALUE = JagLineSeg2DPair( JagLineSeg2D::NULLVALUE );
+JagLineSeg3D JagLineSeg3D::NULLVALUE = JagLineSeg3D(LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN);
+JagLineSeg3DPair JagLineSeg3DPair::NULLVALUE = JagLineSeg3DPair( JagLineSeg3D::NULLVALUE );
+
+
+
 
 ///////////////////////////// Within methods ////////////////////////////////////////
 bool JagGeo::pointInTriangle( double px, double py, double x1, double y1,
@@ -3359,7 +3371,7 @@ bool JagGeo::lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &
 	}
 
 	int len = j;
-	rc = sortLinePoints( points, len );
+	rc = sortLinePoints<JagSortPoint2D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -3761,7 +3773,7 @@ bool JagGeo::polygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1
 	}
 
 	int len = j;
-	rc = sortLinePoints( points, len );
+	rc = sortLinePoints<JagSortPoint2D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -8311,7 +8323,7 @@ bool JagGeo::lineString3DIntersectLineString3D( const Jstr &mk1, const JagStrSpl
 	}
 
 	int len = j;
-	rc = sortLinePoints( points, len );
+	rc = sortLinePoints<JagSortPoint3D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -8959,7 +8971,7 @@ bool JagGeo::polygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit 
 	}
 
 	int len = j;
-	rc = sortLinePoints( points, len );
+	rc = sortLinePoints<JagSortPoint3D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -11514,6 +11526,7 @@ void JagGeo::sampleLinesOnCylinder( double x0, double y0, double z0, double r, d
 }
 
 
+#if 0
 Jstr JagGeo::convertType2Short( const Jstr &geotypeLong )
 {
 	const char *p = geotypeLong.c_str();
@@ -11585,6 +11598,8 @@ Jstr JagGeo::convertType2Short( const Jstr &geotypeLong )
 		return "UNKNOWN";
 	}
 }
+#endif
+
 
 // sp was shifted
 double JagGeo::safeget( const JagStrSplit &sp, int arg )
@@ -13208,138 +13223,6 @@ bool JagGeo::doAllNearby( const Jstr& mark1, const Jstr &colType1, int srid1, co
 	return false;
 }
 
-Jstr JagGeo::getTypeStr( const Jstr& colType )
-{
-	Jstr t;
-	if ( colType == JAG_C_COL_TYPE_POINT ) {
-		t = "Point";
-	} else if ( colType == JAG_C_COL_TYPE_LINE ) {
-		t = "Line";
-	} else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
-		t = "LineString";
-	} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
-		t = "MultiLineString";
-	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-		t = "MultiPolygon";
-	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT ) {
-		t = "MultiPoint";
-	} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
-		t = "Polygon";
-	} else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
-		t = "Circle";
-	} else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
-		t = "Square";
-	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
-		t = "Rectangle";
-	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
-		t = "Triangle";
-	} else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
-		t = "Ellipse";
-	} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
-		t = "Point3D";
-	} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
-		t = "Line3D";
-	} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
-		t = "LineString3D";
-	} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-		t = "MultiLineString3D";
-	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-		t = "MultiPoint3D";
-	} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
-		t = "Polygon3D";
-	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-		t = "MultiPolygon3D";
-	} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
-		t = "Circle3D";
-	} else if ( colType == JAG_C_COL_TYPE_SPHERE ) {
-		t = "Sphere";
-	} else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
-		t = "Square3D";
-	} else if ( colType == JAG_C_COL_TYPE_CUBE ) {
-		t = "Cube";
-	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
-		t = "Rectangle3D";
-	} else if ( colType == JAG_C_COL_TYPE_BOX  ) {
-		t = "Box";
-	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D  ) {
-		t = "Triangle3D";
-	} else if ( colType == JAG_C_COL_TYPE_CYLINDER  ) {
-		t = "Cylinder";
-	} else if ( colType == JAG_C_COL_TYPE_CONE   ) {
-		t = "Cone";
-	} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D   ) {
-		t = "Ellipse3D";
-	} else if ( colType == JAG_C_COL_TYPE_ELLIPSOID ) {
-		t = "Ellipsoid";
-	} else {
-		t = "Unknown";
-	}
-	return t;
-}
-
-int JagGeo::getDimension( const Jstr& colType )
-{
-	if ( colType == JAG_C_COL_TYPE_POINT 
-		|| colType == JAG_C_COL_TYPE_LINE 
-		|| colType == JAG_C_COL_TYPE_LINESTRING
-		|| colType == JAG_C_COL_TYPE_MULTILINESTRING
-		|| colType == JAG_C_COL_TYPE_MULTIPOLYGON
-		|| colType == JAG_C_COL_TYPE_MULTIPOINT
-		|| colType == JAG_C_COL_TYPE_POLYGON
-		|| colType == JAG_C_COL_TYPE_CIRCLE
-		|| colType == JAG_C_COL_TYPE_SQUARE
-		|| colType == JAG_C_COL_TYPE_RECTANGLE
-		|| colType == JAG_C_COL_TYPE_TRIANGLE
-		|| colType == JAG_C_COL_TYPE_ELLIPSE
-		 ) {
-		 return 2;
-	 } else if (  colType == JAG_C_COL_TYPE_POINT3D
-	 			 ||  colType == JAG_C_COL_TYPE_LINE3D
-	 			 ||  colType == JAG_C_COL_TYPE_LINESTRING3D
-	 			 ||  colType == JAG_C_COL_TYPE_MULTILINESTRING3D
-				 || colType == JAG_C_COL_TYPE_MULTIPOINT3D
-	 			 ||  colType == JAG_C_COL_TYPE_POLYGON3D
-	 			 ||  colType == JAG_C_COL_TYPE_MULTIPOLYGON3D
-	 			 ||  colType == JAG_C_COL_TYPE_CIRCLE3D
-	 			 ||  colType == JAG_C_COL_TYPE_SPHERE
-	 			 ||  colType == JAG_C_COL_TYPE_SQUARE3D
-	 			 ||  colType == JAG_C_COL_TYPE_CUBE
-	 			 ||  colType == JAG_C_COL_TYPE_RECTANGLE3D
-	 			 ||  colType == JAG_C_COL_TYPE_BOX
-	 			 ||  colType == JAG_C_COL_TYPE_TRIANGLE3D
-	 			 ||  colType == JAG_C_COL_TYPE_CYLINDER
-	 			 ||  colType == JAG_C_COL_TYPE_CONE
-	 			 ||  colType == JAG_C_COL_TYPE_ELLIPSE3D
-	 			 ||  colType == JAG_C_COL_TYPE_ELLIPSOID
-				 ) {
-		 return 3;
-	 } else {
-	 	return 0;
-	 }
-}
-
-
-int JagGeo::getPolyDimension( const Jstr& colType )
-{
-	if ( colType == JAG_C_COL_TYPE_LINESTRING
-	     || colType == JAG_C_COL_TYPE_MULTILINESTRING
-		 || colType == JAG_C_COL_TYPE_POLYGON
-		 || colType == JAG_C_COL_TYPE_MULTIPOLYGON
-		 || colType == JAG_C_COL_TYPE_MULTIPOINT
-		 ) {
-		 return 2;
-	 } else if (  colType == JAG_C_COL_TYPE_LINESTRING3D
-	     		 || colType == JAG_C_COL_TYPE_MULTILINESTRING3D
-	 			 ||  colType == JAG_C_COL_TYPE_POLYGON3D
-	 			 ||  colType == JAG_C_COL_TYPE_MULTIPOLYGON3D
-	 			 ||  colType == JAG_C_COL_TYPE_MULTIPOINT3D
-				 ) {
-		 return 3;
-	 } else {
-	 	return 0;
-	 }
-}
-
 void JagGeo::getCoordAvg( const Jstr &colType, const JagStrSplit &sp, double &x, double &y, double &z, 
 							double &Rx, double &Ry, double &Rz )
 {
@@ -13800,6 +13683,7 @@ bool JagGeo::isNull( double x1, double y1, double z1, double x2, double y2, doub
 	return false;
 }
 
+#if 0
 // sp: OJAG=0=test.lstr.ls=LS guarantee 3 '=' signs
 // str: "x:y x:y x:y ..." or "x:y:z x:y:z x:y:z ..."
 Jstr JagGeo::makeGeoJson( const JagStrSplit &sp, const char *str )
@@ -14510,6 +14394,7 @@ Jstr JagGeo::makeJsonDefault( const JagStrSplit &sp, const char *str )
 {
 	return "";
 }
+#endif
 
 // 2D case
 bool JagGeo::pointWithinPolygon( double x, double y, const JagLineString3D &linestr )
@@ -14753,18 +14638,18 @@ bool JagGeo::distance( const JagFixString &inlstr, const JagFixString &inrstr, c
 	Jstr lstr;
 	int rc = 0;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
-		prt(("s5510 convertConstantObjToJAG ...\n" ));
-		rc = convertConstantObjToJAG( inlstr, lstr );
+		prt(("s5510 JagParser::convertConstantObjToJAG ...\n" ));
+		rc = JagParser::convertConstantObjToJAG( inlstr, lstr );
 		if ( rc <= 0 ) return false;
 		// point(0 0 0 )  to "OJAG=srid=33=33=d x y z"
-		prt(("s5512 convertConstantObjToJAG lstr=[%s] rc=%d ...\n", lstr.c_str(), rc ));
+		prt(("s5512 JagParser::convertConstantObjToJAG lstr=[%s] rc=%d ...\n", lstr.c_str(), rc ));
 	} else {
 		lstr = inlstr.c_str();
 	}
 
 	Jstr rstr;
 	if ( !strnchr( inrstr.c_str(), '=', 8 ) ) {
-		rc = convertConstantObjToJAG( inrstr, rstr );
+		rc = JagParser::convertConstantObjToJAG( inrstr, rstr );
 		if ( rc <= 0 ) return false;
 	} else {
 		rstr = inrstr.c_str();
@@ -14785,8 +14670,8 @@ bool JagGeo::distance( const JagFixString &inlstr, const JagFixString &inrstr, c
 
 	Jstr colType1 = co1[3];
 	Jstr colType2 = co2[3];
-	int dim1 = JagGeo::getDimension( colType1 );
-	int dim2 = JagGeo::getDimension( colType2 );
+	int dim1 = getDimension( colType1 );
+	int dim2 = getDimension( colType2 );
 	prt(("s7231 dim1=%d dim2=%d\n", dim1, dim2 ));
 	if ( dim1 != dim2 ) { return 0; }
 
@@ -20661,10 +20546,11 @@ bool JagGeo::getBBox3DInner( const JagVector<JagPolygon> &pgvec, double &xmin, d
 	return ( cnt > 0 );
 }
 
+#if 0
 // return n>0: OK ,  <=0 error
 // instr: "point3d(...)"  "polygon((...),(...))"
 // outstr: "CJAG=0=0=type=subtype  bbox data1 data2 data3 ..."
-int JagGeo::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
+int JagGeo::JagParser::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 {
 	int cnt = 0;
 	Jstr othertype;
@@ -21012,6 +20898,7 @@ int JagGeo::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 
 	return cnt;
 }
+#endif
 
 
 // mk: OJAG or CJAG
@@ -21028,7 +20915,7 @@ double JagGeo::getGeoLength( const JagFixString &inlstr )
 	if ( inlstr.size() < 1 ) return 0.0;
 	Jstr lstr;
 	if ( !strnchr( inlstr.c_str(), '=', 8 ) ) {
-		int rc1 = JagGeo::convertConstantObjToJAG( inlstr, lstr );
+		int rc1 = JagParser::convertConstantObjToJAG( inlstr, lstr );
 		if ( rc1 <= 0 ) return 0.0;
 	} else {
 		lstr = inlstr.c_str();
@@ -21612,7 +21499,7 @@ Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1,
 			prt(("s2038 error unionOfTwoPolygons rc=%d\n", rc ));
 			return "";
 		}
-		rc = convertConstantObjToJAG( JagFixString(uwkt.c_str()), val );
+		rc = JagParser::convertConstantObjToJAG( JagFixString(uwkt.c_str()), val );
 		if ( rc <= 0 ) { val = ""; }
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
 		Jstr res;
@@ -21624,16 +21511,16 @@ Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1,
 		}
 		prt(("s1728 res=[%s] rc=%d\n", res.c_str(), rc ));
 		if ( res.size() < 1 ) return "";
-		rc = convertConstantObjToJAG( JagFixString(res.c_str()), val );
+		rc = JagParser::convertConstantObjToJAG( JagFixString(res.c_str()), val );
 		prt(("s1728 val=[%s] rc=%d\n", val.c_str(), rc ));
 		if ( rc <= 0 ) {
-			prt(("s2038 error convertConstantObjToJAG rc=%d\n", rc ));
+			prt(("s2038 error JagParser::convertConstantObjToJAG rc=%d\n", rc ));
 			return "";
 		}
 	} 
 	return val;
 
-	// int JagGeo::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
+	// int JagParser::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 
 }
 
@@ -21921,10 +21808,10 @@ Jstr  JagGeo::doLineStringIntersection( const Jstr &colType1,const JagStrSplit &
 			JagPoint2D *pt2 =new JagPoint2D[len2];
 			for ( int i=0; i < len1; ++i ) { pt1[i] = vec1[i]; }
 			for ( int i=0; i < len2; ++i ) { pt2[i] = vec2[i]; }
-			sortLinePoints( pt1, len1 );
-			sortLinePoints( pt2, len2 );
+			sortLinePoints<JagPoint2D>( pt1, len1 );
+			sortLinePoints<JagPoint2D>( pt2, len2 );
 			JagVector<JagPoint2D> pvec;
-			JagSortedSetJoin( pt1, len1, pt2, len2, pvec );
+			JagSortedSetJoin<JagPoint2D>( pt1, len1, pt2, len2, pvec );
 			for ( int i=0; i < pvec.size(); ++i ) {
    				val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
    				++cnt;
@@ -21942,10 +21829,10 @@ Jstr  JagGeo::doLineStringIntersection( const Jstr &colType1,const JagStrSplit &
 			JagPoint3D *pt2 =new JagPoint3D[len2];
 			for ( int i=0; i < len1; ++i ) { pt1[i] = vec1[i]; }
 			for ( int i=0; i < len2; ++i ) { pt2[i] = vec2[i]; }
-			sortLinePoints( pt1, len1 );
-			sortLinePoints( pt2, len2 );
+			sortLinePoints<JagPoint3D>( pt1, len1 );
+			sortLinePoints<JagPoint3D>( pt2, len2 );
 			JagVector<JagPoint3D> pvec;
-			JagSortedSetJoin( pt1, len1, pt2, len2, pvec );
+			JagSortedSetJoin<JagPoint3D>( pt1, len1, pt2, len2, pvec );
 			for ( int i=0; i < pvec.size(); ++i ) {
    				val += Jstr(" ") + d2s(pvec[i].x) + ":" + d2s(pvec[i].y);
    				++cnt;
@@ -22505,7 +22392,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
     
     		Jstr reswkt;
     		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-    		int n = convertConstantObjToJAG(reswkt.c_str(), val );
+    		int n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
     		if ( n <= 0 ) return "";
 			++cnt;
 		} else if ( 3 == dim2 ) {
@@ -22535,7 +22422,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
 
     		Jstr reswkt;
     		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-    		n = convertConstantObjToJAG(reswkt.c_str(), val );
+    		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
     		if ( n <= 0 ) return "";
 			++cnt;
 	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
@@ -22598,7 +22485,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
 		pgon2.toWKT( false, true, "polygon", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), val );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
@@ -22616,7 +22503,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
 		multiPolygonToWKT( pgvec2, false, wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomDifference<BoostLineString2D,BoostMultiPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), val );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
 		if ( n <= 0 ) return "";
 		++cnt;
 	}
@@ -22649,7 +22536,7 @@ Jstr  JagGeo::doMultiLineStringDifference( const Jstr &colType1,const JagStrSpli
 		pgon1.toWKT( false, true, "linestring", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
@@ -22666,7 +22553,7 @@ Jstr  JagGeo::doMultiLineStringDifference( const Jstr &colType1,const JagStrSpli
 		pgon1.toWKT( false, true, "multilinestring", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if (  colType2 == JAG_C_COL_TYPE_POLYGON ) {
@@ -22684,7 +22571,7 @@ Jstr  JagGeo::doMultiLineStringDifference( const Jstr &colType1,const JagStrSpli
 		Jstr reswkt;
 		//JagCGAL::getMultiLineStringPolygonDifference( wkt1, wkt2, reswkt );
 		JagCGAL::getTwoGeomDifference<BoostMultiLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
@@ -22726,7 +22613,7 @@ Jstr  JagGeo::doPolygonDifference( const Jstr &colType1,const JagStrSplit &sp1,
 		Jstr reswkt;
 		//JagCGAL::getPolygonPolygonDifference( wkt1, wkt2, reswkt );
 		JagCGAL::getTwoGeomDifference<BoostPolygon2D,BoostPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
@@ -22744,7 +22631,7 @@ Jstr  JagGeo::doPolygonDifference( const Jstr &colType1,const JagStrSplit &sp1,
 		Jstr reswkt;
 		//JagCGAL::getPolygonMultiPolygonDifference( wkt1, wkt2, reswkt );
 		JagCGAL::getTwoGeomDifference<BoostPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	}
@@ -22787,7 +22674,7 @@ Jstr  JagGeo::doMultiPolygonDifference( const Jstr &colType1,const JagStrSplit &
 
 		JagCGAL::getTwoGeomDifference<BoostMultiPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
 
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	}
@@ -23142,7 +23029,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
     
     		Jstr reswkt;
     		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-    		int n = convertConstantObjToJAG(reswkt.c_str(), val );
+    		int n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
     		if ( n <= 0 ) return "";
 			++cnt;
 		} else if ( 3 == dim2 ) {
@@ -23180,7 +23067,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 
     		Jstr reswkt;
     		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-    		n = convertConstantObjToJAG(reswkt.c_str(), val );
+    		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
     		if ( n <= 0 ) return "";
 			++cnt;
 	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D
@@ -23257,7 +23144,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 		pgon2.toWKT( false, true, "polygon", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), val );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
@@ -23275,7 +23162,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 		multiPolygonToWKT( pgvec2, false, wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomSymDifference<BoostLineString2D,BoostMultiPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), val );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), val );
 		if ( n <= 0 ) return "";
 		++cnt;
 	}
@@ -23308,7 +23195,7 @@ Jstr  JagGeo::doMultiLineStringSymDifference( const Jstr &colType1,const JagStrS
 		pgon1.toWKT( false, true, "linestring", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomSymDifference<BoostMultiLineString2D,BoostLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTILINESTRING ) {
@@ -23325,7 +23212,7 @@ Jstr  JagGeo::doMultiLineStringSymDifference( const Jstr &colType1,const JagStrS
 		pgon1.toWKT( false, true, "multilinestring", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomSymDifference<BoostMultiLineString2D,BoostMultiLineString2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if (  colType2 == JAG_C_COL_TYPE_POLYGON ) {
@@ -23342,7 +23229,7 @@ Jstr  JagGeo::doMultiLineStringSymDifference( const Jstr &colType1,const JagStrS
 		pgon1.toWKT( false, true, "polygon", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomSymDifference<BoostMultiLineString2D,BoostPolygon2D,BoostMultiLineString2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if (  colType2 == JAG_C_COL_TYPE_MULTILINESTRING3D || colType2 == JAG_C_COL_TYPE_POLYGON3D ) {
@@ -23387,7 +23274,7 @@ Jstr  JagGeo::doPolygonSymDifference( const Jstr &colType1,const JagStrSplit &sp
 		pgon2.toWKT( false, true, "polygon", wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomSymDifference<BoostPolygon2D,BoostPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	} else if ( colType2 == JAG_C_COL_TYPE_MULTIPOLYGON ) {
@@ -23404,7 +23291,7 @@ Jstr  JagGeo::doPolygonSymDifference( const Jstr &colType1,const JagStrSplit &sp
 		multiPolygonToWKT( pgvec2, false, wkt2 );
 		Jstr reswkt;
 		JagCGAL::getTwoGeomSymDifference<BoostPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	}
@@ -23447,7 +23334,7 @@ Jstr  JagGeo::doMultiPolygonSymDifference( const Jstr &colType1,const JagStrSpli
 
 		JagCGAL::getTwoGeomSymDifference<BoostMultiPolygon2D,BoostMultiPolygon2D,BoostMultiPolygon2D>( wkt1, wkt2, reswkt );
 
-		n = convertConstantObjToJAG(reswkt.c_str(), value );
+		n = JagParser::convertConstantObjToJAG(reswkt.c_str(), value );
 		if ( n <= 0 ) return "";
 		++cnt;
 	}
@@ -23802,7 +23689,7 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 	JagPoint3D *arr2 = new JagPoint3D[vec2.size()];
 	for ( int i=0; i< vec1.size(); ++i ) { arr1[i] = vec1[i]; }
 	for ( int i=0; i< vec2.size(); ++i ) { arr2[i] = vec2[i]; }
-	JagSetJoin( arr1, vec1.size(), arr2, vec2.size(), resvec );
+	JagSetJoin<JagPoint3D>( arr1, vec1.size(), arr2, vec2.size(), resvec );
 	delete [] arr1;
 	delete [] arr2;
 }
@@ -23834,7 +23721,7 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 	getVectorPoints( sp, is3D, vec2 );
 	JagPoint3D *arr2 = new JagPoint3D[vec2.size()];
 	for ( int i=0; i< vec2.size(); ++i ) { arr2[i] = vec2[i]; }
-	JagSetJoin( arr1, vec1.size(), arr2, vec2.size(), resvec );
+	JagSetJoin<JagPoint3D>( arr1, vec1.size(), arr2, vec2.size(), resvec );
 	delete [] arr1;
 	delete [] arr2;
 }

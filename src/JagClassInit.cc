@@ -20,7 +20,6 @@
 
 #include <abax.h>
 #include <JagDBPair.h>
-
 #include <JagGapVector.h>
 #include <JagBlock.h>
 #include <JagArray.h>
@@ -29,20 +28,13 @@
 #include <JagSchemaRecord.h>
 #include <JaguarCPPClient.h>
 #include <JagTableOrIndexAttrs.h>
-#include <JagGeom.h>
 
 template<> AbaxInt AbaxInt::NULLVALUE = AbaxInt(INT_MIN);
 template<> AbaxLong AbaxLong::NULLVALUE = AbaxLong(LLONG_MIN);
 AbaxString AbaxString::NULLVALUE = Jstr();
 JagFixString JagFixString::NULLVALUE = Jstr();
 JagDBPair JagDBPair::NULLVALUE = JagDBPair(JagFixString::NULLVALUE);
-JagLineSeg2D JagLineSeg2D::NULLVALUE = JagLineSeg2D(LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN);
-JagLineSeg2DPair JagLineSeg2DPair::NULLVALUE = JagLineSeg2DPair( JagLineSeg2D::NULLVALUE );
-JagLineSeg3D JagLineSeg3D::NULLVALUE = JagLineSeg3D(LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN,LONG_MIN);
-JagLineSeg3DPair JagLineSeg3DPair::NULLVALUE = JagLineSeg3DPair( JagLineSeg3D::NULLVALUE );
-
 template<class K, class V> AbaxPair<K,V> AbaxPair<K,V>::NULLVALUE = K::NULLVALUE;
-
 template<> AbaxPair<AbaxInt,AbaxInt> AbaxPair<AbaxInt,AbaxInt>::NULLVALUE = AbaxInt::NULLVALUE;
 template<> AbaxPair<AbaxInt,AbaxBuffer> AbaxPair<AbaxInt,AbaxBuffer>::NULLVALUE = AbaxInt::NULLVALUE;
 template<> AbaxPair<AbaxInt,AbaxPair<AbaxString,AbaxBuffer>> AbaxPair<AbaxInt,AbaxPair<AbaxString,AbaxBuffer>>::NULLVALUE = AbaxInt::NULLVALUE;

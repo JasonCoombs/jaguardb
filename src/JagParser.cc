@@ -20,21 +20,11 @@
 #include <JagParser.h>
 #include <JagFileMgr.h>
 #include <base64.h>
-#include <JagTableSchema.h>
-#include <JagIndexSchema.h>
+#include <JagTime.h>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/error/en.h"
-
-
-// ctor
-JagParser::JagParser( const JagDBServer *srv, const JaguarCPPClient *cli )
-{
-	_srv = srv;
-	_cli = cli;
-}
-
 
 // return 0: for error, 1: OK
 bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, 
@@ -47,7 +37,6 @@ bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, Jag
 
 	// prt(("s0823 parseSQL(%s) ...\n", pcmd ));
 	try {
-		//cmdcheck = parseSQL( jpa, parseParam, pcmd );
 		cmdcheck = parseSQL( jpa, parseParam, pcmd, cmd.size() );
 	} catch ( int a ) {
 		em = Jstr("Parser exception ") + intToStr( a ) ;
@@ -3200,7 +3189,7 @@ int JagParser::setCreateVector( short setType )
 
 			if ( firstCol ) {
 				firstCol = 0;
-				int dim = JagGeo::getPolyDimension( cattr.type );
+				int dim = getPolyDimension( cattr.type );
 				//prt(("s2033 getPolyDimension cattr.type=[%s] dim=%d\n", cattr.type.c_str(), dim ));
 				if ( dim >= 2 ) {
 					CreateAttribute save = cattr;
@@ -3879,8 +3868,9 @@ const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const Jstr &
 	return getColumn( db, objname, colName );
 }
 
-const JagColumn* JagParser::getColumn( const Jstr &db, const Jstr &objname, 
-							const Jstr &colName ) const
+/***
+#ifdef JAG_SERVER_SIDE
+const JagColumn* JagParser::getColumn( const Jstr &db, const Jstr &objname, const Jstr &colName ) const
 {
 	// prt(("s7383 _srv=%0x\n", _srv ));
 	if ( _srv ) {
@@ -3898,7 +3888,11 @@ const JagColumn* JagParser::getColumn( const Jstr &db, const Jstr &objname,
 		// prt(("s2208 schema->getColumn(db=%s objname=%s colname=%s\n", db.c_str(), objname.c_str(), colName.c_str() ));
 		return schema2->getColumn( db, objname, colName );
 	}
-
+	return NULL; // rc is false
+}
+#else
+const JagColumn* JagParser::getColumn( const Jstr &db, const Jstr &objname, const Jstr &colName ) const
+{
 	if ( _cli ) {
 		JagHashMap<AbaxString, JagTableOrIndexAttrs> *schemaMap = _cli->_schemaMap;
 		if ( ! schemaMap ) {
@@ -3924,9 +3918,11 @@ const JagColumn* JagParser::getColumn( const Jstr &db, const Jstr &objname,
 		 return &(*objAttr.schemaRecord.columnVector)[pos];
 	}
 
-	//prt(("s3040 no srv no cli\n" ));
 	return NULL; // rc is false
 }
+#endif
+***/
+
 
 bool JagParser::isPolyType( const Jstr &rcs )
 {
@@ -4038,6 +4034,8 @@ bool JagParser::isComplexType( const Jstr &rcs )
 	return false;
 }
 
+/******
+#ifdef JAG_SERVER_SIDE
 bool JagParser::isIndexCol( const Jstr &db, const Jstr &colName ) const
 {
 	if ( _srv ) {
@@ -4048,6 +4046,13 @@ bool JagParser::isIndexCol( const Jstr &db, const Jstr &colName ) const
 	}
 	return false;
 }
+#else
+bool JagParser::isIndexCol( const Jstr &db, const Jstr &colName ) const
+{
+	return false;
+}
+#endif
+*******/
 
 void JagParser::replaceChar( char *start, char oldc, char newc, char stopchar )
 {
@@ -6613,3 +6618,355 @@ bool JagParser::getMetrics( const JagStrSplitWithQuote &sp, int start, JagVector
 	return true;
 }
 
+
+// return n>0: OK ,  <=0 error
+// instr: "point3d(...)"  "polygon((...),(...))"
+// outstr: "CJAG=0=0=type=subtype  bbox data1 data2 data3 ..."
+int JagParser::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
+{
+	int cnt = 0;
+	Jstr othertype;
+	int rc = 0;
+	char *p = (char*)instr.c_str();
+	if ( ! p || *p == '\0' ) return 0;
+	if ( strncasecmp( p, "point(", 6 ) == 0 || strncasecmp( p, "point3d(", 8 ) == 0 ) {
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -10;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -381; } }
+		if ( sp.length() == 3 ) {
+			outstr = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
+		} else if ( sp.length() == 2 ) {
+			outstr = Jstr("CJAG=0=0=PT=d 0:0:0:0 ") + sp[0] + " " + sp[1];
+		} else {
+			outstr = "";
+			return -9;
+		}
+		++cnt;
+	} else if ( strncasecmp( p, "circle(", 7 ) == 0 ) {
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -20;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 3 ) { return -30; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -382; } }
+		outstr = Jstr("CJAG=0=0=CR=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2];
+		++cnt;
+	} else if ( strncasecmp( p, "square(", 7 )==0 ) {
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -20;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 3 ) { return -30; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -383; } }
+		if ( sp.length() <= 3 ) {
+			outstr = Jstr("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " 0.0";
+		} else {
+			outstr = Jstr("CJAG=0=0=SQ=d 0:0:0:0 ") + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+		}
+		++cnt;
+	} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
+		// cube( x y z radius )   inner circle radius
+		if ( strncasecmp( p, "cube", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_CUBE;
+		} else {
+			othertype =  JAG_C_COL_TYPE_SPHERE;
+		}
+
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -30;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 4 ) { return -32; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -384; } }
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		++cnt;
+		if ( othertype == JAG_C_COL_TYPE_CUBE ) {
+			Jstr nx, ny;
+			if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
+			if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
+			outstr += nx + " " + ny;
+		}
+	} else if ( strncasecmp( p, "circle3d(", 9 )==0
+				|| strncasecmp( p, "square3d(", 9 )==0 ) {
+		// circle3d( x y z radius nx ny )   inner circle radius
+		if ( strncasecmp( p, "circ", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_CIRCLE3D;
+		} else {
+			othertype =  JAG_C_COL_TYPE_SQUARE3D;
+		} 
+
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -40;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 4 ) { return -42; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -385; } }
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		Jstr nx, ny;
+		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
+		if ( sp.length() >= 6 ) { ny = sp[5]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+		++cnt;
+	} else if (  strncasecmp( p, "rectangle(", 10 )==0 || strncasecmp( p, "ellipse(", 8 )==0 ) {
+		// rectangle( x y width height nx ny) 
+		if ( strncasecmp( p, "rect", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_RECTANGLE;
+		} else {
+			othertype =  JAG_C_COL_TYPE_ELLIPSE;
+		}
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -45;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 4 ) { return -46; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -386; } }
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		Jstr nx;
+		if ( sp.length() >= 5 ) { nx = sp[4]; } else { nx="0.0"; }
+		outstr += nx;
+		++cnt;
+	} else if ( strncasecmp( p, "rectangle3d(", 12 )==0 || strncasecmp( p, "ellipse3d(", 10 )==0 ) {
+		// rectangle( x y z width height nx ny ) 
+		if ( strncasecmp( p, "rect", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_RECTANGLE3D;
+		} else {
+			othertype =  JAG_C_COL_TYPE_ELLIPSE3D;
+		}
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -55;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 5 ) { return -48; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -387; } }
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " ";
+		Jstr nx, ny;
+		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
+		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+		++cnt;
+	} else if (  strncasecmp( p, "box(", 4 )==0 || strncasecmp( p, "ellipsoid(", 10 )==0 ) {
+		// box( x y z width depth height nx ny ) 
+		if ( strncasecmp( p, "box", 3 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_BOX;
+		} else {
+			othertype =  JAG_C_COL_TYPE_ELLIPSOID;
+		}
+		while ( *p != '(' ) ++p;
+		++p;  // (p
+		if ( *p == 0 ) return -56;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 6 ) { return -49; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -388; } }
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5];
+		Jstr nx, ny;
+		if ( sp.length() >= 7 ) { nx = sp[6]; } else { nx="0.0"; }
+		if ( sp.length() >= 8 ) { ny = sp[7]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+		++cnt;
+	} else if ( strncasecmp( p, "cylinder(", 9 )==0 || strncasecmp( p, "cone(", 5 )==0 ) {
+		// cylinder( x y z r height  nx ny 
+		if ( strncasecmp( p, "cone", 4 )==0 ) {
+			othertype =  JAG_C_COL_TYPE_CONE;
+		} else {
+			othertype =  JAG_C_COL_TYPE_CYLINDER;
+		}
+		while ( *p != '(' ) ++p;
+		++p;  // (p
+		if ( *p == 0 ) return -58;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() < 5 ) { return -52; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -390; } }
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4];
+		Jstr nx, ny;
+		if ( sp.length() >= 6 ) { nx = sp[5]; } else { nx="0.0"; }
+		if ( sp.length() >= 7 ) { ny = sp[6]; } else { ny="0.0"; }
+		outstr += nx + " " + ny;
+		++cnt;
+	} else if ( strncasecmp( p, "line(", 5 )==0 ) {
+		// line( x1 y1 x2 y2)
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -61;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 4 ) { return -55; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -391; } }
+		othertype =  JAG_C_COL_TYPE_LINE;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3];
+		++cnt;
+	} else if ( strncasecmp( p, "line3d(", 7 )==0 ) {
+		// line3d(x1 y1 z1 x2 y2 z2)
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -64;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 6 ) { return -57; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -440; } }
+		othertype =  JAG_C_COL_TYPE_LINE3D;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5];
+		++cnt;
+	} else if ( strncasecmp( p, "linestring(", 11 )==0 ) {
+		while ( *p != '(' ) ++p;  ++p;
+		if ( *p == 0 ) return -64;
+		othertype =  JAG_C_COL_TYPE_LINESTRING;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 2 ) {  continue; }
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1];
+		}
+		++cnt;
+	} else if ( strncasecmp( p, "linestring3d(", 13 )==0 ) {
+		// linestring( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4)
+		//prt(("s2836 linestring3d( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -65;
+		othertype =  JAG_C_COL_TYPE_LINESTRING3D;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 3 ) {  continue; }
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+			++cnt;
+		}
+	} else if ( strncasecmp( p, "multipoint(", 11 )==0 ) {
+		// multipoint( x1 y1, x2 y2, x3 y3, x4 y4)
+		//prt(("s2834 multipoint( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p;  ++p;
+		if ( *p == 0 ) return -67;
+		othertype =  JAG_C_COL_TYPE_MULTIPOINT;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 2 ) {  continue; }
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1];
+			++cnt;
+		}
+	} else if ( strncasecmp( p, "multipoint3d(", 13 )==0 ) {
+		// multipoint3d( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4)
+		//prt(("s2836 multipoint3d( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -68;
+		othertype =  JAG_C_COL_TYPE_MULTIPOINT3D;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		JagStrSplit sp(p, ',', true );
+		int len = sp.length();
+		for ( int i = 0; i < len; ++i ) {
+			JagStrSplit ss( sp[i], ' ', true );
+			if ( ss.length() < 3 ) {  continue; }
+			outstr += Jstr(" ") + ss[0] + ":" + ss[1]  + ":" + ss[2];
+			++cnt;
+		}
+	} else if ( strncasecmp( p, "polygon(", 8 )==0 ) {
+		// polygon( ( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...) )
+		//prt(("s3834 polygon( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -72;
+		othertype =  JAG_C_COL_TYPE_POLYGON;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		//rc = JagParser::addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose );
+		Jstr pgonstr;
+		rc = JagParser::addPolygonData( pgonstr, p, false, true );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+		++cnt;
+	} else if ( strncasecmp( p, "polygon3d(", 10 )==0 ) {
+		// polygon( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
+		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -73;
+		othertype =  JAG_C_COL_TYPE_POLYGON3D;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		Jstr pgonstr;
+		rc = JagParser::addPolygon3DData( pgonstr, p, false, true );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+		++cnt;
+	} else if ( strncasecmp( p, "multipolygon(", 13 )==0 ) {
+		// multipolygon( (( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...)), ( (..), (..) ) )
+		prt(("s3834 multipolygon( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p;  // p: "( ((...), (...), (...)), (...), ... )
+		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		Jstr mgon;
+		rc = JagParser::addMultiPolygonData( mgon, p, false, false, false );
+		prt(("s3238 addMultiPolygonData mgon=[%s] rc=%d\n", mgon.c_str(), rc ));
+		if ( rc <= 0 ) return rc; 
+		outstr += mgon;
+		++cnt;
+	} else if ( strncasecmp( p, "multipolygon3d(", 10 )==0 ) {
+		// polygon( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
+		//prt(("s3835 polygon3d( p=[%s] )\n", p ));
+		while ( *p != '(' ) ++p;  // "(p ((...), (...), (...)), (...), ... ) 
+		othertype =  JAG_C_COL_TYPE_MULTIPOLYGON3D;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		Jstr mgon;
+		rc = JagParser::addMultiPolygonData( mgon, p, false, true, true );
+		if ( rc <= 0 ) return rc; 
+		outstr += mgon;
+		++cnt;
+	} else if ( strncasecmp( p, "multilinestring(", 16 )==0 ) {
+		// multilinestring( ( x1 y1, x2 y2, x3 y3, x4 y4), ( 2 3, 3 4, 9 8, 2 3 ), ( ...) )
+		//prt(("s3834 polygon( p=[%s]\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -74;
+		othertype =  JAG_C_COL_TYPE_MULTILINESTRING;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 ";
+		Jstr pgonstr;
+		rc = JagParser::addPolygonData( pgonstr, p, false, false );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+		++cnt;
+	} else if ( strncasecmp( p, "multilinestring3d(", 10 )==0 ) {
+		// multilinestring3d( ( x1 y1 z1, x2 y2 z2, x3 y3 z3, x4 y4 z4), ( 2 3 8, 3 4 0, 9 8 2, 2 3 8 ), ( ...) )
+		//prt(("s3835 multilinestring3d( p=[%s] )\n", p ));
+		while ( *p != '(' ) ++p; ++p;
+		if ( *p == 0 ) return -78;
+		othertype =  JAG_C_COL_TYPE_MULTILINESTRING3D;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 ";
+		Jstr pgonstr;
+		rc = JagParser::addPolygon3DData( pgonstr, p, false, false );
+		if ( rc <= 0 ) return rc; 
+		outstr += pgonstr;
+		++cnt;
+	} else if ( strncasecmp( p, "triangle(", 9 )==0 ) {
+		// triangle(x1 y1 x2 y2 x3 y3 )
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -82;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 6 ) { return -387; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -318; } }
+		othertype =  JAG_C_COL_TYPE_TRIANGLE;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5];
+		++cnt;
+	} else if ( strncasecmp( p, "triangle3d(", 11 )==0 ) {
+		// triangle3d(x1 y1 z1 x2 y2 z2 x3 y3 z3 )
+		while ( *p != '(' ) ++p; ++p;  // (p
+		if ( *p == 0 ) return -88;
+		JagParser::replaceChar(p, ',', ' ', ')' );
+		JagStrSplit sp(p, ' ', true );
+		if (  sp.length() != 9 ) { return -390; }
+		for ( int k=0; k < sp.length(); ++k ) { if ( sp[k].length() >= JAG_POINT_LEN ) { return -3592; } }
+		othertype =  JAG_C_COL_TYPE_TRIANGLE3D;
+		outstr = Jstr("CJAG=0=0=") + othertype + "=d 0:0:0:0:0:0 " + sp[0] + " " + sp[1] + " " + sp[2] + " " + sp[3] + " ";
+		outstr += sp[4] + " " + sp[5] + " " + sp[6] + " " + sp[7] + " " + sp[8];
+		++cnt;
+	}
+
+	return cnt;
+}

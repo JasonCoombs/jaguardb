@@ -47,7 +47,7 @@
 #include <JagParseParam.h>
 #include <JagIndexString.h>
 #include <JagSchemaRecord.h>
-#include <JaguarCPPClient.h>
+//#include <JaguarCPPClient.h>
 #include <JagVector.h>
 #include <JagDBServer.h>
 #include <JDFS.h>

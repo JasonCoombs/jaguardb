@@ -31,6 +31,9 @@
 #include <dirent.h>
 #include <math.h>
 
+#undef JAG_SERVER_SIDE 
+#define JAG_CLIENT_SIDE 1
+
 #include <abax.h>
 #include <JagCfg.h>
 #include <JagDef.h>
@@ -49,7 +52,6 @@
 #include <JagTextFileBuffReader.h>
 #include <JagUUID.h>
 #include <JagADB.h>
-//#include <HostMinMaxKey.h>
 #include <JagFastCompress.h>
 #include <JagThreadPool.h>
 #include <JagVector.h>
@@ -65,13 +67,13 @@
 #include <JagSQLMergeReader.h>
 #include <JagReplicateBackup.h>
 #include <JagParser.h>
-#include <JagUserRole.h>
-#include <JagGeom.h>
+#include <JagShape.h>
 #include <JagLineFile.h>
 #include <JagCrypt.h>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "JagSortLinePoints.h"
 
 // refer http://www.binarytides.com/winsock-socket-programming-tutorial/
 // for winsock2.h 
@@ -1175,7 +1177,7 @@ int JaguarCPPClient::query( const char *querys, bool replyFlag )
 	//_row->jsData = "";
 
 	jaguar_mutex_lock ( &_lineFileMutex );
-	if (  _parentCli->_lineFile ) {
+	if ( _parentCli && _parentCli->_lineFile ) {
 		_debug && prt(("c2088 jagdelete  _parentCli->_lineFile _parentCli=%0x\n", _parentCli ));
 		jagdelete(  _parentCli->_lineFile);
 		 _parentCli->_lineFile = NULL;
@@ -4767,7 +4769,8 @@ abaxint JaguarCPPClient::loadFile( const char *loadCommand )
 	JagParseAttribute jpa;
 	jpa.dfdbname = _dbname;
 	jpa.timediff = _tdiff;
-	JagParser parser( NULL, this );
+	//JagParser parser( NULL, this );
+	JagParser parser( (void*)this );
 	int rc = parser.parseCommand( jpa, loadCommand, &parseParam, reterr );
 	
 	if ( ! rc ) {
@@ -6793,12 +6796,12 @@ int JaguarCPPClient::formatReturnMessageForSpecialCommand( const JagParseParam &
 					" is renamed/added successfully";
 		else retmsg = Jstr("Table ") + parseParam.objectVec[0].tableName + " alter error";
 	} else if ( JAG_GRANT_OP == parseParam.opcode ) {
-		retmsg = Jstr("Permission [") + JagUserRole::convertManyToStr(parseParam.grantPerm) + 
+		retmsg = Jstr("Permission [") + convertManyToStr(parseParam.grantPerm) + 
 				"] for " + parseParam.grantUser;
 		if ( rc ) retmsg += " is granted successfully";
 		else retmsg += " is not granted";
 	} else if ( JAG_REVOKE_OP == parseParam.opcode ) {
-		retmsg = Jstr("Permission [") + JagUserRole::convertManyToStr(parseParam.grantPerm) + 
+		retmsg = Jstr("Permission [") + convertManyToStr(parseParam.grantPerm) + 
 				 "] for " + parseParam.grantUser;
 		if ( rc ) retmsg += " is revoked successfully";
 		else retmsg += " is not revoked";
@@ -6817,7 +6820,8 @@ int JaguarCPPClient::formatReturnMessageForSpecialCommand( const JagParseParam &
 int JaguarCPPClient::getParseInfo( const Jstr &cmd, JagParseParam &parseParam, Jstr &errmsg )
 {
 	JagParseAttribute jpa( NULL, _tdiff, _tdiff, _dbname );
-	JagParser parser( NULL, this );
+	//JagParser parser( NULL, this );
+	JagParser parser( (void*)this );
 	if ( !parser.parseCommand( jpa, cmd, &parseParam, errmsg ) ) {
 		return 0;
 	}
@@ -7046,7 +7050,8 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 		//prt(("s2727 sortedName i=%d name=[%s]\n", pos, colName2.c_str() ));
 	}
 
-	JagGeo::sortLinePoints<JagNameIndex>( sortedName, otherSize );
+	//JagGeo::sortLinePoints<JagNameIndex>( sortedName, otherSize );
+	sortLinePoints<JagNameIndex>( sortedName, otherSize );
 	//prt(("s871 done sortLinePoints otherSize=%d\n", otherSize ));
 	
 	// insert into table related cmds, need to reformat
@@ -8011,6 +8016,10 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 int JaguarCPPClient::processMultiServerCommands( const char *qstr, JagParseParam &parseParam, Jstr &errmsg )
 {	
 	_debug && prt(("c8823 processMultiServerCommands [%s]\n", qstr ));
+	if ( ! _mapLock ) {
+		errmsg = Jstr("E3928 error no connection yet");
+		return 0;
+	}
 
 	int rc, isInsertSelect = 0;
 	AbaxString hdbobj;
@@ -8942,7 +8951,8 @@ int JaguarCPPClient::formatSendQuery( JagParseParam &parseParam, JagParseParam &
 	JagParseAttribute jpa;
 	jpa.dfdbname = _dbname;
 	jpa.timediff = _tdiff;
-	JagParser parser(NULL, this);
+	//JagParser parser(NULL, this);
+	JagParser parser( (void*)this);
 	rc = parser.parseCommand( jpa, checkquery.c_str(), &parseParam2, errmsg2 );
 	if ( !rc ) {
 		errmsg = "E5230 Error select column [";
@@ -10293,7 +10303,7 @@ Jstr JaguarCPPClient::convertToJson(const char *buf)
 		if ( csp.length() < 4 ) break;
 		p = value.secondTokenStart(' ');
 		//prt(("c3380 secondTokenStart p=[%s]\n", p ));
-		json = JagGeo::makeGeoJson(csp, value.secondTokenStart(' ') );
+		json = makeGeoJson(csp, value.secondTokenStart(' ') );
 		//prt(("c3318 json=[%s]\n", json.c_str() ));
 		if ( res.size() < 1 ) {
 			res = dbtabcol + "=" + json;

@@ -696,7 +696,7 @@ abaxint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequ
 	
 	if ( timeoutFlag ) {
 		Jstr timeoutStr = "Index select command has timed out. Results have been truncated;";
-		JagTable::sendMessage( req, timeoutStr.c_str(), "ER" );
+		sendMessage( req, timeoutStr.c_str(), "ER" );
 	}
 	if ( pcli ) {
 		pcli->close();

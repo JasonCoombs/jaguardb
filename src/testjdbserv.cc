@@ -71,26 +71,16 @@
 #include <AbaxCStr.h>
 #include <base64.h>
 #include <JagGeom.h>
-//#include <JagBtree.h>
-//#include <btree_map.h>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/error/en.h"
 #include <JagLineFile.h>
 #include <JagParser.h>
-/**
-#include <JagCGAL.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/convex_hull_2.h>
-#include <CGAL/convex_hull_3.h>
-**/
-//#include <CGAL/Simple_cartesian.h>
+#include <JagSortLinePoints.h>
 
 abaxint test_strchrnumskip( const char *str, char ch );
-
 using namespace std;
-
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct TPass {
@@ -2858,7 +2848,7 @@ void test_geo( int N )
 		points[i].color = JAG_RED;
 	}
 
-	int nrc = JagGeo::sortLinePoints( points, N );
+	int nrc = sortLinePoints( points, N );
 	clock.stop();
 	printf("test_geo %d computes sortIntersectLinePoints used %d millisecs nrc=%d\n", N, clock.elapsed(), nrc );
 	delete [] points;
@@ -3284,7 +3274,7 @@ void test_json( int N )
 	const char *str = "0.0:0.0:500.0:600.0 0.0:0.0 20.0:0.0 8.0:9.0 0.0:0.0| 1.0:2.0 2.0:3.0 1.0:2.0|2:3 9:0 2:4 20:399";
 
 	//Jstr json= JagGeo::makeJsonPolygon("Polygon", sp, str, true );
-	Jstr json= JagGeo::makeJsonPolygon("Polygon", sp, str, false );
+	Jstr json= makeJsonPolygon("Polygon", sp, str, false );
 	prt(("json=[%s]\n", json.c_str() ));
 
 	const char *js = "{\"type\":\"Polygon\",\"coordinates\":[[[0.0,0.0],[\"20.0\",\"0.0\"],[\"8.0\",\"9.0\"],[\"0.0\",\"0.0\"]],[[\"1.0\",\"2.0\"],[\"2.0\",\"3.0\"],[\"1.0\",\"2.0\"]],[[\"2\",\"3\"],[\"9\",\"0\"],[\"2\",\"4\"],[\"20\",\"399\"]]]}";

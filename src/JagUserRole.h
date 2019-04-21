@@ -43,8 +43,6 @@ class JagUserRole : public JagFixKV
                  const Jstr &col, Jstr &rowFilter );
 
 	Jstr showRole( const AbaxString &userid );
-	static Jstr convertToStr( const Jstr  &pm );
-	static Jstr convertManyToStr( const Jstr &pm );
 
 	protected:
 	  void getDbTabCol( const JagParseParam &parseParam, int i, const JagStrSplit &sp2,

@@ -16,11 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with JaguarDB (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef _sort_line_points_h_
+#define _sort_line_points_h_
+
 #define  MAX_LEVELS  300
 template <class POINT>
-int JagGeo::sortLinePoints( POINT arr[], int elements )
+int sortLinePoints( POINT arr[], int elements )
 {
-    // int  piv, beg[MAX_LEVELS], end[MAX_LEVELS], i=0, L, R, swap;
     int  beg[MAX_LEVELS], end[MAX_LEVELS], i=0, L, R, swap;
 	POINT piv;
     beg[0]=0; end[0]=elements;
@@ -80,7 +83,7 @@ int JagGeo::sortLinePoints( POINT arr[], int elements )
 }
 
 template <class POINT>
-int JagGeo::JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec )
+int JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec )
 {
 	int i=0; int j=0;
 	int cnt = 0;
@@ -100,9 +103,12 @@ int JagGeo::JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, J
 
 
 template <class POINT>
-int JagGeo::JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec )
+int JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec )
 {
-	sortLinePoints( arr1, len1 );
-	sortLinePoints( arr2, len2 );
-	JagSortedSetJoin( arr1, len1,  arr2, len2, vec );
+	sortLinePoints<POINT>( arr1, len1 );
+	sortLinePoints<POINT>( arr2, len2 );
+	JagSortedSetJoin<POINT>( arr1, len1,  arr2, len2, vec );
 }
+
+#endif
+

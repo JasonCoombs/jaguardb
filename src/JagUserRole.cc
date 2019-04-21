@@ -444,42 +444,6 @@ Jstr JagUserRole::showRole( const AbaxString &uid )
 	return perm.c_str();
 }
 
-Jstr JagUserRole::convertToStr( const Jstr  &pm )
-{
-	Jstr str;
-	if ( pm == JAG_ROLE_SELECT  ) {
-		str = "select";
-	} else if ( pm == JAG_ROLE_INSERT ) {
-		str = "insert";
-	} else if ( pm == JAG_ROLE_UPDATE ) {
-		str = "update";
-	} else if ( pm == JAG_ROLE_DELETE ) {
-		str = "delete";
-	} else if ( pm == JAG_ROLE_CREATE ) {
-		str = "create";
-	} else if ( pm == JAG_ROLE_DROP ) {
-		str = "drop";
-	} else if ( pm == JAG_ROLE_ALTER ) {
-		str = "alter";
-	} else if ( pm == JAG_ROLE_ALL  ) {
-		str = "all";
-	}
-
-	return str;
-}
-
-// pms "A,U,D"
-Jstr JagUserRole::convertManyToStr( const Jstr &pms )
-{
-	Jstr str;
-	JagStrSplit sp( pms, ',', true );
-	for ( int i=0; i < sp.length(); ++i ) {
-		str += convertToStr( sp[i] ) + ",";
-	}
-	return trimTailChar(str, ',' );
-}
-
-
 void JagUserRole::getDbTabCol( const JagParseParam &parseParam, int i, const JagStrSplit &sp2, 
 								Jstr &db, Jstr &tab, Jstr &col )
 {

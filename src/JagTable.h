@@ -121,9 +121,9 @@ class JagTable
 	int formatCreateIndex( JagIndex *pindex );
 	static void *parallelCreateIndexStatic( void * ptr );
 
-	static abaxint sendMessage( const JagRequest &req, const char *mesg, const char *type );
-	static abaxint sendMessageLength( const JagRequest &req, const char *mesg, abaxint len, const char *type );
-	static abaxint sendMessageLength2( JagSession *session, const char *mesg, abaxint len, const char *type );
+	//static abaxint sendMessage( const JagRequest &req, const char *mesg, const char *type );
+	//static abaxint sendMessageLength( const JagRequest &req, const char *mesg, abaxint len, const char *type );
+	//static abaxint sendMessageLength2( JagSession *session, const char *mesg, abaxint len, const char *type );
 
 	/**** hit invalid fastbin entry bug
 	static void fillCmdParse( int objType, void *objPtr, int i, abaxint gbvsendlen, JagParseParam *pparam[], 

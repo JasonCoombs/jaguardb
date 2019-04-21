@@ -39,14 +39,12 @@
 #include <JagStrSplitWithQuote.h>
 #include <JagColumn.h>
 
-class JaguarCPPClient;
-class JagDBServer;
 class CreateAttribute;
 
 class JagParser
 {
   public:
-    JagParser( const JagDBServer *srv = NULL, const JaguarCPPClient *cli = NULL );
+    JagParser( void * obj );
 	bool parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, 
 						Jstr &errmsg );
 	const JagColumn* getColumn( const JagParseParam *pparam, const Jstr &colName ) const;
@@ -56,7 +54,6 @@ class JagParser
 	static bool  isVectorGeoType( const Jstr &rcs );
 	static int   vectorShapeCoordinates( const Jstr &rcs );
 	static bool  isPolyType( const Jstr &rcs );
-	bool isIndexCol( const Jstr &db, const Jstr &colName ) const;
 	static Jstr getColumns( const char *str );
 	static int  checkLineStringData( const char *p );
 	static int  checkLineString3DData( const char *p );
@@ -92,6 +89,8 @@ class JagParser
 	static void removeEndUnevenBracket( char *str );
 	static void removeEndUnevenBracketAll( char *str );
 	static void replaceChar( char *start, char oldc, char newc, char stopchar );
+	static int  convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr );
+
 
 	
   private:
@@ -136,7 +135,6 @@ class JagParser
 	int getEachRangeFieldLength( int srid ) const;
 	static bool getMetrics( const JagStrSplitWithQuote &sp, int start, JagVector<Jstr> &metrics );
 
-
 	
 	// data members
 	char *_gettok, *_saveptr;
@@ -144,9 +142,8 @@ class JagParser
 	JagStrSplitWithQuote _splitwq;
 	JagParseParam *_ptrParam;
 	JagCfg *_cfg;
+	void *_obj;
 
-	const JagDBServer *_srv;
-	const JaguarCPPClient *_cli;
 	JagColumn   _dummy;
 };  // end of JagParser
 

@@ -28,7 +28,7 @@
 #include <JagSingleBuffReader.h>
 #include <JagBuffBackReader.h>
 #include <JagDBConnector.h>
-#include <JagTable.h>
+//#include <JagTable.h>
 #include <JagFileMgr.h>
 #include <JagSingleBuffWriter.h>
 #include <JagUtil.h>
@@ -1421,7 +1421,7 @@ bool JagDiskArrayServer::checkFileOrder( const JagRequest &req )
 	JagBuffReader br( this, _arrlen, KEYLEN, VALLEN, _nthserv*_arrlen, 0, rlimit );
 	while ( br.getNext( keyvalbuf, KEYVALLEN, ipos ) ) { 
 		if ( ipos*100/_arrlen >= percnt ) {
-			JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+			sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 			percnt += 5;
 		}
 		if ( keybuf[0] == '\0' ) {
@@ -1438,7 +1438,7 @@ bool JagDiskArrayServer::checkFileOrder( const JagRequest &req )
 		}
 	}
 	sendmsg = _pdbobj + " check 100\% complete.";
-	JagTable::sendMessage( req, sendmsg.c_str(), "OK" );
+	sendMessage( req, sendmsg.c_str(), "OK" );
 	free( keyvalbuf );
 	return 1;
 }
@@ -1511,7 +1511,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf1, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1524,7 +1524,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf0, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1539,7 +1539,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf2, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1552,7 +1552,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf0, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1566,7 +1566,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			jda.writeit( msg, buf0, KEYVALLEN );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1580,7 +1580,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			updateCorrectDataBlockIndex( buf0, pos0, tpair, lastBlock );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1594,7 +1594,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 2;
@@ -1606,7 +1606,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			// order of 5-4-5, delete first 5, window to 4-5-?
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1621,7 +1621,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos0*KEYVALLEN);
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 2;
@@ -1634,7 +1634,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			updateCorrectDataBlockIndex( buf0, pos0, tpair, lastBlock );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1647,7 +1647,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			updateCorrectDataBlockIndex( buf0, pos0, tpair, lastBlock );
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 1;
@@ -1660,7 +1660,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos1*KEYVALLEN);
 			raypwrite(_jdfs, nullbuf, KEYVALLEN, pos2*KEYVALLEN);
 			if ( pos2*100/_arrlen >= percnt ) {
-				JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+				sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 				percnt += 5;
 			}
 			errorcnt += 2;
@@ -1687,7 +1687,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
 			errorcnt += 1;
 		}
 		if ( pos2*100/_arrlen >= percnt ) {
-			JagTable::sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
+			sendMessage( req, Jstr(sendmsg+intToStr(percnt)+"% ...").c_str(), "OK" );
 			percnt += 5;
 		}
 	} 
@@ -1709,7 +1709,7 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
     	prt(("s1723 %s\n", sendmsg.c_str() ));
     
     	sendmsg =  _pdbobj + " misplaced records are being replaced again ...";
-    	JagTable::sendMessage( req, sendmsg.c_str(), "OK" );
+    	sendMessage( req, sendmsg.c_str(), "OK" );
     	// finish build index and remove error-ordered data, then insert those data again
     	abaxint icnt = 0;
     	while ( jda.readit( data ) ) {
@@ -1723,9 +1723,9 @@ abaxint JagDiskArrayServer::orderRepair( const JagRequest &req )
     	prt(("s1724 %s\n", sendmsg.c_str() ));
 
     	sendmsg = _pdbobj + " misplaced records have all been corrected";
-    	JagTable::sendMessage( req, sendmsg.c_str(), "OK" );
+    	sendMessage( req, sendmsg.c_str(), "OK" );
 	} else {
-    	JagTable::sendMessage( req, "All records are in right order. None are replaced", "OK" );
+    	sendMessage( req, "All records are in right order. None are replaced", "OK" );
 	}
 
 	return errorcnt;

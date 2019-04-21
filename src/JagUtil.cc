@@ -4049,3 +4049,1035 @@ void makeSQLHeader( char *sqlhdr )
 	sprintf(sqlhdr, "%0*d", 5, rand()%100000);
 }
 
+
+// sp: OJAG=0=test.lstr.ls=LS guarantee 3 '=' signs
+// str: "x:y x:y x:y ..." or "x:y:z x:y:z x:y:z ..."
+Jstr makeGeoJson( const JagStrSplit &sp, const char *str )
+{
+	//prt(("s3391 makeGeoJson sp[3]=[%s]\n", sp[3].c_str() ));
+	//prt(("s3392 sp.print: \n" ));
+	//sp.print();
+
+	if ( sp[3] == JAG_C_COL_TYPE_LINESTRING ) {
+		return makeJsonLineString("LineString", sp, str );
+	} else if ( sp[3] == JAG_C_COL_TYPE_LINESTRING3D ) {
+		return makeJsonLineString3D( "LineString", sp, str );
+	} else if ( sp[3] == JAG_C_COL_TYPE_MULTIPOINT ) {
+		return makeJsonLineString("MultiPoint", sp, str );
+	} else if ( sp[3] == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		return makeJsonLineString3D("MultiPoint", sp, str );
+	} else if ( sp[3] == JAG_C_COL_TYPE_POLYGON ) {
+		return makeJsonPolygon( "Polygon", sp, str, false );
+	} else if ( sp[3] == JAG_C_COL_TYPE_POLYGON3D ) {
+		return makeJsonPolygon( "Polygon", sp, str, true );
+	} else if ( sp[3] == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		return makeJsonPolygon("MultiLineString", sp, str, false );
+	} else if ( sp[3] == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		return makeJsonPolygon( "MultiLineString", sp, str, true );
+	} else if ( sp[3] == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		return makeJsonMultiPolygon( "MultiPolygon", sp, str, false );
+	} else if ( sp[3] == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		return makeJsonMultiPolygon( "MultiPolygon", sp, str, true );
+	} else {
+		return makeJsonDefault( sp, str) ;
+	}
+}
+
+/******************************************************************
+** GeoJSON supports the following geometry types: 
+** Point, LineString, Polygon, MultiPoint, MultiLineString, and MultiPolygon. 
+** Geometric objects with additional properties are Feature objects. 
+** Sets of features are contained by FeatureCollection objects.
+** https://tools.ietf.org/html/rfc7946
+*******************************************************************/
+
+// sp: OJAG=0=test.lstr.ls=LS guarantee 3 '=' signs
+// str: "xmin:ymin:xmax:ymax x:y x:y x:y ..." 
+/*********************
+    {
+       "type": "Feature",
+       "bbox": [-10.0, -10.0, 10.0, 10.0],
+       "geometry": {
+           "type": "LineString",
+           "coordinates": [
+                   [-10.0, -10.0],
+                   [10.0, -10.0],
+                   [10.0, 10.0],
+                   [-10.0, -10.0]
+           ]
+       }
+       //...
+    }
+
+    {
+       "type": "Feature",
+       "bbox": [-10.0, -10.0, 10.0, 10.0],
+       "geometry": {
+           "type": "Polygon",
+           "coordinates": [
+               [
+                   [-10.0, -10.0],
+                   [10.0, -10.0],
+                   [10.0, 10.0],
+                   [-10.0, -10.0]
+               ]
+           ]
+       }
+       //...
+    }
+****************/
+Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *str )
+{
+	//prt(("s2980 makeJsonLineString str=[%s]\n", str ));
+	const char *p = str;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
+	if ( *p == '\0' ) return "";
+
+	Jstr s;
+	rapidjson::StringBuffer bs;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
+	writer.StartObject();
+	writer.Key("type");
+	writer.String("Feature");
+
+	JagStrSplit bsp( Jstr(str, p-str), ':' );
+	if ( bsp.length() == 4 ) {
+		writer.Key("bbox");
+		writer.StartArray();
+		writer.Double( jagatof(bsp[0].c_str()) );
+		writer.Double( jagatof(bsp[1].c_str()) );
+		writer.Double( jagatof(bsp[2].c_str()) );
+		writer.Double( jagatof(bsp[3].c_str()) );
+		writer.EndArray();
+	} else if ( bsp.length() == 6 ) {
+		writer.Key("bbox");
+		writer.StartArray();
+		writer.Double( jagatof(bsp[0].c_str()) );
+		writer.Double( jagatof(bsp[1].c_str()) );
+		writer.Double( jagatof(bsp[2].c_str()) );
+		writer.Double( jagatof(bsp[3].c_str()) );
+		writer.Double( jagatof(bsp[4].c_str()) );
+		writer.Double( jagatof(bsp[5].c_str()) );
+		writer.EndArray();
+	}
+
+	while ( isspace(*p) ) ++p; //  "x:y x:y x:y ..."
+	char *q = (char*)p;
+	prt(("s1038 p=[%s]\n", p ));
+
+	writer.Key("geometry");
+	writer.StartObject();
+	    writer.Key("type");
+	    writer.String( title.c_str() );
+		writer.Key("coordinates");
+		writer.StartArray(); 
+		while( *q != '\0' ) {
+			//prt(("s2029 q=[%s]\n", q ));
+			writer.StartArray(); 
+			while (*q != ':' && *q != '\0' ) ++q;
+			if ( *q == '\0' ) {
+				writer.EndArray(); 
+				break;
+			}
+			s = Jstr(p, q-p);
+			prt(("s3941 s=[%s]\n", s.s() ));
+			//writer.String( p );
+			//writer.String( s.c_str(), s.size() );
+			writer.Double( jagatof(s.c_str()) );
+			//*q = ':';
+
+			++q;
+			//prt(("s2039 q=[%s]\n", q ));
+			p = q;
+			//while (*q != ' ' && *q != '\0' ) ++q;
+			while ( *q != ' ' && *q != ':' && *q != '\0' ) ++q;
+			if ( *q == '\0' ) {
+				//writer.String( p );
+				writer.Double( jagatof(p) );
+				writer.EndArray(); 
+				break;
+			}
+			// *q == ':' or ' '
+
+			s = Jstr(p, q-p);
+			prt(("s3942 s=[%s]\n", s.s() ));
+			//prt(("s2339 q=[%s]\n", q ));
+			//writer.String( p );
+			//writer.String( s.c_str(), s.size() );
+			writer.Double( jagatof(s.c_str()) );
+			writer.EndArray(); 
+			//*q = ' ';
+
+			while (*q != ' ' && *q != '\0' ) ++q;
+			while (*q == ' ' ) ++q;
+			p = q;
+			//prt(("s1336 q=[%s]\n", q ));
+		}
+		writer.EndArray(); 
+	writer.EndObject();
+
+	writer.Key("properties");
+	writer.StartObject();
+	    writer.Key("column");
+	    writer.String( sp[2].c_str() );
+	    writer.Key("srid");
+	    writer.String( sp[1].c_str() );
+	    writer.Key("dimension");
+	    writer.String( "2" );
+	writer.EndObject();
+
+	writer.EndObject();
+
+	//prt(("s0301 got result=[%s]\n", (char*)bs.GetString() ));
+
+	return (char*)bs.GetString();
+}
+
+Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char *str )
+{
+	//prt(("s0823 makeJsonLineString3D str=[%s]\n", str ));
+
+	const char *p = str;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
+	if ( *p == '\0' ) return "";
+
+	Jstr s;
+	rapidjson::StringBuffer bs;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
+	writer.StartObject();
+	writer.Key("type");
+	writer.String("Feature");
+
+	JagStrSplit bsp( Jstr(str, p-str), ':' );
+	if ( bsp.length() >= 6 ) {
+		writer.Key("bbox");
+		writer.StartArray();
+		writer.Double( jagatof(bsp[0].c_str()) );
+		writer.Double( jagatof(bsp[1].c_str()) );
+		writer.Double( jagatof(bsp[2].c_str()) );
+		writer.Double( jagatof(bsp[3].c_str()) );
+		writer.Double( jagatof(bsp[4].c_str()) );
+		writer.Double( jagatof(bsp[5].c_str()) );
+		writer.EndArray();
+	}
+
+	while ( isspace(*p) ) ++p;  // "x:y:z x:y:z x:y:z ..."
+	char *q = (char*)p;
+
+	writer.Key("geometry");
+	writer.StartObject();
+	    writer.Key("type");
+	    // writer.String("LineString");
+	    writer.String( title.c_str() );
+		writer.Key("coordinates");
+		writer.StartArray(); 
+		while( *q != '\0' ) {
+			//prt(("s8102 q=[%s]\n", q ));
+			writer.StartArray(); 
+
+			while (*q != ':' && *q != '\0' ) ++q;
+			if ( *q == '\0' ) {
+				writer.EndArray(); 
+				break;
+			}
+			//*q = '\0';
+			s = Jstr(p, q-p);
+			//writer.String( p );
+			//writer.String( s.c_str(), s.size() );
+			writer.Double( jagatof(s.c_str()) );
+			//*q = ':';
+
+			++q;
+			//prt(("s8103 q=[%s]\n", q ));
+			p = q;
+			while (*q != ':' && *q != '\0' ) ++q;
+			if ( *q == '\0' ) {
+				writer.EndArray(); 
+				break;
+			}
+			//*q = '\0';
+			s = Jstr(p, q-p);
+			//writer.String( p );
+			//writer.String( s.c_str(), s.size() );
+			writer.Double( jagatof(s.c_str()) );
+			//*q = ':';
+
+			++q;
+			//prt(("s8104 q=[%s]\n", q ));
+			p = q;
+			//while (*q != ' ' && *q != '\0' ) ++q;
+			while ( *q != ' ' && *q != ':' && *q != '\0' ) ++q;
+			if ( *q == '\0' ) {
+				//writer.String( p );
+				writer.Double( jagatof(p) );
+				writer.EndArray(); 
+				break;
+			}
+
+			//*q = '\0';
+			s = Jstr(p, q-p);
+			// writer.String( p );
+			//writer.String( s.c_str(), s.size() );
+			writer.Double( jagatof(s.c_str()) );
+			writer.EndArray(); 
+			//*q = ' ';
+
+			while (*q != ' ' && *q != '\0' ) ++q;
+			while (*q == ' ' ) ++q;
+			//prt(("s8105 q=[%s]\n", q ));
+			p = q;
+		}
+		writer.EndArray(); 
+	writer.EndObject();
+
+	writer.Key("properties");
+	writer.StartObject();
+	    writer.Key("column");
+	    writer.String( sp[2].c_str() );
+	    writer.Key("srid");
+	    writer.String( sp[1].c_str() );
+	    writer.Key("dimension");
+	    writer.String( "3" );
+	writer.EndObject();
+
+	writer.EndObject();
+
+	return (char*)bs.GetString();
+}
+
+/********************************************************
+{
+   "type": "Polygon",
+   "coordinates": [
+       [ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ],
+       [ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
+   ]
+}
+********************************************************/
+Jstr makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str, bool is3D )
+{
+	//prt(("s7081 makeJsonPolygon str=[%s] is3D=%d\n", str, is3D ));
+
+	const char *p = str;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
+	if ( *p == '\0' ) return "";
+
+	rapidjson::StringBuffer bs;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
+	writer.StartObject();
+	writer.Key("type");
+	writer.String("Feature");
+
+	Jstr bbox(str, p-str);
+	//prt(("s5640 bbox=[%s]\n", bbox.c_str() ));
+	JagStrSplit bsp( bbox, ':' );
+	//prt(("s5732 bsp.len=%d\n", bsp.length() ));
+	if ( bsp.length() == 4 ) {
+		writer.Key("bbox");
+		writer.StartArray();
+		writer.Double( jagatof(bsp[0].c_str()) );
+		writer.Double( jagatof(bsp[1].c_str()) );
+		writer.Double( jagatof(bsp[2].c_str()) );
+		writer.Double( jagatof(bsp[3].c_str()) );
+		writer.EndArray();
+	} else if ( bsp.length() == 6 ) {
+		writer.Key("bbox");
+		writer.StartArray();
+		writer.Double( jagatof(bsp[0].c_str()) );
+		writer.Double( jagatof(bsp[1].c_str()) );
+		writer.Double( jagatof(bsp[2].c_str()) );
+		writer.Double( jagatof(bsp[3].c_str()) );
+		writer.Double( jagatof(bsp[4].c_str()) );
+		writer.Double( jagatof(bsp[5].c_str()) );
+		writer.EndArray();
+	}
+
+	while ( isspace(*p) ) ++p; //  "x:y x:y x:y ..."
+	char *q = (char*)p;
+	Jstr s;
+	//int level = 0;
+
+	writer.Key("geometry");
+	writer.StartObject();
+	    writer.Key("type");
+	    //writer.String("Polygon");
+	    writer.String( title.c_str() );
+		writer.Key("coordinates");
+		writer.StartArray(); 
+		//++level;
+		bool startRing = true;
+		while( *q != '\0' ) {
+			while (*q == ' ' ) ++q; 
+			p = q;
+			//prt(("s2029 q=[%s] level=%d p=[%s]\n", q, level, p ));
+			if ( startRing ) {
+				writer.StartArray(); 
+				//++level;
+				startRing = false;
+			}
+
+			while (*q != ':' && *q != '\0' && *q != '|' ) ++q;
+			//prt(("s2132 q=[%s] level=%d\n", q, level ));
+			if ( *q == '\0' ) {
+				writer.EndArray(); // outeraray
+				//--level;
+				//prt(("s3362 level=%d break\n", level ));
+				break;
+			}
+			//*q = '\0';
+			//s = Jstr(p, q-p);
+
+			if ( *q == '|' ) {
+				writer.EndArray(); // outeraray
+				startRing = true;
+				//--level;
+				//prt(("s3462 level=%d continue\n", level ));
+				++q;
+				p = q;
+				continue;
+			}
+
+			s = Jstr(p, q-p);
+
+			writer.StartArray(); 
+			//++level;
+			//prt(("s6301 write xcoord s=[%s]\n", s.c_str() ));
+			//writer.String( p );   // x-coord
+			//writer.String( s.c_str(), s.size() );   // x-coord
+			writer.Double( jagatof(s.c_str()) );
+			//*q = save;
+
+			++q;
+			p = q;
+			//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
+			if ( is3D ) {
+				while ( *q != ':' && *q != '\0' && *q != '|' ) ++q;
+			} else {
+				//while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
+				while ( *q != ' ' && *q != ':' && *q != '\0' && *q != '|' ) ++q;
+			}
+
+			s = Jstr(p, q-p);
+			//prt(("s6302 write ycoord s=[%s]\n", s.c_str() ));
+			//writer.String( s.c_str(), s.size() );   // y-coord
+			writer.Double( jagatof(s.c_str()) );
+
+			if ( is3D && *q != '\0' ) {
+				++q;
+				p = q;
+				//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
+				//while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
+				while ( *q != ' ' && *q != ':' && *q != '\0' && *q != '|' ) ++q;
+				//prt(("s6303 write zcoord s=[%s]\n", s.c_str() ));
+				s = Jstr(p, q-p);
+				//writer.String( s.c_str(), s.size() );   // z-coord
+				writer.Double( jagatof(s.c_str()) );
+			}
+
+			writer.EndArray(); // inner raray
+			//--level;
+
+			if ( *q == '\0' ) {
+				writer.EndArray(); // outeraray
+				//--level;
+				//prt(("s3162 level=%d break\n", level ));
+				break;
+			}
+
+			if ( *q == '|' ) {
+				writer.EndArray(); // outer raray
+				startRing = true;
+				//--level;
+				//prt(("s1162 level=%d continue p=[%s]\n", level, p ));
+				++q;
+				p = q;
+				continue;
+			}
+
+			while (*q != ' ' && *q != '\0' ) ++q;  // goto next x:y coord
+			while (*q == ' ' ) ++q;  // goto next x:y coord
+			//prt(("s2339 q=[%s]\n", q ));
+			if ( *q == '\0' ) {
+				writer.EndArray(); // outeraray
+				//--level;
+				//prt(("s5862 level=%d break \n", level ));
+				break;
+			}
+
+			p = q;
+		}
+
+		writer.EndArray(); 
+		//--level;
+		//prt(("s5869 level=%d outside loop \n", level ));
+	writer.EndObject();
+
+	writer.Key("properties");
+	writer.StartObject();
+	    writer.Key("column");
+	    writer.String( sp[2].c_str() );
+	    writer.Key("srid");
+	    writer.String( sp[1].c_str() );
+	    writer.Key("dimension");
+		if ( is3D ) {
+	    	writer.String( "3" );
+		} else {
+	    	writer.String( "2" );
+		}
+	writer.EndObject();
+
+	writer.EndObject();
+
+	//prt(("s0303 got result=[%s]\n", (char*)bs.GetString() ));
+
+	return (char*)bs.GetString();
+}
+
+/***********************************************************************************
+{
+   "type": "MultiPolygon",
+   "coordinates": [
+       [
+           [ [102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0] ]
+       ],
+       [
+           [ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ],
+           [ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
+       ]
+   ]
+}
+***********************************************************************************/
+Jstr makeJsonMultiPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str, bool is3D )
+{
+	//prt(("s7084 makeJsonMultiPolygon str=[%s] is3D=%d\n", str, is3D ));
+
+	const char *p = str;
+	//while ( *p != ' ' && *p != '\0' ) ++p;
+	if ( *p == '\0' ) return "";
+
+	rapidjson::StringBuffer bs;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(bs);
+	writer.StartObject();
+	writer.Key("type");
+	writer.String("Feature");
+
+	Jstr bbox(str, p-str);
+	//prt(("s5640 bbox=[%s]\n", bbox.c_str() ));
+	JagStrSplit bsp( bbox, ':' );
+	//prt(("s5732 bsp.len=%d\n", bsp.length() ));
+	if ( bsp.length() == 4 ) {
+		writer.Key("bbox");
+		writer.StartArray();
+		writer.Double( jagatof(bsp[0].c_str()) );
+		writer.Double( jagatof(bsp[1].c_str()) );
+		writer.Double( jagatof(bsp[2].c_str()) );
+		writer.Double( jagatof(bsp[3].c_str()) );
+		writer.EndArray();
+	} else if ( bsp.length() == 6 ) {
+		writer.Key("bbox");
+		writer.StartArray();
+		writer.Double( jagatof(bsp[0].c_str()) );
+		writer.Double( jagatof(bsp[1].c_str()) );
+		writer.Double( jagatof(bsp[2].c_str()) );
+		writer.Double( jagatof(bsp[3].c_str()) );
+		writer.Double( jagatof(bsp[4].c_str()) );
+		writer.Double( jagatof(bsp[5].c_str()) );
+		writer.EndArray();
+	}
+
+	while ( isspace(*p) ) ++p; //  "x:y x:y x:y ..."
+	char *q = (char*)p;
+	Jstr s;
+	//int level = 0;
+
+	writer.Key("geometry");
+	writer.StartObject();
+	    writer.Key("type");
+	    writer.String( title.c_str() );
+		writer.Key("coordinates");
+		writer.StartArray(); 
+		//++level;
+		bool startPolygon = true;
+		bool startRing = true;
+		while( *q != '\0' ) {
+			while (*q == ' ' ) ++q; 
+			p = q;
+			//prt(("s2029 q=[%s] level=%d p=[%s]\n", q, level, p ));
+
+			if ( startPolygon ) {
+				writer.StartArray(); 
+				//++level;
+				startPolygon = false;
+			}
+
+			if ( startRing ) {
+				writer.StartArray(); 
+				//++level;
+				startRing = false;
+			}
+
+			while (*q != ':' && *q != '\0' && *q != '|' && *q != '!' ) ++q;
+			//prt(("s2132 q=[%s] level=%d\n", q, level ));
+			if ( *q == '\0' ) {
+				writer.EndArray(); // outeraray
+				writer.EndArray(); // outeraray
+				//--level;
+				//--level;
+				//prt(("s3362 level=%d break\n", level ));
+				break;
+			}
+
+			if ( *q == '|' ) {
+				writer.EndArray(); // outeraray
+				startRing = true;
+				//--level;
+				//prt(("s3462 level=%d continue\n", level ));
+				++q;
+				p = q;
+				continue;
+			}
+
+			if ( *q == '!' ) {
+				writer.EndArray(); // outeraray
+				writer.EndArray(); // outeraray
+				startPolygon = true;
+				startRing = true;
+				//--level;
+				//--level;
+				//prt(("s3462 level=%d continue\n", level ));
+				++q;
+				p = q;
+				continue;
+			}
+
+			s = Jstr(p, q-p);
+
+			writer.StartArray(); 
+			//++level;
+			//prt(("s6301 write xcoord p=[%s]\n", p ));
+			//writer.String( s.c_str(), s.size() );   // x-coord
+			writer.Double( jagatof(s.c_str()) );
+
+			++q;
+			p = q;
+			//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
+			if ( is3D ) {
+				while ( *q != ':' && *q != '\0' && *q != '|' && *q != '!' ) ++q;
+			} else {
+				while ( *q != ' ' && *q != '\0' && *q != '|' && *q != '!' ) ++q;
+			}
+
+			s = Jstr(p, q-p);
+			//writer.String( s.c_str(), s.size() );   // y-coord
+			writer.Double( jagatof(s.c_str()) );
+
+			if ( is3D && *q != '\0' ) {
+				++q;
+				p = q;
+				//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
+				while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
+				s = Jstr(p, q-p);
+				//writer.String( s.c_str(), s.size() );   // z-coord
+				writer.Double( jagatof(s.c_str()) );
+			}
+
+			writer.EndArray(); // inner raray
+			//--level;
+
+			if ( *q == '\0' ) {
+				writer.EndArray(); // outeraray
+				writer.EndArray(); // outeraray
+				//--level;
+				//--level;
+				//prt(("s3162 level=%d break\n", level ));
+				break;
+			}
+
+			if ( *q == '|' ) {
+				writer.EndArray(); // outer raray
+				startRing = true;
+				//--level;
+				//prt(("s1162 level=%d continue p=[%s]\n", level, p ));
+				++q;
+				p = q;
+				continue;
+			}
+
+			if ( *q == '!' ) {
+				writer.EndArray(); // outer raray
+				writer.EndArray(); // outer raray
+				startPolygon = true;
+				startRing = true;
+				//--level;
+				//--level;
+				//prt(("s1162 level=%d continue p=[%s]\n", level, p ));
+				++q;
+				p = q;
+				continue;
+			}
+
+			while (*q == ' ' ) ++q;  // goto next x:y coord
+			//prt(("s2339 q=[%s]\n", q ));
+			if ( *q == '\0' ) {
+				writer.EndArray(); // outeraray
+				writer.EndArray(); // outeraray
+				//--level;
+				//--level;
+				//prt(("s5862 level=%d break \n", level ));
+				break;
+			}
+
+			p = q;
+		}
+
+		writer.EndArray(); 
+		//--level;
+		//prt(("s5869 level=%d outside loop \n", level ));
+	writer.EndObject();
+
+	writer.Key("properties");
+	writer.StartObject();
+	    writer.Key("column");
+	    writer.String( sp[2].c_str() );
+	    writer.Key("srid");
+	    writer.String( sp[1].c_str() );
+	    writer.Key("dimension");
+		if ( is3D ) {
+	    	writer.String( "3" );
+		} else {
+	    	writer.String( "2" );
+		}
+	writer.EndObject();
+
+	writer.EndObject();
+
+	//prt(("s0303 got result=[%s]\n", (char*)bs.GetString() ));
+
+	return (char*)bs.GetString();
+}
+
+Jstr makeJsonDefault( const JagStrSplit &sp, const char *str )
+{
+	return "";
+}
+
+int getDimension( const Jstr& colType )
+{
+	if ( colType == JAG_C_COL_TYPE_POINT 
+		|| colType == JAG_C_COL_TYPE_LINE 
+		|| colType == JAG_C_COL_TYPE_LINESTRING
+		|| colType == JAG_C_COL_TYPE_MULTILINESTRING
+		|| colType == JAG_C_COL_TYPE_MULTIPOLYGON
+		|| colType == JAG_C_COL_TYPE_MULTIPOINT
+		|| colType == JAG_C_COL_TYPE_POLYGON
+		|| colType == JAG_C_COL_TYPE_CIRCLE
+		|| colType == JAG_C_COL_TYPE_SQUARE
+		|| colType == JAG_C_COL_TYPE_RECTANGLE
+		|| colType == JAG_C_COL_TYPE_TRIANGLE
+		|| colType == JAG_C_COL_TYPE_ELLIPSE
+		 ) {
+		 return 2;
+	 } else if (  colType == JAG_C_COL_TYPE_POINT3D
+	 			 ||  colType == JAG_C_COL_TYPE_LINE3D
+	 			 ||  colType == JAG_C_COL_TYPE_LINESTRING3D
+	 			 ||  colType == JAG_C_COL_TYPE_MULTILINESTRING3D
+				 || colType == JAG_C_COL_TYPE_MULTIPOINT3D
+	 			 ||  colType == JAG_C_COL_TYPE_POLYGON3D
+	 			 ||  colType == JAG_C_COL_TYPE_MULTIPOLYGON3D
+	 			 ||  colType == JAG_C_COL_TYPE_CIRCLE3D
+	 			 ||  colType == JAG_C_COL_TYPE_SPHERE
+	 			 ||  colType == JAG_C_COL_TYPE_SQUARE3D
+	 			 ||  colType == JAG_C_COL_TYPE_CUBE
+	 			 ||  colType == JAG_C_COL_TYPE_RECTANGLE3D
+	 			 ||  colType == JAG_C_COL_TYPE_BOX
+	 			 ||  colType == JAG_C_COL_TYPE_TRIANGLE3D
+	 			 ||  colType == JAG_C_COL_TYPE_CYLINDER
+	 			 ||  colType == JAG_C_COL_TYPE_CONE
+	 			 ||  colType == JAG_C_COL_TYPE_ELLIPSE3D
+	 			 ||  colType == JAG_C_COL_TYPE_ELLIPSOID
+				 ) {
+		 return 3;
+	 } else {
+	 	return 0;
+	 }
+}
+
+
+Jstr getTypeStr( const Jstr& colType )
+{
+	Jstr t;
+	if ( colType == JAG_C_COL_TYPE_POINT ) {
+		t = "Point";
+	} else if ( colType == JAG_C_COL_TYPE_LINE ) {
+		t = "Line";
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING ) {
+		t = "LineString";
+	} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+		t = "MultiLineString";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		t = "MultiPolygon";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		t = "MultiPoint";
+	} else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+		t = "Polygon";
+	} else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+		t = "Circle";
+	} else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+		t = "Square";
+	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE ) {
+		t = "Rectangle";
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		t = "Triangle";
+	} else if ( colType == JAG_C_COL_TYPE_ELLIPSE ) {
+		t = "Ellipse";
+	} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
+		t = "Point3D";
+	} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+		t = "Line3D";
+	} else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+		t = "LineString3D";
+	} else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+		t = "MultiLineString3D";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		t = "MultiPoint3D";
+	} else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+		t = "Polygon3D";
+	} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		t = "MultiPolygon3D";
+	} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D ) {
+		t = "Circle3D";
+	} else if ( colType == JAG_C_COL_TYPE_SPHERE ) {
+		t = "Sphere";
+	} else if ( colType == JAG_C_COL_TYPE_SQUARE3D ) {
+		t = "Square3D";
+	} else if ( colType == JAG_C_COL_TYPE_CUBE ) {
+		t = "Cube";
+	} else if ( colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
+		t = "Rectangle3D";
+	} else if ( colType == JAG_C_COL_TYPE_BOX  ) {
+		t = "Box";
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D  ) {
+		t = "Triangle3D";
+	} else if ( colType == JAG_C_COL_TYPE_CYLINDER  ) {
+		t = "Cylinder";
+	} else if ( colType == JAG_C_COL_TYPE_CONE   ) {
+		t = "Cone";
+	} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D   ) {
+		t = "Ellipse3D";
+	} else if ( colType == JAG_C_COL_TYPE_ELLIPSOID ) {
+		t = "Ellipsoid";
+	} else {
+		t = "Unknown";
+	}
+	return t;
+}
+
+int getPolyDimension( const Jstr& colType )
+{
+	if ( colType == JAG_C_COL_TYPE_LINESTRING
+	     || colType == JAG_C_COL_TYPE_MULTILINESTRING
+		 || colType == JAG_C_COL_TYPE_POLYGON
+		 || colType == JAG_C_COL_TYPE_MULTIPOLYGON
+		 || colType == JAG_C_COL_TYPE_MULTIPOINT
+		 ) {
+		 return 2;
+	 } else if (  colType == JAG_C_COL_TYPE_LINESTRING3D
+	     		 || colType == JAG_C_COL_TYPE_MULTILINESTRING3D
+	 			 ||  colType == JAG_C_COL_TYPE_POLYGON3D
+	 			 ||  colType == JAG_C_COL_TYPE_MULTIPOLYGON3D
+	 			 ||  colType == JAG_C_COL_TYPE_MULTIPOINT3D
+				 ) {
+		 return 3;
+	 } else {
+	 	return 0;
+	 }
+}
+
+// send to socket with header
+abaxint sendMessage( const JagRequest &req, const char *mesg, const char *type )
+{
+    abaxint len = strlen( mesg );
+	// prt(("s7383 sendMessage mesg=[%s]\n", mesg ));
+	return sendMessageLength2( req.session, mesg, len, type );
+}
+
+// send to socket with header
+abaxint sendMessageLength( const JagRequest &req, const char *mesg, abaxint len, const char *type )
+{
+	return sendMessageLength2( req.session, mesg, len, type );
+}
+
+// actual send to socket with header
+abaxint sendMessageLength2( JagSession *session, const char *mesg, abaxint len, const char *type ) 
+{
+	char *buf = NULL;
+	abaxint rc = 0;
+    if ( strlen( type ) < 2 ) { if ( buf ) free( buf ); return -200; }
+	//if ( len > 1 ) { prt(("s2800 sock=%d SENDMEGLEN [%s], len=%lld\n", session->sock, mesg, len)); }
+
+	// check if message is last one, e.g. "_END_" for mesg or "X1" for type
+	int lastone = false;
+	if ( strncmp( mesg, "_END_", 5 ) == 0 || (type[0] == 'X' && type[1] == '1') || (type[0] == 'S' && type[1] == 'S') ) {
+		lastone = true;
+	}
+	// check if message is hard bit
+	int isHB = false;
+	if ( type[0] == 'H' && type[1] == 'B' ) {
+		isHB = true;
+		// sendheartbeat
+	}
+
+
+	// compress or no: if no, len is original; if yes, use new length
+	char code4[5];
+	char sqlhdr[10]; makeSQLHeader( sqlhdr );
+	if ( len >= JAG_SOCK_COMPRSS_MIN ) {
+		Jstr comp;
+		JagFastCompress::compress( mesg, len, comp );
+		len = comp.size();
+		buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+comp.size()+1+64 );
+		sprintf( code4, "Z%c%cC", type[0], type[1] );
+		putXmitHdrAndData( buf, sqlhdr, comp.c_str(), len, code4 );
+		//sprintf( buf, "%0*lldZ%c%cC", JAG_SOCK_TOTAL_HDR_LEN-4, comp.size(), type[0], type[1] );
+		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, comp.c_str(), len );
+	} else {
+ 		buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+len+1+64 );
+    	//sprintf( buf, "%0*lldC%c%cC", JAG_SOCK_TOTAL_HDR_LEN-4, len, type[0], type[1] );
+		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, mesg, len );
+		sprintf( code4, "C%c%cC", type[0], type[1] );
+		putXmitHdrAndData( buf, sqlhdr, mesg, len, code4 );
+	}
+    // buf[JAG_SOCK_TOTAL_HDR_LEN+len] = '\0';
+
+	#if 0
+    if ( !isHB ) { 
+		prt(("s2800 THREADID=%ld sock=%d SENDMEGLEN mesg=[%s], len=%lld\n", THREADID, session->sock, mesg, len));
+		prt(("s2800 THREADID=%ld buf=[%s]\n", THREADID, buf ));
+	}
+	#endif
+
+	jaguar_mutex_lock ( &session->dataMutex );
+	if ( !isHB ) {
+		rc = sendData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+len );
+	} else if ( session->hasTimer ) {
+		rc = sendData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+len );
+	}
+
+	if ( rc < 0 ) session->sessionBroken = 1; // session send error, broken 
+	jaguar_mutex_unlock ( &session->dataMutex );
+
+	if ( rc < JAG_SOCK_TOTAL_HDR_LEN+len ) {
+		rc = -1;
+	}
+	if ( buf ) free( buf );
+    return rc;
+}
+
+Jstr convertToStr( const Jstr  &pm )
+{
+    Jstr str;
+    if ( pm == JAG_ROLE_SELECT  ) {
+        str = "select";
+    } else if ( pm == JAG_ROLE_INSERT ) {
+        str = "insert";
+    } else if ( pm == JAG_ROLE_UPDATE ) {
+        str = "update";
+    } else if ( pm == JAG_ROLE_DELETE ) {
+        str = "delete";
+    } else if ( pm == JAG_ROLE_CREATE ) {
+        str = "create";
+    } else if ( pm == JAG_ROLE_DROP ) {
+        str = "drop";
+    } else if ( pm == JAG_ROLE_ALTER ) {
+        str = "alter";
+    } else if ( pm == JAG_ROLE_ALL  ) {
+        str = "all";
+    }
+
+    return str;
+}
+
+
+// pms "A,U,D"
+Jstr convertManyToStr( const Jstr &pms )
+{
+    Jstr str;
+    JagStrSplit sp( pms, ',', true );
+    for ( int i=0; i < sp.length(); ++i ) {
+        str += convertToStr( sp[i] ) + ",";
+    }
+    return trimTailChar(str, ',' );
+}
+
+Jstr convertType2Short( const Jstr &geotypeLong )
+{
+	const char *p = geotypeLong.c_str();
+    if ( 0==strcasecmp(p, "point" ) ) {
+		return JAG_C_COL_TYPE_POINT;
+	} else if ( 0==strcasecmp(p, "point3d" ) ) {
+		return JAG_C_COL_TYPE_POINT3D;
+	} else if ( 0==strcasecmp(p, "line" ) ) {
+		return JAG_C_COL_TYPE_LINE;
+	} else if ( 0==strcasecmp(p, "line3d" ) ) {
+		return JAG_C_COL_TYPE_LINE3D;
+	} else if ( 0==strcasecmp(p, "circle" ) ) {
+		return JAG_C_COL_TYPE_CIRCLE;
+	} else if ( 0==strcasecmp(p, "circle3d" ) ) {
+		return JAG_C_COL_TYPE_CIRCLE3D;
+	} else if ( 0==strcasecmp(p, "sphere" ) ) {
+		return JAG_C_COL_TYPE_SPHERE;
+	} else if ( 0==strcasecmp(p, "square" ) ) {
+		return JAG_C_COL_TYPE_SQUARE;
+	} else if ( 0==strcasecmp(p, "square3d" ) ) {
+		return JAG_C_COL_TYPE_SQUARE3D;
+	} else if ( 0==strcasecmp(p, "cube" ) ) {
+		return JAG_C_COL_TYPE_CUBE;
+	} else if ( 0==strcasecmp(p, "rectangle" ) ) {
+		return JAG_C_COL_TYPE_RECTANGLE;
+	} else if ( 0==strcasecmp(p, "rectangle3d" ) ) {
+		return JAG_C_COL_TYPE_RECTANGLE3D;
+	} else if ( 0==strcasecmp(p, "bbox" ) ) {
+		return JAG_C_COL_TYPE_BBOX;
+	} else if ( 0==strcasecmp(p, "box" ) ) {
+		return JAG_C_COL_TYPE_BOX;
+	} else if ( 0==strcasecmp(p, "cone" ) ) {
+		return JAG_C_COL_TYPE_CONE;
+	} else if ( 0==strcasecmp(p, "triangle" ) ) {
+		return JAG_C_COL_TYPE_TRIANGLE;
+	} else if ( 0==strcasecmp(p, "triangle3d" ) ) {
+		return JAG_C_COL_TYPE_TRIANGLE3D;
+	} else if ( 0==strcasecmp(p, "cylinder" ) ) {
+		return JAG_C_COL_TYPE_CYLINDER;
+	} else if ( 0==strcasecmp(p, "ellipse" ) ) {
+		return JAG_C_COL_TYPE_ELLIPSE;
+	} else if ( 0==strcasecmp(p, "ellipse3d" ) ) {
+		return JAG_C_COL_TYPE_ELLIPSE3D;
+	} else if ( 0==strcasecmp(p, "ellipsoid" ) ) {
+		return JAG_C_COL_TYPE_ELLIPSOID;
+	} else if ( 0==strcasecmp(p, "polygon" ) ) {
+		return JAG_C_COL_TYPE_POLYGON;
+	} else if ( 0==strcasecmp(p, "polygon3d" ) ) {
+		return JAG_C_COL_TYPE_POLYGON3D;
+	} else if ( 0==strcasecmp(p, "linestring" ) ) {
+		return JAG_C_COL_TYPE_LINESTRING;
+	} else if ( 0==strcasecmp(p, "linestring3d" ) ) {
+		return JAG_C_COL_TYPE_LINESTRING3D;
+	} else if ( 0==strcasecmp(p, "multipoint" ) ) {
+		return JAG_C_COL_TYPE_MULTIPOINT;
+	} else if ( 0==strcasecmp(p, "multipoint3d" ) ) {
+		return JAG_C_COL_TYPE_MULTIPOINT3D;
+	} else if ( 0==strcasecmp(p, "multilinestring" ) ) {
+		return JAG_C_COL_TYPE_MULTILINESTRING;
+	} else if ( 0==strcasecmp(p, "multilinestring3d" ) ) {
+		return JAG_C_COL_TYPE_MULTILINESTRING3D;
+	} else if ( 0==strcasecmp(p, "multipolygon" ) ) {
+		return JAG_C_COL_TYPE_MULTIPOLYGON;
+	} else if ( 0==strcasecmp(p, "multipolygon3d" ) ) {
+		return JAG_C_COL_TYPE_MULTIPOLYGON3D;
+	} else if ( 0==strcasecmp(p, "range" ) ) {
+		return JAG_C_COL_TYPE_RANGE;
+	} else {
+		return "UNKNOWN";
+	}
+}
+

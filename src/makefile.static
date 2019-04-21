@@ -33,7 +33,7 @@ CPP=$(GPP)  -O3
 #### makefile.obj has $(OBJS)
 include makefile.obj
 
-ALLOBJS=$(OBJS) Web/TomCrypt/static/lib/*.o Web/Snappy/static/*.o 
+EXTOBJS=Web/TomCrypt/static/lib/*.o Web/Snappy/static/*.o 
 
 JagParseExpr.o: JagExprStack.h
 
@@ -49,14 +49,14 @@ glibcversion: glibcversion.o
 	$(CPP) $(CCFLAGS) -o glibcversion glibcversion.o
 
 
-prog:  $(OBJS) jagserv.o jql.o 
-	$(CPP) $(CCFLAGS) -o jaguar.bin jagserv.o $(ALLOBJS) $(STDLIBS) 
-	$(CPP) $(CCFLAGS) -o jql.bin jql.o $(ALLOBJS) $(STDLIBS)
+prog:  $(CLIENTOBJS) $(SERVEROBJS) jagserv.o jql.o 
+	$(CPP) $(CCFLAGS) -o jql.bin jql.o $(CLIENTOBJS) $(EXTOBJS) /usr/lib64/libpthread.a
+	$(CPP) $(CCFLAGS) -o jaguar.bin jagserv.o $(SERVEROBJS) $(EXTOBJS) $(STDLIBS) 
 
 
 createKeyPair: createKeyPair.o
-	$(CPP) $(CCFLAGS) -o createKeyPair.bin  createKeyPair.o $(ALLOBJS) $(STDLIBS)
+	$(CPP) $(CCFLAGS) -o createKeyPair.bin  createKeyPair.o $(SERVEROBJS) $(EXTOBJS) $(STDLIBS)
 
 testjdbserv: testjdbserv.o $(OBJS) 
-	$(CPP) $(CCFLAGS) -o testjdbserv testjdbserv.o $(ALLOBJS) $(STDLIBS)
+	$(CPP) $(CCFLAGS) -o testjdbserv testjdbserv.o $(SERVEROBJS) $(EXTOBJS) $(STDLIBS)
 

@@ -1146,7 +1146,7 @@ void JagDataAggregate::sendDataToClient( abaxint cnt, const JagRequest &req )
 	// first, send num of data to client, then waiting for request cmd
 	sprintf( buf, "%lld|%lld", cnt, this->getdatalen() );
 	//prt(("s4029 sendMessage buf=[%s]\n", buf ));
-	JagTable::sendMessage( req, buf, "OK" );
+	sendMessage( req, buf, "OK" );
 
 	memset(buf, 0, SELECT_DATA_REQUEST_LEN+1);
  	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
@@ -1168,7 +1168,7 @@ void JagDataAggregate::sendDataToClient( abaxint cnt, const JagRequest &req )
 				break;
 			}
 			//prt(("s9319 request len=%lld ptr=[%s]\n", len, ptr));
-			if ( JagTable::sendMessageLength( req, ptr, len, "XX" ) < 0 ) break;
+			if ( sendMessageLength( req, ptr, len, "XX" ) < 0 ) break;
 		}
 	} // otherwise, discard data
 

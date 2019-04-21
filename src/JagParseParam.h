@@ -22,7 +22,7 @@
 #include <abax.h>
 #include <JagVector.h>
 #include <JagParseExpr.h>
-#include <JagGeom.h>
+#include <JagShape.h>
 
 class JagParser;
 class JagHashStrStr;

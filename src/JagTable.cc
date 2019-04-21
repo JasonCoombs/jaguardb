@@ -2998,6 +2998,7 @@ int JagTable::setIndexColumn( const JagParseParam *parseParam, Jstr &errmsg )
 	return 1;	
 }
 
+#if 0
 // send to socket with header
 abaxint JagTable::sendMessage( const JagRequest &req, const char *mesg, const char *type )
 {
@@ -3077,6 +3078,7 @@ abaxint JagTable::sendMessageLength2( JagSession *session, const char *mesg, aba
 	if ( buf ) free( buf );
     return rc;
 }
+#endif
 
 int JagTable::refreshSchema()
 {

@@ -34,6 +34,9 @@
 #include <dirent.h>
 #include <malloc.h>
 
+#undef JAG_CLIENT_SIDE
+#define JAG_SERVER_SIDE 1
+
 #include <JagUtil.h>
 #include <JagUserID.h>
 #include <JagUserRole.h>
@@ -73,6 +76,7 @@
 #include <JagParser.h>
 #include <JagLineFile.h>
 #include <JagCrypt.h>
+
 
 extern int JAG_LOG_LEVEL;
 int JagDBServer::g_dtimeout = 0;
@@ -669,7 +673,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 		Jstr endmsg = Jstr("_END_[T=20|E=|]");
 		if ( req.hasReply && !redoOnly ) {
 			// prt(("s7736 sendMessageLength ED endmsg=[%s]\n", endmsg.c_str() ));
-			JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), "ED" );
+			sendMessageLength( req, endmsg.c_str(), endmsg.length(), "ED" );
 		} else {
 			prt(("s7738 *** not sent sendMessageLength ED endmsg=[%s] req.hasReply=%d redoOnly=%d\n", 
 				endmsg.c_str(), req.hasReply, redoOnly ));
@@ -693,7 +697,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
     		}
 		}
 
-		JagParser parser(servobj, NULL );
+		JagParser parser( (void*)servobj );
 		JagParseParam pparam( &parser );
 		// prt(("s4072 parseCommand mesg=[%s]\n", mesg ));
 		if ( parser.parseCommand( jpa, mesg, &pparam, reterr ) ) {
@@ -704,9 +708,9 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 				sprintf(brand, JAG_BRAND );
 				brand[0] = toupper( brand[0] );
 				sprintf( hellobuf, "%s Server %s", brand, servobj->_version.c_str() );
-				rc = JagTable::sendMessage( req, hellobuf, "OK");  // SG: Server Greeting
+				rc = sendMessage( req, hellobuf, "OK");  // SG: Server Greeting
 				servobj->_taskMap->removeKey( taskID );
-				JagTable::sendMessage( req, "_END_[T=20|E=]", "ED");  // SG: Server Greeting
+				sendMessage( req, "_END_[T=20|E=]", "ED");  // SG: Server Greeting
 				return 1;
 			} else {
 				// other cmds
@@ -726,7 +730,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
     					rc = servobj->synchFromOtherDataCenters( req, mesg, pparam );
 						//prt(("s0282 synchFromOtherDataCenters mesg=[%s] done rc=%d\n", mesg, rc ));
     					jaguar_mutex_unlock ( &g_datacentermutex );						
-						// JagTable::sendMessageLength( req, err.c_str(), err.length(), "OK" );
+						// sendMessageLength( req, err.c_str(), err.length(), "OK" );
 					} else {
 						//prt(("s9302 doing processCmd mesg=[%s] ... \n", mesg ));
 						rc = JagDBServer::processCmd( req, servobj, mesg, pparam, reterr, threadQueryTime, threadSchemaTime );
@@ -783,12 +787,12 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 				}
 				endmsg += Jstr("|]");
 				// prt(("s0293 sendMessageLength endmsg=[%s] ...\n",  endmsg.c_str() ));
-				JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
+				sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
 				// prt(("s0239 sendMessageLength endmsg=[%s] done\n",  endmsg.c_str() ));
 			} else {
 				// prt(("s7378 no sendMessageLength req.hasReply=%d redoOnly=%d ************** \n", req.hasReply, redoOnly ));
 				// Jstr resstr = "ED", endmsg = Jstr("_END_[T=20|E=");
-				// JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
+				// sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
 			}
 		} else {
 			//prt(("E8383 parse error mesg=[%s] reterr=[%s]\n", mesg, reterr.c_str() ));
@@ -798,7 +802,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 				// endmsg += Jstr(mesg) + " ";
 				endmsg += reterr + Jstr("|]");
 				// prt(("s02939 sendMessageLength endmsg=[%s] ...\n",  endmsg.c_str() ));
-				JagTable::sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
+				sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
 				// prt(("s02939 sendMessageLength endmsg=[%s] done\n",  endmsg.c_str() ));
 			}
 		}
@@ -1143,7 +1147,7 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			char cntbuf[30];
 			memset( cntbuf, 0, 30 );
 			sprintf( cntbuf, "%lld", cnt );
-			JagTable::sendMessage( req, cntbuf, "OK" );
+			sendMessage( req, cntbuf, "OK" );
 		}
 		
 		if ( cnt >= 0 ) {
@@ -1558,33 +1562,33 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			rc = checkNonStandardCommandValidation( pmesg );
 			if ( !rc ) {
 				prt(("E7845 invalid non standard server command [%s]\n", pmesg));
-				JagTable::sendMessage( req, "_END_[T=10|E=Error non standard server command]", "ER" );			
+				sendMessage( req, "_END_[T=10|E=Error non standard server command]", "ER" );			
 			} else {
 				if ( ! authed && JAG_SCMD_GETPUBKEY != rc ) {
 					// printf("s8003 %lld user not authed close\n", pthread_self() );
-					JagTable::sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
+					sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
 					breakcode = 5;
 					break;
 				}
 				if ( JAG_SCMD_NOOP == rc ) {
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_CSCHEMA == rc ) {
 					servobj->sendMapInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 					/***
 				} else if ( JAG_SCMD_CDEFVAL == rc ) {
 					servobj->sendMapInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 					***/
 				} else if ( JAG_SCMD_CHOST == rc ) {
 					servobj->sendHostInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_CRECOVER == rc ) {
 					servobj->cleanRecovery( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_CHECKDELTA == rc ) {
 					servobj->checkDeltaFiles( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_BFILETRANSFER == rc ) {
 					JagStrSplit sp( pmesg, '|', true );
 					if ( sp.length() >= 4 ) {
@@ -1595,68 +1599,68 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 							servobj->walFileReceiver( pmesg, req );
 						}
 					}
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_ABFILETRANSFER == rc ) {
 					servobj->recoveryFileReceiver( pmesg, req );
 					servobj->_addClusterFlag = 1;
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_JOINDATAREQUEST == rc ) {
 					servobj->joinRequestSend( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );					
+					sendMessage( req, "_END_[T=30|E=]", "ED" );					
 				} else if ( JAG_SCMD_OPINFO == rc ) {
 					servobj->sendOpInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_COPYDATA == rc ) {
 					servobj->doCopyData( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_REFRESHACL == rc ) {
 					servobj->doRefreshACL( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_REQSCHEMAFROMDC == rc ) {
 					servobj->sendSchemaToDataCenter( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_UNPACKSCHINFO == rc ) {
 					servobj->unpackSchemaInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_ASKDATAFROMDC == rc ) {
 					servobj->askDataFromDC( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_PREPAREDATAFROMDC == rc ) {
 					servobj->prepareDataFromDC( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_DOLOCALBACKUP == rc ) {
 					servobj->doLocalBackup( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_DOREMOTEBACKUP == rc ) {
 					servobj->doRemoteBackup( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_DORESTOREREMOTE == rc ) {				
 					servobj->doRestoreRemote( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONDBTAB == rc ) {
 					servobj->dbtabInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONINFO == rc ) {
 					servobj->sendInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONRSINFO == rc ) {
 					servobj->sendResourceInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONCLUSTERINFO == rc ) {
 					servobj->sendClusterOpInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONHOSTS == rc ) {
 					servobj->sendHostsInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONBACKUPHOSTS == rc ) {
 					servobj->sendRemoteHostsInfo( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONLOCALSTAT == rc ) {
 					servobj->sendLocalStat6( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_MONCLUSTERSTAT == rc ) {
 					servobj->sendClusterStat6( pmesg, req );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				} else if ( JAG_SCMD_EXPROCLOCALBACKUP == rc ) {
 					// no _END_ ED sent, already sent in method
 					servobj->processLocalBackup( pmesg, req );
@@ -1680,8 +1684,8 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 					servobj->shutDown( pmesg, req );
 				} else if ( JAG_SCMD_GETPUBKEY == rc ) {
 					// no _END_ ED sent, already sent in method
-					JagTable::sendMessage( req, servobj->_publicKey.c_str(), "DS" );
-					JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+					sendMessage( req, servobj->_publicKey.c_str(), "DS" );
+					sendMessage( req, "_END_[T=30|E=]", "ED" );
 				}				
 			}
 			continue;
@@ -1691,7 +1695,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 		if ( simplerc > 0 ) {
 			if ( ! authed && JAG_RCMD_AUTH != simplerc ) {
 				// printf("s8003 %lld user not authed close\n", pthread_self() );
-				JagTable::sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
+				sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
 				breakcode = 5;
 				break;
 			}
@@ -1700,7 +1704,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 				tok = strtok_r( NULL, " ;", &saveptr );
 				if ( tok ) { helpTopic( req, tok ); } 
 				else { helpPrintTopic( req ); }
-				JagTable::sendMessage( req, "_END_[T=10|E=]", "ED" );				
+				sendMessage( req, "_END_[T=10|E=]", "ED" );				
 			} else if ( JAG_RCMD_USE == simplerc ) {
 				// no _END_ ED sent, already sent in method
 				useDB( req, servobj, pmesg, saveptr );
@@ -1728,9 +1732,9 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 				// sprintf( pmesg, "%s Server %s %lld\r\n", brand, servobj->_version.c_str(), sessid );
 				// sprintf( hellobuf, "%s Server %s %lld", brand, servobj->_version.c_str(), sessid );
 				sprintf( hellobuf, "%s Server %s", brand, servobj->_version.c_str() );
-				// rc = JagTable::sendMessage( req, pmesg, "OK");  // SG: Server Greeting
-				rc = JagTable::sendMessage( req, hellobuf, "OK");  // SG: Server Greeting
-				JagTable::sendMessage( req, "_END_[T=20|E=]", "ED" );
+				// rc = sendMessage( req, pmesg, "OK");  // SG: Server Greeting
+				rc = sendMessage( req, hellobuf, "OK");  // SG: Server Greeting
+				sendMessage( req, "_END_[T=20|E=]", "ED" );
 				session.fromShell = 1;
 			}
 			continue;
@@ -1751,7 +1755,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			}
 			
 			if ( ! ok ) {
-				JagTable::sendMessage( req, "_END_[T=20|E=No database selected]", "ER" );
+				sendMessage( req, "_END_[T=20|E=No database selected]", "ER" );
 				breakcode = 4;
 				break;
 			}
@@ -1759,18 +1763,18 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 
 		if ( ! authed ) {
 			// printf("s8003 %lld user not authed close\n", pthread_self() );
-			JagTable::sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
+			sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
 			breakcode = 5;
 			break;
 		}
 		/**
 		if ( ! servobj->_serverReady && ! simplerc && *pmesg != '_' ) {
-			JagTable::sendMessage( req, "_END_[T=10|E=Server not ready, please try later]", "ER" );			
+			sendMessage( req, "_END_[T=10|E=Server not ready, please try later]", "ER" );			
 			continue;
 		}
 		**/
 		if ( ! servobj->_newdcTrasmittingFin && ! req.session->datacenter && ! req.session->samePID ) {
-			JagTable::sendMessage( req, "_END_[T=20|E=Server not ready for datacenter to accept regular commands, please try later]", "ER" );
+			sendMessage( req, "_END_[T=20|E=Server not ready for datacenter to accept regular commands, please try later]", "ER" );
 			continue;
 		}
 
@@ -1840,7 +1844,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 				int sprc = 1;
 				char cond[3] = { 'O', 'K', '\0' };
 				if ( 0 == session.drecoverConn && rspec == 1 ) {
-					if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+					if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 						sprc = 0;
 					}
 	
@@ -1849,7 +1853,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 					}
 				}
 
-				JagTable::sendMessage( req, "_END_[T=779|E=]", "ED" );
+				sendMessage( req, "_END_[T=779|E=]", "ED" );
 				
 				// receive three bytes of signal
 				if ( sprc == 1 && servobj->_faultToleranceCopy > 1 && session.drecoverConn == 0 ) {
@@ -1875,7 +1879,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 					rephdr[0] = *newbuf2; rephdr[1] = *(newbuf2+1); rephdr[2] = *(newbuf2+2);
 					rsmode = servobj->getReplicateStatusMode( rephdr );
 					if ( !session.spCommandReject ) servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
-					JagTable::sendMessage( req, "_END_[T=7799|E=]", "ED" );
+					sendMessage( req, "_END_[T=7799|E=]", "ED" );
 				}
 				continue;
 			}
@@ -1918,7 +1922,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			rephdr[0] = *newbuf2; rephdr[1] = *(newbuf2+1); rephdr[2] = *(newbuf2+2);
 			rsmode = servobj->getReplicateStatusMode( rephdr );
 			if ( !session.spCommandReject ) servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
-			JagTable::sendMessage( req, "_END_[T=77999|E=]", "ED" );
+			sendMessage( req, "_END_[T=77999|E=]", "ED" );
 		}
     }
 
@@ -2151,7 +2155,7 @@ int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 {
 	JagTable *ptab = NULL;
 	char cond[3] = { 'O', 'K', '\0' };
-	if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+	if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 		// prt(("s3828 return 0\n"));
 		return 0;
 	}
@@ -2321,7 +2325,7 @@ void JagDBServer::helpPrintTopic( const JagRequest &req )
 	str += "\n";
 	str += "\n";
 
-	JagTable::sendMessageLength( req, str.c_str(), str.size(), "I_" );
+	sendMessageLength( req, str.c_str(), str.size(), "I_" );
 }
 
 void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
@@ -2954,26 +2958,26 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 
 	// str += "\n";
 
-	JagTable::sendMessageLength( req, str.c_str(), str.size(), "I_" );
+	sendMessageLength( req, str.c_str(), str.size(), "I_" );
 }
 
 void JagDBServer::showCurrentDatabase( JagCfg *cfg, const JagRequest &req, const Jstr &dbname )
 {
 	Jstr res = dbname;
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showDatabases( JagCfg *cfg, const JagRequest &req )
 {
 	Jstr res;
 	res = JagSchema::getDatabases( cfg, req.session->replicateType );
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showCurrentUser( JagCfg *cfg, const JagRequest &req )
 {
 	Jstr res = req.session->uid;
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showClusterStatus( const JagRequest &req, JagDBServer *servobj )
@@ -2995,7 +2999,7 @@ void JagDBServer::showClusterStatus( const JagRequest &req, JagDBServer *servobj
 				jagatoll( sp[6].c_str() )  );
 
 	res += buf;
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showTools( const JagRequest &req, JagDBServer *servobj )
@@ -3021,7 +3025,7 @@ void JagDBServer::showTools( const JagRequest &req, JagDBServer *servobj )
 	res += "createKeyPair.[bin|exe]            -- generate server public and private keys on current host\n";
 	res += "\n";
 
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showDatacenter( const JagRequest &req, JagDBServer *servobj )
@@ -3057,7 +3061,7 @@ void JagDBServer::showDatacenter( const JagRequest &req, JagDBServer *servobj )
 	res = cont;
 
 	JAG_BLURT jaguar_mutex_unlock ( &g_datacentermutex ); JAG_OVER;
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::_showDatabases( JagCfg *cfg, const JagRequest &req )
@@ -3066,14 +3070,14 @@ void JagDBServer::_showDatabases( JagCfg *cfg, const JagRequest &req )
 	res = JagSchema::getDatabases( cfg, req.session->replicateType );
 	JagStrSplit sp(res, '\n', true);
 	if ( sp.length() < 1 ) {
-		JagTable::sendMessageLength( req, " ", 1, "KV" );
+		sendMessageLength( req, " ", 1, "KV" );
 		return;
 	}
 
 	for ( int i = 0; i < sp.length(); ++i ) {
 		JagRecord rec;
 		rec.addNameValue("TABLE_CAT", sp[i].c_str() );
-		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
+		sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
     }
 }
 
@@ -3092,7 +3096,7 @@ void JagDBServer::showTables( const JagRequest &req, const JagParseParam &pparam
 
 	// printf("s7382 showTables %s\n", res.c_str() );
 
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::_showTables( const JagRequest &req, const JagTableSchema *tableschema, const Jstr &dbname )
@@ -3123,7 +3127,7 @@ void JagDBServer::_showTables( const JagRequest &req, const JagTableSchema *tabl
 	char buf[ 5+len];
 	memcpy( buf, "m   |", 5 ); // meta data
 	memcpy( buf+5, rrec.getSource(), rrec.getLength() );
-	JagTable::sendMessageLength( req, buf, 5+len, "FH" );
+	sendMessageLength( req, buf, 5+len, "FH" );
 
 	for ( i = 0; i < vec->size(); ++i ) {
 		res = (*vec)[i];
@@ -3134,7 +3138,7 @@ void JagDBServer::_showTables( const JagRequest &req, const JagTableSchema *tabl
 		rec.addNameValue( "TABLE_NAME", split[1].c_str() );
 		rec.addNameValue( "TABLE_TYPE", "TABLE" );
 
-		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
+		sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
 		// KV records
 	}
 	if ( vec ) delete vec;
@@ -3154,7 +3158,7 @@ void JagDBServer::showIndexes( const JagRequest &req, const JagParseParam &ppara
 	if ( vec ) delete vec;
 	vec = NULL;
 
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::showAllIndexes( const JagRequest &req,  const JagParseParam &pparam, const JagIndexSchema *indexschema, 
@@ -3169,12 +3173,12 @@ void JagDBServer::showAllIndexes( const JagRequest &req,  const JagParseParam &p
 	if ( vec ) delete vec;
 	vec = NULL;
 
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 void JagDBServer::_showIndexes( const JagRequest &req, const JagIndexSchema *indexschema, const Jstr &dbtable )
 {
-	JagTable::sendMessageLength( req, " ", 1, "KV" );
+	sendMessageLength( req, " ", 1, "KV" );
 }
 
 void JagDBServer::showTask( const JagRequest &req, JagDBServer *servobj )
@@ -3199,7 +3203,7 @@ void JagDBServer::showTask( const JagRequest &req, JagDBServer *servobj )
 		}
 	}
 
-	JagTable::sendMessageLength( req, str.c_str(), str.size(), "I_" );
+	sendMessageLength( req, str.c_str(), str.size(), "I_" );
 }
 
 
@@ -3338,7 +3342,7 @@ int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagD
 	}
 
 	res += AbaxString(");\n");
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 	return 1;
 }
 
@@ -3356,7 +3360,7 @@ void JagDBServer::sendValueData( const JagParseParam &pparm, const JagRequest &r
 
 	while ( pparm._lineFile->getLine( line ) ) {
 		//prt(("s7230 sendMessageLength line=%s ...\n", line.c_str() ));
-		JagTable::sendMessageLength( req, line.c_str(), line.size(), "JS" );
+		sendMessageLength( req, line.c_str(), line.size(), "JS" );
 	}
 }
 
@@ -3393,7 +3397,7 @@ void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const J
 	char buf5[ 5+len];
 	memcpy( buf5, "m   |", 5 ); // meta data
 	memcpy( buf5+5, rrec.getSource(), rrec.getLength() );
-	JagTable::sendMessageLength( req, buf5, 5+len, "FH" );
+	sendMessageLength( req, buf5, 5+len, "FH" );
 
 
 	const JagSchemaRecord *record = tableschema->getAttr( dbtable );
@@ -3487,7 +3491,7 @@ void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const J
 			rec.addNameValue("KEY_SEQ", buf ); // 
 		}
 
-		JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
+		sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
 		// KV records
 	}
 }
@@ -3595,7 +3599,7 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 	}
 
 	res += AbaxString(");\n");
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "DS" );
+	sendMessageLength( req, res.c_str(), res.size(), "DS" );
 }
 
 // static Task for a thread
@@ -4073,7 +4077,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 
 	pthread_rwlock_unlock( &servobj->_aclrwlock );
 	if ( ! ipOK ) {
-    	JagTable::sendMessage( req, "_END_[T=579|E=Error client IP address]", "ER" );
+    	sendMessage( req, "_END_[T=579|E=Error client IP address]", "ER" );
 		raydebug( stdout, JAG_LOG_HIGH, "client IP (%s) is blocked\n", req.session->ip.c_str() );
 		return false;
 	}
@@ -4082,7 +4086,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 
 	JagStrSplit sp(pmesg, '|' );
 	if ( sp.length() < 9 ) {
-		JagTable::sendMessage( req, "_END_[T=20|E=Error Auth]", "ER" );
+		sendMessage( req, "_END_[T=20|E=Error Auth]", "ER" );
 		// prt(("s5403 pmesg=[%s] erroorauth\n", pmesg ));
 		return false;
 	}
@@ -4103,7 +4107,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 	else session.samePID = 0;
 
 	if ( ! servobj->_serverReady && ! session.origserv ) {
-		JagTable::sendMessage( req, "_END_[T=20|E=Server not ready, please try later]", "ER" );
+		sendMessage( req, "_END_[T=20|E=Server not ready, please try later]", "ER" );
 		return false;
 	}
 	
@@ -4154,7 +4158,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 				if ( session.replicateType == 0 ) {
 					// main connection accept exclusive login, other backup connection ignore it
 					if ( servobj->_exclusiveAdmins > 0 ) {
-						JagTable::sendMessage( req, "_END_[T=120|E=Failed to login in exclusive mode]", "ER" );
+						sendMessage( req, "_END_[T=120|E=Failed to login in exclusive mode]", "ER" );
 						return false;
 					}
 				}
@@ -4164,7 +4168,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 
 	/***
 	if ( ! servobj->_newdcTrasmittingFin && ! session.datacenter && ! session.samePID ) {
-		JagTable::sendMessage( req, "_END_[T=20|E=Server not ready for datacenter, please try later]", "ER" );
+		sendMessage( req, "_END_[T=20|E=Server not ready for datacenter, please try later]", "ER" );
 		return false;
 	}
 	***/
@@ -4200,7 +4204,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 
 	// prt(("s8822 isGood=%d\n", isGood ));
 	if ( ! isGood ) {
-       	JagTable::sendMessage( req, "_END_[T=20|E=Error password or token]", "ER" );
+       	sendMessage( req, "_END_[T=20|E=Error password or token]", "ER" );
        	raydebug( stdout, JAG_LOG_LOW, "Connection from %s, Error password or TOKEN\n", session.ip.c_str() );
        	return false;
 	}
@@ -4229,8 +4233,8 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 	oksid += Jstr(" ") + servobj->_cfg->getValue("HASHJOIN_TABLE_MAX_RECORDS", "500000");
 	oksid += Jstr(" ") + intToStr( servobj->_isGate );
 
-	JagTable::sendMessageLength( req, oksid.c_str(), oksid.size(), "CD" );
-	JagTable::sendMessage( req, "_END_[T=20|E=]", "ED" );
+	sendMessageLength( req, oksid.c_str(), oksid.size(), "CD" );
+	sendMessage( req, "_END_[T=20|E=]", "ED" );
 	session.uid = uid;
 
 	// set timer for session if recover connection is not 2 ( clean recover )
@@ -4257,26 +4261,26 @@ bool JagDBServer::useDB( const JagRequest &req, JagDBServer *servobj, char *pmes
 	tok = strtok_r( NULL, " ;", &saveptr );
 	if ( ! tok ) {
 		// prt(("s9999 usedb2\n"));
-		JagTable::sendMessage( req, "_END_[T=20|E=Database empty]", "ER" );
+		sendMessage( req, "_END_[T=20|E=Database empty]", "ER" );
 	} else {
 		// prt(("s9999 usedb3\n"));
 		if ( strlen( tok ) > JAG_MAX_DBNAME ) {
 			// prt(("s9999 usedb4\n"));
-			JagTable::sendMessage( req, "_END_[T=20|E=Database too long]", "ER" );
+			sendMessage( req, "_END_[T=20|E=Database too long]", "ER" );
 		} else {
 			// prt(("s9999 usedb5\n"));
     		strcpy( dbname, tok );
 			tok = strtok_r( NULL, " ;", &saveptr );
 			if ( tok ) {
 				// prt(("s9999 usedb6\n"));
-				// JagTable::sendMessage( req, "_END_[T=20|E=Use database syntax error]", "ED" );
-				JagTable::sendMessage( req, "_END_[T=20|E=Use database syntax error]", "ER" );
+				// sendMessage( req, "_END_[T=20|E=Use database syntax error]", "ED" );
+				sendMessage( req, "_END_[T=20|E=Use database syntax error]", "ER" );
 			} else {
 				// prt(("s9999 usedb7\n"));
 				if ( 0 == strcmp( dbname, "test" ) ) {
 					req.session->dbname = dbname;
-					JagTable::sendMessage( req, "Database changed", "OK" );
-					JagTable::sendMessage( req, "_END_[T=20|E=]", "ED" );
+					sendMessage( req, "Database changed", "OK" );
+					sendMessage( req, "_END_[T=20|E=]", "ED" );
 					return true;
 				}
     			Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
@@ -4285,14 +4289,14 @@ bool JagDBServer::useDB( const JagRequest &req, JagDBServer *servobj, char *pmes
     			if ( 0 == jagaccess( fpath.c_str(), X_OK )  ) {
 					// prt(("s9999 usedb9\n"));
     				req.session->dbname = dbname;
-    				JagTable::sendMessage( req, "Database changed", "OK" );
-    				JagTable::sendMessage( req, "_END_[T=20|E=]", "ED" );
+    				sendMessage( req, "Database changed", "OK" );
+    				sendMessage( req, "_END_[T=20|E=]", "ED" );
     			} else {
 					// prt(("s9999 usedb10\n"));
-    				//JagTable::sendMessage( req, "Database does not exist", "OK" );
-    				//JagTable::sendMessage( req, "_END_[T=40|E=Database does not exist]", "ED" );
-    				// JagTable::sendMessage( req, "_END_[T=40|E=Database does not exist]", "EE" );
-    				JagTable::sendMessage( req, "_END_[T=20|E=Database does not exist]", "ER" );
+    				//sendMessage( req, "Database does not exist", "OK" );
+    				//sendMessage( req, "_END_[T=40|E=Database does not exist]", "ED" );
+    				// sendMessage( req, "_END_[T=40|E=Database does not exist]", "EE" );
+    				sendMessage( req, "_END_[T=20|E=Database does not exist]", "ER" );
     			}
 			}
 		}
@@ -4762,7 +4766,7 @@ void JagDBServer::dropAllTablesAndIndex( const JagRequest &req, JagDBServer *ser
 void JagDBServer::showUsers( const JagRequest &req, JagDBServer *servobj )
 {
 	if ( req.session->uid != "admin" ) {
-		JagTable::sendMessage( req, "Only admin can get a list of user accounts", "OK" );
+		sendMessage( req, "Only admin can get a list of user accounts", "OK" );
 		return;
 	}
 
@@ -4774,7 +4778,7 @@ void JagDBServer::showUsers( const JagRequest &req, JagDBServer *servobj )
 	if ( uiddb ) {
 		users = uiddb->getListUsers();
 	}
-	JagTable::sendMessageLength( req, users.c_str(), users.length(), "OK" );
+	sendMessageLength( req, users.c_str(), users.length(), "OK" );
 }
 
 // ensure admin account is created
@@ -5122,7 +5126,7 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 		JagParseAttribute jpa( session->servobj, session->timediff, session->servobj->servtimediff, 
 							   session->dbname, session->servobj->_cfg );
 		// prt(("s2230 parseCommand...\n" ));
-		JagParser parser( this, NULL );
+		JagParser parser( (void*)this );
 		JagParseParam parseParam(&parser);
 		rc = parser.parseCommand( jpa, mesg, &parseParam, reterr );
 		if ( rc ) {
@@ -6209,7 +6213,7 @@ int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr
 	}
 
 	//prt(("s4402 schemaChangeCommandSyncCheck() sendMessageLength(cond=%s) ...\n", cond ));
-	if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+	if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 		if ( setmap > 0 ) _scMap->removeKey( dbobj );
 		raydebug( stdout, JAG_LOG_LOW, "s6027 send SS < 0, return 0\n" );
 		return 0;
@@ -6224,7 +6228,7 @@ int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr
 	// if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || *(newbuf+1) != 'K' ) {
 	if ( recvData( req.session->sock, hdr, newbuf ) >=0 && ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) ) {
 		// prt(("s3039 recvData got OK from %s\n", req.session->ip.c_str() ));
-		// JagTable::sendMessageLength( req, "OK", 2, "SS" );
+		// sendMessageLength( req, "OK", 2, "SS" );
 		// DONOT send OK to client; if recv OK, do nothing
 	} else {
 		// connection abort or not OK signal, reject
@@ -6480,7 +6484,7 @@ void JagDBServer::noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &
 
 	if ( 0 == req.session->drecoverConn ) {
 		prt(("s1208 sendMessageLength cond=[%s] SS\n", cond ));
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
@@ -6540,7 +6544,7 @@ void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj,
 
 	if ( 0 == req.session->drecoverConn ) {
 		// prt(("s3508 sendMessageLength cond=[%s] SS\n", cond ));
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -6606,7 +6610,7 @@ void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj,
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -6670,7 +6674,7 @@ void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj,
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -6745,7 +6749,7 @@ void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj,
 
 	if ( 0 == req.session->drecoverConn ) {
 		// prt(("s2209 sendMessageLength ...\n" ));
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			prt(("s4407 sendMessageLength < 0 \n" ));
 			if ( rc ) servobj->_objectLock->readUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
@@ -6803,7 +6807,7 @@ void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj,
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -6862,7 +6866,7 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
@@ -6945,7 +6949,7 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 
 	prt(("s5839 createTable cond=[%s] reptype=%d\n", cond, repType ));
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -7036,7 +7040,7 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Js
 	}
 	
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 			prt(("s3523 writeUnlockDatabase %s is unlocked reptype=%d\n", dbname.c_str(), repType )); 
@@ -7131,7 +7135,7 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr 
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( rc ) {
 				// rollback index schema
 				prt(("E3481 SS sent error remove dbindex ...\n" ));
@@ -7252,7 +7256,7 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 							parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
@@ -7372,7 +7376,7 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &d
 
 	// if not from dead server (self or other). 0 is from client
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			// client conn disconnected
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
@@ -7467,7 +7471,7 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &d
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( pindex ) servobj->_objectLock->writeUnlockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
 				parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
 				tableschema, indexschema, req.session->replicateType, 1 );
@@ -7565,7 +7569,7 @@ int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jst
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {		
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {		
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
@@ -7643,7 +7647,7 @@ void JagDBServer::sendMapInfo( const char *mesg, const JagRequest &req )
 			// prt(("send map info=[%s]\n", schemaInfo.c_str()));
 			if ( schemaInfo.size() > 0 ) {
 				// prt(("s3330 sendMapInfo schemaInfo=[%s]\n", schemaInfo.c_str() ));
-				JagTable::sendMessageLength( req, schemaInfo.c_str(), schemaInfo.size(), "SC" );
+				sendMessageLength( req, schemaInfo.c_str(), schemaInfo.size(), "SC" );
 			}
 		}
 		return;
@@ -7657,7 +7661,7 @@ void JagDBServer::sendMapInfo( const char *mesg, const JagRequest &req )
 			// prt(("send map info=[%s]\n", schemaInfo.c_str()));
 			if ( info.size() > 0 ) {
 				// prt(("s3330 sendMapInfo schemaInfo=[%s]\n", schemaInfo.c_str() ));
-				JagTable::sendMessageLength( req, info.c_str(), info.size(), "DF" );
+				sendMessageLength( req, info.c_str(), info.size(), "DF" );
 			}
 		}
 		return;
@@ -7672,7 +7676,7 @@ void JagDBServer::sendHostInfo( const char *mesg, const JagRequest &req )
 {	
 	if ( !req.session->origserv && !_restartRecover ) {	
 		Jstr snodes = _dbConnector->_nodeMgr->_sendNodes;
-		JagTable::sendMessageLength( req, snodes.c_str(), snodes.size(), "HL" );
+		sendMessageLength( req, snodes.c_str(), snodes.size(), "HL" );
 	}
 }
 
@@ -7684,32 +7688,32 @@ void JagDBServer::checkDeltaFiles( const char *mesg, const JagRequest &req )
 	if ( _actdelPOhost == req.session->ip && JagFileMgr::fileSize(_actdelPOpath) > 0 ) {
 		// prt(("checkdelta error 1=[%s]\n", req.session->ip.c_str()));
 		str = _actdelPOpath + " not empty";
-		JagTable::sendMessage( req, str.c_str(), "OK" );
+		sendMessage( req, str.c_str(), "OK" );
 	}
 	if ( _actdelPRhost == req.session->ip && JagFileMgr::fileSize(_actdelPRpath) > 0 ) {
 		// prt(("checkdelta error 2=[%s]\n", req.session->ip.c_str()));
 		str = _actdelPRpath + " not empty";
-		JagTable::sendMessage( req, str.c_str(), "OK" );
+		sendMessage( req, str.c_str(), "OK" );
 	}
 	if ( _actdelPORhost == req.session->ip && JagFileMgr::fileSize(_actdelPORpath) > 0 ) {
 		// prt(("checkdelta error 3=[%s]\n", req.session->ip.c_str()));
 		str = _actdelPORpath + " not empty";
-		JagTable::sendMessage( req, str.c_str(), "OK" );
+		sendMessage( req, str.c_str(), "OK" );
 	}
 	if ( _actdelNOhost == req.session->ip && JagFileMgr::fileSize(_actdelNOpath) > 0 ) {
 		// prt(("checkdelta error 4=[%s]\n", req.session->ip.c_str()));
 		str = _actdelNOpath + " not empty";
-		JagTable::sendMessage( req, str.c_str(), "OK" );
+		sendMessage( req, str.c_str(), "OK" );
 	}
 	if ( _actdelNRhost == req.session->ip && JagFileMgr::fileSize(_actdelNRpath) > 0 ) {
 		// prt(("checkdelta error 5=[%s]\n", req.session->ip.c_str()));
 		str = _actdelNRpath + " not empty";
-		JagTable::sendMessage( req, str.c_str(), "OK" );
+		sendMessage( req, str.c_str(), "OK" );
 	}
 	if ( _actdelNORhost == req.session->ip && JagFileMgr::fileSize(_actdelNORpath) > 0 ) { 
 		// prt(("checkdelta error 6=[%s]\n", req.session->ip.c_str()));
 		str = _actdelNORpath + " not empty";
-		JagTable::sendMessage( req, str.c_str(), "OK" );
+		sendMessage( req, str.c_str(), "OK" );
 	}
 }
 
@@ -8069,7 +8073,7 @@ void JagDBServer::sendOpInfo( const char *mesg, const JagRequest &req )
 
 	res = buf;
 	// printf("s4910 sendOpInfo [%s]\n", res.c_str() );
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
+	sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
 // do local data backup
@@ -8215,7 +8219,7 @@ void JagDBServer::dbtabInfo( const char *mesg, const JagRequest &req )
 		vec = NULL;
 		res += Jstr("|");
 	}
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
+	sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
 // send info 
@@ -8237,7 +8241,7 @@ void JagDBServer::sendInfo( const char *mesg, const JagRequest &req )
 		res = "0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0";
 	}
 	// prt(("s3228 res=[%s] len=%d done\n", res.c_str(), len ));
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
+	sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
 // client expects: "disk:123:322|mem:234:123|cpu:23:12";  in GB  used:free
@@ -8260,7 +8264,7 @@ void JagDBServer::sendResourceInfo( const char *mesg, const JagRequest &req )
 	sprintf( buf, "disk:%lld:%lld|mem:%lld:%lld|cpu:%lld:%lld", 
 			 usedDisk, freeDisk, totm-freem, freem, usercpu+syscpu, 100-usercpu-syscpu );
 	res = buf;
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
+	sendMessageLength( req, res.c_str(), res.size(), "OK" );
 	// prt(("s3349 res=[%s]\n", res.c_str() ));
 }
 
@@ -8269,7 +8273,7 @@ void JagDBServer::sendResourceInfo( const char *mesg, const JagRequest &req )
 void JagDBServer::sendClusterOpInfo( const char *mesg, const JagRequest &req )
 {
 	Jstr res = getClusterOpInfo( req, this );
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
+	sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
 // client expects: "disk:123:322|mem:234:123|cpu:23:12";  in GB  used:free
@@ -8278,7 +8282,7 @@ void JagDBServer::sendHostsInfo( const char *mesg, const JagRequest &req )
 {
 	Jstr res;
 	res = _dbConnector->_nodeMgr->_allNodes;
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
+	sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
 // client expects: "ip1|ip2|ip3";  in GB  used:free
@@ -8286,7 +8290,7 @@ void JagDBServer::sendHostsInfo( const char *mesg, const JagRequest &req )
 void JagDBServer::sendRemoteHostsInfo( const char *mesg, const JagRequest &req )
 {
 	Jstr res = _cfg->getValue("REMOTE_BACKUP_SERVER", "0" );
-	JagTable::sendMessageLength( req, res.c_str(), res.size(), "OK" );
+	sendMessageLength( req, res.c_str(), res.size(), "OK" );
 }
 
 // client expects: "%lld|%lld|%lld|%lld|%.2f|%lld", totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp
@@ -8298,7 +8302,7 @@ void JagDBServer::sendLocalStat6( const char *mesg, const JagRequest &req )
 	_jagSystem.getStat6( totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp );
 	char line[256];
 	sprintf(line, "%lld|%lld|%lld|%lld|%.2f|%lld", totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp );
-	JagTable::sendMessageLength( req, line, strlen(line), "OK" );
+	sendMessageLength( req, line, strlen(line), "OK" );
 }
 
 // client expects: "%lld|%lld|%lld|%lld|%.2f|%lld", totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp
@@ -8338,7 +8342,7 @@ void JagDBServer::sendClusterStat6( const char *mesg, const JagRequest &req )
 	loadvg = loadvg/(float)splen;
 
 	sprintf(line, "%lld|%lld|%lld|%lld|%.2f|%lld", totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp );
-	JagTable::sendMessageLength( req, line, strlen(line), "OK" );
+	sendMessageLength( req, line, strlen(line), "OK" );
 }
 
 // 0: not done; 1: done
@@ -8347,20 +8351,20 @@ void JagDBServer::processLocalBackup( const char *mesg, const JagRequest &req )
 {
 	if ( req.session->uid!="admin" || !req.session->exclusiveLogin ) {
 		raydebug( stdout, JAG_LOG_LOW, "localbackup rejected. admin exclusive login is required\n" );
-		JagTable::sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 	
 	if ( ! _dbConnector->_nodeMgr->_isHost0OfCluster0 ) {
 		prt(("s2930 processLocalBackup not ishost0Cluster0 skip\n"));
 		raydebug( stdout, JAG_LOG_LOW, "localbackup not processed\n" );
-		JagTable::sendMessage( req, "localbackup is not setup and not processed", "ER" );
-		JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		sendMessage( req, "localbackup is not setup and not processed", "ER" );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 	
 	raydebug( stdout, JAG_LOG_LOW, "localbackup started\n" );
-	JagTable::sendMessage( req, "localbackup started...", "OK" );
+	sendMessage( req, "localbackup started...", "OK" );
 	
 	// copy local data
 	Jstr tmstr = JagTime::YYYYMMDDHHMM();
@@ -8372,8 +8376,8 @@ void JagDBServer::processLocalBackup( const char *mesg, const JagRequest &req )
 	raydebug( stdout, JAG_LOG_LOW, "broadcast localbackup to all servers ...\n" ); 
 	_dbConnector->broadCastSignal( bcastCmd, bcasthosts );
 	raydebug( stdout, JAG_LOG_LOW, "localbackup finished\n" );
-	JagTable::sendMessage( req, "localbackup finished", "OK" );
-	JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+	sendMessage( req, "localbackup finished", "OK" );
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
 }
 
 // 0: not done; 1: done
@@ -8387,7 +8391,7 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
 	
 	if ( req.session && ( req.session->uid!="admin" || !req.session->exclusiveLogin ) ) {
 		raydebug( stdout, JAG_LOG_LOW, "remotebackup rejected. admin exclusive login is required\n" );
-		if ( req.session ) JagTable::sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		if ( req.session ) sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 	
@@ -8395,16 +8399,16 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
 	if ( ! _dbConnector->_nodeMgr->_isHost0OfCluster0 ) {
 		prt(("s2930 processRemoteBackup not _isHost0OfCluster0 skip\n"));
 		raydebug( stdout, JAG_LOG_LOW, "remotebackup not processed\n" );
-		if ( req.session ) JagTable::sendMessage( req, "remotebackup is not setup and not processed", "ER" );
-		if ( req.session ) JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		if ( req.session ) sendMessage( req, "remotebackup is not setup and not processed", "ER" );
+		if ( req.session ) sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 
 	if ( _restartRecover ) {
 		prt(("s2931 in recovery, skip processRemoteBackup\n"));
 		raydebug( stdout, JAG_LOG_LOW, "remotebackup not processed\n" );
-		if ( req.session ) JagTable::sendMessage( req, "remotebackup is not setup and not processed", "ER" );
-		if ( req.session ) JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		if ( req.session ) sendMessage( req, "remotebackup is not setup and not processed", "ER" );
+		if ( req.session ) sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 
@@ -8418,13 +8422,13 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
 		// do not comment out
 		raydebug( stdout, JAG_LOG_LOW, "REMOTE_BACKUP_SERVER/syncpass.txt empty, skip\n" ); 
 		raydebug( stdout, JAG_LOG_LOW, "remotebackup not processed\n" );
-		if ( req.session ) JagTable::sendMessage( req, "remotebackup is not setup and not processed", "ER" );
-		if ( req.session ) JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		if ( req.session ) sendMessage( req, "remotebackup is not setup and not processed", "ER" );
+		if ( req.session ) sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 	
 	raydebug( stdout, JAG_LOG_LOW, "remotebackup started\n" );
-	if ( req.session ) JagTable::sendMessage( req, "remotebackup started...", "OK" );
+	if ( req.session ) sendMessage( req, "remotebackup started...", "OK" );
 	
 	JagStrSplit sp (rs, '|');
 	Jstr remthost;
@@ -8450,8 +8454,8 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
 		jagsleep(10, JAG_SEC);
 	}
 	raydebug( stdout, JAG_LOG_LOW, "remotebackup finished\n" );
-	if ( req.session ) JagTable::sendMessage( req, "remotebackup finished", "OK" );
-	if ( req.session ) JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+	if ( req.session ) sendMessage( req, "remotebackup finished", "OK" );
+	if ( req.session ) sendMessage( req, "_END_[T=30|E=]", "ED" );
 }
 
 // 0: not done; 1: done
@@ -8464,7 +8468,7 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 	// "msg", "OK"  just an message
 	if ( req.session->uid!="admin" || !req.session->exclusiveLogin ) {
 		raydebug( stdout, JAG_LOG_LOW, "restorefromremote rejected. admin exclusive login is required\n" );
-		JagTable::sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 	
@@ -8472,16 +8476,16 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 	if ( ! _dbConnector->_nodeMgr->_isHost0OfCluster0 ) {
 		prt(("s2930 processRestoreRemote not _isHost0OfCluster0 skip\n"));
 		raydebug( stdout, JAG_LOG_LOW, "restorefromremote not processed\n" );
-		JagTable::sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
-		JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 
 	if ( _restartRecover ) {
 		prt(("s2931 in recovery, skip processRestoreRemote\n"));
 		raydebug( stdout, JAG_LOG_LOW, "restorefromremote not processed\n" );
-		JagTable::sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
-		JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 
@@ -8489,8 +8493,8 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 	if ( sp.length() < 3 ) {
 		raydebug( stdout, JAG_LOG_LOW, "processRestoreRemote pmsg empty, skip\n" ); 
 		raydebug( stdout, JAG_LOG_LOW, "restorefromremote not processed\n" );
-		JagTable::sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
-		JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 
@@ -8499,14 +8503,14 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 	if ( remthost.size() < 1 ) {
 		raydebug( stdout, JAG_LOG_LOW, "processRestoreRemote IP empty, skip\n" ); 
 		raydebug( stdout, JAG_LOG_LOW, "restorefromremote not processed\n" );
-		JagTable::sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
-		JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+		sendMessage( req, "restorefromremote is not setup and not processed", "ER" );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
 		return;
 	}
 	
 	prt(("s6370 _restorefromremote mesg=[%s]\n", mesg ));
 	raydebug( stdout, JAG_LOG_LOW, "restorefromremote started\n" );
-	JagTable::sendMessage( req, "restorefromremote started... please restart jaguar after completion", "OK" );
+	sendMessage( req, "restorefromremote started... please restart jaguar after completion", "OK" );
 
     // bcast to other servers
     Jstr bcastCmd, bcasthosts;
@@ -8520,8 +8524,8 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 	doRestoreRemote( rmsg.c_str(), req );
 	// doRestoreRemote( remthost, passwd );
 	raydebug( stdout, JAG_LOG_LOW, "restorefromremote finished\n" );
-	JagTable::sendMessage( req, "restorefromremote finished", "OK" );
-	JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+	sendMessage( req, "restorefromremote finished", "OK" );
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
 }
 
 // method to check and repair given object data
@@ -8532,7 +8536,7 @@ void JagDBServer::repairCheck( const char *mesg, const JagRequest &req )
 	if ( 0 == strncmp( mesg, "_ex_repairocheck", 16 ) ) isCheck = 1;
 	if ( req.session->uid!="admin" || !req.session->exclusiveLogin ) {
 		raydebug( stdout, JAG_LOG_LOW, "check/repair object rejected. admin exclusive login is required\n" );
-		JagTable::sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 
@@ -8587,7 +8591,7 @@ void JagDBServer::repairCheck( const char *mesg, const JagRequest &req )
 			tableschema, indexschema, req.session->replicateType, 0 );
 	} else {
 		msg = dbobj + " does not exist. Please check the name";
-		JagTable::sendMessage( req, msg.c_str(), "ER" );
+		sendMessage( req, msg.c_str(), "ER" );
 		return;
 	}
 
@@ -8606,8 +8610,8 @@ void JagDBServer::repairCheck( const char *mesg, const JagRequest &req )
 		}
 	}
 	prt(("s7459 %s\n", msg.c_str()));
-	JagTable::sendMessage( req, msg.c_str(), "OK" );
-	JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+	sendMessage( req, msg.c_str(), "OK" );
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
 }
 
 // method to add new cluster
@@ -8616,7 +8620,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 {
 	if ( req.session->uid!="admin" || !req.session->exclusiveLogin ) {
 		raydebug( stdout, JAG_LOG_LOW, "add cluster rejected. admin exclusive login is required\n" );
-		JagTable::sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 
@@ -8648,7 +8652,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 			if ( ip.length() < 2 ) {
 				err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of " ) +  sp4[j] ;
 				raydebug( stdout, JAG_LOG_LOW, "E1300 addcluster error %s \n", err.c_str() );
-				JagTable::sendMessage( req, err.c_str(), "ER" );
+				sendMessage( req, err.c_str(), "ER" );
 				return;
 			}
 
@@ -8668,7 +8672,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 		if ( ip.length() < 2 ) {
 			err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of newhost " ) +  sp2[i] ;
 			raydebug( stdout, JAG_LOG_LOW, "E1301 addcluster error %s \n", err.c_str() );
-			JagTable::sendMessage( req, err.c_str(), "ER" );
+			sendMessage( req, err.c_str(), "ER" );
 			return;
 		}
 
@@ -8801,7 +8805,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	_dbConnector->_nodeMgr->refreshFile( nhstr );
 	crecoverRefreshSchema( 2 );
 	_localInternalIP = _dbConnector->_nodeMgr->_selfIP;
-	JagTable::sendMessage( req, "_END_[T=30|E=]", "ED" );
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
 
 	struct timeval now;
 	gettimeofday( &now, NULL );
@@ -9261,7 +9265,7 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 		cmd = Jstr("select * from ") + sp2[i] + " export;";
 		JagParseAttribute jpa( this, servtimediff, servtimediff, req2.session->dbname, _cfg );
 		prt(("s4071 parseCommand cmd=[%s]\n", cmd.c_str() ));
-		JagParser parser( this, NULL );
+		JagParser parser( this );
 		JagParseParam pparam( &parser );
 		if ( parser.parseCommand( jpa, cmd.c_str(), &pparam, reterr ) ) {
 			// select table export;
@@ -9283,7 +9287,7 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 {
 	if ( req.session && (req.session->uid!="admin" || !req.session->exclusiveLogin ) ) {
 		raydebug( stdout, JAG_LOG_LOW, "shut down rejected. admin exclusive login is required\n" );
-		JagTable::sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 	
@@ -9545,7 +9549,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	// send all table elements info to client
 	Jstr elemInfo = longToStr( objelem[0] ) + "|" + longToStr( objelem[1] );
 
-	JagTable::sendMessage( req, elemInfo.c_str(), "OK" );
+	sendMessage( req, elemInfo.c_str(), "OK" );
 
  	char ehdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *enewbuf = NULL;
@@ -10344,7 +10348,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	}
 
 	if ( timeout ) {
-		JagTable::sendMessage( req, "E8012 Join command has timed out. Results have been truncated;", "ER" );
+		sendMessage( req, "E8012 Join command has timed out. Results have been truncated;", "ER" );
 	}
 	// send data to client if not 0
 	if ( jda->elements() > 0 && !req.session->sessionBroken && jda ) {
@@ -10354,7 +10358,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	}
 	// send "JOINEND" to client and wait for signal to free all memory ( make sure all servers finish join job )
 	hcli.close();
-	JagTable::sendMessage( req, "JOINEND", "OK" );
+	sendMessage( req, "JOINEND", "OK" );
 	recvData( req.session->sock, hdr, newbuf );
 	
 	// free all memory, and also remove all files and dirs under clipid_ip
@@ -11377,7 +11381,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 			} else {
 				bbuf[boffset] = '\0';
 				// if one batch if full, flush the whole batch to another server
-				rc = JagTable::sendMessageLength( req, bbuf, boffset, "XX" );
+				rc = sendMessageLength( req, bbuf, boffset, "XX" );
 				boffset = 0;
 				if ( rc < 0 ) { break; }
 			}
@@ -11385,7 +11389,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 		if ( boffset > 0 ) {
 			// flush last time
 			bbuf[boffset] = '\0';
-			rc = JagTable::sendMessageLength( req, bbuf, boffset, "XX" );
+			rc = sendMessageLength( req, bbuf, boffset, "XX" );
 			boffset = 0;
 		}
 		if ( bbuf ) free( bbuf );
@@ -11840,16 +11844,16 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 				// must be X1, or select count(*) result
 				pmsg = _dataCenter[useindex]->getMessage();
 				msglen = _dataCenter[useindex]->getMessageLen();
-				//JagTable::sendMessageLength( req, pmsg, msglen, "OK" );
+				//sendMessageLength( req, pmsg, msglen, "OK" );
 				if ( pparam.opcode == JAG_COUNT_OP ) {
 					pmsg = strcasestrskipquote( pmsg, " contains " );
 					Jstr cntstr = longToStr(jagatoll(pmsg+10));
 					// prt(("sendback to origclient select count() [%s] ...\n", cntstr.c_str() ));
-					JagTable::sendMessageLength( req, cntstr.c_str(), cntstr.size(), "OK" );
+					sendMessageLength( req, cntstr.c_str(), cntstr.size(), "OK" );
 				} else {
 					// prt(("sendback to origclient select point query [%s] ...\n", pmsg ));
 					if ( !hasX1 && pmsg ) {
-						JagTable::sendMessageLength( req, pmsg, msglen, "X1" );
+						sendMessageLength( req, pmsg, msglen, "X1" );
 						hasX1 = true;
 						// prt(("s7028 hasX1=true pmsg=[%s]\n", pmsg ));
 					}
@@ -11870,7 +11874,7 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 						// prt(("sendbak to origclient [%s] ...\n", pmsg ));
 						if ( !hasX1 && pmsg ) {
 							// "select * from tab export" gives NULL pmsg
-							JagTable::sendMessageLength( req, pmsg, msglen, "X1" );
+							sendMessageLength( req, pmsg, msglen, "X1" );
 							hasX1 = true;
 							// prt(("s5028 hasX1=true pmsg=[%s]\n", pmsg ));
 						}
@@ -12345,7 +12349,7 @@ void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj,
 
 	if ( 0 == req.session->drecoverConn ) {
 		// prt(("s2220 sending cond=[%s] SS ..\n", cond ));
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			prt(("s3928 return\n"));
@@ -12423,7 +12427,7 @@ void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj,
 	}
 
 	if ( 0 == req.session->drecoverConn ) {
-		if ( JagTable::sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
@@ -12468,7 +12472,7 @@ void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj,
 
 	if ( req.session->uid != "admin" && uid != req.session->uid ) {
 		Jstr err = Jstr("E5082 error show grants for user ") + uid;
-		JagTable::sendMessageLength( req, err.c_str(), err.length(), "OK" );
+		sendMessageLength( req, err.c_str(), err.length(), "OK" );
 		return;
 	}
 
@@ -12489,7 +12493,7 @@ void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj,
 	}
 
 	// prt(("s2473 perms=[%s] send to cleint\n", perms.c_str() ));
-	JagTable::sendMessageLength( req, perms.c_str(), perms.length(), "DS" );
+	sendMessageLength( req, perms.c_str(), perms.length(), "DS" );
 	// jaguar_mutex_unlock ( &g_dbmutex );
 }
 
@@ -12747,7 +12751,7 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
 		}
 
 		if ( cnt > 0 ) {
-        	int rc = JagTable::sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
+        	int rc = sendMessageLength( req, rec.getSource(), rec.getLength(), "KV" );
 			//prt(("s1128 sendMessageLength msg=[%s] rc=%d\n", rec.getSource(), rc  ));
 			return rc;
 		} else {
