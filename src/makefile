@@ -1,6 +1,5 @@
-jaguarprog: lib createKeyPair
-all: clean lib 
-test: testjdbserv 
+jaguarprog: progdyn
+all: clean progdyn  
 
 BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include \
 		  -IWeb/Tencent/rapidjson/include -IWeb/TomCrypt/include \
@@ -70,14 +69,8 @@ javalib: Jaguar.o  $(CLIENTOBJS)
 glibcversion: glibcversion.o
 	$(CPP) -o glibcversion glibcversion.o
 
-lib:  $(SERVEROBJS) jql.o JagParseExprClient.o JagParseExprServer.o jagserv.o javahdr javalib
+progdyn:  $(SERVEROBJS) jql.o JagParseExprClient.o JagParseExprServer.o jagserv.o javahdr javalib
 	$(CPP) -o jql.bin jql.o -L. -lJaguarClient -lpthread
 	$(CPP) -o jaguar.bin jagserv.o $(SERVEROBJS) $(EXTOBJS) $(STDLIBS) 
 
-
-createKeyPair: createKeyPair.o
-	$(CPP) -o createKeyPair.bin  createKeyPair.o libJaguarClient.so $(STDLIBS)
-
-testjdbserv: testjdbserv.o $(OBJS) 
-	$(GPP) -o testjdbserv testjdbserv.o libJaguarClient.so $(STDLIBS) -lpthread
 
