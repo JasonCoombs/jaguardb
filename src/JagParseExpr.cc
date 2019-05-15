@@ -1123,6 +1123,12 @@ Jstr BinaryOpNode::binaryOpStr( short binaryOp )
 	else if ( binaryOp == JAG_FUNC_NEARBY ) str = "nearby";
 	else if ( binaryOp == JAG_FUNC_ALL ) str = "all";
 	else if ( binaryOp == JAG_FUNC_CENTROID ) str = "centroid";
+	else if ( binaryOp == JAG_FUNC_XMINPOINT ) str = "xminpoint";
+	else if ( binaryOp == JAG_FUNC_XMAXPOINT ) str = "xmaxpoint";
+	else if ( binaryOp == JAG_FUNC_YMINPOINT ) str = "yminpoint";
+	else if ( binaryOp == JAG_FUNC_YMAXPOINT ) str = "ymaxpoint";
+	else if ( binaryOp == JAG_FUNC_ZMINPOINT ) str = "zminpoint";
+	else if ( binaryOp == JAG_FUNC_ZMAXPOINT ) str = "zmaxpoint";
 	else if ( binaryOp == JAG_FUNC_REVERSE ) str = "reverse";
 	else if ( binaryOp == JAG_FUNC_SCALE ) str = "scale";
 	else if ( binaryOp == JAG_FUNC_SCALEAT ) str = "scaleat";
@@ -1212,6 +1218,9 @@ int BinaryOpNode::setFuncAttribute( const JagHashStrInt *maps[], const JagSchema
 		siglen = 0;
 	} else if ( _binaryOp == JAG_FUNC_POINTN ||  _binaryOp == JAG_FUNC_STARTPOINT || _binaryOp == JAG_FUNC_ENDPOINT
 				|| _binaryOp == JAG_FUNC_INTERPOLATE
+				|| _binaryOp == JAG_FUNC_XMINPOINT || _binaryOp == JAG_FUNC_XMAXPOINT
+				|| _binaryOp == JAG_FUNC_YMINPOINT || _binaryOp == JAG_FUNC_YMAXPOINT
+				|| _binaryOp == JAG_FUNC_ZMINPOINT || _binaryOp == JAG_FUNC_ZMAXPOINT
                 || _binaryOp == JAG_FUNC_CENTROID || _binaryOp == JAG_FUNC_CLOSESTPOINT ) {
 		ltmode = 0;
 		type = JAG_C_COL_TYPE_STR;
@@ -3222,7 +3231,10 @@ int BinaryOpNode::_doCalculation( JagFixString &lstr, JagFixString &rstr,
 				 || _binaryOp == JAG_FUNC_TOPOLYGON  || _binaryOp == JAG_FUNC_ASTEXT
 				 || _binaryOp == JAG_FUNC_TOMULTIPOINT  ||  _binaryOp == JAG_FUNC_CONCAVEHULL
 				 || _binaryOp == JAG_FUNC_CENTROID ||  _binaryOp == JAG_FUNC_OUTERRING || _binaryOp == JAG_FUNC_OUTERRINGS
-				 ||  _binaryOp == JAG_FUNC_INNERRINGS || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
+				 || _binaryOp == JAG_FUNC_XMINPOINT ||  _binaryOp == JAG_FUNC_XMAXPOINT
+				 || _binaryOp == JAG_FUNC_YMINPOINT ||  _binaryOp == JAG_FUNC_YMAXPOINT
+				 || _binaryOp == JAG_FUNC_ZMINPOINT ||  _binaryOp == JAG_FUNC_ZMAXPOINT
+				 || _binaryOp == JAG_FUNC_INNERRINGS || _binaryOp == JAG_FUNC_RINGN || _binaryOp == JAG_FUNC_INNERRINGN
 	             || _binaryOp == JAG_FUNC_ENDPOINT || _binaryOp == JAG_FUNC_ISCLOSED
 	             || _binaryOp == JAG_FUNC_ISSIMPLE  || _binaryOp == JAG_FUNC_ISRING
 	             || _binaryOp == JAG_FUNC_ISCONVEX  || _binaryOp == JAG_FUNC_INTERPOLATE
@@ -4761,6 +4773,9 @@ bool BinaryExpressionBuilder::checkFuncType( short fop )
 		fop == JAG_FUNC_INNERRINGS || fop == JAG_FUNC_RINGN || fop == JAG_FUNC_UNIQUE || 
 		fop == JAG_FUNC_INNERRINGN || fop == JAG_FUNC_ASTEXT || fop == JAG_FUNC_BUFFER || 
 		fop == JAG_FUNC_CENTROID || 
+		fop == JAG_FUNC_XMINPOINT || fop == JAG_FUNC_XMAXPOINT || 
+		fop == JAG_FUNC_YMINPOINT || fop == JAG_FUNC_YMAXPOINT || 
+		fop == JAG_FUNC_ZMINPOINT || fop == JAG_FUNC_ZMAXPOINT || 
 		fop == JAG_FUNC_ISCLOSED || fop == JAG_FUNC_ISSIMPLE || fop == JAG_FUNC_ISCONVEX || 
 		fop == JAG_FUNC_ISVALID || fop == JAG_FUNC_ISRING || 
 		fop == JAG_FUNC_ISONLEFT || fop == JAG_FUNC_ISONRIGHT || 
@@ -5100,6 +5115,18 @@ bool BinaryExpressionBuilder::getCalculationType( const char *p, short &fop, sho
 		fop = JAG_FUNC_NUMINNERRINGS; len = 13; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "srid", 4 ) ) {
 		fop = JAG_FUNC_SRID; len = 4; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "xminpoint", 9 ) ) {
+		fop = JAG_FUNC_XMINPOINT; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "yminpoint", 9 ) ) {
+		fop = JAG_FUNC_YMINPOINT; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "zminpoint", 9 ) ) {
+		fop = JAG_FUNC_ZMINPOINT; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "xmaxpoint", 9 ) ) {
+		fop = JAG_FUNC_XMAXPOINT; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "ymaxpoint", 9 ) ) {
+		fop = JAG_FUNC_YMAXPOINT; len = 9; ctype = 2;
+	} else if ( 0 == strncasecmp(p, "zmaxpoint", 9 ) ) {
+		fop = JAG_FUNC_ZMAXPOINT; len = 9; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "xmin", 4 ) ) {
 		fop = JAG_FUNC_XMIN; len = 4; ctype = 2;
 	} else if ( 0 == strncasecmp(p, "ymin", 4 ) ) {
@@ -5750,6 +5777,10 @@ bool BinaryOpNode::doSingleStrOp( int op, const Jstr& mark1, const Jstr& hdr, co
 		rc = doAllBuffer( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_CENTROID ) {
 		rc = doAllCentroid( mark1, hdr, colType1, srid1, sp1, value );
+	} else if ( op == JAG_FUNC_XMINPOINT || op == JAG_FUNC_XMAXPOINT
+	              || op == JAG_FUNC_YMINPOINT || op == JAG_FUNC_YMAXPOINT
+				  || op == JAG_FUNC_ZMINPOINT || op == JAG_FUNC_ZMAXPOINT ) {
+		rc = doAllMinMaxPoint( op, mark1, hdr, colType1, srid1, sp1, value );
 	} else if ( op == JAG_FUNC_TOPOLYGON ) {
 		rc = doAllToPolygon( mark1, hdr, colType1, srid1, sp1, carg, value );
 	} else if ( op == JAG_FUNC_TOMULTIPOINT ) {
@@ -6763,14 +6794,164 @@ bool BinaryOpNode::doAllCentroid( const Jstr& mk, const Jstr& hdr, const Jstr &c
 	if ( rc ) {
 		prt(("s5088 is3D=%d cx=%f cy=%f cz=%f\n", is3D, cx, cy, cz ));
 		if ( is3D ) {
-			value = trimEndZeros( doubleToStr(cx) ) + " " + trimEndZeros( doubleToStr(cy) ) + " " + trimEndZeros(doubleToStr(cz));
+			value = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ");
+			value += trimEndZeros( doubleToStr(cx) ) + " " + trimEndZeros( doubleToStr(cy) ) + " " + trimEndZeros(doubleToStr(cz));
 		} else {
-			value = trimEndZeros( doubleToStr(cx) ) + " " + trimEndZeros( doubleToStr(cy) );
+			value = Jstr("CJAG=0=0=PT=d 0:0:0:0 ");
+			value += trimEndZeros( doubleToStr(cx) ) + " " + trimEndZeros( doubleToStr(cy) );
 		}
 	}
 
 	return rc;
 }
+
+
+bool BinaryOpNode::doAllMinMaxPoint( int op, const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
+								     int srid, const JagStrSplit &sp1, Jstr &value )
+{
+	prt(("s3420 doAllMinMaxPoint() op=%d mk=[%s] colType=[%s] sp1.print():\n", op, mk.c_str(), colType.c_str() ));
+	//sp.print();
+	value = "";
+	bool rc = true;
+	bool is3D = false;
+
+	prt(("s8830 JAG_OJAG\n" ));
+	//sp.print();
+	JagLineString line;
+	JagPolygon pgon;
+	double xmin, xmax, ymin, ymax, zmin, zmax;
+    if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+		JagParser::addLineStringData( line, sp1 );
+		line.bbox2D( xmin, ymin, xmax, ymax );
+    } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D || colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+		JagLineString3D line3D;
+		JagParser::addLineString3DData( line3D, sp1 );
+		line3D.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+		is3D = true;
+    } else if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+	    JagParser::addPolygonData( pgon, sp1, true );
+		line.copyFrom( pgon.linestr[0], true );
+		line.bbox2D( xmin, ymin, xmax, ymax );
+    } else if ( colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+	    JagParser::addPolygonData( pgon, sp1, true );
+		line.copyFrom( pgon.linestr[0], false );
+		line.bbox2D( xmin, ymin, xmax, ymax );
+    } else if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+	    JagParser::addPolygon3DData( pgon, sp1, true );
+		line.copyFrom( pgon.linestr[0], true );
+		line.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+		is3D = true;
+    } else if ( colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+	    JagParser::addPolygon3DData( pgon, sp1, true );
+		line.copyFrom( pgon.linestr[0], false );
+		line.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+		is3D = true;
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+		JagVector<JagPolygon> pgvec;
+		JagParser::addMultiPolygonData( pgvec, sp1, true, false );
+		line.copyFrom( pgvec[0].linestr[0], true );
+		line.bbox2D( xmin, ymin, xmax, ymax );
+    } else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+		//prt(("s5038 JAG_C_COL_TYPE_MULTIPOLYGON3D\n" ));
+		JagVector<JagPolygon> pgvec;
+		JagParser::addMultiPolygonData( pgvec, sp1, true, true );
+		line.copyFrom( pgvec[0].linestr[0], true );
+		line.bbox3D( xmin, ymin, zmin, xmax, ymax, zmax );
+		is3D = true;
+	} else if ( colType == JAG_C_COL_TYPE_POINT ) {
+		xmin = xmax = jagatof( sp1[JAG_SP_START+0].c_str() );
+		ymin = ymax = jagatof( sp1[JAG_SP_START+1].c_str() );
+	} else if (  colType == JAG_C_COL_TYPE_SQUARE) {
+		xmin = jagatof( sp1[JAG_SP_START+0].c_str() );
+		ymin = jagatof( sp1[JAG_SP_START+1].c_str() );
+		//todo qwer
+	} else if (  colType == JAG_C_COL_TYPE_RECTANGLE  ) {
+		xmin = jagatof( sp1[JAG_SP_START+0].c_str() );
+		ymin = jagatof( sp1[JAG_SP_START+1].c_str() );
+		//todo qwer
+	} else if (  colType == JAG_C_COL_TYPE_CIRCLE ) { 
+		xmin = jagatof( sp1[JAG_SP_START+0].c_str() );
+		ymin = jagatof( sp1[JAG_SP_START+1].c_str() );
+		//todo qwer
+	} else if (  colType == JAG_C_COL_TYPE_ELLIPSE ) {
+		xmin = jagatof( sp1[JAG_SP_START+0].c_str() );
+		ymin = jagatof( sp1[JAG_SP_START+1].c_str() );
+		//todo qwer
+	} else if ( colType == JAG_C_COL_TYPE_LINE ) {
+		double cx1 = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double cy1 = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double cx2 = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double cy2 = jagatof( sp1[JAG_SP_START+3].c_str() );
+		//todo qwer
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+		double cx1 = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double cy1 = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double cx2 = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double cy2 = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double cx3 = jagatof( sp1[JAG_SP_START+4].c_str() );
+		double cy3 = jagatof( sp1[JAG_SP_START+5].c_str() );
+		//todo qwer
+	} else if ( colType == JAG_C_COL_TYPE_POINT3D || colType == JAG_C_COL_TYPE_CUBE 
+			    || colType == JAG_C_COL_TYPE_SPHERE || colType == JAG_C_COL_TYPE_ELLIPSOID
+				|| colType == JAG_C_COL_TYPE_CONE ) {
+				/**
+		cx = jagatof( sp1[JAG_SP_START+0].c_str() );
+		cy = jagatof( sp1[JAG_SP_START+1].c_str() );
+		cz = jagatof( sp1[JAG_SP_START+2].c_str() );
+		**/
+		//prt(("s7942 JAG_C_COL_TYPE_POINT3D cx=%f cy=%f cz=%f\n", cx, cy, cz ));
+		is3D = true;
+		//todo
+	} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+		// todo
+		double cx1 = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double cy1 = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double cz1 = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double cx2 = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double cy2 = jagatof( sp1[JAG_SP_START+4].c_str() );
+		double cz2 = jagatof( sp1[JAG_SP_START+5].c_str() );
+		/**
+		cx = ( cx1 + cx2 ) /2.0;
+		cy = ( cy1 + cy2 ) /2.0;
+		cz = ( cz1 + cz2 ) /2.0;
+		**/
+		is3D = true;
+	} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+		double cx1 = jagatof( sp1[JAG_SP_START+0].c_str() );
+		double cy1 = jagatof( sp1[JAG_SP_START+1].c_str() );
+		double cz1 = jagatof( sp1[JAG_SP_START+2].c_str() );
+		double cx2 = jagatof( sp1[JAG_SP_START+3].c_str() );
+		double cy2 = jagatof( sp1[JAG_SP_START+4].c_str() );
+		double cz2 = jagatof( sp1[JAG_SP_START+5].c_str() );
+		double cx3 = jagatof( sp1[JAG_SP_START+6].c_str() );
+		double cy3 = jagatof( sp1[JAG_SP_START+7].c_str() );
+		double cz3 = jagatof( sp1[JAG_SP_START+8].c_str() );
+		/**
+		cx = ( cx1 + cx2 + cx3 ) /3.0;
+		cy = ( cy1 + cy2 + cy3 ) /3.0;
+		cz = ( cz1 + cz2 + cz3 ) /3.0;
+		**/
+		is3D = true;
+		//todo
+	} else  {
+		rc = false;
+	}
+
+	if ( rc ) {
+		//todo
+		// prt(("s5088 is3D=%d cx=%f cy=%f cz=%f\n", is3D, cx, cy, cz ));
+		if ( is3D ) {
+			value = Jstr("CJAG=0=0=PT3=d 0:0:0:0:0:0 ");
+			value += trimEndZeros( doubleToStr(xmin) ) + " " + trimEndZeros( doubleToStr(ymin) ) + " " + trimEndZeros(doubleToStr(zmin));
+		} else {
+			value = Jstr("CJAG=0=0=PT=d 0:0:0:0 ");
+			value += trimEndZeros( doubleToStr(xmin) ) + " " + trimEndZeros( doubleToStr(ymin) );
+		}
+	}
+
+	return rc;
+}
+
 
 bool BinaryOpNode::doAllConvexHull( const Jstr& mk, const Jstr& hdr, const Jstr &colType, 
 								    int srid, const JagStrSplit &sp, Jstr &value )

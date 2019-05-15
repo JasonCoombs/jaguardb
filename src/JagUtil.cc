@@ -2552,7 +2552,7 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 	}
 	if ( socket_bad( sock ) ) { return -1; } 
 	len = ::recv( sock, hdr, N, 0 );
-	prt(("s4424 _rayrecv  len=%d hdr=[%s]\n", len, hdr ));
+	//prt(("s4424 _rayrecv  len=%d hdr=[%s]\n", len, hdr ));
 	if ( len < 0 && errno == EINTR ) {
     	len = ::recv( sock, hdr, N, 0 );
 	}

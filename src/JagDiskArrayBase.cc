@@ -1202,15 +1202,12 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 	if ( jda->_isClient ) {
 		JagCfg ccfg( JAG_CLIENT );
 		period = atoi(ccfg.getValue("DISK_FLUSH_INTERVAL", "1000").c_str());
-		// syncPeriod = atoi(ccfg.getValue("INSERT_SYNC_PERIOD", "10").c_str());
 	} else {
 		period = atoi(servobj->_cfg->getValue("DISK_FLUSH_INTERVAL", "1500").c_str());
-		// syncPeriod = servobj->_insertSyncPeriod;
 	}
 	abaxint cnt = 0;
 	JagClock clock;
 	JagClock clock2;
-	int  rc, fd;
 	abaxint  t1, t2;
 	time_t  nowt;
 
@@ -1233,6 +1230,7 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 				jda->_monitordone = 1;
 				return NULL;
 		}
+		raydebug(stdout, JAG_LOG_LOW, "s3428 waitCopyAndInsertBufferAndClean cnt=%d\n", cnt );
 		// clock.stop();
 		t1 = clock.elapsed();
 		t2 = clock2.elapsed();
@@ -1250,7 +1248,6 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 void JagDiskArrayBase::copyAndInsertBufferAndClean()
 {
 	jaguar_mutex_lock( & _insertBufferMutex );
-	// if ( _pairarr->_elements < 1 || ! _sessionactive ) {
 	if ( _pairmap->elements() < 1 || ! _sessionactive ) {
 		jaguar_mutex_unlock( &_insertBufferMutex );
 		return;
@@ -1274,6 +1271,7 @@ abaxint JagDiskArrayBase::waitCopyAndInsertBufferAndClean( JagClock &clock, JagC
 	jaguar_mutex_lock( & _insertBufferMutex );
 	struct timeval now;
 	struct timespec ts;
+	raydebug(stdout, JAG_LOG_LOW, "s3028 enter waitCopyAndInsertBufferAndClean() ...\n" );
 	while ( _pairmap->elements() < 1 && _sessionactive ) {
 		gettimeofday( &now, NULL );
 		ts.tv_sec = now.tv_sec;
@@ -1284,11 +1282,12 @@ abaxint JagDiskArrayBase::waitCopyAndInsertBufferAndClean( JagClock &clock, JagC
 			// timeout, destroy monitor thread
 			_monitordone = 1;
 			jaguar_mutex_unlock( &_insertBufferMutex );
-			//raydebug(stdout, JAG_LOG_LOW, "s3528 JagDiskArrayBase cond_timedwait ETIMEDOUT\n" );
+			raydebug(stdout, JAG_LOG_LOW, "s3528 JagDiskArrayBase cond_timedwait ETIMEDOUT\n" );
 			return rc;
 		}
 	}
 	//clock.stop();
+	raydebug(stdout, JAG_LOG_LOW, "s3628 in waitCopyAndInsertBufferAndClean() past while\n" );
 	
 	//clock2.start();
 	#ifdef CHECK_LATENCY
@@ -1306,7 +1305,11 @@ abaxint JagDiskArrayBase::waitCopyAndInsertBufferAndClean( JagClock &clock, JagC
 
 	jaguar_mutex_unlock( &_insertBufferMutex );
 	jaguar_cond_signal(& _insertBufferLessThanMaxCond );
+
+	raydebug(stdout, JAG_LOG_LOW, "s3030 flushInsertBuffer()... \n" );
 	cnt = flushInsertBuffer(); 
+	raydebug(stdout, JAG_LOG_LOW, "s3030 flushInsertBuffer() cnt=%d done\n", cnt );
+
 	#ifdef CHECK_LATENCY
 	clock3.stop();
 	raydebug(stdout, JAG_LOG_LOW, "s3028 flushInsertBuffer %l ms\n", clock3.elapsed());
@@ -1343,6 +1346,9 @@ abaxint JagDiskArrayBase::copyInsertBuffer()
 // object method flush *_pairarr data pairs
 abaxint JagDiskArrayBase::flushInsertBuffer()
 {
+	//raydebug( stdout, JAG_LOG_LOW, "s4011 testtesttest nothing done in flushInsertBuffer return\n" );
+	//return 0;
+
 	// if (  _pairarrcopy->_elements < 1 ) { return 0; }
 	if (  _pairmapcopy->elements() < 1 ) { return 0; }
 	_isFlushing = 1;
@@ -1353,6 +1359,7 @@ abaxint JagDiskArrayBase::flushInsertBuffer()
 	cnt = 0;
 	rc = insertMerge( 0, _pairmapcopy->elements(), NULL, NULL, NULL, NULL );
 	// prt(("s2883 insertMergerc=%d\n", rc ));
+	raydebug( stdout, JAG_LOG_LOW, "s4111 insertMerge %d return rc=%d\n", _pairmapcopy->elements(), rc );
 	if ( rc == 2 ) {
 		// insert one pair to empty diskarray, then try merge again
 		if ( _pairmapcopy->elements() < 1 ) { _isFlushing = 0; return cnt; }

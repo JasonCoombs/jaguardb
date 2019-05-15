@@ -294,6 +294,8 @@ class BinaryOpNode: public ExprElementNode
 						  int srid, const JagStrSplit &sp1, const Jstr& carg, Jstr &val );
 	bool doAllCentroid( const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
 						  int srid, const JagStrSplit &sp1, Jstr &val );
+	bool doAllMinMaxPoint( int op, const Jstr& mk1, const Jstr& hdr, const Jstr &colType1, 
+						  int srid, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsClosed( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsSimple( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );
 	bool doAllIsConvex( const Jstr& mk1, const Jstr &colType1, const JagStrSplit &sp1, Jstr &val );

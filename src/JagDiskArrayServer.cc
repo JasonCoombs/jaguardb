@@ -1767,7 +1767,8 @@ void JagDiskArrayServer::removeBlockIndexIndDisk()
 int JagDiskArrayServer::needResize()
 {	
 	if ( _fileSplitCntLimit > 0 && _elements-_removeUsers >= _fileSplitCntLimit && !_uidORschema ) return 0;
-	else if ( ( _arrlen > _fileSplitCntLimit || _arrlen >= _fileMaxCntLimit ) && !_uidORschema ) return 0;
-	else if ( 100*(_elements-_removeUsers) > _arrlen * JAG_FILE_RAND_EXPAND ) return 1;
+	if ( ( _arrlen > _fileSplitCntLimit || _arrlen >= _fileMaxCntLimit ) && !_uidORschema ) return 0;
+
+	if ( 100*(_elements-_removeUsers) > _arrlen * JAG_FILE_RAND_EXPAND ) return 1;
 	return 0;
 }

@@ -500,6 +500,12 @@
 #define JAG_FUNC_CONCAVEHULL       327  // concave hull of multipoint/linestring/polygon
 #define JAG_FUNC_KNN       		   328  // k-NN K nearest neighbor of 2D and 3D point to multipoint/linestring/polygon
 #define JAG_FUNC_METRICN   		   329  // metricN(geom, N, m ) metric of N-th point, m-th metric, 1-based. or metricN(g,N)
+#define JAG_FUNC_XMINPOINT   	   330  // xminpoint(geom) return point where x-coord is minimum on geom
+#define JAG_FUNC_XMAXPOINT   	   331  // xmaxpoint(geom) return point where x-coord is maximum on geom
+#define JAG_FUNC_YMINPOINT   	   332  // yminpoint(geom) return point where y-coord is minimum on geom
+#define JAG_FUNC_YMAXPOINT   	   333  // ymaxpoint(geom) return point where y-coord is maximum on geom
+#define JAG_FUNC_ZMINPOINT   	   334  // zminpoint(geom) return point where z-coord is minimum on geom
+#define JAG_FUNC_ZMAXPOINT   	   335  // zmaxpoint(geom) return point where z-coord is maximum on geom
 
 
 // string functions 
@@ -643,7 +649,7 @@
 #define JAG_USEC	2
 
 // client send batch records
-#define CLIENT_SEND_BATCH_RECORDS  10000
+#define CLIENT_SEND_BATCH_RECORDS  50000
 
 // MEMORY_MODE values
 #define JAG_MEM_LOW  100

@@ -153,7 +153,7 @@ void JaguarCPPClient::_init()
 	_jda = NULL;
 	_lineFile = NULL;
 	_cfg = new JagCfg( JAG_CLIENT );
-	_maxQueryNum = jagatoll(_cfg->getValue("MAX_QUERY_NUMBER", "30000").c_str());
+	_maxQueryNum = CLIENT_SEND_BATCH_RECORDS;
 	_dtimeout = atoi(_cfg->getValue("TRANSMIT_TIMEOUT", "3").c_str());
 	_connRetryLimit = atoi(_cfg->getValue("CONNECTION_RETRY", "30").c_str());
 
@@ -856,7 +856,8 @@ int JaguarCPPClient::connect( const char *host, unsigned int port,
 		_loadlock = new JagReadWriteLock();
 		// prt(("c2438 _loadlock=%0x\n", _loadlock ));
 		_insertBuffer = new JagVector<Jstr>();
-		_insertBufferCopy = new JagVector<Jstr>();
+		// testtest
+		// _insertBufferCopy = new JagVector<Jstr>();
 		_passmo->cli = this;
 
 		_insertPool = thpool_init( _numHosts );
@@ -993,8 +994,7 @@ void *JaguarCPPClient::monitorInserts( void *ptr )
 	abaxint   bfsize = 0;
 	JagClock clock;
 	JagCfg cfg( JAG_CLIENT );
-	int FLUSH_INTERVAL = atoi(cfg.getValue("FLUSH_INTERVAL", "500").c_str());
-
+	int FLUSH_INTERVAL = atoi(cfg.getValue("FLUSH_INTERVAL", "1000").c_str());
 	// JagClock clock;
 	// printf("c7373 monitorInserts tid=%lld this=%0x ...\n", THREADID, cli );
 	lastFlush = JagTime::mtime(); // milliseconds
@@ -5640,6 +5640,7 @@ abaxint JaguarCPPClient::redoLog( const Jstr &fpath )
 	return cnt;
 }
 
+#if 0
 void JaguarCPPClient::flushInsertBuffer()
 {
 	// update schema map if available
@@ -5692,6 +5693,57 @@ void JaguarCPPClient::flushInsertBuffer()
 	}
 	// clock.stop();
 	// prt(("c3002 %lld insert %d recs to pool took %d millisecs\n", THREADID, _insertBufferCopy->size(), clock.elapsed() ));
+
+	// clock.start();
+	if ( onecnt > 0 ) flushQMap( qmap );
+	// clock.stop();
+	// prt(("c3003 %lld flushQMap %lld cmds took %d millisecs\n", THREADID, cnt, clock.elapsed() ));
+	_isFlushingInsertBuffer = 0;
+	return;
+}
+#endif
+
+void JaguarCPPClient::flushInsertBuffer()
+{
+	// update schema map if available
+	if ( _schemaUpdateString.size() > 0 ) {
+		_mapLock->writeLock( -1 );
+		rebuildSchemaMap();
+		updateSchemaMap( _schemaUpdateString.c_str() );
+		_mapLock->writeUnlock( -1 );
+		_schemaUpdateString = "";
+	}
+
+	/**
+	if ( _defvalUpdateString.size() > 0 ) {
+		_mapLock->writeLock( -1 );
+		updateDefvalMap( _defvalUpdateString.c_str() );
+		_mapLock->writeUnlock( -1 );
+		_defvalUpdateString = "";
+	}
+	***/
+
+
+	// prt(("c3000 flushinsertbuffer this=%0x thrd=%lld...\n", this, THREADID ));
+ 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	_isFlushingInsertBuffer = 1;
+	JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer>> qmap;
+
+	if ( _insertBuffer->size() < 1 ) {
+		_isFlushingInsertBuffer = 0;
+		return;
+	}
+
+	// clock.start();
+	abaxint onecnt = 0;
+	for ( int i = 0; i < _insertBuffer->size(); ++i ) {
+		onecnt += oneCmdInsertPool( qmap, (*(_insertBuffer))[i] );
+	}
+	// clock.stop();
+	// prt(("c3002 %lld insert %d recs to pool took %d millisecs\n", THREADID, _insertBufferCopy->size(), clock.elapsed() ));
+	delete _insertBuffer;
+	_insertBuffer = new JagVector<Jstr>();
+	mutex.writeUnlock();
 
 	// clock.start();
 	if ( onecnt > 0 ) flushQMap( qmap );

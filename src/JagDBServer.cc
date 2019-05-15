@@ -4182,6 +4182,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 	else if ( session.replicateType == 2 ) userDB = servobj->_nextuserDB;
 	// check password first
 	bool isGood = false;
+	int passOK = 0;
 	if ( userDB ) {
 		AbaxString dbpass = userDB->getValue( uid, JAG_PASS );
 		char *md5 = MDString( pass.c_str() );
@@ -4189,23 +4190,38 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 		if ( md5 ) free( md5 );
 		if ( dbpass == md5pass && dbpass.size() > 0 ) {
 			isGood = true;
+			passOK = 1;
+		} else {
+			passOK = -1;
+       		raydebug( stdout, JAG_LOG_HIGH, "dbpass=[%s] inmd5pass=[%s]\n", dbpass.c_str(), md5pass.c_str() );
 		}
+	} else {
+		passOK = -2;
 	}
 	
+	int tokenOK = 0;
 	if ( ! isGood ) {
 		AbaxString servToken;
     	if ( hashmap.getValue("TOKEN", servToken ) ) {
 			if ( servToken == servobj->_servToken ) {
 				// prt(("s7263 servToken match\n"));
 				isGood = true;
+				tokenOK = 1;
+			} else {
+				tokenOK = -1;
+       			raydebug( stdout, JAG_LOG_HIGH, "inservToken=[%s] _servToken=[%s]\n", 
+						  servToken.c_str(), servobj->_servToken.c_str() );
 			}
-		} 
+		}  else {
+			tokenOK = -2;
+		}
 	}
 
 	// prt(("s8822 isGood=%d\n", isGood ));
 	if ( ! isGood ) {
        	sendMessage( req, "_END_[T=20|E=Error password or token]", "ER" );
        	raydebug( stdout, JAG_LOG_LOW, "Connection from %s, Error password or TOKEN\n", session.ip.c_str() );
+       	raydebug( stdout, JAG_LOG_LOW, "%s passOK=%d tokenOK=%d\n", session.ip.c_str(), passOK, tokenOK );
        	return false;
 	}
 
@@ -4239,6 +4255,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 
 	// set timer for session if recover connection is not 2 ( clean recover )
 	if ( session.drecoverConn != 2 && !session.samePID ) session.createTimer();
+	// hearbeat timer
 	// prt(("s9999 fin doauth\n"));
 
 	// prt(("s7734 _threadMap->addKeyValue( %lld ) \n", AbaxLong(THREADID) ));
