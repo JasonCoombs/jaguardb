@@ -117,7 +117,7 @@ class JagDiskArrayBase
 		// virtual int reSize( bool force=false, abaxint newarrlen=-1, bool doFirstDist=true, bool sepThrdSelfCall=false ) {}
 		virtual void reSizeLocal( ) {}
 		void copyAndInsertBufferAndClean();
-		abaxint waitCopyAndInsertBufferAndClean( JagClock &clock, JagClock &clock2 );
+		abaxint waitCopyAndInsertBufferAndClean();
 		static Jstr jdbPath( const Jstr &jdbhome, const Jstr &db, const Jstr &tab );
 		Jstr jdbPathName( const Jstr &jdbhome, const Jstr &db, const Jstr &tab );
 		void debugJDBFile( int flag, abaxint limit, abaxint hold, abaxint instart, abaxint inend );
@@ -185,7 +185,7 @@ class JagDiskArrayBase
 		PairArray * 		_pairarr;
 		JagDBMap  *			_pairmap;
 		int					_fd;
-		int					_forceSleepTime;
+		//int					_forceSleepTime;
 
 		abaxint  _mergeLimit;
 		abaxint  _fileSplitCntLimit;

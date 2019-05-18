@@ -74,7 +74,7 @@ class JagDiskArrayFamily
 	void drop();
 	void flushBlockIndexToDisk();
 	void copyAndInsertBufferAndClean();
-	void forceSleepTime( int time );
+	//void forceSleepTime( int time );
 
 	// may need to be imporved later for join
 	abaxint setFamilyRead( JagMergeReader *&nts, const char *minbuf=NULL, const char *maxbuf=NULL ); 

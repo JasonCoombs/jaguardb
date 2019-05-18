@@ -321,12 +321,14 @@ void *JagDiskArrayFamily::separateDACompressStatic( void *ptr )
 	return NULL;
 }
 
+/***
 void JagDiskArrayFamily::forceSleepTime( int time )
 {
 	for ( int i = 0; i < _darrlistlen; ++i ) {
 		_darrlist[i]->_forceSleepTime = time;
 	}
 }
+***/
 
 abaxint JagDiskArrayFamily::getElements( abaxint &keyCheckerCnt )
 {
