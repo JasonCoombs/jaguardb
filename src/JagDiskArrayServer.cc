@@ -772,8 +772,7 @@ int JagDiskArrayServer::mergeResize( int mergeMode, abaxint mergeElements, char 
 	_jdfs2->open();
 	_jdfs2->fallocate( 0, bytes2 );
 
-	// abaxint mpos = 0;
-	FixMap::iterator mpos = _pairmapcopy->_map->begin();
+	FixMap::iterator mpos = _pairmap->_map->begin();
 	abaxint actualcnt = 0, whole = 0, ascwhole = 0, aschalfelem = 0;
 	int dgoNext = 1, mgoNext = 1;
 	double ratio = 0.0;

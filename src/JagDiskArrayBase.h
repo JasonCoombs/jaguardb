@@ -179,16 +179,12 @@ class JagDiskArrayBase
 		abaxint		_lastSyncOneTime;
 		abaxint  _shifts;
 		std::atomic<int> _lastResizeMode;
-		std::atomic<bool> _hasdarrnew;
 		std::atomic<bool> _fileCompress;
 		std::atomic<bool> _noFlush;
 
 		PairArray * 		_pairarr;
-		PairArray *			_pairarrcopy;
 		JagDBMap  *			_pairmap;
-		JagDBMap  *			_pairmapcopy;
 		int					_fd;
-
 		int					_forceSleepTime;
 
 		abaxint  _mergeLimit;

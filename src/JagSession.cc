@@ -68,7 +68,7 @@ void *JagSession::sessionTimer( void *ptr )
 {
 	JagSession *sn = (JagSession*)ptr;
 	while ( !sn->sessionBroken ) {
-		jagsleep(1, JAG_SEC);
+		jagsleep(3, JAG_SEC);
 		sendMessageLength2( sn, "Y", 1, "HB" );
 		// heartbeat from server to client in session
 	}

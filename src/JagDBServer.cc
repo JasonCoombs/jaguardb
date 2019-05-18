@@ -612,6 +612,8 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 					len, servobj->_msyncCount, servobj->_activeWalFpath.c_str(), clock.elapsed() );
 			}
 		}
+
+        raydebug(stdout, JAG_LOG_LOW, "s5130 received %d commands\n", len );
 		JagParseParam *pparam[len];
 		for ( int i = 0; i < len; ++i ) {
 			pparam[i] = newObject<JagParseParam>();
@@ -621,6 +623,8 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 		int numCPUs = servobj->_numCPUs;
 		JagParallelParse pparser( numCPUs,  servobj->_parsePool );
 		pparser.parse( jpa, split, pparam );
+        raydebug(stdout, JAG_LOG_LOW, "s5131 parsed %d commands on %d cores\n", len, numCPUs );
+
 		if ( ! servobj->_isGate ) {
     		for ( int i = 0; i < len; ++i ) {
     			if ( pparam[i]->parseOK ) {
@@ -682,6 +686,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 		for ( int i = 0; i < len; ++i ) {
 			delete pparam[i];
 		}
+
 	} else {
 		// other single cmd
 		if ( ! servobj->_isGate ) {

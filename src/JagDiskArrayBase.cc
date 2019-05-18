@@ -44,9 +44,7 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const Jstr &file
 	_lastSyncOneTime = 0;
 	_isClient = 0;
 	_pairarr = NULL;
-	_pairarrcopy = NULL;
 	_pairmap = NULL;
-	_pairmapcopy = NULL;
 	_monitordone = 1;
 	_hasmonitor = 0;
 	_isSchema = 0;
@@ -57,7 +55,6 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const Jstr &file
 	_numservs = 1;
 	_lastResizeMode = 0;
 	_isChildFile = 0;
-	_hasdarrnew = false;
 	_fileCompress = false;
 	_noFlush = false;
 	_mergeLimit = atoll(_servobj->_cfg->getValue("MAX_RESIZEMERGE_LIMIT", "2048").c_str()) * 1024 * 1024;
@@ -90,9 +87,7 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const Jstr &file
 	_pdbobj = pdbobj;
 	_isClient = 0;
 	_pairarr = NULL;
-	_pairarrcopy = NULL;
 	_pairmap = NULL;
-	_pairmapcopy = NULL;
 	_isSchema = 0;
 	_isUserID = 0;
 	_shifts = 0;
@@ -101,7 +96,6 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj, const Jstr &file
 	_numservs = 1;
 	_lastResizeMode = 0;
 	_isChildFile = 0;
-	_hasdarrnew = false;
 	_fileCompress = false;
 	_noFlush = false;
 	_mergeLimit = atoll(_servobj->_cfg->getValue("MAX_RESIZEMERGE_LIMIT", "2048").c_str()) * 1024 * 1024;
@@ -137,9 +131,7 @@ JagDiskArrayBase::JagDiskArrayBase( const Jstr &filePathName,
 	_lastSyncOneTime = 0;
 	_isClient = 1;
 	_pairarr = NULL;
-	_pairarrcopy = NULL;
 	_pairmap = NULL;
-	_pairmapcopy = NULL;
 	_monitordone = 1;
 	_hasmonitor = 0;
 	_isSchema = 0;
@@ -150,7 +142,6 @@ JagDiskArrayBase::JagDiskArrayBase( const Jstr &filePathName,
 	_numservs = 1;
 	_lastResizeMode = 0;
 	_isChildFile = 0;
-	_hasdarrnew = false;
 	_fileCompress = false;
 	_noFlush = false;
 	_mergeLimit = 512 * 1024 * 1024;
@@ -184,14 +175,9 @@ void JagDiskArrayBase::initMonitor()
 {
 	// setup monitor thread
 	_pairarr = new PairArray();
-	_pairarrcopy = new PairArray();
 	_pairmap = new JagDBMap();
-	_pairmapcopy = new JagDBMap();
 	_sessionactive = 1;
 	_hasmonitor = 1;
-
-	// pthread_t  threadmo;
-	// jagpthread_create( &_threadmo, NULL, monitorCommandsMem, (void*)this);
 }
 
 void JagDiskArrayBase::destroyMonitor()
@@ -199,15 +185,8 @@ void JagDiskArrayBase::destroyMonitor()
 	// prt(("s4408 destroyMonitor ...\n" ));
 	jaguar_mutex_lock( & _insertBufferMutex );
 	jaguar_mutex_lock( &(_insertBufferCopyMutex ) );
-	// prt(("s4418 delete _pairarr/_pairarrcopy/_pairmap/_pairmapcopy ...\n" ));
 	if ( _pairarr ) delete _pairarr; _pairarr = NULL;
-
-	if ( _pairarrcopy ) delete _pairarrcopy; _pairarrcopy=NULL;
-
 	if ( _pairmap ) delete _pairmap; _pairmap=NULL;
-
-	if ( _pairmapcopy ) delete _pairmapcopy; _pairmapcopy = NULL;
-
 	jaguar_mutex_unlock( &(_insertBufferCopyMutex ) );
 	jaguar_mutex_unlock( &(_insertBufferMutex ) );
 }
@@ -481,13 +460,9 @@ int JagDiskArrayBase::checkSafe( char *diskbuf, abaxint index, abaxint first, ab
 // push pair to buffer
 int JagDiskArrayBase::pushToBuffer( JagDBPair &pair )
 {
-	if ( _isClient ) {
-		return 1;
-	}
-
+	if ( _isClient ) { return 1; }
 	int rc;
 	jaguar_mutex_lock( &_insertBufferMutex );
-	
 	if ( _monitordone ) {
 		_monitordone = 0;
 		pthread_t  threadmo;
@@ -495,14 +470,13 @@ int JagDiskArrayBase::pushToBuffer( JagDBPair &pair )
 		pthread_detach( threadmo );
 	}
 
-	while ( _pairmap->elements()*KEYVALLEN > (_lastBytes=availableMemory( _callCounts, _lastBytes ))/16 && !_resizeUsers ) {
+	// put limit on memory usage
+	while ( _pairmap->elements() > 300000 && !_resizeUsers ) {
 		jaguar_cond_wait( &_insertBufferLessThanMaxCond, &_insertBufferMutex );
 	}
 
 	rc = _pairmap->insert( pair );
-
 	if ( !rc ) ++_dupwrites;
-
 	rc = jaguar_cond_signal( &_insertBufferMoreThanMinCond );
 	if ( rc != 0 ) {
 		prt(("s6629 jaguar_cond_signal error rc=%d\n", rc ));
@@ -1247,184 +1221,89 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 // object method
 void JagDiskArrayBase::copyAndInsertBufferAndClean()
 {
+	raydebug(stdout, JAG_LOG_LOW, "s3025 enter copyAndInsertBufferAndClean() ...\n" );
 	jaguar_mutex_lock( & _insertBufferMutex );
 	if ( _pairmap->elements() < 1 || ! _sessionactive ) {
 		jaguar_mutex_unlock( &_insertBufferMutex );
 		return;
 	}
-	
-	jaguar_mutex_lock( &(_insertBufferCopyMutex ) );
-	copyInsertBuffer();
-	jaguar_mutex_unlock( &_insertBufferMutex );
 
-	jaguar_cond_signal(& _insertBufferLessThanMaxCond );
 	flushInsertBuffer(); 
-	cleanInsertBufferCopy();
-	jaguar_mutex_unlock( &(_insertBufferCopyMutex ) );
-}
+	prt(("s1822 there done flushInsertBuffer ... \n" ));
+	delete _pairmap;
+	jagmalloc_trim(0);
+	_pairmap = new JagDBMap();
 
-// object method
-abaxint JagDiskArrayBase::waitCopyAndInsertBufferAndClean( JagClock &clock, JagClock &clock2 )
-{
-	//clock.start();
-	abaxint cnt = 0; int rc;
-	jaguar_mutex_lock( & _insertBufferMutex );
-	struct timeval now;
-	struct timespec ts;
-	raydebug(stdout, JAG_LOG_LOW, "s3028 enter waitCopyAndInsertBufferAndClean() ...\n" );
-	while ( _pairmap->elements() < 1 && _sessionactive ) {
-		gettimeofday( &now, NULL );
-		ts.tv_sec = now.tv_sec;
-		ts.tv_nsec = now.tv_usec * 1000;
-		ts.tv_sec += _servobj->_jdbMonitorTimedoutPeriod;
-		rc = jaguar_cond_timedwait(&_insertBufferMoreThanMinCond, &_insertBufferMutex, &ts );
-		if ( rc == ETIMEDOUT ) {
-			// timeout, destroy monitor thread
-			_monitordone = 1;
-			jaguar_mutex_unlock( &_insertBufferMutex );
-			raydebug(stdout, JAG_LOG_LOW, "s3528 JagDiskArrayBase cond_timedwait ETIMEDOUT\n" );
-			return rc;
-		}
-	}
-	//clock.stop();
-	raydebug(stdout, JAG_LOG_LOW, "s3628 in waitCopyAndInsertBufferAndClean() past while\n" );
-	
-	//clock2.start();
-	#ifdef CHECK_LATENCY
-	JagClock clock3;
-	clock3.start();
-	#endif
-
-	jaguar_mutex_lock( &(_insertBufferCopyMutex ) );
-	copyInsertBuffer();
-	#ifdef CHECK_LATENCY
-	clock3.stop();
-	raydebug(stdout, JAG_LOG_LOW, "s3028 copyInsertBuffer %l ms\n", clock3.elapsed());
-	clock3.start();
-	#endif
-
-	jaguar_mutex_unlock( &_insertBufferMutex );
 	jaguar_cond_signal(& _insertBufferLessThanMaxCond );
-
-	raydebug(stdout, JAG_LOG_LOW, "s3030 flushInsertBuffer()... \n" );
-	cnt = flushInsertBuffer(); 
-	raydebug(stdout, JAG_LOG_LOW, "s3030 flushInsertBuffer() cnt=%d done\n", cnt );
-
-	#ifdef CHECK_LATENCY
-	clock3.stop();
-	raydebug(stdout, JAG_LOG_LOW, "s3028 flushInsertBuffer %l ms\n", clock3.elapsed());
-	clock3.start();
-	#endif
-
-	cleanInsertBufferCopy();
-	#ifdef CHECK_LATENCY
-	clock3.stop();
-	raydebug(stdout, JAG_LOG_LOW, "s3028 cleanInsertBuffer %l ms\n", clock3.elapsed());
-	#endif
-
-	jaguar_mutex_unlock( &(_insertBufferCopyMutex ) );
-	//clock2.stop();
-	return cnt;
-}
-
-// cleanup insertbuffer copy
-void JagDiskArrayBase::cleanInsertBufferCopy()
-{
-	if ( ! _pairmapcopy ) { return; }
-	if ( _pairmapcopy ) { delete _pairmapcopy; _pairmapcopy = NULL; jagmalloc_trim(0); }
-}
-
-// object method flush *_pairarr data pairs
-abaxint JagDiskArrayBase::copyInsertBuffer()
-{
-	abaxint len = _pairmap->elements();
-	if ( _pairmapcopy ) { delete _pairmapcopy; _pairmapcopy = NULL; jagmalloc_trim(0); }
-	_pairmapcopy = _pairmap; _pairmap = new JagDBMap();
-	return len;
+	jaguar_mutex_unlock( &_insertBufferMutex );
+	raydebug(stdout, JAG_LOG_LOW, "s3025 copyAndInsertBufferAndClean() done\n" );
 }
 
 // object method flush *_pairarr data pairs
 abaxint JagDiskArrayBase::flushInsertBuffer()
 {
-	//raydebug( stdout, JAG_LOG_LOW, "s4011 testtesttest nothing done in flushInsertBuffer return\n" );
-	//return 0;
-
-	// if (  _pairarrcopy->_elements < 1 ) { return 0; }
-	if (  _pairmapcopy->elements() < 1 ) { return 0; }
+	if (  _pairmap->elements() < 1 ) { return 0; }
 	_isFlushing = 1;
 
-	abaxint len = _pairarrcopy->size();
+	abaxint len = _pairarr->size();
 	abaxint cnt, retindex;
 	int rc, insertCode;
 	cnt = 0;
-	rc = insertMerge( 0, _pairmapcopy->elements(), NULL, NULL, NULL, NULL );
-	// prt(("s2883 insertMergerc=%d\n", rc ));
-	raydebug( stdout, JAG_LOG_LOW, "s4111 insertMerge %d return rc=%d\n", _pairmapcopy->elements(), rc );
+	rc = insertMerge( 0, _pairmap->elements(), NULL, NULL, NULL, NULL );
+	raydebug( stdout, JAG_LOG_LOW, "s4111 insertMerge %d return rc=%d\n", _pairmap->elements(), rc );
 	if ( rc == 2 ) {
 		// insert one pair to empty diskarray, then try merge again
-		if ( _pairmapcopy->elements() < 1 ) { _isFlushing = 0; return cnt; }
+		if ( _pairmap->elements() < 1 ) { _isFlushing = 0; return cnt; }
 		char *kvbuf = (char*)jagmalloc(KEYVALLEN+1);
 		memset( kvbuf, 0, KEYVALLEN+1 );
 		JagDBPair retpair;
-
 		FixMap::iterator it;
-		for ( it = _pairmapcopy->_map->begin(); it != _pairmapcopy->_map->end(); ++it ) {
+		for ( it = _pairmap->_map->begin(); it != _pairmap->_map->end(); ++it ) {
 			memcpy( kvbuf, it->first.c_str(), KEYLEN );
 			memcpy( kvbuf+KEYLEN, it->second.first.c_str(), VALLEN );
 			JagDBPair ipair( kvbuf, KEYLEN, kvbuf+KEYLEN, VALLEN, true );
 			ipair.upsertFlag = it->second.second;
-
 			rc = _insertData( ipair, &retindex, insertCode, false, retpair );
-			// prt(("s5203 insertData pair=[%s] rc=%d\n", pair.key.c_str(), rc ));
-			if ( rc > 0 ) {
-				++cnt;
-				++ _writes;
-			}
-			_pairmapcopy->remove( ipair );
-			// prt(("s2483 _insertData rc=%d\n", rc ));
-			break;
+			if ( rc > 0 ) { ++cnt; ++ _writes; }
+			_pairmap->remove( ipair );
+			break;  // only one
 		}
 
 		free( kvbuf );		
 		_insdircnt += cnt;
-		rc = insertMerge( 0, _pairmapcopy->elements(), NULL, NULL, NULL, NULL );
-		// prt(("s5830 insertMerge rc=%d\n", rc ));
+		rc = insertMerge( 0, _pairmap->elements(), NULL, NULL, NULL, NULL );
 	}
 
 	if ( rc == 0 ) {
 		// not done insert merge, do regular insert
-		if ( _pairmapcopy->elements() < 1 ) { _isFlushing = 0; return cnt; }
+		if ( _pairmap->elements() < 1 ) { _isFlushing = 0; return cnt; }
+		prt(("s3018 do regular single inserts  _pairmap->elements()=%d\n",  _pairmap->elements() ));
 		char *kvbuf = (char*)jagmalloc(KEYVALLEN+1);
 		memset(kvbuf, 0, KEYVALLEN+1);
 		JagDBPair retpair;
-
 		FixMap::iterator it;
-		for ( it = _pairmapcopy->_map->begin(); it != _pairmapcopy->_map->end(); ++it ) {
+		for ( it = _pairmap->_map->begin(); it != _pairmap->_map->end(); ++it ) {
 			memcpy( kvbuf, it->first.c_str(), KEYLEN );
 			memcpy( kvbuf+KEYLEN, it->second.first.c_str(), VALLEN );
 			JagDBPair ipair( kvbuf, KEYLEN, kvbuf+KEYLEN, VALLEN, true );
 			ipair.upsertFlag = it->second.second;
-
 			rc = _insertData( ipair, &retindex, insertCode, false, retpair );
 			// prt(("s5203 insertData pair=[%s] rc=%d\n", ipair.key.c_str(), rc ));
-			if ( rc > 0 ) {
-				++cnt;
-				++ _writes;
-			}
+			if ( rc > 0 ) { ++cnt; ++ _writes; }
 		}
-
 		free( kvbuf );		
 		_insdircnt += cnt;
 	} else {
-		// do insert merge for flib
-		cnt = _pairmapcopy->elements();
-		_writes += _pairmapcopy->elements();
+		// done insert merge for flib
+		cnt = _pairmap->elements();
+		_writes += _pairmap->elements();
 		_insmrgcnt += cnt;
 	}
 	
 	_isFlushing = 0;
 	return cnt;
 }
+
 
 Jstr JagDiskArrayBase::jdbPath( const Jstr &jdbhome, const Jstr &db, const Jstr &tab )
 {
@@ -1531,7 +1410,7 @@ bool JagDiskArrayBase::flushCompress()
 	return 1;
 }
 
-// mergeMode 0: flib merge; mergeMode 1: darrnew merge; mergeMode 2: single insert merge ( resize partial )
+// mergeMode 0: flib merge; 1: darrnew merge; 2: single insert merge ( resize partial )
 // mergeElements : num of flibs / darrnew elements / 1
 // mbuf, mbr, mbbr: objects for darrnew use only; other mode are NULL
 // sbuf: objects for single insert merge use only; other mode are NULL
@@ -1541,12 +1420,9 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 {
 	if ( mergeElements < 1 ) return 0; // no more data to merge
 	// first, get min pair and max pair from memory array
-	if ( _elements < 1 && mergeMode == 2 ) return 0;
-	else if ( _elements < 1 && mergeMode == 0 ) return 2; // put first elements in file directly, not by merge
-
-	// check if darrnew is already exist
-	if ( mergeMode == 0 && _hasdarrnew ) {
-		if ( mergeMode == 0 || mergeMode == 1 ) return 0;
+	if ( _elements < 1 ) {
+		if ( 2 == mergeMode ) return 0;
+		if ( 0 == mergeMode ) return 2; // put elements in file directly, not by merge
 	}
 
 	int rc = 0, mergeType = 0;
@@ -1593,7 +1469,10 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 	
 	// otherwise, do insertMerge
 	// first, use while loop to find actual range which can hold all the flib elements
-	if ( !mergeType ) mergeType = findMergeRegionFirstLast( minfirst, maxfirst, numBlocks, ranArrlen, ranElements, mergeElements );
+	if ( !mergeType ) {
+		mergeType = findMergeRegionFirstLast( minfirst, maxfirst, numBlocks, ranArrlen, 
+											  ranElements, mergeElements );
+	}
 	
 	if ( !mergeType && ( _arrlen < _fileMaxCntLimit || _uidORschema ) ) {
 		// the whole file does not have enough space for merge, force resize and do regular insert
@@ -1609,14 +1488,13 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 		// else return mergeResize( mergeMode, mergeElements, mbuf, sbuf, mbr );
 	}
 	
-	JagClock insertMergeClock;
-	insertMergeClock.start();
+	//JagClock insertMergeClock;
+	//insertMergeClock.start();
 	// else, do insert merge
 	char *kvbuf = (char*)jagmalloc(KEYVALLEN+1);
 	char *dbuf = (char*)jagmalloc(KEYVALLEN+1);
 	memset( kvbuf, 0, KEYVALLEN+1 );
 	memset( dbuf, 0, KEYVALLEN+1 );
-	// abaxint dblimit = getBuffReaderWriterMemorySize( ranArrlen*KEYVALLEN/1024/1024 );
 	abaxint dblimit = 64;
 	JagBuffReader dbr( this, ranArrlen, KEYLEN, VALLEN, minfirst, 0, dblimit );
 	
@@ -1627,8 +1505,7 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 	JagSingleBuffWriter *sbw = NULL;
 	abaxint wpos = -1, ipos = minfirst, lastBlock = -1, actualcnt = 0;
 	int dgoNext = 1, mgoNext = 1;
-	// abaxint mpos = 0;
-	FixMap::iterator mpos = _pairmapcopy->_map->begin();
+	FixMap::iterator mpos = _pairmap->_map->begin();
 	abaxint totElements = ranElements + mergeElements;
 	double ratio = (double)totElements/(double)ranArrlen;	
 	
@@ -1663,17 +1540,12 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 		} else if ( pattern == JAG_EEEV || pattern == JAG_EEV || pattern == JAG_EV ) {
 			wpos += span;
 		} else {
-			if ( (actualcnt%span) == 0 ) {
-				wpos += 2;
-			} else {
-				wpos += 1;
-			}
+			if ( (actualcnt%span) == 0 ) { wpos += 2; } else { wpos += 1; }
 		}
 		++actualcnt;
 		ipos = wpos+minfirst;
 		if ( wpos >= ranArrlen ) {
 			prt(("s7799 invalid write out of bound for merge, please check\n"));
-			// abort();
 			break;
 		}
 		
@@ -1689,8 +1561,7 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 	if ( sbw ) sbw->flushBuffer();
 	
 	if ( totElements != actualcnt ) {
-		raydebug( stdout, JAG_LOG_LOW, 
-				  "s9227 [%s] when insert merge, actual number != elements. ranElements=%l, mergeElements=%l actualcnt=%l\n", 
+		raydebug( stdout, JAG_LOG_LOW, "s927 [%s] merge, actual != elemt. ranElem=%l, mrgElem=%l actcnt=%l\n", 
 				  _dbobj.c_str(), ranElements, mergeElements, actualcnt);
 		// abort();
 	}
@@ -1717,7 +1588,7 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 			roff += slen;
 		}
 	}
-	insertMergeClock.stop();
+	//insertMergeClock.stop();
 
 	if ( mergeMode == 0 ) {
 		/**
@@ -1766,9 +1637,9 @@ void JagDiskArrayBase::insertMergeGetMinMaxPair( JagDBPair &minpair, JagDBPair &
 	if ( mergeMode == 0 ) {
 		FixMap::iterator it;
 		FixMap::reverse_iterator it2;
-		it = _pairmapcopy->_map->begin();
+		it = _pairmap->_map->begin();
 		minpair.point( it->first, it->second.first );
-		it2 = _pairmapcopy->_map->rbegin();
+		it2 = _pairmap->_map->rbegin();
 		maxpair.point( it2->first, it2->second.first );
 	} else if ( mergeMode == 1 ) {
 		int rc = mbbr->getNext( mbuf );
@@ -1786,6 +1657,7 @@ void JagDiskArrayBase::insertMergeGetMinMaxPair( JagDBPair &minpair, JagDBPair &
 }
 
 // first, use while loop to find actual range which can hold all the flib elements
+// return 0: full  1: has space to insert merge
 int JagDiskArrayBase::findMergeRegionFirstLast( abaxint &minfirst, abaxint &maxfirst, 
 	abaxint &numBlocks, abaxint &ranArrlen, abaxint &ranElements, abaxint mergeElements )
 {
@@ -1851,7 +1723,7 @@ int JagDiskArrayBase::getNextMergePair( char *kvbuf, char *dbuf, JagBuffReader &
 		if ( mgoNext > 0 ) {
 			w = 30;
 
-			if ( mpos != _pairmapcopy->_map->end() ) {
+			if ( mpos != _pairmap->_map->end() ) {
 				ppair.point( mpos->first, mpos->second.first );
 				++mpos;
 				rc = 1;
@@ -1864,12 +1736,12 @@ int JagDiskArrayBase::getNextMergePair( char *kvbuf, char *dbuf, JagBuffReader &
 			}
 		} else if ( mgoNext == 0 ) {
 
-		 	if ( mpos == _pairmapcopy->_map->end() ) {
+		 	if ( mpos == _pairmap->_map->end() ) {
 				FixMap::reverse_iterator it;
-				it = _pairmapcopy->_map->rbegin();
+				it = _pairmap->_map->rbegin();
 				ppair.point( it->first, it->second.first );
 				w = 100;
-			} else if ( mpos != _pairmapcopy->_map->begin() ) {
+			} else if ( mpos != _pairmap->_map->begin() ) {
 				--mpos;
 				ppair.point( mpos->first, mpos->second.first );
 				++mpos;
