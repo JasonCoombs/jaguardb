@@ -1221,7 +1221,7 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 // object method
 void JagDiskArrayBase::copyAndInsertBufferAndClean()
 {
-	raydebug(stdout, JAG_LOG_LOW, "s3025 enter copyAndInsertBufferAndClean() ...\n" );
+	// raydebug(stdout, JAG_LOG_LOW, "s3025 enter copyAndInsertBufferAndClean() ...\n" );
 	jaguar_mutex_lock( & _insertBufferMutex );
 	if ( _pairmap->elements() < 1 || ! _sessionactive ) {
 		jaguar_mutex_unlock( &_insertBufferMutex );
@@ -1229,14 +1229,14 @@ void JagDiskArrayBase::copyAndInsertBufferAndClean()
 	}
 
 	flushInsertBuffer(); 
-	prt(("s1822 there done flushInsertBuffer ... \n" ));
+	// prt(("s1822 there done flushInsertBuffer ... \n" ));
 	delete _pairmap;
 	jagmalloc_trim(0);
 	_pairmap = new JagDBMap();
 
 	jaguar_cond_signal(& _insertBufferLessThanMaxCond );
 	jaguar_mutex_unlock( &_insertBufferMutex );
-	raydebug(stdout, JAG_LOG_LOW, "s3025 copyAndInsertBufferAndClean() done\n" );
+	// raydebug(stdout, JAG_LOG_LOW, "s3025 copyAndInsertBufferAndClean() done\n" );
 }
 
 abaxint JagDiskArrayBase::waitCopyAndInsertBufferAndClean() 
