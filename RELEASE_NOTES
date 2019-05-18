@@ -1,4 +1,8 @@
 
+JaguarDB 3.0.3 05/18/2019
+------------------------------------------------------------------
+. Trimmed code and reduced memory in insert data 
+
 JaguarDB 3.0.2 04/21/2019
 ------------------------------------------------------------------
 . Refactored code to separate some client and server linraries
