@@ -224,25 +224,27 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	double dblmax = LONG_MAX;
 	double dblmin = LONG_MIN;
 	double xmin=dblmax, ymin=dblmax, zmin=dblmax, xmax=dblmin, ymax=dblmin, zmax=dblmin;
+	Jstr otype;
 	for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 		rc = 0;
-		prt(("s4928 parseParam->otherVec[%d].type=[%s]\n", i, parseParam->otherVec[i].type.s() ));
-		if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_LINESTRING 
-		     || parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOINT  ) {
-			rc = JagParser::getLineStringMinMax( ',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
-		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_LINESTRING3D 
-					|| parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-			rc = JagParser::getLineString3DMinMax(',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
-		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_POLYGON
-		            || parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTILINESTRING ) {
-			rc = JagParser::getPolygonMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
-		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_POLYGON3D
-		            || parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			rc = JagParser::getPolygon3DMinMax( parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
-		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			rc = JagParser::getMultiPolygonMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
-		} else if ( parseParam->otherVec[i].type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			rc = JagParser::getMultiPolygon3DMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+		// prt(("s4928 parseParam->otherVec[%d].type=[%s]\n", i, parseParam->otherVec[i].type.s() ));
+		otype = parseParam->otherVec[i].type;
+
+		if ( otype.size() > 0 ) {
+    		if ( otype  == JAG_C_COL_TYPE_LINESTRING 
+    		     || otype == JAG_C_COL_TYPE_MULTIPOINT  ) {
+    			rc = JagParser::getLineStringMinMax( ',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
+    		} else if ( otype == JAG_C_COL_TYPE_LINESTRING3D || otype == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+    			rc = JagParser::getLineString3DMinMax(',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+    		} else if ( otype == JAG_C_COL_TYPE_POLYGON || otype == JAG_C_COL_TYPE_MULTILINESTRING ) {
+    			rc = JagParser::getPolygonMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
+    		} else if ( otype == JAG_C_COL_TYPE_POLYGON3D || otype == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+    			rc = JagParser::getPolygon3DMinMax( parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+    		} else if ( otype == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+    			rc = JagParser::getMultiPolygonMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
+    		} else if ( otype == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+    			rc = JagParser::getMultiPolygon3DMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+    		}
 		}
 
 		if ( rc < 0 ) {
@@ -280,112 +282,116 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			}
 
 			colType = parseParam->otherVec[i].type;
-			prt(("s6761 i=%d colType=[%s]\n", i, colType.c_str() ));
-			if ( colType == JAG_C_COL_TYPE_POINT  ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_POINT_DIM );  // x y
-				j += JAG_POINT_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_POINT3D) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_POINT3D_DIM );
-				j += JAG_POINT3D_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_CIRCLE_DIM );  // x y r
-				j += JAG_CIRCLE_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_SQUARE_DIM );  // x y r nx
-				j += JAG_SQUARE_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_SPHERE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_SPHERE_DIM );  // x y z r
-				j += JAG_SPHERE_DIM;
-				// x y z radius
-			} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D
-						|| colType == JAG_C_COL_TYPE_SQUARE3D
-						|| colType == JAG_C_COL_TYPE_CUBE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_CIRCLE3D_DIM );  // x y z r nx ny
-				j += JAG_CIRCLE3D_DIM;
-				// x y z radius
-			} else if (  colType == JAG_C_COL_TYPE_LINE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_LINE_DIM );  // x1 y1  x2 y2 
-				j += JAG_LINE_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_RECTANGLE 
-						|| colType == JAG_C_COL_TYPE_ELLIPSE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_RECTANGLE_DIM );  // x y a b nx
-				j += JAG_RECTANGLE_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_LINE3D_DIM );  // x1 y1 z1 x2 y2 z2
-				j += JAG_LINE3D_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_LINESTRING ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_LINESTRING_DIM );  // i x1 y1
-				j += JAG_LINESTRING_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_LINESTRING3D ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_LINESTRING3D_DIM );  // i x1 y1 z1
-				j += JAG_LINESTRING3D_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_MULTIPOINT ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_MULTIPOINT_DIM );  // i x1 y1
-				j += JAG_MULTIPOINT_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_MULTIPOINT3D_DIM );  // i x1 y1 z1
-				j += JAG_MULTIPOINT3D_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_POLYGON_DIM );  // i x1 y1
-				j += JAG_POLYGON_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_POLYGON3D || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_POLYGON3D_DIM );  // i x1 y1
-				j += JAG_POLYGON3D_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_MULTILINESTRING_DIM );  // i x1 y1
-				j += JAG_MULTILINESTRING_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_MULTILINESTRING3D_DIM );  // i x1 y1
-				j += JAG_MULTILINESTRING3D_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_TRIANGLE_DIM );  // x1 y1 x2 y2 x3 y3 
-				j += JAG_TRIANGLE_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_ELLIPSOID ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_ELLIPSOID_DIM );  // x y z width depth height nx ny
-				j += JAG_ELLIPSOID_DIM;
-			} else if (  colType == JAG_C_COL_TYPE_BOX ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_BOX_DIM );  // x y z width depth height nx ny
-				j += JAG_BOX_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_CYLINDER
-			            || colType == JAG_C_COL_TYPE_CONE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_CONE_DIM );  // x y z r height  nx ny
-				j += JAG_CONE_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_TRIANGLE3D_DIM );  //x1y1z1 x2y2z2 x3y3z3
-				j += JAG_TRIANGLE3D_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D || colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, JAG_ELLIPSE3D_DIM );  // x y z a b nx ny
-				j += JAG_ELLIPSE3D_DIM;
-			} else if ( colType == JAG_C_COL_TYPE_RANGE ) {
-				otherVec.append(  parseParam->otherVec[i] );
-				appendOther(  otherVec, 2 );  // begin end
-				j += 2;
+			if ( colType.size() > 0 ) {
+				// prt(("s6761 i=%d colType=[%s]\n", i, colType.c_str() ));
+    			if ( colType == JAG_C_COL_TYPE_POINT  ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_POINT_DIM );  // x y
+    				j += JAG_POINT_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_POINT3D) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_POINT3D_DIM );
+    				j += JAG_POINT3D_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_CIRCLE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_CIRCLE_DIM );  // x y r
+    				j += JAG_CIRCLE_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_SQUARE_DIM );  // x y r nx
+    				j += JAG_SQUARE_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_SPHERE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_SPHERE_DIM );  // x y z r
+    				j += JAG_SPHERE_DIM;
+    				// x y z radius
+    			} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D
+    						|| colType == JAG_C_COL_TYPE_SQUARE3D
+    						|| colType == JAG_C_COL_TYPE_CUBE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_CIRCLE3D_DIM );  // x y z r nx ny
+    				j += JAG_CIRCLE3D_DIM;
+    				// x y z radius
+    			} else if (  colType == JAG_C_COL_TYPE_LINE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_LINE_DIM );  // x1 y1  x2 y2 
+    				j += JAG_LINE_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_RECTANGLE 
+    						|| colType == JAG_C_COL_TYPE_ELLIPSE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_RECTANGLE_DIM );  // x y a b nx
+    				j += JAG_RECTANGLE_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_LINE3D ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_LINE3D_DIM );  // x1 y1 z1 x2 y2 z2
+    				j += JAG_LINE3D_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_LINESTRING ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_LINESTRING_DIM );  // i x1 y1
+    				j += JAG_LINESTRING_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_LINESTRING3D ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_LINESTRING3D_DIM );  // i x1 y1 z1
+    				j += JAG_LINESTRING3D_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_MULTIPOINT_DIM );  // i x1 y1
+    				j += JAG_MULTIPOINT_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_MULTIPOINT3D_DIM );  // i x1 y1 z1
+    				j += JAG_MULTIPOINT3D_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_POLYGON_DIM );  // i x1 y1
+    				j += JAG_POLYGON_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_POLYGON3D || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_POLYGON3D_DIM );  // i x1 y1
+    				j += JAG_POLYGON3D_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_MULTILINESTRING_DIM );  // i x1 y1
+    				j += JAG_MULTILINESTRING_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_MULTILINESTRING3D_DIM );  // i x1 y1
+    				j += JAG_MULTILINESTRING3D_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_TRIANGLE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_TRIANGLE_DIM );  // x1 y1 x2 y2 x3 y3 
+    				j += JAG_TRIANGLE_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_ELLIPSOID ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_ELLIPSOID_DIM );  // x y z width depth height nx ny
+    				j += JAG_ELLIPSOID_DIM;
+    			} else if (  colType == JAG_C_COL_TYPE_BOX ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_BOX_DIM );  // x y z width depth height nx ny
+    				j += JAG_BOX_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_CYLINDER
+    			            || colType == JAG_C_COL_TYPE_CONE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_CONE_DIM );  // x y z r height  nx ny
+    				j += JAG_CONE_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_TRIANGLE3D_DIM );  //x1y1z1 x2y2z2 x3y3z3
+    				j += JAG_TRIANGLE3D_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D || colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, JAG_ELLIPSE3D_DIM );  // x y z a b nx ny
+    				j += JAG_ELLIPSE3D_DIM;
+    			} else if ( colType == JAG_C_COL_TYPE_RANGE ) {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				appendOther(  otherVec, 2 );  // begin end
+    				j += 2;
+    			} else {
+    				otherVec.append(  parseParam->otherVec[i] );
+    				// otherVec.append(  parseParam->otherVec[j] );
+    			}
 			} else {
-				otherVec.append(  parseParam->otherVec[i] );
-				// otherVec.append(  parseParam->otherVec[j] );
+    			otherVec.append(  parseParam->otherVec[i] );
 			}
 
 			++j;
@@ -430,7 +436,6 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	int mlineIndex = 0;
 	int getxmin, getymin, getzmin, getxmax , getymax , getzmax;
 	int getid, getcol, getm, getn, geti, getx, gety, getz;
-
 
 	int srvtmdiff  = _servobj->servtimediff;
 	#ifdef DEVDEBUG
@@ -490,819 +495,831 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 		colType = (*_tableRecord.columnVector)[i].type;
 		metrics = (*_tableRecord.columnVector)[i].metrics;
 		//prt(("s5051 other i=%d dbcolumn=[%s] colType=[%s]\n", i, dbcolumn.c_str(), colType.c_str() ));
-		if ( colType == JAG_C_COL_TYPE_POINT ) {
-			pointx = colname + ":x"; pointy = colname + ":y";
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
-									_schAttr[getpos].sig, _schAttr[getpos].type );
 
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-			}
-		} else if ( colType == JAG_C_COL_TYPE_RANGE ) {
-			pointx = colname + ":begin"; pointy = colname + ":end";
-			dbcolumn = dbtab + "." + pointx;
-			//prt(("s9383 otherAttr.valueData=[%s]\n", otherAttr.valueData.c_str() ));
-			char sep;
-			if ( strchr( otherAttr.valueData.c_str(), ',') ) {
-				sep = ',';
-			} else {
-				sep = ' ';
-			}
-			JagStrSplit sp(otherAttr.valueData, sep );
-
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[0].c_str(), errmsg, 
-			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
-									_schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[1].c_str(), errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-			}
-		} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
-			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 		pointx.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointz;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-			 			pointz.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-			}
-		} else if ( colType == JAG_C_COL_TYPE_CIRCLE || colType == JAG_C_COL_TYPE_SQUARE ) {
-			pointx = colname + ":x"; pointy = colname + ":y"; pointr = colname + ":a"; 
-			pointnx = colname + ":nx"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
-									_schAttr[getpos].sig, _schAttr[getpos].type );
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				} 
-				dbcolumn = dbtab + "." + pointr;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-			 						   pointr.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
-									   _schAttr[getpos].sig, _schAttr[getpos].type );
-				} 
-
-				if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+		if ( colType.size() > 0 ) {
+    		if ( colType == JAG_C_COL_TYPE_POINT ) {
+    			pointx = colname + ":x"; pointy = colname + ":y";
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    									_schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_RANGE ) {
+    			pointx = colname + ":begin"; pointy = colname + ":end";
+    			dbcolumn = dbtab + "." + pointx;
+    			//prt(("s9383 otherAttr.valueData=[%s]\n", otherAttr.valueData.c_str() ));
+    			char sep;
+    			if ( strchr( otherAttr.valueData.c_str(), ',') ) {
+    				sep = ',';
+    			} else {
+    				sep = ' ';
+    			}
+    			JagStrSplit sp(otherAttr.valueData, sep );
+    
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[0].c_str(), errmsg, 
+    			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    									_schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[1].c_str(), errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_POINT3D ) {
+    			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointz;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
+    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_CIRCLE || colType == JAG_C_COL_TYPE_SQUARE ) {
+    			pointx = colname + ":x"; pointy = colname + ":y"; pointr = colname + ":a"; 
+    			pointnx = colname + ":nx"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    									_schAttr[getpos].sig, _schAttr[getpos].type );
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				} 
+    				dbcolumn = dbtab + "." + pointr;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
+    			 						   pointr.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    									   _schAttr[getpos].sig, _schAttr[getpos].type );
+    				} 
+    
+    				if ( colType == JAG_C_COL_TYPE_SQUARE ) {
+        					dbcolumn = dbtab + "." + pointnx;
+        					rc = _tablemap->getValue(dbcolumn, getpos);
+        					if ( rc ) {
+        						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
+        				 					   pointnx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+        									   _schAttr[getpos].sig, _schAttr[getpos].type );
+        					} 
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    			} 
+    		} else if ( colType == JAG_C_COL_TYPE_SPHERE || colType == JAG_C_COL_TYPE_CUBE ) {
+    			pointx = colname + ":x"; pointy = colname + ":y";
+    			pointz = colname + ":z"; pointr = colname + ":a"; 
+    			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointz;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
+    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointr;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
+    			 			pointr.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				if (  (*_tableRecord.columnVector)[i].type == JAG_C_COL_TYPE_CUBE ) {
     					dbcolumn = dbtab + "." + pointnx;
     					rc = _tablemap->getValue(dbcolumn, getpos);
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-    				 					   pointnx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
-    									   _schAttr[getpos].sig, _schAttr[getpos].type );
-    					} 
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-			} 
-		} else if ( colType == JAG_C_COL_TYPE_SPHERE || colType == JAG_C_COL_TYPE_CUBE ) {
-			pointx = colname + ":x"; pointy = colname + ":y";
-			pointz = colname + ":z"; pointr = colname + ":a"; 
-			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 		pointx.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointz;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-			 			pointz.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointr;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-			 			pointr.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				if (  (*_tableRecord.columnVector)[i].type == JAG_C_COL_TYPE_CUBE ) {
-					dbcolumn = dbtab + "." + pointnx;
-					rc = _tablemap->getValue(dbcolumn, getpos);
-					if ( rc ) {
-						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-			 				pointnx.c_str(), _schAttr[getpos].offset, 
-							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-					}
-
-					dbcolumn = dbtab + "." + pointny;
-					rc = _tablemap->getValue(dbcolumn, getpos);
-					if ( rc ) {
-						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-			 				pointny.c_str(), _schAttr[getpos].offset, 
-							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-					}
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-
-			}
-		} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D || colType == JAG_C_COL_TYPE_SQUARE3D ) {
-			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
-			pointr = colname + ":a"; 
-			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 		pointx.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointz;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-			 			pointz.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointr;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-			 			pointr.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointnx;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-			 			pointnx.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointny;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-			 			pointny.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-			}
-		} else if ( colType  == JAG_C_COL_TYPE_RECTANGLE || colType == JAG_C_COL_TYPE_ELLIPSE ) {
-			pointx = colname + ":x"; pointy = colname + ":y";
-			pointw = colname + ":a"; pointh = colname + ":b"; 
-			pointnx = colname + ":nx"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 		pointx.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointw;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-			 			pointw.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointh;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
-			 			pointh.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointnx;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-			 			pointnx.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-			}
-		} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D || colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
-			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
-			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
-			pointw = colname + ":a"; pointh = colname + ":b"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			//prt(("s2838 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
-			//prt(("s1028 otherAttr.point.x=[%s] otherAttr.point.y=[%s]\n", otherAttr.point.x, otherAttr.point.y ));
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 		pointx.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				//prt(("s2830 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointz;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				//prt(("s2831 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-			 			pointz.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-
-				dbcolumn = dbtab + "." + pointw;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				//prt(("s2832 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-			 			pointw.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointh;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
-			 			pointh.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointnx;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-			 			pointnx.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointny;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-			 			pointny.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-			}
-		} else if ( colType == JAG_C_COL_TYPE_BOX || colType == JAG_C_COL_TYPE_ELLIPSOID ) {
-			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
-			pointw = colname + ":a"; pointh = colname + ":c"; 
-			pointd = colname + ":b";
-			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 		pointx.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointz;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-			 			pointz.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointw;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-			 			pointw.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointd;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
-			 			pointd.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointh;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.c, errmsg, 
-			 			pointh.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointnx;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-			 			pointnx.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointny;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-			 			pointny.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-
-			}
-		} else if ( colType == JAG_C_COL_TYPE_CYLINDER || colType == JAG_C_COL_TYPE_CONE ) {
-			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
-			pointr = colname + ":a"; pointh = colname + ":c"; 
-			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
-
-			dbcolumn = dbtab + "." + pointx;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-			 		pointx.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-			 			pointy.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointz;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-			 			pointz.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointr;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-			 			pointr.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointh;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.c, errmsg, 
-			 			pointh.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointnx;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-			 			pointnx.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-				dbcolumn = dbtab + "." + pointny;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-			 			pointny.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
-			}
-		} else if ( colType == JAG_C_COL_TYPE_LINE3D || colType == JAG_C_COL_TYPE_LINE ) {
-			pointx1 = colname + ":x1"; pointy1 = colname + ":y1"; pointz1 = colname + ":z1";
-			pointx2 = colname + ":x2"; pointy2 = colname + ":y2"; pointz2 = colname + ":z2";
-			is3D = false;
-			if ( colType == JAG_C_COL_TYPE_LINE3D ) { is3D = true; }
-
-			dbcolumn = dbtab + "." + pointx1;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].x, errmsg, 
-			 		pointx1.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy1;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].y, errmsg, 
-			 			pointy1.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				if ( is3D ) {
-					dbcolumn = dbtab + "." + pointz1;
-					rc = _tablemap->getValue(dbcolumn, getpos);
-					if ( rc ) {
-						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].z, errmsg, 
-			 				pointz1.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
-							_schAttr[getpos].type );
-					}
-				}
-
-				dbcolumn = dbtab + "." + pointx2;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].x, errmsg, 
-			 			pointx2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointy2;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				//prt(("s2828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
-				//prt(("2381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].y, errmsg, 
-			 			pointy2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				if ( is3D ) {
-					dbcolumn = dbtab + "." + pointz2;
-					rc = _tablemap->getValue(dbcolumn, getpos);
-					if ( rc ) {
-						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].z, errmsg, 
-			 				pointz2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
-							_schAttr[getpos].type );
-					}
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[0].metrics, tablekvbuf );
-				//formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[1].metrics, tablekvbuf );
-			}
-		} else if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D
-					 || colType == JAG_C_COL_TYPE_MULTIPOINT || colType == JAG_C_COL_TYPE_MULTIPOINT3D
-			       ) {
-			//prt(("s7650 i=%d colType=[%s] colname=[%s] \n", i, colType.c_str(), colname.c_str() ));
-			//pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
-			prt(("s2181 colType=[%s] colname=[%s]\n", colType.s(), colname.s() ));
-			is3D = false;
-			if ( colType == JAG_C_COL_TYPE_LINESTRING3D || 
-			     colType == JAG_C_COL_TYPE_MULTIPOINT3D ) { is3D = true; }
-			getColumnIndex( dbtab, colname, is3D, getx, gety, getz, getxmin, getymin, getzmin,
-								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
-			prt(("s2234 getColumnIndex is3D=%d getxmin=%d getx=%d gety=%d getz=%d\n", is3D, getxmin, getx, gety, getz ));
-			if ( getxmin >= 0 ) {
-				JagLineString line;
-				if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
-					JagParser::addLineStringData(line, otherAttr.valueData.c_str() );
-					prt(("s8032 addLineStringData xmin=%0.3f ymin=%.3f zmin=%.3f\n", xmin, ymin, zmin ));
-				} else {
-					JagParser::addLineString3DData(line, otherAttr.valueData.c_str() );
-					prt(("s8033 addLineString3DData xmin=%0.3f ymin=%.3f zmin=%.3f valueData=[%s]\n", xmin, ymin, zmin, otherAttr.valueData.c_str() ));
-				}
-				JagPolyPass ppass;
-				ppass.is3D = is3D;
-				ppass.xmin = xmin; ppass.ymin = ymin; ppass.zmin = zmin;
-				ppass.xmax = xmax; ppass.ymax = ymax; ppass.zmax = zmax;
-				ppass.tzdiff = tzdiff; ppass.srvtmdiff = srvtmdiff;
-				ppass.getxmin = getxmin; ppass.getymin = getymin; ppass.getzmin = getzmin;
-				ppass.getxmax = getxmax; ppass.getymax = getymax; ppass.getzmax = getzmax;
-				ppass.getid = getid; ppass.getcol = getcol;
-				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
-				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
-				ppass.lsuuid = lsuuid;
-				ppass.dbtab = dbtab;
-				ppass.colname = colname;
-				ppass.m = 0;
-				ppass.n = 0;
-				ppass.col = i;
-
-				formatPointsInLineString( metrics, line, tablekvbuf, ppass, retpair, errmsg );
-
-				++mlineIndex;
-    			hasDoneAppend = true;
-				rc = 1;
-			}
-		} else if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_POLYGON3D
-		            || colType == JAG_C_COL_TYPE_MULTILINESTRING || colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			//prt(("s7651 i=%d colType=[%s]\n", i, colType.c_str() ));
-			// pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
-			is3D = false;
-			if ( colType == JAG_C_COL_TYPE_POLYGON3D || colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) { is3D = true; }
-			getColumnIndex( dbtab, colname, is3D, getx, gety, getz, getxmin, getymin, getzmin,
-								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
-			if ( getxmin >= 0 ) {
-				//char ibuf[32];
-				//OtherAttribute other;
-				JagPolygon pgon;
-				if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
-					if ( colType == JAG_C_COL_TYPE_POLYGON ) {
-						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.c_str(), false, true );
-					} else {
-						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.c_str(), false, false );
-					}
-					//prt(("s8041 addPolygonData xmin=%0.3f ymin=%.3f zmin=%.3f \n", xmin, ymin, zmin ));
-				} else {
-					if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
-						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.c_str(), false, true );
-					} else {
-						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.c_str(), false, false );
-					}
-					//prt(("s8042 addPolygonData3D xmin=%0.3f ymin=%.3f zmin=%.3f\n", xmin, ymin, zmin ));
-				}
-
-				if ( 0 == rc ) { continue; }
-				if ( rc < 0 ) {
-					errmsg = Jstr("E3014  Polygon input data error ") + intToStr(rc);
-					prt(("E3014 Polygon input data error rc=%d\n", rc ));
-					free( tablekvbuf );
-					return 0;
-				}
-
-				//if ( ! is3D ) { zmin = zmax = 0.0; }
-				//pgon.print();
-
-				JagPolyPass ppass;
-				ppass.is3D = is3D;
-				ppass.xmin = xmin; ppass.ymin = ymin; ppass.zmin = zmin;
-				ppass.xmax = xmax; ppass.ymax = ymax; ppass.zmax = zmax;
-				ppass.tzdiff = tzdiff; ppass.srvtmdiff = srvtmdiff;
-				ppass.getxmin = getxmin; ppass.getymin = getymin; ppass.getzmin = getzmin;
-				ppass.getxmax = getxmax; ppass.getymax = getymax; ppass.getzmax = getzmax;
-				ppass.getid = getid; ppass.getcol = getcol;
-
-				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
-				ppass.lsuuid = lsuuid;
-				ppass.dbtab = dbtab;
-				ppass.colname = colname;
-				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
-				ppass.col = i;
-
-				//prt(("s7830 pgon.size()=%d\n", pgon.size() ));
-				ppass.m = 0;
-				JagLineString linestr;
-				for ( int n=0; n < pgon.size(); ++n ) {
-					ppass.n = n;
-					linestr = pgon.linestr[n]; // convert
-					formatPointsInLineString( metrics, linestr, tablekvbuf, ppass, retpair, errmsg );
-				}
-
-				rc = 1;
-
-				++mlineIndex;
-    			hasDoneAppend = true;
-			} else {
-				prt(("s2773 error polygon\n" ));
-			}
-		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			//prt(("s7651 i=%d colType=[%s]\n", i, colType.c_str() ));
-			// pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
-			is3D = false;
-			if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) { is3D = true; }
-			getColumnIndex( dbtab, colname, is3D, getx, gety, getz, getxmin, getymin, getzmin,
-								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
-			if ( getxmin >= 0 ) {
-				//char ibuf[32];
-				//OtherAttribute other;
-				JagVector<JagPolygon> pgvec;
-				if ( is3D ) {
-					//prt(("s8260 addMultiPolygonData 3d\n" ));
-					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.c_str(), false, false, true );
-				} else {
-					//prt(("s8260 addMultiPolygonData 2d\n" ));
-					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.c_str(), false, false, false );
-				}
-
-				if ( 0 == rc ) continue;
-				if ( rc < 0 ) {
-					errmsg = Jstr("E3015  MultiPolygon input data error ") + intToStr(rc);
-					//prt(("E3015 Polygon input data error rc=%d\n", rc ));
-					free( tablekvbuf );
-					return 0;
-				}
-
-				//if ( ! is3D ) { zmin = zmax = 0.0; }
-				//pgon.print();
-
-				JagPolyPass ppass;
-				ppass.is3D = is3D;
-				ppass.xmin = xmin; ppass.ymin = ymin; ppass.zmin = zmin;
-				ppass.xmax = xmax; ppass.ymax = ymax; ppass.zmax = zmax;
-				ppass.tzdiff = tzdiff; ppass.srvtmdiff = srvtmdiff;
-				ppass.getxmin = getxmin; ppass.getymin = getymin; ppass.getzmin = getzmin;
-				ppass.getxmax = getxmax; ppass.getymax = getymax; ppass.getzmax = getzmax;
-				ppass.getid = getid; ppass.getcol = getcol;
-
-				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
-				ppass.lsuuid = lsuuid;
-				ppass.dbtab = dbtab;
-				ppass.colname = colname;
-				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
-				ppass.col = i;
-
-				JagLineString linestr;
-    			//prt(("s7830 pgvec.size()=%d\n", pgvec.size() ));
-				for ( int i = 0; i < pgvec.size(); ++i ) {
-    				ppass.m = i;
-    				//prt(("s7830 pgvec.size()=%d  ppass.m=%d\n", pgvec.size(),  ppass.m ));
-					const JagPolygon& pgon = pgvec[i];
+    			 				pointnx.c_str(), _schAttr[getpos].offset, 
+    							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    					}
+    
+    					dbcolumn = dbtab + "." + pointny;
+    					rc = _tablemap->getValue(dbcolumn, getpos);
+    					if ( rc ) {
+    						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
+    			 				pointny.c_str(), _schAttr[getpos].offset, 
+    							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    					}
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_CIRCLE3D || colType == JAG_C_COL_TYPE_SQUARE3D ) {
+    			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
+    			pointr = colname + ":a"; 
+    			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointz;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
+    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointr;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
+    			 			pointr.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointnx;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
+    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointny;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
+    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    			}
+    		} else if ( colType  == JAG_C_COL_TYPE_RECTANGLE || colType == JAG_C_COL_TYPE_ELLIPSE ) {
+    			pointx = colname + ":x"; pointy = colname + ":y";
+    			pointw = colname + ":a"; pointh = colname + ":b"; 
+    			pointnx = colname + ":nx"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointw;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
+    			 			pointw.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointh;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
+    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointnx;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
+    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_ELLIPSE3D || colType == JAG_C_COL_TYPE_RECTANGLE3D ) {
+    			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
+    			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
+    			pointw = colname + ":a"; pointh = colname + ":b"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			//prt(("s2838 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+    			//prt(("s1028 otherAttr.point.x=[%s] otherAttr.point.y=[%s]\n", otherAttr.point.x, otherAttr.point.y ));
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				//prt(("s2830 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointz;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				//prt(("s2831 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
+    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    
+    				dbcolumn = dbtab + "." + pointw;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				//prt(("s2832 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
+    			 			pointw.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointh;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
+    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointnx;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
+    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointny;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
+    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_BOX || colType == JAG_C_COL_TYPE_ELLIPSOID ) {
+    			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
+    			pointw = colname + ":a"; pointh = colname + ":c"; 
+    			pointd = colname + ":b";
+    			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointz;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
+    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointw;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
+    			 			pointw.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointd;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
+    			 			pointd.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointh;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.c, errmsg, 
+    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointnx;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
+    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointny;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
+    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_CYLINDER || colType == JAG_C_COL_TYPE_CONE ) {
+    			pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z"; 
+    			pointr = colname + ":a"; pointh = colname + ":c"; 
+    			pointnx = colname + ":nx"; pointny = colname + ":ny"; 
+    
+    			dbcolumn = dbtab + "." + pointx;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
+    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
+    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointz;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
+    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointr;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
+    			 			pointr.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointh;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.c, errmsg, 
+    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointnx;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
+    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    				dbcolumn = dbtab + "." + pointny;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
+    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_LINE3D || colType == JAG_C_COL_TYPE_LINE ) {
+    			pointx1 = colname + ":x1"; pointy1 = colname + ":y1"; pointz1 = colname + ":z1";
+    			pointx2 = colname + ":x2"; pointy2 = colname + ":y2"; pointz2 = colname + ":z2";
+    			is3D = false;
+    			if ( colType == JAG_C_COL_TYPE_LINE3D ) { is3D = true; }
+    
+    			dbcolumn = dbtab + "." + pointx1;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].x, errmsg, 
+    			 		pointx1.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy1;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].y, errmsg, 
+    			 			pointy1.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				if ( is3D ) {
+    					dbcolumn = dbtab + "." + pointz1;
+    					rc = _tablemap->getValue(dbcolumn, getpos);
+    					if ( rc ) {
+    						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].z, errmsg, 
+    			 				pointz1.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
+    							_schAttr[getpos].type );
+    					}
+    				}
+    
+    				dbcolumn = dbtab + "." + pointx2;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].x, errmsg, 
+    			 			pointx2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointy2;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				//prt(("s2828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
+    				//prt(("2381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].y, errmsg, 
+    			 			pointy2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				if ( is3D ) {
+    					dbcolumn = dbtab + "." + pointz2;
+    					rc = _tablemap->getValue(dbcolumn, getpos);
+    					if ( rc ) {
+    						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].z, errmsg, 
+    			 				pointz2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
+    							_schAttr[getpos].type );
+    					}
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[0].metrics, tablekvbuf );
+    				//formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[1].metrics, tablekvbuf );
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D
+    					 || colType == JAG_C_COL_TYPE_MULTIPOINT || colType == JAG_C_COL_TYPE_MULTIPOINT3D
+    			       ) {
+    			//prt(("s7650 i=%d colType=[%s] colname=[%s] \n", i, colType.c_str(), colname.c_str() ));
+    			//pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
+    			prt(("s2181 colType=[%s] colname=[%s]\n", colType.s(), colname.s() ));
+    			is3D = false;
+    			if ( colType == JAG_C_COL_TYPE_LINESTRING3D || 
+    			     colType == JAG_C_COL_TYPE_MULTIPOINT3D ) { is3D = true; }
+    			getColumnIndex( dbtab, colname, is3D, getx, gety, getz, getxmin, getymin, getzmin,
+    								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
+    			prt(("s2234 getColumnIndex is3D=%d getxmin=%d getx=%d gety=%d getz=%d\n", is3D, getxmin, getx, gety, getz ));
+    			if ( getxmin >= 0 ) {
+    				JagLineString line;
+    				if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
+    					JagParser::addLineStringData(line, otherAttr.valueData.c_str() );
+    					prt(("s8032 addLineStringData xmin=%0.3f ymin=%.3f zmin=%.3f\n", xmin, ymin, zmin ));
+    				} else {
+    					JagParser::addLineString3DData(line, otherAttr.valueData.c_str() );
+    					prt(("s8033 addLineString3DData xmin=%0.3f ymin=%.3f zmin=%.3f valueData=[%s]\n", xmin, ymin, zmin, otherAttr.valueData.c_str() ));
+    				}
+    				JagPolyPass ppass;
+    				ppass.is3D = is3D;
+    				ppass.xmin = xmin; ppass.ymin = ymin; ppass.zmin = zmin;
+    				ppass.xmax = xmax; ppass.ymax = ymax; ppass.zmax = zmax;
+    				ppass.tzdiff = tzdiff; ppass.srvtmdiff = srvtmdiff;
+    				ppass.getxmin = getxmin; ppass.getymin = getymin; ppass.getzmin = getzmin;
+    				ppass.getxmax = getxmax; ppass.getymax = getymax; ppass.getzmax = getzmax;
+    				ppass.getid = getid; ppass.getcol = getcol;
+    				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
+    				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
+    				ppass.lsuuid = lsuuid;
+    				ppass.dbtab = dbtab;
+    				ppass.colname = colname;
+    				ppass.m = 0;
+    				ppass.n = 0;
+    				ppass.col = i;
+    
+    				formatPointsInLineString( metrics, line, tablekvbuf, ppass, retpair, errmsg );
+    
+    				++mlineIndex;
+        			hasDoneAppend = true;
+    				rc = 1;
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_POLYGON3D
+    		            || colType == JAG_C_COL_TYPE_MULTILINESTRING || colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+    			//prt(("s7651 i=%d colType=[%s]\n", i, colType.c_str() ));
+    			// pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
+    			is3D = false;
+    			if ( colType == JAG_C_COL_TYPE_POLYGON3D || colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) { is3D = true; }
+    			getColumnIndex( dbtab, colname, is3D, getx, gety, getz, getxmin, getymin, getzmin,
+    								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
+    			if ( getxmin >= 0 ) {
+    				//char ibuf[32];
+    				//OtherAttribute other;
+    				JagPolygon pgon;
+    				if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
+    					if ( colType == JAG_C_COL_TYPE_POLYGON ) {
+    						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.c_str(), false, true );
+    					} else {
+    						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.c_str(), false, false );
+    					}
+    					//prt(("s8041 addPolygonData xmin=%0.3f ymin=%.3f zmin=%.3f \n", xmin, ymin, zmin ));
+    				} else {
+    					if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
+    						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.c_str(), false, true );
+    					} else {
+    						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.c_str(), false, false );
+    					}
+    					//prt(("s8042 addPolygonData3D xmin=%0.3f ymin=%.3f zmin=%.3f\n", xmin, ymin, zmin ));
+    				}
+    
+    				if ( 0 == rc ) { continue; }
+    				if ( rc < 0 ) {
+    					errmsg = Jstr("E3014  Polygon input data error ") + intToStr(rc);
+    					prt(("E3014 Polygon input data error rc=%d\n", rc ));
+    					free( tablekvbuf );
+    					return 0;
+    				}
+    
+    				//if ( ! is3D ) { zmin = zmax = 0.0; }
+    				//pgon.print();
+    
+    				JagPolyPass ppass;
+    				ppass.is3D = is3D;
+    				ppass.xmin = xmin; ppass.ymin = ymin; ppass.zmin = zmin;
+    				ppass.xmax = xmax; ppass.ymax = ymax; ppass.zmax = zmax;
+    				ppass.tzdiff = tzdiff; ppass.srvtmdiff = srvtmdiff;
+    				ppass.getxmin = getxmin; ppass.getymin = getymin; ppass.getzmin = getzmin;
+    				ppass.getxmax = getxmax; ppass.getymax = getymax; ppass.getzmax = getzmax;
+    				ppass.getid = getid; ppass.getcol = getcol;
+    
+    				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
+    				ppass.lsuuid = lsuuid;
+    				ppass.dbtab = dbtab;
+    				ppass.colname = colname;
+    				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
+    				ppass.col = i;
+    
+    				//prt(("s7830 pgon.size()=%d\n", pgon.size() ));
+    				ppass.m = 0;
+    				JagLineString linestr;
     				for ( int n=0; n < pgon.size(); ++n ) {
     					ppass.n = n;
-						linestr = pgon.linestr[n];
+    					linestr = pgon.linestr[n]; // convert
     					formatPointsInLineString( metrics, linestr, tablekvbuf, ppass, retpair, errmsg );
     				}
-				}
-
-				rc = 1;
-
-				++mlineIndex;
-    			hasDoneAppend = true;
-			}
-		} else if ( colType == JAG_C_COL_TYPE_TRIANGLE || colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
-			pointx1 = colname + ":x1"; pointy1 = colname + ":y1"; pointz1 = colname + ":z1"; 
-			pointx2 = colname + ":x2"; pointy2 = colname + ":y2"; pointz2 = colname + ":z2";
-			pointx3 = colname + ":x3"; pointy3 = colname + ":y3"; pointz3 = colname + ":z3";
-
-			is3D = false;
-			if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) { is3D = true; }
-
-			dbcolumn = dbtab + "." + pointx1;
-			rc = _tablemap->getValue(dbcolumn, getpos);
-
-			//prt(("s5828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
-			//prt(("s5381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
-
-			if ( rc ) {
-				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].x, errmsg, 
-			 		pointx1.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-
-				dbcolumn = dbtab + "." + pointy1;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].y, errmsg, 
-			 			pointy1.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				if ( is3D ) {
-					dbcolumn = dbtab + "." + pointz1;
-					rc = _tablemap->getValue(dbcolumn, getpos);
-					if ( rc ) {
-						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].z, errmsg, 
-			 				pointz1.c_str(), _schAttr[getpos].offset, 
-							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-					}
-				}
-
-				dbcolumn = dbtab + "." + pointx2;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].x, errmsg, 
-			 			pointx2.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointy2;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				//prt(("s5428 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
-				//prt(("s5581 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].y, errmsg, 
-			 			pointy2.c_str(), _schAttr[getpos].offset, 
-						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				if ( is3D ) {
-					dbcolumn = dbtab + "." + pointz2;
-					rc = _tablemap->getValue(dbcolumn, getpos);
-					if ( rc ) {
-						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].z, errmsg, 
-			 				pointz2.c_str(), _schAttr[getpos].offset, 
-							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-					}
-				}
-
-				dbcolumn = dbtab + "." + pointx3;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].x, errmsg, 
-			 			pointx3.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				dbcolumn = dbtab + "." + pointy3;
-				rc = _tablemap->getValue(dbcolumn, getpos);
-				if ( rc ) {
-					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].y, errmsg, 
-			 			pointy3.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-				}
-
-				if ( is3D ) {
-					dbcolumn = dbtab + "." + pointz3;
-					rc = _tablemap->getValue(dbcolumn, getpos);
-					// prt(("s5201 is3D getValue pointz3 rc=%d\n", rc ));
-					if ( rc ) {
-						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].z, errmsg, 
-			 				pointz3.c_str(), _schAttr[getpos].offset, 
-							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-						// prt(("s5203 formatOneCol rc=%d\n", rc ));
-					}
-				}
-
-				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[0].metrics, tablekvbuf );
-				//formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[1].metrics, tablekvbuf );
-				//formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[2].metrics, tablekvbuf );
-			} 
+    
+    				rc = 1;
+    
+    				++mlineIndex;
+        			hasDoneAppend = true;
+    			} else {
+    				prt(("s2773 error polygon\n" ));
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+    			//prt(("s7651 i=%d colType=[%s]\n", i, colType.c_str() ));
+    			// pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
+    			is3D = false;
+    			if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) { is3D = true; }
+    			getColumnIndex( dbtab, colname, is3D, getx, gety, getz, getxmin, getymin, getzmin,
+    								getxmax, getymax, getzmax, getid, getcol, getm, getn, geti );
+    			if ( getxmin >= 0 ) {
+    				//char ibuf[32];
+    				//OtherAttribute other;
+    				JagVector<JagPolygon> pgvec;
+    				if ( is3D ) {
+    					//prt(("s8260 addMultiPolygonData 3d\n" ));
+    					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.c_str(), false, false, true );
+    				} else {
+    					//prt(("s8260 addMultiPolygonData 2d\n" ));
+    					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.c_str(), false, false, false );
+    				}
+    
+    				if ( 0 == rc ) continue;
+    				if ( rc < 0 ) {
+    					errmsg = Jstr("E3015  MultiPolygon input data error ") + intToStr(rc);
+    					//prt(("E3015 Polygon input data error rc=%d\n", rc ));
+    					free( tablekvbuf );
+    					return 0;
+    				}
+    
+    				//if ( ! is3D ) { zmin = zmax = 0.0; }
+    				//pgon.print();
+    
+    				JagPolyPass ppass;
+    				ppass.is3D = is3D;
+    				ppass.xmin = xmin; ppass.ymin = ymin; ppass.zmin = zmin;
+    				ppass.xmax = xmax; ppass.ymax = ymax; ppass.zmax = zmax;
+    				ppass.tzdiff = tzdiff; ppass.srvtmdiff = srvtmdiff;
+    				ppass.getxmin = getxmin; ppass.getymin = getymin; ppass.getzmin = getzmin;
+    				ppass.getxmax = getxmax; ppass.getymax = getymax; ppass.getzmax = getzmax;
+    				ppass.getid = getid; ppass.getcol = getcol;
+    
+    				ppass.getx = getx; ppass.gety = gety; ppass.getz = getz;
+    				ppass.lsuuid = lsuuid;
+    				ppass.dbtab = dbtab;
+    				ppass.colname = colname;
+    				ppass.getm = getm; ppass.getn = getn; ppass.geti = geti;
+    				ppass.col = i;
+    
+    				JagLineString linestr;
+        			//prt(("s7830 pgvec.size()=%d\n", pgvec.size() ));
+    				for ( int i = 0; i < pgvec.size(); ++i ) {
+        				ppass.m = i;
+        				//prt(("s7830 pgvec.size()=%d  ppass.m=%d\n", pgvec.size(),  ppass.m ));
+    					const JagPolygon& pgon = pgvec[i];
+        				for ( int n=0; n < pgon.size(); ++n ) {
+        					ppass.n = n;
+    						linestr = pgon.linestr[n];
+        					formatPointsInLineString( metrics, linestr, tablekvbuf, ppass, retpair, errmsg );
+        				}
+    				}
+    
+    				rc = 1;
+    
+    				++mlineIndex;
+        			hasDoneAppend = true;
+    			}
+    		} else if ( colType == JAG_C_COL_TYPE_TRIANGLE || colType == JAG_C_COL_TYPE_TRIANGLE3D ) {
+    			pointx1 = colname + ":x1"; pointy1 = colname + ":y1"; pointz1 = colname + ":z1"; 
+    			pointx2 = colname + ":x2"; pointy2 = colname + ":y2"; pointz2 = colname + ":z2";
+    			pointx3 = colname + ":x3"; pointy3 = colname + ":y3"; pointz3 = colname + ":z3";
+    
+    			is3D = false;
+    			if ( colType == JAG_C_COL_TYPE_TRIANGLE3D ) { is3D = true; }
+    
+    			dbcolumn = dbtab + "." + pointx1;
+    			rc = _tablemap->getValue(dbcolumn, getpos);
+    
+    			//prt(("s5828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
+    			//prt(("s5381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
+    
+    			if ( rc ) {
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].x, errmsg, 
+    			 		pointx1.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    
+    				dbcolumn = dbtab + "." + pointy1;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].y, errmsg, 
+    			 			pointy1.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				if ( is3D ) {
+    					dbcolumn = dbtab + "." + pointz1;
+    					rc = _tablemap->getValue(dbcolumn, getpos);
+    					if ( rc ) {
+    						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].z, errmsg, 
+    			 				pointz1.c_str(), _schAttr[getpos].offset, 
+    							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    					}
+    				}
+    
+    				dbcolumn = dbtab + "." + pointx2;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].x, errmsg, 
+    			 			pointx2.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointy2;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				//prt(("s5428 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
+    				//prt(("s5581 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].y, errmsg, 
+    			 			pointy2.c_str(), _schAttr[getpos].offset, 
+    						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				if ( is3D ) {
+    					dbcolumn = dbtab + "." + pointz2;
+    					rc = _tablemap->getValue(dbcolumn, getpos);
+    					if ( rc ) {
+    						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].z, errmsg, 
+    			 				pointz2.c_str(), _schAttr[getpos].offset, 
+    							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    					}
+    				}
+    
+    				dbcolumn = dbtab + "." + pointx3;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].x, errmsg, 
+    			 			pointx3.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				dbcolumn = dbtab + "." + pointy3;
+    				rc = _tablemap->getValue(dbcolumn, getpos);
+    				if ( rc ) {
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].y, errmsg, 
+    			 			pointy3.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    				}
+    
+    				if ( is3D ) {
+    					dbcolumn = dbtab + "." + pointz3;
+    					rc = _tablemap->getValue(dbcolumn, getpos);
+    					// prt(("s5201 is3D getValue pointz3 rc=%d\n", rc ));
+    					if ( rc ) {
+    						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].z, errmsg, 
+    			 				pointz3.c_str(), _schAttr[getpos].offset, 
+    							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    						// prt(("s5203 formatOneCol rc=%d\n", rc ));
+    					}
+    				}
+    
+    				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[0].metrics, tablekvbuf );
+    				//formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[1].metrics, tablekvbuf );
+    				//formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[2].metrics, tablekvbuf );
+    			} 
+    		} else {
+    			/***
+    			prt(("s5128 i=%d name=[%s] otherAttr.valueData=[%s]\n", 
+    					i, (*_tableRecord.columnVector)[i].name.c_str(), otherAttr.valueData.c_str() ));
+    					***/
+    			if ( otherAttr.valueData.size() < 1 ) {
+    				rc = 1;
+    			} else {
+    			    rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.valueData.c_str(), errmsg, 
+    				 	(*_tableRecord.columnVector)[i].name.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    			}
+    		}
 		} else {
-			/***
-			prt(("s5128 i=%d name=[%s] otherAttr.valueData=[%s]\n", 
-					i, (*_tableRecord.columnVector)[i].name.c_str(), otherAttr.valueData.c_str() ));
-					***/
-			if ( otherAttr.valueData.size() < 1 ) {
-				rc = 1;
-			} else {
-			    rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.valueData.c_str(), errmsg, 
-				 	(*_tableRecord.columnVector)[i].name.c_str(), _schAttr[getpos].offset, 
-					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
-			}
+    			if ( otherAttr.valueData.size() < 1 ) {
+    				rc = 1;
+    			} else {
+    			    rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.valueData.c_str(), errmsg, 
+    				 	(*_tableRecord.columnVector)[i].name.c_str(), _schAttr[getpos].offset, 
+    					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    			}
 		}
+
 
 		if ( !rc ) {
 			free( tablekvbuf );

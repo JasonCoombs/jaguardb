@@ -543,27 +543,15 @@ void JagDiskArrayFamily::flushKeyCheckerString()
 	}
 	int vlen = 2;
 	int kvlen = klen + vlen;
-	// char buf[klen+1+1];
-	// char *buf = (char*) jagmalloc ( kvlen+1 );
 	char buf[2];
-	// memset( buf, 0, kvlen+1 );
 	buf[0] = '1';
 	raysafewrite( fd, buf, 1 ); 
 
 	// begin flush key checker map to disk
-	// const AbaxPair<AbaxString, char> *arr = _keyChecker->array();
-	// const AbaxPair<AbaxString, JagFixString> *arr = _keyChecker->array();
 	const char *arr = _keyChecker->array();
 	abaxint len = _keyChecker->arrayLength();
 	if ( len >= 1 ) {
 		for ( abaxint i = 0; i < len; ++i ) {
-			/***
-			if ( arr[i].key == AbaxString::NULLVALUE ) continue;
-			memcpy( buf, arr[i].key.c_str(), klen );
-			memcpy( buf+klen, arr[i].value.c_str(), vlen );
-			// buf[klen] = arr[i].value;
-			raysafewrite( fd, buf, klen+vlen );
-			***/
 			if ( arr[i*kvlen] == '\0' ) continue;
 			raysafewrite( fd, arr+i*kvlen, kvlen );
 		}
@@ -580,7 +568,6 @@ void JagDiskArrayFamily::copyAndInsertBufferAndClean()
 		_darrlist[i]->copyAndInsertBufferAndClean();
 	}
 }
-
 
 bool JagDiskArrayFamily::checkFileOrder( const JagRequest &req )
 {
@@ -787,6 +774,7 @@ abaxint JagDiskArrayFamily::setFamilyReadPartial( JagMergeReader *&nts, const ch
 	}
 	return maxPossibleElem;
 }
+
 abaxint JagDiskArrayFamily::setFamilyReadBackPartial( JagMergeBackReader *&nts, const char *minbuf, const char *maxbuf, 
 	abaxint spos, abaxint epos, abaxint mmax ) 
 {

@@ -817,12 +817,10 @@ int JagDiskArrayBase::insertToRange( JagDBPair &pair, abaxint *retindex, int &in
 //           1: success
 int JagDiskArrayBase::insertToAll( JagDBPair &pair, abaxint *retindex, int &insertCode )
 {
-	/***
 	prt(("s3828 insertAll pairk=[%s] pairv=[%s] _elements=%lld _arrlen=%lld\n", 
 	     pair.key.c_str(), pair.value.c_str(), (abaxint)_elements, (abaxint)_arrlen ));
 	prt(( "s3828 insall _elem=%lld _arl=%lld xins=%lld, _pathname=[%s], _key=[%s]\n", 
 		  (abaxint)_elements, (abaxint)_arrlen, _servobj->_xferInsert, _pathname.c_str(), pair.key.c_str() ));
-	***/
 	// _blockIndex->print();
 	//print();
 	insertCode = 0;
@@ -1175,28 +1173,14 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 		JagCfg ccfg( JAG_CLIENT );
 		period = atoi(ccfg.getValue("DISK_FLUSH_INTERVAL", "1000").c_str());
 	} else {
-		period = atoi(servobj->_cfg->getValue("DISK_FLUSH_INTERVAL", "1500").c_str());
+		period = atoi(servobj->_cfg->getValue("DISK_FLUSH_INTERVAL", "2000").c_str());
 	}
 	abaxint cnt = 0;
-	//JagClock clock1;
-	//JagClock clock2;
-	//abaxint  t1, t2;
-	time_t  nowt;
-
 	while ( 1 ) {
 		if ( ! (int)(jda->_sessionactive) ) {
 			break;
 		}
-
-		/***
-		if ( jda->_forceSleepTime > 0 ) {
-			jagsleep( jda->_forceSleepTime, JAG_MSEC );
-		} else {
-			jagsleep( period, JAG_MSEC );
-		}
-		***/
-
-		// clock.start();
+		jagsleep( period, JAG_MSEC );
 		cnt = jda->waitCopyAndInsertBufferAndClean(); 
 		if ( cnt == ETIMEDOUT ) {
 				// timeout, destroy monitor
@@ -1204,11 +1188,10 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 				jda->_monitordone = 1;
 				return NULL;
 		}
+
 		//raydebug(stdout, JAG_LOG_LOW, "s3428 waitCopyAndInsertBufferAndClean cnt=%d\n", cnt );
-		// clock.stop();
 		/***
 		if ( cnt > 1 ) {
-			// DO not remove this in production
 			logInfo( t1, t2, cnt, jda );
 		}
 		***/
@@ -1221,22 +1204,21 @@ void *JagDiskArrayBase::monitorCommandsMem( void *ptr )
 // object method
 void JagDiskArrayBase::copyAndInsertBufferAndClean()
 {
-	// raydebug(stdout, JAG_LOG_LOW, "s3025 enter copyAndInsertBufferAndClean() ...\n" );
 	jaguar_mutex_lock( & _insertBufferMutex );
+	//raydebug(stdout, JAG_LOG_LOW, "s3025 enter copyAndInsertBufferAndClean() elements=%d ...\n",  _pairmap->elements() );
 	if ( _pairmap->elements() < 1 || ! _sessionactive ) {
 		jaguar_mutex_unlock( &_insertBufferMutex );
 		return;
 	}
 
 	flushInsertBuffer(); 
-	// prt(("s1822 there done flushInsertBuffer ... \n" ));
+	prt(("s1822 there done flushInsertBuffer ... \n" ));
 	delete _pairmap;
 	jagmalloc_trim(0);
 	_pairmap = new JagDBMap();
-
 	jaguar_cond_signal(& _insertBufferLessThanMaxCond );
 	jaguar_mutex_unlock( &_insertBufferMutex );
-	// raydebug(stdout, JAG_LOG_LOW, "s3025 copyAndInsertBufferAndClean() done\n" );
+	//raydebug(stdout, JAG_LOG_LOW, "s3025 copyAndInsertBufferAndClean() done\n" );
 }
 
 abaxint JagDiskArrayBase::waitCopyAndInsertBufferAndClean() 
@@ -1244,9 +1226,9 @@ abaxint JagDiskArrayBase::waitCopyAndInsertBufferAndClean()
 	abaxint cnt = 0; int rc;
 	struct timeval now;
 	struct timespec ts;
-	//raydebug(stdout, JAG_LOG_LOW, "waitCopyAndInsertBufferAndClean() ...\n" );
 	jaguar_mutex_lock( & _insertBufferMutex );
-	while ( _pairmap->elements() < 50000 && _sessionactive ) {
+	//raydebug(stdout, JAG_LOG_LOW, "waitCopyAndInsertBufferAndClean() _pairmap->elements()=%d ...\n", _pairmap->elements() );
+	while ( _pairmap->elements() < 1 && _sessionactive ) {
 		gettimeofday( &now, NULL );
 		ts.tv_sec = now.tv_sec;
 		ts.tv_nsec = now.tv_usec * 1000;
@@ -1283,7 +1265,7 @@ abaxint JagDiskArrayBase::flushInsertBuffer()
 	int rc, insertCode;
 	cnt = 0;
 	rc = insertMerge( 0, _pairmap->elements(), NULL, NULL, NULL, NULL );
-	raydebug( stdout, JAG_LOG_HIGH, "s4111 insertMerge %d return rc=%d\n", _pairmap->elements(), rc );
+	// raydebug( stdout, JAG_LOG_HIGH, "s4111 insertMerge %d return rc=%d\n", _pairmap->elements(), rc );
 	if ( rc == 2 ) {
 		// insert one pair to empty diskarray, then try merge again
 		if ( _pairmap->elements() < 1 ) { _isFlushing = 0; return cnt; }
@@ -1304,6 +1286,7 @@ abaxint JagDiskArrayBase::flushInsertBuffer()
 
 		free( kvbuf );		
 		_insdircnt += cnt;
+		// prt(("s2773 insertMerge(0 %d) ...\n", _pairmap->elements() ));
 		rc = insertMerge( 0, _pairmap->elements(), NULL, NULL, NULL, NULL );
 	}
 
@@ -1513,6 +1496,7 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 		if ( mergeMode == 2 ) return 0;
 		abaxint narrlen = _GEO*_arrlen;
 		while( narrlen*JAG_FILE_RAND_EXPAND < (_elements+mergeElements)*100 ) narrlen *= _GEO;
+		prt(("s4001 reSize narrlen=%d\n", narrlen ));
 		reSize( true, narrlen );
 		JAG_BLURT _memLock->readLock( -1 ); JAG_OVER;
 		getFirstLast( minpair, minfirst, minlast );
@@ -1559,11 +1543,13 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 	} else {
 		// memory is not large enough. Use dbobj.reg for temporary file for insert Merge
 		jagunlink( twp.c_str() );
+		prt(("s8110 jagopen(%s)\n",  twp.c_str() ));
 		fd = jagopen( twp.c_str(), O_CREAT|O_RDWR|JAG_NOATIME, S_IRWXU );
 		jagftruncate( fd, ranArrlen*KEYVALLEN );
 		sbw = new JagSingleBuffWriter( fd, KEYVALLEN, dblimit );
 	}
 	
+	prt(("s1280 mergeType=%d mergeMode=%d\n", mergeType, mergeMode ));
 	pattern = getResizePattern( ratio, span );
 	cleanRegionElements( minfirst, numBlocks );
 	
@@ -1602,11 +1588,13 @@ int JagDiskArrayBase::insertMerge( int mergeMode, abaxint mergeElements, char *m
 	// finally, overwrite the original range with memory or .reg disk data
 	if ( mergeType == 0 ) {
 		// for memory, just overwrite range with new data
+		prt(("s2347 raypwrite mergeType==0 ranArrlen=%d\n", ranArrlen ));
 		raypwrite(_jdfs, wbuf, ranArrlen*KEYVALLEN, minfirst*KEYVALLEN);
 	} else {
 		// for disk, destory buff writer and jagmalloc a piece of memory to read data from .reg piece by piece with overwrite
 		jagclose( fd );
 		fd = jagopen( twp.c_str(), O_RDONLY|JAG_NOATIME, S_IRWXU );
+		prt(("s1980 jagopen (%s) raysafepread raypwrite\n", twp.c_str() ));
 		abaxint soff = 0, slen, roff = minfirst*KEYVALLEN, rbytes = _mergeLimit/KEYVALLEN;
 		if ( sbw ) delete sbw;
 		sbw = NULL;
@@ -1924,7 +1912,8 @@ void JagDiskArrayBase::debugJDBFile( int flag, abaxint limit, abaxint hold, abax
 	prt(("debug jdb info dbobj=%s _arrlen=%lld _garrlen=%lld, _elements=%lld, _numOfResizes=%lld, KEYLEN=%d, VALLEN=%d, KEYVALLEN=%d\n", 
 		_dbobj.c_str(), (abaxint)_arrlen, (abaxint)_garrlen, (abaxint)_elements, (abaxint)_numOfResizes, KEYLEN, VALLEN, KEYVALLEN ));
 	prt(("debug jdb info _keyMode=%d, _isdarrnew=%d, _doneIndex=%d, _firstResize=%d, _insertUsers=%lld, _removeUsers=%lld, _minindex=%lld _maxindex=%lld, _uidORschema=%d, _fulls=%lld, _partials=%lld, _reads=%lld, _writes=%lld, _dupwrites=%lld, _upserts=%lld\n", 
-		_keyMode, _isdarrnew, _doneIndex, _firstResize, (abaxint)_insertUsers, (abaxint)_removeUsers, (abaxint)_minindex, (abaxint)_maxindex, _uidORschema, _fulls, _partials, _reads, _writes, _dupwrites, _upserts ));	
+		_keyMode, _isdarrnew, _doneIndex, _firstResize, (abaxint)_insertUsers, (abaxint)_removeUsers, (abaxint)_minindex, (abaxint)_maxindex, 
+		_uidORschema, _fulls, _partials, _reads, _writes, _dupwrites, _upserts ));	
 
 	_diskLock->readLock( -1 );
 	if ( 0 == flag ) {

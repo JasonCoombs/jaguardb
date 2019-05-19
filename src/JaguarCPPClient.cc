@@ -7170,234 +7170,236 @@ int JaguarCPPClient::processInsertCommandsWithNames( JagVector<JagDBPair> &cmdho
 			prt(("s1290 append , to newquery\n" ));
 		}
 
-		if ( type == JAG_C_COL_TYPE_POINT ) {
-			if ( colInOther ) {
-				newquery += getCoordStr( "point", parseParam, otherPos, 1, 1, 0, 0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_POINT3D ) {
-			if ( colInOther ) {
-				newquery += getCoordStr( "point3d", parseParam, otherPos, 1, 1, 1, 0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CIRCLE ) {
-			if ( colInOther ) {
-				newquery += getCoordStr( "circle", parseParam, otherPos, 1, 1, 0, 1 );
-			} else {
-				newquery += "'',";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CIRCLE3D ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "circle3d", parseParam, otherPos, 1, 1, 1,  1,0,0, 1, 1, 1 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_SPHERE ) {
-			if ( colInOther ) {
-				newquery += getCoordStr( "sphere", parseParam, otherPos, 1, 1, 1, 1 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_SQUARE ) {
-			//prt(("s3380 JAG_C_COL_TYPE_SQUARE colInOther=%d\n", colInOther ));
-			if ( colInOther ) {
-				newquery += getSquareCoordStr( "square", parseParam, otherPos );
-				//prt(("s1094 square getSquareCoordStr newquery=[%s]\n", newquery.c_str() ));
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_SQUARE3D ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "square3d", parseParam, otherPos, 1, 1, 1, 1,0,0,1,1,0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CUBE ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "cube", parseParam, otherPos, 1,1,1, 1,0,0, 1,1,0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
-			//prt(("c5282 JAG_C_COL_TYPE_RECTANGLE colInOther=%d\n", colInOther ));
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "rectangle", parseParam, otherPos, 1,1,0, 1,1,0, 1,0,0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
-			//prt(("c5283 JAG_C_COL_TYPE_RECTANGLE3D colInOther=%d\n", colInOther ));
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, otherPos, 1, 1, 1, 1,1,0, 1,1,0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, otherPos, 1,1,1, 1,1,0, 1,1,0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_BOX ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "box", parseParam, otherPos, 1, 1, 1, 1, 1, 1, 1,1,1 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CYLINDER ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "cylinder", parseParam, otherPos, 1, 1, 1, 1, 0, 1, 1,1,1 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CONE ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "cone", parseParam, otherPos, 1, 1, 1, 1, 0, 1, 1,1,1 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_ELLIPSE ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "ellipse", parseParam, otherPos, 1,1,0,  1,1,0, 1,0,0 );
-			} else {
-				newquery += "''";
-			}
-			// prt(("c3931 colName2=[%s] JAG_C_COL_TYPE_ELLIPSE newquery=[%s]\n", colName2.c_str(), newquery.c_str() ));
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_ELLIPSOID ) {
-			if ( colInOther ) {
-				newquery += get3DPlaneCoordStr( "ellipsoid", parseParam, otherPos, 1, 1, 1, 1, 1, 1, 1,1,1 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINE ) {
-			prt(("c1028 newquery=[%s]\n", newquery.c_str() ));
-			if ( colInOther ) {
-				newquery += getLineCoordStr( "line", parseParam, otherPos, 1, 1, 0, 1, 1, 0 );
-			} else {
-				newquery += "''";
-			}
-			prt(("c1029 newquery=[%s]\n", newquery.c_str() ));
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
-			prt(("c1528 newquery=[%s]\n", newquery.c_str() ));
-			if ( colInOther ) {
-				newquery += getLineCoordStr( "line3d", parseParam, otherPos, 1, 1, 1, 1, 1, 1 );
-			} else {
-				newquery += "''";
-			}
-			prt(("c1528 newquery=[%s]\n", newquery.c_str() ));
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
-			if ( colInOther ) {
-				newquery += Jstr("linestring(") + parseParam.otherVec[otherPos].valueData  + ")";
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINESTRING3D ) {
-			if ( colInOther ) {
-				newquery += Jstr("linestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT ) {
-			if ( colInOther ) {
-				newquery += Jstr("multipoint(") + parseParam.otherVec[otherPos].valueData  + ")";
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-			if ( colInOther ) {
-				newquery += Jstr("multipoint3d(") + parseParam.otherVec[otherPos].valueData  + ")";
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
-			if ( colInOther ) {
-				newquery += Jstr("polygon(") + parseParam.otherVec[otherPos].valueData  + ")";
-				prt(("s0291 POLYGON valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_POLYGON3D ) {
-			if ( colInOther ) {
-				newquery += Jstr("polygon3d(") + parseParam.otherVec[otherPos].valueData  + ")";
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			if ( colInOther ) {
-				newquery += Jstr("multipolygon") + parseParam.otherVec[otherPos].valueData;
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			if ( colInOther ) {
-				newquery += Jstr("multipolygon3d") + parseParam.otherVec[otherPos].valueData;
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
-			if ( colInOther ) {
-				newquery += Jstr("multilinestring(") + parseParam.otherVec[otherPos].valueData  + ")";
-				prt(("s0295 MULTILINESTRING valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			if ( colInOther ) {
-				newquery += Jstr("multilinestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
-			if ( colInOther ) {
-				newquery += Jstr("range") + parseParam.otherVec[otherPos].valueData  + ")";
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_TRIANGLE ) {
-			if ( colInOther ) {
-				newquery += getTriangleCoordStr( "triangle", parseParam, otherPos, 1, 1, 0, 1, 1, 0, 1, 1, 0 );
-			} else {
-				newquery += "''";
-			}
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_TRIANGLE3D ) {
-			if ( colInOther ) {
-				newquery += getTriangleCoordStr( "triangle3d", parseParam, otherPos, 1, 1, 1, 1, 1, 1, 1, 1, 1 );
-			} else {
-				newquery += "''";
-			}
-			continue;
+		if ( type.size() > 0 ) {
+    		if ( type == JAG_C_COL_TYPE_POINT ) {
+    			if ( colInOther ) {
+    				newquery += getCoordStr( "point", parseParam, otherPos, 1, 1, 0, 0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_POINT3D ) {
+    			if ( colInOther ) {
+    				newquery += getCoordStr( "point3d", parseParam, otherPos, 1, 1, 1, 0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CIRCLE ) {
+    			if ( colInOther ) {
+    				newquery += getCoordStr( "circle", parseParam, otherPos, 1, 1, 0, 1 );
+    			} else {
+    				newquery += "'',";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CIRCLE3D ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "circle3d", parseParam, otherPos, 1, 1, 1,  1,0,0, 1, 1, 1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_SPHERE ) {
+    			if ( colInOther ) {
+    				newquery += getCoordStr( "sphere", parseParam, otherPos, 1, 1, 1, 1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_SQUARE ) {
+    			//prt(("s3380 JAG_C_COL_TYPE_SQUARE colInOther=%d\n", colInOther ));
+    			if ( colInOther ) {
+    				newquery += getSquareCoordStr( "square", parseParam, otherPos );
+    				//prt(("s1094 square getSquareCoordStr newquery=[%s]\n", newquery.c_str() ));
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_SQUARE3D ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "square3d", parseParam, otherPos, 1, 1, 1, 1,0,0,1,1,0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CUBE ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "cube", parseParam, otherPos, 1,1,1, 1,0,0, 1,1,0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
+    			//prt(("c5282 JAG_C_COL_TYPE_RECTANGLE colInOther=%d\n", colInOther ));
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "rectangle", parseParam, otherPos, 1,1,0, 1,1,0, 1,0,0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
+    			//prt(("c5283 JAG_C_COL_TYPE_RECTANGLE3D colInOther=%d\n", colInOther ));
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, otherPos, 1, 1, 1, 1,1,0, 1,1,0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, otherPos, 1,1,1, 1,1,0, 1,1,0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_BOX ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "box", parseParam, otherPos, 1, 1, 1, 1, 1, 1, 1,1,1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CYLINDER ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "cylinder", parseParam, otherPos, 1, 1, 1, 1, 0, 1, 1,1,1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CONE ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "cone", parseParam, otherPos, 1, 1, 1, 1, 0, 1, 1,1,1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_ELLIPSE ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "ellipse", parseParam, otherPos, 1,1,0,  1,1,0, 1,0,0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			// prt(("c3931 colName2=[%s] JAG_C_COL_TYPE_ELLIPSE newquery=[%s]\n", colName2.c_str(), newquery.c_str() ));
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_ELLIPSOID ) {
+    			if ( colInOther ) {
+    				newquery += get3DPlaneCoordStr( "ellipsoid", parseParam, otherPos, 1, 1, 1, 1, 1, 1, 1,1,1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINE ) {
+    			prt(("c1028 newquery=[%s]\n", newquery.c_str() ));
+    			if ( colInOther ) {
+    				newquery += getLineCoordStr( "line", parseParam, otherPos, 1, 1, 0, 1, 1, 0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			prt(("c1029 newquery=[%s]\n", newquery.c_str() ));
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
+    			prt(("c1528 newquery=[%s]\n", newquery.c_str() ));
+    			if ( colInOther ) {
+    				newquery += getLineCoordStr( "line3d", parseParam, otherPos, 1, 1, 1, 1, 1, 1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			prt(("c1528 newquery=[%s]\n", newquery.c_str() ));
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("linestring(") + parseParam.otherVec[otherPos].valueData  + ")";
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINESTRING3D ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("linestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("multipoint(") + parseParam.otherVec[otherPos].valueData  + ")";
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("multipoint3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("polygon(") + parseParam.otherVec[otherPos].valueData  + ")";
+    				prt(("s0291 POLYGON valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_POLYGON3D ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("polygon3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("multipolygon") + parseParam.otherVec[otherPos].valueData;
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("multipolygon3d") + parseParam.otherVec[otherPos].valueData;
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("multilinestring(") + parseParam.otherVec[otherPos].valueData  + ")";
+    				prt(("s0295 MULTILINESTRING valueData=[%s]\n", parseParam.otherVec[otherPos].valueData.c_str() ));
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("multilinestring3d(") + parseParam.otherVec[otherPos].valueData  + ")";
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
+    			if ( colInOther ) {
+    				newquery += Jstr("range") + parseParam.otherVec[otherPos].valueData  + ")";
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_TRIANGLE ) {
+    			if ( colInOther ) {
+    				newquery += getTriangleCoordStr( "triangle", parseParam, otherPos, 1, 1, 0, 1, 1, 0, 1, 1, 0 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_TRIANGLE3D ) {
+    			if ( colInOther ) {
+    				newquery += getTriangleCoordStr( "triangle3d", parseParam, otherPos, 1, 1, 1, 1, 1, 1, 1, 1, 1 );
+    			} else {
+    				newquery += "''";
+    			}
+    			continue;
+    		}
 		}
 
 		// regular columns
@@ -7689,192 +7691,195 @@ int JaguarCPPClient::processInsertCommandsWithoutNames( JagVector<JagDBPair> &cm
 		}
 
 		//prt(("c3408 i=%d ii=%d type=[%s]\n", i, ii, type.c_str() ));
-
-		if ( type == JAG_C_COL_TYPE_POINT ) {
-			newquery += getCoordStr( "point", parseParam, ii, 1, 1, 0, 0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_POINT3D ) {
-			newquery += getCoordStr( "point3d", parseParam, ii, 1, 1, 1, 0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CIRCLE ) {
-			newquery += getCoordStr( "circle", parseParam, ii, 1, 1, 0, 1 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CIRCLE3D ) {
-			newquery += get3DPlaneCoordStr( "circle3d", parseParam, ii, 1, 1, 1, 1,0,0, 1,1,1 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_SPHERE ) {
-			newquery += getCoordStr( "sphere", parseParam, ii, 1, 1, 1, 1 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_SQUARE ) {
-			newquery += getSquareCoordStr( "square", parseParam, ii );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_SQUARE3D ) {
-			newquery += get3DPlaneCoordStr( "square3d", parseParam, ii, 1, 1, 1, 1,0,0,1,1,0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CUBE ) {
-			newquery += get3DPlaneCoordStr( "cube", parseParam, ii, 1,1,1, 1,0,0, 1,1,0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
-			newquery += get3DPlaneCoordStr( "rectangle", parseParam, ii, 1,1,0, 1,1,0, 1,0,0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
-			newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, ii, 1, 1, 1, 1,1,0, 1,1,0 );
-			//prt(("c3018 newquery=[%s]\n", newquery.s() ));
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
-			newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, ii, 1,1,1, 1,1,0, 1,1,0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_BOX ) {
-			newquery += get3DPlaneCoordStr( "box", parseParam, ii, 1, 1, 1, 1, 1, 1, 1,1,0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CYLINDER ) {
-			newquery += get3DPlaneCoordStr( "cylinder", parseParam, ii, 1, 1, 1, 1, 0, 1, 1,1,0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_CONE ) {
-			newquery += get3DPlaneCoordStr( "cone", parseParam, ii, 1, 1, 1,  1, 0, 1, 1,1,1 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_ELLIPSE ) {
-			newquery += get3DPlaneCoordStr( "ellipse", parseParam, ii, 1,1,0,  1,1,0, 1,0,0 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_ELLIPSOID ) {
-			newquery += get3DPlaneCoordStr( "ellipsoid", parseParam, ii, 1, 1, 1, 1, 1, 1, 1,1,1 );
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINE ) {
-			//prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
-			newquery += getLineCoordStr( "line", parseParam, ii, 1, 1, 0, 1, 1, 0 );
-			//prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
-			//prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
-			newquery += getLineCoordStr( "line3d", parseParam, ii, 1, 1, 1, 1, 1, 1 );
-			//prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("linestring(") + parseParam.otherVec[ii].valueData  + ")";
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_LINESTRING3D ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("linestring3d(") + parseParam.otherVec[ii].valueData  + ")";
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("multipoint(") + parseParam.otherVec[ii].valueData  + ")";
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("multipoint3d(") + parseParam.otherVec[ii].valueData  + ")";
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
-			//prt(("c4021 JAG_C_COL_TYPE_POLYGON ii=%d parseParam.otherVec[ii].valueData=[%s]\n", ii, parseParam.otherVec[ii].valueData.s() ));
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("polygon(") + parseParam.otherVec[ii].valueData  + ")";
-				//prt(("s2093 POLYGON valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_POLYGON3D ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("polygon3d(") + parseParam.otherVec[ii].valueData  + ")";
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("multipolygon") + parseParam.otherVec[ii].valueData;
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-			if ( parseParam.otherVec[ii].valueData.size() > 0 ) {
-				newquery += Jstr("multipolygon3d") + parseParam.otherVec[ii].valueData;
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("multilinestring(") + parseParam.otherVec[ii].valueData  + ")";
-				//prt(("s2053 MULTILINESTRING valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("multilinestring3d(") + parseParam.otherVec[ii].valueData  + ")";
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += Jstr("range(") + parseParam.otherVec[ii].valueData  + ")";
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_TRIANGLE ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += getTriangleCoordStr( "triangle", parseParam, ii, 1, 1, 0, 1, 1, 0, 1, 1, 0 );
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
-		} else if ( type == JAG_C_COL_TYPE_TRIANGLE3D ) {
-			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
-				newquery += getTriangleCoordStr( "triangle3d", parseParam, ii, 1, 1, 1, 1, 1, 1, 1, 1, 1 );
-			} else {
-				newquery += Jstr("''");
-			}
-			lastIsGeo = true;
-			continue;
+		if ( type.size() > 0 ) {
+    		if ( type == JAG_C_COL_TYPE_POINT ) {
+    			newquery += getCoordStr( "point", parseParam, ii, 1, 1, 0, 0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_POINT3D ) {
+    			newquery += getCoordStr( "point3d", parseParam, ii, 1, 1, 1, 0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CIRCLE ) {
+    			newquery += getCoordStr( "circle", parseParam, ii, 1, 1, 0, 1 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CIRCLE3D ) {
+    			newquery += get3DPlaneCoordStr( "circle3d", parseParam, ii, 1, 1, 1, 1,0,0, 1,1,1 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_SPHERE ) {
+    			newquery += getCoordStr( "sphere", parseParam, ii, 1, 1, 1, 1 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_SQUARE ) {
+    			newquery += getSquareCoordStr( "square", parseParam, ii );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_SQUARE3D ) {
+    			newquery += get3DPlaneCoordStr( "square3d", parseParam, ii, 1, 1, 1, 1,0,0,1,1,0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CUBE ) {
+    			newquery += get3DPlaneCoordStr( "cube", parseParam, ii, 1,1,1, 1,0,0, 1,1,0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_RECTANGLE ) {
+    			newquery += get3DPlaneCoordStr( "rectangle", parseParam, ii, 1,1,0, 1,1,0, 1,0,0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_RECTANGLE3D ) {
+    			newquery += get3DPlaneCoordStr( "rectangle3d", parseParam, ii, 1, 1, 1, 1,1,0, 1,1,0 );
+    			//prt(("c3018 newquery=[%s]\n", newquery.s() ));
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_ELLIPSE3D ) {
+    			newquery += get3DPlaneCoordStr( "ellipse3d", parseParam, ii, 1,1,1, 1,1,0, 1,1,0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_BOX ) {
+    			newquery += get3DPlaneCoordStr( "box", parseParam, ii, 1, 1, 1, 1, 1, 1, 1,1,0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CYLINDER ) {
+    			newquery += get3DPlaneCoordStr( "cylinder", parseParam, ii, 1, 1, 1, 1, 0, 1, 1,1,0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_CONE ) {
+    			newquery += get3DPlaneCoordStr( "cone", parseParam, ii, 1, 1, 1,  1, 0, 1, 1,1,1 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_ELLIPSE ) {
+    			newquery += get3DPlaneCoordStr( "ellipse", parseParam, ii, 1,1,0,  1,1,0, 1,0,0 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_ELLIPSOID ) {
+    			newquery += get3DPlaneCoordStr( "ellipsoid", parseParam, ii, 1, 1, 1, 1, 1, 1, 1,1,1 );
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINE ) {
+    			//prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
+    			newquery += getLineCoordStr( "line", parseParam, ii, 1, 1, 0, 1, 1, 0 );
+    			//prt(("c1128 newquery=[%s]\n", newquery.c_str() ));
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINE3D ) {
+    			//prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
+    			newquery += getLineCoordStr( "line3d", parseParam, ii, 1, 1, 1, 1, 1, 1 );
+    			//prt(("c1148 newquery=[%s]\n", newquery.c_str() ));
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINESTRING ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("linestring(") + parseParam.otherVec[ii].valueData  + ")";
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_LINESTRING3D ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("linestring3d(") + parseParam.otherVec[ii].valueData  + ")";
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("multipoint(") + parseParam.otherVec[ii].valueData  + ")";
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOINT3D ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("multipoint3d(") + parseParam.otherVec[ii].valueData  + ")";
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_POLYGON ) {
+    			//prt(("c4021 JAG_C_COL_TYPE_POLYGON ii=%d parseParam.otherVec[ii].valueData=[%s]\n", ii, parseParam.otherVec[ii].valueData.s() ));
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("polygon(") + parseParam.otherVec[ii].valueData  + ")";
+    				//prt(("s2093 POLYGON valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_POLYGON3D ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("polygon3d(") + parseParam.otherVec[ii].valueData  + ")";
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("multipolygon") + parseParam.otherVec[ii].valueData;
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
+    			if ( parseParam.otherVec[ii].valueData.size() > 0 ) {
+    				newquery += Jstr("multipolygon3d") + parseParam.otherVec[ii].valueData;
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("multilinestring(") + parseParam.otherVec[ii].valueData  + ")";
+    				//prt(("s2053 MULTILINESTRING valuedata=[%s]\n", parseParam.otherVec[ii].valueData.c_str() ));
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("multilinestring3d(") + parseParam.otherVec[ii].valueData  + ")";
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_RANGE ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += Jstr("range(") + parseParam.otherVec[ii].valueData  + ")";
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_TRIANGLE ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += getTriangleCoordStr( "triangle", parseParam, ii, 1, 1, 0, 1, 1, 0, 1, 1, 0 );
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else if ( type == JAG_C_COL_TYPE_TRIANGLE3D ) {
+    			if ( parseParam.otherVec[ii].valueData.size()>0 ) {
+    				newquery += getTriangleCoordStr( "triangle3d", parseParam, ii, 1, 1, 1, 1, 1, 1, 1, 1, 1 );
+    			} else {
+    				newquery += Jstr("''");
+    			}
+    			lastIsGeo = true;
+    			continue;
+    		} else {
+    			//newquery += Jstr("''");
+    			lastIsGeo = false;
+    		}
 		} else {
-			//newquery += Jstr("''");
 			lastIsGeo = false;
 		}
 

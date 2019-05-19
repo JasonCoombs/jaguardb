@@ -2897,7 +2897,7 @@ int JagParser::setInsertVector()
 			if ( other.valueData.size() < 1 ) {
 				other.valueData = p;
 			}
-			prt(("s5347 other.valueData=[%s]\n", other.valueData.c_str() ));
+			//prt(("s5347 other.valueData=[%s]\n", other.valueData.c_str() ));
 
 			other.hasQuote = hquote;
 
@@ -4300,6 +4300,8 @@ void JagParser::addCreateAttrAndColumn(bool isValue, CreateAttribute &cattr, int
 //
 void JagParser::addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other, int &numCols )
 {
+	if ( pcol->type.size() < 1 ) return;
+
 	Jstr on;
 
 	//prt(("s9283 pcol->type=[%s]\n", pcol->type.c_str() ));

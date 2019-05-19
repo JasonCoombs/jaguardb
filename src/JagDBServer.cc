@@ -1495,7 +1495,7 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 		}
 		++cnt;
 		getXmitSQLHdr( hdr, sqlhdr );
-		prt(("s3809 receved sqlhdr=[%s]\n", sqlhdr ));
+		//prt(("s3809 receved sqlhdr=[%s]\n", sqlhdr ));
 
 		struct timeval now;
 		gettimeofday( &now, NULL );

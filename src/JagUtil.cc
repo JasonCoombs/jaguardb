@@ -2576,7 +2576,7 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 
 	// if len==0; remote end had a orderly shudown
 	if ( len == 0 ) {
-		prt(("2302 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d DONE 0\n", len, sock, hdr, N));
+		// prt(("2302 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d DONE 0\n", len, sock, hdr, N));
 		return 0;
 	} else if ( len < 0 ) {
 		// prt(("2304 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d errnomsg=[%s] DONE -1\n", 
