@@ -24,57 +24,92 @@
 #include <JagSingleBuffReader.h>
 #include <JagCfg.h>
 #include <JagUtil.h>
+#include <JagCompFile.h>
 
-///////////////// implementation /////////////////////////////////
 
 // readlen is number of KEYVAL records, not bytes
-JagSingleBuffReader::JagSingleBuffReader ( int fd, abaxint readlen, int keylen, int vallen, abaxint start, abaxint headoffset, abaxint bufferSize ) 
+JagSingleBuffReader::JagSingleBuffReader ( JagCompFile *compf, jagint readlen, int keylen, int vallen, 
+										   jagint start, jagint headoffset, jagint bufferSize ) 
+{
+	_intfd = -1;
+	_superbuf = NULL;
+	if ( NULL == compf ) {
+		prt(("s1029292 error fd is NULL !!!!!!!!!!!!!!!!!!!!!\n"));
+		exit(41);
+		return;
+	}
+
+	_compf = compf;
+	_readlen = readlen;
+	KEYLEN = keylen;
+	VALLEN = vallen;
+	KEYVALLEN = KEYLEN + VALLEN;
+	if ( readlen < 0 || readlen > _compf->size()/KEYVALLEN ) _readlen = _compf->size()/KEYVALLEN;
+	init( _readlen, keylen, vallen, start, headoffset, bufferSize );
+}
+
+JagSingleBuffReader::JagSingleBuffReader ( int fd, jagint readlen, int keylen, int vallen, 
+										   jagint start, jagint headoffset, jagint bufferSize ) 
+{
+	_compf = NULL;
+	_intfd = fd;
+	_superbuf = NULL;
+	if ( _intfd < 0 ) { 
+		prt(("s1029294 error _intfd <0 !!!!!!!!!!!!!!!!!!!!! abort\n"));
+		abort();
+		exit(42);
+	}
+    struct stat sbuf;
+    int rc = fstat( _intfd, &sbuf );
+    if ( rc < 0 ) { return; }
+	_readlen = readlen;
+	KEYLEN = keylen;
+	VALLEN = vallen;
+	KEYVALLEN = KEYLEN + VALLEN;
+	if ( readlen < 0 || readlen > sbuf.st_size/KEYVALLEN ) _readlen = sbuf.st_size/KEYVALLEN;
+
+	init( _readlen, keylen, vallen, start, headoffset, bufferSize );
+
+}
+
+void JagSingleBuffReader::init ( jagint readlen, int keylen, int vallen, 
+								 jagint start, jagint headoffset, jagint bufferSize ) 
 {
 	KEYLEN = keylen;
 	VALLEN = vallen;
 	KEYVALLEN = keylen + vallen;
 
-	abaxint NB = getNumBlocks( KEYVALLEN, bufferSize );
+	jagint NB = getNumBlocks( KEYVALLEN, bufferSize );
 	_elements = NB * JagCfg::_BLOCK;
 	_headoffset = headoffset;
-
-	_fd = fd;
 	_superbuf = NULL;
-	
-	if ( _fd < 0 ) { return; }
-    struct stat sbuf;
-    int rc = fstat( _fd, &sbuf );
-    if ( rc < 0 ) { return; }
-
 	_start = start;
-	_readlen = readlen;
 	if ( start < 0 ) { _start = 0; }
-	if ( readlen < 0 || readlen > sbuf.st_size/KEYVALLEN ) _readlen = sbuf.st_size/KEYVALLEN;
-	
-	// raydebug( stdout, JAG_LOG_HIGH, "s2829 sigbufrdr _elements=%l mem=%l\n", _elements, _elements * (abaxint)KEYVALLEN );  
-	_superbuf = (char*) jagmalloc ( _elements * (abaxint)KEYVALLEN );
+
+	// raydebug( stdout, JAG_LOG_HIGH, "s2829 sigbufrdr _elements=%l mem=%l\n", _elements, _elements * (jagint)KEYVALLEN );  
+	_superbuf = (char*) jagmalloc ( _elements * (jagint)KEYVALLEN );
 	while ( NULL == _superbuf ) {
 		// printf("s8393 JagBuffReader::JagBuffReader _superbuf malloc failed size=%lld KEYVALLEN=%d \n", _elements * KEYVALLEN, KEYVALLEN );
 		_elements = _elements / 2;
-		_superbuf = (char*) jagmalloc ( _elements * (abaxint)KEYVALLEN );
+		_superbuf = (char*) jagmalloc ( _elements * (jagint)KEYVALLEN );
 
 		if ( _superbuf ) {
-			raydebug( stdout, JAG_LOG_LOW, "JagSingleBuffReader malloc smaller memory %l _elements=%l _fd=%l\n", 
-					_elements * (abaxint)KEYVALLEN, _elements, _fd );
+			raydebug( stdout, JAG_LOG_LOW, "JagSingleBuffReader malloc smaller memory %l _elements=%l _compf=%l\n", 
+					_elements * (jagint)KEYVALLEN, _elements, _compf );
 		}
 	}
 
-	//raydebug( stdout, JAG_LOG_HIGH, "s3829 sigbufrdr _elements=%l mem=%l\n", _elements, _elements * (abaxint)KEYVALLEN );  
+	//raydebug( stdout, JAG_LOG_HIGH, "s3829 sigbufrdr _elements=%l mem=%l\n", _elements, _elements * (jagint)KEYVALLEN );  
 	memset( _superbuf, 0, KEYVALLEN );
 	_lastSuperBlock = -1;
 	_relpos = 0;
 }
 
-abaxint JagSingleBuffReader::getNumBlocks( int kvlen, abaxint bufferSize )
+jagint JagSingleBuffReader::getNumBlocks( int kvlen, jagint bufferSize )
 {
-	abaxint num = 4096;
-	abaxint bytes = num * JagCfg::_BLOCK * kvlen;
-	abaxint maxmb = 128;
+	jagint num = 4096;
+	jagint bytes = num * JagCfg::_BLOCK * kvlen;
+	jagint maxmb = 128;
 
 	if ( bufferSize > 0 ) {
 		maxmb = bufferSize;
@@ -104,21 +139,21 @@ JagSingleBuffReader::~JagSingleBuffReader ()
 bool JagSingleBuffReader::getNext ( char *buf )
 {
 	int len = KEYVALLEN;
-	abaxint pos;
+	jagint pos;
 	return getNext( buf, len, pos );
 }
 
-bool JagSingleBuffReader::getNext ( char *buf, abaxint &i )
+bool JagSingleBuffReader::getNext ( char *buf, jagint &i )
 {
 	int len = KEYVALLEN;
 	return getNext( buf, len, i );
 }
 
-bool JagSingleBuffReader::getNext ( char *buf, int len, abaxint &i )
+bool JagSingleBuffReader::getNext ( char *buf, int len, jagint &i )
 {
-	abaxint rc;
-	if ( _fd < 0 ) { return false; }
+	if ( _intfd < 0 && NULL == _compf ) { return false; }
 	
+	jagint rc;
 	if ( len < KEYVALLEN ) {
 		printf("e8394 error JagSingleBuffReader::getNext passedin len=%d is less than KEYVALLEN=%d\n", len, KEYVALLEN );
 		return false;
@@ -130,9 +165,17 @@ bool JagSingleBuffReader::getNext ( char *buf, int len, abaxint &i )
 	}
     if ( -1 == _lastSuperBlock ) {
 		if ( _readlen <= _elements ) {  // total is smaller than a single superblock
-			rc = raysafepread( _fd, _superbuf, _readlen*KEYVALLEN, _start*KEYVALLEN+_headoffset );
+			if ( NULL == _compf ) {
+				rc = raysafepread( _intfd, _superbuf, _readlen*KEYVALLEN, _start*KEYVALLEN+_headoffset );
+			} else {
+				rc = _compf->pread( _superbuf, _readlen*KEYVALLEN, _start*KEYVALLEN+_headoffset );
+			}
 		} else {
-			rc = raysafepread( _fd, _superbuf, _elements*KEYVALLEN, _start*KEYVALLEN+_headoffset );
+			if ( NULL == _compf ) {
+			 	rc = raysafepread( _intfd, _superbuf, _elements*KEYVALLEN, _start*KEYVALLEN+_headoffset );
+			} else {
+				rc = _compf->pread( _superbuf, _elements*KEYVALLEN, _start*KEYVALLEN+_headoffset );
+			}
 		}
 		if ( rc < 0 ) { return false; }
         _lastSuperBlock = 0; 
@@ -144,12 +187,12 @@ bool JagSingleBuffReader::getNext ( char *buf, int len, abaxint &i )
 }
 
 
-bool JagSingleBuffReader::findNonblankElement( char *buf, abaxint &i )
+bool JagSingleBuffReader::findNonblankElement( char *buf, jagint &i )
 {
-	abaxint readbytes;
-	abaxint  rc;
+	jagint readbytes;
+	jagint  rc;
 	
-	abaxint seg, maxcheck;
+	jagint seg, maxcheck;
 	seg = ( _readlen - _lastSuperBlock*_elements );
 
 	while ( true ) {
@@ -184,7 +227,12 @@ bool JagSingleBuffReader::findNonblankElement( char *buf, abaxint &i )
         	} else {
 				readbytes = _elements*KEYVALLEN;
         	}
-			rc = raysafepread( _fd, _superbuf, readbytes, (_start+_lastSuperBlock*_elements)*KEYVALLEN+_headoffset );
+
+			if ( NULL == _compf ) {
+				rc = raysafepread( _intfd, _superbuf, readbytes, (_start+_lastSuperBlock*_elements)*KEYVALLEN+_headoffset );
+			} else {
+				rc = _compf->pread( _superbuf, readbytes, (_start+_lastSuperBlock*_elements)*KEYVALLEN+_headoffset );
+			}
 			if ( rc < 0 ) { return false; }
 		}
 		continue;

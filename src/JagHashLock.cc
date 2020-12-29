@@ -97,6 +97,7 @@ bool JagHashLock::regionOverlaps( const AbaxString &kstr, bool isRead )
 // v2: data1 is readers; data2 is writers
 void JagHashLock::writeLock( const AbaxString & kstr )
 {
+	JAG_BLURT
     pthread_mutex_lock( & _mutex);
     while ( regionOverlaps( kstr, false ) ) {
       pthread_cond_wait(&_condvar, & _mutex);
@@ -107,6 +108,7 @@ void JagHashLock::writeLock( const AbaxString & kstr )
 	++ _writers;
     _map->setValue( kstr, v2, true );
     pthread_mutex_unlock(&_mutex);
+	JAG_OVER
 }
   
 void JagHashLock::writeUnlock( const AbaxString & kstr )
@@ -130,6 +132,7 @@ void JagHashLock::writeUnlock( const AbaxString & kstr )
   
 void JagHashLock::readLock( const AbaxString & kstr )
 {
+	JAG_BLURT
     pthread_mutex_lock( & _mutex);
     while ( regionOverlaps( kstr, true ) ) {
       pthread_cond_wait(&_condvar, & _mutex);
@@ -140,6 +143,7 @@ void JagHashLock::readLock( const AbaxString & kstr )
 	++ _readers;
     _map->setValue( kstr, v2, true );
     pthread_mutex_unlock(&_mutex);
+	JAG_OVER
 }
 
 void JagHashLock::readUnlock( const AbaxString & kstr )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 DataJaguar, Inc.
+ * Copyright (C) 2018,2019,2020,2021 DataJaguar, Inc.
  *
  * This file is part of JaguarDB.
  *
@@ -34,6 +34,7 @@
 #include <dirent.h>
 #include <math.h>
 #include <malloc.h>
+#include <libgen.h>
 
 #ifndef _WINDOWS64_
 #include <termios.h>
@@ -45,7 +46,7 @@
 
 #include <abax.h>
 #include <JagLogLevel.h>
-#include <JDFS.h>
+//#include <JDFS.h>
 #include <JagStrSplit.h>
 #include <JagParser.h>
 #include <JagParseParam.h>
@@ -362,19 +363,20 @@ Jstr strRemoveQuote( const char *p )
 		char *q = jumptoEndQuote( p ); ++p;
 		if ( *p == '\0' || *q == '\0' || q-p <= 0 ) {
 		} else {
-			str = Jstr( p, q-p );
+			str = Jstr( p, q-p, q-p );
+			//str = Jstr( p, q-p );
 		}
 	}
 	return str;
 }	
 
 //static char *itostr( int i, char *buf );
-//static char *ltostr( abaxint i, char *buf );
+//static char *ltostr( jagint i, char *buf );
 void raydebug( FILE *outf, int level, const char *fmt, ... )
 {
     const char *p;
     va_list 	argp;
-    abaxint 	i;
+    jagint 	i;
     char 		*s;
     char 		fmtbuf[256];
 	char        tstr[22];
@@ -391,7 +393,9 @@ void raydebug( FILE *outf, int level, const char *fmt, ... )
 	// tmp = localtime( &now );
 	tmp = jag_localtime_r( &now, &result );
 	strftime( tstr, 22, "%Y-%m-%d %H:%M:%S", tmp );
-	fprintf( outf, "%s %lld ", tstr, pthread_self() ); 
+	//fprintf( outf, "%s %lld ", tstr, pthread_self() ); 
+	pthread_t tid = pthread_self();
+	fprintf( outf, "%s 0x%0x ", tstr, tid ); 
     
     va_start(argp, fmt);
     for(p = fmt; *p != '\0'; p++) {
@@ -412,12 +416,17 @@ void raydebug( FILE *outf, int level, const char *fmt, ... )
     			fputs(s, outf);
     			break;
     		case 'l':
-    			i = va_arg(argp, abaxint);
+    			i = va_arg(argp, jagint);
     			s = ltostr(i, fmtbuf );
     			fputs(s, outf);
     			break;
+    		case 'x':
+    			i = va_arg(argp, jagint);
+    			s = xtostr(i, fmtbuf );
+    			fputs(s, outf);
+    			break;
     		case 'u':
-    			i = va_arg(argp, abaxint);
+    			i = va_arg(argp, jagint);
     			s = itostr(i, fmtbuf );
     			fputs(s, outf);
     			break;
@@ -433,7 +442,7 @@ void raydebug( FILE *outf, int level, const char *fmt, ... )
     			break;
 
 			default:
-    			i = va_arg(argp, abaxint);
+    			i = va_arg(argp, jagint);
     			s = ltostr(i, fmtbuf );
     			fputs(s, outf);
 				++p;
@@ -450,66 +459,42 @@ char *itostr( int i, char *buf )
 	sprintf( buf, "%d", i );
 	return buf;
 }
-char *ltostr( abaxint i, char *buf )
+
+char *ltostr( jagint i, char *buf )
 {
 	sprintf( buf, "%lld", i );
 	return buf;
 }
 
-// use jdfs to read data
-ssize_t jdfpread( const JDFS *jdfs, char *buf, abaxint len, abaxint startpos )
+char *xtostr( jagint i, char *buf )
 {
-	ssize_t s;
-
-	#ifdef CHECK_LATENCY
-		JagClock clock;
-		clock.start();
-	#endif
-
-	s = jdfs->pread( buf, len, startpos );
-	#ifdef CHECK_LATENCY
-		clock.stop();
-		printf("s5524 jdfpread(len=%d startpos=%d) took %d microsecs\n", len, startpos, clock.elapsedusec() );
-	#endif
-
-	return s;
-}
-
-// use jdfs to write data
-ssize_t jdfpwrite( JDFS *jdfs, const char *buf, abaxint len, abaxint startpos )
-{
-	ssize_t s;
-
-	#ifdef CHECK_LATENCY
-		JagClock clock;
-		clock.start();
-	#endif
-
-	s = jdfs->pwrite( buf, len, startpos );
-	#ifdef CHECK_LATENCY
-		clock.stop();
-		printf("s5524 jdfpwrite(len=%d startpos=%d) took %d microsecs\n", len, startpos, clock.elapsedusec() );
-	#endif
-	return s;
+	sprintf( buf, "%0x", i );
+	return buf;
 }
 
 // safe pread data from a file
-ssize_t raysafepread( int fd, char *buf, abaxint length, abaxint startpos )
+// 0: no more data   -1: error
+ssize_t raysafepread( int fd, char *buf, jagint length, jagint startpos )
 {
-    register ssize_t bytes = 0;
-    register ssize_t len;
+    ssize_t bytes = 0;
+    ssize_t len;
 
    	len = jagpread( fd, buf, length, startpos );
 	if ( len < 0 && errno == EINTR ) {
     	len = jagpread( fd, buf, length, startpos );
 	}
 
+	if ( len == length ) {
+		return len;
+	}
+
 	if ( len == 0 ) {
+		prt(("E62816 raysafepread error len==0  fd=%d length=%lld startpos=%lld [%s] return 0\n",
+				 fd, length, startpos, strerror(errno) )); 
 		return 0;
 	} else if ( len < 0 ) {
-		printf("E6287 raysafepread error fd=%d length=%lld startpos=%lld [%s]\n",
-				fd, length, startpos, strerror(errno) ); 
-		fflush( stdout );
+		prt(("E628117 raysafepread error len=%d  fd=%d length=%lld startpos=%lld [%s] return -1\n",
+				len, fd, length, startpos, strerror(errno) )); 
 		return -1;
 	}
 
@@ -521,9 +506,8 @@ ssize_t raysafepread( int fd, char *buf, abaxint length, abaxint startpos )
 		}
 
 		if ( len < 0 ) {
-			printf("E6288 raysafepread error fd=%d length-bytes=%lld startpos+bytes=%lld [%s]\n",
-				fd, length-bytes, startpos+bytes, strerror(errno) ); 
-			fflush( stdout );
+			prt(("E62808 raysafepread error fd=%d length-bytes=%lld startpos+bytes=%lld [%s]\n",
+				     fd, length-bytes, startpos+bytes, strerror(errno) )); 
 		}
 
         if ( len <= 0 ) {
@@ -536,7 +520,7 @@ ssize_t raysafepread( int fd, char *buf, abaxint length, abaxint startpos )
 }
 
 // safe pwrite data to a file
-ssize_t raysafepwrite( int fd, const char *buf, abaxint len, abaxint startpos )
+ssize_t raysafepwrite( int fd, const char *buf, jagint len, jagint startpos )
 {
     size_t nleft;
     ssize_t nwritten;
@@ -550,8 +534,7 @@ ssize_t raysafepwrite( int fd, const char *buf, abaxint len, abaxint startpos )
             if (nwritten < 0 && errno == EINTR) {
                 nwritten = 0;   /* and call write() again */
 			} else {
-				printf("raysafepwrite error fd=%d len=%lld startpos=%lld [%s]\n", fd, len, startpos, strerror(errno) );
-				fflush( stdout );
+				prt(("E290260 raysafepwrite error fd=%d len=%lld startpos=%lld [%s]\n", fd, len, startpos, strerror(errno) ));
                 return (-1);    /* error */
 			}
         }
@@ -560,7 +543,7 @@ ssize_t raysafepwrite( int fd, const char *buf, abaxint len, abaxint startpos )
         ptr += nwritten;
 		startpos += nwritten;
     }
-    return (len);
+    return len;
 }
 
 int rayatoi( const char *buf, int length )
@@ -573,12 +556,12 @@ int rayatoi( const char *buf, int length )
 	return value;
 }
 
-abaxint rayatol( const char *buf, int length )
+jagint rayatol( const char *buf, int length )
 {
 	char *p = (char*)buf;
 	char savebyte = *(p+length);
 	*(p+length) = '\0';
-	abaxint value = jagatoll(p);
+	jagint value = jagatoll(p);
 	*(p+length) = savebyte;
 	return value;
 }
@@ -618,17 +601,15 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 	if ( *inbuf == '\0' ) return 1;
 	int errcode = 0;
 	char savebyte = *(outbuf+offset+length);
-	abaxint actwlen = 0;
+	jagint actwlen = 0;
 	int writelen = 0;
 
 	JagParseAttribute jpa( NULL, tzdiff, servtzdiff );
 	//prt(("s8282 formatOneCol type=[%s]  inbuf=[%s] offset=%d length=%d\n", type.c_str(), inbuf, offset, length ));
 
-	if ( type == JAG_C_COL_TYPE_DATETIME ) { // for datetime
+	if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP ) { // for datetime
 		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length );
-	} else if ( type == JAG_C_COL_TYPE_TIMESTAMP ) { // for datetime == timestamp
-		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length );
-	} else if ( type == JAG_C_COL_TYPE_DATETIMENANO ) { // for datetime in nano sec
+	} else if ( type == JAG_C_COL_TYPE_DATETIMENANO || type == JAG_C_COL_TYPE_TIMESTAMPNANO ) { // for datetime in nano sec 
 		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length, true );
 	} else if ( type == JAG_C_COL_TYPE_DATE ) { // for date
 		errcode = JagTime::convertDateFormat( outbuf, inbuf, offset, length );
@@ -645,8 +626,8 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 			errcode = 1;
 		}
 		***/
-	} else { // for int/abaxint, float/double
-		abaxint lonnum = 0;
+	} else { // for int/jagint, float/double
+		jagint lonnum = 0;
 		bool dofl = false;
 		char *trackpos;
 
@@ -713,16 +694,20 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 		if ( type == JAG_C_COL_TYPE_DATE ) {
 			errmsg = "E6200 Error date format. Please check your input.";
 		} else if ( type == JAG_C_COL_TYPE_DATETIME ) {
-			errmsg = "E6201 Error datetime format. Please check your input.";
+			errmsg = "E6202 Error datetime format. Please check your input.";
+		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO ) {
+			errmsg = "E6204 Error datetimenano format. Please check your input.";
 		} else if ( type == JAG_C_COL_TYPE_TIMESTAMP ) {
-			errmsg = "E6203 Error timestamp format. Please check your input.";
+			errmsg = "E6206 Error timestamp format. Please check your input.";
+		} else if ( type == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
+			errmsg = "E6208 Error timestampnano format. Please check your input.";
 		} else if ( type == JAG_C_COL_TYPE_TIME ) {
-			errmsg = "E6204 Error time format. Please check your input.";
+			errmsg = "E6210 Error time format. Please check your input.";
 		} else if ( type == JAG_C_COL_TYPE_STR ) {
-			errmsg = "E6205 Length of string " + longToStr(actwlen) + " exceeded limit " + 
+			errmsg = "E6212 Length of string " + longToStr(actwlen) + " exceeded limit " + 
 					intToStr(length) + " for column " + name + ". Please check your input.";
 		} else {
-			errmsg = "E6206 Error input. Please check your input.";
+			errmsg = "E6220 Error input. Please check your input.";
 		}
 	} else if ( errcode == 2 ) {
 		errmsg = "E6208 Length of input " + longToStr(actwlen) + " exceeded limit " + 
@@ -756,7 +741,9 @@ void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schA
         if ( ( isInteger(type) || type == JAG_C_COL_TYPE_FLOAT
             || type == JAG_C_COL_TYPE_DOUBLE) && *(outbuf+offset) == JAG_C_NEG_SIGN ) {
             for ( int j = offset+1; j < offset+length; ++j ) {
-                if ( *(outbuf+j) != '.' ) *(outbuf+j) = '9' - *(outbuf+j) + '0';
+                if ( *(outbuf+j) != '.' ) {
+					*(outbuf+j) = '9' - *(outbuf+j) + '0';
+				}
             }
         }
 	}
@@ -797,7 +784,6 @@ Jstr removeCharFromString( const Jstr &str, char dropc )
 	}
 	Jstr res( p );
 	if ( p ) free( p );
-	p = NULL;
 	return res;
 }
 
@@ -807,14 +793,13 @@ Jstr makeUpperString( const Jstr &str )
 {
 	if ( str.length()<1) return "";
 
-	char * p = (char*)jagmalloc( str.length() + 1 );
+	char *p = (char*)jagmalloc( str.length() + 1 );
 	p[str.length()] = '\0';
 	for ( int i = 0; i < str.length(); ++i ) {
 		p[i] = toupper( *(str.c_str()+i) );
 	}
 	Jstr res( p );
 	if ( p ) free( p );
-	p = NULL;
 	return res;
 }
 
@@ -829,7 +814,6 @@ Jstr makeLowerString( const Jstr &str )
 	}
 	Jstr res( p );
 	if ( p ) free( p );
-	p = NULL;
 	return res;
 }
 
@@ -846,16 +830,18 @@ JagFixString makeUpperOrLowerFixString( const JagFixString &str, bool isUpper )
 			p[i] = tolower( *(str.c_str()+i) );
 		}
 	}
-	res = JagFixString( p, str.length() );
+	res = JagFixString( p, str.length(), str.length() );
 	if ( p ) free( p );
-	p = NULL;
 	return res;
 }
 
 Jstr trimChar( const Jstr &str, char c )
 {
+	//prt(("s22092 in trimChar str=[%s] c=[%c]\n", str.s(), c ));
 	Jstr s1 = trimHeadChar( str, c);
+	//prt(("s22093 in trimChar str=[%s] c=[%c] s1=[%s]\n", str.s(), c, s1.s() ));
 	Jstr s2 = trimTailChar( s1, c);
+	//prt(("s22094 in trimChar str=[%s] c=[%c] s2=[%s]\n", str.s(), c, s2.s() ));
 	return s2;
 }
 
@@ -867,39 +853,43 @@ Jstr trimHeadChar( const Jstr &str, char c )
 	if ( *p != c ) return str; 
 	while ( *p == c ) ++p;
 	if ( *p == '\0' ) return "";
+	//prt(("s222018 in trimHeadChar p=[%s]\n", p ));
 	return Jstr(p);
 }
 
 // input: "xjfjdkjfkdcc"  out: "xjfjdkjfkd"
 Jstr trimTailChar( const Jstr &str, char c )
 {
-	char r;
+	char v;
 	if ( str.size() < 1 ) return str;
 	char *p = (char*)str.c_str() + str.size()-1;
 	if ( *p != c ) return str; 
 	while ( *p == c && p >= str.c_str() ) --p;
     if ( p < str.c_str() ) return ""; 
 
-	r = *(p+1);
+	v = *(p+1);
 	*(p+1) = '\0';
+	//Jstr newstr = Jstr( str.c_str(), str.size(), str.size() );
 	Jstr newstr = Jstr( str.c_str() );
-	*(p+1) = r;
+	*(p+1) = v;
+	//prt(("s302838 in trimTailChar str=[%s]  newstr=[%s]\n", str.c_str(), newstr.s() ));
 	return newstr;
 }
 
 Jstr trimTailLF( const Jstr &str )
 {
-	char r;
+	char v;
 	if ( str.size() < 1 ) return str;
 	char *p = (char*)str.c_str() + str.size()-1;
 	if ( *p != '\r' && *p != '\n' ) return str; 
 	while ( (*p =='\r' || *p=='\n' ) && p >= str.c_str() ) --p;
     if ( p < str.c_str() ) return ""; 
 
-	r = *(p+1);
+	v = *(p+1);
 	*(p+1) = '\0';
+	//Jstr newstr = Jstr( str.c_str(), str.size(), str.size() );
 	Jstr newstr = Jstr( str.c_str() );
-	*(p+1) = r;
+	*(p+1) = v;
 	return newstr;
 }
 
@@ -999,7 +989,7 @@ Jstr intToStr( int i )
 	return Jstr(buf);
 }
 
-Jstr longToStr( abaxint i )
+Jstr longToStr( jagint i )
 {
 	char buf[32];
 	memset(buf, 0, 32 );
@@ -1046,7 +1036,7 @@ Jstr longDoubleToStr( abaxdouble f )
 
 // mode 0: use sprintf, 1 use snprintf
 // fill 0: directly fill with Lf or f; 1: fill with *.*Lf or *.*f, where fill length are JAG_MAX_INT_LEN and JAG_MAX_SIG_LEN
-int jagsprintfLongDouble( int mode, bool fill, char *buf, abaxdouble i, abaxint maxlen )
+int jagsprintfLongDouble( int mode, bool fill, char *buf, abaxdouble i, jagint maxlen )
 {
 	int rc;
 	#ifdef _WINDOWS64_
@@ -1111,20 +1101,10 @@ bool isDateTime( const Jstr &dtype )
 	if ( dtype == JAG_C_COL_TYPE_DATETIME  ||
 		 dtype == JAG_C_COL_TYPE_TIMESTAMP  ||
 		dtype == JAG_C_COL_TYPE_DATETIMENANO  ||
+		dtype == JAG_C_COL_TYPE_TIMESTAMPNANO  ||
 		dtype == JAG_C_COL_TYPE_DATE  ||
 		dtype == JAG_C_COL_TYPE_TIME  ||
 		dtype == JAG_C_COL_TYPE_TIMENANO )
-	{
-		return true;
-	}
-	return false;
-}
-
-bool isJoin( int dtype ) {
-	if (JAG_INNERJOIN_OP == dtype ||
-		JAG_LEFTJOIN_OP == dtype ||
-		JAG_RIGHTJOIN_OP == dtype ||
-		JAG_FULLJOIN_OP == dtype)
 	{
 		return true;
 	}
@@ -1232,24 +1212,24 @@ Jstr intToString( int i )
 	sprintf(buf, "%d", i );
 	return Jstr( buf );
 }
-Jstr longToString( abaxint i ) 
+Jstr longToString( jagint i ) 
 {
 	char buf[32];
 	sprintf(buf, "%lld", i );
 	return Jstr( buf );
 }
-Jstr ulongToString( uabaxint i ) 
+Jstr ulongToString( jaguint i ) 
 {
 	char buf[32];
 	sprintf(buf, "%lu", i );
 	return Jstr( buf );
 }
 
-abaxint strchrnum( const char *str, char ch )
+jagint strchrnum( const char *str, char ch )
 {
     if ( ! str || *str == '\0' ) return 0;
 
-    abaxint cnt = 0;
+    jagint cnt = 0;
     const char *p = str;
     const char *q;
     while ( 1 ) {
@@ -1264,10 +1244,10 @@ abaxint strchrnum( const char *str, char ch )
 
 // "aabbb" --> 2, skip consecutive chars
 // also skip 'ijjj'  "xxx"
-abaxint strchrnumskip( const char *str, char ch )
+jagint strchrnumskip( const char *str, char ch )
 {
     if ( ! str || *str == '\0' ) return 0;
-    abaxint cnt = 0;
+    jagint cnt = 0;
     while ( *str != '\0' ) {
 		if ( *str == '\'' ) { while ( *str != '\'' && *str != '\0' ) ++str; ++str; }
 		else if ( *str == '"' ) { while ( *str != '"' && *str != '\0' ) ++str; ++str; }
@@ -1282,7 +1262,7 @@ void escapeNewline( const Jstr &instr, Jstr &outstr )
 {
 	if ( instr.size() < 1 ) return;
 
-	abaxint n = strchrnum( instr.c_str(), '\n' );
+	jagint n = strchrnum( instr.c_str(), '\n' );
 	char *str = (char*)jagmalloc( instr.size() + 2*n + 1 );
 	const char *p = instr.c_str();
 	char *q = str;
@@ -1297,6 +1277,7 @@ void escapeNewline( const Jstr &instr, Jstr &outstr )
 	}
 	*q++ = '\0';
 	outstr = Jstr(str);
+	jagfree( str );
 }
 
 
@@ -1352,6 +1333,7 @@ void splitFilePath( const char *fpath, Jstr &first, Jstr &last )
 // output: first=/tmp/abc/fff.bid
 Jstr renameFilePath( const Jstr& fpath, const Jstr &newLast )
 {
+	prt(("s33278 renameFilePath fpath=%s newLast=%s\n", fpath.c_str(), newLast.c_str() ));
 	char *p = (char*)strrchr( fpath.c_str(), '.' );
 	if ( !p ) {
 		return fpath;
@@ -1363,7 +1345,7 @@ Jstr renameFilePath( const Jstr& fpath, const Jstr &newLast )
 	return newPath;
 }
 
-void stripeFilePath( const Jstr &fpath, abaxint stripe, Jstr &stripePath )
+void stripeFilePath( const Jstr &fpath, jagint stripe, Jstr &stripePath )
 {
 	Jstr first, last;
 	splitFilePath( fpath.c_str(), first, last );
@@ -1396,7 +1378,7 @@ Jstr jaguarHome()
 	if (  ! p ) {
 		p = getenv("HOME");
 		if ( p ) {
-			jaghm = Jstr(p) + "/" + Jstr(JAG_BRAND);
+			jaghm = Jstr(p) + "/jaguar";
 		} else {
 			#ifdef _WINDOWS64_
 		       p = "/c/jaguar";
@@ -1411,7 +1393,6 @@ Jstr jaguarHome()
 		jaghm = Jstr(p);
 	}
 	
-	// return Jstr(p) + "/" + Jstr(JAG_BRAND);
 	return jaghm;
 }
 
@@ -1426,7 +1407,7 @@ bool startWith( const Jstr &str, char a )
 }
 
 // safe read data from a file
-ssize_t raysaferead( int fd, char *buf, abaxint len )
+ssize_t raysaferead( int fd, char *buf, jagint len )
 {
      size_t  nleft;
      ssize_t nread;
@@ -1449,7 +1430,7 @@ ssize_t raysaferead( int fd, char *buf, abaxint len )
      return (len - nleft);         /* return >= 0 */
 }
 
-ssize_t raysaferead( int fd, unsigned char *buf, abaxint len )
+ssize_t raysaferead( int fd, unsigned char *buf, jagint len )
 {
      size_t  nleft;
      ssize_t nread;
@@ -1474,7 +1455,7 @@ ssize_t raysaferead( int fd, unsigned char *buf, abaxint len )
 
 
 // safe write data to a file
-ssize_t raysafewrite( int fd, const char *buf, abaxint len )
+ssize_t raysafewrite( int fd, const char *buf, jagint len )
 {
     size_t nleft;
     ssize_t nwritten;
@@ -1532,9 +1513,9 @@ int selectServer( const JagFixString &min, const JagFixString &max, const JagFix
 
 
 // Available Memory to use in bytes
-abaxint availableMemory( abaxint &callCount, abaxint lastBytes )
+jagint availableMemory( jagint &callCount, jagint lastBytes )
 {
-	abaxint bytes;
+	jagint bytes;
 	#ifndef _WINDOWS64_
 		bytes = sysconf( _SC_PAGESIZE ) * sysconf( _SC_AVPHYS_PAGES );
     #else
@@ -1563,13 +1544,12 @@ abaxint availableMemory( abaxint &callCount, abaxint lastBytes )
 	}
 }
 
-// return 1: write related, insert, cinsert, dinsert, create, alter, update, delete, drop, truncate, import
-//  1: broadcast command to all clusters and all servers
-// return 0: read related, select, show, desc and/or other commands
-// 0: sent to maybe onnly 1 server
+// return JAG_WRITE_SQL(==1): write related, insert, cinsert, dinsert, create, alter, update, delete, drop, truncate, import
+//                        broadcast command to all clusters and all servers
+// return JAG_READ_SQL(==0): read related, select, show, desc and/or other commands, sent to maybe only 1 server
 int checkReadOrWriteCommand( const char *pmesg )
 {
-	if ( 0 == strncasecmp( pmesg, "insert", 6 ) || 0 == strncasecmp( pmesg, "sinsert", 7 ) ||
+	if ( 0 == strncasecmp( pmesg, "insert", 6 ) || 0 == strncasecmp( pmesg, "finsert", 7 ) ||
 		 0 == strncasecmp( pmesg, "cinsert", 7 ) || 0 == strncasecmp( pmesg, "dinsert", 7 ) ||
 		 0 == strncasecmp( pmesg, "create", 6 ) || 0 == strncasecmp( pmesg, "alter", 5 ) ||
 		 0 == strncasecmp( pmesg, "update", 6 ) || 0 == strncasecmp( pmesg, "delete", 6 ) ||
@@ -1579,15 +1559,27 @@ int checkReadOrWriteCommand( const char *pmesg )
 		 0 == strncasecmp( pmesg, "createuser", 10 ) || 0 == strncasecmp( pmesg, "dropuser", 8 ) ||
 		 0 == strncasecmp( pmesg, "grant", 5 ) || 0 == strncasecmp( pmesg, "revoke", 6 ) ||
 		 0 == strncasecmp( pmesg, "changepass", 10 ) || 0 == strncasecmp( pmesg, "changedb", 8 ) ) {
-		 return 1;
+		 return JAG_WRITE_SQL;
 	}
-	return 0;
+	return JAG_READ_SQL;
+}
+
+// return JAG_WRITE_SQL(==1): write related, insert, cinsert, dinsert, create, alter, update, delete, drop, truncate, import
+//                        broadcast command to all clusters and all servers
+// return JAG_READ_SQL(==0): read related, select, show, desc and/or other commands, sent to maybe only 1 server
+int checkReadOrWriteCommand( int qmode )
+{
+	if ( 1 == qmode || 7 == qmode || 3 == qmode ) {
+		 return JAG_WRITE_SQL;
+	} else {
+		return JAG_READ_SQL;
+	}
 }
 
 // return 1: string type
 // return 2: bool type
 // return 3: int type
-// return 4: abaxint type
+// return 4: jagint type
 // return 5: float/double type
 // return 6: date/time type
 int checkColumnTypeMode( const Jstr &type )
@@ -1599,29 +1591,30 @@ int checkColumnTypeMode( const Jstr &type )
 	else if ( type == JAG_C_COL_TYPE_DBIGINT  ) return 4;
 	else if ( type == JAG_C_COL_TYPE_FLOAT  || type == JAG_C_COL_TYPE_DOUBLE  ) return 5;
 	else if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP  || type == JAG_C_COL_TYPE_TIME  || 
-				type==JAG_C_COL_TYPE_DATETIMENANO  || type==JAG_C_COL_TYPE_TIMENANO || type==JAG_C_COL_TYPE_DATE  ) return 6;
+				type==JAG_C_COL_TYPE_DATETIMENANO || type == JAG_C_COL_TYPE_TIMESTAMPNANO || 
+				type==JAG_C_COL_TYPE_TIMENANO || type==JAG_C_COL_TYPE_DATE  ) return 6;
 	return 0;
 }
 
-Jstr formOneColumnNaturalData( const char *buf, abaxint offset, abaxint length, const Jstr &type )
+Jstr formOneColumnNaturalData( const char *buf, jagint offset, jagint length, const Jstr &type )
 {
 	Jstr instr, outstr;
 	int rc = checkColumnTypeMode( type );
 	if ( 6 == rc ) {
 		if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP ) {
-			instr = Jstr( buf+offset, length );
+			instr = Jstr( buf+offset, length, length );
 			JagTime::convertDateTimeToLocalStr( instr, outstr );
-		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO ) {
-			instr = Jstr( buf+offset, length );
+		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO || type == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
+			instr = Jstr( buf+offset, length, length );
 			JagTime::convertDateTimeToLocalStr( instr, outstr, true );
 		} else if ( type == JAG_C_COL_TYPE_TIME ) {
-			instr = Jstr( buf+offset, length );
+			instr = Jstr( buf+offset, length, length );
 			JagTime::convertTimeToStr( instr, outstr );
 		} else if ( type == JAG_C_COL_TYPE_TIMENANO ) {
-			instr = Jstr( buf+offset, length );
+			instr = Jstr( buf+offset, length, length );
 			JagTime::convertTimeToStr( instr, outstr, 2 );
 		} else if ( type == JAG_C_COL_TYPE_DATE ) {
-			instr = Jstr( buf+offset, length );
+			instr = Jstr( buf+offset, length, length );
 			JagTime::convertDateToStr( instr, outstr );
 		}
 	} else if ( 5 == rc ) {
@@ -1633,34 +1626,23 @@ Jstr formOneColumnNaturalData( const char *buf, abaxint offset, abaxint length, 
 	} else if ( 2 == rc ) {
 		outstr = intToStr( rayatoi(buf+offset, length) != 0 );
 	} else if ( 1 == rc ) {
+		// string
 		/**
 		Jstr tmpstr = Jstr(buf+offset, length);
 		outstr = tmpstr.c_str();
 		**/
-		outstr = Jstr(buf+offset, length);
+		//outstr = Jstr(buf+offset, length, length);
+		prt(("u2029280 formOneColumnNaturalData buf=[%s] offset=%d length=%d\n", buf, offset, length ));
+		char *pbuf = (char*)buf;
+		char v = *(pbuf+offset+length);
+		*(pbuf+offset+length) = NBT;
+		outstr = Jstr(pbuf+offset);
+		*(pbuf+offset+length) = v;
+		prt(("u222208 outstr=[%s]\n", outstr.s() ));
 	}
+
 	return outstr;
 }
-
-/***
-Jstr printCharWithEscapeSequence( const char p )
-{
-	Jstr str;
-	if ( p == '\a' ) str = "\\a";
-	else if ( p == '\b' ) str = "\\b"; 
-	else if ( p == '\t' ) str = "\\t";
-	else if ( p == '\n' ) str = "\\n";
-	else if ( p == '\v' ) str = "\\v";
-	else if ( p == '\f' ) str = "\\f";
-	else if ( p == '\r' ) str = "\\r";
-	else if ( p == '"' ) str = "\"";
-	else if ( p == '\'' ) str = "'";
-	else if ( p == '\?' ) str = "\\?";
-	else if ( p == '\\' ) str = "\\";
-	else str = p;
-	return str;
-}
-****/
 
 
 // rewrite for group by 1-24-2017
@@ -1670,13 +1652,13 @@ Jstr printCharWithEscapeSequence( const char p )
 // num is # of tables involved. normally num=1 for one table
 int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 					JagParseParam *parseParam, const JagVector<SetHdrAttr> &spa, Jstr &newhdr, Jstr &gbvhdr,
-					abaxint &finalsendlen, abaxint &gbvsendlen, bool needGbvs )
+					jagint &finalsendlen, jagint &gbvsendlen, bool needGbvs )
 {
 	//prt(("u2033 rearrangeHdr num=%d parseParam->hasColumn=%d ...\n", num, parseParam->hasColumn ));
 	gbvsendlen = 0;
 	int rc, collen, siglen, constMode = 0, typeMode = 0;
 	bool isAggregate;
-	abaxint offset = 0;
+	jagint offset = 0;
 	ExprElementNode *root;
 	const JagSchemaRecord *records[num];
 	Jstr type, hdr, tname;
@@ -1746,7 +1728,7 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 				// get collen, siglen etc
 				rc = root->setFuncAttribute( maps, attrs, constMode, typeMode, isAggregate, type, collen, siglen );
 				if ( 0 == rc ) {
-					printf("s3004 Error setFuncAttribute\n");
+					printf("s39004 Error setFuncAttribute\n");
 					return 0;
 				}
 
@@ -1880,7 +1862,7 @@ void changeHome( Jstr &fpath )
 	if ( ! home ) home = getenv("HOME");
 	int idx = 0;
 	for ( int i = oldsp.length()-1; i>=0; --i ) {
-		if ( oldsp[i] == JAG_BRAND ) {
+		if ( oldsp[i] == "jaguar" ) {
 			idx = i;
 			break; // found last "jaguar"
 		}
@@ -1995,7 +1977,7 @@ int jagmkdir(const char *path, mode_t mode)
 }
 
 
-ssize_t jagpread( int fd, char *buf, abaxint length, abaxint startpos )
+ssize_t jagpread( int fd, char *buf, jagint length, jagint startpos )
 {
 	ssize_t len;
 	#ifdef _WINDOWS64_
@@ -2008,7 +1990,7 @@ ssize_t jagpread( int fd, char *buf, abaxint length, abaxint startpos )
 	return len;
 }
 
-ssize_t jagpwrite( int fd, const char *buf, abaxint length, abaxint startpos )
+ssize_t jagpwrite( int fd, const char *buf, jagint length, jagint startpos )
 {
 	ssize_t len;
 	#ifdef _WINDOWS64_
@@ -2125,7 +2107,7 @@ void randDataStringSort( Jstr *vec, int maxlen )
 {
 	struct timeval now;
 	gettimeofday( &now, NULL );
-	abaxint microsec = now.tv_sec * (abaxint)1000000 + now.tv_usec;
+	jagint microsec = now.tv_sec * (jagint)1000000 + now.tv_usec;
 	srand( microsec );
 	Jstr tmp;
 	int i = maxlen-1, pivot = maxlen-1, radidx;
@@ -2139,20 +2121,20 @@ void randDataStringSort( Jstr *vec, int maxlen )
 	}
 }
 
-abaxint getNearestBlockMultiple( abaxint value )
+jagint getNearestBlockMultiple( jagint value )
 {
 	if ( value < JAG_BLOCK_SIZE ) value = JAG_BLOCK_SIZE;
-	abaxint a, b;
+	jagint a, b;
 	double c, d;
 	d = (double)value;
 	c = log2 ( d );
-	b = (abaxint) c;
+	b = (jagint) c;
 	++b;
 	a = exp2( b );
 	return a;
 }
 
-abaxint getBuffReaderWriterMemorySize( abaxint value ) // max as 1024 ( MB ), value and return in MB
+jagint getBuffReaderWriterMemorySize( jagint value ) // max as 1024 ( MB ), value and return in MB
 {
 	if ( value <= 0 ) value = 0;
 	value = getNearestBlockMultiple( value ) / 2;
@@ -2160,17 +2142,13 @@ abaxint getBuffReaderWriterMemorySize( abaxint value ) // max as 1024 ( MB ), va
 	return value;
 }
 
-char *jagmalloc( abaxint sz )
+char *jagmalloc( jagint sz )
 {
-	// if ( sz > 1000000000 ) abort();
-	//todo tmpdebug
-
 	char *p = NULL;
 	while ( NULL == p ) {
 		p = (char*)malloc(sz);
 		if ( NULL == p ) {
-			printf("ERR0300 Error malloc %lld bytes memory, not enough memory. Please free up some memory. Retry in 10 seconds...\n", sz );
-			fflush( stdout );
+			prt(("ERR0300 Error malloc %lld bytes memory, not enough memory. Please free up some memory. Retry in 10 seconds...\n", sz ));
 			sleep(10);
 		}
 	}
@@ -2185,8 +2163,7 @@ int jagpthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*sta
 	while ( rc != 0 ) {
 		rc = pthread_create( thread, attr, (*start_routine), arg );
 		if ( rc != 0 ) {
-			printf("ERR0400 Error creating new thread, errno=%d. Please clean up some unused processes. Retry in 10 seconds...\n", rc );
-			fflush( stdout );
+			prt(("ERR0400 Error pthread_create, errno=%d. Please clean up some unused processes. Retry in 10 seconds...\n", rc ));
 			sleep(10);
 		}
 	}
@@ -2198,74 +2175,99 @@ int jagpthread_join(pthread_t thread, void **retval)
 {
 	int rc = pthread_join( thread, retval );
 	if ( rc != 0 ) {
-		printf("Error pthread_join , errno=%d\n", rc );
-		fflush( stdout );
+		prt(("Error pthread_join , errno=%d\n", rc ));
 	}
 	return rc;
 }
 
-// send data to socket
+// Send data to socket, no header added
 // return -1: error; bytes received
 // buf has space to hold len bytes
-abaxint sendData( JAGSOCK sock, const char *buf, abaxint len )
+jagint sendRawData( JAGSOCK sock, const char *buf, jagint len )
 {
-	#if 0
-		// 21 is HB heartbeat
-		if ( 21 != len ) {
-			prt(("s2625 sendData sock=%d buf=[%s] len=%d dumpmem:\n", sock, buf, len ));
-			dumpmem(buf, len );
-			prt(("\n"));
-			//if ( 106 == len ) abort();
-		}
-		prt(("s2625 sendData sock=%d buf=[%s] len=%d dumpmem:\n", sock, buf, len ));
-		dumpmem(buf, len );
-	#endif
-
-	abaxint slen = _raysend( sock, buf, len );
-
-	/**
-	if ( slen > JAG_SOCK_TOTAL_HDR_LEN && *(buf+JAG_SOCK_TOTAL_HDR_LEN-3) == 'H' && *(buf+JAG_SOCK_TOTAL_HDR_LEN-2) == 'B' ) {
-		// no print HB
-	} else {
-		prt(("s7889 socket=%d len=%lld slen=%lld sendData=[%.200s]\n", sock, len, slen, buf));
-	}
-	**/
-
+	jagint slen = _raysend( sock, buf, len );
 	if ( slen < len ) { 
-		// prt(("sendData error 1=%d %d %d\n", sock, slen, len)); 
 		return -1; 
-	} else return slen;
+	} else {
+		return slen;
+	}
 }
 
-// receive data from socket, with hdr
+// Receive message data from socket, with sqlhdr
 // return -1: error; bytes received
 // hdr is a buffer to hold hdr, buf is a pointer to hold len bytes
-// with jagmalloc inside
-abaxint recvData( JAGSOCK sock, char *hdr, char *&buf )
+// with jagmalloc inside, buf is payload
+jagint recvMessage( JAGSOCK sock, char *hdr, char *&buf )
 {
-	abaxint slen, len;
+	jagint slen, len;
 	memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
 	slen = _rayrecv( sock, hdr, JAG_SOCK_TOTAL_HDR_LEN); 
 	if ( slen < JAG_SOCK_TOTAL_HDR_LEN) { 
-		// prt(("recvData error 1=%d %d\n", sock, slen)); 
+		prt(("u2220221 _rayrecv slen=%d < JAG_SOCK_TOTAL_HDR_LEN return -1\n", slen ));
 		return -1; 
 	}
-	// len = jagatoll(hdr);
 	len = getXmitMsgLen( hdr );
-	//prt(("s3920 recvData slen=%d hdr=%s datalen=%d\n", slen, hdr, len )); 
-	if ( len < 0 ) { 
-		// prt(("recvData error 1=%d hdr=%s\n", sock, hdr)); 
-		return -1; 
-	} else if ( len == 0 ) { return 0; }
+	if ( len <= 0 ) { 
+		return 0; 
+	} 
 
 	if ( buf ) { free( buf ); }
 	buf = (char*)jagmalloc( len+1 );
 	memset( buf, 0, len+1 );
 	slen = _rayrecv( sock, buf, len );
 	if ( slen < len ) { 
-		// prt(("recvData error 2=%d %d %d\n", sock, slen, len));
+		prt(("recvMessage error 2=%d %d %d\n", sock, slen, len));
 		free( buf ); buf = NULL; 
 		return -1; 
+	}
+
+	//prt(("c387440 recvMessage got hdr=[%s] buf=[%s]\n", hdr, buf ));
+	return slen;
+}
+
+// Receive data from socket, with sqlhdr
+// return -1: error; bytes received
+// hdr is a buffer to hold hdr
+// If buf is not NULL, it is a pointer to hold len bytes with jagmalloc
+// if buf is NULL, sbuf will hold data. sbuf is allocated from caller
+jagint recvMessageInBuf( JAGSOCK sock, char *hdr, char *&buf, char *sbuf, int sbuflen )
+{
+	jagint slen, len;
+	memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
+
+	slen = _rayrecv( sock, hdr, JAG_SOCK_TOTAL_HDR_LEN); 
+	if ( slen < JAG_SOCK_TOTAL_HDR_LEN) { 
+		//prt(("u332092 slen=%d < JAG_SOCK_TOTAL_HDR_LEN got hdr=[%s] return -1\n", slen, hdr ));
+		return -1; 
+	}
+
+	len = getXmitMsgLen( hdr );
+	if ( len <= 0 ) { 
+		prt(("u2020281 getXmitMsgLen len=%d <=0 hdr=[%s]\n", len, hdr ));
+		return 0; 
+	}
+
+	if ( len < sbuflen ) {
+    	if ( buf ) { free( buf ); buf=NULL; }
+		memset( sbuf, 0, sbuflen+1);
+    	slen = _rayrecv( sock, sbuf, len );
+    	if ( slen < len ) { 
+			prt(("s0292811 _rayrecv len=%d  got slen=%d recved sbuf=[%s]\n", len, slen, sbuf ));
+			return -1;
+		}
+		sbuf[ len ] = '\0' ;
+	} else {
+    	if ( buf ) { free( buf ); }
+    	buf = (char*)jagmalloc( len+1 );
+		memset( buf, 0,  len+1 );
+    	slen = _rayrecv( sock, buf, len );
+    	if ( slen < len ) { 
+			prt(("s000288 error slen=%d < len=%d buf=[%s]\n", slen, len, buf ));
+    		free( buf ); buf = NULL; 
+    		return -1; 
+    	}
+		buf[ len ] = '\0' ;
+		sbuf[0] = '\0';
 	}
 
 	return slen;
@@ -2273,9 +2275,9 @@ abaxint recvData( JAGSOCK sock, char *hdr, char *&buf )
 
 // receive data from socket, data only
 // return -1: error; bytes received
-abaxint recvData( JAGSOCK sock, char *buf, abaxint len )
+jagint recvRawData( JAGSOCK sock, char *buf, jagint len )
 {
-	abaxint slen = _rayrecv( sock, buf, len );
+	jagint slen = _rayrecv( sock, buf, len );
 	if ( slen < len ) { 
 		return -1; 
 	}
@@ -2284,10 +2286,10 @@ abaxint recvData( JAGSOCK sock, char *buf, abaxint len )
 
 #ifdef _WINDOWS64_
 // windows code
-abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N )
+jagint _raysend( JAGSOCK sock, const char *hdr, jagint N )
 {
-    register abaxint bytes = 0;
-    register abaxint len;
+    register jagint bytes = 0;
+    register jagint len;
 	int errcnt = 0;
 	
 	if ( N <= 0 ) { return 0; }
@@ -2299,24 +2301,19 @@ abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N )
 	if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) { // send timeout
 		++errcnt;
 		while ( 1 ) {
-    		jagsleep( 1, JAG_MSEC );
     		len = ::send( sock, hdr, N, 0 );
 			if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) {
 				++errcnt;
 			} else break;
-			if ( errcnt >= 3 ) break;
+			if ( errcnt >= 5 ) break;
 		}
-		if ( errcnt >= 3 ) {
-			// prt(("2000 _raysend Timeout or error() %d %d - %s\n",
-			// sock, WSAGetLastError(), strerror(WSAGetLastError())));
+		if ( errcnt >= 5 ) {
 			rayclose( sock );
 			len = -1;
 		}
 	}
 
 	if ( len < 0 ) {
-		// prt(("2004 _raysend len is %d, sock %d, hdr=[%.100s], N %d MSG_NOS %d, errno=[%d]\n", 
-		// len, sock, hdr, N, 0, WSAGetLastError()));
 		if ( WSAGetLastError() == WSAENETRESET || WSAGetLastError() == WSAECONNRESET ) {
 			rayclose( sock );
 		}
@@ -2334,24 +2331,19 @@ abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N )
 		if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) { // send timeout
 			++errcnt;
 			while ( 1 ) {
-    			jagsleep( 1, JAG_MSEC );
         		len = ::send( sock, hdr+bytes, N-bytes, 0 );
 				if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) {
 					++errcnt;
 				} else break;
-				if ( errcnt >= 3 ) break;
+				if ( errcnt >= 5 ) break;
 			}
-			if ( errcnt >= 3 ) {
-				// prt(("2006 _raysend Timeout or error() %d %d\n",
-				// sock, WSAGetLastError()));
+			if ( errcnt >= 5 ) {
 				rayclose( sock );
 				len = -1;
 			}
 		}	
 
         if ( len < 0 ) {
-            // prt(("2008 _raysend len is %d, sock %d, hdr=[%.100s], N %d MSG_NOS %d, errno=[%d]\n", 
-			// len, sock, hdr, N, 0, WSAGetLastError()));
             if ( WSAGetLastError() == WSAENETRESET || WSAGetLastError() == WSAECONNRESET ) {
                 rayclose( sock );
             }
@@ -2364,17 +2356,21 @@ abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N )
 }
 
 // windows code
-abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
+jagint _rayrecv( JAGSOCK sock, char *hdr, jagint N )
 {
-    register abaxint bytes = 0;
-    register abaxint len;
+    register jagint bytes = 0;
+    register jagint len;
 	int errcnt = 0;
 
 	if ( N <= 0 ) { 
-		//prt(("s4429 _rayrecv  N <= 0 return 0\n" ));
+		prt(("s4429 _rayrecv  N <= 0 return 0\n" ));
 		return 0; 
 	}
-	if ( socket_bad( sock ) ) { return -1; } 
+
+	if ( socket_bad( sock ) ) { 
+		return -1; 
+	}
+
 	len = ::recv( sock, hdr, N, 0 );
 	if ( len < 0 && WSAGetLastError() == WSAEINTR ) {
     	len = ::recv( sock, hdr, N, 0 );
@@ -2382,16 +2378,13 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 	if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) { // recv timeout
 		++errcnt;
 		while ( 1 ) {
-    		jagsleep( 1, JAG_MSEC );
     		len = ::recv( sock, hdr, N, 0 );
 			if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) {
 				++errcnt;
 			} else break;
-			if ( errcnt >= 3 ) break;
+			if ( errcnt >= 5 ) break;
 		}
-		if ( errcnt >= 3 ) {
-			// prt(("2100 _rayrecv Timeout or error() %d %d\n",
-			// sock, WSAGetLastError()));
+		if ( errcnt >= 5 ) {
 			rayclose( sock );
 			len = -1;
 		}
@@ -2399,12 +2392,8 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 
 	// if len==0; remote end had a orderly shudown
 	if ( len == 0 ) {
-		// prt(("2102 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d DONE 0\n", 
-		// len, sock, hdr, N));
 		return 0;
 	} else if ( len < 0 ) {
-		// prt(("2104 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d errno=[%d] DONE -1\n", 
-		// len, sock, hdr, N, WSAGetLastError()));
 		if ( WSAGetLastError() == WSAENETRESET || WSAGetLastError() == WSAECONNRESET ) {
 			rayclose( sock );
 		}
@@ -2422,24 +2411,19 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 		if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) { // recv timeout
 			++errcnt;
 			while ( 1 ) {
-    			jagsleep( 1, JAG_MSEC );
         		len = ::recv( sock, hdr+bytes, N-bytes, 0 );
 				if ( len < 0 && WSAGetLastError() == WSAEWOULDBLOCK ) {
 					++errcnt;
 				} else break;
-				if ( errcnt >= 3 ) break;
+				if ( errcnt >= 5 ) break;
 			}
-			if ( errcnt >= 3 ) {
-				// prt(("2106 _rayrecv Timeout or error() %d %d\n",
-				// sock, WSAGetLastError()));
+			if ( errcnt >= 5 ) {
 				rayclose( sock );
 				len = -1;
 			}
 		}	
 
         if ( len <= 0 ) {
-            // prt(("2108 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d errno=[%d] DONE -1\n", 
-			// len, sock, hdr, N, WSAGetLastError()));
             if ( WSAGetLastError() == WSAENETRESET || WSAGetLastError() == WSAECONNRESET ) {
                 rayclose( sock );
             }
@@ -2452,50 +2436,59 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 }
 #else
 // linux code
-abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N )
+jagint _raysend( JAGSOCK sock, const char *hdr, jagint N )
 {
-    register abaxint bytes = 0;
-    register abaxint len;
-	int errcnt = 0;
+    jagint bytes = 0;
+    jagint len;
+	int errcnt;
+
 	/***
+	// debug, no print HB 
+	if ( ! strstr( hdr, "1CHBCY" ) ) {
+		prt(("    u2220 _raysend hdr=[%s] N=%d\n", hdr, N ));
+	}
 	prt(("s2220 _raysend hdr=[%s] N=%d\n", hdr, N ));
 	dumpmem( hdr, N );
 	prt(("s2220\n" ));
 	***/
 
 	if ( N <= 0 ) { 
+		prt(("    u2083 raysend N<=0 return 0\n"));
 		return 0;
 	}
-	if ( socket_bad( sock ) ) { return -1; } 
+
+	if ( socket_bad( sock ) ) { 
+		prt(("    u2083 raysend sock %d bad\n", sock ));
+		//abort();
+		return -1; 
+	}
+
 	len = ::send( sock, hdr, N, MSG_NOSIGNAL );
 	if ( len < 0 && errno == EINTR ) {
     	len = ::send( sock, hdr, N, MSG_NOSIGNAL );
 	}
 
+	errcnt = 0;
 	if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) { // send timeout
 		++errcnt;
 		while ( 1 ) {
-    		jagsleep( 1, JAG_MSEC );
     		len = ::send( sock, hdr, N, MSG_NOSIGNAL );
 			if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) {
 				++errcnt;
 			} else break;
-			if ( errcnt >= 3 ) break;
+			if ( errcnt >= 5 ) break;
 		}
-		if ( errcnt >= 3 ) {
-			// prt(("2200 _raysend Timeout or error() %d %d - %s\n",
-			// sock, errno, strerror(errno)));
+		if ( errcnt >= 5 ) {
 			rayclose( sock );
 			len = -1;
 		}
 	}	
 
 	if ( len < 0 ) {
-		// prt(("2204 _raysend len is %d, sock %d, hdr=[%.100s], N %d MSG_NOS %d, errnomsg=[%s] DONE -1\n", 
-		// len, sock, hdr, N, MSG_NOSIGNAL, strerror(errno)));
 		if ( errno == ENETRESET || errno == ECONNRESET ) {
 			rayclose( sock );
 		}
+		prt(("    u20922 raysend hdr=[%s] N=%d  len < 0 ret -1\n", hdr, N ));
 		return -1;
 	}
 
@@ -2510,65 +2503,72 @@ abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N )
 		if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) { // send timeout
 			++errcnt;
 			while ( 1 ) {
-    			jagsleep( 1, JAG_MSEC );
         		len = ::send( sock, hdr+bytes, N-bytes, MSG_NOSIGNAL );
 				if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) {
 					++errcnt;
 				} else break;
-				if ( errcnt >= 3 ) break;
+				if ( errcnt >= 5 ) break;
 			}
-			if ( errcnt >= 3 ) {
-				// prt(("2206 _raysend Timeout or error() %d %d - %s\n",
-				// sock, errno, strerror(errno)));
+			if ( errcnt >= 5 ) {
 				rayclose( sock );
 				len = -1;
 			}
 		}	
 
         if ( len < 0 ) {
-            // prt(("2208 _raysend len is %d, sock %d, hdr=[%.100s], N %d MSG_NOS %d, errnomsg=[%s]\n", 
-			// len, sock, hdr, N, MSG_NOSIGNAL, strerror(errno)));
             if ( errno == ENETRESET || errno == ECONNRESET ) {
                 rayclose( sock );
             }
+			prt(("    u20922 raysend len < 0 ret bytes=%d\n", bytes));
             return bytes;
         }
         bytes += len;
     }
 
+	#if 0
+	if ( ! strstr( hdr, "1CHBCY" ) ) {
+		prt(("    u20922 raysend final ret bytes=%d\n", bytes));
+	}
+	#endif
+
     return bytes;
 }
 
 // linux code
-abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
+jagint _rayrecv( JAGSOCK sock, char *buf, jagint N )
 {
-    register abaxint bytes = 0;
-    register abaxint len;
+    register jagint bytes = 0;
+    register jagint len;
 	int errcnt = 0;
 
+	//prt(("    u200727 _rayrecv expect N=%d ...\n", N));
+
 	if ( N <= 0 ) { 
-		prt(("s4429 _rayrecv  N <= 0 return 0\n" ));
+		prt(("    s4429 _rayrecv  N <= 0 return 0\n" ));
 		return 0;
 	}
-	if ( socket_bad( sock ) ) { return -1; } 
-	len = ::recv( sock, hdr, N, 0 );
-	//prt(("s4424 _rayrecv  len=%d hdr=[%s]\n", len, hdr ));
-	if ( len < 0 && errno == EINTR ) {
-    	len = ::recv( sock, hdr, N, 0 );
+
+	if ( socket_bad( sock ) ) { 
+		prt(("    u82882 socket_bad return -1\n"));
+		return -1; 
 	}
+
+	len = ::recv( sock, buf, N, 0 );
+	//prt(("    s4424 _rayrecv N=%d len=%d buf=[%s] done\n", N, len, buf ));
+	if ( len < 0 && errno == EINTR ) {
+    	len = ::recv( sock, buf, N, 0 );
+	}
+
 	if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) { // recv timeout
 		++errcnt;
 		while ( 1 ) {
-    		jagsleep( 1, JAG_MSEC );
-    		len = ::recv( sock, hdr, N, 0 );
+    		len = ::recv( sock, buf, N, 0 );
 			if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) {
 				++errcnt;
 			} else break;
-			if ( errcnt >= 3 ) break;
+			if ( errcnt >= 5 ) break;
 		}
-		if ( errcnt >= 3 ) {
-			// prt(("2300 _rayrecv Timeout or error() %d %d - %s\n",
-			// sock, errno, strerror(errno)));
+		if ( errcnt >= 5 ) {
 			rayclose( sock );
 			len = -1;
 		}
@@ -2576,60 +2576,56 @@ abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N )
 
 	// if len==0; remote end had a orderly shudown
 	if ( len == 0 ) {
-		// prt(("2302 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d DONE 0\n", len, sock, hdr, N));
+		//prt(("    u2302 _rayrecv len is %d, sock %d, buf=[%.100s], N %d DONE ret 0\n", len, sock, buf, N));
 		return 0;
 	} else if ( len < 0 ) {
-		// prt(("2304 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d errnomsg=[%s] DONE -1\n", 
-		// len, sock, hdr, N, strerror(errno)));
 		if ( errno == ENETRESET || errno == ECONNRESET ) {
 			rayclose( sock );
 		}
+		//prt(("    u2866 _rayrecv len < 0 return -1\n"));
 		return -1;
 	}
 
     bytes += len;
     while ( bytes < N ) {
-        len = ::recv( sock, hdr+bytes, N-bytes, 0 );
+        len = ::recv( sock, buf+bytes, N-bytes, 0 );
 		if ( len < 0 && errno == EINTR ) {
-        	len = ::recv( sock, hdr+bytes, N-bytes, 0 );
+        	len = ::recv( sock, buf+bytes, N-bytes, 0 );
 		}
 	
 		errcnt = 0;
 		if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) { // recv timeout
 			++errcnt;
 			while ( 1 ) {
-    			jagsleep( 1, JAG_MSEC );
-        		len = ::recv( sock, hdr+bytes, N-bytes, 0 );
+        		len = ::recv( sock, buf+bytes, N-bytes, 0 );
 				if ( len < 0 && ( errno == EAGAIN || errno == EWOULDBLOCK ) ) {
 					++errcnt;
 				} else break;
-				if ( errcnt >= 3 ) break;
+				if ( errcnt >= 5 ) break;
 			}
-			if ( errcnt >= 3 ) {
-				// prt(("2306 _rayrecv Timeout or error() %d %d - %s\n",
-				// sock, errno, strerror(errno)));
+			if ( errcnt >= 5 ) {
 				rayclose( sock );
 				len = -1;
 			}
 		}	
 
         if ( len <= 0 ) {
-            // prt(("2308 _rayrecv len is %d, sock %d, hdr=[%.100s], N %d errnomsg=[%s] DONE -1\n", 
-			// len, sock, hdr, N, strerror(errno)));
             if ( errno == ENETRESET || errno == ECONNRESET ) {
                 rayclose( sock );
             }
+			//prt(("    u667807 _rayrecv return bytes=%d\n", bytes ));
             return bytes;
         }
         bytes += len;
     }
 
+	//prt(("c50287 _rayrecv buf=[%s] bytes=%d N=%d\n", buf, bytes, N ));
     return bytes;
 }
 #endif
 
 
-int jagmalloc_trim( abaxint n ) 
+int jagmalloc_trim( jagint n ) 
 {
 	#ifdef _WINDOWS64_
     return 1;
@@ -2645,7 +2641,7 @@ FILE *loopOpen( const char *path, const char *mode )
 	while ( 1 ) {
 		fp = ::fopen( path, mode );
 		if ( fp ) {
-			// prt(("s3370 fopen(%s)\n", path));
+			//prt(("s3370 loopOpen fopen(%s) mode=[%s]\n", path, mode ));
 			return fp;
 		}
 
@@ -2732,9 +2728,9 @@ int jagunlink( const char *path )
 {
 	int rc = ::unlink( path );
 	if ( rc < 0 ) {
-		// prt(("s3377 unlink(%s) error [%s]\n", path, strerror( errno )));
+		prt(("s3377 ::unlink(%s) error [%s]\n", path, strerror( errno )));
 	} else {
-		// prt(("s3378 unlink(%s)\n", path));
+		prt(("s3378 ::unlink(%s) OK\n", path));
 	}
 
 	return rc;
@@ -2749,7 +2745,7 @@ int jagrename( const char *path, const char *newpath )
 	if ( rc < 0 ) {
 		prt(("s3379 rename(%s   ->   %s) error [%s]\n", path, newpath, strerror( errno )));
 	} else {
-		// prt(("s3380 rename(%s   ->   %s)\n", path, newpath));
+		//prt(("s3380 rename(%s   ->   %s)\n", path, newpath));
 	}
 	return rc;
 }
@@ -2779,13 +2775,13 @@ int jagftruncate( int fd, off_t length )
 #endif
 
 // mode ( input type ): 0: seconds; 1: milliseconds, 2 or else: microseconds
-void jagsleep( abaxint time, int mode )
+void jagsleep( useconds_t time, int mode )
 {
 	#ifdef _WINDOWS64_
 	if ( JAG_SEC == mode ) Sleep( time*1000 );
 	else if ( JAG_MSEC == mode ) Sleep( time );
 	else if ( JAG_USEC == mode ) {
-		abaxint t = time/1000;
+		jagint t = time/1000;
 		if ( t < 1 ) t = 1;
 		Sleep( t );
 	}
@@ -2814,13 +2810,13 @@ const char *jagstrrstr(const char *haystack, const char *needle)
 }
 
 #ifdef _WINDOWS64_
-abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size )
+jagint jagsendfile( JAGSOCK sock, int fd, jagint size )
 {
 	char buf[1024*1024];
 	lseek(fd, 0, SEEK_SET );
-	abaxint sz = 0;
-	abaxint n = 0;
-	abaxint snd;
+	jagint sz = 0;
+	jagint n = 0;
+	jagint snd;
 	while (  ( n= ::read(fd, buf, 1024*1024 ) ) > 0 ) {
 		snd = raysafewrite( sock, buf, n );
 		if ( snd < n ) {
@@ -2834,9 +2830,9 @@ abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size )
 }
 #else
 #include <sys/sendfile.h>
-abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size )
+jagint jagsendfile( JAGSOCK sock, int fd, jagint size )
 {
-	abaxint sz = ::sendfile( sock, fd, NULL, size );
+	jagint sz = ::sendfile( sock, fd, NULL, size );
 	if ( sz < 0 ) {
 		if ( errno == ENETRESET || errno == ECONNRESET ) {
 			rayclose( sock );
@@ -2844,7 +2840,7 @@ abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size )
 		return -1;
 	}
 	else if ( sz < size ) {
-		abaxint sz2;
+		jagint sz2;
 		while ( 1 ) {
 			if ( size-sz <= 0 ) break;
 			sz2 = ::sendfile( sock, fd, NULL, size-sz );
@@ -2882,7 +2878,7 @@ Jstr psystem( const char *command )
 }
 
 // both arguments are in seconds
-bool checkCmdTimeout( abaxint startTime, abaxint timeoutLimit )
+bool checkCmdTimeout( jagint startTime, jagint timeoutLimit )
 {
 	if ( timeoutLimit < 0 ) return false;
 	struct timeval now;
@@ -2949,24 +2945,6 @@ ssize_t jaggetline(char **lineptr, size_t *n, FILE *stream)
     return  count;
 	#endif
 }
-
-
-/**
-int daemonInit()
-{
-    pid_t  pid;
-    if ( (pid=fork()) < 0 ) {
-        return -1;
-    } else if ( pid != 0 ) {
-        exit(0);  // parent bye-bye
-    }
-
-    setsid();
-    umask(0);
-    return 0;
-}
-**/
-
 
 Jstr expandEnvPath( const Jstr &path )
 {
@@ -3076,7 +3054,7 @@ void getWinPass( char *pass )
 // Parse error msg from _END_[T=ddd|E=Error 1002 Syntax error in ...|X=...]
 // NULL: if no error
 // jagmalloced string containing error message, must tbe freeed.
-abaxint _getFieldInt( const char * rowstr, char fieldToken )
+jagint _getFieldInt( const char * rowstr, char fieldToken )
 {
 	char newbuf[30];
 	const char *p; 
@@ -3161,14 +3139,13 @@ Jstr makeStringFromTwoVec( const JagVector<Jstr> &xvec, const JagVector<Jstr> &y
 
 int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 {
-	//prt(("\ns4009 oneFileSender sock=%d THRD=%lld inpath=[%s] ...\n", sock, THREADID, inpath.c_str() ));
-	int fileSuccess = 0; 
+	prt(("\ns4009 oneFileSender sock=%d THRD=%lld inpath=[%s] ...\n", sock, THREADID, inpath.c_str() ));
 	Jstr filename;
 	char *newbuf = NULL; 
 	ssize_t rlen = 0; struct stat sbuf; Jstr cmd; int fd = -1;
-	abaxint filelen;
+	jagint filelen;
 
-	//prt(("s2838 oneFileSender inpath=[%s]\n", inpath.c_str() ));
+	prt(("s2838 oneFileSender inpath=[%s]\n", inpath.c_str() ));
     const char *p = strrchr( inpath.c_str(), '/' );
     if ( p == NULL ) {
 		p = inpath.c_str();
@@ -3192,42 +3169,35 @@ int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 	if ( rlen < 0 ) {
 		sendFakeData = 1;
 		filelen = 0;
-		//prt(("s0283 sendFakeData = 1\n" ));
-		filename = ".";
+		prt(("s0283 sendFakeData = 1\n" ));
+		filename = ".";  // means no data
 	} else {
 		sendFakeData = 0;
 		filelen = sbuf.st_size;
-		//prt(("s0283 sendFakeData = 0\n" ));
+		prt(("s0283 sendFakeData = 0\n" ));
 	}
 
 	cmd = "_onefile|" + filename + "|" + longToStr( filelen ) + "|" + longToStr(THREADID);
 	char cmdbuf[JAG_SOCK_TOTAL_HDR_LEN+cmd.size()+1]; 
 	memset( cmdbuf, ' ', JAG_SOCK_TOTAL_HDR_LEN+cmd.size()+1);
-	/***
-	//memcpy( cmdbuf+JAG_SOCK_TOTAL_HDR_LEN, cmd.c_str(), cmd.size() );
-	//sprintf( cmdbuf, "%0*lld", JAG_SOCK_TOTAL_HDR_LEN-4, cmd.size() );
-	//memcpy( cmdbuf+JAG_SOCK_TOTAL_HDR_LEN-4, "ATFC", 4 );
-	***/
-	char sqlhdr[10]; makeSQLHeader( sqlhdr );
-	//putXmitHdr( cmdbuf, sqlhdr, cmd.size(), "ATFC" );
+	char sqlhdr[8]; makeSQLHeader( sqlhdr );
 	putXmitHdrAndData( cmdbuf, sqlhdr, cmd.c_str(), cmd.size(), "ATFC" );
 
-	//prt(("s2309 sendData cmdbuf=[%s]\n", cmdbuf ));
-	rlen = sendData( sock, cmdbuf, JAG_SOCK_TOTAL_HDR_LEN+cmd.size() ); // 016ABCDmessage client query mode
+	prt(("s2309 sendRawData cmdbuf=[%s]\n", cmdbuf ));
+	rlen = sendRawData( sock, cmdbuf, JAG_SOCK_TOTAL_HDR_LEN+cmd.size() ); // 016ABCDmessage client query mode
 	if ( rlen < JAG_SOCK_TOTAL_HDR_LEN+cmd.size() ) {
-		prt(("s0822 sendData error\n" ));
+		prt(("s0822 sendRawData error\n" ));
 		sendFakeData = 1;
+	} else {
+		prt(("c00271 sendRawData rlen=%d OK  cmdbuf=[%s]\n", rlen, cmdbuf ));
 	}
 
-	if ( sendFakeData ) {
-		// send 1 byte to server
-		//raysafewrite( sock, "0", 1 );
-	} else {
+	if ( ! sendFakeData ) {
 		//prt(("s2293 jagsendfile ...\n" ));
 		beginBulkSend( sock );
 		rlen = jagsendfile( sock, fd, sbuf.st_size );
 		endBulkSend( sock );
-		//prt(("s2293 jagsendfile done\n" ));
+		prt(("s2293 jagsendfile done rlen=%d\n", rlen ));
 	}
 
 	if ( fd >= 0 ) jagclose( fd );
@@ -3244,17 +3214,14 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 {	
 	// prt(("c0293 oneFileReceiver outpath=[%s]\n", outpath.c_str() ));
 	int fd = -1; 
-	abaxint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT;
+	jagint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT;
 	Jstr filename, senderID, recvpath;
 	char *newbuf = NULL; 
 	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	ssize_t rlen = 0;
 
-	// prt(("s3028 recvData() ...\n" ));
 	while ( 1 ) {
-		//memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
-    	rlen = recvData( sock, hdr, newbuf );
-    	// prt(("s3028 recvData() done hdr=[%s] newbuf=[%s] ...\n", hdr, newbuf ));
+    	rlen = recvMessage( sock, hdr, newbuf ); // "_onefile|...."
 		if ( 0 == rlen ) {
 			continue;
 		}
@@ -3267,18 +3234,19 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
     		prt(("s0293 _onefile error newbuf=[%s]\n", newbuf ));
     		if ( newbuf ) free(newbuf );
     		return -1;
-    	} else {
-			break; // got _onefile
-		}
+    	} 
+
+		break; // got _onefile command
 	}
 
 	// if _onefile recved, parse and check the outpath is valid to recv
+	// cmd = "_onefile|" + filename + "|" + longToStr( filelen ) + "|" + longToStr(THREADID);
 	JagStrSplit sp( newbuf, '|', true );
+	if ( sp.length() <  4 ) return -100;
 	filename = sp[1];
 	// get fake data
 	if ( filename == "." ) {
-		char c;
-		// recvData( sock, &c, 1 );
+    	if ( newbuf ) free(newbuf );
 		return -3;
 	}
 
@@ -3302,7 +3270,7 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 		} else {
 			recvlen = memsize;
 		}
-		rlen = recvData( sock, mbuf, recvlen );
+		rlen = recvRawData( sock, mbuf, recvlen );
 		if ( rlen < recvlen ) {
 			rlen = -1;
 			break;
@@ -3314,12 +3282,13 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 	// prt(("s1239 end recv file totlen=%d\n", totlen ));
 
 	jagfdatasync( fd ); jagclose( fd );
-	/***
-	prt(("s1239 end recv file totlen=%d\n", totlen ));
+
+	prt(("s1239 end recv file %s totlen=%d\n", recvpath.s(), totlen ));
+	/**
 	prt(("s2736 send _filedone to client ...\n" ));
 	sendDirectToSock(sock, "_filedone", 0);
 	prt(("s2736 send _filedone to client done\n" ));
-	***/
+	**/
 
 	if ( mbuf ) free( mbuf );
 	if ( newbuf ) free( newbuf );
@@ -3327,37 +3296,32 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 }
 
 // method to send data directly to sock
-abaxint sendDirectToSock( JAGSOCK sock, const char *mesg, abaxint len, bool nohdr )
+jagint sendDirectToSock( JAGSOCK sock, const char *mesg, jagint len, bool nohdr )
 {
-	abaxint rlen;
+	jagint rlen;
 	if ( nohdr ) {
-		rlen = sendData( sock, mesg, len ); // 016ABCDmessage client query mode
+		rlen = sendRawData( sock, mesg, len ); // 016ABCDmessage client query mode
 	} else {
 		char *buf =(char*)jagmalloc(len+JAG_SOCK_TOTAL_HDR_LEN+1);
-		//memset( buf, ' ', len+JAG_SOCK_TOTAL_HDR_LEN+1 );
-		char sqlhdr[10];  makeSQLHeader( sqlhdr );
+		char sqlhdr[8];  makeSQLHeader( sqlhdr );
 		putXmitHdrAndData( buf, sqlhdr, mesg, len, "ATFC" );
-		/***
-		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, mesg, len );
-		//sprintf( buf, "%0*lld", JAG_SOCK_TOTAL_HDR_LEN-4, len );
-		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN-4, "ATFC", 4 );
-		***/
-		rlen = sendData( sock, buf, len+JAG_SOCK_TOTAL_HDR_LEN ); // 016ABCDmessage client query mode
-		// prt(("c9910 sendDirectToSock sendData buf=[%s] len=%d rlen=%d\n", buf, len, rlen ));
+		rlen = sendRawData( sock, buf, len+JAG_SOCK_TOTAL_HDR_LEN ); // 016ABCDmessage client query mode
 		if ( buf ) free( buf );
 	}
 	return rlen;
 }
 
 // method to recv data directly from sock
-abaxint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr )
+jagint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr )
 {
-	abaxint rlen = 0;
+	jagint rlen = 0;
 	while ( 1 ) {
-		rlen = recvData( sock, hdr, buf );
-		// prt(("c2039 hdr=[%s] buf=[%s]\n", hdr, buf ));
+		prt(("u208737 recvMesage ...\n"));
+		rlen = recvMessage( sock, hdr, buf );
+		prt(("c201139 got hdr=[%s] buf=[%s]\n", hdr, buf ));
 		if ( rlen > 0 && (hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B') ) { 
 		    // heartbit alive, ignore
+			prt(("c201134 HB \n" ));
 			continue;
 		}
 		break;
@@ -3368,19 +3332,21 @@ abaxint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr )
 // method to send data directly to sock
 // len is length of mesg, not including hdr
 // if original data is compressed ( checked from orig hdr ), then rebuild mesg with compressed data
-abaxint sendDirectToSockWithHdr( JAGSOCK sock, const char *hdr, const char *mesg, abaxint len )
+jagint sendDirectToSockWithHdr( JAGSOCK sock, const Jstr &shdr, const Jstr &mesg )
 {
-	const char *p = mesg;
-	abaxint rlen;
+	jagint len = mesg.size();
+	const char *p = mesg.c_str();
+	const char *hdr = shdr.c_str();
+	jagint rlen;
 	Jstr comp;
 	if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-4] == 'Z' ) {
-		JagFastCompress::compress( mesg, len, comp );
+		JagFastCompress::compress( mesg.c_str(), len, comp );
 		p = comp.c_str();
 		len = comp.size();
     }
 
-	rlen = sendData( sock, hdr, JAG_SOCK_TOTAL_HDR_LEN );
-	rlen = sendData( sock, p, len );
+	rlen = sendRawData( sock, hdr, JAG_SOCK_TOTAL_HDR_LEN );
+	rlen = sendRawData( sock, p, len );
 	return rlen;
 }
 
@@ -3405,7 +3371,7 @@ int isValidSciNotation(const char *str )
 // hash fstr and return  "ddd/ddd"
 Jstr fileHashDir( const JagFixString &fstr )
 {
-	abaxint hcode = fstr.hashCode();
+	jagint hcode = fstr.hashCode();
 	char buf[8];
 	sprintf( buf, "%d/%d", hcode % 1000, (hcode/1000) % 1000 ); 
 	return buf;
@@ -3417,7 +3383,7 @@ char lastChar( const JagFixString &str )
 }
 
 // ignore NULL in str
-void jagfwrite( const char *str, abaxint len, FILE *outf )
+void jagfwrite( const char *str, jagint len, FILE *outf )
 {
 	for ( int i = 0; i < len; ++i ) {
 		if ( str[i] != '\0' ) {
@@ -3427,7 +3393,7 @@ void jagfwrite( const char *str, abaxint len, FILE *outf )
 }
 
 // ignore leading zeros and  NULL in str
-void jagfwritefloat( const char *str, abaxint len, FILE *outf )
+void jagfwritefloat( const char *str, jagint len, FILE *outf )
 {
 	if ( NULL == str || '\0' == *str || len <1 ) return;
 	bool leadzero = false;
@@ -3498,6 +3464,11 @@ long long jagatoll(const char *nptr)
 {
 	if ( NULL == nptr || '\0' == *nptr ) return 0;
 	return atoll( nptr );
+}
+
+long long jagatoll(const Jstr &str )
+{
+	return jagatoll( str.c_str() );
 }
 
 long double jagstrtold(const char *nptr, char **endptr)
@@ -3695,9 +3666,9 @@ Jstr replaceChar( const Jstr& str, char oldc, char newc )
 	}
 }
 
-void printStr( const Jstr &str )
+void prttr( const Jstr &str )
 {
-	printf("printStr size=%d: \n[", str.size() );
+	printf("prttr size=%d: \n[", str.size() );
 	for ( int i=0; i < str.size(); ++i ) {
 		if ( str[i] == '\0' ) {
 			putchar('@');
@@ -3752,9 +3723,9 @@ char *secondTokenStartEnd( const char *str, char *&pend, char sep )
 
 
 //  xm, xh, xd, xw
-abaxint convertToSecond( const char *p )
+jagint convertToSecond( const char *p )
 {
-	abaxint num, n = jagatol(p);
+	jagint num, n = jagatol(p);
     if ( strchr(p, 'm') || strchr(p, 'M')  ) {
           num = n * 60; // tosecond
     } else if (  strchr(p, 'h') || strchr(p, 'H') ) {
@@ -3770,9 +3741,9 @@ abaxint convertToSecond( const char *p )
 }
 
 //  xm, xh, xd, xs, xw
-abaxint convertToMicroSecond( const char *p )
+jagint convertToMicroSecond( const char *p )
 {
-	abaxint num, n = jagatol(p);
+	jagint num, n = jagatol(p);
     if ( strchr(p, 'm') || strchr(p, 'M')  ) {
           num = n * 60000000; 
     } else if (  strchr(p, 'h') || strchr(p, 'H') ) {
@@ -3907,6 +3878,116 @@ void affine3d( double x1, double y1, double z1, double a, double b, double c, do
 void ellipseBoundBox( double x0, double y0, double a, double b, double nx, 
 					  double &xmin, double &xmax, double &ymin, double &ymax )
 {
+	// nx is sin(theta) -- theta is angle of rotating shape clock-wise
+	// ny=sqrt(1.0-nx*nx) and == cos(theta)=ny
+	// xmin = - sqrt( a^2 * ny^2 + b^2 * nx^2 )
+	// xmax = + sqrt( a^2 * ny^2 + b^2 * nx^2 )
+	// ymin = - sqrt( a^2 * nx^2 + b^2 * ny^2 )
+	// ymax = + sqrt( a^2 * nx^2 + b^2 * ny^2 )
+
+	if ( nx > 1.0 ) nx = 1.0;
+	if ( nx < -1.0 ) nx = -1.0;
+
+	if ( jagEQ(nx, 0.0) ) {
+		xmin = x0-a;
+		xmax = x0+a;
+		ymin = y0-b;
+		ymax = y0+b;
+		return;
+	}
+
+	if ( jagEQ(fabs(nx), 1.0) ) {
+		xmin = x0-b;
+		xmax = x0+b;
+		ymin = y0-a;
+		ymax = y0+a;
+		return;
+	}
+
+	double nx2 = nx * nx;
+	double ny2 = 1.0-nx2;
+	double sqrt1 = sqrt( a*a*ny2 + b*b*nx2 );
+	double sqrt2 = sqrt( a*a*nx2 + b*b*ny2 );
+
+	xmin = x0 - sqrt1;
+	xmax = x0 + sqrt1;
+	ymin = y0 - sqrt2;
+	ymax = y0 + sqrt2;
+}
+
+
+void ellipseMinMax(int op, double x0, double y0, double a, double b, double nx, 
+					  double &xmin, double &xmax, double &ymin, double &ymax )
+{
+	// nx is sin(theta) -- theta is angle of rotating shape clock-wise
+	// ny=sqrt(1.0-nx*nx) and == cos(theta)=ny
+	// newx = xcos(theta) + ysin(theta)
+	// newy = ycos(theta) - xsin(theta)
+	// xmin = - sqrt( a^2 * ny^2 + b^2 * nx^2 )
+	// xmax = + sqrt( a^2 * ny^2 + b^2 * nx^2 )
+	// ymin = - sqrt( a^2 * nx^2 + b^2 * ny^2 )
+	// ymax = + sqrt( a^2 * nx^2 + b^2 * ny^2 )
+	xmin = ymin = xmax = ymax = 0.0;
+	if ( jagEQ(a, 0.0) && jagEQ( b, 0.0) ) {
+		return;
+	}
+
+	if ( nx > 1.0 ) nx = 1.0;
+	if ( nx < -1.0 ) nx = -1.0;
+
+	if ( jagEQ(nx, 0.0) ) {
+		if ( JAG_FUNC_XMINPOINT == op ) {
+			xmin = x0 - a;
+			ymin = y0;
+		} else if ( JAG_FUNC_YMINPOINT == op ) {
+			xmin = x0;
+			ymin = y0 - b;
+		} else if ( JAG_FUNC_XMAXPOINT == op ) {
+			xmax = x0 + a;
+			ymax = y0;
+		} else if ( JAG_FUNC_YMAXPOINT == op ) {
+			xmax = x0;
+			ymax = y0 + b;
+		}
+		return;
+	}
+
+	double nx2 = nx * nx;
+	double ny2 = 1.0-nx2;
+	double ny = sqrt(ny2);
+
+	double A, B;
+	if ( JAG_FUNC_XMINPOINT == op ) {
+		double sqrt1 = sqrt( a*a*ny2 + b*b*nx2 );
+		A = b*b*nx2 + a*a * ny2;
+		B = 2.0*(b*b - a*a)*sqrt1*nx*ny;
+		xmin = x0 - sqrt1;
+		ymin = y0 - 0.5*B/A;
+	} else if ( JAG_FUNC_XMAXPOINT == op ) {
+		double sqrt1 = sqrt( a*a*ny2 + b*b*nx2 );
+		A = b*b*nx2 + a*a * ny2;
+		B = 2.0*(a*a - b*b)*sqrt1*nx*ny;
+		xmax = x0 + sqrt1;
+		ymax = y0 - 0.5*B/A;
+	} else if ( JAG_FUNC_YMINPOINT == op ) {
+		double sqrt2 = sqrt( a*a*nx2 + b*b*ny2 );
+		A = b*b*ny2 + a*a * nx2;
+		B = 2.0*(b*b-a*a)*sqrt2*nx*ny;
+		ymin = y0 - sqrt2;
+		xmin = x0 - 0.5*B/A;
+	} else if ( JAG_FUNC_YMAXPOINT == op ) {
+		double sqrt2 = sqrt( a*a*nx2 + b*b*ny2 );
+		A = b*b*ny2 + a*a * nx2;
+		B = 2.0*(a*a - b*b)*sqrt2*nx*ny;
+		ymax = y0 + sqrt2;
+		xmax = x0 - 0.5*B/A;
+	}
+}
+
+#if 0
+void ellipseBoundBox( double x0, double y0, double a, double b, double nx, 
+					  double &xmin, double &xmax, double &ymin, double &ymax )
+{
 	// nx is sin(phi) -- phi is angle of rotating shape clock-wise
 	// sqrt(1.0-nx*nx) is cos(phi)=ny
 	// x = x0+a*cos(t)*cos(phi) + b*sin(t)*sin(phi)  
@@ -3947,6 +4028,8 @@ void ellipseBoundBox( double x0, double y0, double a, double b, double nx,
 	ymin = jagmin(y1,y2);
 	ymax = jagmax(y1,y2);
 }
+#endif
+
 
 
 double dotProduct( double x1, double y1, double x2, double y2 )
@@ -3988,10 +4071,12 @@ bool jagEQ (double f1, double f2 )
 }
 
 
-// strlen(code)  must be 4 code=XXXX
-// [               qlhdr][                        ]msgdata
+// strlen(code)  must be 4 code=XXXX (ie. ACCC)
+// [              sqlhdr][                        ]msgdata
 // [JAG_SOCK_SQL_HDR_LEN][JAG_SOCK_MSG_HDR_LENXXXX]msgdata
+// [    3 bytes         ][   13 bytes             ]msgdata
 // [               JAG_SOCK_TOTAL_HDR_LEN         ]msgdata
+// sqlhdr shoule be 2 bytes
 void putXmitHdr( char *buf, const char *sqlhdr, int msglen, const char *code )
 {
 	int blanksz = JAG_SOCK_SQL_HDR_LEN-strlen(sqlhdr);
@@ -4038,17 +4123,40 @@ long getXmitMsgLen( char *buf )
 	char c = buf[JAG_SOCK_TOTAL_HDR_LEN-4];
 	buf[JAG_SOCK_TOTAL_HDR_LEN-4]='\0';
 	long n = atoll( buf+JAG_SOCK_SQL_HDR_LEN );
-	//prt(("s2093 getXmitMsgLen() dumpmem : n=%d\n", n ));
+	//prt(("s2088893 getXmitMsgLen() dumpmem : n=%d\n", n ));
 	//dumpmem( buf+JAG_SOCK_SQL_HDR_LEN, JAG_SOCK_MSG_HDR_LEN );
 	buf[JAG_SOCK_TOTAL_HDR_LEN-4]=c;
 	return n;
 }
 
+// Hope to have 2 bytes
 void makeSQLHeader( char *sqlhdr )
 {
-	sprintf(sqlhdr, "%0*d", 5, rand()%100000);
+	for ( int i=0; i < JAG_SOCK_SQL_HDR_LEN; ++i ) {
+		sqlhdr[i] = '9';
+	}
+	sqlhdr[JAG_SOCK_SQL_HDR_LEN] = '\0';
 }
 
+// tothdr must have tothdr[JAG_SOCK_TOTAL_HDR_LEN+1] enough length
+// payloadLen is payload length in bytes, code is 4-letter code "ACCC" is non compressed
+void makeTotalHeader( char *tothdr, jagint payloadLen, const char *code4 )
+{
+    char sqlhdr[8]; makeSQLHeader( sqlhdr );
+    int blanksz = JAG_SOCK_SQL_HDR_LEN-strlen(sqlhdr);
+    memset(tothdr, '#', blanksz );
+    sprintf( tothdr+blanksz, "%s", sqlhdr );
+    sprintf( tothdr+JAG_SOCK_SQL_HDR_LEN, "%0*lld%s", JAG_SOCK_MSG_HDR_LEN-4, payloadLen, code4 );
+}
+
+// Send data with sqlhdr
+jagint sendShortMessageToSock( JAGSOCK sock, const char *msg, jagint msglen, const char *code4 )
+{
+	char buf[JAG_SOCK_TOTAL_HDR_LEN+msglen+1];
+	makeTotalHeader( buf, msglen, code4 );
+	memcpy( buf + JAG_SOCK_TOTAL_HDR_LEN, msg, msglen );
+	return sendRawData( sock, buf, JAG_SOCK_TOTAL_HDR_LEN + msglen );
+}
 
 // sp: OJAG=0=test.lstr.ls=LS guarantee 3 '=' signs
 // str: "x:y x:y x:y ..." or "x:y:z x:y:z x:y:z ..."
@@ -4140,7 +4248,7 @@ Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *s
 	writer.Key("type");
 	writer.String("Feature");
 
-	JagStrSplit bsp( Jstr(str, p-str), ':' );
+	JagStrSplit bsp( Jstr(str, p-str, p-str), ':' );
 	if ( bsp.length() == 4 ) {
 		writer.Key("bbox");
 		writer.StartArray();
@@ -4179,7 +4287,7 @@ Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *s
 				writer.EndArray(); 
 				break;
 			}
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 			prt(("s3941 s=[%s]\n", s.s() ));
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
@@ -4199,7 +4307,7 @@ Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *s
 			}
 			// *q == ':' or ' '
 
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 			prt(("s3942 s=[%s]\n", s.s() ));
 			//prt(("s2339 q=[%s]\n", q ));
 			//writer.String( p );
@@ -4248,7 +4356,7 @@ Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char 
 	writer.Key("type");
 	writer.String("Feature");
 
-	JagStrSplit bsp( Jstr(str, p-str), ':' );
+	JagStrSplit bsp( Jstr(str, p-str, p-str), ':' );
 	if ( bsp.length() >= 6 ) {
 		writer.Key("bbox");
 		writer.StartArray();
@@ -4281,7 +4389,7 @@ Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char 
 				break;
 			}
 			//*q = '\0';
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -4296,7 +4404,7 @@ Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char 
 				break;
 			}
 			//*q = '\0';
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 			//writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -4315,7 +4423,7 @@ Jstr makeJsonLineString3D( const Jstr &title, const JagStrSplit &sp, const char 
 			}
 
 			//*q = '\0';
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 			// writer.String( p );
 			//writer.String( s.c_str(), s.size() );
 			writer.Double( jagatof(s.c_str()) );
@@ -4368,7 +4476,7 @@ Jstr makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str
 	writer.Key("type");
 	writer.String("Feature");
 
-	Jstr bbox(str, p-str);
+	Jstr bbox(str, p-str, p-str);
 	//prt(("s5640 bbox=[%s]\n", bbox.c_str() ));
 	JagStrSplit bsp( bbox, ':' );
 	//prt(("s5732 bsp.len=%d\n", bsp.length() ));
@@ -4437,7 +4545,7 @@ Jstr makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str
 				continue;
 			}
 
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 
 			writer.StartArray(); 
 			//++level;
@@ -4457,7 +4565,7 @@ Jstr makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str
 				while ( *q != ' ' && *q != ':' && *q != '\0' && *q != '|' ) ++q;
 			}
 
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 			//prt(("s6302 write ycoord s=[%s]\n", s.c_str() ));
 			//writer.String( s.c_str(), s.size() );   // y-coord
 			writer.Double( jagatof(s.c_str()) );
@@ -4469,7 +4577,7 @@ Jstr makeJsonPolygon( const Jstr &title,  const JagStrSplit &sp, const char *str
 				//while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
 				while ( *q != ' ' && *q != ':' && *q != '\0' && *q != '|' ) ++q;
 				//prt(("s6303 write zcoord s=[%s]\n", s.c_str() ));
-				s = Jstr(p, q-p);
+				s = Jstr(p, q-p, q-p);
 				//writer.String( s.c_str(), s.size() );   // z-coord
 				writer.Double( jagatof(s.c_str()) );
 			}
@@ -4561,7 +4669,7 @@ Jstr makeJsonMultiPolygon( const Jstr &title,  const JagStrSplit &sp, const char
 	writer.Key("type");
 	writer.String("Feature");
 
-	Jstr bbox(str, p-str);
+	Jstr bbox(str, p-str, p-str);
 	//prt(("s5640 bbox=[%s]\n", bbox.c_str() ));
 	JagStrSplit bsp( bbox, ':' );
 	//prt(("s5732 bsp.len=%d\n", bsp.length() ));
@@ -4650,7 +4758,7 @@ Jstr makeJsonMultiPolygon( const Jstr &title,  const JagStrSplit &sp, const char
 				continue;
 			}
 
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 
 			writer.StartArray(); 
 			//++level;
@@ -4667,7 +4775,7 @@ Jstr makeJsonMultiPolygon( const Jstr &title,  const JagStrSplit &sp, const char
 				while ( *q != ' ' && *q != '\0' && *q != '|' && *q != '!' ) ++q;
 			}
 
-			s = Jstr(p, q-p);
+			s = Jstr(p, q-p, q-p);
 			//writer.String( s.c_str(), s.size() );   // y-coord
 			writer.Double( jagatof(s.c_str()) );
 
@@ -4676,7 +4784,7 @@ Jstr makeJsonMultiPolygon( const Jstr &title,  const JagStrSplit &sp, const char
 				p = q;
 				//prt(("s2039 q=[%s] p=[%s]\n", q, p ));
 				while ( *q != ' ' && *q != '\0' && *q != '|' ) ++q;
-				s = Jstr(p, q-p);
+				s = Jstr(p, q-p, q-p);
 				//writer.String( s.c_str(), s.size() );   // z-coord
 				writer.Double( jagatof(s.c_str()) );
 			}
@@ -4894,81 +5002,83 @@ int getPolyDimension( const Jstr& colType )
 }
 
 // send to socket with header
-abaxint sendMessage( const JagRequest &req, const char *mesg, const char *type )
+jagint sendMessage( const JagRequest &req, const char *mesg, const char *type )
 {
-    abaxint len = strlen( mesg );
-	// prt(("s7383 sendMessage mesg=[%s]\n", mesg ));
+    jagint len = strlen( mesg );
 	return sendMessageLength2( req.session, mesg, len, type );
 }
 
 // send to socket with header
-abaxint sendMessageLength( const JagRequest &req, const char *mesg, abaxint len, const char *type )
+jagint sendMessageLength( const JagRequest &req, const char *mesg, jagint msglen, const char *type )
 {
-	return sendMessageLength2( req.session, mesg, len, type );
+    return sendMessageLength2( req.session, mesg, msglen, type );
 }
 
-// actual send to socket with header
-abaxint sendMessageLength2( JagSession *session, const char *mesg, abaxint len, const char *type ) 
+// send to socket with header
+jagint sendMessageLength2( JagSession *session, const char *mesg, jagint msglen, const char *type )
 {
 	char *buf = NULL;
-	abaxint rc = 0;
-    if ( strlen( type ) < 2 ) { if ( buf ) free( buf ); return -200; }
-	//if ( len > 1 ) { prt(("s2800 sock=%d SENDMEGLEN [%s], len=%lld\n", session->sock, mesg, len)); }
+	jagint rc = 0;
+    if ( strlen( type ) < 2 ) { 
+		prt(("s202928 type.size < 2 return -200\n"));
+		return -200; 
+	}
 
 	// check if message is last one, e.g. "_END_" for mesg or "X1" for type
+	/**
 	int lastone = false;
 	if ( strncmp( mesg, "_END_", 5 ) == 0 || (type[0] == 'X' && type[1] == '1') || (type[0] == 'S' && type[1] == 'S') ) {
 		lastone = true;
 	}
-	// check if message is hard bit
-	int isHB = false;
-	if ( type[0] == 'H' && type[1] == 'B' ) {
-		isHB = true;
-		// sendheartbeat
-	}
+	***/
 
+	bool isHB;
+	if ( type[0] == 'H' && type[1] == 'B' ) { isHB = true; } else { isHB = false; }
 
 	// compress or no: if no, len is original; if yes, use new length
 	char code4[5];
-	char sqlhdr[10]; makeSQLHeader( sqlhdr );
-	if ( len >= JAG_SOCK_COMPRSS_MIN ) {
+	char sqlhdr[8]; makeSQLHeader( sqlhdr );
+	if ( isHB ) {
+		sqlhdr[0] = 'H'; sqlhdr[1] = 'B'; sqlhdr[2] = 'B'; // "HBB"
+	}
+
+	if ( msglen >= JAG_SOCK_COMPRSS_MIN ) {
 		Jstr comp;
-		JagFastCompress::compress( mesg, len, comp );
-		len = comp.size();
+		JagFastCompress::compress( mesg, msglen, comp );
+		msglen = comp.size();
 		buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+comp.size()+1+64 );
 		sprintf( code4, "Z%c%cC", type[0], type[1] );
-		putXmitHdrAndData( buf, sqlhdr, comp.c_str(), len, code4 );
-		//sprintf( buf, "%0*lldZ%c%cC", JAG_SOCK_TOTAL_HDR_LEN-4, comp.size(), type[0], type[1] );
-		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, comp.c_str(), len );
+		putXmitHdrAndData( buf, sqlhdr, comp.c_str(), msglen, code4 );
+		//prt(("s2039383 compress\n"));
 	} else {
- 		buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+len+1+64 );
-    	//sprintf( buf, "%0*lldC%c%cC", JAG_SOCK_TOTAL_HDR_LEN-4, len, type[0], type[1] );
-		//memcpy( buf+JAG_SOCK_TOTAL_HDR_LEN, mesg, len );
+ 		buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+msglen+1+64 );
 		sprintf( code4, "C%c%cC", type[0], type[1] );
-		putXmitHdrAndData( buf, sqlhdr, mesg, len, code4 );
+		putXmitHdrAndData( buf, sqlhdr, mesg, msglen, code4 );
+		//prt(("s2039384 no compress\n"));
 	}
-    // buf[JAG_SOCK_TOTAL_HDR_LEN+len] = '\0';
 
-	#if 0
+	// check if message is heart beat
+	/***
     if ( !isHB ) { 
-		prt(("s2800 THREADID=%ld sock=%d SENDMEGLEN mesg=[%s], len=%lld\n", THREADID, session->sock, mesg, len));
+		prt(("s2800 THREADID=%ld sock=%d SENDMEGLEN mesg=[%s], msglen=%lld\n", THREADID, session->sock, mesg, msglen));
 		prt(("s2800 THREADID=%ld buf=[%s]\n", THREADID, buf ));
 	}
-	#endif
+	***/
 
-	jaguar_mutex_lock ( &session->dataMutex );
 	if ( !isHB ) {
-		rc = sendData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+len );
+		rc = sendRawData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+msglen );
 	} else if ( session->hasTimer ) {
-		rc = sendData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+len );
+		rc = sendRawData( session->sock, buf, JAG_SOCK_TOTAL_HDR_LEN+msglen );
 	}
 
 	if ( rc < 0 ) session->sessionBroken = 1; // session send error, broken 
-	jaguar_mutex_unlock ( &session->dataMutex );
 
-	if ( rc < JAG_SOCK_TOTAL_HDR_LEN+len ) {
+	if ( rc < JAG_SOCK_TOTAL_HDR_LEN+msglen ) {
+		prt(("s20298 sendMLen rc = %d < %d(HLN=%d) mesg=[%s] msglen=%d -1\n", 
+			  rc, JAG_SOCK_TOTAL_HDR_LEN+msglen , JAG_SOCK_TOTAL_HDR_LEN, mesg, msglen ));
 		rc = -1;
 	}
+
 	if ( buf ) free( buf );
     return rc;
 }
@@ -4996,7 +5106,6 @@ Jstr convertToStr( const Jstr  &pm )
 
     return str;
 }
-
 
 // pms "A,U,D"
 Jstr convertManyToStr( const Jstr &pms )

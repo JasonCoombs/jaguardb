@@ -21,32 +21,80 @@
 #include <map>
 #include <JagTime.h>
 #include <JagDBPair.h>
+#include <functional>
+//#include <safemap.h>
+//typedef	std::pair<JagFixString,char>  JagFixValuePair;
+//typedef   std::pair<JagFixString,JagFixValuePair>  JFixPair;
+//typedef	std::map<JagFixString,JagFixValuePair>  JagFixMap;
 
-typedef	std::pair<JagFixString,char>  FixValuePair;
-typedef std::pair<JagFixString,FixValuePair>  FixPair;
-typedef	std::map<JagFixString,FixValuePair>  FixMap;
+typedef		std::map<JagFixString,JagFixString>  JagFixMap;
+typedef   	JagFixMap::iterator  JagFixMapIterator;
+typedef   	JagFixMap::reverse_iterator  JagFixMapReverseIterator;
+
+/**
+typedef	 	safe::map<JagFixString, JagFixString> JagFixMap;
+typedef		JagFixMap::base_iterator  JagFixMapIterator;
+**/
+
+class JagMergeSeg
+{
+  public:
+    int simpfPos;
+    JagFixMapIterator leftIter;
+    JagFixMapIterator rightIter;
+	void print() {
+		printf("simpfPos=%d left=[%s][%s] right=[%s][%s]\n", 
+				simpfPos, leftIter->first.c_str(), leftIter->second.c_str(), 
+				rightIter->first.c_str(), rightIter->second.c_str() );
+
+	}
+};
+
+class JagRequest;
+class ExprElementNode;
+class JagParseParam;
+class JagSchemaAttribute;
+class JagDBPair;
+class JagDBServer;
 
 class JagDBMap
 {
 	public:
-
 		JagDBMap( );
 		~JagDBMap();
 
 		bool insert( const JagDBPair &newpair );
 		// bool upsert( const JagDBPair &newpair );
-
-		bool exist( const JagDBPair &pair );
+		bool exist( const JagDBPair &pair ) const;
 		bool remove( const JagDBPair &pair );
-		bool get( JagDBPair &pair ); 
+		bool get( JagDBPair &pair ) const; 
 		bool set( const JagDBPair &pair ); 
 
 		void destroy();
-		void clean() { _map->clear(); }
-		abaxint size() const { return _map->size(); }
-		abaxint elements() { return _map->size(); }
-		void   print();
-		std::map<JagFixString, FixValuePair> *_map; 
+		//void clean() { _map->clear(); }
+		void clear() { _map->clear(); }
+		jagint size() const { return _map->size(); }
+		jagint elements() const { return _map->size(); }
+		void   print() const;
+		JagFixMap *_map; 
+		JagFixMapIterator getPred( const JagDBPair &pair ) const; // _map->end() if not found
+		JagFixMapIterator getPredOrEqual( const JagDBPair &pair ) const;// _map->end() if not found
+		JagFixMapIterator getSucc( const JagDBPair &pair ) const; // _map->end() if not found
+		JagFixMapIterator getSuccOrEqual( const JagDBPair &pair ) const; // _map->end() if not found
+		bool isAtEnd( const JagFixMapIterator &iter ) const;
+		void setToEnd( JagFixMapIterator &iter ) const;
+		JagFixMapIterator getFirst() const; // _map->end() if empty
+		JagFixMapIterator getLast() const;  // _map->end() if empty
+		void iterToPair( const JagFixMapIterator& iter, JagDBPair& pair ) const;
+		bool setWithRange( const JagDBServer *servobj, const JagRequest &req, JagDBPair &pair, 
+						   const char *buffers[], bool uniqueAndHasValueCol,
+		                   ExprElementNode *root, const JagParseParam *parseParam, int numKeys,
+			               const JagSchemaAttribute *schAttr, jagint KLEN, jagint VLEN, jagint setposlist[], JagDBPair &retpair );
+
+		void reverseIterToPair( const JagFixMapReverseIterator& iter, JagDBPair& pair ) const;
+		JagFixMapReverseIterator getReversePredOrEqual( const JagDBPair &pair ) const;// _map->rend() if not found
+		JagFixMapReverseIterator getReverseSuccOrEqual( const JagDBPair &pair ) const; // _map->rend() if not found
+		bool isAtREnd( const JagFixMapReverseIterator &iter ) const;
 
 	protected:
 		void init();

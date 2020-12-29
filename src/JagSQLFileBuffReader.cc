@@ -55,7 +55,7 @@ bool JagSQLFileBuffReader::readNextBlock()
 	_cmdlen = 0;
 	_cursor = 0;
 	Jstr sql;
-	for ( abaxint i = 0; i < NB; ++i ) {
+	for ( jagint i = 0; i < NB; ++i ) {
 		rc = JaguarCPPClient::getSQLCommand( sql, 0, _fp, true );
 		if ( ! rc ) break;
 		_cmd[_cmdlen++] = sql;

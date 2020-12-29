@@ -34,14 +34,18 @@ class JagCfg
 	JagCfg( int type = JAG_SERVER );
 	~JagCfg();
 
-	int init( int type );
-	int destroy();
-	int refresh();
-	Jstr  getValue( const AbaxString &name, const Jstr &defaultValue="" ) const;
-	Jstr  getConfHOME() const;
-	Jstr  getJDBDataHOME( int objType=0 ) const;
-	Jstr  getTEMPDataHOME( int objType=0 ) const;
+	int 	init( int type );
+	int 	destroy();
+	int 	refresh();
+	Jstr  	getValue( const AbaxString &name, const Jstr &defaultValue="" ) const;
+	int  	getIntValue( const AbaxString &name, int defaultValue=0 ) const;
+	jagint  getLongValue( const AbaxString &name, jagint defaultValue=0 ) const;
+	float   getFloatValue( const AbaxString &name, float defaultValue=0.0 ) const;
+	Jstr  	getConfHOME() const;
+	Jstr  	getJDBDataHOME( int objType) const;
+	Jstr  	getTEMPDataHOME( int objType) const;
 	Jstr 	getTEMPJoinHOME() const;
+	Jstr 	getWalLogHOME() const;
 	
 	static const int _BLOCK= JAG_BLOCK_SIZE;
 	int			_type;

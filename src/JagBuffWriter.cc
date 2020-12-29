@@ -22,14 +22,15 @@
 #include <JagUtil.h>
 #include <JDFS.h>
 
-// inline JagBuffWriter<Pair>::JagBuffWriter( int fd, int kvlen, abaxint headoffset )
-JagBuffWriter::JagBuffWriter( JDFS *jdfs, int kvlen, abaxint headoffset, abaxint bufferSize )
+// inline JagBuffWriter<Pair>::JagBuffWriter( int fd, int kvlen, jagint headoffset )
+JagBuffWriter::JagBuffWriter( JDFS *jdfs, int kvlen, jagint headoffset, jagint bufferSize )
 {
 	_jdfs = jdfs;
 	KVLEN = kvlen;
 
 	if ( bufferSize == -1 ) {
-		bufferSize = 128;
+		//bufferSize = 128;
+		bufferSize = 32;
 	}
 	SUPERBLOCK = bufferSize*1024*1024/KVLEN/JagCfg::_BLOCK*JagCfg::_BLOCK;
 	SUPERBLOCKLEN = SUPERBLOCK * KVLEN;
@@ -61,7 +62,7 @@ JagBuffWriter::~JagBuffWriter()
 	}
 }
 
-void JagBuffWriter::writeit( abaxint pos, const char *keyvalbuf, abaxint KVLEN )
+void JagBuffWriter::writeit( jagint pos, const char *keyvalbuf, jagint KVLEN )
 {
 	_relpos = (pos-_headoffset/KVLEN) % SUPERBLOCK;  // elements
 	int newBlock = (pos-_headoffset/KVLEN) / SUPERBLOCK;

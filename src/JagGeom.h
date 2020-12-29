@@ -43,9 +43,6 @@ using namespace GeographicLib;
 class JagGeo
 {
   public:
-	//template <class POINT> static int sortLinePoints( POINT arr[], int elements );
-	//template <class POINT> static int JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
-	//template <class POINT> static int JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec );
 
 	/////////////////////////////////////// Within function ////////////////////////////////////////////////////
    	static bool doPointWithin(  const JagStrSplit &sp1, const Jstr &mk2, 
@@ -1893,5 +1890,4 @@ class DistanceCalculator3DCart
     	return sqrt( (a.x-b.x)*(a.x-b.x) + (a.y-b.y )*(a.y-b.y) + (a.z-b.z )*(a.z-b.z) );
   	}
 };
-//#include <JagSortLinePoints.h>
 #endif

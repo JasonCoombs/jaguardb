@@ -41,7 +41,6 @@ bool JagHashStrInt::addKeyValue( const Jstr & key, int val )
 	int rc = jag_hash_insert_str_int( &_hash, key.c_str(), val );
 	if ( rc ) {
 		++ _len;
-		//prt(("s3039 JagHashStrInt::addKeyValue this=%0x key=[%s] val=%d\n", this, key.c_str(), val ));
 		return true;
 	} 
 	return false;
@@ -53,7 +52,6 @@ void JagHashStrInt::removeKey( const Jstr & key )
 	int rc = jag_hash_delete( &_hash, key.c_str() );
 	if ( rc ) {
 		-- _len;
-		//prt(("s2039 JagHashStrInt::removeKey this=%0x key=[%s]\n", this, key.c_str() ));
 	}
 }
 
@@ -84,6 +82,7 @@ void JagHashStrInt::reset()
 {
 	jag_hash_destroy( &_hash );
 	jag_hash_init( &_hash, 10 );
+	_len = 0;
 }
 
 
@@ -92,6 +91,7 @@ JagHashStrInt::JagHashStrInt( const JagHashStrInt &o )
 {
 	//prt(("s8540 JagHashStrInt copy ctor this=%x o=%0x\n", this, &o ));
 	jag_hash_init( &_hash, 10 );
+	_len = 0;
 
 	HashNodeT *node;
 	for ( int i = 0; i < o._hash.size; ++i ) {
@@ -99,6 +99,7 @@ JagHashStrInt::JagHashStrInt( const JagHashStrInt &o )
 		while ( node != NULL ) {
 			jag_hash_insert( &_hash, node->key, node->value );
 			node = node->next;
+			++ _len;
 		}
 	}
 }
@@ -117,6 +118,7 @@ JagHashStrInt& JagHashStrInt:: operator= ( const JagHashStrInt &o )
 		while ( node != NULL ) {
 			jag_hash_insert( &_hash, node->key, node->value );
 			node = node->next;
+			++ _len;
 		}
 	}
 
@@ -130,26 +132,26 @@ void JagHashStrInt::print()
 	for ( int i = 0; i < _hash.size; ++i ) {
 		node = _hash.bucket[i];
 		while ( node != NULL ) {
-			prt(("key=[%s] ==> value=[%s]\n", node->key, node->value ));
+			prt(("231 key=[%s] ==> value=[%s]\n", node->key, node->value ));
 			node = node->next;
 		}
 	}
 }
 
 
-JagVector<AbaxPair<Jstr,abaxint>> JagHashStrInt::getStrIntVector()
+JagVector<AbaxPair<Jstr,jagint>> JagHashStrInt::getStrIntVector()
 {
-	JagVector<AbaxPair<Jstr,abaxint>> vec;
+	JagVector<AbaxPair<Jstr,jagint>> vec;
 
 	HashNodeT *node;
 	Jstr key;
-	abaxint num;
+	jagint num;
 	for ( int i = 0; i < _hash.size; ++i ) {
 		node = _hash.bucket[i];
 		while ( node != NULL ) {
 			key = node->key;
 			num = atoi(node->value);
-			AbaxPair<Jstr,abaxint> pair(key, num);
+			AbaxPair<Jstr,jagint> pair(key, num);
 			vec.append( pair );
 			node = node->next;
 		}

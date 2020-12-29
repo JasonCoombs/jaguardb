@@ -46,20 +46,20 @@ class JagDBConnector
   	~JagDBConnector();
 
 	void makeInitConnection( bool debugClient );
-	Jstr broadCastGet( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli=NULL );
-	bool broadCastSignal( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli=NULL );
+	Jstr broadcastGet( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli=NULL );
+	bool broadcastSignal( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli=NULL, bool toAll=false );
 	static void *queryDBServerStatic( void *ptr );
 
 	// data members
-	short _port;
-	Jstr _passwd;
-	Jstr _servToken;
-	JagNodeMgr *_nodeMgr;
+	short 		_port;
+	Jstr 		_passwd;
+	Jstr 		_servToken;
+	JagNodeMgr 	*_nodeMgr;
 	JaguarCPPClient *_parentCliNonRecover;
 	JaguarCPPClient *_parentCli;
-	JaguarCPPClient *_broadCastCli;
-	Jstr   _listenIP;
-	JagReadWriteLock *_lock;
+	JaguarCPPClient *_broadcastCli;
+	Jstr   		_listenIP;
+	pthread_rwlock_t *_lock;
 
 };
 

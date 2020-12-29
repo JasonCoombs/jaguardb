@@ -26,8 +26,8 @@ class JagFastCompress
   public:
 	static  void compress(const Jstr & instr, Jstr & outstr );
 	static  void uncompress(const Jstr &instr, Jstr & outstr );
-	static  void compress( const char *instr, abaxint inlen, Jstr & outstr );
-	static  void uncompress( const char *instr, abaxint inlen, Jstr & outstr );
+	static  void compress( const char *instr, jagint inlen, Jstr & outstr );
+	static  void uncompress( const char *instr, jagint inlen, Jstr & outstr );
 };
 
 #endif

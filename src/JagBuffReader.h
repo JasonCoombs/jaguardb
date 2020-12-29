@@ -28,39 +28,40 @@ class JagBuffReader
 {
 
   public:
-	JagBuffReader( const JagDiskArrayBase *darr, abaxint readlen, abaxint keylen, abaxint vallen, 
-		abaxint start=0, abaxint headoffset=JAG_ARJAG_FILE_HEAD, abaxint bufferSize=64 );
+	JagBuffReader( JagDiskArrayBase *darr, jagint readlen, jagint keylen, jagint vallen, 
+		jagint start=0, jagint headoffset=JAG_ARJAG_FILE_HEAD, jagint bufferSize=8 );
   	~JagBuffReader();
 	
   	bool getNext( char *buf );
-  	bool getNext( char *buf, abaxint &i );
-	bool getNext( char *buf, abaxint len, abaxint &i );
+  	bool getNext( char *buf, jagint &i );
+	bool getNext( char *buf, jagint len, jagint &i );
 	bool setRestartPos();
-	bool getRestartPos();
+	bool moveToRestartPos();
 	void setClearRestartPosFlag();
 
   protected:
-	bool findNonblankElement( char *buf, abaxint &i );
-	abaxint getNumBlocks( abaxint kvlen, abaxint bufferSize );
+	bool findNonblankElement( char *buf, jagint &i );
+	jagint getNumBlocks( jagint kvlen, jagint bufferSize );
 	
 	bool _dolock;
 	bool  _readAll;
 	bool _setRestartPos;
 	char *_superbuf;
-	abaxint	KEYLEN;
-	abaxint VALLEN;
-	abaxint KEYVALLEN;
-	abaxint _elements;
-	abaxint _lastSuperBlock;
-	abaxint _relpos;
-	abaxint _stlastSuperBlock;
-	abaxint _strelpos;
-	abaxint _headoffset;
-	abaxint _start;
-	abaxint _readlen;
-	abaxint _numResize;
-	abaxint _curBlockElements;
-	const JagDiskArrayBase *_darr;	
+	jagint	KEYLEN;
+	jagint VALLEN;
+	jagint KEYVALLEN;
+	jagint _elements;
+	jagint _lastSuperBlock;
+	jagint _relpos;
+	jagint _stlastSuperBlock;
+	jagint _strelpos;
+	jagint _headoffset;
+	jagint _start;
+	jagint _readlen;
+	jagint _numResize;
+	jagint _curBlockElements;
+	JagDiskArrayBase *_darr;	
+	jagint  _n;
 };
 
 #endif

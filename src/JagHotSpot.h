@@ -23,7 +23,7 @@
 #include <JagSimpleBoundedArray.h>
 
 typedef AbaxPair<AbaxLong, AbaxDouble> HotSpotPair;
-class JagReadWriteLock;
+//class JagReadWriteLock;
 
 template <class Pair>
 class JagHotSpot
@@ -32,7 +32,7 @@ class JagHotSpot
   	JagHotSpot(int bound=1000);
 	~JagHotSpot();
 
-	int insert( abaxint usec, double spot, const Pair &pair );
+	int insert( jagint usec, double spot, const Pair &pair );
 	int updateUpsAndDowns( const Pair &dbpair );
 	int goingRight() const;
 	int getResizeMode() const;
@@ -42,16 +42,16 @@ class JagHotSpot
   protected:
   	int 		_bound;
   	JagSimpleBoundedArray<HotSpotPair> *_barr;
-	JagReadWriteLock    *_lock;
-	Pair  _oldPair;
-	Pair  _prevResizeMaxPair;
-	uabaxint  _ups;
-	uabaxint  _downs;
-	uabaxint  _mups;
-	uabaxint  _mdowns;
+	pthread_rwlock_t    *_lock;
+	Pair  				_oldPair;
+	Pair  				_prevResizeMaxPair;
+	jaguint  _ups;
+	jaguint  _downs;
+	jaguint  _mups;
+	jaguint  _mdowns;
 
-	abaxint  _uds;
-	abaxint  _locs;
+	jagint  _uds;
+	jagint  _locs;
 };
 
 
@@ -59,7 +59,8 @@ template <class Pair>
 JagHotSpot<Pair>::JagHotSpot(int bound)
 {
 	_barr = new JagSimpleBoundedArray<HotSpotPair>( bound );
-	_lock = new JagReadWriteLock();
+	//_lock = newJagReadWriteLock();
+	_lock = NULL;
 	_ups = _downs = _mups = _mdowns = 1;
 
 	_uds = 0;
@@ -70,7 +71,8 @@ template <class Pair>
 JagHotSpot<Pair>::~JagHotSpot()
 {
 	delete _barr;
-	delete _lock;
+	//delete _lock;
+	deleteJagReadWriteLock( _lock );
 }
 
 template <class Pair>
@@ -97,7 +99,7 @@ int JagHotSpot<Pair>::updateUpsAndDowns( const Pair &dbpair )
 
 
 template <class Pair>
-int JagHotSpot<Pair>::insert( abaxint usec, double spot, const Pair &dbpair )
+int JagHotSpot<Pair>::insert( jagint usec, double spot, const Pair &dbpair )
 {
 	HotSpotPair hpair;
 	hpair.key = usec;

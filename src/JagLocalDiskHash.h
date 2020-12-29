@@ -38,55 +38,60 @@ class JagLocalDiskHash
 		bool set( const JagDBPair &pair );
 		bool remove( const JagDBPair &pair ); 
 		bool setforce( const JagDBPair &pair );
-		inline bool exist( const JagDBPair &pair ) { abaxint hc; return _exist( 1, pair, &hc ); }
+		inline bool exist( const JagDBPair &pair ) { jagint hc; return _exist( 1, pair, &hc ); }
 
 		void    setConcurrent( bool flag );
 		void 	drop();
 
 		void destroy();
-		abaxint size() const { return _arrlen; }
+		jagint size() const { return _arrlen; }
 		int getFD() const { return _fdHash; }
-		abaxint keyLength() const { return KEYLEN; }
-		abaxint valueLength() const { return VALLEN; }
-		abaxint keyValueLength() const { return KVLEN; }
-		Jstr getName() { return _hashname; }
+		jagint keyLength() const { return KEYLEN; }
+		jagint valueLength() const { return VALLEN; }
+		jagint keyValueLength() const { return KVLEN; }
+		// Jstr getName() consrt { return _hashname; }
+		Jstr getFilePath() const { return _filePath; }
 
-		abaxint elements() { return _elements; }
+		jagint elements() { return _elements; }
 		void print();
 		void printnew();
+		jagint getLength() const { return _arrlen; }
+		Jstr getListKeys();
+		jagint removeMatchKey( const char *str, int strlen );
+
 		
 	protected:
 		void    init( const Jstr &fileName, int arrlength );
 		void 	reAllocDistribute();
 		void 	reAllocShrink();
 		// bool 	updateHash( const JagDBPair &pair );
-		void 	rehashCluster( abaxint hc );
-		abaxint countCells( );
-		bool _insertAt(int fdHash, const JagDBPair& pair, abaxint hloc);
+		void 	rehashCluster( jagint hc );
+		jagint 	countCells( );
+		bool 	_insertAt(int fdHash, const JagDBPair& pair, jagint hloc);
 
-		char  *makeKeyValueBuffer( const JagDBPair &pair );
-		bool  _exist( int current, const JagDBPair &pair, abaxint *hc );
-		bool  _insertHash( const JagDBPair &pair, int current );
+		char  	*makeKeyValueBuffer( const JagDBPair &pair );
+		bool  	_exist( int current, const JagDBPair &pair, jagint *hc );
+		bool  	_insertHash( const JagDBPair &pair, int current );
 
-		abaxint 	hashKey( const JagDBPair &key, abaxint arrlen ) { return key.hashCode() % arrlen; }
+		jagint 	hashKey( const JagDBPair &key, jagint arrlen );
 
-    	abaxint 	probeLocation( abaxint hc, const int fdHash, abaxint arrlen );
-    	abaxint 	findProbedLocation( int fdHash, abaxint arrlen, const JagDBPair &search, abaxint hc ) ;
-    	void 		findCluster( abaxint hc, abaxint *start, abaxint *end );
-    	abaxint 	prevHC ( abaxint hc, abaxint arrlen );
-    	abaxint 	nextHC( abaxint hc, abaxint arrlen );
-		bool     	aboveq( abaxint start, abaxint end, abaxint birthhc, abaxint nullbox );
+    	jagint 	probeLocation( jagint hc, const int fdHash, jagint arrlen );
+    	jagint 	findProbedLocation( int fdHash, jagint arrlen, const JagDBPair &search, jagint hc ) ;
+    	void 	findCluster( jagint hc, jagint *start, jagint *end );
+    	jagint 	prevHC ( jagint hc, jagint arrlen );
+    	jagint 	nextHC( jagint hc, jagint arrlen );
+		bool   	aboveq( jagint start, jagint end, jagint birthhc, jagint nullbox );
 
-		abaxint  	_arrlen;
-		abaxint  	_newarrlen;
+		jagint 	_arrlen;
+		jagint 	_newarrlen;
 
-		abaxint  	_elements;
-		Jstr _hashname;
-		Jstr _newhashname;
+		jagint 	_elements;
+		Jstr 	_filePath;
+		Jstr 	_newhashname;
 		
-		abaxint KEYLEN; 
-		abaxint VALLEN;
-		abaxint KVLEN;
+		jagint KEYLEN; 
+		jagint VALLEN;
+		jagint KVLEN;
 
 		char		*_NullKeyValBuf;
 		int 		_fdHash;

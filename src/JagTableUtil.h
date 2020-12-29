@@ -43,6 +43,7 @@ class JagDiskArrayFamily;
 class JagDataAggregate;
 class JagSchemaAttribute;
 class JagHashStrInt;
+class JagCompFile;
 
 template <class K, class V> class JagHashMap;
 template <class Pair> class JagVector;
@@ -82,9 +83,9 @@ class GroupByValueTransfer
 {
   public:
 	Jstr name;
-	abaxint objnum;
-	abaxint offset;
-	abaxint length;
+	jagint objnum;
+	jagint offset;
+	jagint length;
 	
 	GroupByValueTransfer() {
 		objnum = 0;
@@ -98,9 +99,9 @@ class OnefileRange
 {
   public:
 	JagDiskArrayServer *darr;
-	abaxint startpos;
-	abaxint readlen;
-	abaxint memmax;
+	jagint startpos;
+	jagint readlen;
+	jagint memmax;
 
 	OnefileRange() {
 		startpos = 0;
@@ -113,12 +114,16 @@ class OnefileRangeFD
 {
   public:
 	int fd;
-	abaxint startpos;
-	abaxint readlen;
-	abaxint memmax;
+	//JagCompFile *compf;
+	//JagCompFile *fd;
+	jagint startpos;
+	jagint readlen;
+	jagint memmax;
 
 	OnefileRangeFD() {
 		fd = -1;
+		//fd = NULL;
+		//compf = NULL;
 		startpos = 0;
 		readlen = 0;
 		memmax = -1;
@@ -131,7 +136,7 @@ class ParallelCmdPass
 	JagTable *ptab;
 	JagIndex *pindex;
 	int pos;
-	abaxint sendlen;
+	jagint sendlen;
 	JagParseParam *parseParam;
 	JagMemDiskSortArray *gmdarr;
 	JagRequest req;
@@ -140,17 +145,17 @@ class ParallelCmdPass
 	JaguarCPPClient *cli;
 	Jstr writeName;
 	bool nowherecnt;
-	std::atomic<abaxint> *recordcnt;
-	abaxint actlimit;
-	abaxint memlimit;
+	std::atomic<jagint> *recordcnt;
+	jagint actlimit;
+	jagint memlimit;
 	char *minbuf;
 	char *maxbuf;
-	abaxint starttime;
+	jagint starttime;
 	bool timeoutFlag;
 
-	abaxint kvlen;
-	abaxint spos;
-	abaxint epos;
+	jagint kvlen;
+	jagint spos;
+	jagint epos;
 
 	ParallelCmdPass() {
 		ptab = NULL;
@@ -184,16 +189,16 @@ class ParallelJoinPass
 	JagTable *ptab2;
 	JagIndex *pindex;
 	JagIndex *pindex2;
-	abaxint klen;
-	abaxint klen2;
-	abaxint vlen;
-	abaxint vlen2;
-	abaxint kvlen;
-	abaxint kvlen2;
-	abaxint numKeys;
-	abaxint numKeys2;
-	abaxint numCols;
-	abaxint numCols2;
+	jagint klen;
+	jagint klen2;
+	jagint vlen;
+	jagint vlen2;
+	jagint kvlen;
+	jagint kvlen2;
+	jagint numKeys;
+	jagint numKeys2;
+	jagint numCols;
+	jagint numCols2;
 	const JagHashStrInt *maps;
 	const JagHashStrInt *maps2;
 	const JagSchemaAttribute *attrs;
@@ -208,28 +213,28 @@ class ParallelJoinPass
 	char *maxbuf2;
 	bool dfSorted;
 	bool dfSorted2;
-	abaxint objelem;
-	abaxint objelem2;
-	abaxint jlen;
-	abaxint jlen2;
-	abaxint sklen;
-	abaxint sklen2;
-	const JagVector<abaxint> *jsvec;
-	const JagVector<abaxint> *jsvec2;
-	abaxint tabnum;
-	abaxint tabnum2;
-	abaxint pos;
-	abaxint totlen;
+	jagint objelem;
+	jagint objelem2;
+	jagint jlen;
+	jagint jlen2;
+	jagint sklen;
+	jagint sklen2;
+	const JagVector<jagint> *jsvec;
+	const JagVector<jagint> *jsvec2;
+	jagint tabnum;
+	jagint tabnum2;
+	jagint pos;
+	jagint totlen;
 	Jstr jpath;
 	Jstr jname;
 	JagRequest req;
 	JagParseParam *parseParam;
 	JagDataAggregate *jda;
 	JaguarCPPClient *hcli;
-	abaxint stime;
+	jagint stime;
 	Jstr uhost;
 	bool timeout;
-	abaxint numCPUs;
+	jagint numCPUs;
 	JagHashMap<JagFixString, JagFixString> *hmaps;
 	
 	ParallelJoinPass() {

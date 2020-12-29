@@ -44,7 +44,7 @@ class CreateAttribute;
 class JagParser
 {
   public:
-    JagParser( void * obj );
+    JagParser( void *obj, bool isCli=false );
 	bool parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, 
 						Jstr &errmsg );
 	const JagColumn* getColumn( const JagParseParam *pparam, const Jstr &colName ) const;
@@ -118,7 +118,6 @@ class JagParser
 	Jstr fillDataType( const char *gettok );
 	int getColumnLength( const Jstr &colType );
 	
-	// int setupCheckMap();
 	bool  isValidGrantPerm( Jstr &perm );
 	bool  isValidGrantObj(  Jstr &obj );
 	void addCreateAttrAndColumn( bool isValue, CreateAttribute &cattr, int &coloffset );
@@ -135,14 +134,14 @@ class JagParser
 	int getEachRangeFieldLength( int srid ) const;
 	static bool getMetrics( const JagStrSplitWithQuote &sp, int start, JagVector<Jstr> &metrics );
 
-	
 	// data members
 	char *_gettok, *_saveptr;
 	JagStrSplit _split;
 	JagStrSplitWithQuote _splitwq;
 	JagParseParam *_ptrParam;
 	JagCfg *_cfg;
-	void *_obj;
+	void *_obj; // servobj or cliobj
+	bool  _isCli;
 
 	JagColumn   _dummy;
 };  // end of JagParser

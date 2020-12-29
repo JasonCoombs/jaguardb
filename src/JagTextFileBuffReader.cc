@@ -19,9 +19,10 @@
 #include <JagGlobalDef.h>
 
 #include <JagTextFileBuffReader.h>
-#include <JDFS.h>
+//#include <JDFS.h>
 
 ///////////////// implementation /////////////////////////////////
+#if 0
 JagTextFileBuffReader::JagTextFileBuffReader ( const JDFS *jdfs, char linesep )
     : _jdfs( jdfs )
 {
@@ -36,13 +37,14 @@ JagTextFileBuffReader::JagTextFileBuffReader ( const JDFS *jdfs, char linesep )
 	_inDoubleQuote = 0;
 	_connectNextlineDQ = 0;
 }
+#endif
 
 ///////////////// implementation /////////////////////////////////
 // JagTextFileBuffReader::JagTextFileBuffReader ( int fd, char linesep, char quotesep )
 JagTextFileBuffReader::JagTextFileBuffReader ( int fd, char linesep )
 {
 	_fd = fd;
-	_jdfs = NULL;
+	//_jdfs = NULL;
 	_sep = linesep;
 	// _qsep = quotesep;
 	_cursor = 0;
@@ -174,11 +176,14 @@ bool JagTextFileBuffReader::readNextBlock( int length )
 	// printf("s6373 readNextBlock() _fdPos=%d  _cursor=%d ...\n", _fdPos, _cursor );
 
 	ssize_t len;
+	/***
 	if ( _jdfs ) {
 		len = raypread( _jdfs, _buf, NB, _fdPos );
 	} else {
 		len = jagpread( _fd, _buf, NB, _fdPos );
 	}
+	***/
+	len = jagpread( _fd, _buf, NB, _fdPos );
 
 	// end of file reached
 	if ( len == 0 ) {
@@ -209,7 +214,7 @@ bool JagTextFileBuffReader::readNextBlock( int length )
 		return true;
 	}
 
-	abaxint n = 0;
+	jagint n = 0;
 	int chunk = 0;
 	int eof = 0;
 	int  maxchunks = 500;
@@ -223,11 +228,14 @@ bool JagTextFileBuffReader::readNextBlock( int length )
 	{
 		// printf("s76262 in while loop read chunk _buflen=%d  _fdPos=%d\n", _buflen, _fdPos );
 
+			/***
 			if ( _jdfs ) {
 				n = raypread( _jdfs, buf, CHUNK, _fdPos  ); 
 			} else {
 				n = jagpread( _fd, buf, CHUNK, _fdPos  ); 
 			}
+			***/
+			n = jagpread( _fd, buf, CHUNK, _fdPos  ); 
 
 			if (  n >0 && n <= CHUNK ) {
 				if ( NULL != (p=(char*)memchr(buf, _sep, n )  ) ) {

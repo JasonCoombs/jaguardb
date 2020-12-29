@@ -38,34 +38,33 @@ class JagServerObjectLock
 
 	void rebuildObjects();
 	void setInitDatabases( const Jstr &dblist, int replicateType );
-	abaxint getnumObjects( int objType, int replicateType );
+	jagint getnumObjects( int objType, int replicateType );
 
 	int readLockSchema( int replicateType );
 	int readUnlockSchema( int replicateType );
 	int writeLockSchema( int replicateType );
 	int writeUnlockSchema( int replicateType );
-	int readLockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
-	int readUnlockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
-	int writeLockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
-	int writeUnlockDatabase( abaxint opcode, const Jstr &dbName, int replicateType );
-	JagTable *readLockTable( abaxint opcode, const Jstr &dbName, 
-		const Jstr &tableName, int replicateType, bool lockSelfLevel=0 );
-	int readUnlockTable( abaxint opcode, const Jstr &dbName, 
-		const Jstr &tableName, int replicateType, bool lockSelfLevel=0 );
-	JagTable *writeLockTable( abaxint opcode, const Jstr &dbName, const Jstr &tableName, 
+	int readLockDatabase( jagint opcode, const Jstr &dbName, int replicateType );
+	int readUnlockDatabase( jagint opcode, const Jstr &dbName, int replicateType );
+	int writeLockDatabase( jagint opcode, const Jstr &dbName, int replicateType );
+	int writeUnlockDatabase( jagint opcode, const Jstr &dbName, int replicateType );
+
+	JagTable *readLockTable( jagint opcode, const Jstr &db, const Jstr &table, int repType, bool lockSelfLevel=0 );
+	int readUnlockTable( jagint opcode, const Jstr &dbName, const Jstr &table, int repType, bool lockSelfLevel=0 );
+
+	JagTable *writeLockTable( jagint opcode, const Jstr &db, const Jstr &table, const JagTableSchema *tschema, int repType, bool lockSelfLevel=0 );
+	int writeUnlockTable( jagint opcode, const Jstr &db, const Jstr &table, int repType, bool lockSelfLevel=0 );
+
+	JagTable *writeTruncateTable( jagint opcode, const Jstr &dbName, const Jstr &tableName, 
 		const JagTableSchema *tschema, int replicateType, bool lockSelfLevel=0 );
-	int writeUnlockTable( abaxint opcode, const Jstr &dbName, const Jstr &tableName, 
-		const JagTableSchema *tschema, int replicateType, bool lockSelfLevel=0 );
-	JagTable *writeTruncateTable( abaxint opcode, const Jstr &dbName, const Jstr &tableName, 
-		const JagTableSchema *tschema, int replicateType, bool lockSelfLevel=0 );
-	JagIndex *readLockIndex( abaxint opcode, const Jstr &dbName, Jstr &tableName, const Jstr &indexName,
-		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
-	int readUnlockIndex( abaxint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
-		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
-	JagIndex *writeLockIndex( abaxint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
-		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
-	int writeUnlockIndex( abaxint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
-		const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
+
+	JagIndex *readLockIndex( jagint opcode, const Jstr &dbName, Jstr &tableName, const Jstr &indexName, int replicateType, bool lockSelfLevel=0 );
+	int readUnlockIndex( jagint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName, int replicateType, bool lockSelfLevel=0 );
+
+	JagIndex *writeLockIndex( jagint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
+							  const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
+	int writeUnlockIndex( jagint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
+						  int replicateType, bool lockSelfLevel=0 );
 		
 	Jstr getAllTableNames( int replicateType );
 

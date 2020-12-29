@@ -52,19 +52,19 @@ int JagTime::getTimeZoneDiff()
 }
 
 // return milliseconds timestamp
-abaxint JagTime::mtime()
+jaguint JagTime::mtime()
 {
 	struct timeval now;
 	gettimeofday( &now, NULL );
-	return (1000*(abaxint)now.tv_sec + now.tv_usec/1000);
+	return (1000*(jaguint)now.tv_sec + now.tv_usec/1000);
 }
 
 // return microseconds timestamp
-abaxint JagTime::utime()
+jaguint JagTime::utime()
 {
 	struct timeval now;
 	gettimeofday( &now, NULL );
-	return (1000000*(abaxint)now.tv_sec + now.tv_usec);
+	return (1000000*(jaguint)now.tv_sec + now.tv_usec);
 }
 
 //  N: years back
@@ -74,8 +74,8 @@ Jstr JagTime::makeRandDateTimeString( int N )
   	struct tm * timeinfo;
   	struct tm  result;
   	char buffer [80];
-	abaxint yearSecs = 365 * 86400;
-	abaxint rnd = rand() % (N*yearSecs);
+	jagint yearSecs = 365 * 86400;
+	jagint rnd = rand() % (N*yearSecs);
 
   	time (&rawtime);
 	rawtime -=  rnd;
@@ -176,11 +176,11 @@ Jstr JagTime::makeNowTimeStringMicroSeconds()
 	return buffer;
 }
 
-abaxint JagTime::nowMilliSeconds()
+jagint JagTime::nowMilliSeconds()
 {
     struct timeval now;
     gettimeofday( &now, NULL );
-	return (abaxint)now.tv_usec * 1000 + now.tv_sec/1000;
+	return (jagint)now.tv_usec * 1000 + now.tv_sec/1000;
 }
 
 Jstr JagTime::nowYear()
@@ -196,71 +196,12 @@ Jstr JagTime::nowYear()
 	return buffer;
 }
 
-#if 0
-// input: rawSeconds "1538282828"
-Jstr JagTime::rawToClientString( const JagParseAttribute &jpa, time_t seconds, const Jstr &ttype )
-{
-	//abaxint  defTZDiffMin = jpa.timediff;
-	//abaxint servTZDiffMin = jpa.servtimediff;
-	//abaxint minSrvCli = servTZDiffMin - defTZDiffMin;
-	//int minSrvCli = jpa.servtimediff - jpa.timediff;
-	int minSrvCli = jpa.timediff;
-	prt(("s2096 rawToString jpa.servtimediff=%d jpa.timediff=%d minSrvCli=%d\n", jpa.servtimediff, jpa.timediff, minSrvCli ));
-
-	//seconds -=  minSrvCli * 60;
-	seconds +=  minSrvCli * 60;
-
-	struct tm timeinfo;
-	//jag_localtime_r( &seconds, &timeinfo );
-	gmtime_r( &seconds, &timeinfo );
-	char buf[64];
-	memset(buf, 0, 64 );
-	if (  ttype == JAG_C_COL_TYPE_DATETIME ) {
-  		strftime (buf, 64, "%Y-%m-%d %H:%M:%S", &timeinfo);
-	} else if (  ttype == JAG_C_COL_TYPE_TIME ) {
-  		strftime (buf, 64, "%H:%M:%S", &timeinfo);
-	} else if (  ttype == JAG_C_COL_TYPE_DATE ) {
-  		strftime (buf, 64, "%Y-%m-%d", &timeinfo);
-	} 
-	prt(("s2228 buf=[%s]\n", buf ));
-	return buf; 
-}
-#endif
-
-#if 0
-// input: rawSeconds "1538282828"
-Jstr JagTime::rawToServerString( const JagParseAttribute &jpa, time_t seconds, const Jstr &ttype )
-{
-	//abaxint  defTZDiffMin = jpa.timediff;
-	//abaxint servTZDiffMin = jpa.servtimediff;
-	//abaxint minSrvCli = servTZDiffMin - defTZDiffMin;
-	//int minSrvCli = jpa.servtimediff - jpa.timediff;
-	//seconds +=  minSrvCli * 60;
-
-	struct tm timeinfo;
-	jag_localtime_r( &seconds, &timeinfo ); // server localtime
-	//gmtime_r( &seconds, &timeinfo );
-	char buf[64];
-	memset(buf, 0, 64 );
-	if (  ttype == JAG_C_COL_TYPE_DATETIME ) {
-  		strftime (buf, 64, "%Y-%m-%d %H:%M:%S", &timeinfo);
-	} else if (  ttype == JAG_C_COL_TYPE_TIME ) {
-  		strftime (buf, 64, "%H:%M:%S", &timeinfo);
-	} else if (  ttype == JAG_C_COL_TYPE_DATE ) {
-  		strftime (buf, 64, "%Y-%m-%d", &timeinfo);
-	} 
-	prt(("s2228 buf=[%s]\n", buf ));
-	return buf; 
-}
-#endif
-
-
 // str: "2016-02-13 12:32:22"   "12:23:00" "yyyy-mm-dd" "152939440000"
 void JagTime::setTimeInfo( const JagParseAttribute &jpa , const char *str, struct tm &timeinfo, int isTime ) 
 {
 	// printf("s2838 setTimeInfo str=[%s]  isTime=%d\n", str, isTime );
 	const char *ttime1, *tdate2;
-	abaxint microsec = -1;
+	jagint microsec = -1;
 	
 	ttime1 = strchr(str, ':'); 
 	tdate2 = strchr(str, '-');
@@ -302,9 +243,9 @@ void JagTime::setTimeInfo( const JagParseAttribute &jpa , const char *str, struc
 		else secs = microsec / 1000000000;
 
 		// gmtime_r( &secs, &timeinfo );
-		abaxint  defTZDiffMin = jpa.timediff;
-		abaxint servTZDiffMin = jpa.servtimediff;
-		abaxint minSrvCli = servTZDiffMin - defTZDiffMin;
+		jagint  defTZDiffMin = jpa.timediff;
+		jagint servTZDiffMin = jpa.servtimediff;
+		jagint minSrvCli = servTZDiffMin - defTZDiffMin;
 		// prt(("s2394 secs=%lld\n", secs ));
 
 		secs -=  minSrvCli * 60;
@@ -398,7 +339,7 @@ JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, cons
 
 		time_t endt = mktime( &timeinfo2 );
 		time_t begint = mktime( &timeinfo );
-		abaxint diff = 0;
+		jagint diff = 0;
 		if ( endt > -1 && begint > -1 ) {
 			diff = endt - begint;
     		if ( ddiff == "m" ) {
@@ -417,7 +358,7 @@ JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, cons
 		snprintf(buf, timelen+1, "%lld", diff);
 	}
 	
-	JagFixString res(buf, timelen);
+	JagFixString res(buf, timelen, timelen);
 	return res;	
 }
 
@@ -427,17 +368,15 @@ JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, cons
 // void convertDateTimeToLocalStr( int tzdiff, const Jstr& instr, Jstr& outstr, bool isnano )
 void JagTime::convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool isnano )
 {
-	// print keys
 	char tmstr[48];
-	char utime[8];
-	abaxint timestamp;
-	time_t  sec;
-	abaxint  usec;
+	char utime[12];
+	jaguint timestamp;
+	jaguint  sec;
+	jaguint  usec;
 	struct tm *tmptr;
 	struct tm result;
 
 	//prt(("c4828 convertDateTimeToLocalStr instr=[%s]\n", instr.c_str() ));
-
 	timestamp = jagatoll( instr.c_str() );
 	if ( !isnano ) {
 		sec = timestamp/1000000; 
@@ -447,18 +386,17 @@ void JagTime::convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool i
 		usec = timestamp%1000000000;
 	}
 
-	// tmptr = localtime( &sec );  // client calls this
-	tmptr = jag_localtime_r( &sec, &result );  // client calls this
-	// tmptr = gmtime( &sec );
-
+	//prt(("j22228188 sec=%lld  usec=%lld\n", sec, usec ));
+	time_t tsec = sec;
+	tmptr = jag_localtime_r( &tsec, &result );  // client calls this
 	strftime( tmstr, sizeof(tmstr), "%Y-%m-%d %H:%M:%S", tmptr ); 
-
 	if ( !isnano ) sprintf( utime, ".%06d", usec );
 	else sprintf( utime, ".%09d", usec );
 
+	//prt(("j8283718 tmstr=[%s] utime=[%s]\n", tmstr, utime ));
 	strcat( tmstr, utime );
 	outstr = tmstr;
-	//prt(("c1183 cnvtDatTimToStr ins=[%s] outs=[%s] isnano=%d\n", instr.c_str(), outstr.c_str(), isnano ));
+	//prt(("c1183 convertDateTimeToLocalStr ins=[%s] outs=[%s] isnano=%d\n", instr.c_str(), outstr.c_str(), isnano ));
 }
 
 // input: instr "1928282292929"
@@ -471,9 +409,9 @@ void JagTime::convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype )
 	// print keys
 	char tmstr[24];
 	char utime[8];
-	abaxint timestamp;
+	jagint timestamp;
 	time_t  sec;
-	abaxint  usec;
+	jagint  usec;
 	struct tm *tmptr;
 
 
@@ -535,7 +473,7 @@ int JagTime::convertDateTimeFormat( const JagParseAttribute &jpa, char *outbuf, 
 							const int offset, const int length, bool isnano )
 {
 	// prt(("s3661 convertDateTimeFormat inbuf=[%s] isnano=%d\n", inbuf, isnano ));
-    abaxint lonnum = 0;
+    jagint lonnum = 0;
 
 	// allow "microseconds" or "nanoseconds" since epoch digits input UTC time
 	// timestamp is microseconds since epoch, same as datetime
@@ -566,7 +504,7 @@ int JagTime::convertDateTimeFormat( const JagParseAttribute &jpa, char *outbuf, 
 int JagTime::convertTimeFormat( char *outbuf, const char *inbuf, const int offset, const int length, bool isnano )
 {
 	//prt(("s4774 convertTimeFormat inbuf=[%s] offset=%d length=%d isnano=%d\n", inbuf, offset, length, isnano ));
-    abaxint lonnum = 0;
+    jagint lonnum = 0;
 
 	/***
 	if ( ( NULL == strchr((char*)inbuf, ':') ) || (lonnum = getTimeFromStr(inbuf, isnano)) == -1 )  {
@@ -617,13 +555,12 @@ int JagTime::convertDateFormat( char *outbuf, const char *inbuf, const int offse
 // str:   yyyy-mm-dd hh:mm:ss[.ffffff] -HH:MM  (timezone offset)
 // defTZDiffMin: client's default timezone diff in minutes (-8 or +10)
 // if isnano, str has [.fffffffff] 
-// -1: error
-// abaxint getDateTimeFromStr( int defTZDiffMin, const char *str, bool isnano )
-abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, bool isnano )
+// 0: error
+jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, bool isnano )
 {
-	abaxint  defTZDiffMin = jpa.timediff;
-	abaxint servTZDiffMin = jpa.servtimediff;
-	abaxint minSrvCli = servTZDiffMin - defTZDiffMin;
+	jagint  defTZDiffMin = jpa.timediff;
+	jagint servTZDiffMin = jpa.servtimediff;
+	jagint minSrvCli = servTZDiffMin - defTZDiffMin;
 
 	// prt(("s1828 getDateTimeFromStr str=[%s] defTZDfMin=%d srvTZMin=%d minSrvCli=%d\n", str, defTZDiffMin, servTZDiffMin, minSrvCli ));
 
@@ -634,27 +571,26 @@ abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
 	char *s = (char*) str;
 	char *p;
 	char v;
-	abaxint res;
+	jaguint res;
 
 	ttime.tm_isdst = -1;
 
 	// get yyyy
 	p = s;
 	while ( *p != '-' && *p != '\0' ) ++p;
-	// if ( *p == '\0' ) return -1;
 	if ( *p == '\0' ) return 0;
 
 	*p = '\0';
 	ttime.tm_year = atoi(s) - 1900;
-	if ( ttime.tm_year >= 10000 ) return -1;
+	if ( ttime.tm_year >= 10000 ) return 0;
 	*p = '-';
 	s = p+1;
-	if ( *s == '\0' ) return -1;
+	if ( *s == '\0' ) return 0;
 
 	// get mm
 	p = s;
 	while ( *p != '-' && *p != '\0' ) ++p;
-	if ( *p == '\0' ) return -1;
+	if ( *p == '\0' ) return 0;
 	*p = '\0';
 	ttime.tm_mon = atoi(s) - 1;
 	// if ( ttime.tm_mon < 0 || ttime.tm_mon > 11 ) return -1;
@@ -662,24 +598,24 @@ abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
 
 	// get dd
 	s = p+1;
-	if ( *s == '\0' ) return -1;
+	if ( *s == '\0' ) return 0;
 
 	p = s;
 	while ( *p != ' ' && *p != '\0' ) ++p;
-	if ( *p == '\0' ) return -1;
+	if ( *p == '\0' ) return 0;
 	*p = '\0';
 	ttime.tm_mday = atoi(s);
 	// if ( ttime.tm_mday < 1 || ttime.tm_mday > 31 ) return -1;
 	*p = ' ';
 
 	while ( *p == ' ' && *p != '\0' ) ++p;
-	if ( *p == '\0' ) return -1;
+	if ( *p == '\0' ) return 0;
 
 	// hh:mm:ss[.ffffff]
 	// get hh
 	s = p;
 	while ( *p != ':' && *p != '\0' ) ++p;
-	if ( *s == '\0' ) return -1;
+	if ( *s == '\0' ) return 0;
 	*p = '\0';
 	ttime.tm_hour = atoi(s);
 	// if ( ttime.tm_hour > 23 ) return -1;
@@ -689,7 +625,7 @@ abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
 	++p;
 	s = p;
 	while ( *p != ':' && *p != '\0' ) ++p;
-	if ( *s == '\0' ) return -1;
+	if ( *s == '\0' ) return 0;
 	*p = '\0';
 	ttime.tm_min = atoi(s);
 	// if ( ttime.tm_min > 59 ) return -1;
@@ -712,14 +648,14 @@ abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
    	// adjust server
    	res += minSrvCli * 60;
 
-   	if ( isnano ) res *= (abaxint)1000000000;
-   	else res *= (abaxint)1000000;
+   	if ( isnano ) res *= (jaguint)1000000000;
+   	else res *= (jaguint)1000000;
+
+   	jagint zsecdiff;
+	jagint tzhour;
 
 	while ( 1 ) {
-    	// prt(("s8907 time str=[%s] ===> res=[%lld]\n", str, res));
-    	if ( *p == '\0' ) {
-			break;
-    	}
+    	if ( *p == '\0' ) { break; }
     
     	// saw .ffffff or .fffffffff
     	if ( *p == '.' ) {
@@ -746,13 +682,10 @@ abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
         	res += jagatoll(buf10);
     	}
     
-    	if ( *p == '\0' ) {
-			break;
-    	}
+    	if ( *p == '\0' ) { break; }
     
     	while ( *p == ' ' ) ++p;  // skip blanks
     	if ( *p == '\0' ) {
-    		// prt(("c8133 getdatetimefromstr return res=[%lld]\n", res ));
 			break;
     	}
     
@@ -778,37 +711,33 @@ abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
     	*p = '\0';
     	// -06:30
     	// printf("c110 s=[%s] defTZDiffMin=%d atoll(s)*60=%d\n", s, defTZDiffMin, atoll(s)*60 );
-    	abaxint zsecdiff;
-		abaxint tzhour = jagatoll(s);
+    	zsecdiff;
+		tzhour = jagatoll(s);
 		// prt(("s6612 before hour adjust tzhour=%d res=%lld\n", tzhour, res ));
     	if ( c > 0 ) {
     		zsecdiff =  tzhour *3600 - defTZDiffMin*60;  // adjust to original clien time zone
-    		if ( !isnano ) res -=  zsecdiff * (abaxint)1000000;
-    		else res -=  zsecdiff * (abaxint)1000000000;
+    		if ( !isnano ) res -=  zsecdiff * (jaguint)1000000;
+    		else res -=  zsecdiff * (jaguint)1000000000;
     	} else {
     		zsecdiff =  defTZDiffMin*60 + tzhour*3600;
-    		if ( !isnano ) res +=  zsecdiff * (abaxint)1000000;
-    		else res +=  zsecdiff * (abaxint)1000000000;
+    		if ( !isnano ) res +=  zsecdiff * (jaguint)1000000;
+    		else res +=  zsecdiff * (jaguint)1000000000;
     	}
 
     	*p = v;
-    	if ( *p == '\0' ) {
-			break;
-    	}
+    	if ( *p == '\0' ) { break; }
 
     	++p; // past :   :30 minute part
-    	if ( *p == '\0' ) {
-			break;
-		}
+    	if ( *p == '\0' ) { break; }
 
     	s = p;
 		// prt(("s8309 s=[%s] res=%lld\n", s, res ));
     	if ( c > 0 ) {
-    		if ( !isnano ) res = res - jagatoll(s) * 60 * (abaxint)1000000;  // res is GMT time
-    		else res = res - jagatoll(s) * 60 * (abaxint)1000000000;  // res is GMT time
+    		if ( !isnano ) res = res - jagatoll(s) * 60 * (jaguint)1000000;  // res is GMT time
+    		else res = res - jagatoll(s) * 60 * (jaguint)1000000000;  // res is GMT time
     	} else {
-    		if ( !isnano ) res = res + jagatoll(s) * 60 * (abaxint)1000000;
-    		else res = res + jagatoll(s) * 60 * (abaxint)1000000000;
+    		if ( !isnano ) res = res + jagatoll(s) * 60 * (jagint)1000000;
+    		else res = res + jagatoll(s) * 60 * (jaguint)1000000000;
     	}
 
 		break;  // must be here to exit the loop
@@ -822,7 +751,7 @@ abaxint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
 // return time in microseconds
 // str:   hh:mm:ss[.ffffff]
 // -1: error
-abaxint JagTime::getTimeFromStr( const char *str, bool isnano )
+jagint JagTime::getTimeFromStr( const char *str, bool isnano )
 {
 	//prt(("s2039 getTimeFromStr str=[%s] isnano=%d\n", str, isnano ));
 	int c;
@@ -832,7 +761,7 @@ abaxint JagTime::getTimeFromStr( const char *str, bool isnano )
 	char *s = (char*) str;
 	char *p;
 	char v;
-	abaxint res;
+	jagint res;
 
 	ttime.tm_isdst = -1;
 	ttime.tm_year = 0;
@@ -873,8 +802,8 @@ abaxint JagTime::getTimeFromStr( const char *str, bool isnano )
 	// res = 1000000* mktime( &ttime );
 	// res = 1000000* timegm( &ttime );
 	res = 3600*ttime.tm_hour + 60*ttime.tm_min + ttime.tm_sec;
-	if ( !isnano ) res *= (abaxint)1000000;
-	else res *= (abaxint)1000000000;
+	if ( !isnano ) res *= (jagint)1000000;
+	else res *= (jagint)1000000000;
 	// prt(("s8907 time str=[%s] ===> res=[%lld]\n", str, res));
 	if ( *p == '\0' ) {
 		// printf("c111\n");

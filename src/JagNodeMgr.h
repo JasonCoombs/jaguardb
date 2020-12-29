@@ -27,19 +27,19 @@ class JagNodeMgr
   public:
   	JagNodeMgr( const Jstr& listenIP ) { _listenIP = listenIP; init(); }
   	~JagNodeMgr() { destroy(); }
-	void refreshFile( Jstr &hostlist );
+	void refreshClusterFile( Jstr &hostlist );
 
-	Jstr                  _listenIP;
+	Jstr                  	_listenIP;
 
-	bool							_isHost0OfCluster0;
+	bool					_isHost0OfCluster0;
 	Jstr					_selfIP;
-	Jstr					_sendNodes;
+	Jstr					_sendAllNodes; // all nodes
 	Jstr					_allNodes;
 	Jstr					_curClusterNodes;
-	abaxint							_curClusterNumber;
-	abaxint							_totalClusterNumber;
-	int                             _numNodes;
-	int                             _numAllNodes;
+	jagint					_curClusterNumber;
+	int                     _numCurNodes;
+	int                     _numAllNodes;
+	jagint					_totalClusterNumber;
 
   protected:
   	void init();

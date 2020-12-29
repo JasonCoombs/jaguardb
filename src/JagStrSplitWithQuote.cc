@@ -172,11 +172,11 @@ const Jstr& JagStrSplitWithQuote::operator[](int i ) const
 	}
 }
 
-abaxint JagStrSplitWithQuote::length() const
+jagint JagStrSplitWithQuote::length() const
 {
 	return length_;
 }
-abaxint JagStrSplitWithQuote::size() const
+jagint JagStrSplitWithQuote::size() const
 {
 	return length_;
 }

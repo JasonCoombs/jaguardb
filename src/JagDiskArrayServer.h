@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with JaguarDB (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _jag_disk_arjagserv_h_
-#define _jag_disk_arjagserv_h_
+#ifndef _jag_disk_arrjagserv_h_
+#define _jag_disk_arrjagserv_h_
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -27,9 +27,11 @@
 #include <string.h>
 #include <limits.h>
 #include <atomic>
+#include <vector>
 
 #include <abax.h>
 #include <JagDiskArrayBase.h>
+#include <JagDBMap.h>
 
 class JagDataAggregate;
 
@@ -39,70 +41,77 @@ class JagDiskArrayServer : public JagDiskArrayBase
 {
 	public:
 		// JagDiskArrayServer public methods
-		JagDiskArrayServer( const JagDBServer *servobj, const Jstr &fpathname, 
-							const JagSchemaRecord *record, 
-							bool buildInitIndex=true, abaxint length=32, bool noMonitor=false, bool isLastOne=true );
-		JagDiskArrayServer( const JagDBServer *servobj, const Jstr &fpathname, 
-							const JagSchemaRecord *record, 
-							const Jstr &pdbobj, JagDBPair &minpair, JagDBPair &maxpair );
+		JagDiskArrayServer( const JagDBServer *servobj, JagDiskArrayFamily *fam, int index, const Jstr &fpathname, 
+							const JagSchemaRecord *record, jagint length, bool buildInitIndex );
 		virtual ~JagDiskArrayServer();
 			
-		inline bool remove( const JagDBPair &pair ) { abaxint idx; return removeData( pair, &idx ); }
-		abaxint removeMatchKey( const char *str, int strlen );
-		inline bool checkFirstResize() { return _firstResize; }
-		inline bool get( JagDBPair &pair ) { abaxint idx; return get( pair, idx ); }		
-		inline bool set( JagDBPair &pair ) { abaxint idx; return set( pair, idx ); }
-		inline bool exist( JagDBPair &pair ) { abaxint idx; return exist( pair, &idx, pair ); }		
+		// bool remove( const JagDBPair &pair ) { jagint idx; return removeData( pair, &idx ); }
+		bool remove( const JagDBPair &pair );
+		// jagint removeMatchKey( const char *str, int strlen );
+		bool get( JagDBPair &pair ) { jagint idx; return get( pair, idx ); }		
+		bool set( const JagDBPair &pair ) { jagint idx; return set( pair, idx ); }
+		bool exist( JagDBPair &pair ) { jagint idx; return exist( pair, &idx, pair ); }		
 		
-		bool exist( const JagDBPair &pair, abaxint *index, JagDBPair &retpair );		
-		bool get( JagDBPair &pair, abaxint &index );
-		bool getWithRange( JagDBPair &pair, abaxint &index );
-		bool set( JagDBPair &pair, abaxint &index );
+		bool exist( const JagDBPair &pair, jagint *index, JagDBPair &retpair );		
+		bool exist( const JagDBPair &pair, JagDBPair &retpair );		
+		bool get( JagDBPair &pair, jagint &index );
+		bool getWithRange( JagDBPair &pair, jagint &index );
+		bool set( const JagDBPair &pair, jagint &index );
+		/***
 		bool setWithRange(  const JagRequest &req, JagDBPair &pair, const char *buffers[], bool uniqueAndHasValueCol, 
 							ExprElementNode *root, 
-							JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
-							abaxint setposlist[], JagDBPair &retpair );	
-		bool getLimitStartPos( abaxint &startlen, abaxint limitstart, abaxint &soffset );
+							const JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
+							jagint setposlist[], JagDBPair &retpair );	
+							***/
+		// bool getLimitStartPos( jagint &startlen, jagint limitstart, jagint &soffset );
 
 		void flushBlockIndexToDisk();
 		void removeBlockIndexIndDisk();
-		void separateResizeForce();
-		void separateMergeForce();
-		void print( abaxint start=-1, abaxint end=-1, abaxint limit=-1 );
+		//void separateResizeForce();
+		//void separateMergeForce();
+		void print( jagint start=-1, jagint end=-1, jagint limit=-1 );
 		int	orderCheckOK(); // check if the order in diskarray is correct	
 		int buildInitIndexFromIdxFile();
-		Jstr getListKeys();
+		// Jstr getListKeys();
 
-		virtual void drop();
+		jagint waitCopyAndInsertBufferAndClean();
+		JagDiskArrayServer* flushInsertBufferToFile( );
+		jagint flushInsertBufferOneByOne();
+		//void  appendNewSimpFile();
+
+		//virtual void dropFile();
 		virtual void buildInitIndex( bool force=false );
-		virtual void init( abaxint length, bool buildBlockIndex, bool isLastOne );
-		virtual int _insertData( JagDBPair &pair, abaxint *retindex, int &insertCode, bool doFirstRedist, JagDBPair &retpair );
-		virtual int reSize( bool force=false, abaxint newarrlen=-1 );
-		virtual int mergeResize( int mergeMode, abaxint mergeElements, char *mbuf, const char *sbuf, JagBuffReader *mbr );
-		virtual void reSizeLocal();
+		virtual void init( jagint length, bool buildBlockIndex );
+		//virtual int _insertData( JagDBPair &pair, int &insertCode, bool doFirstRedist, JagDBPair &retpair );
+		//virtual int reSize( bool force=false, jagint newarrlen=-1 );
+		//virtual void reSizeLocal();
 
-		bool checkInitResizeCondition( bool isLastOne );
-		void recountElements();
-
-		bool reSizeCompress();
+		//bool checkInitResizeCondition();
+		// void recountElements();
+		//bool reSizeCompress();
 		
 		bool checkFileOrder( const JagRequest &req );
-		abaxint orderRepair( const JagRequest &req );
-		void updateCorrectDataBlockIndex( char *buf, abaxint pos, JagDBPair &tpair, abaxint &lastBlock );
-		JagDiskArrayServer *_darrnew;
+		jagint orderRepair( const JagRequest &req );
+		void updateCorrectDataBlockIndex( char *buf, jagint pos, JagDBPair &tpair, jagint &lastBlock );
+		//static void *monitorCommandsMem( void *ptr );
+		//virtual int pushToBuffer( JagDBPair &pair );
+		float computeMergeCost( const JagDBMap *pairmap, jagint sequentialReadSpeed, 
+								jagint sequentialWriteSpeed, JagVector<JagMergeSeg> &vec );
+
+		/***
+		static bool checkSetPairCondition( const JagDBServer *servobj, const JagRequest &req, const JagDBPair &pair, char *buffers[], 
+									bool uniqueAndHasValueCol, ExprElementNode *root, 
+									const JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
+									jagint  KLEN, jagint VLEN,
+									jagint setposlist[], JagDBPair &retpair );
+									***/
 		
 	protected:
-		// JagDiskArrayServer protected methods
-		bool checkSetPairCondition( const JagRequest &req, JagDBPair &pair, char *buffers[], 
-									bool uniqueAndHasValueCol, ExprElementNode *root, 
-									JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
-									abaxint setposlist[], JagDBPair &retpair );
-		bool removeData( const JagDBPair &pair, abaxint *retindex );
-		int removeFromRange( const JagDBPair &pair, abaxint *retindex );
-		int removeFromAll( const JagDBPair &pair, abaxint *retindex );		
-		void mergeDarrnew( abaxint &cnt, abaxint &rsz );
-		int needResize();
-		static void *separateResizeStatic( void *ptr );
+		// bool removeData( const JagDBPair &pair, jagint *retindex );
+		int removeFromRange( const JagDBPair &pair, jagint *retindex );
+		int removeFromAll( const JagDBPair &pair, jagint *retindex );		
+		//int needResize();
+		//static void *separateResizeStatic( void *ptr );
 };
 
 #endif

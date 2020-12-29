@@ -99,11 +99,13 @@ static void Decode PROTO_LIST
 static void MD5_memcpy PROTO_LIST ((MD5POINTER, MD5POINTER, unsigned int));
 static void MD5_memset PROTO_LIST ((MD5POINTER, int, unsigned int));
 */
+/**
 static unsigned char PADDING[64] = {
   0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+**/
 
 /* F, G, H and I are basic MD5 functions.
  */

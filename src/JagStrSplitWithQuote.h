@@ -41,14 +41,14 @@ class JagStrSplitWithQuote
 		~JagStrSplitWithQuote();
 
 	    const Jstr& operator[]( int i ) const;
-		abaxint length() const;
-		abaxint size() const;
+		jagint length() const;
+		jagint size() const;
 		bool  exists(const Jstr &token) const;
 		void	print();
 
 	private:
 		Jstr *list_;
-		abaxint length_;
+		jagint length_;
 		char sep_;
 };
 

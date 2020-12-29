@@ -27,8 +27,8 @@ class JagTime
 {
 	public:
 		static int getTimeZoneDiff();  //  minutes
-		static abaxint mtime();  //  time(NULL) + milliseconds
-		static abaxint utime();  //  time(NULL) + microseconds
+		static jaguint mtime();  //  time(NULL) + milliseconds
+		static jaguint utime();  //  time(NULL) + microseconds
 		static Jstr makeRandDateTimeString( int N);
 		static Jstr makeRandTimeString();
 		static Jstr YYYYMMDDHHMM();
@@ -37,7 +37,7 @@ class JagTime
 		static Jstr makeNowTimeStringSeconds();
 		static Jstr makeNowTimeStringMilliSeconds();
 		static Jstr makeNowTimeStringMicroSeconds();
-		static abaxint nowMilliSeconds();
+		static jagint nowMilliSeconds();
 		static Jstr nowYear();
 
 		//static Jstr rawToServerString( const JagParseAttribute &jpa, time_t rawSeconds, const Jstr &ttype );
@@ -54,8 +54,8 @@ class JagTime
 
 		static int convertTimeFormat( char *outbuf, const char *inbuf, const int offset, const int length, bool isnano = false );
 		static int convertDateFormat( char *outbuf, const char *inbuf, const int offset, const int length );
-		static abaxint getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, bool isnano=false );
-		static abaxint getTimeFromStr( const char *str, bool isnano=false );
+		static jaguint getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, bool isnano=false );
+		static jagint getTimeFromStr( const char *str, bool isnano=false );
 		static bool getDateFromStr( const char *instr, char *outstr );
 
 

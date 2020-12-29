@@ -23,18 +23,23 @@ typedef struct HashNodeT
 {
   char * key;  
   char * value;
+  //bool   valueReadOnly;
   struct HashNodeT *next;   /* next node in hash chain */
 } HashNodeT;
 
-typedef struct jag_hash_t 
+class jag_hash_t 
 {
+  public:
+  jag_hash_t() { doneInit = false; }
+
   struct HashNodeT **bucket;        /* array of hash nodes */
   int size;                           /* size of the array */
   int entries;                        /* number of entries in table */
   int downshift;                      /* shift cound, used in hash function */
   int mask;                           /* used to select bits for hashing */
   unsigned char empty;
-} jag_hash_t;
+  bool doneInit;
+};
 
 void jag_hash_init(jag_hash_t *, int buckets);
 
@@ -44,10 +49,11 @@ char *jag_hash_lookup (const jag_hash_t *t, const char *key);
 int jag_hash_insert (jag_hash_t *t, const char *key, const char *val );
 int jag_hash_delete (jag_hash_t *t, const char * key, bool freeval=true );
 
-int jag_hash_insert_str_void(jag_hash_t *htabptr, const char *key, void *value );
+int jag_hash_insert_str_voidptr(jag_hash_t *htabptr, const char *key, void *value );
 
 int jag_hash_insert_int_int (jag_hash_t *t, int key, int val );
 bool jag_hash_lookup_int_int (const jag_hash_t *t, int key, int *val );
+int jag_hash_delete_int (jag_hash_t *t, int key );
 
 int jag_hash_insert_str_int (jag_hash_t *t, const char *key, int val );
 bool jag_hash_lookup_str_int (const jag_hash_t *t, const char *key, int *val );

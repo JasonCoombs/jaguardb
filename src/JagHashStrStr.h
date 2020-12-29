@@ -41,6 +41,7 @@ class JagHashStrStr
 		Jstr getKeyStrings( const char *sep = "|" );
 		int  size(); // how many items
 		void removeAllKey();
+		void clean();
 
 
 	protected:

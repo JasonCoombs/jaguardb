@@ -28,8 +28,8 @@
 #include <JagDiskArrayBase.h>
 #include <JagBuffBackReader.h>
 
-JagBuffBackReader::JagBuffBackReader( const JagDiskArrayBase *darr, abaxint readlen, abaxint keylen, abaxint vallen, abaxint end, 
-	abaxint headoffset, abaxint bufferSize )  : _darr( darr )
+JagBuffBackReader::JagBuffBackReader( JagDiskArrayBase *darr, jagint readlen, jagint keylen, jagint vallen, jagint end, 
+	jagint headoffset, jagint bufferSize )  : _darr( darr )
 {
 	KEYLEN = keylen; 
 	VALLEN = vallen;
@@ -45,7 +45,7 @@ JagBuffBackReader::JagBuffBackReader( const JagDiskArrayBase *darr, abaxint read
 	_headoffset = headoffset;
 	_end = end;
 	_readlen = readlen;
-	_numResize = _darr->_numOfResizes;
+	// _numResize = _darr->_numOfResizes;
 	_elements = getNumBlocks( KEYVALLEN, bufferSize )*JAG_BLOCK_SIZE;
 	if ( KEYVALLEN > 100000 ) { _elements = 2; } // for tables with large kvlen
 	
@@ -67,7 +67,7 @@ JagBuffBackReader::JagBuffBackReader( const JagDiskArrayBase *darr, abaxint read
 	}
 	
 	_superbuf = NULL;
-	raydebug( stdout, JAG_LOG_HIGH, "s2280 bufbckrdr _elements=%l mem=%l\n", _elements, _elements * (abaxint)KEYVALLEN );
+	raydebug( stdout, JAG_LOG_HIGH, "s2280 bufbckrdr _elements=%l mem=%l\n", _elements, _elements * (jagint)KEYVALLEN );
 	_superbuf = (char*)jagmalloc( _elements*KEYVALLEN );
 	while ( !_superbuf ) {
 		_elements = _elements/2;
@@ -78,7 +78,7 @@ JagBuffBackReader::JagBuffBackReader( const JagDiskArrayBase *darr, abaxint read
 		}
 	}
 	memset( _superbuf, 0, KEYVALLEN );
-	//raydebug( stdout, JAG_LOG_HIGH, "s3829 bufbckrdr _elements=%l mem=%l\n", _elements, _elements * (abaxint)KEYVALLEN );
+	//raydebug( stdout, JAG_LOG_HIGH, "s3829 bufbckrdr _elements=%l mem=%l\n", _elements, _elements * (jagint)KEYVALLEN );
 }
 
 JagBuffBackReader::~JagBuffBackReader()
@@ -91,11 +91,11 @@ JagBuffBackReader::~JagBuffBackReader()
 	}
 }
 
-abaxint JagBuffBackReader::getNumBlocks( abaxint kvlen, abaxint bufferSize )
+jagint JagBuffBackReader::getNumBlocks( jagint kvlen, jagint bufferSize )
 {
-	abaxint num = 4096;
-	abaxint bytes = num*kvlen*JAG_BLOCK_SIZE;
-	abaxint maxmb = 32;
+	jagint num = 4096;
+	jagint bytes = num*kvlen*JAG_BLOCK_SIZE;
+	jagint maxmb = 32;
 
 	if ( bufferSize > 0 ) {
 		maxmb = bufferSize;
@@ -113,16 +113,16 @@ abaxint JagBuffBackReader::getNumBlocks( abaxint kvlen, abaxint bufferSize )
 
 bool JagBuffBackReader::getNext( char *buf )
 {
-	abaxint pos;
+	jagint pos;
 	return getNext( buf, KEYVALLEN, pos );
 }
 
-bool JagBuffBackReader::getNext( char *buf, abaxint &i )
+bool JagBuffBackReader::getNext( char *buf, jagint &i )
 {
 	return getNext( buf, KEYVALLEN, i );
 }
 
-bool JagBuffBackReader::getNext( char *buf, abaxint len, abaxint &i )
+bool JagBuffBackReader::getNext( char *buf, jagint len, jagint &i )
 {
 	if ( !_darr ) {
 		// prt(("e8394 error read buffer darr empty\n"));
@@ -137,9 +137,10 @@ bool JagBuffBackReader::getNext( char *buf, abaxint len, abaxint &i )
 		return false;
 	}
 	
-	abaxint rc;
+	jagint rc;
     if ( -1 == _lastSuperBlock ) { // first time read
-		if ( _dolock ) { _darr->_memLock->readLock( -1 ); }	
+		// if ( _dolock ) { _darr->_memLock->readLock( -1 ); }	
+		//if ( _dolock ) { pthread_rwlock_rdlock(&_darr->_memLock); }
 		/***
 		if ( _numResize != _darr->_numOfResizes ) {
 			if ( !_readAll ) { // if file has been resized and buffreader request is not all data, stop reading
@@ -158,7 +159,8 @@ bool JagBuffBackReader::getNext( char *buf, abaxint len, abaxint &i )
 		}
 		rc = jdfpread( _darr->_jdfs, _superbuf, _curBlockElements*KEYVALLEN, (_end-_curBlockElements)*KEYVALLEN+_headoffset );
 		// prt(("s3000 raypread rc=%lld\n", rc ));
-		if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+		//if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+		//if ( _dolock ) { pthread_rwlock_unlock(&_darr->_memLock); }
 
 		if ( rc <= 0 ) { 
 			// no valid bytes read from file
@@ -176,9 +178,9 @@ bool JagBuffBackReader::getNext( char *buf, abaxint len, abaxint &i )
     return true;
 }
 
-bool JagBuffBackReader::findNonblankElement( char *buf, abaxint &i )
+bool JagBuffBackReader::findNonblankElement( char *buf, jagint &i )
 {
-	abaxint rc;
+	jagint rc;
 	while ( 1 ) {
 		if ( _relpos >= 0 ) {
 			// current block is not reach to the end
@@ -201,12 +203,14 @@ bool JagBuffBackReader::findNonblankElement( char *buf, abaxint &i )
 			_relpos = 0;
 			++ _lastSuperBlock;
 
-			if ( _dolock ) { _darr->_memLock->readLock( -1 ); }
+			//if ( _dolock ) { _darr->_memLock->readLock( -1 ); }
+			//if ( _dolock ) { pthread_rwlock_rdlock(&_darr->_memLock); }
 			// check to see if more data needed to be read
 			rc = _readlen-_lastSuperBlock*_elements;
 			if ( rc <= 0 ) {
 				// reach the end of read range
-				if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+				//if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+				//if ( _dolock ) { pthread_rwlock_unlock(&_darr->_memLock); }
 				return false;
 			} else if ( rc < _elements ) {
 				_curBlockElements = rc;
@@ -215,7 +219,8 @@ bool JagBuffBackReader::findNonblankElement( char *buf, abaxint &i )
 			}
 			rc = jdfpread( _darr->_jdfs, _superbuf, _curBlockElements*KEYVALLEN, (_end-_lastSuperBlock*_elements-_curBlockElements)*KEYVALLEN+_headoffset );
 			// prt(("s3002 raypread rc=%lld\n", rc ));
-			if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+			//if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+			//if ( _dolock ) { pthread_rwlock_unlock(&_darr->_memLock); }
 						
 			if ( rc <= 0 ) {
 				// no valid bytes read from file
@@ -273,21 +278,23 @@ bool JagBuffBackReader::setRestartPos()
 }
 
 // method to move back block buffer to position where stored by setRestartPos
-bool JagBuffBackReader::getRestartPos()
+bool JagBuffBackReader::moveToRestartPos()
 {
 	if ( !_setRestartPos ) return false;
 	// move back to stored position
 	// if super block counts are the same, simple move _relpos is enough
 	// otherwise, read the super block again
-	abaxint rc;
+	jagint rc;
 	if ( _stlastSuperBlock >= _lastSuperBlock ) {
 		_relpos = _strelpos;
 	} else {
-		if ( _dolock ) { _darr->_memLock->readLock( -1 ); }
+		//if ( _dolock ) { _darr->_memLock->readLock( -1 ); }
+		//if ( _dolock ) { pthread_rwlock_rdlock(&_darr->_memLock); }
 		rc = _readlen-_stlastSuperBlock*_elements;
 		if ( rc <= 0 ) {
 			// reach the end of read range
-			if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+			//if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+			//if ( _dolock ) { pthread_rwlock_unlock(&_darr->_memLock); }
 			_setRestartPos = 0;
 			return false;
 		} else if ( rc < _elements ) {
@@ -296,7 +303,8 @@ bool JagBuffBackReader::getRestartPos()
 			_curBlockElements = _elements;
 		}
 		rc = jdfpread( _darr->_jdfs, _superbuf, _curBlockElements*KEYVALLEN, (_end-_stlastSuperBlock*_elements-_curBlockElements)*KEYVALLEN+_headoffset );
-		if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+		//if ( _dolock ) { _darr->_memLock->readUnlock( -1 ); }
+		//if ( _dolock ) { pthread_rwlock_unlock(&_darr->_memLock); }
 		if ( rc <= 0 ) {
 			// no valid bytes read from file
 			_setRestartPos = 0;

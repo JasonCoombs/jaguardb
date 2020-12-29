@@ -34,18 +34,18 @@ class JagFixHashArray
 		~JagFixHashArray();
 
 		bool insert( const char* newpair );
-		bool exist( const char *pair, abaxint *index );
+		bool exist( const char *pair, jagint *index );
 		bool remove( const char* pair );
 		void removeAll();
 		bool get( char *pair ); 
 		bool get( const char *key, char *val ); 
 		bool set( const char *pair ); 
 		void destroy();
-		abaxint size() const { return _arrlen; }
-		abaxint arrayLength() const { return _arrlen; }
+		jagint size() const { return _arrlen; }
+		jagint arrayLength() const { return _arrlen; }
 		const char* array() const { return (const char*)_arr; }
-		abaxint elements() { return _elements; }
-		bool isNull( abaxint i ) const;
+		jagint elements() { return _elements; }
+		bool isNull( jagint i ) const;
 		void print() const;
 
 	protected:
@@ -58,21 +58,21 @@ class JagFixHashArray
 		void 	reAllocDistributeShrink();
 		void 	reDistributeShrink();
 
-		abaxint	hashKey( const char *key, abaxint arrlen ) const;
-    	inline abaxint 	probeLocation( abaxint hc, const char *arr, abaxint arrlen );
-    	inline abaxint 	findProbedLocation( const char *search, abaxint hc ) ;
-    	inline void 	findCluster( abaxint hc, abaxint *start, abaxint *end );
-    	inline abaxint 	prevHC ( abaxint hc, abaxint arrlen );
-    	inline abaxint 	nextHC( abaxint hc, abaxint arrlen );
-		inline abaxint  hashLocation( const char *pair, const char *arr, abaxint arrlen );
-		inline void 	rehashCluster( abaxint hc );
-		inline bool 	aboveq( abaxint start, abaxint end, abaxint birthhc, abaxint nullbox );
+		jagint	hashKey( const char *key, jagint arrlen ) const;
+    	inline jagint 	probeLocation( jagint hc, const char *arr, jagint arrlen );
+    	inline jagint 	findProbedLocation( const char *search, jagint hc ) ;
+    	inline void 	findCluster( jagint hc, jagint *start, jagint *end );
+    	inline jagint 	prevHC ( jagint hc, jagint arrlen );
+    	inline jagint 	nextHC( jagint hc, jagint arrlen );
+		inline jagint  hashLocation( const char *pair, const char *arr, jagint arrlen );
+		inline void 	rehashCluster( jagint hc );
+		inline bool 	aboveq( jagint start, jagint end, jagint birthhc, jagint nullbox );
 
 		char   		*_arr;
-		abaxint  	 _arrlen;
+		jagint  	 _arrlen;
 		char   		*_newarr;
-		abaxint  	 _newarrlen;
-		abaxint  	    _elements;
+		jagint  	 _newarrlen;
+		jagint  	    _elements;
 		static const int _GEO  = 2;	 // fixed
 };
 

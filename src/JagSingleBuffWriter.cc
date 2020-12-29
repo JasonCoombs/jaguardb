@@ -22,34 +22,55 @@
 #include <JagUtil.h>
 #include <JagCfg.h>
 #include <JagDef.h>
+#include <JagCompFile.h>
 
-JagSingleBuffWriter::JagSingleBuffWriter( int fd, int kvlen, abaxint bufferSize )
+JagSingleBuffWriter::JagSingleBuffWriter( JagCompFile *compf, int kvlen, jagint bufferSize )
 {
 	KVLEN = kvlen;
-	_fd = fd;
+	_compf = compf;
 	_superbuf = NULL;
-	if ( _fd < 0 ) { return; }
-
-	if ( bufferSize == -1 ) {
-		bufferSize = 128;
+	if ( ! _compf ) { 
+		prt(("s502348 JagSingleBuffWriter ctor1 return\n"));
+		return; 
 	}
-	SUPERBLOCK = bufferSize*1024*1024/KVLEN/JagCfg::_BLOCK*JagCfg::_BLOCK;
-	SUPERBLOCKLEN = SUPERBLOCK * KVLEN;
-	/***
-	if ( SUPERBLOCKLEN > 512*1024*1024 ) {
-		SUPERBLOCK = (512*1024*1024)/KVLEN;
-		SUPERBLOCKLEN = SUPERBLOCK * KVLEN;
-	}
-	***/
+	_fd = 1;
 
-	//raydebug( stdout, JAG_LOG_HIGH, "s2829 sigbufwtr SUPERBLOCKLEN=%l ...\n", SUPERBLOCKLEN );
-	_superbuf = (char*) jagmalloc( SUPERBLOCKLEN );
-	//raydebug( stdout, JAG_LOG_HIGH, "s2829 sigbufwtr SUPERBLOCKLEN=%l done\n", SUPERBLOCKLEN );
-	_lastSuperBlock = -1;
-	_relpos = -1;
-
-	memset( _superbuf, 0, SUPERBLOCKLEN );
+	init( kvlen, bufferSize );
 }
+
+JagSingleBuffWriter::JagSingleBuffWriter( int fd, int kvlen, jagint bufferSize )
+{
+    _fd = fd;
+    _superbuf = NULL;
+    if ( _fd < 0 ) { 
+		prt(("s502358 JagSingleBuffWriter ctor2 return\n"));
+		return; 
+	}
+	_compf = nullptr;
+
+	init( kvlen, bufferSize );
+}
+
+void JagSingleBuffWriter::init( int kvlen, jagint bufferSize )
+{
+    KVLEN = kvlen;
+    if ( bufferSize == -1 ) {
+        //bufferSize = 128;
+        bufferSize = 32;
+    }
+
+	prt(("s81029 init kvlen=%d bufferSize=%d\n", kvlen, bufferSize ));
+
+    SUPERBLOCK = bufferSize*1024*1024/KVLEN/JagCfg::_BLOCK*JagCfg::_BLOCK;
+    SUPERBLOCKLEN = SUPERBLOCK * KVLEN;
+    _superbuf = (char*) jagmalloc( SUPERBLOCKLEN );
+    _lastSuperBlock = -1;
+    _relpos = -1;
+	prt(("s12876 _superbuf SUPERBLOCKLEN=%d\n", SUPERBLOCKLEN ));
+
+    memset( _superbuf, 0, SUPERBLOCKLEN );
+}
+
 
 JagSingleBuffWriter::~JagSingleBuffWriter()
 {
@@ -57,7 +78,7 @@ JagSingleBuffWriter::~JagSingleBuffWriter()
 		free( _superbuf );
 		_superbuf = NULL;
 		jagmalloc_trim( 0 );
-		raydebug( stdout, JAG_LOG_HIGH, "s2829 sigbufwtr SUPERBLOCKLEN=%l dtor\n", SUPERBLOCKLEN );
+		//raydebug( stdout, JAG_LOG_HIGH, "s2829 sigbufwtr SUPERBLOCKLEN=%l dtor\n", SUPERBLOCKLEN );
 	}
 }
 
@@ -77,33 +98,52 @@ void JagSingleBuffWriter::resetKVLEN( int newkvlen )
 }
 ***/
 
-void JagSingleBuffWriter::writeit( abaxint pos, const char *keyvalbuf, abaxint KVLEN )
+// pos is not absolute position, it is index, increamented one by one. position is pos*KVLEN
+void JagSingleBuffWriter::writeit( jagint pos, const char *keyvalbuf, jagint KVLEN )
 {
-	_relpos = pos % SUPERBLOCK;  // elements
-	abaxint rc; 
+	//prt(("s33222 JagSingleBuffWriter::writeit pos=%d keyvalbuf=[%s] KVLEN=%d ...\n", pos, keyvalbuf, KVLEN));
+	_relpos = pos % SUPERBLOCK;  // relative positon inside a superblock (SUPERBLOCKLEN = SUPERBLOCK * KVLEN)
+	jagint rc; 
 	int newBlock = pos / SUPERBLOCK;
 	if ( -1 == _lastSuperBlock ) {
 		memcpy( _superbuf+_relpos*KVLEN, keyvalbuf, KVLEN );
+		//prt(("s239311 memcpy[%s] to _superbuf at location=%d _relpos*KVLEN=%d\n", keyvalbuf, _relpos, _relpos*KVLEN ));
 		_lastSuperBlock = newBlock;
 		return;
 	}
 
 	if ( newBlock == _lastSuperBlock ) {
 		memcpy( _superbuf+_relpos*KVLEN, keyvalbuf, KVLEN );
+		//prt(("s239313 memcpy[%s] to _superbuf at location=%d _relpos*KVLEN=%d\n", keyvalbuf, _relpos, _relpos*KVLEN ));
 		return;
-	} else { // moved to new block, flush old block
+	} 
+
+	// moved to new block, flush old block
+	// rc = raysafepwrite( _compf, _superbuf, SUPERBLOCKLEN, _lastSuperBlock*SUPERBLOCKLEN );
+	if ( _compf ) {
+		//prt(("s440293 _compf->pwrite ...\n"));
+		rc = _compf->pwrite( _superbuf, SUPERBLOCKLEN, _lastSuperBlock*SUPERBLOCKLEN );
+	} else {
+		//prt(("s440294 raysafepwrite _fd=%d ...\n", _fd ));
 		rc = raysafepwrite( _fd, _superbuf, SUPERBLOCKLEN, _lastSuperBlock*SUPERBLOCKLEN );
-		memset( _superbuf, 0, SUPERBLOCKLEN );
-		memcpy( _superbuf+_relpos*KVLEN, keyvalbuf, KVLEN );
-		_lastSuperBlock = newBlock;
-		return;
 	}
+
+	memset( _superbuf, 0, SUPERBLOCKLEN );
+	memcpy( _superbuf+_relpos*KVLEN, keyvalbuf, KVLEN );
+	_lastSuperBlock = newBlock;
+	return;
 }
 
 void JagSingleBuffWriter::flushBuffer()
 {
 	if ( _lastSuperBlock == -1 ) { return; }
-	abaxint rc = raysafepwrite( _fd, _superbuf, (_relpos+1)*KVLEN, _lastSuperBlock*SUPERBLOCKLEN );
+	//jagint rc = raysafepwrite( _compf, _superbuf, (_relpos+1)*KVLEN, _lastSuperBlock*SUPERBLOCKLEN );
+	if ( _compf ) {
+		_compf->pwrite( _superbuf, (_relpos+1)*KVLEN, _lastSuperBlock*SUPERBLOCKLEN );
+	} else {
+		//prt(("s322287 flushBuffer _relpos+1=%d _lastSuperBlock=%d \n", _relpos+1, _lastSuperBlock ));
+		raysafepwrite( _fd, _superbuf, (_relpos+1)*KVLEN, _lastSuperBlock*SUPERBLOCKLEN );
+	}
 	_lastSuperBlock = -1;
 	_relpos = -1;
 	return;

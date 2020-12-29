@@ -63,9 +63,9 @@ Jstr JagNet::getLocalHost()
 //////// rayconnect
 JAGSOCK rayconnect( const char *host, unsigned int port, int timeoutsecs, bool errPrint )
 {
-	int  rc, len;
-	struct  hostent *serv;
-	struct sockaddr_in serv_addr;
+	//int  rc, len;
+	//struct  hostent *serv;
+	//struct sockaddr_in serv_addr;
 	if ( 0 == strcmp( host, "localhost" ) ) {
 		host = "127.0.0.1";
 	}
@@ -114,7 +114,7 @@ JAGSOCK JagNet::connect2Host( const char *host, short port, int timeoutsecs, boo
 
 	char    ip[64];
 	memset( ip, 0, 64 );
-	getIPFromHostName( host, ip );
+	_getIPFromHostName( host, ip );
 	if ( strlen( ip ) < 1 ) {
 		return INVALID_SOCKET;
 	}
@@ -181,8 +181,8 @@ void JagNet::getLocalIPs( JagVector<Jstr> &vec )
 // new
 JAGSOCK JagNet::connect2Host( const char *host, short port, int timeoutsecs, bool errPrint )
 {
-	struct  hostent *serv;
-	struct 	sockaddr_in serv_addr;
+	//struct  hostent *serv;
+	//struct 	sockaddr_in serv_addr;
     JAGSOCK 	sockfd;
     struct addrinfo hints, *servinfo, *p;
     int     rv;
@@ -190,7 +190,7 @@ JAGSOCK JagNet::connect2Host( const char *host, short port, int timeoutsecs, boo
 
 	char    ip[64];
 	memset( ip, 0, 64 );
-	getIPFromHostName( host, ip );
+	_getIPFromHostName( host, ip );
 	// printf("s3092 host=[%s] ip=[%s]\n", host, ip );
 	if ( strlen( ip ) < 1 ) {
 		return -1;
@@ -372,7 +372,7 @@ int connectWithTimeout(JAGSOCK sockfd, const struct sockaddr *addr, socklen_t ad
 {
 	// printf("c2939 connectWithTimeout timeoutmillisec=%d\n", timeoutmillisec );
 
-	abaxint arg;
+	//jagint arg;
 	int res, valopt, lon=sizeof(int);
 
 	JagNet::socketNonBlocking( sockfd );
@@ -470,7 +470,7 @@ int connectWithTimeout(JAGSOCK sockfd, const struct sockaddr *addr, socklen_t ad
 	return 0;
 }
 // get network reads and writes
-int JagNet::getNetStat( uabaxint & reads, uabaxint &writes )
+int JagNet::getNetStat( jaguint & reads, jaguint &writes )
 {
     reads = writes = 0;
     DWORD dwRetval;
@@ -499,7 +499,7 @@ int JagNet::getNetStat( uabaxint & reads, uabaxint &writes )
 #ifndef _WINDOWS64_
 // Linux
 // get network reads and writes
-int JagNet::getNetStat( uabaxint & reads, uabaxint &writes )
+int JagNet::getNetStat( jaguint & reads, jaguint &writes )
 {
     reads = writes = 0;
     FILE *fp = fopen( "/proc/net/dev", "rb" );
@@ -520,7 +520,7 @@ int JagNet::getNetStat( uabaxint & reads, uabaxint &writes )
 }
 void JagNet::socketNonBlocking( JAGSOCK sockfd )
 {
-	abaxint arg;
+	jagint arg;
 	// Set to non-blocking 
 	arg = fcntl(sockfd, F_GETFL, NULL); 
 	arg |= O_NONBLOCK; 
@@ -528,7 +528,7 @@ void JagNet::socketNonBlocking( JAGSOCK sockfd )
 }
 void JagNet::socketBlocking( JAGSOCK sockfd )
 {
-	abaxint arg;
+	jagint arg;
 	// Set to blocking 
 	arg = fcntl(sockfd, F_GETFL, NULL); 
 	arg ^= O_NONBLOCK; 
@@ -601,7 +601,7 @@ int JagNet::getNumTCPConnections()
 #endif
 
 #ifdef _WINDOWS64_
-void  JagNet::setRecvSndTimeOut( JAGSOCK sock, int dtimeout, int cliservSameProcess  )
+void  JagNet::setRecvSendTimeOut( JAGSOCK sock, int dtimeout, int cliservSameProcess  )
 {
 	DWORD tv;
     struct linger so_linger;
@@ -616,7 +616,7 @@ void  JagNet::setRecvSndTimeOut( JAGSOCK sock, int dtimeout, int cliservSameProc
     setsockopt( sock, SOL_SOCKET, SO_LINGER, (CHARPTR)&so_linger, sizeof(so_linger) );
 }
 #else
-void  JagNet::setRecvSndTimeOut( JAGSOCK sock, int dtimeout, int cliservSameProcess  )
+void  JagNet::setRecvSendTimeOut( JAGSOCK sock, int dtimeout, int cliservSameProcess  )
 {
     struct timeval tv;
     struct linger so_linger;
@@ -634,7 +634,7 @@ void  JagNet::setRecvSndTimeOut( JAGSOCK sock, int dtimeout, int cliservSameProc
 #endif
 
 // 1: OK  0: error
-void JagNet::getIPFromHostName( const char *hostname, char *ip )
+void JagNet::_getIPFromHostName( const char *hostname, char *ip )
 {
    	strcpy( ip, hostname );
 	if ( atoi( hostname ) > 0 ) {
@@ -701,9 +701,13 @@ void JagNet::getIPFromEtcFile( const char *hostname, char *ip )
 
 Jstr JagNet::getIPFromHostName( const Jstr &hostname )
 {
+	if ( isIPAddress( hostname ) ) {
+		return hostname;
+	}
+
 	char buf[64];
 	memset( buf, 0, 64 );
-	getIPFromHostName( hostname.c_str(), buf );
+	_getIPFromHostName( hostname.c_str(), buf );
 	return buf;
 }
 
@@ -712,7 +716,7 @@ Jstr JagNet::getIPFromHostName( const Jstr &hostname )
 // Linux
 // int  JagNet::acceptTimeOut( JAGSOCK sock, (struct sockaddr *)&cliaddr, ( socklen_t* )&clilen);
 // return -9999 for timeout; else rc from accept
-JAGSOCK JagNet::acceptTimeout( JAGSOCK sock, struct sockaddr *pcliaddr, socklen_t* pclilen, abaxint thrdgrp, int timeOutseconds )
+JAGSOCK JagNet::acceptTimeout( JAGSOCK sock, struct sockaddr *pcliaddr, socklen_t* pclilen, jagint thrdgrp, int timeOutseconds )
 {
 	int connfd = 0;
 	if ( 0 == thrdgrp ) {
@@ -749,9 +753,49 @@ JAGSOCK JagNet::acceptTimeout( JAGSOCK sock, struct sockaddr *pcliaddr, socklen_
 }
 #else
 // Windows
-JAGSOCK JagNet::acceptTimeout( JAGSOCK sock, struct sockaddr *pcliaddr, socklen_t* pclilen, abaxint thrdGroup, int timeOutseconds )
+JAGSOCK JagNet::acceptTimeout( JAGSOCK sock, struct sockaddr *pcliaddr, socklen_t* pclilen, jagint thrdGroup, int timeOutseconds )
 {
 	return accept( sock, pcliaddr, pclilen);
 }
 #endif
 **********/
+
+
+// if "eedd:03c3:2b6f:2d90::338c"  >= 4 ':', it is IP V6 address
+// else
+//	if contains "d.d.d.d" it is IPV4   d is [0-9]
+//  else
+//	    false
+bool JagNet::isIPAddress( const Jstr &hoststr )
+{
+	if ( hoststr.size() < 1 ) return false;
+	const char *p;
+	bool isIPV6 = true;
+	int numSeps = 0;
+	for ( p = hoststr.s(); *p != '\0'; ++p ) {
+		if ( *p == ':' || ( '0' <= *p && *p <= '9' ) || ( 'a' <= *p && *p <= 'f') ) {
+			if ( *p == ':' ) ++numSeps;
+		} else {
+			isIPV6 = false;
+			break;
+		}
+	}
+
+	if ( isIPV6 && ( numSeps >= 4  ) ) return true;
+
+	// check if it is IPV4
+	bool isIPV4 = true;
+	numSeps = 0;
+	for ( p = hoststr.s(); *p != '\0'; ++p ) {
+		if ( *p == '.' || ( '0' <= *p && *p <= '9' ) ) {
+			if ( *p == '.' ) ++numSeps;
+		} else {
+			isIPV4 = false;
+			break;
+		}
+	}
+
+	if ( isIPV4 && ( 3 == numSeps ) ) return true;
+
+	return false;
+}

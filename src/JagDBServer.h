@@ -20,11 +20,14 @@
 #define _raydb_server_h_
 
 #include <atomic>
+//#include <mutex>
 #include <abax.h>
 #include <JagHashMap.h>
-#include <JagThreadPool.h>
 #include <JagArray.h>
 #include <JagSystem.h>
+#include <JagMutexMap.h>
+#include <JagWalMap.h>
+#include <JagHashIntInt.h>
 
 class JagKeyChecker;
 class JagTable;
@@ -38,13 +41,13 @@ class JagIndexSchema;
 class JagCfg;
 class JagUserID;
 class JagUserRole;
-class JagReadWriteLock;
+//class JagReadWriteLock;
 class JagBlockLock;
 class JagHashLock;
 class JagServerObjectLock;
 class JagRequest;
 class JagSession;
-class JDFSMgr;
+class JagFSMgr;
 class JaguarAPI;
 class JagDataAggregate;
 class JagUUID;
@@ -53,6 +56,7 @@ class JagDBConnector;
 class JagStrSplitWithQuote;
 class JagIPACL;
 class JagDBLogger;
+class JagMergeReader;
 
 template <class Pair> class JagVector;
 
@@ -60,30 +64,28 @@ class JagDBServer
 {
   public:
 
-	void objectCountTesting( JagParseParam &parseParam );
-  
 	JagDBServer();
 	~JagDBServer();
 	void init( JagCfg *cfg );
 	void destroy();
-    int main(int argc, char**argv);
+    int  main(int argc, char**argv);
     void sig_int(int sig);
     void sig_hup(int sig);
 
 	int processSignal( int signal );
 	int getReplicateStatusMode( char *pmesg, int replicateType=-1 );
 	int fileTransmit( const Jstr &host, unsigned int port, const Jstr &passwd, 
-		const Jstr &unixSocket, int mode, const Jstr &fpath, int isAddCluster );
+					  const Jstr &unixSocket, int mode, const Jstr &fpath, int isAddCluster );
 	int checkDeltaFileStatus();	
 	void organizeCompressDir( int mode, Jstr &fpath );
-	void crecoverRefreshSchema( int mode );
+	void crecoverRefreshSchema( int mode, bool restoreInsertBuffer = false );
 	void recoveryFromTransferredFile();
 	void onlineRecoverDeltaLog();
 	void requestSchemaFromDataCenter();
-	Jstr getBroadCastRecoverHosts( int replicateCopy );
+	Jstr getBroadcastRecoverHosts( int replicateCopy );
 
 	
-	// "_" server cmds
+	// "_xxx" server cmds
 	void sendMapInfo( const char *pmesg, const JagRequest &req );
 	void sendHostInfo( const char *pmesg, const JagRequest &req );
 	void checkDeltaFiles( const char *mesg, const JagRequest &req );
@@ -109,20 +111,23 @@ class JagDBServer
 	void processRestoreRemote( const char *pmesg, const JagRequest &req );
 	void repairCheck( const char *pmesg, const JagRequest &req );
 	void addCluster( const char *pmesg, const JagRequest &req );
+	void addClusterMigrate( const char *pmesg, const JagRequest &req );
+	void addClusterMigrateContinue( const char *pmesg, const JagRequest &req );
+	void addClusterMigrateComplete( const char *pmesg, const JagRequest &req );
+	void importTableDirect( const char *pmesg, const JagRequest &req );
+	void truncateTableDirect( const char *pmesg, const JagRequest &req );
 	void sendSchemaToDataCenter( const char *mesg, const JagRequest &req );
 	void unpackSchemaInfo( const char *mesg, const JagRequest &req );
 	void askDataFromDC( const char *mesg, const JagRequest &req );
 	void prepareDataFromDC( const char *mesg, const JagRequest &req );
 	void shutDown( const char *pmesg, const JagRequest &req );
+	static void makeNeededDirectories();
 
 	void joinRequestSend( const char *pmesg, const JagRequest &req );
 	void reconnectDataCenter( const Jstr &ip, bool doLock = true );
 	bool dbExist( const Jstr &dbName, int replicateType );
 	bool objExist( const Jstr &dbname, const Jstr &objName, int replicateType );
-	
 
-
-	// data members
 	JagUserID   	*_userDB;
 	JagUserID   	*_prevuserDB;
 	JagUserID   	*_nextuserDB;
@@ -135,18 +140,15 @@ class JagDBServer
 	JagIndexSchema *_previndexschema;
 	JagTableSchema *_nexttableschema;
 	JagIndexSchema *_nextindexschema;
-	// maps
-	// JagHashMap<AbaxLong,AbaxLong> *_threadMap;
 	JagHashMap<AbaxLong,AbaxString> *_taskMap;
 	JagHashMap<AbaxString, AbaxPair<AbaxPair<AbaxLong, AbaxPair<AbaxLong, AbaxLong>>, AbaxPair<JagDBPair, AbaxPair<AbaxBuffer, AbaxPair<AbaxBuffer, AbaxBuffer>>>>> *_joinMap;
-	JagHashMap<AbaxString, abaxint> *_internalHostNum;
+	JagHashMap<AbaxString, jagint> *_internalHostNum;
 	JagHashMap<AbaxString, AbaxInt> *_scMap;
-	// atomic
-	std::atomic<abaxint>    numSelects;
-	std::atomic<abaxint>    numInserts;
-	std::atomic<abaxint>    numUpdates;
-	std::atomic<abaxint>    numDeletes;
-	std::atomic<abaxint>    numInInsertBuffers;
+	std::atomic<jagint>    numSelects;
+	std::atomic<jagint>    numInserts;
+	std::atomic<jagint>    numUpdates;
+	std::atomic<jagint>    numDeletes;
+	std::atomic<jagint>    numInInsertBuffers;
 	std::atomic<int>	 _exclusiveAdmins;
 	std::atomic<int>     _doingRemoteBackup;
 	std::atomic<int>     _doingRestoreRemote;
@@ -154,88 +156,86 @@ class JagDBServer
 	std::atomic<int>	 _restartRecover;
 	std::atomic<int>	 _addClusterFlag;
 	std::atomic<int>	 _newdcTrasmittingFin;
-	// int, bool, abaxint, datastring, etc.
 	int			_nthServer;
 	int			_numPrimaryServers;
 	int 		_hashRebalanceFD;
 	int			_port;
 	int			_flushWait;
-	// int         _insertSyncPeriod;
 	int         _dumfd;
 	int         _beginAddServer;
 	int			_faultToleranceCopy;
 	int			_isSSD;
 	int			_memoryMode;
 	int			servtimediff;
-	abaxint		_connections;
-	abaxint		_sea_records_limit;
-	abaxint		_jdbMonitorTimedoutPeriod;
-	abaxint		_hashRebalanceLen;
-	uabaxint		_xferInsert;
+	jagint		_connections;
+	//jagint		_sea_records_limit;
+	jagint		_jdbMonitorTimedoutPeriod;
+	jagint		_hashRebalanceLen;
+	jaguint		_xferInsert;
 	Jstr		_version;
 	Jstr		_localInternalIP;
 	Jstr	    _listenIP;
-	Jstr      _perfFile;
-	Jstr      _servToken;
-	static  Jstr	_allLockToken;
-	// other members
+	Jstr      	_perfFile;
+	Jstr      	_servToken;
 	JagCfg				*_cfg;
-	JDFSMgr				*jdfsMgr;
+	JagFSMgr			*jdfsMgr;
 	JagUUID				*_jagUUID;
 	JagDBConnector		*_dbConnector;
-	JaguarThreadPool    *_parsePool;
-	JaguarThreadPool    *_selectPool;
 
 	// locks
 	JagServerObjectLock *_objectLock;
-	JagHashLock    *_createIndexLock;
-	JagHashLock    *_tableUsingLock;
 	JagSystem       _jagSystem;
-   	static pthread_mutex_t  g_dbmutex;
+   	static pthread_mutex_t  g_dbschemamutex;
+	//std::mutex     g_dbschemamutex;
+
    	static pthread_mutex_t  g_flagmutex;
    	static pthread_mutex_t  g_logmutex;
    	static pthread_mutex_t  g_dlogmutex;
    	static pthread_mutex_t  g_dinsertmutex;
    	static pthread_mutex_t  g_datacentermutex;
-   	static pthread_mutex_t  g_selectmutex;
-	int             _isGate;
-	int             _isProxy;
-	abaxint   _curClusterNumber;
-	abaxint   _totalClusterNumber;
-	int	      _numCPUs;
+   	pthread_mutex_t  		g_dbconnectormutex;
+
+	int         _isGate;
+	int         _isProxy;
+	jagint   	_curClusterNumber;
+	jagint   	_totalClusterNumber;
+	int	      	_numCPUs;
+	int			_scaleMode;
+
+	JagMutexMap   _walMutexMap;
+	JagWalMap     _walLogMap;
 
   protected:
-  
-	// static methods		
-	static int checkNonStandardCommandValidation( const char *mesg );
-	static int checkSimpleCommandValidation( const char *mesg );
+	static int isValidInternalCommand( const char *mesg );
+	static void processInternalCommands( int op, const JagRequest &req, JagDBServer *servobj, const char *pmesg ); 
+	static int isSimpleCommand( const char *mesg );
 	static int createTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
-		Jstr &reterr, abaxint threadQueryTime );
+							Jstr &reterr, jagint threadQueryTime );
     static int createMemTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
-		Jstr &reterr, abaxint threadQueryTime );
+								Jstr &reterr, jagint threadQueryTime );
 	static int createIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
-		JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, abaxint threadQueryTime );
+							JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, jagint threadQueryTime );
     static int createIndexSchema( const JagRequest &req, JagDBServer *servobj, JagTable* ptab, const Jstr &dbname, 
-		JagParseParam *parseParam, Jstr &reterr );
+							JagParseParam *parseParam, Jstr &reterr );
 	static int dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime );
+							JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime );
 	static int dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime );
+						  JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime );
 	static int truncateTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime );
+							  JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime );
     static int renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-		const JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime, abaxint &thrdSchemaTime );
+							  const JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime, jagint &thrdSchemaTime );
 	static int importTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname,
-		JagParseParam *parseParam, Jstr &reterr );
+							JagParseParam *parseParam, Jstr &reterr );
 	static int doInsert( JagDBServer *servobj, JagRequest &req, JagParseParam &parseParam, Jstr &reterr, const Jstr &oricmd );
-	static int processMultiCmd( JagRequest &req, const char *mesg, abaxint msglen, JagDBServer *servobj, 
-		abaxint &threadSchemaTime, abaxint &threadHostTime, abaxint threadQueryTime, bool redoOnly, int isReadOrWriteCommand );
+	static int processMultiSingleCmd( JagRequest &req, const char *mesg, jagint msglen, 
+									  JagDBServer *servobj, jagint &threadSchemaTime, jagint &threadHostTime, 
+									  jagint threadQueryTime, bool redoOnly, int isReadOrWriteCommand );
 	static int joinObjects( const JagRequest &req, JagDBServer *servobj, JagParseParam *parseParam, Jstr &reterr );
-	static abaxint processCmd( JagRequest &req, JagDBServer *servobj, const char *cmd, 
-		JagParseParam &parseParam, Jstr &rr, abaxint threadQueryTime, abaxint &threadSchemaTime );
-	static bool doAuth ( const JagRequest &req, JagDBServer *servobj, char *pmesg, char *&saveptr, 
-		JagSession &session );
-	static bool useDB( const JagRequest &req, JagDBServer *servobj, char *pmesg, char *&saveptr );
+	static jagint processCmd( JagRequest &req, JagDBServer *servobj, const char *cmd, 
+							  JagParseParam &parseParam, Jstr &rr, jagint threadQueryTime, jagint &threadSchemaTime );
+	static bool doAuth( JagRequest &req, JagDBServer *servobj, char *pmesg );
+	static bool useDB( JagRequest &req, JagDBServer *servobj, char *pmesg );
     static void helpPrintTopic( const JagRequest &req );
     static void helpTopic( const JagRequest &req, const char *topic );
     static void showDatabases(JagCfg *cfg, const JagRequest &req );
@@ -260,13 +260,14 @@ class JagDBServer
     static void describeIndex( const JagParseParam &parseParam, const JagRequest &req, const JagDBServer *servobj, 
 								const JagIndexSchema *indexschema, 
 								const Jstr &dbname, const Jstr &indexName, Jstr &reterr );
-	static void refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj, abaxint &schtime );
+	//static void refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj, jagint &schtime );
+	static void refreshSchemaInfo( int replicateType, JagDBServer *servobj, jagint &schtime );
 	static void sendUpDown( const JagRequest &req, JagDBServer* servobj, const Jstr &dbtab );
 	static void dropAllTablesAndIndexUnderDatabase( const JagRequest &req, JagDBServer* servobj,
 												    JagTableSchema *schema, const Jstr &dbname );
 	static void dropAllTablesAndIndex( const JagRequest &req, JagDBServer* servobj,
 										JagTableSchema *schema );
-	static void addTask(  uabaxint taskID, JagSession *session, const char *mesg );
+	static void addTask(  jaguint taskID, JagSession *session, const char *mesg );
 	static void removeTask( JagDBServer *servobj );
 	static void completeTask( JagDBServer *servobj );
 	static void showTask( const JagRequest &req, JagDBServer *servobj );
@@ -274,30 +275,32 @@ class JagDBServer
 	static void showClusterStatus( const JagRequest &req, JagDBServer *servobj);
 	static void showDatacenter( const JagRequest &req, JagDBServer *servobj);
 	static void showTools( const JagRequest &req, JagDBServer *servobj);
-	static void logCommand( JagSession *session, const char *mesg, abaxint len, int spMode );
-	static void dinsertlogCommand( JagSession *session, const char *mesg, abaxint len );
+	void logCommand( const JagParseParam *ppram, JagSession *session, const char *mesg, jagint len, int spMode );
+	static void dinsertlogCommand( JagSession *session, const char *mesg, jagint len );
 	void deltalogCommand( int mode, JagSession *session, const char *mesg, bool isBatch );
-	static void regSplogCommand( JagSession *session, const char *mesg, abaxint len, int spMode );
+	static void regSplogCommand( JagSession *session, const char *mesg, jagint len, int spMode );
 	static void doCreateIndex( JagTable *ptab, JagIndex *pindex, JagDBServer *servobj );	
-	static void changeDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, abaxint threadQueryTime );
-	static void createDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, abaxint threadQueryTime );
-	static void dropDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, abaxint threadQueryTime );
-	static void createUser( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, abaxint threadQueryTime );
-	static void dropUser( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, abaxint threadQueryTime );
-	static void changePass( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, abaxint threadQueryTime );
+	static void changeDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
+	static void createDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
+	static void dropDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
+	static void createUser( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
+	static void dropUser( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
+	static void changePass( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
 	static void showUsers( const JagRequest &req, JagDBServer *servobj );
-	static void	*threadGroupTask( void *servptr );
+	static void	*oneThreadGroupTask( void *servptr );
    	static void	*oneClientThreadTask( void *passptr );
-   	static void	*makeTableObjects( void *servptr );
+   	static void	*makeTableObjects( void *servptr, bool restoreInsertBuffer = false );
    	static void	*monitorCommandsMem( void *sessionptr );
    	static void	*monitorLog( void *sessionptr );
    	static void	*monitorRemoteBackup( void *sessionptr );
    	static void	*threadRemoteBackup( void *sessionptr );
    	static void	*threadRestoreRemote( void *sessionptr );
-	static void *joinSortStatic( void *ptr );
-	static void *joinSortStatic2( void *ptr );
-	static void *joinHashStatic( void *ptr );
 	static void *joinRequestStatic( void * ptr );
+	static void *doMergeJoinStatic( void *ptr );
+	static void *joinSortStatic2( void *ptr );
+	static void *joinHashMapData( void *ptr );
+	static void hashJoinStaticGetMap( ParallelJoinPass *pass );
+	static void mergeJoinGetData( ParallelJoinPass *pass );
 	static void *copyDataToNewDCStatic( void * ptr );
 	static Jstr getLocalHostIP( JagDBServer *servobj, const Jstr &allhosts );
 	static Jstr getClusterOpInfo( const JagRequest &req, JagDBServer *servobj);
@@ -305,17 +308,24 @@ class JagDBServer
 	void   getDestHostPortType( const Jstr &inLine, Jstr& host, Jstr& port, 
 								Jstr& destType );
 	void printResources();
-	static void grantPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, abaxint threadQueryTime );
-	static void revokePerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parsParam, abaxint thrdQueryTime );
-	static void showPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, abaxint thrdQueryTime );
+	static void grantPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, jagint threadQueryTime );
+	static void revokePerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parsParam, jagint thrdQueryTime );
+	static void showPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, jagint thrdQueryTime );
 	static bool checkUserCommandPermission( JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
 											const JagParseParam &parseParam, int i, Jstr &rowFilter, 
 											Jstr &reterr );
 	static void noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam );
+	static int processSimpleCommand( int simplerc, JagRequest &req, char *pmesg, JagDBServer *servobj, int &authed );
+	static int advanceLeftTable( JagMergeReader *jntr, const JagHashStrInt **maps, char *jbuf[], int numKeys[], jagint sklen[],
+								 const JagSchemaAttribute *attrs[], JagParseParam *pram, const char *buffers[] );
+	static int advanceRightTable( JagMergeReader *jntr, const JagHashStrInt **maps, char *jbuf[], int numKeys[], jagint sklen[],
+								const JagSchemaAttribute *attrs[], JagParseParam *pram, const char *buffers[] );
+
+	static void rePositionMessage( JagRequest &req, char *&pmesg, jagint &len );
 
 
 	// object methods
-	int mainInit(int argc, char**argv);
+	int mainInit();
 	int mainClose();
 	int initObjects();
 	int createSocket( int argc, char *argv[] );
@@ -323,7 +333,7 @@ class JagDBServer
 	int makeThreadGroups( int grps, int grpseq );
 	int eventLoop( const char *port );
 	int copyLocalData( const Jstr &dirname, const Jstr &policy, const Jstr &tmstr, bool show );
-	int schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr &dbobj, abaxint opcode, int isRemove );
+	int schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr &dbobj, jagint opcode, int isRemove );
 	int schemaChangeCommandSyncRemove( const Jstr &dbobj );
 	
 	bool isInteralIP( const Jstr &ip );
@@ -332,17 +342,16 @@ class JagDBServer
 	void checkLicense();
 	void createAdmin();
 	void makeAdmin( JagUserID *uiddb );
-	void doBackup( uabaxint  seq );
+	void doBackup( jaguint  seq );
 	void refreshACL( int bcast );
 	void loadACL( );
-	void checkPoint( uabaxint  seq);
+	void checkPoint( jaguint  seq);
 	void copyData( const Jstr &dirname, bool show=true );
-	void writeLoad( uabaxint  seq );
+	void writeLoad( jaguint  seq );
 	void numDBTables( int &databases, int &tables );
 
 	void resetWalLog();
-	void rotateWalLog();
-	void recoverWalLog( const Jstr &fpath );
+	void recoverWalLog( );
 	void resetDinsertLog();
 	void rotateDinsertLog();
 	void recoverDinsertLog( const Jstr &fpath );
@@ -350,84 +359,74 @@ class JagDBServer
 	void recoverDeltaLog( JagSession *session, bool force=false );
 	void resetRegSpLog();
 	void recoverRegSpLog();
-	void syncLogs();
 	void flushAllBlockIndexToDisk();
 	void removeAllBlockIndexInDisk();
 	void removeAllBlockIndexInDiskAll( const JagTableSchema *tableschema, const char *datapath );
 	void flushOneTableAndRelatedIndexsInsertBuffer( const Jstr &dbobj, int replicateType, int isTable, 
-		JagTable *iptab, JagIndex *ipindex );
+													JagTable *iptab, JagIndex *ipindex );
 	void flushAllTableAndRelatedIndexsInsertBuffer();
-	abaxint redoDinsertLog( const Jstr &fpath );
-	abaxint redoLog( const Jstr &fpath );
-	Jstr getTaskIDsByThreadID( abaxint threadID );
+	jagint redoDinsertLog( const Jstr &fpath );
+	jagint redoLog( const Jstr &fpath );
+	jagint redoLog( FILE *fp, bool isTopLevel );
+	Jstr 	getTaskIDsByThreadID( jagint threadID );
 	JagTableSchema *getTableSchema( int replicateType ) const;
-	void getTableIndexSchema( int replicateType, JagTableSchema *& tableschema, JagIndexSchema *&indexschema );
-	void openDataCenterConnection();
-	int synchToOtherDataCenters(const char *mesg, bool &sucsync, const JagRequest &req);
-	int synchFromOtherDataCenters( const JagRequest &req, const char *mesg, const JagParseParam &pparam );
-	void closeDataCenterConnection();
-	int countOtherDataCenters();
-	void refreshDataCenterConnections( abaxint seq );
-	void checkAndCreateThreadGroups();
-	long getDataCenterQueryCount( const Jstr &ip, bool doLock );
-	void refreshUserDB( abaxint seq );
-	void refreshUserRole( abaxint seq );
-	Jstr  fillDescBuf( const JagSchema *schema, const JagColumn &column, const Jstr &dbobj ) const;
-	int processSelectConstData( const JagRequest &req, const JagParseParam *parseParam );
-	Jstr columnProperty(const char *ctype, int srid, int metrics ) const;
+	void 	getTableIndexSchema( int replicateType, JagTableSchema *& tableschema, JagIndexSchema *&indexschema );
+	void 	openDataCenterConnection();
+	int 	synchToOtherDataCenters(const char *mesg, bool &sucsync, const JagRequest &req);
+	int 	synchFromOtherDataCenters( const JagRequest &req, const char *mesg, const JagParseParam &pparam );
+	void 	closeDataCenterConnection();
+	int 	countOtherDataCenters();
+	void 	refreshDataCenterConnections( jagint seq );
+	void 	checkAndCreateThreadGroups();
+	long 	getDataCenterQueryCount( const Jstr &ip, bool doLock );
+	void 	refreshUserDB( jagint seq );
+	void 	refreshUserRole( jagint seq );
+	Jstr  	fillDescBuf( const JagSchema *schema, const JagColumn &column, const Jstr &dbobj ) const;
+	int 	processSelectConstData( const JagRequest &req, const JagParseParam *parseParam );
+	Jstr 	columnProperty(const char *ctype, int srid, int metrics ) const;
+	void 	logBatchInsertCommand( const JagRequest &req, const JagParseParam* pparam, const Jstr &insertMsg );
+	int 	handleRestartRecover( const JagRequest &req, const char *pmesg, jagint len,
+							  	char *hdr2, char *&newbuf, char *&newbuf2 );
 
-
+	int     broadcastSchemaToClients();
+	int     broadcastHostsToClients();
 
 	// data members
-	int	_threadGroups;
-	int	_threadGroupSize;
-	int  _initExtraThreads;
-	abaxint _threadGroupNum;
-	std::atomic<abaxint> _activeThreadGroups;
-	std::atomic<abaxint> _activeClients;
-	abaxint  _threadGroupSeq;
-	int   _groupSeq;
+	int		_threadGroups;
+	int		_threadGroupSize;
+	int  	_initExtraThreads;
+	jagint 	_threadGroupNum;
+	std::atomic<jagint> _activeThreadGroups;
+	std::atomic<jagint> _activeClients;
+	jagint  _threadGroupSeq;
+	int   	_groupSeq;
 
 	JAGSOCK	_sock;
-	int	_walLog;
-	bool _clusterMode;
-	bool _cacheCommand;
-	uabaxint _taskID;
-	abaxint	_msyncCount;
+	int		_walLog;
+	bool 	_clusterMode;
+	bool 	_cacheCommand;
+	jaguint _taskID;
     static int g_receivedSignal;
-	static int g_dtimeout;
-	static abaxint g_lastSchemaTime;
-	static abaxint g_lastHostTime;
+	//static int g_dtimeout;
+	static jagint g_lastSchemaTime;
+	static jagint g_lastHostTime;
 	static char *_logFpath;
 	bool  _serverReady;
 	
-	// data member for testing only
-	static abaxint g_icnt1;
-	static abaxint g_icnt2;
-	static abaxint g_icnt3;
-	static abaxint g_icnt4;
-	static abaxint g_icnt5;
-	static abaxint g_icnt6;
-	static abaxint g_icnt7;
-	static abaxint g_icnt8;
-	static abaxint g_icnt9;
-	
-	// wallog
-	FILE *_fpCommand;
-	Jstr _activeWalFpath;
-
 	// dinsertlog
-	FILE *_dinsertCommand;
-	Jstr _activeDinFpath;
+	FILE 	*_dinsertCommandFile;
+	Jstr 	_activeDinFpath;
 	
 	// replicate delta files
 	// e.g. serv 0,1,2,3,4
-	FILE *_delPrevOriCommand;    // 1 original on 2 for original delta
-	FILE *_delPrevRepCommand;	// 2 origianl to 1 on 2 for replicate delta
-	FILE *_delPrevOriRepCommand; // 1 original to 0 on 2 for replicate delta
-	FILE *_delNextOriCommand; // 3 original on 2 for original delta
-	FILE *_delNextRepCommand; // 2 original to 3 on 2 for replicate delta
-	FILE *_delNextOriRepCommand; // 3 original to 4 on 2 for replicate delta
+	FILE *_delPrevOriCommandFile;    // 1 original on 2 for original delta
+	FILE *_delPrevRepCommandFile;	// 2 origianl to 1 on 2 for replicate delta
+	FILE *_delPrevOriRepCommandFile; // 1 original to 0 on 2 for replicate delta
+
+	FILE *_delNextOriCommandFile; // 3 original on 2 for original delta
+	FILE *_delNextRepCommandFile; // 2 original to 3 on 2 for replicate delta
+	FILE *_delNextOriRepCommandFile; // 3 original to 4 on 2 for replicate delta
+
 	Jstr _actdelPOpath;
 	Jstr _actdelPRpath;
 	Jstr _actdelPORpath;
@@ -442,8 +441,8 @@ class JagDBServer
 	Jstr _actdelNORhost;
 
 	// recovery commands log
-	FILE *_recoveryRegCommand;
-	FILE *_recoverySpCommand; 
+	FILE *_recoveryRegCommandFile;
+	FILE *_recoverySpCommandFile; 
 	Jstr _recoveryRegCmdPath;
 	Jstr _recoverySpCmdPath;
 	Jstr _crecoverFpath;
@@ -453,18 +452,22 @@ class JagDBServer
 	Jstr _walrecoverFpath;
 	Jstr _prevwalrecoverFpath;
 	Jstr _nextwalrecoverFpath;	
+	Jstr _migrateOldHosts;
 
-	JagIPACL       *_blackIPList;
-	JagIPACL       *_whiteIPList;
-	JagDBLogger	   *_dbLogger;
-	pthread_rwlock_t       _aclrwlock;
+	JagIPACL       		*_blockIPList;
+	JagIPACL       		*_allowIPList;
+	JagDBLogger	   		*_dbLogger;
+	pthread_rwlock_t    _aclrwlock;
 
-	Jstr _publicKey;
-	Jstr _privateKey;
+	Jstr 			_publicKey;
+	Jstr 			_privateKey;
 	JaguarAPI      *_dataCenter[JAG_DATACENTER_MAX];
 	int			    _numDataCenter;
-	Jstr  _centerHostPort[JAG_DATACENTER_MAX];
+	Jstr  			_centerHostPort[JAG_DATACENTER_MAX];
 	bool            _debugClient;
+	bool            _isDirectorNode;
+
+	JagHashIntInt   _clientSocketMap;
 
 };
 #endif

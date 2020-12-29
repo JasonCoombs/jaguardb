@@ -21,9 +21,12 @@
 #define _sort_line_points_h_
 
 #define  MAX_LEVELS  300
+// Requires operators: ">=" "<=" "="
 template <class POINT>
-int sortLinePoints( POINT arr[], int elements )
+int inlineQuickSort( POINT arr[], int elements )
 {
+	if ( elements < 1 ) return -1;
+
     int  beg[MAX_LEVELS], end[MAX_LEVELS], i=0, L, R, swap;
 	POINT piv;
     beg[0]=0; end[0]=elements;
@@ -33,35 +36,10 @@ int sortLinePoints( POINT arr[], int elements )
             piv=arr[L];
             while (L<R) {
             	while ( arr[R] >= piv && L<R) { 
-					// if arr[R] and piv intersect, return 1
-					/***
-					if ( arr[R].color != piv.color ) {
-						if ( lineIntersectLine( arr[R].x1,arr[R].y1,arr[R].x2,arr[R].y2, 
-											    piv.x1,piv.y1,piv.x2,piv.y2 ) ) {
-							prt(("e6303 %f %f %f %f   %f %f %f %f  intersect\n",
-								  arr[R].x1,arr[R].y1,arr[R].x2,arr[R].y2,
-								  piv.x1,piv.y1,piv.x2,piv.y2  ));
-							return 1;
-						}
-					}
-					***/
 					R--; 
 				}
     			if (L<R) { arr[L++]=arr[R]; }
             	while (arr[L] <= piv && L<R) { 
-					// if arr[L] and piv intersect, return 1
-					// if ( lineIntersectLine(  x1, y1, x2, y2, x3, y3, x4, y4  ) ) return 1;
-					/***
-					if ( arr[L].color != piv.color ) {
-						if ( lineIntersectLine( arr[L].x1,arr[L].y1,arr[L].x2,arr[L].y2, 
-							 piv.x1,piv.y1,piv.x2,piv.y2 ) ) {
-							prt(("e6304 %f %f %f %f   %f %f %f %f  intersect\n",
-								  arr[L].x1,arr[L].y1,arr[L].x2,arr[L].y2,
-								  piv.x1,piv.y1,piv.x2,piv.y2  ));
-							 return 1;
-					    }
-					}
-					***/
 					L++; 
 				}
     			if (L<R) { arr[R--]=arr[L];  }
@@ -105,8 +83,8 @@ int JagSortedSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector
 template <class POINT>
 int JagSetJoin( POINT arr1[], int len1,  POINT arr2[], int len2, JagVector<POINT> &vec )
 {
-	sortLinePoints<POINT>( arr1, len1 );
-	sortLinePoints<POINT>( arr2, len2 );
+	inlineQuickSort<POINT>( arr1, len1 );
+	inlineQuickSort<POINT>( arr2, len2 );
 	JagSortedSetJoin<POINT>( arr1, len1,  arr2, len2, vec );
 }
 

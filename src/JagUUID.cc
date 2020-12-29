@@ -65,7 +65,7 @@ void JagUUID::_getHostStr()
 	static char cset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"; // 62 total
 	AbaxString xs = _hostID;
 	char c5[6];
-	abaxint hc = xs.hashCode();
+	jagint hc = xs.hashCode();
 	int  d5 = hc%100000;  // 87213
 	c5[0] = cset[ d5/10000];
 	c5[1] = cset[ (d5/1000)%10];

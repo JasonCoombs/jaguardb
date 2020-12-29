@@ -76,10 +76,10 @@ JagLang::~JagLang()
 // -1: error
 // 0:  nonparsed
 // len: number of tokens obtained
-abaxint JagLang::parse( const char *instr, const char *encode )
+jagint JagLang::parse( const char *instr, const char *encode )
 {
 	// prt(("s3319 JagLang::parse( instr=[%s] encode=[%s]\n", instr, encode ));
-	abaxint n = 0;
+	jagint n = 0;
 	if ( 0 == strcasecmp( encode, "UTF8" ) ||
 		 0 == strcasecmp( encode, "UTF-8" ) ) {
 		 n = JagLang::_parseUTF8( instr );
@@ -127,12 +127,12 @@ abaxint JagLang::parse( const char *instr, const char *encode )
 
 }
 
-abaxint JagLang::length()
+jagint JagLang::length()
 {
 	return (*_vec).length();
 }
 
-abaxint  JagLang:: size()
+jagint  JagLang:: size()
 {
 	return (*_vec).length();
 }
@@ -142,14 +142,14 @@ Jstr JagLang::at(int i)
 	return (*_vec)[i];
 }
 
-abaxint JagLang::_parseUTF8( const char *instr )
+jagint JagLang::_parseUTF8( const char *instr )
 {
     char* str = (char*)instr;    // utf-8 string
     char* str_i = (char*)str;                  // string iterator
     char* end = str+ strlen(instr)+1;      // end iterator
     unsigned char symbol[5] = {0,0,0,0,0};
 	uint32_t code;
-	abaxint n = 0;
+	jagint n = 0;
     do {
         code = utf8::next(str_i, end); // get 32 bit code of a utf-8 symbol
         if (code == 0) continue;
@@ -188,9 +188,9 @@ void JagLang::rangeFixString( int buflen, int start, int len, JagFixString &res 
 }
 
 
-abaxint JagLang::_parseGB2312( const char *instr )
+jagint JagLang::_parseGB2312( const char *instr )
 {
-	abaxint n = 0;
+	jagint n = 0;
 	char b1[2];
 	char b2[3];
 	char *p = (char*) instr;
@@ -219,9 +219,9 @@ abaxint JagLang::_parseGB2312( const char *instr )
 	return n;
 }
 
-abaxint JagLang::_parseGB18030( const char *instr )
+jagint JagLang::_parseGB18030( const char *instr )
 {
-	abaxint n = 0;
+	jagint n = 0;
 	char b1[2];
 	char b2[3];
 	char b4[5];

@@ -35,46 +35,29 @@ class JagMutex
 	pthread_mutex_t  *_mutex;
 };
 
-class JagReadWriteLock 
-{
-  protected:
-    int 	_numReaders;
-    int 	_numWriters, _numWritersWaiting;
-    pthread_mutex_t 	class_mutex;
-    pthread_cond_t  	_readerCond;
-    pthread_cond_t  	_writeCond;
-
-  public:
-
-    JagReadWriteLock();
-    ~JagReadWriteLock();
-    void readLock();
-    void writeLock();
-    void readUnlock();
-    void writeUnlock();
-};
-
-
 /////////// Read and write mutex for readers and writers
 class JagReadWriteMutex
 {
   public:
-    JagReadWriteMutex( JagReadWriteLock *_mutex );
-    JagReadWriteMutex( JagReadWriteLock *_mutex, int lockType );
+    JagReadWriteMutex( pthread_rwlock_t *lock );
+    JagReadWriteMutex( pthread_rwlock_t *lock, int lockType );
+    ~JagReadWriteMutex( );
 	void readLock();
 	void writeLock();
 	void readUnlock();
 	void writeUnlock();
 	void unlock();
-    ~JagReadWriteMutex( );
+	//void upgradeToWriteLock();
 
 	static  const  int  READ_LOCK = 1;
 	static  const  int  WRITE_LOCK = 2;
 
   protected:
-	JagReadWriteLock  *_lock;
+	pthread_rwlock_t  *_lock;
 	int				   _type;  
 };
 
+pthread_rwlock_t *newJagReadWriteLock();
+void deleteJagReadWriteLock( pthread_rwlock_t *lock );
 
 #endif

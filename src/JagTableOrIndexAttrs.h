@@ -34,9 +34,9 @@ template <class K, class V> class JagHashMap;
 class PosOffsetLength
 {
   public:
-	abaxint   pos;  
-	abaxint   offset;
-	abaxint   length;
+	jagint   pos;  
+	jagint   offset;
+	jagint   length;
 };
 
 //for table/index object data members, used by Client only for now
@@ -58,6 +58,7 @@ class JagTableOrIndexAttrs
 	char defDatetime; // has default update time stamp or not ( 'T' or ' ' )
 	char updDatetime; // has default update time stamp or not ( 'P' or ' ' )
 	bool hasFile; // has file type -- need to transmit files from client to server, single insert
+	bool isSWO; 
 	Jstr dbName;
 	Jstr tableName;
 	Jstr indexName; // if not empty, this object is an index of dbName.tableName

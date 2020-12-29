@@ -22,32 +22,39 @@
 #include <abax.h>
 #include <JagVector.h>
 #include <JagTableUtil.h>
+#include <JagDBMap.h>
+#include <JagPriorityQueue.h>
 
 class JagMergeReaderBase
 {
   public:
-	JagMergeReaderBase( int veclen, int keylen, int vallen );
+	JagMergeReaderBase( const JagDBMap *dbmap, int veclen, int keylen, int vallen, const char *minbuf, const char *maxbuf );
   	virtual ~JagMergeReaderBase(); 	
-  	virtual bool getNext( char *buf, abaxint &pos ) = 0;
-  	virtual bool getNext( char *buf ) = 0;
-	virtual bool setRestartPos() = 0;
-	virtual bool getRestartPos() = 0;
-	virtual void setClearRestartPosFlag() = 0;
-	void         putBack( const char *buf );
 
-	abaxint KEYLEN;
-	abaxint VALLEN;
-	abaxint KEYVALLEN;
+  	virtual bool 	getNext( char *buf ) = 0;
+	void         	putBack( const char *buf );
+	void 			unsetMark();
+	bool 			isMarked() const;
+
+	jagint KEYLEN;
+	jagint VALLEN;
+	jagint KEYVALLEN;
+
+	JagPriorityQueue<int, JagDBPair> *_pqueue;
+	JagDBPair  			beginPair;
+	JagDBPair  			endPair;
+	const JagDBMap 		*_dbmap;
+	bool  				memReadDone;
 
   protected:
-	int _veclen;
-	int _endcnt;
-	int *_goNext;
-	char *_buf;
-	bool _setRestartPos;
-	char *_cacheBuf;
+	int 		_readerPtrlen;
+	int 		_endcnt;
+	int 		*_goNext;
+	char 		*_buf;
+	bool 		_setRestartPos;
+	char 		*_cacheBuf;
+	bool  		_isMarkSet;
 
 };
 
 #endif
-

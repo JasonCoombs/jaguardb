@@ -26,9 +26,8 @@ class JagVector
 {
 	public:
 
-		JagVector( int initSize=4 );
+		JagVector( int initSize=1 );
 
-		// template <class P> JagVector( const JagVector<P>& other );
 		JagVector<Pair>& operator=( const JagVector<Pair>& other );
 		JagVector<Pair>( const JagVector<Pair>& other );
 
@@ -37,29 +36,29 @@ class JagVector
 		void clean();
 		void clear();
 		~JagVector();
-		inline bool append( const Pair &newpair, abaxint sz=0 ) { abaxint idx; return append(newpair, &idx, sz); }
-		inline const Pair & operator[] ( abaxint i ) const { return _arr[i]; }
-		inline Pair & operator[] ( abaxint i ) { return _arr[i]; }
+		inline bool push_back( const Pair &newpair ) { jagint idx; return append(newpair, &idx, 0); }
+		inline bool append( const Pair &newpair, jagint sz=0 ) { jagint idx; return append(newpair, &idx, sz); }
+		inline const Pair & operator[] ( jagint i ) const { return _arr[i]; }
+		inline Pair & operator[] ( jagint i ) { return _arr[i]; }
 
-		inline bool exist( const Pair &pair ) { abaxint idx; return exist(pair, &idx); }
-		bool exist( const Pair &pair, abaxint *index );
+		inline bool exist( const Pair &pair ) { jagint idx; return exist(pair, &idx); }
+		bool exist( const Pair &pair, jagint *index );
 
 		bool remove( const Pair &pair, AbaxDestroyAction action=ABAX_NOOP ); 
-		bool removepos( abaxint posindex, AbaxDestroyAction action=ABAX_NOOP ); 
+		bool removepos( jagint posindex, AbaxDestroyAction action=ABAX_NOOP ); 
 		bool get( Pair &pair ); 
 		bool set( const Pair &pair ); 
-		inline  abaxint capacity() const { return _arrlen; }
-		inline  abaxint size() const { return _elements; }
-		inline  abaxint length() const { return _elements; }
-		// inline  abaxint last() const { return _last; }
+		inline  jagint capacity() const { return _arrlen; }
+		inline  jagint size() const { return _elements; }
+		inline  jagint length() const { return _elements; }
 		inline  const Pair* array() const { return (const Pair*)_arr; }
-		bool append( const Pair &newpair, abaxint *index, abaxint sz );
+		bool append( const Pair &newpair, jagint *index, jagint sz );
 		bool empty() { if ( _elements == 0 ) return true; else return false; }
-		abaxint bytes() const { return _bytes; }
+		jagint bytes() const { return _bytes; }
 
 		void print() const {
 			printf("JagVector::print() _elements=%d :\n", _elements );
-			for ( abaxint i = 0; i < _elements; ++i ) {
+			for ( jagint i = 0; i < _elements; ++i ) {
 				printf("i=%d: ", i );
 				_arr[i].print();
 			}	
@@ -68,14 +67,14 @@ class JagVector
 		}
 
 		void printString() const {
-			for ( abaxint i = 0; i < _elements; ++i ) {
+			for ( jagint i = 0; i < _elements; ++i ) {
 				printf("i=%d   [%s]\n", i, _arr[i].c_str() );
 			}	
 		}
 
 		Jstr asString() const {
 			Jstr str;
-			for ( abaxint i = 0; i < _elements; ++i ) {
+			for ( jagint i = 0; i < _elements; ++i ) {
 				if (  0 == i ) {
 					str =  _arr[i];
 				} else {
@@ -86,22 +85,19 @@ class JagVector
 		}
 
 
-		void 	reAlloc();
-		void 	reAllocShrink();
-		abaxint 	_elements;
-		abaxint   _bytes;
+		void 	 reAlloc();
+		void 	 reAllocShrink();
+		jagint	 _elements;
+		jagint   _bytes;
 
 
 	protected:
-
 		Pair   		*_arr;
-		abaxint  	_arrlen;
+		jagint  	_arrlen;
 
 		// temp vars
 		Pair   		*_newarr;
-		abaxint  	_newarrlen;
-
-		// abaxint  	_last;
+		jagint  	_newarrlen;
 
 		static const int _GEO  = 2;	 // fixed
 
@@ -140,7 +136,7 @@ JagVector<Pair>::JagVector( const JagVector<P>& other )
 	// _last = other._last;
 
 	_arr = new Pair[_arrlen];
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = other._arr[i];
 	}
 }
@@ -153,9 +149,10 @@ JagVector<Pair>::JagVector( const JagVector<Pair>& other )
 	_arrlen = other._arrlen;
 	_elements = other._elements;
 	// _last = other._last;
+	_bytes = other._bytes;
 
 	_arr = new Pair[_arrlen];
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = other._arr[i];
 	}
 }
@@ -178,9 +175,10 @@ JagVector<Pair>& JagVector<Pair>::operator=( const JagVector<Pair>& other )
 	_arrlen = other._arrlen;
 	_elements = other._elements;
 	// _last = other._last;
+	_bytes = other._bytes;
 
 	_arr = new Pair[_arrlen];
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = other._arr[i];
 	}
 
@@ -232,7 +230,7 @@ JagVector<Pair>::~JagVector( )
 template <class Pair> 
 void JagVector<Pair>::reAlloc()
 {
-	abaxint i;
+	jagint i;
 	_newarrlen  = _GEO*_arrlen; 
 
 	_newarr = new Pair[_newarrlen];
@@ -251,7 +249,7 @@ void JagVector<Pair>::reAlloc()
 template <class Pair> 
 void JagVector<Pair>::reAllocShrink()
 {
-	abaxint i;
+	jagint i;
 
 	_newarrlen  = _arrlen/_GEO; 
 
@@ -268,7 +266,7 @@ void JagVector<Pair>::reAllocShrink()
 
 
 template <class Pair> 
-bool JagVector<Pair>::append( const Pair &newpair, abaxint *index, abaxint bytes )
+bool JagVector<Pair>::append( const Pair &newpair, jagint *index, jagint bytes )
 {
 	if ( _elements == _arrlen ) { 
 		// printf("s9002 this=%0x _elements %d == %d realloc\n", this, _elements, _arrlen );
@@ -287,7 +285,7 @@ bool JagVector<Pair>::append( const Pair &newpair, abaxint *index, abaxint bytes
 template <class Pair> 
 bool JagVector<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 {
-	abaxint i, index;
+	jagint i, index;
 	bool rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
@@ -302,7 +300,7 @@ bool JagVector<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 	-- _elements;
 
 	if ( _arrlen >= 64 ) {
-    	abaxint loadfactor  = 100 * (abaxint)_elements / _arrlen;
+    	jagint loadfactor  = 100 * (jagint)_elements / _arrlen;
     	if (  loadfactor < 15 ) {
     		reAllocShrink();
     	}
@@ -319,9 +317,9 @@ bool JagVector<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 
 // Slow, should not use this
 template <class Pair> 
-bool JagVector<Pair>::removepos( abaxint posindex, AbaxDestroyAction action )
+bool JagVector<Pair>::removepos( jagint posindex, AbaxDestroyAction action )
 {
-	abaxint i;
+	jagint i;
 
 	// shift left
 	for ( i = posindex; i <= _elements-2; ++i ) {
@@ -330,7 +328,7 @@ bool JagVector<Pair>::removepos( abaxint posindex, AbaxDestroyAction action )
 	-- _elements;
 
 	if ( _arrlen >= 64 ) {
-    	abaxint loadfactor  = 100 * (abaxint)_elements / _arrlen;
+    	jagint loadfactor  = 100 * (jagint)_elements / _arrlen;
     	if (  loadfactor < 15 ) {
     		reAllocShrink();
     	}
@@ -347,10 +345,9 @@ bool JagVector<Pair>::removepos( abaxint posindex, AbaxDestroyAction action )
 
 // scan search  slow
 template <class Pair> 
-bool JagVector<Pair>::exist( const Pair &search, abaxint *index )
+bool JagVector<Pair>::exist( const Pair &search, jagint *index )
 {
-    abaxint i; 
-
+    jagint i; 
 	for ( i = 0; i < _elements; ++i ) {
 		if ( _arr[i] == search ) {
 			*index = i;
@@ -365,9 +362,8 @@ bool JagVector<Pair>::exist( const Pair &search, abaxint *index )
 template <class Pair> 
 inline bool JagVector<Pair>::get( Pair &pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
-
 	rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
@@ -378,14 +374,24 @@ inline bool JagVector<Pair>::get( Pair &pair )
 template <class Pair> 
 inline bool JagVector<Pair>::set( const Pair &pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
-
 	rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
 	_arr[index].value = pair.value;
 	return true;
+}
+
+template <class Pair>
+JagVector<Pair> *&ensureVec( JagVector<Pair> *&vec, int sz=1 )
+{
+    if ( vec ) {
+        return vec;
+    }
+
+    vec = new JagVector<Pair>( sz );
+    return vec;
 }
 
 

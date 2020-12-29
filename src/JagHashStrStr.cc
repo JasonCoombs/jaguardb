@@ -98,6 +98,7 @@ void JagHashStrStr::reset()
 {
 	jag_hash_destroy( &_hash );
 	jag_hash_init( &_hash, 10 );
+	_len = 0;
 }
 
 
@@ -106,6 +107,7 @@ JagHashStrStr::JagHashStrStr( const JagHashStrStr &o )
 {
 	//prt(("s8540 JagHashStrStr copy ctor this=%x o=%0x\n", this, &o ));
 	jag_hash_init( &_hash, 10 );
+	_len = 0;
 
 	HashNodeT *node;
 	for ( int i = 0; i < o._hash.size; ++i ) {
@@ -113,6 +115,7 @@ JagHashStrStr::JagHashStrStr( const JagHashStrStr &o )
 		while ( node != NULL ) {
 			jag_hash_insert( &_hash, node->key, node->value );
 			node = node->next;
+			++ _len;
 		}
 	}
 }
@@ -131,34 +134,12 @@ JagHashStrStr& JagHashStrStr:: operator= ( const JagHashStrStr &o )
 		while ( node != NULL ) {
 			jag_hash_insert( &_hash, node->key, node->value );
 			node = node->next;
+			++ _len;
 		}
 	}
 
 	return *this;
 }
-
-/***
-JagVector<AbaxPair<Jstr,Jstr>> JagHashStrStr::getStrStrVector()
-{
-	JagVector<AbaxPair<Jstr,Jstr>> vec;
-
-	HashNodeT *node;
-	Jstr key;
-	Jstr val;
-	for ( int i = 0; i < _hash.size; ++i ) {
-		node = _hash.bucket[i];
-		while ( node != NULL ) {
-			key = node->key;
-			val = node->value;
-			AbaxPair<Jstr,Jstr> pair(key, val);
-			vec.append( pair );
-			node = node->next;
-		}
-	}
-
-	return vec;
-}
-***/
 
 // return "a=1|c=3|f=34" if sep is |
 Jstr JagHashStrStr::getKVStrings( const char *sep)
@@ -209,6 +190,11 @@ int JagHashStrStr::size()
 }
 
 void JagHashStrStr::removeAllKey()
+{
+	reset();
+}
+
+void JagHashStrStr::clean()
 {
 	reset();
 }

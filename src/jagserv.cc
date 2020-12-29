@@ -25,7 +25,7 @@ int main(int argc, char**argv)
 	if  ( ! p ) {
 		printf("Starting server failure\n");
 		printf("jaguar server must be started with jaguarstart program\n");
-		exit(1);
+		exit(51);
 	}
 
 	//daemonInit();

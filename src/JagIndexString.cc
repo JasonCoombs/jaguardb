@@ -61,7 +61,7 @@ void JagIndexString::destroy()
 
 //  "[10digit length of key]kkkkkkk000kkkkkk000N0F0dddddddd|...|...|"
 //  "[10digit length of key]kkkkkkk000kkkkkk000N1F1dddddddd|...|...|"
-void JagIndexString::add( const JagFixString &key, abaxint i, int isnew, int force )
+void JagIndexString::add( const JagFixString &key, jagint i, int isnew, int force )
 {
 	if ( i != -1 && i == _lasti ) {
 		return;

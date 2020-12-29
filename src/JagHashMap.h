@@ -29,13 +29,13 @@
 template <class K, class V>
 class JagHashMap 
 {
-
     template <class K2, class V2> friend class JagHashMapIterator;
 
     public: 
 
-        JagHashMap( int length=16 );
-        ~JagHashMap() { destroy(); }
+        JagHashMap( bool doLock = false,  int length=16 );
+        ~JagHashMap();
+		JagHashMap& operator=( const JagHashMap &map );
 
         bool addKeyValue( const K& key, const V& value );
         bool keyExist(  const K& key );
@@ -46,14 +46,17 @@ class JagHashMap
 		bool appendValue( const K& key, const V &value );
         bool removeKey( const K& key, AbaxDestroyAction action=ABAX_NOOP  );
 		void removeAllKey( int length=16 );
-        abaxint removeMatchKey( const K& key, AbaxDestroyAction action=ABAX_NOOP  );
+        jagint removeMatchKey( const K& key, AbaxDestroyAction action=ABAX_NOOP  );
 
-        abaxint size( ) const  { return _xarr->elements(); }
+        jagint size( ) const  { return _xarr->elements(); }
+		const K& keyAt( jagint i ) const { return (*_xarr)[i].key; }
+		const V& valueAt( jagint i ) const { return  (*_xarr)[i].value; }
+		const AbaxPair<K,V> &pairAt( jagint i) const { return (*_xarr)[i]; }
 
 		const AbaxPair<K,V> *array() const { return _xarr->array(); }
 		const JagHashArray<AbaxPair<K,V> > *hashArray() const { return _xarr; }
-        abaxint arrayLength( ) const  { return _xarr->size(); }
-		inline bool isNull( abaxint i ) const { return _xarr->isNull(i); }
+        jagint arrayLength( ) const  { return _xarr->size(); }
+		inline bool isNull( jagint i ) const { return _xarr->isNull(i); }
 
 		void printKeyStringOnly() { _xarr->printKeyStringOnly(); }
 		void printKeyIntegerOnly() { _xarr->printKeyIntegerOnly(); }
@@ -61,19 +64,32 @@ class JagHashMap
 		void printKeyIntegerValueString() { _xarr->printKeyIntegerValueString(); }
 		void printKeyStringValueInteger() { _xarr->printKeyStringValueInteger(); }
 		void printKeyIntegerValueInteger() { _xarr->printKeyIntegerValueInteger(); }
-		JagReadWriteLock    *_lock;
+		pthread_rwlock_t    *_lock;
 
     protected:
         JagHashArray<AbaxPair<K,V> >  *_xarr; 
 		void  destroy();
+		bool  _doLock;
 };
 
 template <class K, class V>
-JagHashMap<K,V>::JagHashMap( int length )
+JagHashMap<K,V>::JagHashMap( bool doLock, int length )
 {
-	_lock = new JagReadWriteLock();
-	// prt(("s2042 this=%lld thread=%lld JagHashMap JagReadWriteLock new _lock=%0x\n", this, THREADID,  _lock ));
+	_doLock = doLock;
+	if ( _doLock ) {
+		_lock = newJagReadWriteLock();
+	} else {
+		_lock = NULL;
+	}
+	// prt(("s2042 JagHashMap() ctor  this=%x thread=%lld _doLock=%d _lock=%0x\n", this, THREADID, _doLock, _lock ));
 	_xarr = new JagHashArray< AbaxPair<K,V> > ( length );
+}
+
+template <class K, class V>
+JagHashMap<K,V>::~JagHashMap()
+{
+	// prt(("s2042 JagHashMap() dtor  this=%x thread=%lld _doLock=%d _lock=%0x\n", this, THREADID, _doLock, _lock ));
+	this->destroy();
 }
 
 template <class K, class V>
@@ -111,6 +127,11 @@ template <class K, class V>
 V& JagHashMap<K,V>::getValue( const K& key, bool &rc )
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
+	if ( NULL == _xarr ) {
+		rc = false;
+		static V v;
+		return v; 
+	}
 	AbaxPair<K,V> inpair(key);
 	AbaxPair<K,V> &pair = _xarr->get( inpair, rc );
 	return pair.value;
@@ -168,23 +189,21 @@ bool JagHashMap<K,V>::removeKey( const K& key, AbaxDestroyAction action )
 template <class K, class V>
 void JagHashMap<K,V>::removeAllKey( int length )
 {
-	// prt(("s3003 this=%lld thread=%lld JagHashMap<K,V>::removeAllKey\n", this, THREADID ));
-	// destroy();
+	//prt(("s3003 this=%x thread=%lld JagHashMap<K,V>::removeAllKey\n", this, THREADID ));
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	if ( _xarr ) {
 		delete _xarr; 
 	}
 	_xarr = new JagHashArray< AbaxPair<K,V> > ( length );
-	// _lock = new JagReadWriteLock();
 	// prt(("s3340 this=%lld thread=%lld JagHashMap new JagReadWriteLock _lock=%0x\n", this, THREADID, _lock ));
 }
 
 template <class K, class V>
-abaxint JagHashMap<K,V>::removeMatchKey( const K& key, AbaxDestroyAction action )
+jagint JagHashMap<K,V>::removeMatchKey( const K& key, AbaxDestroyAction action )
 {
-	abaxint cnt = 0;
+	jagint cnt = 0;
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	for ( abaxint i = 0; i < _xarr->size(); ++i ) {
+	for ( jagint i = 0; i < _xarr->size(); ++i ) {
 		if ( _xarr->isNull( i ) ) continue;
 		const AbaxPair<K,V> &pair = (*_xarr)[i];
 		if ( 0 == strncasecmp( pair.key.c_str(), key.c_str(), key.size() ) ) {
@@ -198,6 +217,7 @@ abaxint JagHashMap<K,V>::removeMatchKey( const K& key, AbaxDestroyAction action 
 template <class K, class V>
 void JagHashMap<K,V>::destroy( )
 {
+	// prt(("s338383939 JagHashMap destroy() this=%0x  _doLock=%d  _lock=%0x\n", this, _doLock, _lock ));
 	{
 		JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 		if ( _xarr ) {
@@ -206,10 +226,31 @@ void JagHashMap<K,V>::destroy( )
 		}
 	}
 	
-	if ( _lock ) {
-		delete _lock;
+	if ( _doLock ) {
+		deleteJagReadWriteLock( _lock );
 		_lock = NULL;
 	}
+}
+
+template <class K, class V>
+JagHashMap<K,V>& JagHashMap<K,V>:: operator=( const JagHashMap<K,V> &map )
+{
+	prt(("s22233038 JagHashMap  operator=   this=%0x _doLock=%d _lock=%0x\n", this, _doLock, _lock ));
+	// qwer
+	/**
+	if ( _doLock ) {
+		deleteJagReadWriteLock( _lock );
+		_lock = newJagReadWriteLock();
+	} else {
+		_lock = NULL;
+	}
+	**/
+
+	if ( _xarr ) {
+		delete _xarr;
+	}
+
+	_xarr = new JagHashArray< AbaxPair<K,V> >( *map._xarr );
 }
 
 
@@ -224,7 +265,7 @@ class JagHashMapIterator
     public: 
 
         JagHashMapIterator( JagHashMap<K,V> *hmap );
-        JagHashMapIterator( JagHashMap<K,V> *hmap, uabaxint count );
+        JagHashMapIterator( JagHashMap<K,V> *hmap, jaguint count );
 
         ~JagHashMapIterator();
 
@@ -239,12 +280,12 @@ class JagHashMapIterator
         JagHashMap<K,V> *_mapobj; 
 
 
-		uabaxint 	_count;
-		uabaxint 	_itermax;
+		jaguint 	_count;
+		jaguint 	_itermax;
 		unsigned char   _type; // 0: all;  10: has start;  20: has start and end element
 		bool   			_doneBegin;
 
-		abaxint	    _cursor;
+		jagint	    _cursor;
 };
 
 template <class K, class V>
@@ -258,7 +299,7 @@ JagHashMapIterator<K,V>::JagHashMapIterator( JagHashMap<K,V> *hmap )
 }
 
 template <class K, class V>
-JagHashMapIterator<K,V>::JagHashMapIterator( JagHashMap<K,V> *hmap, uabaxint count )
+JagHashMapIterator<K,V>::JagHashMapIterator( JagHashMap<K,V> *hmap, jaguint count )
 {
 	_mapobj = hmap;
 	_count = 0;
@@ -350,12 +391,12 @@ class JagHashSet
         bool addKey( const K& key );
         bool keyExist(  const K& key );
         bool removeKey( const K& key );
-        abaxint size( ) const  { return _xarr->elements(); }
+        jagint size( ) const  { return _xarr->elements(); }
 		// void setFormat( const char *fmt );
 		void  destroy() { if ( _xarr ) delete _xarr; _xarr = NULL; }
 		const K  *array() const { return _xarr->array(); }
-        abaxint arrayLength( ) const  { return _xarr->size(); }
-		inline bool isNull( abaxint i ) const { return _xarr->isNull(i); }
+        jagint arrayLength( ) const  { return _xarr->size(); }
+		inline bool isNull( jagint i ) const { return _xarr->isNull(i); }
 
 		void print() { _xarr->print(); }
 
@@ -400,7 +441,7 @@ class JagHashSetIterator
     public: 
 
         JagHashSetIterator( JagHashSet<K> *hmap );
-        JagHashSetIterator( JagHashSet<K> *hmap, uabaxint count );
+        JagHashSetIterator( JagHashSet<K> *hmap, jaguint count );
 
         ~JagHashSetIterator();
 
@@ -411,12 +452,12 @@ class JagHashSetIterator
     private:
         JagHashSet<K> *_mapobj; 
 
-		uabaxint 	_count;
-		uabaxint 	_itermax;
+		jaguint 	_count;
+		jaguint 	_itermax;
 		unsigned char   _type; // 0: all;  10: has start;  20: has start and end element
 		bool   			_doneBegin;
 
-		abaxint	    _cursor;
+		jagint	    _cursor;
 };
 
 template <class K >
@@ -430,7 +471,7 @@ JagHashSetIterator<K>::JagHashSetIterator( JagHashSet<K> *hmap )
 }
 
 template <class K>
-JagHashSetIterator<K>::JagHashSetIterator( JagHashSet<K> *hmap, uabaxint count )
+JagHashSetIterator<K>::JagHashSetIterator( JagHashSet<K> *hmap, jaguint count )
 {
 	_mapobj = hmap;
 	_count = 0;

@@ -29,26 +29,26 @@ class JagBuffWriter
 {
 	public:
 
-		JagBuffWriter( JDFS *jdfs, int keyvallen, abaxint headoffset = JAG_ARJAG_FILE_HEAD, abaxint bufferSize=-1 ); 
+		JagBuffWriter( JDFS *jdfs, int keyvallen, jagint headoffset = JAG_ARJAG_FILE_HEAD, jagint bufferSize=-1 ); 
 		~JagBuffWriter();
 		
 		// void resetKVLEN( int newkvlen );
-		void writeit( abaxint pos, const char *keyvalbuf, abaxint kvlen );
+		void writeit( jagint pos, const char *keyvalbuf, jagint kvlen );
 		void flushBuffer();
 
 	protected:
 
-		// static const abaxint SUPERBLOCK = 1024*JagCfg::_BLOCK; 
-		abaxint SUPERBLOCK;
+		// static const jagint SUPERBLOCK = 1024*JagCfg::_BLOCK; 
+		jagint SUPERBLOCK;
 
 		char	*_superbuf; 
 
-		abaxint _lastBlock;
-		abaxint _relpos;
-		abaxint  KVLEN;
-		abaxint SUPERBLOCKLEN;
+		jagint _lastBlock;
+		jagint _relpos;
+		jagint  KVLEN;
+		jagint SUPERBLOCKLEN;
 		int  _fd;
-		abaxint _headoffset;
+		jagint _headoffset;
 		JDFS  *_jdfs;
 
 };

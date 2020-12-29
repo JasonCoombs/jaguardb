@@ -29,7 +29,7 @@ void JagNodeMgr::init()
 {
 	_isHost0OfCluster0 = 0;
 	_selfIP = "";
-	_sendNodes = "";
+	_sendAllNodes = "";
 	_allNodes = "";
 	_curClusterNodes = "";
 	_curClusterNumber = 0;
@@ -40,24 +40,23 @@ void JagNodeMgr::init()
 	FILE *fv = jagfopen( vfpath.c_str(), "r" );
 	if ( ! fv ) { 
 		printf("s5082 Error open %s exit\n", vfpath.c_str() );
-		exit( 1 );
+		exit( 11 );
 	}
 
 	// get all ips in cluster.conf
 	char line[2048];
 	int len, first = true, cnt = 0, isPound = false;
-	abaxint cnum = 0, cpos = -1;
+	jagint cnum = 0, cpos = -1;
 	Jstr sline;
 	memset( line, 0, 2048 );
 
-	JagHashMap<AbaxString, abaxint> checkMap;
-	JagHashMap<AbaxString, abaxint> clusterNumMap;
+	JagHashMap<AbaxString, jagint> checkMap;
+	JagHashMap<AbaxString, jagint> clusterNumMap;
 
 	JagVector<Jstr> checkVec;
 	JagVector<Jstr> nicvec;
 	JagNet::getLocalIPs( nicvec );
 	Jstr  curHost = JagNet::getLocalHost();
-	// Jstr curHostUpper = makeUpperString( curHost );
 	Jstr curHostIP = JagNet::getIPFromHostName( curHost );
 	Jstr ip;
 	_numAllNodes = 0;
@@ -65,7 +64,6 @@ void JagNodeMgr::init()
 	// prt(("s1800 nicvec:\n" ));
 	// nicvec.printString();
 	while ( NULL != (fgets( line, 2048, fv ) ) ) {
-		// if ( line[0] == '#' ) 
 		if ( strchr( line, '#' ) ) {
 			// next cluster
 			checkVec.append( "#" );
@@ -84,37 +82,28 @@ void JagNodeMgr::init()
 		}
 
 		if ( split[0] == "localhost" || split[0] == "127.0.0.1" ) {
-			// checkVec.append( "127.0.0.1" );
 			prt(("E3930 localhost or 127.0.0.1 cannot exist in conf/cluster.conf, please fix and restart\n" ));
 			exit(33);
-		} else {
-			// checkVec.append( split[0] );
-			ip = JagNet::getIPFromHostName(  split[0] );
-			if ( ip.length() < 2 ) {
-				prt(("E9293 cannot resolve IP address of host %s exit ...\n", split[0].c_str() ));
-				prt(("Please fix conf/cluster.conf and restart\n" ));
-				exit(21);
-			}
-
-			if ( ! checkVec.exist(ip) ) { checkVec.append( ip ); }
+		} 
+		
+		ip = JagNet::getIPFromHostName(  split[0] );
+		if ( ip.length() < 2 ) {
+			prt(("E9293 cannot resolve IP address of host %s exit ...\n", split[0].c_str() ));
+			prt(("Please fix conf/cluster.conf and restart\n" ));
+			exit(21);
 		}
+
+		if ( ! checkVec.exist(ip) ) { checkVec.append( ip ); }
 		memset( line, 0, 2048 );
 	}
    	jagfclose( fv );
 
-	// checkVec has all IP addresses now
+	// checkVec has all IP addresses now, and '#' between clusters
 
 	// get self host ip
 	Jstr up1, up2;
 	cnt = 0;
 	for ( int i = 0; i < checkVec.size(); ++i ) {
-		/***
-		up1 = makeUpperString(  checkVec[i] );
-		if ( nicvec.exist( checkVec[i] ) || up1 == curHostUpper ) {
-			if ( _selfIP.size() < 1 ) _selfIP = checkVec[i];
-			++cnt;
-		}
-		***/
 		if ( nicvec.exist( checkVec[i] ) || checkVec[i] == curHostIP ) {
 			if ( _selfIP.size() < 1 ) _selfIP = checkVec[i];
 			++cnt;
@@ -123,11 +112,11 @@ void JagNodeMgr::init()
 
 	if ( cnt > 1 ) { 
 		printf("Too many current host in conf/cluster.conf Please fix and restart\n");
-		exit( 1 );
+		exit( 18 );
 	} else if ( cnt < 1 ) {
 		if ( checkVec.size() > 0 || _listenIP.size() < 1 ) {
 			printf("No current host is provided in cluster.conf or server.conf, exit\n");
-			exit( 1 );
+			exit( 19 );
 		} else {
 			checkVec.append( "#" );
 			checkVec.append( _listenIP );
@@ -136,13 +125,12 @@ void JagNodeMgr::init()
 	} else {
 		if ( _listenIP.size() > 0 && _listenIP != _selfIP ) {
 			printf("listen ip [%s] is not the same as self ip [%s] in conf/cluster.conf\n", _listenIP.c_str(), _selfIP.c_str());
-			exit( 1 );
+			exit( 16 );
 		}
 	}
 
 	// set isHost0Cluster0 flag
 	for ( int i = 0; i < checkVec.size(); ++i ) {
-		// if ( *(checkVec[i].c_str()) != '#' ) 
 		if ( ! strchr(checkVec[i].c_str(), '#' ) ) {
 			if ( checkVec[i] == _selfIP ) {
 				_isHost0OfCluster0 = 1;
@@ -153,57 +141,57 @@ void JagNodeMgr::init()
 		}
 	}
 	
-	// format _sendNodes and _allNodes
+	// format _sendAllNodes  "#ip1|ip2|ip3#ip4|ip5"
+	// and _allNodes "ip1|ip2|ip3|ip4|ip5"
 	first = true;
+	Jstr tok; // IP or #
 	for ( int i = 0; i < checkVec.size(); ++i ) {
-		if ( strchr(checkVec[i].c_str(), '#' ) ) {
-			// _sendNodes += checkVec[i];
-			_sendNodes += "#"; 
-			// prt(("s0293 _sendNodes add[%s]\n", checkVec[i].c_str() ));
+		tok = checkVec[i];
+		if ( strchr(tok.c_str(), '#' ) ) {
+			_sendAllNodes += "#"; 
 			isPound = true;
 			cnum = i;
 			++cpos;
 		} else {
 			if ( isPound ) {
-				_sendNodes += checkVec[i];
-				// prt(("s0233 _sendNodes add[%s]\n", checkVec[i].c_str() ));
+				_sendAllNodes += tok;
 				isPound = false;
 			} else {
-				_sendNodes += Jstr("|") + checkVec[i];
-				// prt(("s0235 _sendNodes add[%s]\n", checkVec[i].c_str() ));
+				_sendAllNodes += Jstr("|") + tok;
 			}
 
 			if ( first ) {
-				_allNodes += checkVec[i];
+				_allNodes += tok;
 				first = false;
 			} else {
-				_allNodes += Jstr("|") + checkVec[i];
+				_allNodes += Jstr("|") + tok;
 			}
 			++ _numAllNodes;
 
-			checkMap.addKeyValue( AbaxString(checkVec[i]), cnum );
-			clusterNumMap.addKeyValue( AbaxString(checkVec[i]), cpos );
+			checkMap.addKeyValue( AbaxString(tok), cnum );
+			clusterNumMap.addKeyValue( AbaxString(tok), cpos );
 		}
 	}
 
 	// checkVec has all IP addresses
 	// last, format current cluster node string
+	// _curClusterNodes: "ip4|ip5|ip6"
 	checkMap.getValue( AbaxString(_selfIP), cnum );
 	clusterNumMap.getValue( AbaxString(_selfIP), _curClusterNumber );
 	first = true;
-	_numNodes = 0;
+	_numCurNodes = 0;
 	for ( int i = cnum+1; i < checkVec.size(); ++i ) {
 		if ( strchr(checkVec[i].c_str(), '#' ) ) {
 			// next cluster, break
 			break;
 		} else {
 			if ( first ) {
-				_curClusterNodes += checkVec[i];
+				_curClusterNodes = checkVec[i];
 				first = false;
 			} else {
 				_curClusterNodes += Jstr("|") + checkVec[i];
 			}
-			++ _numNodes;
+			++ _numCurNodes;
 		}
 	}
 
@@ -211,8 +199,10 @@ void JagNodeMgr::init()
 	// # iddid
 	// # kdkd
 	//  ip1
+	//  ip2
 	// # idid
 	//  ip3
+	//  ip4
 	// # dd
 	_totalClusterNumber = 0;
 	int inComment = 0;
@@ -232,7 +222,7 @@ void JagNodeMgr::init()
 // public methods
 // rename original file to .backup, write newhost list to file, then redo init
 // str has the form of: #\nip1\nip2\n#\nip3\nip4\n...
-void JagNodeMgr::refreshFile( Jstr &str )
+void JagNodeMgr::refreshClusterFile( Jstr &hoststr )
 {
 	Jstr vfpath = jaguarHome() + "/conf/cluster.conf";
 	Jstr bvfpath = vfpath + ".backup";
@@ -240,9 +230,9 @@ void JagNodeMgr::refreshFile( Jstr &str )
 	FILE *fv = jagfopen( vfpath.c_str(), "w" );
 	if ( ! fv ) { 
 		printf("s5083 Error open %s exit\n", vfpath.c_str() );
-		exit( 1 );
+		exit( 21 );
 	}
-	fprintf(fv, "%s", str.c_str());
+	fprintf(fv, "%s", hoststr.c_str());
 	jagfclose( fv );
 
 	// if cluster.conf changes, require do sshsetup in install script

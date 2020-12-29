@@ -25,104 +25,151 @@
 
 JagParseParam::JagParseParam( const JagParser *jps ) 
 { 
-	jagParser = jps;
+	_jagParser = jps; // const
+	initCtor( ); 
+}
+
+void JagParseParam::initCtor()
+{
 	_rowHash = NULL;
-	_colHash = NULL;
 	_lineFile = NULL;
-	init( NULL, false ); 
+	_colHash = NULL;
+
+	parseOK = impComplete = opcode = 0;
+	hasExist = hasColumn = hasWhere = hasGroup = hasHaving = hasOrder = 0;
+    hasLimit = hasTimeout = hasPivot = hasExport = hasForce = 0;
+	limitStart = limit = timeout = keyLength = valueLength = ovalueLength = 0;
+	timediff = exportType = groupType = isMemTable = isChainTable = 0;
+	getfileActualData = 0;
+	optype=' '; fieldSep=','; lineSep='\n'; quoteSep='\'';
+	dorep = true;
+	origpos = NULL;
+	tabidxpos = NULL;
+	endtabidxpos = NULL;
+	hasCountAll = false;
+	_selectStar = false;
+	cmd = 0;
+	detail = false;
+	hasPoly = false;
+	polyDim = 0;
+
+	treeCheckMap = NULL;
+	insColMap = NULL;
+	joinColMap = NULL;
 }
 
 JagParseParam::~JagParseParam()
 {
 	//prt(("s3088 JagParseParam::~JagParseParam() \n" ));
-	if ( _rowHash ) delete _rowHash;
-	if ( _colHash ) delete _colHash;
-	if ( _lineFile ) {
-		//prt(("s3082 delete _lineFile\n" ));
-		delete _lineFile;
-		_lineFile = NULL;
-	}
+	destroy();
 }
-
 
 void JagParseParam::init( const JagParseAttribute *ijpa, bool needClean )
 {
 	// clean old tree, vector and hashmap
-	//prt(("s8408 JagParseParam::init needClean=%d\n", needClean ));
+	//prt(("s8408 JagParseParam::init needClean=%d ijpa=%0x\n", needClean, ijpa ));
 	if ( needClean ) {
 		clean();
 	}
 
-	// init all other data members
-	// set all bool/abaxint/init type data members to 0
-	// set optype, fieldSep, lineSep, quoteSep to default
-	// set all data string to empty
-	// set jpa if not NULL
-	parseOK = impComplete = opcode = 0;
-	hasExist = hasColumn = hasWhere = hasGroup = hasHaving = hasOrder = hasLimit = hasTimeout = hasPivot = hasExport = 0;
-	hasForce = 0;
-	limitStart = limit = timeout = keyLength = valueLength = ovalueLength = timediff = exportType = groupType = isMemTable = 0;
-	isChainTable = 0;
-	getfileActualData = 0;
-	optype=' '; fieldSep=','; lineSep='\n'; quoteSep='\'';
+	initCtor();
+
+	// strings
 	uid = passwd = dbName = batchFileName = "";
 	selectTablistClause = selectColumnClause = selectWhereClause = selectGroupClause = selectHavingClause = "";
 	selectOrderClause = selectLimitClause = selectTimeoutClause = selectPivotClause = selectExportClause = "";
 	loadColumnClause = loadLineClause = loadQuoteClause = "";
 	insertDCSyncHost = "";
-	if ( ijpa ) jpa = *ijpa;
-	dorep = true;
-
 	origCmd = "";
 	dbNameCmd = "";
-	origpos = NULL;
-	tabidxpos = NULL;
-	endtabidxpos = NULL;
-
 	grantPerm = "";
 	grantObj = "";
 	grantUser = "";
 	grantWhere = "";
-	detail = false;
-	hasPoly = false;
-	polyDim = 0;
-	_rowHash = NULL;
-	_colHash = NULL;
-	_lineFile = NULL;
-	hasCountAll = false;
 	like="";
-	_selectStar = false;
-	cmd = 0;
+
+	if ( ijpa ) jpa = *ijpa;
 }
 
 // clean all trees and reset all vectors
 void JagParseParam::clean()
 {	
 	// clean objectVec, orderVec, groupVec, otherVec, createAttrVec, updSetVec, selColVec, joinOnVec, whereVec, havingVec, offsetVec and map
-	objectVec.clean(); orderVec.clean(); groupVec.clean(); otherVec.clean(); createAttrVec.clean(); 
-	updSetVec.clean(); selColVec.clean(); joinOnVec.clean(); whereVec.clean(); offsetVec.clean(); 
-	inscolmap.removeAllKey(); joincolmap.removeAllKey(); treecheckmap.removeAllKey();
-	// havingVec.clean(); 
-	selAllColVec.clean();
+	prt(("s0283838 JagParseParam::clean() ...\n"));
+	objectVec.clean(); 
+	orderVec.clean(); 
+	groupVec.clean(); 
+	otherVec.clean(); 
+	createAttrVec.clean(); 
+	updSetVec.clean(); 
+	selColVec.clean(); 
+	selAllColVec.clean(); 
+	joinOnVec.clean(); 
+	whereVec.clean(); 
+	offsetVec.clean(); 
 	jpa.clean();
+
+	// havingVec.clean(); 
 	_selectStar = false;
 	cmd = 0;
 	value = "";
 
+	if ( insColMap ) {
+		insColMap->removeAllKey(); 
+	}
+
+	if ( _rowHash ) {
+		_rowHash->clean();
+	}
+
+	if ( joinColMap ) {
+		joinColMap->removeAllKey(); 
+	}
+
+	if ( treeCheckMap ) {
+		treeCheckMap->removeAllKey();
+	}
+
+	if ( _colHash ) {
+		_colHash->clean();
+	}
+
+	if ( _lineFile ) {
+		delete _lineFile;
+		_lineFile = NULL;
+	}
+
+	/***
+	prt(("s0283838 JagParseParam::destroy() ...\n"));
+	destroy();
+	prt(("s0283838 JagParseParam::destroy() done\n"));
+	**/
+}
+
+void JagParseParam::destroy()
+{
+	if ( insColMap ) {
+		delete insColMap;
+	}
+
 	if ( _rowHash ) {
 		delete _rowHash;
-		_rowHash = NULL;
 	}
 
 	if ( _colHash ) {
 		delete _colHash;
-		_colHash = NULL;
 	}
 
 	if ( _lineFile ) {
-		// prt(("s0393 JagParseParam::clean() delete _lineFile\n" ));
 		delete _lineFile;
-		_lineFile = NULL;
+	}
+
+	if ( treeCheckMap ) {
+		delete treeCheckMap;
+	}
+
+	if ( joinColMap ) {
+		delete joinColMap;
 	}
 }
 
@@ -131,24 +178,18 @@ void JagParseParam::clean()
 // return value <= 0 error; 1 OK
 int JagParseParam::setSelectWhere( )
 {
-	//prt(("s4034 setSelectWhere selectWhereClause=[%s] \n", selectWhereClause.c_str() ));
 	if ( this->selectWhereClause.length() < 1 ) return -2500;
 
 	const char *pwhere = this->selectWhereClause.c_str();	
 	OnlyTreeAttribute ota;
-	//prt(("s3348\n" ));
-	// ota.init( this->jpa );
 	ota.init( this->jpa, this );
 	this->whereVec.append( ota );
 
 	int last = this->whereVec.length()-1;
 	this->whereVec[last].tree->init( this->jpa, this );
-	//prt(("s3341\n" ));
 	this->setupCheckMap(); // uses objectVec
-	//prt(("s2308 tree->parse(%s) ...\n", pwhere ));
-	this->whereVec[last].tree->parse( jagParser, pwhere, 1, this->treecheckmap, this->joincolmap, 
+	this->whereVec[last].tree->parse( _jagParser, pwhere, 1, *treeCheckMap, joinColMap, 
 								       this->whereVec[last].colList );
-	//prt(("s0183 tree->parse done\n" ));
 	this->hasWhere = 1;
 	return 1;
 }
@@ -180,103 +221,98 @@ int JagParseParam::resetSelectWhere( const Jstr &extraWhere )
 		selectWhereClause = newWhere;
 	}
 
-	/***
-	prt(("s4036 result resetSelectWhere extraWhere=[%s] newWhere=[%s] selectWhereClause=[%s]\n", 
-		extraWhere.c_str(), newWhere.c_str(), selectWhereClause.c_str()  ));
-	***/
-
 	return 1;
 }
 
-// method to setup hashmap of treecheckmap
-// return 0: already set, ignore; return 1: set treecheckmap
-// treecheckmap: key=db.tab.idx  value: index number in objectVec
-// treecheckmap: key=db.idx      value: index number in objectVec
-// treecheckmap: key=idx      value: index number in objectVec
-// treecheckmap: key=db.tab      value: index number in objectVec
-// treecheckmap: key=tab      value: index number in objectVec
+// method to setup hashmap of treeCheckMap
+// return 0: already set, ignore; return 1: set treeCheckMap
+// treeCheckMap: key=db.tab.idx  value: index number in objectVec
+// treeCheckMap: key=db.idx      value: index number in objectVec
+// treeCheckMap: key=idx      value: index number in objectVec
+// treeCheckMap: key=db.tab      value: index number in objectVec
+// treeCheckMap: key=tab      value: index number in objectVec
 int JagParseParam::setupCheckMap()
 {
-	if ( treecheckmap.size() > 0 ) return 0;
+	initTreeCheckMap();
+
+	if ( treeCheckMap->size() > 0 ) return 0;
 	AbaxString pname, fname;
-	AbaxPair<AbaxString, abaxint> pair;
-	abaxint cnt = -1;
+	AbaxPair<AbaxString, jagint> pair;
 	for ( int i = 0; i < objectVec.length(); ++i ) {
 		pair.value = i;
 		if ( JAG_INSERTSELECT_OP == opcode ) pair.value = 0;
 		// put "<db.tab<db.tab,cnt>>", "<tab<db.tab,cnt>>" or 
-		// "<db.tab.idx<db.tab.idx,cnt>>", "<db.idx<db.tab.idx,cnt>>", "<idx<db.tab.idx,cnt>>" into treecheckmap
+		// "<db.tab.idx<db.tab.idx,cnt>>", "<db.idx<db.tab.idx,cnt>>", "<idx<db.tab.idx,cnt>>" into treeCheckMap
 		if ( objectVec[i].indexName.length() > 0 ) {
 			fname = objectVec[i].dbName + "." + objectVec[i].tableName + "." + objectVec[i].indexName;
 			pair.key = fname;
 			// "<db.tab.idx<db.tab.idx,cnt>>"
 			pname = fname;
-			treecheckmap.addKeyValue( pname, pair );
+			treeCheckMap->addKeyValue( pname, pair );
 			// "<db.idx<db.tab.idx,cnt>>"
 			pname = objectVec[i].dbName + "." + objectVec[i].indexName;
-			treecheckmap.addKeyValue( pname, pair );
+			treeCheckMap->addKeyValue( pname, pair );
 			// "<idx<db.tab.idx,cnt>>"
 			pname = objectVec[i].indexName;
-			treecheckmap.addKeyValue( pname, pair );
+			treeCheckMap->addKeyValue( pname, pair );
 		} else {
 			fname = objectVec[i].dbName + "." + objectVec[i].tableName;
 			pair.key = fname;
 			// "<db.tab<db.tab,cnt>>"
 			pname = fname;
-			treecheckmap.addKeyValue( pname, pair );
+			treeCheckMap->addKeyValue( pname, pair );
 			// "<tab<db.tab,cnt>>"
 			pname = objectVec[i].tableName;
-			treecheckmap.addKeyValue( pname, pair );
+			treeCheckMap->addKeyValue( pname, pair );
 		}
 	}
 
 	pair.key = fname;
 	pair.value = objectVec.length();
-	treecheckmap.addKeyValue( "0", pair );
+	treeCheckMap->addKeyValue( "0", pair );
 	return 1;
 }
 
 //////////////////////////// OtherAttribute ///////////////////
 OtherAttribute::OtherAttribute()
 {
-	//mpgon = NULL;
 	init();
 }
 
 OtherAttribute::~OtherAttribute()
 {
-	//if ( mpgon ) delete mpgon;
 }
 
 void OtherAttribute::init( ) 
 {
 	objName.init(); 
 	valueData = ""; hasQuote = 0; type=""; issubcol = false;
-	point.init(); linestr.init(); 
+	point.init(); 
+	linestr.init(); 
 	is3D = false;
 }
 
 void OtherAttribute::copyData( const OtherAttribute& other )
 {
-		hasQuote = other.hasQuote;
-		objName = other.objName;
-		valueData = other.valueData;
-		type = other.type;
-		point = other.point;
-		linestr = other.linestr;
-		issubcol = other.issubcol;
+	hasQuote = other.hasQuote;
+	objName = other.objName;
+	valueData = other.valueData;
+	type = other.type;
+	point = other.point;
+	linestr = other.linestr;
+	issubcol = other.issubcol;
 }
 
 OtherAttribute& OtherAttribute::operator=( const OtherAttribute& other )
 {
-		if ( this == &other ) return *this;
-		copyData( other );
-		return *this;
+	if ( this == &other ) return *this;
+	copyData( other );
+	return *this;
 }
 
 OtherAttribute::OtherAttribute ( const OtherAttribute& other )
 {
-		copyData( other );
+	copyData( other );
 }
 
 void OtherAttribute::print()
@@ -288,7 +324,6 @@ void OtherAttribute::print()
 	prt(("  issubcol=[%d]\n", issubcol ));
 	prt(("  linestr.size=[%d]\n", linestr.size() ));
 }
-
 
 //////////////////////////// OnlyTreeAttribute //////////////
 void OnlyTreeAttribute::init( const JagParseAttribute &jpa, JagParseParam *pram ) 
@@ -312,7 +347,7 @@ Jstr JagParseParam::formSelectSQL()
 {
 	Jstr q;
 	formatInsertSelectCmdHeader( this, q );
-	q += "select " + selectColumnClause + " from " + selectTablistClause + " ";
+	q += Jstr("select ") + selectColumnClause + " from " + selectTablistClause + " ";
 
 	if ( hasWhere ) {
 		q += Jstr(" where ") + selectWhereClause + " ";
@@ -508,21 +543,23 @@ void JagParseParam::print()
 		}
 	}
 
-	if ( this->inscolmap.size() > 0 ) {
+	/***
+	if ( this->insColMap.size() > 0 ) {
 		prt(("-----------------insert column map------------------\n"));
-		// this->inscolmap.printKeyStringValueInteger();
+		// this->insColMap.printKeyStringValueInteger();
 		prt(("\n"));
 	}
 
-	if ( this->joincolmap.size() > 0 ) {
+	if ( this->joinColMap.size() > 0 ) {
 		prt(("-----------------join column map------------------\n"));
-		// this->joincolmap.printKeyStringValueInteger();
+		// this->joinColMap.printKeyStringValueInteger();
 		prt(("\n"));
 	}
+	***/
 
-	if ( this->treecheckmap.size() > 0 ) {
+	if ( treeCheckMap && treeCheckMap->size() > 0 ) {
 		prt(("-----------------tree check map------------------\n"));
-		// this->treecheckmap.printKeyStringOnly();
+		// this->treeCheckMap.printKeyStringOnly();
 		prt(("\n"));
 	}
 
@@ -793,7 +830,7 @@ short JagParseParam::checkCmdMode()
 		return 0;
 	} else if ( optype == 'R' ) {
 		if ( JAG_SELECT_OP == opcode || JAG_GETFILE_OP == opcode || JAG_COUNT_OP == opcode ) return 5;
-		else if ( isJoin( opcode ) ) return 6;
+		else if ( isJoin() ) return 6;
 		return 0;
 	}
 	return 0;
@@ -1188,3 +1225,45 @@ bool JagParseParam::isSelectConst() const
 		return false;
 	}
 }
+
+// obj method
+bool JagParseParam::isJoin() const
+{
+	return isJoin( opcode );
+}
+
+// static method
+bool JagParseParam::isJoin( int code ) 
+{
+    if (JAG_INNERJOIN_OP == code ||
+        JAG_LEFTJOIN_OP == code ||
+        JAG_RIGHTJOIN_OP == code ||
+        JAG_FULLJOIN_OP == code )
+    {
+        return true;
+    }
+    return false;
+}
+
+
+void JagParseParam::initTreeCheckMap()
+{
+	if ( treeCheckMap == NULL ) {
+		treeCheckMap = new JagHashMap<AbaxString, AbaxPair<AbaxString, jagint> >();
+	}
+}
+
+void JagParseParam::initInsColMap()
+{
+	if ( insColMap == NULL ) {
+		insColMap = new JagHashStrInt();
+	}
+}
+
+void JagParseParam::initJoinColMap()
+{
+	if ( joinColMap == NULL ) {
+		joinColMap = new JagHashStrInt();
+	}
+}
+

@@ -40,21 +40,31 @@ class JagBlock
 		~JagBlock();
 		void destroy();
 
-		void setNull( const Pair &pair, abaxint loweri );
-        void deleteIndex( const Pair &dpair, const Pair &npair, abaxint pos, bool dolock=true );
-		bool updateIndex( const Pair &pair, abaxint loweri, bool force=false, bool dolock=true );
-		void updateCounter( abaxint loweri, int val, bool isSet, bool dolock=true );
-		void updateMinKey( const Pair &pair,  bool dolock=true );
-		void updateMaxKey( const Pair &pair,  bool dolock=true );
-		abaxint findRealLast();
-		bool findFirstLast( const Pair &newpair, abaxint *first, abaxint *last );
-		bool findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset ); 
-		abaxint getPartElements( abaxint pos ) { return _vec[0].getPartElements( pos ); }
-		void cleanPartBlockIndex( abaxint pos, bool dolock=true );
+		void setNull( const Pair &pair, jagint loweri );
+
+        //void deleteIndex( const Pair &dpair, const Pair &npair, jagint pos, bool dolock=true );
+		//bool updateIndex( const Pair &pair, jagint loweri, bool force=false, bool dolock=true );
+        void deleteIndex( const Pair &dpair, const Pair &npair, jagint pos, bool dolock=false );
+		bool updateIndex( const Pair &pair, jagint loweri, bool force=false, bool dolock=false );
+
+		//void updateCounter( jagint loweri, int val, bool isSet, bool dolock=true );
+		void updateCounter( jagint loweri, int val, bool isSet, bool dolock=false );
+
+		//void updateMinKey( const Pair &pair,  bool dolock=true );
+		//void updateMaxKey( const Pair &pair,  bool dolock=true );
+		void updateMinKey( const Pair &pair,  bool dolock=false );
+		void updateMaxKey( const Pair &pair,  bool dolock=false );
+
+		jagint findRealLast();
+		bool findFirstLast( const Pair &newpair, jagint *first, jagint *last );
+		bool findLimitStart( jagint &startlen, jagint limitstart, jagint &soffset ); 
+		jagint getPartElements( jagint pos ) { return _vec[0].getPartElements( pos ); }
+		//void cleanPartBlockIndex( jagint pos, bool dolock=true );
+		void cleanPartBlockIndex( jagint pos, bool dolock=false );
 		JagFixString getMinKey();
 		JagFixString getMaxKey();
-		void  flushBottomLevel( const Jstr &outPath, abaxint elemts, abaxint arln, abaxint minindx, abaxint maxindx );
-		abaxint getBottomCapacity() const { return _vec[0].capacity(); }
+		void  flushBottomLevel( const Jstr &outPath, jagint elemts, jagint arln, jagint minindx, jagint maxindx );
+		jagint getBottomCapacity() const { return _vec[0].capacity(); }
 
 		// debug purpose
 		const JagGapVector<Pair>  *getVec() const { return _vec; }
@@ -62,10 +72,10 @@ class JagBlock
 		bool setNull();
 		void print();
 
-		uabaxint ops;
+		jaguint ops;
 		static const bool  debug = 1;
 		static const int  BLOCK = JAG_BLOCK_SIZE;
-		JagReadWriteLock *_lock;
+		pthread_rwlock_t *_lock;
 		Pair		_maxKey;
 		Pair		_minKey;
 
@@ -73,7 +83,7 @@ class JagBlock
 
 		JagGapVector<Pair>  *_vec;
 		int			_topLevel; // current top level
-		bool        isPrimary( int level, abaxint i, abaxint *primei );
+		bool        isPrimary( int level, jagint i, jagint *primei );
 
 };
 
@@ -83,7 +93,8 @@ JagBlock<Pair>::JagBlock( int levels )
 	_vec = new JagGapVector<Pair>[levels];
 	_topLevel = 0;
 	ops = 0;
-	_lock = new JagReadWriteLock();
+	//_lock = newJagReadWriteLock();
+	_lock = NULL;
 }
 
 template <class Pair> 
@@ -101,7 +112,8 @@ void JagBlock<Pair>::destroy( )
 	_vec = NULL;
 
 	if ( _lock ) {
-		delete _lock;
+		//delete _lock;
+		deleteJagReadWriteLock( _lock );
 		_lock = NULL;
 	}
 }
@@ -154,7 +166,7 @@ void JagBlock<Pair>::updateMaxKey( const Pair &inpair, bool dolock )
 
 // pos is level 0 actual position, not jdb file position
 template <class Pair> 
-void JagBlock<Pair>::cleanPartBlockIndex( abaxint pos, bool dolock )
+void JagBlock<Pair>::cleanPartBlockIndex( jagint pos, bool dolock )
 {
 	JagReadWriteMutex mutex( _lock );
 	if ( dolock ) { mutex.writeLock(); }
@@ -165,8 +177,8 @@ void JagBlock<Pair>::cleanPartBlockIndex( abaxint pos, bool dolock )
 		return;
 	}
 		
-	abaxint start;
-	abaxint usepos;
+	jagint start;
+	jagint usepos;
 	bool noUpdate = false;
 	Pair pair;
 
@@ -175,7 +187,7 @@ void JagBlock<Pair>::cleanPartBlockIndex( abaxint pos, bool dolock )
 		usepos = pos/BLOCK;
 		noUpdate = false;
 		start = pos/BLOCK*BLOCK;
-		for ( abaxint i = start; i < pos; ++i ) {
+		for ( jagint i = start; i < pos; ++i ) {
 			if ( i >= _vec[level-1].capacity() || _vec[level-1][i] != Pair::NULLVALUE ) {
 				noUpdate = true;
 				break;
@@ -185,7 +197,7 @@ void JagBlock<Pair>::cleanPartBlockIndex( abaxint pos, bool dolock )
 		// else, the previous pos for blocks are all empty, check to this blocks last pos ( relative pos 32 ) 
 		// to make sure this new block is totally empty or has new pair keys to be set to the upper level
 		pair = Pair::NULLVALUE;
-		for ( abaxint i = pos; i < start+BLOCK; ++i ) {
+		for ( jagint i = pos; i < start+BLOCK; ++i ) {
 			if ( i < _vec[level-1].capacity() && _vec[level-1][i] != Pair::NULLVALUE ) {
 				pair = _vec[level-1][i];
 				break;
@@ -199,7 +211,7 @@ void JagBlock<Pair>::cleanPartBlockIndex( abaxint pos, bool dolock )
 
 // pos is level 0 actual position, not jdb file position
 template <class Pair> 
-void JagBlock<Pair>::deleteIndex( const Pair &dpair, const Pair &npair, abaxint pos, bool dolock )
+void JagBlock<Pair>::deleteIndex( const Pair &dpair, const Pair &npair, jagint pos, bool dolock )
 {
     JagReadWriteMutex mutex( _lock );
     if ( dolock ) { mutex.writeLock(); }
@@ -211,12 +223,12 @@ void JagBlock<Pair>::deleteIndex( const Pair &dpair, const Pair &npair, abaxint 
 	}
 
     // then, loop to check and update upper levels of block indexs
-    abaxint start, usepos; bool noUpdate;
+    jagint start, usepos; bool noUpdate;
     for ( int level = 1; level <= _topLevel; ++level ) {
         usepos = pos/BLOCK;
         noUpdate = 0;
         start = pos/BLOCK*BLOCK;
-        for ( abaxint i = start; i < pos; ++i ) {
+        for ( jagint i = start; i < pos; ++i ) {
             if ( i >= _vec[level-1].capacity() || ! _vec[level-1].isNull(i) ) {
                 noUpdate = 1; break;
             }
@@ -226,7 +238,7 @@ void JagBlock<Pair>::deleteIndex( const Pair &dpair, const Pair &npair, abaxint 
         // if start-pos blocks are all empty, need to check from pos to last to update new pair keys
         // or null block for the upper level
         Pair pk;
-        for ( abaxint i = pos; i < start+BLOCK; ++i ) {
+        for ( jagint i = pos; i < start+BLOCK; ++i ) {
             if ( i < _vec[level-1].capacity() && ! _vec[level-1].isNull(i) ) {
                 pk = _vec[level-1][i];
                 break;
@@ -240,20 +252,20 @@ void JagBlock<Pair>::deleteIndex( const Pair &dpair, const Pair &npair, abaxint 
 }
 
 template <class Pair> 
-bool JagBlock<Pair>::updateIndex( const Pair &inpair, abaxint loweri, bool force, bool dolock )
+bool JagBlock<Pair>::updateIndex( const Pair &inpair, jagint loweri, bool force, bool dolock )
 {
 	JagReadWriteMutex mutex( _lock );
 	if ( dolock ) { mutex.writeLock(); }
 
 	bool rc = false;
-	abaxint i = loweri;
+	jagint i = loweri;
 	int   level = 0;
 	bool goup = 1;
 	// Pair  pair = inpair;
 	Pair  pair = Pair(inpair.key);
-	abaxint  primei;
+	jagint  primei;
 
-	int  cnt=0;
+	//int  cnt=0;
 
 	//printf("\nc3201 index::updateindex less loweri=%d ", loweri );
 	//abaxcout << " pair=" << pair << abaxendl;
@@ -320,7 +332,7 @@ bool JagBlock<Pair>::updateIndex( const Pair &inpair, abaxint loweri, bool force
 
 // is i-th postion the start-position or the first non-zero element in level-vec?
 template <class Pair> 
-bool JagBlock<Pair>::isPrimary( int level, abaxint i, abaxint *primei )
+bool JagBlock<Pair>::isPrimary( int level, jagint i, jagint *primei )
 {
 	if ( (i % BLOCK) == 0 ) {
 		*primei = i;
@@ -328,8 +340,8 @@ bool JagBlock<Pair>::isPrimary( int level, abaxint i, abaxint *primei )
 		return true;
 	}
 	
-	abaxint j = (i/BLOCK) * BLOCK;
-	abaxint k = j + BLOCK;
+	jagint j = (i/BLOCK) * BLOCK;
+	jagint k = j + BLOCK;
 	while ( _vec[level][j] == Pair::NULLVALUE ) {
 		++j;
 		if ( j == k ) {
@@ -347,19 +359,19 @@ bool JagBlock<Pair>::isPrimary( int level, abaxint i, abaxint *primei )
 }
 
 template <class Pair>
-void JagBlock<Pair>::updateCounter( abaxint loweri, int val, bool isSet, bool dolock )
+void JagBlock<Pair>::updateCounter( jagint loweri, int val, bool isSet, bool dolock )
 {
 	JagReadWriteMutex mutex( _lock );
 	if ( dolock ) { mutex.writeLock(); }
-	abaxint i = loweri / BLOCK;
+	jagint i = loweri / BLOCK;
 	_vec[0].setValue( val, isSet, i );
 	if ( dolock ) { mutex.writeUnlock(); }
 }
 
 template <class Pair> 
-void JagBlock<Pair>::setNull( const Pair &pair, abaxint loweri )
+void JagBlock<Pair>::setNull( const Pair &pair, jagint loweri )
 {
-	abaxint i = loweri;
+	jagint i = loweri;
 	int   level = 0;
 
 	while ( 1 ) {
@@ -371,20 +383,20 @@ void JagBlock<Pair>::setNull( const Pair &pair, abaxint loweri )
 }
 
 template <class Pair> 
-abaxint JagBlock<Pair>::findRealLast()
+jagint JagBlock<Pair>::findRealLast()
 {
 	return _vec[0].last();
 }
 
 template <class Pair> 
-bool JagBlock<Pair>::findFirstLast( const Pair &pair, abaxint *retfirst, abaxint *retlast )
+bool JagBlock<Pair>::findFirstLast( const Pair &pair, jagint *retfirst, jagint *retlast )
 {
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 
 	// _topLevel
 	// ..
 	// 0  level
-	abaxint first, last, index;
+	jagint first, last, index;
 	int level;
 	int realtop;
 
@@ -443,7 +455,7 @@ bool JagBlock<Pair>::findFirstLast( const Pair &pair, abaxint *retfirst, abaxint
 
 // write bottom level of block index to a file
 template <class Pair> 
-void JagBlock<Pair>::flushBottomLevel( const Jstr &outFPath, abaxint elements, abaxint arrlen, abaxint minindex, abaxint maxindex )
+void JagBlock<Pair>::flushBottomLevel( const Jstr &outFPath, jagint elements, jagint arrlen, jagint minindex, jagint maxindex )
 {
 	if ( _topLevel == 0 &&  _vec[0].size() < 1 ) {
 		return;
@@ -460,7 +472,7 @@ void JagBlock<Pair>::flushBottomLevel( const Jstr &outFPath, abaxint elements, a
 	const Pair *arr = _vec[0].array();
 	// get pair's key length
 	int klen = 0;
-	for ( abaxint i = 0; i <= _vec[0].last(); ++i ) {
+	for ( jagint i = 0; i <= _vec[0].last(); ++i ) {
 		if ( _vec[0].isNull( i ) ) { continue; }
 		const Pair &pair = arr[i];
 		klen = pair.key.size();
@@ -474,7 +486,7 @@ void JagBlock<Pair>::flushBottomLevel( const Jstr &outFPath, abaxint elements, a
 	}
 
 	// write header  elementtsarrlen first  32 bytes
-	abaxint pos = 0;
+	jagint pos = 0;
 	int minlen, maxlen;
 	minlen = _minKey.key.size();
 	maxlen = _maxKey.key.size();
@@ -493,7 +505,7 @@ void JagBlock<Pair>::flushBottomLevel( const Jstr &outFPath, abaxint elements, a
 	char *nullbuf = (char*)jagmalloc(klen+2);
 	memset( nullbuf, 0, klen+1 );
 
-	for ( abaxint i = 0; i <= _vec[0].last(); ++i ) {
+	for ( jagint i = 0; i <= _vec[0].last(); ++i ) {
 		if ( _vec[0].isNull( i ) ) {
 			raysafepwrite( fd, nullbuf, klen+1, pos ); 
 			//printf("s5801 write NULL at pos=%lld len=%lld\n", pos, 1 );
@@ -514,7 +526,7 @@ void JagBlock<Pair>::flushBottomLevel( const Jstr &outFPath, abaxint elements, a
 }
 
 template <class Pair> 
-bool JagBlock<Pair>::findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset ) 
+bool JagBlock<Pair>::findLimitStart( jagint &startlen, jagint limitstart, jagint &soffset ) 
 {
 	bool rc = _vec[0].findLimitStart( startlen, limitstart, soffset ); 
 	if ( rc ) {

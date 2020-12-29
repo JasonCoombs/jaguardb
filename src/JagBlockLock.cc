@@ -39,7 +39,7 @@ void JagBlockLock::init()
 	_readers = _writers = 0;
 }
 
-bool JagBlockLock::regionOverlaps( abaxint pos, bool isRead )
+bool JagBlockLock::regionOverlaps( jagint pos, bool isRead )
 {
 	// -1 lock look at number of readers and writers
    	if ( -1 == pos ) {
@@ -97,8 +97,9 @@ bool JagBlockLock::regionOverlaps( abaxint pos, bool isRead )
 }
 
 // v2: data1 is readers; data2 is writers
-void JagBlockLock::writeLock( abaxint pos )
+void JagBlockLock::writeLock( jagint pos )
 {
+	JAG_BLURT
     jaguar_mutex_lock( & _mutex);
     while ( regionOverlaps( pos, false ) ) {
       jaguar_cond_wait(&_condvar, & _mutex);
@@ -109,9 +110,10 @@ void JagBlockLock::writeLock( abaxint pos )
 	++ _writers;
     _map->setValue( pos, v2, true );
     jaguar_mutex_unlock(&_mutex);
+	JAG_OVER
 }
   
-void JagBlockLock::writeUnlock( abaxint pos )
+void JagBlockLock::writeUnlock( jagint pos )
 {
     jaguar_mutex_lock(&_mutex);
     AbaxLong2 v2;
@@ -130,8 +132,9 @@ void JagBlockLock::writeUnlock( abaxint pos )
     jaguar_mutex_unlock(&_mutex);
 }
   
-void JagBlockLock::readLock( abaxint pos )
+void JagBlockLock::readLock( jagint pos )
 {
+	JAG_BLURT
     jaguar_mutex_lock( & _mutex);
     while ( regionOverlaps( pos, true ) ) {
       jaguar_cond_wait(&_condvar, & _mutex);
@@ -142,9 +145,10 @@ void JagBlockLock::readLock( abaxint pos )
 	++ _readers;
     _map->setValue( pos, v2, true );
     jaguar_mutex_unlock(&_mutex);
+	JAG_OVER
 }
 
-void JagBlockLock::readUnlock( abaxint pos )
+void JagBlockLock::readUnlock( jagint pos )
 {
     jaguar_mutex_lock(&_mutex);
     AbaxLong2 v2;

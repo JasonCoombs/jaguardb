@@ -363,13 +363,19 @@ long JaguarAPI::sendDirectToSockAll( const char *mesg, long len, bool nohdr )
 	return _jcli->sendDirectToSockAll( mesg, len, nohdr );
 }
 
+long JaguarAPI::sendRawDirectToSockAll( const char *mesg, long len )
+{
+	return _jcli->sendDirectToSockAll( mesg, len, true );
+}
+
 long JaguarAPI::recvDirectFromSockAll( char *&buf, char *hdr )
 {
 	return _jcli->recvDirectFromSockAll( buf, hdr );
 }
-long JaguarAPI::recvDirectFromSockAll( char *&buf, long len )
+
+long JaguarAPI::recvRawDirectFromSockAll( char *&buf, long len )
 {
-	return _jcli->recvDirectFromSockAll( buf, len );
+	return _jcli->recvRawDirectFromSockAll( buf, len );
 }
 
 /***
@@ -444,7 +450,7 @@ int make2DBarChart( const char *title, int width, int height,
 	int debug = 0;
 	FILE *dbg = NULL;
 	if ( debug ) {
-		FILE *dbg = fopen("/tmp/JaguarAPI.log", "w");
+		dbg = fopen("/tmp/JaguarAPI.log", "w");
 	}
 
 	page = "<!doctype html>\n";
@@ -535,7 +541,7 @@ void readInputFile( const char *inputFile, int maxLines, Jstr &xname, Jstr &ynam
 	if ( ! fp ) return;
 
 	char buf[256];
-	char c, *p, *q;
+	//char c, *p, *q;
 	bool xvaldigit, yvaldigit;
 	long tot = 0;
 	long xval = 0;

@@ -23,7 +23,7 @@
 #include <string.h>
 #include <JagUtil.h>
 
-class JDFS;
+//class JDFS;
 
 class JagTextFileBuffReader
 {
@@ -43,12 +43,12 @@ class JagTextFileBuffReader
 
     static const int NB = 2048*1024;
 	char    *_buf; 
-	abaxint    _buflen;
-	abaxint    _cursor;
-	abaxint   _fdPos;
+	jagint    _buflen;
+	jagint    _cursor;
+	jagint   _fdPos;
 
 	bool  _eof;
-	const JDFS  *_jdfs;
+	//const JDFS  *_jdfs;
 	bool  _inDoubleQuote;
 	bool _connectNextlineDQ;
 };

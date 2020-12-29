@@ -32,15 +32,18 @@ class AbaxCStr
 		AbaxCStr(); 
 		AbaxCStr(const AbaxCStr& str);
 		AbaxCStr(const char* str);
-		AbaxCStr(const char* str, size_t len );
+		AbaxCStr(const char* str, size_t capacity );
+		AbaxCStr(const char* str, size_t strlen, size_t capacity );
 		AbaxCStr(size_t size);
+		AbaxCStr(const char* str, const char *readOnly );
 		~AbaxCStr();
-		inline const char* c_str() const { return buf_; }
-		inline const char* addr() const { return buf_; }
-		inline const char* data() const { return buf_; }
-		inline const char *s() const { return buf_; }
-		inline size_t  size() const { return length_; }
-		inline size_t  length() const { return length_; }
+		const char* c_str() const { return buf_; }
+		char* start() const { return buf_; }
+		const char* addr() const { return buf_; }
+		const char* data() const { return buf_; }
+		const char *s() const { return buf_; }
+		size_t  size() const { return length_; }
+		size_t  length() const { return length_; }
 		size_t find( int c) const;
 		double tof() const;
 		int   toInt() const;
@@ -52,6 +55,8 @@ class AbaxCStr
 		AbaxCStr& operator +=( int ch);
 		AbaxCStr& append( const char *cpstr, unsigned long len);
 		AbaxCStr& operator =( const AbaxCStr& cpstr) ;
+		AbaxCStr operator+( const AbaxCStr& cpstr) const ;
+		//AbaxCStr operator+( const char *cpstr) ;
 
 		bool operator ==( const char *str) const;
 		bool operator ==( const AbaxCStr &str) const;
@@ -88,25 +93,24 @@ class AbaxCStr
 		AbaxCStr	substr(int start ) const;
 		AbaxCStr&	pad0(); 
 		void		destroy();
-		//AbaxCStr 	toUpper() const;
-		//AbaxCStr 	toLower() const ;
 		void 		toUpper();
 		void 		toLower();
 		int     	caseEqual(const char *str) const;
-		//int     	IsAscii() const;
 		int     	numPunct() const;
 		void    	print() const;
 		AbaxCStr&   trimEndZeros();
-		inline AbaxCStr& trim0() { return trimEndZeros(); }
+		AbaxCStr& 	trim0() { return trimEndZeros(); }
 		AbaxCStr 	firstToken( char sep );
 		const char *secondTokenStart( char sep );
 		AbaxCStr 	substr( char startc, char endc );
 		bool        containsChar( char c );
 		bool        isNumeric() const;  // 2 203 or 234.5
 		void   	    dump();
-
+		char    	dtype[4]; // data type of content
+		void        setDtype( const char *typ );
 
 	private:
+		bool    _readOnly;
 		char 	*buf_;
 		size_t 	length_;
 		int  	nseg_;
@@ -123,7 +127,7 @@ class AbaxCStr
 // AbaxCStr operator+ (const char *s1, const AbaxCStr &s2 );
 // AbaxCStr operator+ (const AbaxCStr &s1, const AbaxCStr &s2 );
 AbaxCStr operator+ (const char *s1, const AbaxCStr &s2 );
-AbaxCStr operator+ (const AbaxCStr &s1, const AbaxCStr &s2 );
+//AbaxCStr operator+ (const AbaxCStr &s1, const AbaxCStr &s2 );
 
 #endif
 

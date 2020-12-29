@@ -36,12 +36,12 @@ int JagIndexSchema::getIndexNames( const Jstr &dbname, const Jstr &tabname,
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	bool rc;
-	abaxint getpos;
+	jagint getpos;
 	char *buf = (char*) jagmalloc ( KVLEN+1 );
 	memset( buf, '\0', KVLEN+1 );
 	char *keybuf = (char*) jagmalloc ( KEYLEN+1 );
-	abaxint length = _schema->_garrlen;
-	JagBuffReader nti( _schema, length, KEYLEN, VALLEN, 0, 0 );
+	jagint length = _schema->getLength();
+	JagSingleBuffReader nti( _schema->getFD(), length, KEYLEN, VALLEN, 0, 0, 1 );
 	JagColumn onecolrec;
 	Jstr  ks;
 
@@ -73,9 +73,9 @@ int JagIndexSchema::getIndexNamesFromMem( const Jstr &dbname, const Jstr &tabnam
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 
 	Jstr dbtab = dbname + "." + tabname + ".";
-	abaxint hdrlen = dbtab.size(), len = _recordMap->arrayLength();
+	jagint hdrlen = dbtab.size(), len = _recordMap->arrayLength();
     const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
-    for ( abaxint i = 0; i < len; ++i ) {
+    for ( jagint i = 0; i < len; ++i ) {
     	if ( _recordMap->isNull(i) ) continue;
 		if ( memcmp(arr[i].key.c_str(), dbtab.c_str(), hdrlen) != 0 ) { continue; }
 		vec.append( Jstr(arr[i].key.c_str()+hdrlen) );
@@ -94,9 +94,9 @@ bool JagIndexSchema::tableExist( const Jstr &dbname, const Jstr &tab )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	bool found = false;
-	abaxint totlen = _schema->_garrlen;
+	jagint totlen = _schema->getLength();
 	char  save;
-    abaxint getpos;
+    jagint getpos;
 	int rc;
 
 	char *buf = (char*) jagmalloc ( KVLEN+1 );
@@ -106,7 +106,7 @@ bool JagIndexSchema::tableExist( const Jstr &dbname, const Jstr &tab )
 	memcpy(keybuflow, dbname.c_str(), dbname.size());
 	*(keybuflow+dbname.size()) = '.';
 
-	JagBuffReader nti( _schema, totlen, KEYLEN, VALLEN, 0, 0 );
+	JagSingleBuffReader nti( _schema->getFD(), totlen, KEYLEN, VALLEN, 0, 0, 1 );
 	while ( nti.getNext(buf, KVLEN, getpos) ) {
 		rc = memcmp(buf, keybuflow, dbname.size()+1);
 		if ( rc > 0 ) {
@@ -141,11 +141,11 @@ bool JagIndexSchema::indexExist( const Jstr &dbname, JagParseParam *parseParam )
 bool JagIndexSchema::indexExist( const Jstr &dbname, const Jstr &idx )
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	abaxint totlen = _schema->_garrlen;
+	jagint totlen = _schema->getLength();
 	bool found = false;
 	int rc;
 	char  save;
-    abaxint getpos;
+    jagint getpos;
 
 	char *buf = (char*) jagmalloc ( KVLEN+1 );
 	char *keybuflow = (char*) jagmalloc ( KEYLEN+1 );
@@ -154,7 +154,7 @@ bool JagIndexSchema::indexExist( const Jstr &dbname, const Jstr &idx )
 	memcpy(keybuflow, dbname.c_str(), dbname.size());
 	*(keybuflow+dbname.size()) = '.';
 	
-	JagBuffReader nti( _schema, totlen, KEYLEN, VALLEN, 0, 0 );
+	JagSingleBuffReader nti( _schema->getFD(), totlen, KEYLEN, VALLEN, 0, 0, 1 );
 	while ( nti.getNext(buf, KVLEN, getpos) ) {
 		rc = memcmp(buf, keybuflow, dbname.size()+1);
 		if ( rc > 0 ) {

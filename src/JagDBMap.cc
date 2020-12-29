@@ -18,6 +18,11 @@
  */
 #include <JagGlobalDef.h>
 #include <JagDBMap.h>
+#include <JagRequest.h>
+//#include <JagParseExpr.h>
+//#include <JagDiskArrayServer.h>
+#include <JagDiskArrayBase.h>
+
 
 // ctor
 JagDBMap::JagDBMap( )
@@ -36,37 +41,45 @@ void JagDBMap::destroy( )
 	if ( _map ) {
 		_map->clear();
 		delete _map;
-		_map = NULL;
+		// _map = NULL;
+		_map = nullptr;
 	}
 }
 
 void JagDBMap::init()
 {
-	_map = new FixMap();
+	_map = new JagFixMap();
 }
 
 // returns false if item actually exists in array
 // otherwise returns true
 bool JagDBMap::insert( const JagDBPair &newpair )
 {
-	std::pair<std::map<JagFixString,FixValuePair>::iterator,bool> ret;
-	FixValuePair vpair ( newpair.value, newpair.upsertFlag );
-	FixPair pair( newpair.key, vpair );
+	/***
+	std::pair<std::map<JagFixString,JagFixValuePair>::iterator,bool> ret;
+	JagFixValuePair vpair ( newpair.value, newpair.upsertFlag );
+	JFixPair pair( newpair.key, vpair );
     ret = _map->insert ( pair );
     if (ret.second == false) {
 		return false;
 	}
 
 	return true;
+	***/
+	//_map->emplace(std::make_pair( newpair.key, newpair.value));
+	_map->emplace( newpair.key, newpair.value);
+	return true;
+
 }
 
 bool JagDBMap::remove( const JagDBPair &pair )
 {
-	 _map->erase( pair.key );
-	return true;
+	jagint sz = _map->erase( pair.key );
+	if ( sz > 0 ) return true;
+	else return  false;
 }
 
-bool JagDBMap::exist( const JagDBPair &search )
+bool JagDBMap::exist( const JagDBPair &search ) const
 {
 	if ( _map->find( search.key ) == _map->end() ) {
 		return false;
@@ -75,34 +88,191 @@ bool JagDBMap::exist( const JagDBPair &search )
     return true;
 }
 
-bool JagDBMap::get( JagDBPair &pair )
+bool JagDBMap::get( JagDBPair &pair ) const
 {
-	FixMap::iterator it = _map->find( pair.key );
+	JagFixMap::iterator it = _map->find( pair.key );
 	if ( it == _map->end() ) {
 		return false;
 	}
 
-	pair.value = it->second.first;
+	//pair.value = it->second.first;
+	pair.value = it->second;
 	return true;
 }
 
 bool JagDBMap::set( const JagDBPair &pair )
 {
-	// std::map<JagFixString, JagFixString>::iterator it = _map->find( pair.key );
-	FixMap::iterator it = _map->find( pair.key );
+	JagFixMap::iterator it = _map->find( pair.key );
 	if ( it == _map->end() ) {
 		return false;
 	}
 
-	it->second.first = pair.value;
+	it->second = pair.value;
+	//prt(("s442773 JagDBMap::set iter ==> [%s][%s]\n", it->first.s(), it->second.s() ));
 	return true;
 }
 
 
-void JagDBMap::print( )
+void JagDBMap::print( ) const
 {
-    for ( FixMap::iterator it=_map->begin(); it!=_map->end(); ++it) {
-   		printf("key=[%s]  --> value=[%s]\n", it->first.c_str(), it->second.first.c_str() );
+    for ( JagFixMap::iterator it=_map->begin(); it!=_map->end(); ++it) {
+   		printf("17 key=[%s]  --> value=[%s]\n", it->first.c_str(), it->second.c_str() );
     }
 
 }
+
+// lower_bound of k:  find equal or greater than k. It can be at end() is k is greatest.
+// upper_bound of k:  find          greater than k. It can be at end() is k is greatest.
+
+// get strict predecesor of pair; if not found return JagFIxMap::begin() -- changed to below
+// get strict predecesor of pair; if not found return JagFIxMap::end()
+JagFixMapIterator JagDBMap::getPred( const JagDBPair &pair ) const
+{
+	if ( _map->size() < 1 ) return _map->end();
+
+	JagFixMapIterator itlow = _map->lower_bound( pair.key );
+	if ( itlow == _map->begin() ) {
+		return _map->end();
+	}
+	return --itlow;
+}
+
+// get strict predecesor or equal of pair; if not found return JagFIxMap::begin()--- changed to below
+// get strict predecesor or equal of pair; if not found return JagFIxMap::end()
+JagFixMapIterator JagDBMap::getPredOrEqual( const JagDBPair &pair ) const
+{
+	if ( _map->size() < 1 ) return _map->end();
+
+	JagFixMapIterator itlow = _map->lower_bound( pair.key );
+	if ( itlow == _map->end() ) {
+		return --itlow; // last real position
+	}
+
+	if ( itlow->first == pair.key ) {
+		return itlow;
+	}
+
+	if ( itlow == _map->begin() ) {
+		return _map->end();
+	}
+
+	return --itlow;
+}
+
+// get strict successor of pair; if not found return JagFIxMap::end()
+JagFixMapIterator JagDBMap::getSucc( const JagDBPair &pair ) const
+{
+	return _map->upper_bound( pair.key );
+}
+
+// get strict successor or equal of pair; if not found return JagFIxMap::end()
+JagFixMapIterator JagDBMap::getSuccOrEqual( const JagDBPair &pair ) const
+{
+	return _map->lower_bound( pair.key );
+}
+
+
+// pair: input pair with keys only; output: keys and values of old record
+// retpair: keys and new modified values
+bool JagDBMap::setWithRange( const JagDBServer *servobj, const JagRequest &req, JagDBPair &pair, const char *buffers[], 
+							 bool uniqueAndHasValueCol, ExprElementNode *root, const JagParseParam *parseParam, int numKeys, 
+						const JagSchemaAttribute *schAttr, jagint KLEN, jagint VLEN, jagint setposlist[], JagDBPair &retpair )
+{
+	/**
+	if ( ! get( pair ) ) {
+		return false;
+	}
+	**/
+	return set(pair);
+
+	// pair acually exists
+	/***
+	bool rc = JagDiskArrayBase::checkSetPairCondition( servobj, req, pair, (char**)buffers, uniqueAndHasValueCol, root, parseParam, 
+									 					 numKeys, schAttr, KLEN, VLEN, setposlist, retpair );
+	if ( rc ) {
+		prt(("s220293 OK to set\n"));
+		set( pair );
+	} else {
+		prt(("s220294 not found, t\n"));
+	}
+	***/
+	//return set( pair );
+}
+
+bool JagDBMap::isAtEnd( const JagFixMapIterator &iter ) const 
+{
+	if ( _map->size() < 1 ) { return true; }
+	if ( iter == _map->end() ) { return true; } // end() is NULL, has no data
+	return false;
+}
+
+
+void JagDBMap::setToEnd( JagFixMapIterator &iter ) const
+{
+	iter = _map->end();
+}
+
+
+// _map->end() if empty
+JagFixMapIterator JagDBMap::getFirst() const
+{
+	return _map->begin(); // it can be end()
+}
+
+// _map->end() if empty
+JagFixMapIterator JagDBMap::getLast() const
+{
+	if ( _map->size() < 1 ) { return _map->end(); }
+	JagFixMapIterator iter = _map->end();
+	return --iter;
+}
+
+// assume iter is not end()
+void JagDBMap::iterToPair( const JagFixMapIterator& iter, JagDBPair& pair ) const
+{
+	if ( iter == _map->end() ) return;
+	pair.key = iter->first;
+	//pair.value = iter->second.first;
+	pair.value = iter->second;
+}
+
+// assume iter is not rend()
+void JagDBMap::reverseIterToPair( const JagFixMapReverseIterator& iter, JagDBPair& pair ) const
+{
+	if ( iter == _map->rend() ) return;
+	pair.key = iter->first;
+	pair.value = iter->second;
+}
+
+bool JagDBMap::isAtREnd( const JagFixMapReverseIterator &iter ) const 
+{
+	if ( _map->size() < 1 ) { return true; }
+	if ( iter == _map->rend() ) { return true; } // end() is NULL, has no data
+	return false;
+}
+
+// returns reverse iterator
+// get strict predecesor or equal of pair; if not found return JagFixMap::rend()
+JagFixMapReverseIterator JagDBMap::getReversePredOrEqual( const JagDBPair &pair ) const
+{
+	if ( _map->size() < 1 ) return _map->rend();
+
+	JagFixMapReverseIterator revit( _map->upper_bound( pair.key ) );
+	return revit;
+}
+
+// returns reverse iterator
+// get strict succcesor or equal of pair; if not found return JagFixMap::rend()
+JagFixMapReverseIterator JagDBMap::getReverseSuccOrEqual( const JagDBPair &pair ) const
+{
+	if ( _map->size() < 1 ) return _map->rend();
+
+	JagFixMapIterator it = _map->lower_bound( pair.key );
+	if ( it == _map->end() ) {
+		return _map->rend();
+	}
+
+	JagFixMapReverseIterator revit( it );
+	return --revit;
+}
+

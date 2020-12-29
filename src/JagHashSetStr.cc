@@ -63,18 +63,21 @@ void JagHashSetStr::reset()
 {
 	jag_hash_set_destroy( &_hash );
 	jag_hash_set_init( &_hash, 10 );
+	_len = 0;
 }
 
 // copy ctor 
 JagHashSetStr::JagHashSetStr( const JagHashSetStr &o )
 {
 	jag_hash_set_init( &_hash, 10 );
+	_len = 0;
 	HashSetNodeT *node;
 	for ( int i = 0; i < o._hash.size; ++i ) {
 		node = o._hash.bucket[i];
 		while ( node != NULL ) {
 			jag_hash_set_insert( &_hash, node->key );
 			node = node->next;
+			++ _len;
 		}
 	}
 }
@@ -90,6 +93,7 @@ JagHashSetStr& JagHashSetStr:: operator= ( const JagHashSetStr &o )
 		while ( node != NULL ) {
 			jag_hash_set_insert( &_hash, node->key );
 			node = node->next;
+			++ _len;
 		}
 	}
 

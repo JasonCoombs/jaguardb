@@ -66,7 +66,8 @@ Jstr JagDecryptStr( const Jstr &privkey, const Jstr &src64 )
 		return "";
 	}
 
-	Jstr astr( (const char*)plainmsg, outlen );
+	//Jstr astr( (const char*)plainmsg, outlen );
+	Jstr astr( (const char*)plainmsg, outlen, outlen );
 	return astr;
 }
 
@@ -108,7 +109,8 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
 		return NULL;
 	}
 
-	Jstr newp( (const char*)pub, outlen );
+	//Jstr newp( (const char*)pub, outlen );
+	Jstr newp( (const char*)pub, outlen, outlen );
 	pubkey = abaxEncodeBase64 ( newp );
 
 	outlen = 512;
@@ -117,7 +119,8 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
 		return NULL;
 	}
 
-	Jstr newv( (const char*)priv, outlen );
+	//Jstr newv( (const char*)priv, outlen );
+	Jstr newv( (const char*)priv, outlen, outlen );
 	privkey = abaxEncodeBase64 ( newv );
 
 	return pecckey;
@@ -127,7 +130,7 @@ Jstr JagEncryptStr( const Jstr &pubkey, const Jstr &src )
 {
 	// import pbkey to ecckey
 	ecc_key  		ecckey;
-	unsigned long 	outlen;
+	//unsigned long 	outlen;
     Jstr 	pkey = abaxDecodeBase64( pubkey );
 
 	ltc_mp = tfm_desc;
@@ -170,7 +173,8 @@ Jstr JagEncryptZFC( ecc_key *pecckey, const Jstr &src )
           return "";
     }
 
-	Jstr enc( (const char*)ciphermsg, outlen );
+	// Jstr enc( (const char*)ciphermsg, outlen );
+	Jstr enc( (const char*)ciphermsg, outlen, outlen );
 	return ( abaxEncodeBase64 ( enc ) );
 }
 

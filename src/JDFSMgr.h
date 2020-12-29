@@ -35,12 +35,12 @@ class JDFSMgr
 		int  rename( const AbaxString &fpath, const AbaxString &newfpath );
 		int  remove( const AbaxString &fpath );
 		bool exist( const AbaxString &fpath );
-		int mkdir( const AbaxString &fpath );
-		int rmdir( const AbaxString &fpath );
-		abaxint getStripeSize( const AbaxString &fpath, size_t kvlen, size_t stripeSize );
-		abaxint getFileSize( const AbaxString &fpath, size_t kvlen );
-		abaxint  pread( int fd, void *buf, size_t count, abaxint offset);
-		abaxint  pwrite(int fd, const void *buf, size_t count, abaxint offset);
+		int  mkdir( const AbaxString &fpath );
+		int  rmdir( const AbaxString &fpath );
+		jagint  getStripeSize( const AbaxString &fpath, size_t kvlen );
+		jagint  getFileSize( const AbaxString &fpath, size_t kvlen );
+		jagint  pread( int fd, void *buf, size_t count, jagint offset);
+		jagint  pwrite(int fd, const void *buf, size_t count, jagint offset);
 
 
   protected:
@@ -48,7 +48,7 @@ class JDFSMgr
 		JagHashMap<AbaxString,AbaxInt> *_map;
 };
 
-// todo: pass KVLEN, stripeSIZE, STRIPES to file
+// pass KVLEN, stripeSIZE, STRIPES to file
 
 #endif
 

@@ -70,6 +70,8 @@ int JagCfg::init( int type )
 		return 0;
     }
 
+	AbaxString name;
+	AbaxString value;
     while ( NULL != (fgets( line, 1024, fp ) ) ) {
         pline = line;
         while ( *pline == ' ' || *pline == '\t' ) ++pline;
@@ -86,8 +88,7 @@ int JagCfg::init( int type )
 		pline = p;
 		while ( *p != ' ' && *p != '=' && *p != '\0' && *p !='\r' && *p != '\n' ) ++p;
 		*p = '\0';
-		AbaxString name(pline);
-		AbaxString value;
+		name = pline;
 
 		++p;
 		pline = p;
@@ -130,7 +131,6 @@ int JagCfg::refresh()
 Jstr  JagCfg::getValue( const AbaxString &name, const Jstr &defValue ) const
 {
 	AbaxString  value;
-
 	if ( _map->getValue( name, value ) ) {
 		return value.c_str();
 	} else {
@@ -138,16 +138,45 @@ Jstr  JagCfg::getValue( const AbaxString &name, const Jstr &defValue ) const
 	}
 }
 
-Jstr JagCfg::getConfHOME() const
+int JagCfg::getIntValue( const AbaxString &name, int defaultValue ) const
 {
 	AbaxString  value;
-	value = jaguarHome() +  "/conf";
-	return value.c_str();
+	if ( _map->getValue( name, value ) ) {
+		return jagatoi(value.c_str());
+	} else {
+		return defaultValue;
+	}
+}
+
+jagint JagCfg::getLongValue( const AbaxString &name, jagint defaultValue ) const
+{
+	AbaxString  value;
+	if ( _map->getValue( name, value ) ) {
+		return jagatol(value.c_str());
+	} else {
+		return defaultValue;
+	}
+}
+
+float JagCfg::getFloatValue( const AbaxString &name, float defaultValue ) const
+{
+	AbaxString  value;
+	if ( _map->getValue( name, value ) ) {
+		return jagatof(value.c_str());
+	} else {
+		return defaultValue;
+	}
+}
+
+Jstr JagCfg::getConfHOME() const
+{
+	Jstr value = jaguarHome() +  "/conf";
+	return value;
 }
 
 Jstr JagCfg::getJDBDataHOME( int objType ) const
 {
-	AbaxString  value;
+	Jstr  value;
 	if ( 0 == objType ) {
 		value = jaguarHome() + "/data";
 	} else if ( 1 == objType ) {
@@ -155,12 +184,12 @@ Jstr JagCfg::getJDBDataHOME( int objType ) const
 	} else if ( 2 == objType ) {
 		value = jaguarHome() + "/ndata";
 	}
-	return value.c_str();
+	return value;
 }
 
 Jstr JagCfg::getTEMPDataHOME( int objType ) const
 {
-	AbaxString  value;
+	Jstr  value;
 	if ( 0 == objType ) {
 		value = jaguarHome() + "/tmp/data";
 	} else if ( 1 == objType ) {
@@ -168,12 +197,18 @@ Jstr JagCfg::getTEMPDataHOME( int objType ) const
 	} else if ( 2 == objType ) {
 		value = jaguarHome() + "/tmp/ndata";
 	}
-	return value.c_str();
+	return value;
 }
 
 Jstr JagCfg::getTEMPJoinHOME() const
 {
-	AbaxString  value;
-	value = jaguarHome() + "/tmp/join";
-	return value.c_str();
+	Jstr value = jaguarHome() + "/tmp/join";
+	return value;
 }
+
+Jstr JagCfg::getWalLogHOME() const
+{
+	Jstr value = jaguarHome() + "/log/cmd";
+	return value;
+}
+

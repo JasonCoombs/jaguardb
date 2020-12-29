@@ -1,28 +1,34 @@
 OBJS=JagRecord.o  JagClassInit.o murmur.o JagColumn.o \
      JagStrSplit.o JagStrSplitWithQuote.o JagMutex.o  \
-	 JagCfg.o  JagSingleBuffReader.o JagBuffReader.o JagMergeReaderBase.o JagMergeReader.o JagMergeBackReader.o \
+	 JagCfg.o JagFSMgr.o JDFS.o \
+	 JagCompFile.o JagSimpFile.o JagDBMap.o \
 	 JagFileMgr.o JagNet.o  jaghashtable.o jaghashset.o JagMD5lib.o   \
-	 JagExprStack.o JagParseParam.o JagReplicateBackup.o JaguarCPPClient.o \
+	 JagExprStack.o JagParseParam.o \
 	 JagSchemaRecord.o JagTime.o JagSession.o \
-	 JagIndexString.o JagFixString.o  \
+	 JagIndexString.o JagFixString.o \
 	 JagTextFileBuffReader.o JagUUID.o \
-	 JagBlockLock.o JagThreadPool.o JDFS.o JDFSMgr.o \
-	 JagSingleBuffWriter.o JagBuffWriter.o JagUtil.o JagDataAggregate.o \
+	 JagBlockLock.o \
+	 JagUtil.o JagDataAggregate.o \
 	 JaguarAPI.o JagHashLock.o JagSystem.o \
-	 JagBuffBackReader.o JagDiskArrayBase.o  JagDiskArrayClient.o \
+	 JagDiskArrayBase.o  \
+     JagSingleBuffReader.o JagBuffReader.o JagMergeReaderBase.o JagMergeReader.o JagMergeBackReader.o  \
+     JagSingleBuffWriter.o JagBuffWriter.o JagBuffBackReader.o  \
 	 JagMemDiskSortArray.o JagShapeClient.o \
 	 JagLang.o JagBoundFile.o JagLocalDiskHash.o JagSingleMergeReader.o \
-	 JagFastCompress.o JagSQLFileBuffReader.o JagSQLMergeReader.o JagDBMap.o \
+	 JagFastCompress.o JagSQLFileBuffReader.o JagSQLMergeReader.o \
 	 JagFixKeyChecker.o JagFixHashArray.o JagFixGapVector.o JagFixBlock.o \
 	 JagIPACL.o JagDiskKeyChecker.o JagFamilyKeyChecker.o JagDBLogger.o base64.o \
 	 JagHashStrInt.o JagTableOrIndexAttrs.o AbaxCStr.o \
 	 JagHashStrStr.o  JagMinMax.o JagLineFile.o JagRange.o JagCrypt.o \
-	 JagHashSetStr.o JagParser.o
+	 JagHashSetStr.o JagParser.o 
 
 CLIENTOBJS=$(OBJS) JagParseExprClient.o JagParserClient.o 
 
-SERVEROBJS=$(OBJS) JagParseExprServer.o JagServer.o JagDBServer.o JagTable.o JagIndex.o \
+SERVEROBJS=$(OBJS) \
+            JagParseExprServer.o JagServer.o JagDBServer.o JagTable.o JagIndex.o \
             JagServerObjectLock.o JagDiskArrayServer.o JagSchema.o JagTableSchema.o JagIndexSchema.o \
 			JagFixKV.o JagNode.o JagUserID.o JagNodeMgr.o JagDBConnector.o \
-			JagParallelParse.o JagParserServer.o JagDiskArrayFamily.o JagUserRole.o \
-            JagGeom.o JagCGAL.o JagShapeServer.o ACConcaveHull.o
+			JagParserServer.o JagDiskArrayFamily.o JagUserRole.o \
+            JagGeom.o JagCGAL.o JagShapeServer.o ACConcaveHull.o \
+			JagWalMap.o JagMutexMap.o JagHashStrPtr.o JagHashIntInt.o
+

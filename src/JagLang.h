@@ -33,18 +33,18 @@ class JagLang
   	JagLang ();
   	~JagLang ();
 
-	abaxint parse( const char *instr, const char *ENCODE );
-	abaxint length();
-	abaxint size();
+	jagint parse( const char *instr, const char *ENCODE );
+	jagint length();
+	jagint size();
 	Jstr  at( int i);
 	void rangeFixString( int buflen, int start, int len, JagFixString &res );
 
   protected:
   	JagVector<Jstr> *_vec;
 
-	abaxint _parseUTF8( const char *instr );
-	abaxint _parseGB2312( const char *instr );
-	abaxint _parseGB18030( const char *instr );
+	jagint _parseUTF8( const char *instr );
+	jagint _parseGB2312( const char *instr );
+	jagint _parseGB18030( const char *instr );
 };
 
 #endif

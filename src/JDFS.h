@@ -22,33 +22,37 @@
 #include <abax.h>
 
 class JagDBServer;
-class JDFSMgr;
+class JagFSMgr;
+class JagCompFile;
+class JagDiskArrayFamily;
 
 class JDFS
 {
 	public:
-		JDFS( JagDBServer *servobj, const Jstr &fpath, int kvlen, abaxint arrlen=0 );
+		//JDFS( JagDBServer *servobj, JagDiskArrayFamily *fam, const Jstr &fpath, int klen, int vlen, jagint arrlen=0 );
+		JDFS( JagDBServer *servobj, JagDiskArrayFamily *fam, const Jstr &fpath, int klen, int vlen );
 		~JDFS();
-		int getFD();
-		abaxint getFileSize() const;
+		JagCompFile *getCompf();
+		//jagint getFileSize() const;
 		int exist() const;
-		int open();
+		JagCompFile *open();
 		int close();
 		int rename( const Jstr &newpath );
 		int remove();
-		int fallocate( abaxint offset, abaxint len );
-		int setStripeSize( size_t ss ) { _stripeSize = ss; }
-		time_t getfileUpdateTime() const;
-		abaxint getArrayLength() const;
-		abaxint pread( char *buf, size_t len, size_t offset ) const; 
-		abaxint pwrite( const char *buf, size_t len, size_t offset ); 
+		int fallocate( jagint offset, jagint len );
+		jagint getArrayLength() const;
+		jagint pread( char *buf, size_t len, size_t offset ) const; 
+		jagint pwrite( const char *buf, size_t len, size_t offset ); 
 		Jstr  _fpath;
 
   protected:
-  		int          _kvlen;  // KEYVAL length
-		abaxint      _stripeSize;
+  		int          _klen;  
+  		int          _vlen;  
+  		int          _kvlen;
+		jagint      _stripeSize;
 		JagDBServer  *_servobj;
-		JDFSMgr      *_jdfsMgr;
+		JagDiskArrayFamily *_family;
+		JagFSMgr      *_jdfsMgr;
 };
 
 #endif

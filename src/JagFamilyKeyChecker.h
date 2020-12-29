@@ -35,8 +35,8 @@ class JagFamilyKeyChecker
         virtual bool removeKey( const char *key ) = 0;
         virtual bool exist( const char *key ) = 0;
 		virtual void removeAllKey( ) = 0;
-        virtual abaxint size() const = 0;
-        virtual abaxint arrayLength() const = 0;
+        virtual jagint size() const = 0;
+        virtual jagint arrayLength() const = 0;
 		virtual const char *array() const = 0;
 		virtual int buildInitKeyCheckerFromSigFile() = 0;
 		Jstr getPath() { return _pathName; }
@@ -48,7 +48,7 @@ class JagFamilyKeyChecker
 		int   _VLEN;
 		int	  _UKLEN;
 		bool  _useHash;
-		JagReadWriteLock    *_lock;
+		//JagReadWriteLock    *_lock;
 		Jstr     _pathName;
 
 };

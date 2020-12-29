@@ -29,8 +29,8 @@ class JagFileMgr
 
 		static void 	makedirPath( const Jstr &fullpath, int mode=0755 );
 		static void 	rmdir( const Jstr &fullpath, bool rmtop=true );
-		static abaxint 	fileSize( const Jstr &fullpath );
-		static int 		getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &freeGB );
+		static jagint 	fileSize( const Jstr &fullpath );
+		static int 		getPathUsage( const char *fpath,  jagint &usedGB, jagint &freeGB );
 		static int 		isFile( const Jstr &fullpath );
 		static int 		isDir( const Jstr &fullpath );
 		// static size_t 	dirSize( const Jstr &fullpath );
@@ -41,14 +41,18 @@ class JagFileMgr
 		static void 	writeTextFile(const Jstr &fname, const char *content );
 		static int 		cleanDir( const Jstr &fullpath, time_t historySeconds );
 		static int 		cleanDirExclude( const Jstr &fullpath, const Jstr &exsuffix );
-		static abaxint 	numObjects( const Jstr &fullpath );
-		static Jstr 	listObjects( const Jstr &fullpath );
+		static jagint 	numObjects( const Jstr &fullpath );
+		static Jstr 	listObjects( const Jstr &fullpath, const Jstr &substr="" );
 		static Jstr     makeLocalLogDir( const Jstr &subdir="" );
 		static Jstr     getLocalLogDir( const Jstr &subdir="" );
-		static int 		getIOStat( uabaxint &reads, uabaxint & writes );
-		static    int   fallocate(int fd, abaxint offset, abaxint len);
+		static int 		getIOStat( jaguint &reads, jaguint & writes );
+		static    int   fallocate(int fd, jagint offset, jagint len);
 		static Jstr getFileFamily( const Jstr &fullpath, const Jstr &objname, bool fnameOnly=false );
 		static    int   pathWritable( const Jstr &fullpath );
+
+		static Jstr dirName( const Jstr &fpath );
+		static Jstr baseName( const Jstr &fpath );
+
 
 
 };

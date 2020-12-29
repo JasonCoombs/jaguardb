@@ -32,11 +32,12 @@ void JagFastCompress::compress(const Jstr& in, Jstr &out )
 
 	size_t len;
 	snappy::RawCompress( in.c_str(), in.size(), buf, &len );
-	out = Jstr( buf, len );
+	//out = Jstr( buf, len );
+	out = Jstr( buf, len, len );
 	free( buf );
 }
 
-void JagFastCompress::compress( const char *instr, abaxint inlen, Jstr& outstr )
+void JagFastCompress::compress( const char *instr, jagint inlen, Jstr& outstr )
 {
 	if ( inlen < 1 || ! instr ) { outstr=""; return; }
 	// snappy::Compress( instr, inlen, &outstr );
@@ -49,7 +50,8 @@ void JagFastCompress::compress( const char *instr, abaxint inlen, Jstr& outstr )
 
 	size_t len;
 	snappy::RawCompress( instr, inlen, buf, &len );
-	outstr = Jstr( buf, len );
+	//outstr = Jstr( buf, len );
+	outstr = Jstr( buf, len, len );
 	free( buf );
 }
 
@@ -67,11 +69,12 @@ void JagFastCompress::uncompress(const Jstr & in, Jstr &out )
 	char *buf = (char*)malloc( unlen + 1 );
 	memset( buf, 0, unlen + 1 );
 	snappy::RawUncompress( in.c_str(), in.size(), buf );
-	out = Jstr(buf, unlen);
+	//out = Jstr(buf, unlen);
+	out = Jstr(buf, unlen, unlen );
 	free( buf );
 }
 
-void JagFastCompress::uncompress( const char *instr, abaxint inlen, Jstr& outstr )
+void JagFastCompress::uncompress( const char *instr, jagint inlen, Jstr& outstr )
 {
 	if ( inlen < 1 || ! instr ) { outstr=""; return; }
 	// snappy::Uncompress( instr, inlen, &outstr );
@@ -82,7 +85,8 @@ void JagFastCompress::uncompress( const char *instr, abaxint inlen, Jstr& outstr
 	char *buf = (char*)malloc( unlen + 1 );
 	memset( buf, 0, unlen + 1 );
 	snappy::RawUncompress( instr, inlen, buf );
-	outstr = Jstr(buf, unlen);
+	//outstr = Jstr(buf, unlen);
+	outstr = Jstr(buf, unlen, unlen );
 	free( buf );
 }
 

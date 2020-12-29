@@ -37,9 +37,9 @@ class JagStrSplit
 	    const Jstr& operator[](int i ) const;
 	    Jstr& operator[](int i );
 		Jstr& last() const;
-		abaxint length() const;
-		abaxint size() const;
-		abaxint slength() const;
+		jagint length() const;
+		jagint size() const;
+		jagint slength() const;
 		bool  exists(const Jstr &token) const;
 		bool  contains(const Jstr &token, Jstr &rec ) const;
 		void	print() const;
@@ -51,7 +51,7 @@ class JagStrSplit
 
 	private:
 		Jstr *list_;
-		abaxint length_;
+		jagint length_;
 		char sep_;
 		int  start_;
 		Jstr _NULL;

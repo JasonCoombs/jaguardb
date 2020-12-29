@@ -23,31 +23,38 @@
 #include <JagVector.h>
 #include <JagTableUtil.h>
 #include <JagMergeReaderBase.h>
+#include <JagDBMap.h>
 
 
 class JagMergeReader : public JagMergeReaderBase
 {
   public:
-	JagMergeReader( JagVector<OnefileRange> &fRange, int veclen, int keylen, int vallen );
+	JagMergeReader( const JagDBMap *dbmap,  const JagVector<OnefileRange> &fRange, int veclen, 
+					int keylen, int vallen, const char *minbuf, const char *maxbuf );
   	virtual ~JagMergeReader(); 	
-  	virtual bool getNext( char *buf, abaxint &pos );
+
   	virtual bool getNext( char *buf );
-	virtual bool setRestartPos();
-	virtual bool getRestartPos();
-	virtual void setClearRestartPosFlag();
+
+	void findBeginPos( const char *minbuf, const char *maxbuf );
+	void setRestartPos();
+	void moveToRestartPos();
+	void initHeap();
+
+	//////// new
+    void    setMemRestartPos();
+    void    moveMemToRestartPos();
+    bool    isAtEnd( JagFixMapIterator iter );
+    void    print( const char *hdr,  JagFixMapIterator iter );
+
+    JagFixMapIterator   beginPos;
+    JagFixMapIterator   endPos;
+    JagFixMapIterator   prevPos;
+    JagFixMapIterator   currentPos;
+	//////////
 
   protected:
-  	/***
-	int _veclen;
-	int _endcnt;
-	abaxint KEYLEN;
-	abaxint VALLEN;
-	abaxint KEYVALLEN;
-	int *_goNext;
-	char *_buf;
-	bool _setRestartPos;
-	***/
-	JagBuffReaderPtr *_vec;
+	JagBuffReaderPtr *_buffReaderPtr;
+	JagFixMapIterator  _restartMemPos;
 };
 
 

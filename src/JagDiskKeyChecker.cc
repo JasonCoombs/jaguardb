@@ -39,7 +39,6 @@ JagDiskKeyChecker::JagDiskKeyChecker( const Jstr &fpath, int klen, int vlen )
 
 void JagDiskKeyChecker::destroy()
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	if ( _keyCheckArr ) {
 		delete _keyCheckArr;
 		_keyCheckArr = NULL;
@@ -49,14 +48,15 @@ void JagDiskKeyChecker::destroy()
 
 bool JagDiskKeyChecker::addKeyValue( const char *kv )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	return addKeyValueNoLock( kv );
 }
 
 bool JagDiskKeyChecker::addKeyValueNoLock( const char *kv )
 {
 	char ukey[_UKLEN+1];
+
 	getUniqueKey( kv, ukey );  //md5 and hash of kv
+
 	JagFixString key( ukey, _UKLEN );
 	JagFixString val( kv+_KLEN, JAG_KEYCHECKER_VLEN );
 
@@ -67,15 +67,16 @@ bool JagDiskKeyChecker::addKeyValueNoLock( const char *kv )
 
 bool JagDiskKeyChecker::getValue( const char *key, char *value )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey ); 
+
 	// value was provided buffer, data is copied to value
 	JagFixString pkey( ukey, _UKLEN );
-	JagFixString pval( "00", JAG_KEYCHECKER_VLEN );
-	JagDBPair pair( pkey, pval );
+	//JagFixString pval( "00", JAG_KEYCHECKER_VLEN );
+	//JagDBPair pair( pkey, pval );
+	JagDBPair pair( pkey );
 	bool rc =  _keyCheckArr->get( pair );
-	// prt(("s6374 JagDiskKeyChecker::getValue key=[%s] rc=%d\n", key, rc ));
+	//prt(("s6374 JagDiskKeyChecker::getValue key=[%s] rc=%d\n", key, rc ));
 	if ( ! rc ) return false;
 	memcpy( value, pair.value.addr(), JAG_KEYCHECKER_VLEN );
 	return true;
@@ -83,7 +84,7 @@ bool JagDiskKeyChecker::getValue( const char *key, char *value )
 
 bool JagDiskKeyChecker::removeKey( const char *key )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey ); 
 
@@ -94,7 +95,7 @@ bool JagDiskKeyChecker::removeKey( const char *key )
 
 bool JagDiskKeyChecker::exist( const char *key )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey ); 
 
@@ -107,19 +108,19 @@ bool JagDiskKeyChecker::exist( const char *key )
 
 void JagDiskKeyChecker::removeAllKey()
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	_keyCheckArr->drop();
 }
 
 int JagDiskKeyChecker::buildInitKeyCheckerFromSigFile()
 {
-	raydebug( stdout, JAG_LOG_LOW, "diskkcheck buildInitKeyCheckerFromSigFile ...\n" );
+	raydebug( stdout, JAG_LOG_LOW, "diskcheck buildInitKeyCheckerFromSigFile ...\n" );
 
 	int rc = 0;
 	Jstr sigfpath = _fpath + ".sig";
 	Jstr hdbfpath = _fpath + ".hdb";
-	abaxint sigsize = JagFileMgr::fileSize( sigfpath );
-	abaxint hdbsize = _keyCheckArr->elements();
+	jagint sigsize = JagFileMgr::fileSize( sigfpath );
+	jagint hdbsize = _keyCheckArr->elements();
 	raydebug( stdout, JAG_LOG_LOW, "sigfile=%s\n", sigfpath.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "hdbfile=%s\n", hdbfpath.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "sigsize=%l hdbsize=%l\n", sigsize, hdbsize );
@@ -177,10 +178,11 @@ int JagDiskKeyChecker::readSigToHDB( const Jstr &sigfpath, const Jstr &hdbfpath 
 		return -70;
 	}
 
-	abaxint rlimit = getBuffReaderWriterMemorySize( (sbuf.st_size-1)/1024/1024 );
+	jagint rlimit = getBuffReaderWriterMemorySize( (sbuf.st_size-1)/1024/1024 );
+	// JagSingleBuffReader br( fd, (sbuf.st_size-1)/(klen+vlen), klen, vlen, 0, 1, rlimit );
 	JagSingleBuffReader br( fd, (sbuf.st_size-1)/(klen+vlen), klen, vlen, 0, 1, rlimit );
     memset( buf, 0, klen+vlen+1 );
-	abaxint cnt = 0;
+	jagint cnt = 0;
 	bool rc;
 	while ( br.getNext( buf ) ) {
 		rc = _addSigKeyValue( buf );

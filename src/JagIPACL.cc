@@ -24,7 +24,7 @@
 
 JagIPACL::JagIPACL( const Jstr  &fpath )
 {
-	_map = new JagHashMap<AbaxString, AbaxString>( 16 );
+	_map = new JagHashMap<AbaxString, AbaxString>( true, 16 );
 
 	// read from conf files
 	readFile( fpath );
@@ -99,7 +99,7 @@ void JagIPACL::refresh( const Jstr &newdata )
 {
 	_data = newdata;
 	delete _map;
-	_map = new JagHashMap<AbaxString, AbaxString>( 16 );
+	_map = new JagHashMap<AbaxString, AbaxString>( true, 16 );
 	JagStrSplit sp( _data, '\n');
 	for ( int i = 0; i < sp.length(); ++i ) {
 		_map->addKeyValue( sp[i], "1" );

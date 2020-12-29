@@ -136,13 +136,13 @@ int JagBoundFile::_trimFile()
 
 	// read in data
 	JagVector<Jstr> vec;
-	int n = readLines( _bound, vec );
+	readLines( _bound, vec );
 
 	// remove old file
 	jagunlink( _fpath.c_str() );
 
 	// write data back
-	int rc = openAppend( );
+	openAppend( );
 	for ( int i = 0; i < vec.length(); ++i ) {
 		appendLine( vec[i].c_str() );
 	}

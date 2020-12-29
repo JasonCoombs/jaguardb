@@ -26,7 +26,7 @@
 class JagBuffReader;
 class JagBuffBackReader;
 class JagSchemaRecord;
-class JagDiskArrayClient;
+//class JagDiskArrayClient;
 class JagDataAggregate;
 class JagReadWriteLock;
 template <class Pair> class JagArray;
@@ -50,8 +50,8 @@ class JagMemDiskSortArray
 	int insert( JagDBPair &pair );
 	int endWrite();
 	int beginRead( bool isback=0 );
-	int setDataLimit( abaxint num );
-	int ignoreNumData( abaxint num );
+	int setDataLimit( jagint num );
+	int ignoreNumData( jagint num );
 	// int get( JagFixString &str );
 	int get( char *buf );
 	int endRead();
@@ -66,29 +66,29 @@ class JagMemDiskSortArray
 	
   protected:
 
-	JagDiskArrayClient *_diskarr;
+	//JagDiskArrayClient *_diskarr;
 
 	JagDataAggregate *_jda;
 	
 	Jstr _diskhdr;
 	Jstr _opstr;
 	
-	abaxint _mempos;
+	jagint _mempos;
 	JagSchemaRecord *_srecord;
 	JagBuffReader *_ntr;
 	JagBuffBackReader *_bntr;
 
 	pthread_mutex_t _umutex;
 
-	abaxint _memlimit; // in bytes
+	jagint _memlimit; // in bytes
 	int _rwtype;
 	bool _usedisk;
 	bool _isback;
 	bool _hassort;
 	bool _rend;
 
-	abaxint _cnt;
-	abaxint _cntlimit;
+	jagint _cnt;
+	jagint _cntlimit;
 
 	// data members for client reply use
 	Jstr _cntstr;

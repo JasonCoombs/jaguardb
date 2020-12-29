@@ -27,7 +27,7 @@ JagFixHashArray::JagFixHashArray( int inklen, int invlen )
 	klen = inklen;
 	vlen = invlen;
 	kvlen = klen + vlen;
-	abaxint size = 256;
+	jagint size = 256;
 	_arr = jagmalloc(size*kvlen);
 	_arrlen = size;
 	memset( _arr, 0, _arrlen*kvlen );
@@ -53,7 +53,7 @@ void JagFixHashArray::removeAll()
 {
 	destroy();
 
-	abaxint size = 256;
+	jagint size = 256;
 	_arr = jagmalloc(size*kvlen);
 	_arrlen = size;
 	memset( _arr, 0, _arrlen*kvlen );
@@ -84,7 +84,7 @@ void JagFixHashArray::reAllocDistributeShrink()
 
 void JagFixHashArray::reAlloc()
 {
-	abaxint i;
+	jagint i;
 	_newarrlen = _GEO*_arrlen; 
 	_newarr = jagmalloc(_newarrlen*kvlen);
 
@@ -95,7 +95,7 @@ void JagFixHashArray::reAlloc()
 
 void JagFixHashArray::reAllocShrink()
 {
-	abaxint i;
+	jagint i;
 	_newarrlen  = _arrlen/_GEO; 
 	_newarr = jagmalloc(_newarrlen*kvlen);
 
@@ -106,9 +106,9 @@ void JagFixHashArray::reAllocShrink()
 
 void JagFixHashArray::reDistribute()
 {
-	abaxint pos; 
+	jagint pos; 
 
-	for ( abaxint i = _arrlen-1; i>=0; --i) {
+	for ( jagint i = _arrlen-1; i>=0; --i) {
 		if ( _arr[i*kvlen] == NBT ) { continue; } 
 		// pos = hashLocation( _arr[i], _newarr, _newarrlen );
 		pos = hashLocation( _arr+i*kvlen, _newarr, _newarrlen );
@@ -126,9 +126,9 @@ void JagFixHashArray::reDistribute()
 
 void JagFixHashArray::reDistributeShrink()
 {
-	abaxint pos; 
+	jagint pos; 
 
-	for ( abaxint i = _arrlen-1; i>=0; --i) {
+	for ( jagint i = _arrlen-1; i>=0; --i) {
 		if ( _arr[i*kvlen] == NBT ) { continue; } 
 		// pos = hashLocation( _arr[i], _newarr, _newarrlen );
 		pos = hashLocation( _arr+i*kvlen, _newarr, _newarrlen );
@@ -147,13 +147,13 @@ void JagFixHashArray::reDistributeShrink()
 bool JagFixHashArray::insert( const char *newpair )
 {
 	bool rc;
-	abaxint index;
+	jagint index;
 
 	if ( *newpair == NBT  ) { 
 		return 0; 
 	}
 
-	abaxint retindex;
+	jagint retindex;
 	rc = exist( newpair, &retindex );
 	if ( rc ) {
 		return false;
@@ -174,7 +174,7 @@ bool JagFixHashArray::insert( const char *newpair )
 
 bool JagFixHashArray::remove( const char *pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
@@ -193,9 +193,9 @@ bool JagFixHashArray::remove( const char *pair )
 	return true;
 }
 
-bool JagFixHashArray::exist( const char *search, abaxint *index )
+bool JagFixHashArray::exist( const char *search, jagint *index )
 {
-    abaxint idx = hashKey( search, _arrlen );
+    jagint idx = hashKey( search, _arrlen );
 	*index = idx;
     
    	//  hash to NULL, not found.
@@ -217,7 +217,7 @@ bool JagFixHashArray::exist( const char *search, abaxint *index )
 
 bool JagFixHashArray::get(  char *pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
 
 	rc = exist( pair, &index );
@@ -230,7 +230,7 @@ bool JagFixHashArray::get(  char *pair )
 
 bool JagFixHashArray::get( const char *key, char *val )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
 
 	rc = exist( key, &index );
@@ -243,7 +243,7 @@ bool JagFixHashArray::get( const char *key, char *val )
 
 bool JagFixHashArray::set( const char *pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
 
 	rc = exist( pair, &index );
@@ -254,9 +254,9 @@ bool JagFixHashArray::set( const char *pair )
 	return true;
 }
 
-abaxint JagFixHashArray::hashLocation( const char *pair, const char *arr, abaxint arrlen )
+jagint JagFixHashArray::hashLocation( const char *pair, const char *arr, jagint arrlen )
 {
-	abaxint index = hashKey( pair, arrlen ); 
+	jagint index = hashKey( pair, arrlen ); 
 	if ( arr[index*kvlen] != NBT ) {
 		index = probeLocation( index, arr, arrlen );
 	}
@@ -264,7 +264,7 @@ abaxint JagFixHashArray::hashLocation( const char *pair, const char *arr, abaxin
 }
 
 
-abaxint JagFixHashArray::probeLocation( abaxint hc, const char *arr, abaxint arrlen )
+jagint JagFixHashArray::probeLocation( jagint hc, const char *arr, jagint arrlen )
 {
     while ( 1 ) {
     	hc = nextHC( hc, arrlen );
@@ -274,7 +274,7 @@ abaxint JagFixHashArray::probeLocation( abaxint hc, const char *arr, abaxint arr
 }
     
 // retrieve the previously assigned probed location
-abaxint JagFixHashArray::findProbedLocation( const char *search, abaxint idx ) 
+jagint JagFixHashArray::findProbedLocation( const char *search, jagint idx ) 
 {
    	while ( 1 ) {
    		idx = nextHC( idx, _arrlen );
@@ -294,9 +294,9 @@ abaxint JagFixHashArray::findProbedLocation( const char *search, abaxint idx )
     
 // find [start, end] of island that contains hc  
 // [3, 9]   [12, 3]
-inline void JagFixHashArray::findCluster( abaxint hc, abaxint *start, abaxint *end )
+inline void JagFixHashArray::findCluster( jagint hc, jagint *start, jagint *end )
 {
-	abaxint i;
+	jagint i;
 	i = hc;
   	// find start
    	while (1 ) {
@@ -320,14 +320,14 @@ inline void JagFixHashArray::findCluster( abaxint hc, abaxint *start, abaxint *e
 }
 
     
-inline abaxint JagFixHashArray::prevHC ( abaxint hc, abaxint arrlen )
+inline jagint JagFixHashArray::prevHC ( jagint hc, jagint arrlen )
 {
    	--hc; 
    	if ( hc < 0 ) hc = arrlen-1;
    	return hc;
 }
     
-inline abaxint JagFixHashArray::nextHC( abaxint hc, abaxint arrlen )
+inline jagint JagFixHashArray::nextHC( jagint hc, jagint arrlen )
 {
  	++ hc;
    	if ( hc == arrlen ) hc = 0;
@@ -335,7 +335,7 @@ inline abaxint JagFixHashArray::nextHC( abaxint hc, abaxint arrlen )
 }
 
 
-bool JagFixHashArray::aboveq( abaxint start, abaxint end, abaxint birthhc, abaxint nullbox )
+bool JagFixHashArray::aboveq( jagint start, jagint end, jagint birthhc, jagint nullbox )
 {
 		if ( start < end ) {
 			return ( birthhc <= nullbox ) ? true : false;
@@ -352,16 +352,16 @@ bool JagFixHashArray::aboveq( abaxint start, abaxint end, abaxint birthhc, abaxi
 		}
 }
 
-void JagFixHashArray::rehashCluster( abaxint hc )
+void JagFixHashArray::rehashCluster( jagint hc )
 {
-	register abaxint start, end;
-	register abaxint nullbox = hc;
+	register jagint start, end;
+	register jagint nullbox = hc;
 
 	findCluster( hc, &start, &end );
 	_arr[ hc*kvlen] = NBT;
 
 
-	abaxint  birthhc;
+	jagint  birthhc;
 	bool b;
 
 	while ( 1 )
@@ -396,7 +396,7 @@ void JagFixHashArray::print() const
 	char buf[16];
 
 	printf("JagFixHashArray: _arrlen=%lld _elements=%lld\n", _arrlen, _elements );
-	for ( abaxint i=0; i < _arrlen; ++i)
+	for ( jagint i=0; i < _arrlen; ++i)
 	{
 		sprintf( buf, "%08d", i );
 		if ( _arr[i*kvlen] != NBT ) {
@@ -410,17 +410,17 @@ void JagFixHashArray::print() const
 	printf("\n");
 }
 
-abaxint JagFixHashArray::hashKey( const char *key, abaxint arrlen ) const
+jagint JagFixHashArray::hashKey( const char *key, jagint arrlen ) const
 {
 	unsigned int hash[4];
 	unsigned int seed = 42;
 	MurmurHash3_x64_128( (void*)key, klen, seed, hash);
 	uint64_t res = ((uint64_t*)hash)[0];
-	abaxint rc = res % arrlen;
+	jagint rc = res % arrlen;
 	return rc;
 }
 
-bool JagFixHashArray::isNull( abaxint i ) const 
+bool JagFixHashArray::isNull( jagint i ) const 
 {
 	if ( i < 0 || i >= _arrlen ) { return true; } 
 	return ( _arr[i*kvlen] == NBT ); 

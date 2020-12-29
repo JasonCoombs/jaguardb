@@ -37,8 +37,8 @@ class JagFixKeyChecker  : public JagFamilyKeyChecker
         virtual bool removeKey( const char *key );
         virtual bool exist( const char *key );
 		virtual void removeAllKey( );
-        virtual abaxint size() const  { return _keyCheckArr->elements(); }
-        virtual abaxint arrayLength() const  { return _keyCheckArr->arrayLength(); }
+        virtual jagint size() const  { return _keyCheckArr->elements(); }
+        virtual jagint arrayLength() const  { return _keyCheckArr->arrayLength(); }
 		virtual const char *array() const { return _keyCheckArr->array(); }
 
 		virtual int buildInitKeyCheckerFromSigFile();

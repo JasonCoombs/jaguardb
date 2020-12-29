@@ -35,15 +35,15 @@ class JagHashLock
 	void writeLock( const AbaxString &kstr );
 	void writeUnlock( const AbaxString &kstr );
 
-	abaxint getWriters() const { return _writers; }
-	abaxint getReaders() const { return _readers; }
+	jagint getWriters() const { return _writers; }
+	jagint getReaders() const { return _readers; }
 
   protected:
   	pthread_mutex_t  _mutex;
 	pthread_cond_t   _condvar;
 	JagHashMap<AbaxString, AbaxLong2> *_map;
-	abaxint			 _readers;
-	abaxint			 _writers;
+	jagint			 _readers;
+	jagint			 _writers;
 
 	void init();
 	bool regionOverlaps( const AbaxString &kstr, bool isRead );

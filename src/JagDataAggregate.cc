@@ -21,7 +21,7 @@
 #include <JagDataAggregate.h>
 #include <JagHashMap.h>
 #include <JagMutex.h>
-#include <JDFSMgr.h>
+#include <JagFSMgr.h>
 #include <JagUtil.h>
 #include <JagCfg.h>
 #include <JagSingleMergeReader.h>
@@ -45,19 +45,24 @@ JagDataAggregate::JagDataAggregate( bool isserv )
 	_maxLimitBytes = 0;
 	_totalwritelen = 0;
 	_numwrites = 0;
-	_writebuf = NULL;
+	initWriteBuf();
 	_readbuf = NULL;
 	_sqlarr = NULL;
-	_hostToIdx = new JagHashMap<AbaxString, abaxint>();
-	_lock = new JagReadWriteLock();
-	_jmgr = new JDFSMgr();
-	_fmgr = new JagFileMgr();
+	_hostToIdx = new JagHashMap<AbaxString, jagint>();
+
+	if ( isserv ) {
+		_lock = NULL; 
+	} else {
+		_lock = newJagReadWriteLock();
+	}
+
+	_jfsMgr = new JagFSMgr();
 	if ( isserv ) {
 		_cfg = new JagCfg( JAG_SERVER );
 	} else {
 		_cfg = new JagCfg( JAG_CLIENT );
 	}
-	_isserv = isserv;
+	_isServ = isserv;
 	_defpath =  jaguarHome() + "/tmp/";
 	_mergeReader = NULL;
 }
@@ -65,23 +70,20 @@ JagDataAggregate::JagDataAggregate( bool isserv )
 JagDataAggregate::~JagDataAggregate()
 {
 	clean();
-
 	if ( _hostToIdx ) {
 		delete _hostToIdx;
 		_hostToIdx = NULL;
 	}
+
 	if ( _lock ) {
-		delete _lock;
-		_lock = NULL;
+		deleteJagReadWriteLock( _lock );
 	}
-	if ( _jmgr ) {
-		delete _jmgr;
-		_jmgr = NULL;
+
+	if ( _jfsMgr ) {
+		delete _jfsMgr;
+		_jfsMgr = NULL;
 	}
-	if ( _fmgr ) {
-		delete _fmgr;
-		_fmgr = NULL;
-	}
+
 	if ( _cfg ) {
 		delete _cfg;
 		_cfg = NULL;
@@ -90,10 +92,7 @@ JagDataAggregate::~JagDataAggregate()
 
 void JagDataAggregate::clean()
 {
-	if ( _writebuf ) {
-		free( _writebuf );
-		_writebuf = NULL;
-	}
+	cleanWriteBuf();
 	
 	if ( _readbuf ) {
 		free( _readbuf );
@@ -106,9 +105,12 @@ void JagDataAggregate::clean()
 	}
 	
 	for ( int i = 0; i < _dbPairFileVec.size(); ++i ) {
-		_jmgr->close( _dbPairFileVec[i].fpath );
-		if ( _keepFile != 1 && _keepFile != 3 ) _jmgr->remove( _dbPairFileVec[i].fpath );
+		_jfsMgr->closefd( _dbPairFileVec[i].fpath );
+		if ( _keepFile != 1 && _keepFile != 3 ) {
+			_jfsMgr->remove( _dbPairFileVec[i].fpath );
+		}
 	}
+
 	_dbPairFileVec.clean();
 	_pallreadpos.clean();
 	_pallreadlen.clean();
@@ -133,29 +135,36 @@ void JagDataAggregate::clean()
 // get ready for write, initialization
 void JagDataAggregate::setwrite( const JagVector<Jstr> &hostlist )
 {
+	prt(("s765521 setwrite JagVector<Jstr> &hostlist\n"));
 	clean();
 	JagDBPairFile dbpfile;
 	_numHosts = hostlist.size();
-	for ( abaxint i = 0; i < _numHosts; ++i ) {
+	for ( jagint i = 0; i < _numHosts; ++i ) {
 		dbpfile.fpath = _defpath + longToStr( THREADID ) + "_" + hostlist[i];
-		// dbpfile.fd = _jmgr->open( dbpfile.fpath, true );
+		prt(("a111028228 setwrite openfd( %s ) ...\n", dbpfile.fpath.s() ));
+		dbpfile.fd = _jfsMgr->openfd( dbpfile.fpath, true );
+		if ( dbpfile.fd < 0 ) {
+			prt(("s302831 dbpfile.fd=%d error\n", dbpfile.fd ));
+		}
+
 		_dbPairFileVec.append( dbpfile );
 		_pallreadpos.append( 0 );
 		_pallreadlen.append( 0 );
 		_hostToIdx->addKeyValue( hostlist[i], i );
 	}
+
 	_isSetWriteDone = 1;	
+
 }
 
 // another method to set write files, if num of files given instead of vector
-void JagDataAggregate::setwrite( abaxint num )
+void JagDataAggregate::setwrite( jagint numHosts )
 {
 	clean();
 	JagDBPairFile dbpfile;
-	_numHosts = num;
-	for ( abaxint i = 0; i < _numHosts; ++i ) {
+	_numHosts = numHosts;
+	for ( jagint i = 0; i < _numHosts; ++i ) {
 		dbpfile.fpath = _defpath + longToStr( THREADID ) + "_" + longToStr( i );
-		// dbpfile.fd = _jmgr->open( dbpfile.fpath, true );
 		_dbPairFileVec.append( dbpfile );
 		_pallreadpos.append( 0 );
 		_pallreadlen.append( 0 );
@@ -168,6 +177,8 @@ void JagDataAggregate::setwrite( abaxint num )
 // if flag is true, use filestr + .dbp for file name, and use /jaguar/export/ for path, also keep this file;
 void JagDataAggregate::setwrite( const Jstr &mapstr, const Jstr &filestr, int keepFile )
 {
+	//prt(("s222727 in setwrite mapstr=[%s] filestr=[%s] keepFile=%d\n", mapstr.s(), filestr.s(), keepFile ));
+
 	clean();
 	JagDBPairFile dbpfile;
 	_numHosts = 1;
@@ -177,10 +188,8 @@ void JagDataAggregate::setwrite( const Jstr &mapstr, const Jstr &filestr, int ke
 		dbpfile.fpath = _dirpath + filestr + ".sql";
 		_keepFile = 1;
 		_dbobj = filestr;
-		// _jmgr->remove( dbpfile.fpath );
-		_fmgr->rmdir( _dirpath );
-		_fmgr->makedirPath( _dirpath, 0755 );
-		// dbpfile.fd = _jmgr->open( dbpfile.fpath, true );
+		JagFileMgr::rmdir( _dirpath );
+		JagFileMgr::makedirPath( _dirpath, 0755 );
 	} else if ( keepFile == 2 || keepFile == 3 ) {
 		// for given path file keep
 		dbpfile.fpath = filestr;
@@ -188,15 +197,16 @@ void JagDataAggregate::setwrite( const Jstr &mapstr, const Jstr &filestr, int ke
 	} else {
 		dbpfile.fpath = _defpath + longToStr( THREADID ) + "_" + filestr;
 	}
-	// dbpfile.fd = _jmgr->open( dbpfile.fpath, true );
+
 	_dbPairFileVec.append( dbpfile );
 	_pallreadpos.append( 0 );
 	_pallreadlen.append( 0 );
-	_hostToIdx->addKeyValue( AbaxString(mapstr), 0 );
+	_hostToIdx->addKeyValue( AbaxString(mapstr), 0 );  // hosti is 0
 	_isSetWriteDone = 1;
+
 }
 
-void JagDataAggregate::setMemoryLimit( abaxint maxLimitBytes )
+void JagDataAggregate::setMemoryLimit( jagint maxLimitBytes )
 {
 	_maxLimitBytes = maxLimitBytes;
 }
@@ -204,49 +214,49 @@ void JagDataAggregate::setMemoryLimit( abaxint maxLimitBytes )
 // from server get dbpair, write to writebuf, then flush to disk
 // if keep file, write each line of data to sql file for export, format to insert cmd mode instead of dbpair mode
 // need 4th argument for parse
-bool JagDataAggregate::writeit( const Jstr &host, const char *buf, abaxint len, 
-								const JagSchemaRecord *rec, bool noUnlock, abaxint membytes )
+bool JagDataAggregate::writeit( int hosti, const char *buf, jagint len, 
+								const JagSchemaRecord *rec, bool noUnlock, jagint membytes )
 {
+	prt(("s202930 writeit hosti=[%d] buf=[%s] len=%d noUnlock=%d membytes=%d _keepFile=%d membytes=%d\n", 
+			 hosti, buf, len, noUnlock, membytes, _keepFile, membytes ));
+
 	if ( !_isSetWriteDone ) {
+		prt(("a727272 return 0\n"));
 		return 0;
 	}
 
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	if ( !_writebuf && _keepFile != 1 ) {
+	if ( !_writebuf[hosti] && _keepFile != 1 ) {
+		//prt(("s227721 here init _writebuf[%d] \n", hosti ));
 		if ( _datalen <= 0 ) _datalen = len;
-		abaxint maxbytes = getUsableMemory();
+		jagint maxbytes = 10*1024;
 		if ( membytes > 0 && membytes < maxbytes ) maxbytes = membytes;
-		if ( _datalen < 1 ) return 0;
+		if ( _datalen < 1 ) {
+			prt(("a7611717 return 0\n"));
+			return 0;
+		}
 
-		maxbytes /= ( _numHosts * _datalen );
+		maxbytes /= _datalen;
 		if ( 0 == maxbytes ) ++maxbytes;
-		maxbytes *= ( _numHosts * _datalen );
-		abaxint onemaxbytes = maxbytes / _numHosts;
-		_writebuf = (char*)jagmalloc( maxbytes );
-		memset( _writebuf, 0, maxbytes );
-		
-		for ( int i = 0; i < _numHosts; ++i ) {
-			_dbPairFileVec[i].memstart = _dbPairFileVec[i].memoff = _dbPairFileVec[i].mempos = i*onemaxbytes;
-			_dbPairFileVec[i].memlen = i*onemaxbytes + onemaxbytes;
-		}
-	}
-	if ( !noUnlock ) mutex.writeUnlock();
-	
-	abaxint i, clen, wlen;
-	if ( !_hostToIdx->getValue( host, i ) ) {
-		clean();
-		return false;
-	}
+		maxbytes *= _datalen;  // int blocks for numhosts
+		jagint onemaxbytes = maxbytes;
 
+		_writebuf[hosti] = (char*)jagmalloc( maxbytes );
+		memset( _writebuf[hosti], 0, maxbytes );
+		_writebufHasData = true;
+		
+		_dbPairFileVec[hosti].memstart = _dbPairFileVec[hosti].memoff = _dbPairFileVec[hosti].mempos = 0;
+		_dbPairFileVec[hosti].memlen = onemaxbytes;
+	}
+	
+	jagint clen, wlen;
+
+	// export to sql commands
 	if ( _keepFile == 1 ) {
-		if ( _writebuf ) {
-			free( _writebuf );
-			_writebuf = NULL;
-		}
+		cleanWriteBuf();
 
 		if ( !_sqlarr ) {
 			if ( _datalen <= 0 ) _datalen = len;
-			abaxint maxlens = jagatoll(_cfg->getValue("SHUFFLE_MEM_SIZE_MB", "1024").c_str())*1024*1024/_datalen;
+			jagint maxlens = jagatoll(_cfg->getValue("SHUFFLE_MEM_SIZE_MB", "256").c_str())*1024*1024/_datalen;
 			_sqlarr = new Jstr[maxlens];
 			_dbPairFileVec[0].memlen = maxlens-1;
 			_dbPairFileVec[0].mempos = 0;
@@ -254,17 +264,21 @@ bool JagDataAggregate::writeit( const Jstr &host, const char *buf, abaxint len,
 			_dbPairFileVec[0].memoff = 0;
 		}
 
-		if ( !rec ) return 0;
-		abaxint offset, length;
+		if ( !rec ) {
+			prt(("a8282727 return 0\n"));
+			return 0;
+		}
+
+		jagint offset, length;
 		Jstr type;
-		// prt(("s4829 format insert into ...\n"));
 		Jstr outstr, cmd = Jstr("insert into ") + _dbobj + "(";
 		bool isLast = 0;
 		for ( int i = 0; i < rec->columnVector->size(); ++i ) {
 			if ( i == rec->columnVector->size()-2 ) {
-				if ( (*(rec->columnVector))[i+1].name == "spare_" )
-				{ isLast = 1; }
-			} else if ( i==rec->columnVector->size()-1 ) { isLast = 1; }
+				if ( (*(rec->columnVector))[i+1].name == "spare_" ) { isLast = 1; }
+			} else if ( i==rec->columnVector->size()-1 ) { 
+				isLast = 1; 
+			}
 
 			if ( ! isLast ) {
 				cmd += Jstr(" ") + (*(rec->columnVector))[i].name.c_str() + ",";
@@ -277,14 +291,19 @@ bool JagDataAggregate::writeit( const Jstr &host, const char *buf, abaxint len,
 		isLast = 0;
 		for ( int i = 0; i < rec->columnVector->size(); ++i ) {
 			if ( i == rec->columnVector->size()-2 ) {
-				if ( (*(rec->columnVector))[i+1].name == "spare_" )
-				{ isLast = 1; }
-			} else if ( i==rec->columnVector->size()-1 ) { isLast = 1; }
+				if ( (*(rec->columnVector))[i+1].name == "spare_" ) { isLast = 1; }
+			} else if ( i==rec->columnVector->size()-1 ) { 
+				isLast = 1; 
+			}
 			
 			offset = (*(rec->columnVector))[i].offset;
 			length = (*(rec->columnVector))[i].length;
 			type = (*(rec->columnVector))[i].type;
+
 			outstr = formOneColumnNaturalData( buf, offset, length, type );
+			prt(("s222093 formOneColumnNaturalData outstr=[%s]\n", outstr.s() ));
+			// include /export
+
 			if ( ! isLast ) {
 				cmd += Jstr(" '") + outstr + "',";
 			} else {
@@ -300,47 +319,66 @@ bool JagDataAggregate::writeit( const Jstr &host, const char *buf, abaxint len,
 		_sqlarr[_dbPairFileVec[0].mempos++] = cmd;	
 		_totalwritelen += len;
 		++_numwrites;
+		prt(("s22203876 return true _numwrites=%d\n", _numwrites ));
 		return true;
 	}
 
-	if ( _dbPairFileVec[i].mempos + len > _dbPairFileVec[i].memlen ) { //flush to disk
-		wlen = _dbPairFileVec[i].mempos - _dbPairFileVec[i].memoff;
-		if ( _dbPairFileVec[i].fd < 0 ) {
-			_dbPairFileVec[i].fd = _jmgr->open( _dbPairFileVec[i].fpath, true );
+	// flush to disk
+	//prt(("s2110224 flush to disk ...\n"));
+	if ( _dbPairFileVec[hosti].mempos + len > _dbPairFileVec[hosti].memlen ) { 
+		wlen = _dbPairFileVec[hosti].mempos - _dbPairFileVec[hosti].memoff;
+		//prt(("s222820 pwrite data len=%d wlen=%d hosti=%d fd=%d\n", len, wlen, hosti, _dbPairFileVec[hosti].fd ));
+		if ( _dbPairFileVec[hosti].fd < 0 ) {
+			_dbPairFileVec[hosti].fd = _jfsMgr->openfd( _dbPairFileVec[hosti].fpath, true );
+			//prt(("s293804 _useDisk is set to 1\n"));
 			_useDisk = 1;
 		}
-		clen = _jmgr->pwrite( _dbPairFileVec[i].fd, _writebuf+_dbPairFileVec[i].memoff, 
-							  wlen, _dbPairFileVec[i].diskpos );
+
+		clen = _jfsMgr->pwrite( _dbPairFileVec[hosti].fd, _writebuf[hosti]+_dbPairFileVec[hosti].memoff, wlen, _dbPairFileVec[hosti].diskpos );
 		if ( clen < wlen ) {
 			clean();
+			prt(("s102928 return false clen=%d wlen=%d\n", clen, wlen ));
 			return false;
 		}
-		memset( _writebuf+_dbPairFileVec[i].memoff, 0, wlen );
-		_dbPairFileVec[i].mempos = _dbPairFileVec[i].memoff;
-		_dbPairFileVec[i].disklen += clen;
-		_dbPairFileVec[i].diskpos = _dbPairFileVec[i].disklen;
+		_useDisk = 1;
+		//prt(("s299227 done pwrite memoff=%d clen=%d wlen=%d diskpos=%d\n", _dbPairFileVec[hosti].memoff, clen, wlen, _dbPairFileVec[hosti].diskpos ));
+
+		//memset( _writebuf+_dbPairFileVec[hosti].memoff, 0, wlen );
+		memset( _writebuf[hosti]+_dbPairFileVec[hosti].memoff, 0, wlen );
+		_dbPairFileVec[hosti].mempos = _dbPairFileVec[hosti].memoff;
+		_dbPairFileVec[hosti].disklen += clen;
+		_dbPairFileVec[hosti].diskpos = _dbPairFileVec[hosti].disklen;
 	}
 	
-	if ( len > _dbPairFileVec[i].memlen - _dbPairFileVec[i].memoff ) { 
+	//prt(("s77521 host_i=%d len=%d >? memlen=%d - memoff=%d (diff=%d)\n", hosti, len, _dbPairFileVec[hosti].memlen, _dbPairFileVec[hosti].memoff, _dbPairFileVec[hosti].memlen - _dbPairFileVec[hosti].memoff ));
+	if ( len > _dbPairFileVec[hosti].memlen - _dbPairFileVec[hosti].memoff ) { 
 	    // if one len is too large, flush directly to disk, usually not happen
-		if ( _dbPairFileVec[i].fd < 0 ) {
-			_dbPairFileVec[i].fd = _jmgr->open( _dbPairFileVec[i].fpath, true );
+		//prt(("s442827 flush directly to disk, no more room in memory hosti=%d fd=%d\n", hosti, _dbPairFileVec[hosti].fd ));
+		if ( _dbPairFileVec[hosti].fd < 0 ) {
+			_dbPairFileVec[hosti].fd = _jfsMgr->openfd( _dbPairFileVec[hosti].fpath, true );
+			//prt(("s82273 _useDisk = 1\n"));
 			_useDisk = 1;
 		}
-		clen = _jmgr->pwrite( _dbPairFileVec[i].fd, buf, len, _dbPairFileVec[i].diskpos );
+
+		clen = _jfsMgr->pwrite( _dbPairFileVec[hosti].fd, buf, len, _dbPairFileVec[hosti].diskpos );
 		if ( clen < len ) {
 			clean();
+			prt(("s761100 clen=%d len=%d ret false\n", clen, len ));
 			return false;
 		}
-		_dbPairFileVec[i].disklen += clen;
-		_dbPairFileVec[i].diskpos = _dbPairFileVec[i].disklen;		
+		_useDisk = 1;
+		//prt(("s761101 clen=%d len=%d pwrite OK diskpos=%d\n", clen, len, _dbPairFileVec[hosti].diskpos ));
+		_dbPairFileVec[hosti].disklen += clen;
+		_dbPairFileVec[hosti].diskpos = _dbPairFileVec[hosti].disklen;		
 	} else { // otherwise, put buf into memory
-		memcpy( _writebuf+_dbPairFileVec[i].mempos, buf, len );
-		_dbPairFileVec[i].mempos += len;
+		//prt(("s13376 put buf into memory _writebuf i=%d mempos=%d len=%d\n", hosti, _dbPairFileVec[hosti].mempos, len ));
+		memcpy( _writebuf[hosti]+_dbPairFileVec[hosti].mempos, buf, len );
+		_dbPairFileVec[hosti].mempos += len;
 	}
+
 	_totalwritelen += len;
 	++_numwrites;
-	// prt(("writeit buf=[%.50s] len=%ld\n", buf, len));
+	//prt(("s411224 writeit buf=[%.50s] len=%ld done, true\n", buf, len));
 	return true;
 }
 
@@ -348,25 +386,24 @@ bool JagDataAggregate::writeit( const Jstr &host, const char *buf, abaxint len,
 // writeit are all done, flush.  it is end. setwrite is begin.
 bool JagDataAggregate::flushwrite()
 {
-	abaxint clen, wlen;
-
+	//prt(("s3333020 flushwrite\n"));
+	jagint clen, wlen;
 	if ( _keepFile == 1 ) {
 		if ( _dbPairFileVec[0].mempos != _dbPairFileVec[0].memoff ) {
 			shuffleSQLMemAndFlush();
 			_dbPairFileVec[0].mempos = 0;
 		}
-		if ( _writebuf ) free( _writebuf );
+		cleanWriteBuf();
 		if ( _sqlarr ) delete [] _sqlarr;
-		_writebuf = NULL;
 		_sqlarr = NULL;
 	} else if ( _useDisk || _keepFile == 3 ) {
 		for ( int i = 0; i < _numHosts; ++i ) {
 			if ( _dbPairFileVec[i].mempos != _dbPairFileVec[i].memoff ) {
 				wlen = _dbPairFileVec[i].mempos - _dbPairFileVec[i].memoff;
 				if ( _dbPairFileVec[i].fd < 0 ) {
-					_dbPairFileVec[i].fd = _jmgr->open( _dbPairFileVec[i].fpath, true );
+					_dbPairFileVec[i].fd = _jfsMgr->openfd( _dbPairFileVec[i].fpath, true );
 				}
-				clen = _jmgr->pwrite( _dbPairFileVec[i].fd, _writebuf+_dbPairFileVec[i].memoff, 
+				clen = _jfsMgr->pwrite( _dbPairFileVec[i].fd, _writebuf[i]+_dbPairFileVec[i].memoff, 
 									  wlen, _dbPairFileVec[i].diskpos );
 				if ( clen < wlen ) {
 					clean();
@@ -377,9 +414,11 @@ bool JagDataAggregate::flushwrite()
 			}
 			_dbPairFileVec[i].diskpos = 0;
 		}
-		free( _writebuf );
-		_writebuf = NULL;
+		//free( _writebuf );
+		//_writebuf = NULL;
+		cleanWriteBuf();
 	}
+
 	_isFlushWriteDone = 1;
 	return true;
 }
@@ -388,18 +427,28 @@ bool JagDataAggregate::flushwrite()
 // read from write buf, if thhere is disk, freeed writebuf. readbuf from disk
 bool JagDataAggregate::readit( JagFixString &buf )
 {
+	//prt(("s2222100 readit  _numIdx=%d _numHosts=%d _datalen=%d _useDisk=%d\n", _numIdx, _numHosts, _datalen, (int)_useDisk ));
+	//prt(("s23760 readit dtalen=%d _isFlushWriteDone=%d\n", _datalen, (int)_isFlushWriteDone ));
 	buf = "";
 	if ( 0 == _datalen || !_isFlushWriteDone ) {
 		clean();
+		//prt(("s23763 readit dtalen=%d _isFlushWriteDone=%d return false\n", _datalen, (int)_isFlushWriteDone ));
 		return false;
 	}
 
 	if ( !_useDisk ) {
 		while ( true ) {
-			if ( _numIdx >= _numHosts ) break;
-			if ( _dbPairFileVec[_numIdx].memoff + _datalen > _dbPairFileVec[_numIdx].mempos ) ++_numIdx;
-			else {
-				buf = JagFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
+			//prt(("s26355 _numIdx=%d/%d\n", _numIdx, _numHosts ));
+			if ( _numIdx >= _numHosts ) {
+				break;
+			}
+
+			if ( _dbPairFileVec[_numIdx].memoff + _datalen > _dbPairFileVec[_numIdx].mempos ) {
+				++_numIdx;
+			} else {
+				buf = JagFixString( _writebuf[_numIdx]+_dbPairFileVec[_numIdx].memoff, _datalen, _datalen );
+				//prt(("c33391 _dbPairFileVec[%d].memoff=%d break while true loop\n", _numIdx, _dbPairFileVec[_numIdx].memoff ));
+				//buf.dump();
 				_dbPairFileVec[_numIdx].memoff += _datalen;
 				break;
 			}
@@ -407,13 +456,16 @@ bool JagDataAggregate::readit( JagFixString &buf )
 		
 		if ( _numIdx >= _numHosts ) {
 			clean();
+			//prt(("s029290 not _useDisk readit return false\n"));
 			return false;
 		}
+		//prt(("s029293 not _useDisk readit return true\n"));
 		return true;
 	} else {
-		abaxint rc;
+		// read from disk
+		jagint rc;
 		if ( !_readbuf ) {
-			abaxint maxbytes = getUsableMemory();
+			jagint maxbytes = 10 * ONE_MEGA_BYTES;
 			maxbytes /= _datalen;
 			if ( 0 == maxbytes ) ++maxbytes;
 			maxbytes *= _datalen;
@@ -427,15 +479,19 @@ bool JagDataAggregate::readit( JagFixString &buf )
 			}
 		}
 		
-		if ( _readpos + _datalen > _readlen ) { // this block is used up, read next block
+		if ( _readpos + _datalen > _readlen ) { 
+			// this block is used up, read next block
 			rc = readNextBlock();
 			if ( rc < 0 ) {
 				clean();
 				return false;
 			}
 		}
+
 		// otherwise, get data from memory buffer
-		buf = JagFixString( _readbuf+_readpos, _datalen );
+		buf = JagFixString( _readbuf+_readpos, _datalen, _datalen );
+		// prt(("c003835 got buf _datalen=%d   _readbuf+_readpos=[%s]\n", _datalen, _readbuf+_readpos ));
+		//buf.dump();
 		_readpos += _datalen;
 		return true;
 	}
@@ -454,7 +510,8 @@ bool JagDataAggregate::backreadit( JagFixString &buf )
 		while ( _numIdx < _numHosts ) {
 			if ( _dbPairFileVec[_numHosts-_numIdx-1].memoff + _datalen > _dbPairFileVec[_numHosts-_numIdx-1].mempos ) ++_numIdx;
 			else {
-				buf = JagFixString( _writebuf+(_dbPairFileVec[_numHosts-_numIdx-1].mempos-_dbPairFileVec[_numHosts-_numIdx-1].memoff-_datalen+_dbPairFileVec[_numHosts-_numIdx-1].memstart), _datalen );
+				//buf = JagFixString( _writebuf+(_dbPairFileVec[_numHosts-_numIdx-1].mempos-_dbPairFileVec[_numHosts-_numIdx-1].memoff-_datalen+_dbPairFileVec[_numHosts-_numIdx-1].memstart), _datalen );
+				buf = JagFixString( _writebuf[_numIdx]+(_dbPairFileVec[_numHosts-_numIdx-1].mempos-_dbPairFileVec[_numHosts-_numIdx-1].memoff-_datalen+_dbPairFileVec[_numHosts-_numIdx-1].memstart), _datalen, _datalen );
 				_dbPairFileVec[_numHosts-_numIdx-1].memoff += _datalen;
 				break;
 			}
@@ -466,9 +523,9 @@ bool JagDataAggregate::backreadit( JagFixString &buf )
 		}
 		return true;
 	} else {
-		abaxint rc;
+		jagint rc;
 		if ( !_readbuf ) {
-			abaxint maxbytes = getUsableMemory();
+			jagint maxbytes = getUsableMemory();
 			maxbytes /= _datalen;
 			if ( 0 == maxbytes ) ++maxbytes;
 			maxbytes *= _datalen;
@@ -490,93 +547,16 @@ bool JagDataAggregate::backreadit( JagFixString &buf )
 			}
 		}
 		// otherwise, get data from memory buffer
-		buf = JagFixString( _readbuf+(_readlen-_readpos-_datalen), _datalen );
+		//buf = JagFixString( _readbuf+(_readlen-_readpos-_datalen), _datalen );
+		buf = JagFixString( _readbuf+(_readlen-_readpos-_datalen), _datalen, _datalen );
 		_readpos += _datalen;
 		return true;
 	}
 	
 }
 
-// method to read data one by one of _datalen parallel, done by main thread
-bool JagDataAggregate::pallreadit( JagFixString &buf )
-{
-	buf = "";
-	if ( 0 == _datalen || !_isFlushWriteDone ) {
-		clean();
-		return false;
-	}
-
-	int numcounts = 0;
-	if ( !_useDisk ) {
-		while ( numcounts <= _numHosts ) {
-			if ( _dbPairFileVec[_numIdx].memoff + _datalen > _dbPairFileVec[_numIdx].mempos ) {
-				if ( _numIdx >= _numHosts-1 ) {
-					_numIdx = 0;
-				} else {
-					++_numIdx;
-				}
-				++numcounts;
-			} else {
-				buf = JagFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
-				_dbPairFileVec[_numIdx].memoff += _datalen;
-				++_numIdx;
-				if ( _numIdx >= _numHosts ) _numIdx = 0;
-				break;
-			}
-		}
-		
-		if ( numcounts > _numHosts ) {
-			clean();
-			return false;
-		}
-		return true;
-	} else {
-		abaxint rc;
-		if ( !_readbuf ) {
-			abaxint maxbytes = getUsableMemory();
-			maxbytes /= ( _numHosts * _datalen );
-			if ( 0 == maxbytes ) ++maxbytes;
-			maxbytes *= ( _numHosts * _datalen );
-			_readmaxlen = maxbytes / _numHosts;
-			_readbuf = (char*)jagmalloc( maxbytes );
-			memset( _readbuf, 0, maxbytes );
-			rc = pallreadNextBlock();
-			if ( rc < 0 ) {
-				clean();
-				return false;
-			}
-		}
-		
-		// parallel read, read one split memory block one by one until used up
-		while ( _pallreadpos[_numIdx] + _datalen > _pallreadlen[_numIdx] ) {
-			++numcounts;
-			if ( _numIdx >= _numHosts-1 ) {
-				_numIdx = 0;
-			} else {
-				++_numIdx;
-			}
-			if ( numcounts > _numHosts ) break;
-		}
-		
-		if ( numcounts > _numHosts ) { // all blocks are used up, read next pall blocks
-			rc = pallreadNextBlock();
-			if ( rc < 0 ) {
-				clean();
-				return false;
-			}			
-		}
-		
-		// otherwise, get data from memory buffer
-		buf = JagFixString( _readbuf+_pallreadpos[_numIdx], _datalen );
-		_pallreadpos[_numIdx] += _datalen;
-		++_numIdx;
-		if ( _numIdx >= _numHosts ) _numIdx = 0;
-		return true;
-	}
-}
-
 // method to set read start position and end position in number idx, used by server
-void JagDataAggregate::setread( abaxint start, abaxint readcnt )
+void JagDataAggregate::setread( jagint start, jagint readcnt )
 {
 	// _numIdx should be 0
 	if ( _useDisk ) {
@@ -589,7 +569,7 @@ void JagDataAggregate::setread( abaxint start, abaxint readcnt )
 }
 
 // method to read data block by block, done by main thread, used by server
-char *JagDataAggregate::readBlock( abaxint &len )
+char *JagDataAggregate::readBlock( jagint &len )
 {
 	if ( 0 == _datalen || !_isFlushWriteDone ) {
 		clean();
@@ -603,15 +583,15 @@ char *JagDataAggregate::readBlock( abaxint &len )
 			len = -1;
 			return NULL;
 		} 
-		char *ptr = _writebuf+_dbPairFileVec[_numIdx].memoff;
+		char *ptr = _writebuf[_numIdx]+_dbPairFileVec[_numIdx].memoff;
 		len = _dbPairFileVec[_numIdx].mempos - _dbPairFileVec[_numIdx].memoff;
 		_dbPairFileVec[_numIdx].memoff += len;
 		++_numIdx;
 		return ptr;
 	} else {
-		abaxint rc;
+		jagint rc;
 		if ( !_readbuf ) {
-			abaxint maxbytes = getUsableMemory();
+			jagint maxbytes = 10*ONE_MEGA_BYTES;
 			maxbytes /= _datalen;
 			if ( 0 == maxbytes ) ++maxbytes;
 			maxbytes *= _datalen;
@@ -643,7 +623,7 @@ char *JagDataAggregate::readBlock( abaxint &len )
 }
 
 // protected method to read next disk block to memeory, called by readit
-abaxint JagDataAggregate::readNextBlock()
+jagint JagDataAggregate::readNextBlock()
 {
 	memset( _readbuf, 0, _readlen );
 	_readpos = _readlen = 0;
@@ -652,7 +632,7 @@ abaxint JagDataAggregate::readNextBlock()
 		return -1;
 	}
 	
-	abaxint mrest, drest, clen;
+	jagint mrest, drest, clen;
 	while( true ) {
 		if ( _numIdx >= _numHosts || _readmaxlen == _readlen ) break;
 		mrest = _readmaxlen - _readlen;
@@ -661,7 +641,7 @@ abaxint JagDataAggregate::readNextBlock()
 		if ( 0 == _dbPairFileVec[_numIdx].disklen ) ++_numIdx;
 		else {
 			if ( drest > mrest ) {
-				clen = _jmgr->pread( _dbPairFileVec[_numIdx].fd, _readbuf+_readpos, 
+				clen = _jfsMgr->pread( _dbPairFileVec[_numIdx].fd, _readbuf+_readpos, 
 									 mrest, _dbPairFileVec[_numIdx].diskpos );
 				if ( clen < mrest ) {
 					return -1;
@@ -670,7 +650,7 @@ abaxint JagDataAggregate::readNextBlock()
 				_readlen += clen;
 				_readpos += clen;
 			} else {
-				clen = _jmgr->pread( _dbPairFileVec[_numIdx].fd, _readbuf+_readpos, 
+				clen = _jfsMgr->pread( _dbPairFileVec[_numIdx].fd, _readbuf+_readpos, 
 									drest, _dbPairFileVec[_numIdx].diskpos );
 				if ( clen < drest ) {
 					return -1;
@@ -686,7 +666,7 @@ abaxint JagDataAggregate::readNextBlock()
 	return _readlen;
 }
 
-abaxint JagDataAggregate::backreadNextBlock()
+jagint JagDataAggregate::backreadNextBlock()
 {
 	memset( _readbuf, 0, _readlen );
 	_readpos = _readlen = 0;
@@ -695,7 +675,7 @@ abaxint JagDataAggregate::backreadNextBlock()
 		return -1;
 	}
 	
-	abaxint mrest, drest, clen;
+	jagint mrest, drest, clen;
 	while( true ) {
 		if ( _numIdx >= _numHosts || _readmaxlen == _readlen ) break;
 		mrest = _readmaxlen - _readlen;
@@ -704,7 +684,7 @@ abaxint JagDataAggregate::backreadNextBlock()
 		if ( 0 == _dbPairFileVec[_numHosts-_numIdx-1].disklen ) ++_numIdx;
 		else {
 			if ( drest > mrest ) {
-				clen = _jmgr->pread( _dbPairFileVec[_numHosts-_numIdx-1].fd, 
+				clen = _jfsMgr->pread( _dbPairFileVec[_numHosts-_numIdx-1].fd, 
 									 _readbuf+_readpos, mrest, drest-mrest );
 				if ( clen < mrest ) {
 					return -1;
@@ -713,7 +693,7 @@ abaxint JagDataAggregate::backreadNextBlock()
 				_readlen += clen;
 				_readpos += clen;
 			} else {
-				clen = _jmgr->pread( _dbPairFileVec[_numHosts-_numIdx-1].fd, _readbuf+_readpos, drest, 0 );
+				clen = _jfsMgr->pread( _dbPairFileVec[_numHosts-_numIdx-1].fd, _readbuf+_readpos, drest, 0 );
 				if ( clen < drest ) {
 					return -1;
 				}
@@ -729,73 +709,9 @@ abaxint JagDataAggregate::backreadNextBlock()
 	return _readlen;
 }
 
-// protected method to pallread next disk blocks to memeory from all splitted files, called by readit
-abaxint JagDataAggregate::pallreadNextBlock()
+jagint JagDataAggregate::getUsableMemory()
 {
-	abaxint mrest, drest, clen, readcnt = 0, readlen = 0;
-	for ( int i = 0; i < _numHosts; ++i ){
-		if ( _pallreadlen[i]-i*_readmaxlen > 0 ) memset( _readbuf+i*_readmaxlen, 0, _pallreadlen[i]-i*_readmaxlen );
-		_pallreadpos[i] = _pallreadlen[i] = i*_readmaxlen;
-		drest = _dbPairFileVec[i].disklen - _dbPairFileVec[i].diskpos;
-		if ( drest > 0 ) {
-			if ( drest >= _readmaxlen ) {
-				clen = _jmgr->pread( _dbPairFileVec[i].fd, _readbuf+_pallreadpos[i], _readmaxlen, _dbPairFileVec[i].diskpos );
-				if ( clen < _readmaxlen ) {
-					return -1;
-				}
-				_dbPairFileVec[i].diskpos += clen;
-				_pallreadlen[i] += clen;
-				readlen += clen;
-			} else {
-				clen = _jmgr->pread( _dbPairFileVec[i].fd, _readbuf+_pallreadpos[i], drest, _dbPairFileVec[i].diskpos );
-				if ( clen < drest ) {
-					return -1;
-				}
-				_dbPairFileVec[i].diskpos += clen;
-				_pallreadlen[i] += clen;
-				readlen += clen;
-			}
-			++readcnt;
-		}
-		
-	}
-	
-	if ( 0 == readcnt ) { // to the end, nothing more
-		return -1;
-	}
-	
-	return _readlen;
-}
-
-// method only available for setwrite third method path for now
-int JagDataAggregate::readRangeOffsetLength( JagFixString &data, abaxint offset, abaxint length )
-{
-	if ( _datalen == 0 || !_isFlushWriteDone ) {
-		clean();
-		return 0;
-	}
-
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	if ( !_useDisk ) {
-		data = JagFixString( _writebuf+offset, length );
-		return 1;
-	} else {
-		char *buf = (char*)jagmalloc( length+1 );
-		abaxint clen = _jmgr->pread( _dbPairFileVec[0].fd, buf, length, offset );
-		if ( clen < length ) {
-			clean();
-			return 0;
-		}
-		data = JagFixString( buf, length );
-		free( buf );
-		return 1;
-	}
-		
-}
-
-abaxint JagDataAggregate::getUsableMemory()
-{
-	abaxint maxbytes, callCounts = -1, lastBytes = 0;
+	jagint maxbytes, callCounts = -1, lastBytes = 0;
 	int mempect = atoi(_cfg->getValue("DBPAIR_MEM_PERCENT", "5").c_str());
 
 	if ( mempect < 2 ) mempect = 2;
@@ -807,12 +723,12 @@ abaxint JagDataAggregate::getUsableMemory()
 		maxbytes = 100000000;
 	}
 
-	if ( _isserv && maxbytes > _maxLimitBytes ) {
+	if ( _isServ && maxbytes > _maxLimitBytes ) {
 		maxbytes = _maxLimitBytes;
 	}
 
-	if ( !_isserv ) {
-		_maxLimitBytes = 50*1024*1024;
+	if ( !_isServ ) {
+		_maxLimitBytes = 50*ONE_MEGA_BYTES;
 		if ( maxbytes > _maxLimitBytes ) {
 			maxbytes = _maxLimitBytes;
 		}
@@ -835,83 +751,6 @@ int JagDataAggregate::joinReadNext( JagVector<JagFixString> &vec )
 	} else {
 		return _joinReadFromDisk( vec );
 	}
-
-
-	/***
-	int numcounts = 0;
-	if ( ! _useDisk ) {
-		while ( numcounts <= _numHosts ) {
-			if ( _dbPairFileVec[_numIdx].memoff + _datalen > _dbPairFileVec[_numIdx].mempos ) {
-				if ( _numIdx >= _numHosts-1 ) {
-					_numIdx = 0;
-				} else {
-					++_numIdx;
-				}
-				++numcounts;
-			} else {
-				buf = JagFixString( _writebuf+_dbPairFileVec[_numIdx].memoff, _datalen );
-				_dbPairFileVec[_numIdx].memoff += _datalen;
-				++_numIdx;
-				if ( _numIdx >= _numHosts ) _numIdx = 0;
-				break;
-			}
-		}
-		
-		if ( numcounts > _numHosts ) {
-			clean();
-			return false;
-		}
-
-		return true;
-	}
-	***/
-
-
-
-	/***
-		abaxint rc;
-		if ( !_readbuf ) {
-			abaxint maxbytes = getUsableMemory();
-			maxbytes /= ( _numHosts * _datalen );
-			if ( 0 == maxbytes ) ++maxbytes;
-			maxbytes *= ( _numHosts * _datalen );
-			_readmaxlen = maxbytes / _numHosts;
-			_readbuf = (char*)jagmalloc( maxbytes );
-			memset( _readbuf, 0, maxbytes );
-			rc = pallreadNextBlock();
-			if ( rc < 0 ) {
-				clean();
-				return false;
-			}
-		}
-		
-		// parallel read, read one split memory block one by one until used up
-		while ( _pallreadpos[_numIdx] + _datalen > _pallreadlen[_numIdx] ) {
-			++numcounts;
-			if ( _numIdx >= _numHosts-1 ) {
-				_numIdx = 0;
-			} else {
-				++_numIdx;
-			}
-			if ( numcounts > _numHosts ) break;
-		}
-		
-		if ( numcounts > _numHosts ) { // all blocks are used up, read next pall blocks
-			rc = pallreadNextBlock();
-			if ( rc < 0 ) {
-				clean();
-				return false;
-			}			
-		}
-		
-		// otherwise, get data from memory buffer
-		buf = JagFixString( _readbuf+_pallreadpos[_numIdx], _datalen );
-		_pallreadpos[_numIdx] += _datalen;
-		++_numIdx;
-		if ( _numIdx >= _numHosts ) _numIdx = 0;
-		return true;
-	***/
-
 }
 
 void JagDataAggregate::beginJoinRead( int klen )
@@ -919,14 +758,13 @@ void JagDataAggregate::beginJoinRead( int klen )
 	_keylen = klen;
 	_vallen = _datalen - klen;
 
-	// init _goNext
 	for ( int i = 0; i < _numHosts; ++i ) {
 		_goNext[i] = 1;
 	}
 
 	if ( NULL == _mergeReader ) {
 		JagVector<OnefileRangeFD> vec;
-		abaxint memmax = 1024/_numHosts;
+		jagint memmax = 1024/_numHosts;
 		memmax = getBuffReaderWriterMemorySize( memmax );
 		for ( int i = 0; i < _numHosts; ++i ) {
 			OnefileRangeFD fr;
@@ -1074,15 +912,16 @@ int JagDataAggregate::_joinReadFromMem( JagVector<JagFixString> &vec )
 // 0: no more data
 // Read from _writebuf to _dbPairFileVec[i].kv
 // i is host num 0 -> N-1
-int JagDataAggregate::_getNextDataOfHostFromMem( int i  )
+int JagDataAggregate::_getNextDataOfHostFromMem( int hosti  )
 {
-	abaxint memoff = _dbPairFileVec[i].memoff;
-	if ( memoff >= _dbPairFileVec[i].mempos ) {
+	jagint memoff = _dbPairFileVec[hosti].memoff;
+	if ( memoff >= _dbPairFileVec[hosti].mempos ) {
 		return 0; // no more data
 	}
 	
-	_dbPairFileVec[i].kv  = JagFixString( _writebuf+memoff, _datalen );
-	_dbPairFileVec[i].memoff += _datalen;
+	//_dbPairFileVec[i].kv  = JagFixString( _writebuf+memoff, _datalen );
+	_dbPairFileVec[hosti].kv  = JagFixString( _writebuf[hosti]+memoff, _datalen, _datalen );
+	_dbPairFileVec[hosti].memoff += _datalen;
 
 	return 1;
 }
@@ -1110,33 +949,32 @@ int JagDataAggregate::_joinReadFromDisk( JagVector<JagFixString> &vec )
 
 void JagDataAggregate::shuffleSQLMemAndFlush()
 {
+	//prt(("s2209111 shuffleSQLMemAndFlush\n" ));
 	srand(time(NULL));
 	int radidx;
 	// open new random file
 	while ( true ) {
 		radidx = rand() % JAG_RANDOM_FILE_LIMIT;
 		_dbPairFileVec[0].fpath = _dirpath + _dbobj + "." + intToStr( radidx ) + ".sql";
-		if ( _jmgr->exist( _dbPairFileVec[0].fpath ) ) {
+		if ( _jfsMgr->exist( _dbPairFileVec[0].fpath ) ) {
 			continue;
 		} 
-		_dbPairFileVec[0].fd = _jmgr->open( _dbPairFileVec[0].fpath, true );
+		_dbPairFileVec[0].fd = _jfsMgr->openfd( _dbPairFileVec[0].fpath, true );
 		break;
 	}
 
-	// randDataStringSort( _sqlarr, _dbPairFileVec[0].mempos );
 	for ( int i = 0; i < _dbPairFileVec[0].mempos; ++i ) {
 		raysafewrite( _dbPairFileVec[0].fd, (char*)_sqlarr[i].c_str(), _sqlarr[i].size() );
 		_sqlarr[i] = "";
 	}
 	
-	_jmgr->close( _dbPairFileVec[0].fpath );
-	
+	_jfsMgr->closefd( _dbPairFileVec[0].fpath );
 }
 
-// send data to client
-void JagDataAggregate::sendDataToClient( abaxint cnt, const JagRequest &req )
+// send data to client, with sqlhdr
+void JagDataAggregate::sendDataToClient( jagint cnt, const JagRequest &req )
 {
-	abaxint len;
+	jagint len;
 	char *ptr = NULL;
 	char buf[SELECT_DATA_REQUEST_LEN+1];
 	memset(buf, 0, SELECT_DATA_REQUEST_LEN+1);
@@ -1144,35 +982,65 @@ void JagDataAggregate::sendDataToClient( abaxint cnt, const JagRequest &req )
 	//prt(("s9283 sendDataToClient cnt=%d this->getdatalen=%d\n", cnt,  this->getdatalen() ));
 
 	// first, send num of data to client, then waiting for request cmd
-	sprintf( buf, "%lld|%lld", cnt, this->getdatalen() );
-	//prt(("s4029 sendMessage buf=[%s]\n", buf ));
+	sprintf( buf, "_datanum|%lld|%lld", cnt, this->getdatalen() );
+	prt(("s42029 in sendDataToClient() sendMessage buf=[%s]\n", buf ));
+
+	// send
 	sendMessage( req, buf, "OK" );
 
 	memset(buf, 0, SELECT_DATA_REQUEST_LEN+1);
  	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *newbuf = NULL;
-	abaxint clen = recvData( req.session->sock, hdr, newbuf );
-	//prt(("s3733 received hdr=[%s] newbuf=[%s]\n", hdr, newbuf ));
+
+	prt(("a21081 recvMessage ...\n"));
+	jagint clen = recvMessage( req.session->sock, hdr, newbuf );
+	prt(("s38733 recvMessage received hdr=[%s] newbuf=[%s]\n", hdr, newbuf ));
 
 	//prt(("s9999 request cmd=[%s]\n", newbuf));
 	if ( clen > 0 && 0 == strncmp( newbuf, "_send", 5 ) ) { // need send data to client
-		if ( 0 == strncmp( newbuf, "_send|", 6 ) ) { // split cmd to get start position and readcnt for range data
+		prt(("s202911 newbuf has _send\n"));
+		if ( 0 == strncmp( newbuf, "_senddata|", 10 ) ) { // split cmd to get start position and readcnt for range data
 			JagStrSplit sp( newbuf, '|', true );
 			this->setread( jagatoll( sp[1].c_str() ), jagatoll( sp[2].c_str() ) );
 		} // otherwise, send all data
 		
 		// begin send range data to client 
+		jagint cnt = 0;  // debug only
 		while ( true ) {
 			if ( ! ( ptr = this->readBlock( len ) ) || len < 0 ) {
-				// prt(("s9283  len=%d\n", len ));
 				break;
 			}
-			//prt(("s9319 request len=%lld ptr=[%s]\n", len, ptr));
-			if ( sendMessageLength( req, ptr, len, "XX" ) < 0 ) break;
-		}
-	} // otherwise, discard data
 
+			prt(("s9319 sendMessageLength len=%lld ptr=[%.60s]\n", len, ptr));
+			if ( sendMessageLength( req, ptr, len, "XX" ) < 0 ) {
+				break;
+			}
+			++cnt;
+		}
+	} // otherwise, discard data  _discard
+
+	prt(("s20018 done senddatatoclient\n"));
 	if ( newbuf ) free( newbuf );
 }
 
+void JagDataAggregate::initWriteBuf()
+{
+	for ( int i=0; i < JAG_MAX_HOSTS; ++i ) {
+		_writebuf[i] = NULL;
+	}
+	_writebufHasData = false;
+}
+
+void JagDataAggregate::cleanWriteBuf()
+{
+	if ( ! _writebufHasData ) return;
+	for ( int i=0; i < JAG_MAX_HOSTS; ++i ) {
+		if ( _writebuf[i] ) {
+			free( _writebuf[i] );
+			_writebuf[i] = NULL;
+		}
+	}
+
+	_writebufHasData = false;
+}
 

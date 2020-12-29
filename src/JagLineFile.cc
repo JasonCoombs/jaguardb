@@ -28,8 +28,6 @@ JagLineFile::JagLineFile( int bufline )
 	_fileLen = 0;
 	_fp = NULL;
 	_hasStartedRead = false;
-	//_mutex = PTHREAD_MUTEX_INITIALIZER;
-	//pthread_mutex_init( &_mutex, NULL );
 }
 
 JagLineFile::~JagLineFile()
@@ -40,10 +38,8 @@ JagLineFile::~JagLineFile()
 
 	if ( _fp ) {
 		fclose( _fp );
-		::unlink( _fname.c_str() );
+		jagunlink( _fname.c_str() );
 	}
-
-	//pthread_mutex_destroy( &_mutex );
 }
 
 bool JagLineFile::print() const
@@ -58,13 +54,11 @@ bool JagLineFile::print() const
 void JagLineFile::append( const Jstr &line )
 {
 	if ( _hash.keyExist( line ) ) return;
-	//jaguar_mutex_lock ( &_mutex );
 	//prt(("s3890 JagLineFile::append(%s)\n", line.c_str() ));
 	if ( _bufLen < _bufMax ) {
 		_buf[ _bufLen ] = line;
 		++ _bufLen;
 		//prt(("s3710 JagLineFile::append() _bufLen=%d\n", _bufLen ));
-		//jaguar_mutex_unlock ( &_mutex );
 		_hash.addKeyValue( line, "1");
 		return;
 	}
@@ -73,7 +67,6 @@ void JagLineFile::append( const Jstr &line )
 		_fname = jaguarHome() + "/tmp/" + longToStr(THREADID) + intToStr( rand()%10000 );
 		_fp = fopen( _fname.c_str(), "w" );
 		if ( ! _fp ) {
-			//jaguar_mutex_unlock ( &_mutex );
 			return;
 		}
 	}
@@ -81,11 +74,10 @@ void JagLineFile::append( const Jstr &line )
 	fprintf(_fp, "%s\n", line.c_str() );
 	++ _fileLen;
 	_hash.addKeyValue( line, "1");
-	//jaguar_mutex_unlock ( &_mutex );
 	return;
 }
 
-abaxint JagLineFile::size() const
+jagint JagLineFile::size() const
 {
 	return _bufLen + _fileLen;
 }
@@ -93,19 +85,16 @@ abaxint JagLineFile::size() const
 void JagLineFile::startRead()
 {
 	if ( _hasStartedRead ) return;
-	//jaguar_mutex_lock ( &_mutex );
 
 	if ( _fp ) {
 		rewind( _fp );
 	}
 	_i = 0;
 	_hasStartedRead = true;
-	//jaguar_mutex_unlock ( &_mutex );
 }
 
 bool JagLineFile::getLine( Jstr &line )
 {
-	//jaguar_mutex_lock ( &_mutex );
 	//prt(("s3820 getLine _bufLen=%d _i=%d\n", _bufLen, _i ));
 	if ( _i <= _bufLen-1 ) {
 		line = _buf[_i];
@@ -116,14 +105,12 @@ bool JagLineFile::getLine( Jstr &line )
 	}
 
 	if ( ! _fp ) {
-		//jaguar_mutex_unlock ( &_mutex );
 		return false;
 	}
 
 	char *cmdline = NULL;
 	size_t sz;
 	if ( jaggetline( (char**)&cmdline, &sz, _fp ) < 0 ) {
-		//jaguar_mutex_unlock ( &_mutex );
 		return false;
 	}
 
@@ -131,41 +118,33 @@ bool JagLineFile::getLine( Jstr &line )
 	line = cmdline;
 	free( cmdline );
 	//prt(("s5581 line=[%s]\n", line.c_str() ));
-	//jaguar_mutex_unlock ( &_mutex );
 	return true;
 }
 
 bool JagLineFile::hasData()
 {
-	//jaguar_mutex_lock ( &_mutex );
 	//prt(("s3388 JagLineFile::hasData() _i=%d _bufLen-1=%d\n", _i, _bufLen-1 ));
 	if ( _i <= _bufLen-1 ) {
-		//jaguar_mutex_unlock ( &_mutex );
 		return true;
 	}
 
 	if ( ! _fp ) {
-		//jaguar_mutex_unlock ( &_mutex );
 		return false;
 	}
 
 	if ( feof( _fp ) ) {
-		//jaguar_mutex_unlock ( &_mutex );
 		return false;
 	}
-	//jaguar_mutex_unlock ( &_mutex );
 	return true;
 }
 
 JagLineFile& JagLineFile::operator+= ( JagLineFile &f2 )
 {
-	//jaguar_mutex_lock ( &_mutex );
 	f2.startRead();
 	Jstr line;
 	while ( f2.getLine( line ) ) {
 		append( line );
 	}
-	//jaguar_mutex_unlock ( &_mutex );
 	return *this;
 }
 

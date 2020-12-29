@@ -30,13 +30,20 @@
 #include <JagSession.h>
 #include <time.h>
 
-
 #ifdef JAGPRT
-#define prt(x) printf x; fflush(stdout)
+#define prt(x) 1
+#define dbg(x) 1
 #else
-#define prt(x) 1  
+#ifdef JAGDBG
+#define prt(x) 1
+#define dbg(x) printf x; fflush(stdout)
+#else
+#define prt(x) 1
+#define dbg(x) 1
+#endif
 #endif
 
+#define prints(x) printf x; fflush(stdout)
 
 #ifdef _WINDOWS64_
 typedef double abaxdouble;
@@ -66,37 +73,38 @@ void raydebug( FILE *outf, int level, const char *fmt, ... );
 const char *jagstrrstr(const char *haystack, const char *needle);
 
 // pread/pwrite style, but safe
-ssize_t raysafepread( int fd, char *buf, abaxint len, abaxint startpos );
-ssize_t raysafepwrite( int fd, const char *buf, abaxint len, abaxint startpos );
+ssize_t raysafepread( int fd, char *buf, jagint len, jagint startpos );
+ssize_t raysafepwrite( int fd, const char *buf, jagint len, jagint startpos );
 
-ssize_t jagpwrite( int fd, const char *buf, abaxint len, abaxint startpos );
-ssize_t jagpread( int fd, char *buf, abaxint len, abaxint startpos );
+ssize_t jagpwrite( int fd, const char *buf, jagint len, jagint startpos );
+ssize_t jagpread( int fd, char *buf, jagint len, jagint startpos );
 
 // fd read/write style, but safe
-ssize_t raysaferead( int fd, char *buf, abaxint len );
-ssize_t raysaferead( int fd, unsigned char *buf, abaxint len );
-ssize_t raysafewrite( int fd, const char *buf, abaxint len );
+ssize_t raysaferead( int fd, char *buf, jagint len );
+ssize_t raysaferead( int fd, unsigned char *buf, jagint len );
+ssize_t raysafewrite( int fd, const char *buf, jagint len );
 
-ssize_t jdfpread( const JDFS *jdfs, char *buf, abaxint len, abaxint startpos );
-ssize_t jdfpwrite( JDFS *jdfs, const char *buf, abaxint len, abaxint startpos );
+ssize_t jdfpread( const JDFS *jdfs, char *buf, jagint len, jagint startpos );
+ssize_t jdfpwrite( JDFS *jdfs, const char *buf, jagint len, jagint startpos );
 
 short getSimpleEscapeSequenceIndex( const char p );
 int rayatoi( const char *buf, int length );
-abaxint rayatol( const char *buf, int length );
+jagint rayatol( const char *buf, int length );
 double rayatof( const char *buf, int length );
 abaxdouble raystrtold( const char *buf, int length );
 
 char *itostr( int i, char *buf );
-char *ltostr( abaxint i, char *buf );
+char *ltostr( jagint i, char *buf );
+char *xtostr( jagint i, char *buf );
 Jstr intToStr( int i );
-Jstr longToStr( abaxint i );
+Jstr longToStr( jagint i );
 Jstr doubleToStr( double f );
 Jstr d2s( double f );
 Jstr doubleToStr( double f, int maxlen, int sig );
 Jstr longDoubleToStr( abaxdouble f );
-int jagsprintfLongDouble( int mode, bool fill, char *buf, abaxdouble i, abaxint maxlen );
-abaxint getNearestBlockMultiple( abaxint value );
-abaxint getBuffReaderWriterMemorySize( abaxint value ); // max as 1024 ( MB ), value and return in MB
+int jagsprintfLongDouble( int mode, bool fill, char *buf, abaxdouble i, jagint maxlen );
+jagint getNearestBlockMultiple( jagint value );
+jagint getBuffReaderWriterMemorySize( jagint value ); // max as 1024 ( MB ), value and return in MB
 
 bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf, Jstr &errmsg, const Jstr &name, 
 	const int offset, const int length, const int sig, const Jstr &type );
@@ -132,8 +140,8 @@ int stripStrEnd( char *msg, int len );
 void randDataStringSort( Jstr *vec, int maxlen );
 bool isNumeric( const char *str );
 
-void fsetXattr( int fd, const char* path, const char *name, abaxint value );
-abaxint fgetXattr( int fd, const char *path, const char *name );
+void fsetXattr( int fd, const char* path, const char *name, jagint value );
+jagint fgetXattr( int fd, const char *path, const char *name );
 
 FILE *loopOpen( const char *path, const char *mode );
 FILE *jagfopen( const char *path, const char *mode );
@@ -150,20 +158,19 @@ const char *strcasestr(const char *s1, const char *s2);
 #else
 int jagftruncate( int fd, off_t length );
 #endif
-void jagsleep( abaxint time, int mode );
+void jagsleep( useconds_t time, int mode );
 bool lastStrEqual( const char *bigstr, const char *smallstr, int lenbig, int lensmall );
 bool isInteger( const Jstr &dtype );
 bool isDateTime( const Jstr &dtype );
-bool isJoin( int dtype );
 Jstr intToString( int i ) ;
-Jstr longToString( abaxint i ) ;
-Jstr ulongToString( uabaxint i ) ;
-abaxint  strchrnum( const char *str, char ch );
-abaxint  strchrnumskip( const char *str, char ch );
+Jstr longToString( jagint i ) ;
+Jstr ulongToString( jaguint i ) ;
+jagint  strchrnum( const char *str, char ch );
+jagint  strchrnumskip( const char *str, char ch );
 char *strnchr(const char *s, int c, int n);
 int  strInStr( const char *str, int len, const char *str2 );
 void splitFilePath( const char *fpath, Jstr &first, Jstr &last );
-void stripeFilePath( const Jstr &fpath, abaxint stripe, Jstr &stripePath );
+void stripeFilePath( const Jstr &fpath, jagint stripe, Jstr &stripePath );
 Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbname, const Jstr &objname );
 Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbdotname );
 Jstr jaguarHome();
@@ -172,14 +179,16 @@ int selectServer( const JagFixString &min, const JagFixString &max, const JagFix
 int trimEndWithChar ( char *msg, int len, char c );
 int trimEndToChar ( char *msg, int len, char stopc );
 int trimEndWithCharKeepNewline ( char *msg, int len, char c );
-abaxint availableMemory( abaxint &callCount, abaxint lastBytes );
+jagint availableMemory( jagint &callCount, jagint lastBytes );
 int checkReadOrWriteCommand( const char *pmesg );
+int checkReadOrWriteCommand( int qmode );
 int checkColumnTypeMode( const Jstr &type );
-Jstr formOneColumnNaturalData( const char *buf, abaxint offset, abaxint length, const Jstr &type );
+//Jstr formOneColumnNaturalData( const Jstr &data, jagint offset, jagint length, const Jstr &type );
+Jstr formOneColumnNaturalData( const char *data, jagint offset, jagint length, const Jstr &type );
 void printParseParam( JagParseParam *parseParam );
 int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], JagParseParam *parseParam,
 	const JagVector<SetHdrAttr> &spa, Jstr &newhdr, Jstr &gbvhdr,
-	abaxint &finalsendlen, abaxint &gbvsendlen, bool needGbvs=true );
+	jagint &finalsendlen, jagint &gbvsendlen, bool needGbvs=true );
 int checkGroupByValidation( const JagParseParam *parseParam );
 int checkAndReplaceGroupByAlias( JagParseParam *parseParam );
 void convertToHashMap( const Jstr &kvstr, char sep, JagHashMap<AbaxString, AbaxString> &hashmap );
@@ -197,26 +206,30 @@ const char *strcasestrskipspacequote( const char *str, const char *token );
 void trimLenEndColonWhite( char *str, int len );
 void trimEndColonWhite( char *str, int len );
 void escapeNewline( const Jstr &instr, Jstr &outstr );
-char *jagmalloc( abaxint sz );
+char *jagmalloc( jagint sz );
 int jagpthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg);
 int jagpthread_join(pthread_t thread, void **retval);
-abaxint sendData( JAGSOCK sock, const char *buf, abaxint len );
-abaxint recvData( JAGSOCK sock, char *hdr, char *&buf );
-abaxint recvData( JAGSOCK sock, char *buf, abaxint len );
-abaxint _raysend( JAGSOCK sock, const char *hdr, abaxint N );
-abaxint _rayrecv( JAGSOCK sock, char *hdr, abaxint N );
+jagint sendRawData( JAGSOCK sock, const char *buf, jagint len );
+jagint sendShortMessageToSock( JAGSOCK sock, const char *buf, jagint len, const char *code4 );
+jagint recvMessage( JAGSOCK sock, char *hdr, char *&buf );
+jagint recvMessageInBuf( JAGSOCK sock, char *hdr, char *&buf, char *sbuf, int sbuflen );
+jagint recvRawData( JAGSOCK sock, char *buf, jagint len );
+jagint _raysend( JAGSOCK sock, const char *hdr, jagint N );
+jagint _rayrecv( JAGSOCK sock, char *hdr, jagint N );
 
+/**
 #ifdef DEVDEBUG
 #define dbg(x) printf x; fflush(stdout)
 #else
 #define dbg(x) ;
 #endif
+**/
 
 int jagmkdir(const char *path, mode_t mode);
 int jagfdatasync( int fd ); 
 int jagsync( ); 
 int jagfsync( int fd ); 
-abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size );
+jagint jagsendfile( JAGSOCK sock, int fd, jagint size );
 
 #ifdef DEVDEBUG
 #define JAG_BLURT \
@@ -238,9 +251,9 @@ abaxint jagsendfile( JAGSOCK sock, int fd, abaxint size );
 #include <sys/sysinfo.h>
 #endif
 
-int jagmalloc_trim( abaxint n );
+int jagmalloc_trim( jagint n );
 Jstr psystem( const char *cmd );
-bool checkCmdTimeout( abaxint startTime, abaxint timeoutLimit );
+bool checkCmdTimeout( jagint startTime, jagint timeoutLimit );
 char *getNameValueFromStr( const char *content, const char *name );
 ssize_t jaggetline(char **lineptr, size_t *n, FILE *stream);
 Jstr expandEnvPath( const Jstr &path );
@@ -250,28 +263,28 @@ int formatInsertSelectCmdHeader( const JagParseParam *parseParam, Jstr &str );
 bool isValidVar( const char *name );
 bool isValidNameChar( char c );
 void stripEndSpace( char *qstr, char endc );
-abaxint _getFieldInt( const char * rowstr, char fieldToken );
+jagint _getFieldInt( const char * rowstr, char fieldToken );
 void makeMapFromOpt( const char *options, JagHashMap<AbaxString, AbaxString> &omap );
 Jstr makeStringFromOneVec( const JagVector<Jstr> &vec, int dquote );
 Jstr makeStringFromTwoVec( const JagVector<Jstr> &xvec, const JagVector<Jstr> &yvec );
 int oneFileSender( JAGSOCK sock, const Jstr &inpath );
 int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath=true );
-abaxint sendDirectToSock( JAGSOCK sock, const char *mesg, abaxint len, bool nohdr=false );
-abaxint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr );
-abaxint sendDirectToSockWithHdr( JAGSOCK sock, const char *hdr, const char *mesg, abaxint len );
+jagint sendDirectToSock( JAGSOCK sock, const char *mesg, jagint len, bool nohdr=false );
+jagint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr );
+jagint sendDirectToSockWithHdr( JAGSOCK sock, const Jstr& hdr, const Jstr &mesg );
 int isValidSciNotation(const char *str );
 Jstr fileHashDir( const JagFixString &fstr );
 char lastChar( const JagFixString &str );
 
-#define jagfree(x) free(x); x=NULL
-#define jagiffree(x) if (x) {free(x); x=NULL;}
-#define jagdelete(x) delete x; x=NULL 
+#define jagfree(x) if (x) {free(x); x=NULL;}
+#define jagdelete(x) if (x) {delete x; x=NULL;}
 
-void jagfwrite( const char *str, abaxint len, FILE *outf );
-void jagfwritefloat( const char *str, abaxint len, FILE *outf );
+void jagfwrite( const char *str, jagint len, FILE *outf );
+void jagfwritefloat( const char *str, jagint len, FILE *outf );
 void charFromStr( char *dest, const Jstr &src );
 bool streq( const char *s1, const char *s2 );
 long long jagatoll(const char *nptr);
+long long jagatoll(const Jstr &str );
 long jagatol(const char *nptr);
 long double jagstrtold(const char *nptr, char **endptr=NULL);
 double jagatof(const char *nptr );
@@ -319,8 +332,8 @@ void printStr( const Jstr &str );
 char *secondTokenStart( const char *str, char sep=' ' );
 char *thirdTokenStart( const char *str, char sep=' ' );
 char *secondTokenStartEnd( const char *str, char *&pend, char sep=' ' );
-abaxint convertToSecond( const char *str);
-abaxint convertToMicroSecond( const char *str);
+jagint convertToSecond( const char *str);
+jagint convertToMicroSecond( const char *str);
 void rotateat( double oldx, double oldy, double alpha, double x0, double y0, double &x, double &y );
 void rotatenx( double oldnx, double alpha, double &nx );
 void affine2d( double x1, double y1, double a, double b, double d, double e, 
@@ -345,6 +358,7 @@ void getXmitSQLHdr( char *buf, char *sqlhdr );
 void getXmitCode( char *buf, char *code );
 long getXmitMsgLen( char *buf );
 void makeSQLHeader( char *sqlhdr );
+void makeTotalHeader( char *tothdr, jagint payloadLen, const char *code );
 
 Jstr makeGeoJson( const JagStrSplit &sp, const char *str );
 Jstr makeJsonLineString( const Jstr &title, const JagStrSplit &sp, const char *str );
@@ -356,13 +370,12 @@ int getDimension( const Jstr& colType );
 int getPolyDimension( const Jstr& colType );
 Jstr getTypeStr( const Jstr& colType );
 
-abaxint sendMessage( const JagRequest &req, const char *mesg, const char *type );
-abaxint sendMessageLength( const JagRequest &req, const char *mesg, abaxint len, const char *type );
-abaxint sendMessageLength2( JagSession *session, const char *mesg, abaxint len, const char *type );
+jagint sendMessage( const JagRequest &req, const char *mesg, const char *type );
+jagint sendMessageLength( const JagRequest &req, const char *mesg, jagint len, const char *type );
+jagint sendMessageLength2( JagSession *session, const char *mesg, jagint len, const char *type );
 Jstr convertToStr( const Jstr  &pm );
 Jstr convertManyToStr( const Jstr &pms );
 Jstr convertType2Short( const Jstr &geotypeLong );
-
 
 template <class T> T* newObject( bool doPrint = true )
 {
@@ -443,5 +456,8 @@ template <class T> T* newObjectArg( bool doPrint, ... )
 
 void ellipseBoundBox( double x0, double y0, double a, double b, double nx, 
                    double &xmin, double &xmax, double &ymin, double &ymax );
+
+void ellipseMinMax(int op, double x0, double y0, double a, double b, double nx,
+                      double &xmin, double &xmax, double &ymin, double &ymax );
 
 #endif

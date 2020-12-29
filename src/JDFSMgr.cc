@@ -30,7 +30,7 @@
 
 JDFSMgr::JDFSMgr()
 {
-	_map = new JagHashMap<AbaxString,AbaxInt>( 100 );
+	_map = new JagHashMap<AbaxString,AbaxInt>( true, 100 );
 }
 
 JDFSMgr::~JDFSMgr()
@@ -51,7 +51,8 @@ bool JDFSMgr::exist( const AbaxString &fpath )
 	}
 }
 
-abaxint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen, size_t stripeSize )
+//jagint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen, size_t stripeSize )
+jagint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen )
 {
 	// prt(("s2839 getStripeSize fpath=[%s] kvlen=%d stripeSize=%lld\n", fpath.c_str(), kvlen, stripeSize ));
 	
@@ -63,18 +64,11 @@ abaxint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen, size_t st
 		}
 	}
 
-	// file not exist
-	if ( stripeSize > 0 ) {
-		// prt(("s2737 return stripeSize=%d\n", stripeSize ));
-		return stripeSize;
-	} else {
-		// prt(("s2738 return JAG_ARRLEN_INIT=%d\n", JAG_ARRLEN_INIT ));
-		return JAG_ARRLEN_INIT;
-	}
-
+	//prt(("s33392870 -1 abort\n"));
+	return -1;
 }
 
-abaxint JDFSMgr::getFileSize( const AbaxString &fpath, size_t kvlen )
+jagint JDFSMgr::getFileSize( const AbaxString &fpath, size_t kvlen )
 {
 	struct stat sbuf;
 	if ( !exist(fpath) || stat(fpath.c_str(), &sbuf) != 0 || sbuf.st_size/kvlen == 0 ) return 0;
@@ -167,13 +161,13 @@ int JDFSMgr::rmdir( const AbaxString &fpath )
 	return 1;
 }
 
-abaxint JDFSMgr::pread( int fd, void *buf, size_t count, abaxint offset)
+jagint JDFSMgr::pread( int fd, void *buf, size_t count, jagint offset)
 {
 	// return ::pread( fd, buf, count, offset );
 	return raysafepread( fd, (char*)buf, count, offset );
 }
 
-abaxint JDFSMgr::pwrite(int fd, const void *buf, size_t count, abaxint offset)
+jagint JDFSMgr::pwrite(int fd, const void *buf, size_t count, jagint offset)
 {
 	// return ::pwrite( fd, buf, count, offset );
 	return raysafepwrite( fd, (const char*)buf, count, offset );

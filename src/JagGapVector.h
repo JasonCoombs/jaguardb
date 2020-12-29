@@ -35,10 +35,10 @@ class JagGapVector
 		void init( int sz );
 		~JagGapVector();
 
-		// inline void update( abaxint i, const Pair &pair ) { _arr[i] = pair; }
-		inline const Pair & operator[] ( abaxint i ) const { return _arr[i]; }
-		inline Pair & operator[] ( abaxint i ) { return _arr[i]; }
-		inline void setNull( const Pair &pair, abaxint i ) { 
+		// inline void update( jagint i, const Pair &pair ) { _arr[i] = pair; }
+		inline const Pair & operator[] ( jagint i ) const { return _arr[i]; }
+		inline Pair & operator[] ( jagint i ) { return _arr[i]; }
+		inline void setNull( const Pair &pair, jagint i ) { 
 			if ( pair != Pair::NULLVALUE && _arr[i] == pair ) {
 				// abaxcout << "*** c5102 vec i=" << i << " setNull real set to NULL" << abaxendl;
 				_arr[i] = Pair::NULLVALUE; 
@@ -46,7 +46,7 @@ class JagGapVector
 			}
 		}
 
-		bool isNull( abaxint i ) 
+		bool isNull( jagint i ) 
 		{
 			if ( _arr[i] == Pair::NULLVALUE ) {
 				return true;
@@ -55,38 +55,31 @@ class JagGapVector
 			}
 		}
 
-		inline bool exist( const Pair &pair ) { abaxint idx; return exist(pair, &idx); }
-		bool exist( const Pair &pair, abaxint *index );
+		inline bool exist( const Pair &pair ) { jagint idx; return exist(pair, &idx); }
+		bool 	exist( const Pair &pair, jagint *index );
 
-		bool remove( const Pair &pair, AbaxDestroyAction action=ABAX_NOOP ); 
-		bool get( Pair &pair ); 
-		bool set( const Pair &pair ); 
-		void destroy();
-		/***
-		inline void refresh() {
-			if ( _elements > 0 ) {
-				// destroy(); init(256);
-			}
-		}
-		***/
-		inline  abaxint capacity() const { return _arrlen; }
-		inline  abaxint size() const { return _elements; }
-		inline  abaxint last() const { return _last; }
+		bool 	remove( const Pair &pair, AbaxDestroyAction action=ABAX_NOOP ); 
+		bool 	get( Pair &pair ); 
+		bool 	set( const Pair &pair ); 
+		void 	destroy();
+		inline  jagint capacity() const { return _arrlen; }
+		inline  jagint size() const { return _elements; }
+		inline  jagint last() const { return _last; }
 		inline  const Pair* array() const { return (const Pair*)_arr; }
 		// inline const Pair&  min() const { return _min; }
 		// inline const Pair&  max() const { return _max; }
-		inline bool append( const Pair &newpair ) { abaxint idx; return append(newpair, &idx); }
-		bool append( const Pair &newpair, abaxint *index );
-		// bool insert( const Pair &newpair, abaxint index, bool force=0 );
-		bool insertForce( const Pair &newpair, abaxint index );
-		bool insertLess( const Pair &newpair, abaxint index );
-		void setValue( int val, bool isSet, abaxint index );
-		bool findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset );
+		inline bool append( const Pair &newpair ) { jagint idx; return append(newpair, &idx); }
+		bool append( const Pair &newpair, jagint *index );
+		// bool insert( const Pair &newpair, jagint index, bool force=0 );
+		bool insertForce( const Pair &newpair, jagint index );
+		bool insertLess( const Pair &newpair, jagint index );
+		void setValue( int val, bool isSet, jagint index );
+		bool findLimitStart( jagint &startlen, jagint limitstart, jagint &soffset );
 		inline bool setNull() {
 			bool rc = false;
 			if ( _elements > 0 ) {
 
-				for ( abaxint i = 0; i < _arrlen; ++i ) {
+				for ( jagint i = 0; i < _arrlen; ++i ) {
 			    	_arr[i] = Pair::NULLVALUE;
 				}	
 
@@ -96,11 +89,11 @@ class JagGapVector
 			}
 			return rc;
 		}
-		abaxint getPartElements( abaxint pos ) {
+		jagint getPartElements( jagint pos ) {
 			if ( pos <= _last && _arr[pos].value.size() ) return *(_arr[pos].value.c_str());
 			else return 0;
 		}
-		bool cleanPartPair( abaxint pos ) {
+		bool cleanPartPair( jagint pos ) {
 			if( pos <= _last ) {
 				_arr[pos] = Pair::NULLVALUE;
 				return true;
@@ -108,7 +101,7 @@ class JagGapVector
 			return false;
 		}
 
-		bool deleteUpdateNeeded( const Pair &dpair, const Pair &npair, abaxint pos ) {
+		bool deleteUpdateNeeded( const Pair &dpair, const Pair &npair, jagint pos ) {
 			if( pos <= _last ) {
 				if ( dpair <= _arr[pos] ) {
 					_arr[pos] = npair;
@@ -121,7 +114,7 @@ class JagGapVector
 	void print()
 		{
 			printf("arrlen=%d, elements=%d, last=%d\n", _arrlen, _elements, _last);
-			for ( abaxint i = 0; i <= _last; ++i ) {
+			for ( jagint i = 0; i <= _last; ++i ) {
 				printf("i=%d   [%s]\n", i, _arr[i].key.c_str() );
 			}	
 		}
@@ -134,14 +127,14 @@ class JagGapVector
 	protected:
 
 		Pair   		*_arr;
-		abaxint  	_arrlen;
+		jagint  	_arrlen;
 
 		// temp vars
 		Pair   		*_newarr;
-		abaxint  	_newarrlen;
+		jagint  	_newarrlen;
 
-		abaxint  	_elements;
-		abaxint  	_last;
+		jagint  	_elements;
+		jagint  	_last;
 		// Pair 		_min;
 		// Pair 		_max;
 
@@ -167,7 +160,7 @@ void JagGapVector<Pair>::init( int initSize )
 	_elements = 0;
 	_last = 0;
 
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = Pair::NULLVALUE;
 	}
 }
@@ -185,7 +178,7 @@ JagGapVector<Pair>::JagGapVector( const JagGapVector<P>& other )
 	_last = other._last;
 
 	_arr = new Pair[_arrlen];
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = other._arr[i];
 	}
 }
@@ -210,7 +203,7 @@ JagGapVector<Pair>& JagGapVector<Pair>::operator=( const JagGapVector<Pair>& oth
 	_last = other._last;
 
 	_arr = new Pair[_arrlen];
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = other._arr[i];
 	}
 
@@ -228,13 +221,10 @@ void JagGapVector<Pair>::destroy( )
 		return;
 	}
 
-	// printf("c6383 JagGapVector destroy delete [] _arr ...\n");
-	// fflush( stdout );
-
 	if ( _arr ) {
 		delete [] _arr; 
+		_arr = NULL;
 	}
-	_arr = NULL;
 }
 
 // dtor
@@ -248,7 +238,7 @@ JagGapVector<Pair>::~JagGapVector( )
 template <class Pair> 
 void JagGapVector<Pair>::reAlloc()
 {
-	abaxint i, j;
+	jagint i, j;
 	// _newarrlen  = _GEO*_arrlen; 
 	// check to make sure arrlen is even and multiple of JAG_BLOCK_SIZE
 	_newarrlen = _arrlen + _arrlen/2;
@@ -272,7 +262,7 @@ void JagGapVector<Pair>::reAlloc()
 template <class Pair> 
 void JagGapVector<Pair>::reAllocShrink()
 {
-	abaxint i;
+	jagint i;
 
 	_newarrlen  = _arrlen/_GEO; 
 
@@ -292,7 +282,7 @@ void JagGapVector<Pair>::reAllocShrink()
 
 
 template <class Pair> 
-bool JagGapVector<Pair>::append( const Pair &newpair, abaxint *index )
+bool JagGapVector<Pair>::append( const Pair &newpair, jagint *index )
 {
 	if ( _elements == _arrlen ) { reAlloc(); }
 	*index = _elements;
@@ -301,7 +291,7 @@ bool JagGapVector<Pair>::append( const Pair &newpair, abaxint *index )
 }
 
 template <class Pair> 
-bool JagGapVector<Pair>::insertForce( const Pair &newpair, abaxint index )
+bool JagGapVector<Pair>::insertForce( const Pair &newpair, jagint index )
 {
 	while ( index >= _arrlen ) { 
 		reAlloc(); 
@@ -329,7 +319,7 @@ bool JagGapVector<Pair>::insertForce( const Pair &newpair, abaxint index )
 }
 
 template <class Pair> 
-bool JagGapVector<Pair>::insertLess( const Pair &newpair, abaxint index )
+bool JagGapVector<Pair>::insertLess( const Pair &newpair, jagint index )
 {
 	bool rc = false;
 	while ( index >= _arrlen ) { 
@@ -355,7 +345,7 @@ bool JagGapVector<Pair>::insertLess( const Pair &newpair, abaxint index )
 }
 
 template <class Pair>
-void JagGapVector<Pair>::setValue( int val, bool isSet, abaxint index )
+void JagGapVector<Pair>::setValue( int val, bool isSet, jagint index )
 {
 	while ( index >= _arrlen ) { 
 		reAlloc(); 
@@ -376,10 +366,10 @@ void JagGapVector<Pair>::setValue( int val, bool isSet, abaxint index )
 }		
 
 template <class Pair>
-bool JagGapVector<Pair>::findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset )
+bool JagGapVector<Pair>::findLimitStart( jagint &startlen, jagint limitstart, jagint &soffset )
 {
 	bool isEnd = false;
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		if ( _arr[i].value.size() ) {
 			startlen += *(_arr[i].value.c_str());
 		}
@@ -401,7 +391,7 @@ bool JagGapVector<Pair>::findLimitStart( abaxint &startlen, abaxint limitstart, 
 template <class Pair> 
 bool JagGapVector<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 {
-	abaxint i, index;
+	jagint i, index;
 	bool rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
@@ -416,7 +406,7 @@ bool JagGapVector<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 	-- _elements;
 
 	if ( _arrlen >= 64 ) {
-    	abaxint loadfactor  = 100 * (abaxint)_elements / _arrlen;
+    	jagint loadfactor  = 100 * (jagint)_elements / _arrlen;
     	if (  loadfactor < 15 ) {
     		reAllocShrink();
     	}
@@ -433,9 +423,9 @@ bool JagGapVector<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 /**********
 // scan search  slow
 template <class Pair> 
-bool JagGapVector<Pair>::exist( const Pair &search, abaxint *index )
+bool JagGapVector<Pair>::exist( const Pair &search, jagint *index )
 {
-    abaxint i; 
+    jagint i; 
 
 	for ( i = 0; i < _elements; ++i ) {
 		if ( _arr[i] == search ) {
@@ -450,7 +440,7 @@ bool JagGapVector<Pair>::exist( const Pair &search, abaxint *index )
 template <class Pair> 
 inline bool JagGapVector<Pair>::get( Pair &pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
 
 	rc = exist( pair, &index );
@@ -463,7 +453,7 @@ inline bool JagGapVector<Pair>::get( Pair &pair )
 template <class Pair> 
 inline bool JagGapVector<Pair>::set( const Pair &pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
 
 	rc = exist( pair, &index );

@@ -37,6 +37,7 @@
 #include <JaguarCPPClient.h>
 #include <JagUtil.h>
 #include <JagStrSplit.h>
+#include <JagParseParam.h>
 
 class PassParam {
 	public:
@@ -60,7 +61,7 @@ int  	parseArgs( int argc, char *argv[],
 int queryAndReply( JaguarCPPClient& jcli, const char *query, bool ishello=false );
 void usage( const char *prog );
 void* sendStopSignal(void *p);
-void  printResult( const JaguarCPPClient &jcli, const JagClock &clock, abaxint cnt );
+void  printResult( const JaguarCPPClient &jcli, const JagClock &clock, jagint cnt );
 int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli, 
 					 const Jstr &quiet, int echo, int saveNewline, const Jstr &username );
 
@@ -74,13 +75,13 @@ bool lastCmdIsExpect;
 //  jcli -u test -p test -h 128.22.22.3:2345 -d mydb
 int main(int argc, char *argv[])
 {
-	char *pcmd;
+	//char *pcmd;
 	int rc;
 	JaguarCPPClient jcli;
 	Jstr username, passwd, host, port, dbname, exclusive, fullconnect; 
 	Jstr sqlcmd, mcmd, clearex, vvdebug, quiet, keepNewline, sqlFile;
 	int  echo;
-	int  isEx = 0;
+	//int  isEx = 0;
 	int  saveNewline = 1;
 
 	host = "127.0.0.1";
@@ -122,7 +123,8 @@ int main(int argc, char *argv[])
 		if ( p ) { passwd = getenv("PASSWORD"); }
 	}
 	if ( passwd.length() < 1 ) {
-		prt(("Password: "));
+		//printit("Password: ");
+        printit( jcli._outf, "Password: ");
 		getPassword( passwd );
 	}
 
@@ -163,6 +165,7 @@ int main(int argc, char *argv[])
 	}
 
 	//prt(("c8293 connect host=[%s] port=[%s] user=[%s] pass=[%s]\n", host.c_str(), port.c_str(), username.c_str(), passwd.c_str() ));
+     printit( jcli._outf, "Connecting to %s:%s with user %s ...\n", host.c_str(), port.c_str(), username.c_str() );
 
     if ( ! jcli.connect( host.c_str(), atoi(port.c_str()), username.c_str(), passwd.c_str(), dbname.c_str(), unixSocket.c_str(), 0 ) ) {
         printit( jcli._outf, "Error connect to [%s:%s/%s] [%s]\n", host.c_str(), port.c_str(), dbname.c_str(), jcli.error() );
@@ -212,7 +215,6 @@ int main(int argc, char *argv[])
     rc = queryAndReply( jcli, "hello", true );
     if ( ! rc ) {
         jcli.close( );
-        // exit(1);
 		return 1;
     }
 
@@ -276,7 +278,7 @@ int  parseArgs( int argc, char *argv[], Jstr &username, Jstr &passwd,
 		} else if ( 0 == strcmp( argv[i], "-x"  )  ) {
 			if ( (i+1) <= (argc-1) ) {
 				exclusive = argv[i+1];
-			} 
+			}
 		} else if ( 0 == strcmp( argv[i], "-cx"  )  ) {
 			if ( (i+1) <= (argc-1) ) {
 				clearex = argv[i+1];
@@ -309,7 +311,7 @@ int queryAndReply( JaguarCPPClient &jcli, const char *query, bool ishello )
 	const char *p;
     int rc = jcli.query( query );
     if ( ! rc ) {
-        printit(jcli._outf, "E3020 Error query [%s]\n", query );
+        printit(jcli._outf, "E3020 Error query [%s] rc=%d\n", query, rc );
 		return 0;
     }
     
@@ -342,7 +344,7 @@ int queryAndReply( JaguarCPPClient &jcli, const char *query, bool ishello )
 void usage( const char *prog )
 {
 	printf("\n");
-	printf("%s [-h HOST:PORT] [-u USERNAME] [-p PASSWORD] [-d DATABASE] [-e COMMAND] [-f sqlFile] [-v FLAG] [-x FLAG] [-a FLAG] [-q] [-n]\n", prog  );
+	printf("%s [-h HOST:PORT] [-u USERNAME] [-p PASSWORD] [-d DATABASE] [-e COMMAND] [-f sqlFile] [-v FLAG] [-x FLAG] [-cx FLAG] [-a FLAG] [-q] [-n]\n", prog  );
 	printf("    [-h HOST:PORT]   ( IP address and port number of the server. Default: 127.0.0.1:8888 )\n");
 	printf("    [-u USERNAME]    ( User name in Jaguar. If not given, uses USERNAME environment variable. Finally: test )\n");
 	printf("    [-p PASSWORD]    ( Password of USERNAME. If not given, uses PASSWORD environment variable. Finally, prompted to provide )\n");
@@ -351,18 +353,18 @@ void usage( const char *prog )
 	printf("    [-f INPUTFILE]   ( Execute command from INPUTFILE. Default: standard input)\n");
 	printf("    [-v yes/no]      ( Echo input command. Default: no )\n");
 	printf("    [-x yes/no]      ( Exclusive login mode for admin. Default: no )\n");
+	printf("    [-cx yes]        ( Clear the exclusive login lock inside the server. Default: no )\n");
 	printf("    [-a yes/no]      ( Require successful connection to all servers. Default: yes )\n");
 	printf("    [-q]             ( Quiet mode. Default: no  )\n");
-	// printf("    [-n]             ( Ignore newline character in command. Default: no )\n");
 	printf("    [-n]             ( Keep newline character in command. Default: no )\n");
 	printf("\n");
 }
 
-void printResult( const JaguarCPPClient &jcli, const JagClock &clock, abaxint cnt )
+/***
+void printResult( const JaguarCPPClient &jcli, const JagClock &clock, jagint cnt )
 {	
 	const char *tstr;
-	const char *rstr;
-	abaxint rc = clock.elapsed(); // millisecs
+	jagint rc = clock.elapsed(); // millisecs
 	if ( rc < 2   ) {
 		rc = clock.elapsedusec();
 		tstr = "microseconds";
@@ -382,6 +384,31 @@ void printResult( const JaguarCPPClient &jcli, const JagClock &clock, abaxint cn
 
     fflush( stdout );
 }
+***/
+
+void printResult( const JaguarCPPClient &jcli, const JagClock &clock, jagint cnt )
+{	
+	char val[32];
+	jagint millisec = clock.elapsed(); // millisecs
+	float  fs;
+	if ( millisec < 1   ) {
+		fs = (float)clock.elapsedusec()/1000000.0;
+		sprintf(val, "%.6f", fs );
+	} else {
+		fs = (float)millisec/1000.0;
+		sprintf(val, "%.4f", fs );
+	}
+
+	if (  cnt >= 0 ) {
+		if ( 1 == cnt ) printf("Done in %s seconds (1 row) \n", val );
+		else  printf("Done in %s seconds (%lld rows)\n", val, cnt );
+	} else {
+		printf("Done in %s seconds\n", val );
+	}
+
+    fflush( stdout );
+}
+
 
 // return -1 for fatal eror
 // 0: for OK
@@ -407,29 +434,27 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 	lastCmdIsExpect = false;
 	expectCorrectRows = -1;
 	expectErrorRows = -1;
+	int numOK = 0;
+	int numError = 0;
 
-	abaxint cnt;
+	jagint cnt;
     while ( 1 ) {
 		cnt = 0;
 
 		if ( quiet != "yes" ) {
-			//printit( jcli._outf, "%s:%s> ", JAG_BRAND, jcli._dbname.c_str() ); fflush( stdout );
-			fprintf(stdout, "%s:%s> ", JAG_BRAND, jcli._dbname.c_str() ); fflush( stdout );
+			fprintf(stdout, "jaguar:%s> ", jcli._dbname.c_str() ); fflush( stdout );
 		}
 
 		if ( ! jcli.getSQLCommand( sqlcmd, echo, infp, saveNewline ) ) {
 			break;
 		}
 
-		// prt(("c7173 sqlcmd=[%s]\n", sqlcmd.c_str() ));
 		if ( sqlcmd.length() < 1 || ';' == *(sqlcmd.c_str() ) ) {
 			continue;
 		}
 
 		pcmd = (char*)sqlcmd.c_str();
 		while ( jagisspace(*pcmd) ) ++pcmd;
-		// if ( _debug ) { prt(("c3301 cmd=[%s]\n", pcmd )); }
-
 		if (  pcmd[0] == 'q' ) { break; } // quit
 		if ( strncasecmp( pcmd, "exit", 4 ) == 0 ) { break; }
 
@@ -459,7 +484,8 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 				}
 				pcmd = (char*) sqlcmd.c_str();
 			}
-		} else if ( strncasecmp( pcmd, "createuser", 9 ) == 0 && ! strchr(pcmd, ':') ) {
+		} else if ( (strncasecmp( pcmd, "createuser", 9 )==0 || strncasecmp( pcmd, "create user", 10 )==0  )
+				    && ! strchr(pcmd, ':') ) {
 			if ( strchr(pcmd, ':') ) {
 				JagStrSplit sp( pcmd, ':' );
 				if ( sp[1].length() < 12 ) {
@@ -501,6 +527,15 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 			Jstr outs = psystem(pcmd);
 			printit( jcli._outf, "%s\n", outs.c_str() );
 			continue;
+		} else if ( strncasecmp( pcmd, "shell", 5 ) == 0 ) {
+			++pcmd; ++pcmd;
+			++pcmd; ++pcmd;
+			++pcmd;
+			while ( isspace(*pcmd) ) ++pcmd;
+			if ( *pcmd == '\r' || *pcmd == '\n' || *pcmd == ';' || *pcmd == '\0' ) continue;
+			Jstr outs = psystem(pcmd);
+			printit( jcli._outf, "%s\n", outs.c_str() );
+			continue;
 		} else if ( strncasecmp( pcmd, "source ", 7 ) == 0 ) {
 			JagStrSplit sp( pcmd, ' ', true );
 			if ( sp.length() < 2 ) {
@@ -521,8 +556,9 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 			}
 			continue;
 		} else if ( strncasecmp( pcmd, "expect", 6 ) == 0 ) {
-			// expect correct rows 12
-			// expect error rows 1
+			// expect correct rows 12;
+			// expect error   rows 1;
+			// .... sql command ...;
 			JagStrSplit sp( pcmd, ' ', true );
 			if ( sp.length() < 4 ) {
 				printit( jcli._outf, "Error: expect correct/error rows N\n"); 
@@ -565,8 +601,8 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 			continue;
         }
 		
-		int numOK = 0;
-		int numError = 0;
+		numOK = 0;
+		numError = 0;
         while ( jcli.reply() ) {
 			jcli.printRow();
 			if ( ! jcli.hasError() ) {
@@ -584,15 +620,15 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 		if ( lastCmdIsExpect ) {
 			if ( expectErrorRows >= 0 ) {
 				if ( expectErrorRows == numError ) {
-					printit( jcli._outf, "TESTRESULT: good(expect error=%d  reply error=%d)\n", expectErrorRows, numError );
+					printit( jcli._outf, "TESTRESULT: good (expect error=%d  reply error=%d)\n", expectErrorRows, numError );
 				} else {
-					printit( jcli._outf, "TESTRESULT: bad (expect error=%d  reply error=%d)\n", expectErrorRows, numError );
+					printit( jcli._outf, "TESTRESULT: bad  (expect error=%d  reply error=%d)\n", expectErrorRows, numError );
 				}
 			} else if ( expectCorrectRows >= 0 ) {
 				if ( expectCorrectRows == numOK ) {
-					printit( jcli._outf, "TESTRESULT: good(expect correct=%d  reply correct=%d)\n", expectCorrectRows, numOK );
+					printit( jcli._outf, "TESTRESULT: good (expect correct=%d  reply correct=%d)\n", expectCorrectRows, numOK );
 				} else {
-					printit( jcli._outf, "TESTRESULT: bad (expect correct=%d  reply correct=%d)\n", expectCorrectRows, numOK );
+					printit( jcli._outf, "TESTRESULT: bad  (expect correct=%d  reply correct=%d)\n", expectCorrectRows, numOK );
 				}
 			}
 		}
@@ -614,7 +650,7 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 		if ( quiet == "yes" ) {
 			// nothing done
 		} else {
-			if ( jcli._queryCode == JAG_SELECT_OP || isJoin( jcli._queryCode ) ) {
+			if ( jcli._queryCode == JAG_SELECT_OP || JagParseParam::isJoin( jcli._queryCode ) ) {
 				printResult( jcli, clock, cnt );
 			} else {
 				printResult( jcli, clock, -1 );

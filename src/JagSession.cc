@@ -19,13 +19,12 @@
 #include <JagGlobalDef.h>
 
 #include <JagSession.h>
-//#include <JagTable.h>
 #include <JagUtil.h>
 
 // ctor
-JagSession::JagSession( int timeout )
+JagSession::JagSession()
 {
-	dtimeout = timeout;
+	//dtimeout = timeout;
 	sock = active = done = timediff = connectionTime = 0;
 	origserv = 0;
 	exclusiveLogin = 0;
@@ -39,7 +38,6 @@ JagSession::JagSession( int timeout )
 	samePID = 0;
 	dcfrom = 0;
 	dcto = 0;
-	pthread_mutex_init( &dataMutex, NULL );
 }
 
 // dtor
@@ -50,28 +48,27 @@ JagSession::~JagSession()
 	if ( hasTimer ) {
 		pthread_join( threadTimer, NULL );
 	}
-	pthread_mutex_destroy( &dataMutex );
 }
 
 // create separate thread for timer
 void JagSession::createTimer()
 {
 	if ( samePID ) return;
-	hasTimer = 1;
-	jagpthread_create( &threadTimer, NULL, sessionTimer, (void*)this );
-	jaguar_mutex_lock ( &dataMutex );
-	jaguar_mutex_unlock ( &dataMutex );
+	// hasTimer = 1;
+	// todo disable
+	// jagpthread_create( &threadTimer, NULL, sessionTimer, (void*)this );
 }
 
-// separate thread to set timer and send doing processing cmd per 5 secs
+// separate thread to set timer and send HB
 void *JagSession::sessionTimer( void *ptr )
 {
-	JagSession *sn = (JagSession*)ptr;
-	while ( !sn->sessionBroken ) {
-		jagsleep(3, JAG_SEC);
-		sendMessageLength2( sn, "Y", 1, "HB" );
+	JagSession *sess = (JagSession*)ptr;
+	while ( !sess->sessionBroken ) {
+		jagsleep(15, JAG_SEC); 
+		if ( sess->active ) {
+			sendMessageLength2( sess, "Y", 1, "HB" );
+		}
 		// heartbeat from server to client in session
 	}
-
 	return NULL;
 }

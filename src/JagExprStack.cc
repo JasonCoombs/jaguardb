@@ -64,8 +64,8 @@ void JagExprStack::clean()
 
 void JagExprStack::reAlloc()
 {
-	abaxint i;
-	abaxint newarrlen  = _GEO*_arrlen; 
+	jagint i;
+	jagint newarrlen  = _GEO*_arrlen; 
 	ExprElementNode **newarr;
 
 	newarr = new ExprElementNode *[newarrlen];
@@ -81,10 +81,10 @@ void JagExprStack::reAlloc()
 
 void JagExprStack::reAllocShrink()
 {
-	abaxint i;
+	jagint i;
 	ExprElementNode **newarr;
 
-	abaxint newarrlen  = _arrlen/_GEO; 
+	jagint newarrlen  = _arrlen/_GEO; 
 	//prt(("s1838 reAllocShrink newarrlen=%d _last=%d\n", newarrlen, _last ));
 	newarr = new ExprElementNode*[newarrlen];
 	for ( i = 0; i <= _last; ++i) {
@@ -139,7 +139,7 @@ void JagExprStack::pop()
 
 	/***
 	if ( _arrlen >= 64 ) {
-    	abaxint loadfactor  = (100 * _last) / _arrlen;
+    	jagint loadfactor  = (100 * _last) / _arrlen;
     	if (  loadfactor < 20 ) {
     		reAllocShrink();
     	}
@@ -164,7 +164,7 @@ void JagExprStack::pop()
 
 void JagExprStack::print()
 {
-	abaxint i;
+	jagint i;
 	printf("c3012 JagExprStack this=%0x _arrlen=%d _last=%d \n", this, _arrlen, _last );
 	for ( i = 0; i  <= _last; ++i) {
 		printf("%09d  %0x\n", i, _arr[i] );

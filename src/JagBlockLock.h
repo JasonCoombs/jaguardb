@@ -29,21 +29,21 @@ class JagBlockLock
   public:
   	JagBlockLock();
 	~JagBlockLock();
-	void readLock( abaxint pos=-1 );
-	void readUnlock( abaxint pos=-1 );
+	void readLock( jagint pos=-1 );
+	void readUnlock( jagint pos=-1 );
 
-	void writeLock( abaxint pos=-1 );
-	void writeUnlock( abaxint pos=-1 );
+	void writeLock( jagint pos=-1 );
+	void writeUnlock( jagint pos=-1 );
 
   protected:
   	pthread_mutex_t  _mutex;
 	pthread_cond_t   _condvar;
 	JagHashMap<AbaxLong, AbaxLong2> *_map;
-	abaxint			 _readers;
-	abaxint			 _writers;
+	jagint			 _readers;
+	jagint			 _writers;
 
 	void init();
-	bool regionOverlaps( abaxint pos, bool isRead );
+	bool regionOverlaps( jagint pos, bool isRead );
 
 };
 

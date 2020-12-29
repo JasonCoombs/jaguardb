@@ -134,6 +134,10 @@ class JagSquare2D
 	double x0, y0, a, nx; 
 	int srid;
 	JagPoint2D point[4];  // counter-clockwise polygon points
+	double getXMin( double &y );
+	double getXMax( double &y );
+	double getYMin( double &x );
+	double getYMax( double &x );
 };
 
 class JagSquare3D
@@ -160,6 +164,10 @@ class JagRectangle2D
 	double x0, y0, a, b, nx; 
 	int srid;
 	JagPoint2D point[4];  // counter-clockwise polygon points
+	double getXMin( double &y );
+	double getXMax( double &y );
+	double getYMin( double &x );
+	double getYMax( double &x );
 };
 
 class JagRectangle3D
@@ -211,6 +219,7 @@ class JagEllipse2D
   	void init( double inx, double iny, double ina, double inb, double innx, int srid );
   	JagEllipse2D( const JagStrSplit &sp, int srid=0 );
 	void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
+	void minmax2D( int op, double &xmin, double &ymin, double &xmax, double &ymax ) const;
 	double x0, y0, a, b, nx; 
 	int srid;
 	JagVector<Jstr> metrics;
@@ -262,6 +271,8 @@ class JagCube
   public:
   	JagCube( const JagStrSplit &sp, int srid=0 );
 	void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	void minmax3D( int op, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+	void print();
 	JagPoint3D point[8];
 	double x0,y0,z0, a, nx, ny;
 	int srid;
@@ -386,20 +397,21 @@ class JagLineSeg2D
   public:
     JagLineSeg2D() {}
     JagLineSeg2D( double f1, double f2, double f3, double f4 ) { 
-		x1=f1; y1=f2; x2=f3; y2=f4; }
+		x1=f1; y1=f2; x2=f3; y2=f4; 
+	}
 	bool operator > ( const JagLineSeg2D &o) const;
 	bool operator < ( const JagLineSeg2D &o) const;
 	bool operator >= ( const JagLineSeg2D &o) const;
 	bool operator <= ( const JagLineSeg2D &o) const;
 	bool operator == ( const JagLineSeg2D &o) const;
 	bool operator != ( const JagLineSeg2D &o) const;
-	abaxint hashCode() const ;
+	jagint hashCode() const ;
     double x1;
 	double y1;
     double x2;
 	double y2;
 	unsigned char color;
-	abaxint size() const { return 32; }
+	jagint size() const { return 32; }
 	static JagLineSeg2D NULLVALUE;
 	void println() const { printf("JagLineSeg2D: x1=%.3f y1=%.3f x2=%.3f y2=%.3f\n", x1, y1, x2, y2 ); }
 	void print() const { printf("JagLineSeg2D: x1=%.3f y1=%.3f x2=%.3f y2=%.3f ", x1, y1, x2, y2 ); }
@@ -418,7 +430,7 @@ class JagLineSeg3D
 	bool operator <= ( const JagLineSeg3D &o) const;
 	bool operator == ( const JagLineSeg3D &o) const;
 	bool operator != ( const JagLineSeg3D &o) const;
-	abaxint hashCode() const ;
+	jagint hashCode() const ;
     double x1;
 	double y1;
 	double z1;
@@ -426,7 +438,7 @@ class JagLineSeg3D
 	double y2;
 	double z2;
 	unsigned char color;
-	abaxint size() const { return 64; }
+	jagint size() const { return 64; }
 	static JagLineSeg3D NULLVALUE;
 	void println() const { printf("JagLineSeg3D: x1=%.1f y1=%.1f z1=%.1f x2=%.1f y2=%.1f z2=%.1f\n", x1, y1, z1, x2, y2, z2 ); }
 	void print() const { printf("JagLineSeg3D: x1=%.1f y1=%.1f z1=%.1f x2=%.1f y2=%.1f z2=%.1f ", x1, y1, z1, x2, y2, z2 ); }
@@ -472,11 +484,11 @@ class JagLineSeg2DPair
 
 		inline void valueDestroy( AbaxDestroyAction action ) { }
 
-		inline abaxint hashCode() const {
+		inline jagint hashCode() const {
 			return key.hashCode();
 		}
 
-		inline abaxint size() { return 32; }
+		inline jagint size() { return 32; }
 		void print() const { key.print(); }
 		void println() const { key.println(); }
 };
@@ -517,11 +529,11 @@ class JagLineSeg3DPair
         }
 
 		inline void valueDestroy( AbaxDestroyAction action ) { }
-		inline abaxint hashCode() const {
+		inline jagint hashCode() const {
 			return key.hashCode();
 		}
 
-		inline abaxint size() { return 64; }
+		inline jagint size() { return 64; }
 		void print() const { key.print(); }
 		void println() const { key.println(); }
 };
@@ -580,7 +592,7 @@ class JagLineString3D
 		JagLineString3D& operator=( const JagLineString3D& L2 ) { point = L2.point; return *this; }
 		JagLineString3D( const JagLineString3D& L2 ) { point = L2.point; }
 		void init() { point.clean(); };
-		abaxint size() const { return point.size(); }
+		jagint size() const { return point.size(); }
 		void add( const JagPoint2D &p );
 		void add( const JagPoint3D &p );
 		void add( double x, double y, double z=0.0 );
@@ -589,6 +601,7 @@ class JagLineString3D
 		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
 		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
 		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+		void minmax3D( int op, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		const JagPoint3D& operator[](int i ) const { return point[i]; }
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void reverse();
@@ -626,7 +639,7 @@ class JagLineString
 		JagLineString& appendFrom( const JagLineString3D& L2, bool removeLast = false );
 		JagLineString( const JagLineString& L2 ) { point = L2.point; }
 		void init() { point.clean(); };
-		abaxint size() const { return point.size(); }
+		jagint size() const { return point.size(); }
 		void add( const JagPoint2D &p );
 		void add( const JagPoint3D &p );
 		void add( double x, double y );
@@ -635,7 +648,9 @@ class JagLineString
 		void center2D( double &cx, double &cy, bool dropLast=false ) const;
 		void center3D( double &cx, double &cy, double &cz, bool dropLast=false ) const;
 		void bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
+		void minmax2D( int op, double &xmin, double &ymin, double &xmax, double &ymax ) const;
 		void bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+		void minmax3D( int op, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		const JagPoint& operator[](int i ) const { return point[i]; }
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void reverse();
@@ -666,12 +681,14 @@ class JagPolygon
 		JagPolygon( const JagTriangle2D &t, bool isClosed=true );
 		JagPolygon( const JagTriangle3D &t, bool isClosed=true );
 		void init() { linestr.clean(); }
-		abaxint size() const { return linestr.size(); }
+		jagint size() const { return linestr.size(); }
 		void add( const JagLineString3D &linestr3d ) { linestr.append(linestr3d); }
 		void center2D( double &cx, double &cy ) const;
 		void center3D( double &cx, double &cy, double &cz ) const;
 		bool bbox2D( double &xmin, double &ymin, double &xmax, double &ymax ) const;
 		bool bbox3D( double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
+		bool minmax2D( int op, double &xmin, double &ymin, double &xmax, double &ymax ) const;
+		bool minmax3D( int op, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax ) const;
 		void print() const { linestr.print(); }
 		double lineLength( bool removeLast, bool is3D, int srid );
 		void toWKT( bool is3D, bool hasHdr, const Jstr &objname, Jstr &str ) const;

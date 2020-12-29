@@ -39,7 +39,7 @@ JagDBLogger::~JagDBLogger()
 
 	FILE * fp = NULL;
 	const AbaxPair<AbaxString, AbaxBuffer> * arr = _filemap->array();
-	abaxint len = _filemap->arrayLength();
+	jagint len = _filemap->arrayLength();
 	for ( int i = 0; i < len; ++i ) {
 		if ( _filemap->isNull(i)  ) continue;
 		const AbaxPair<AbaxString, AbaxBuffer> &pair = arr[i];

@@ -28,27 +28,24 @@
 #include <JagDBConnector.h>
 #include <JagArray.h>
 #include <JagUtil.h>
+#include <JagFileMgr.h>
 
 // _schemaMap: tableschame key-> db.tab  value->SchemaRecord
 // _schemaMap: indexschema key-> db.tab.idx  value->SchemaRecord
 // _recordmap: tableschame key-> db.tab  value->SchemaText
 // _recordMap: indexschema key-> db.tab.idx  value->SchemaText
-
 // _columnMap-> (key-> db.obj.col val->JagColumn )
 // _tableIndexMap-> (key->db.idx   val->tabName );
 
-///////////////// implementation /////////////////////////////////
 JagSchema::JagSchema()
 {
-	_lock = newObject<JagReadWriteLock>();
+	_lock = newJagReadWriteLock();
 	_cfg = newObject<JagCfg>();
 	_replicateType = 0;
 }
 
 void JagSchema::init( JagDBServer *serv, const Jstr &stype, int replicateType )
 {
-	// JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	// JAG_OVER;
 	// prt(("s4481 JagSchema::init() ...\n" ));
 	_replicateType = replicateType;
 	_servobj = serv;
@@ -64,34 +61,30 @@ void JagSchema::init( JagDBServer *serv, const Jstr &stype, int replicateType )
 		fpath += "/IndexSchema";
 	}
 
-	// printf("c3384 JagSchema::JagSchema() new JagDiskArrayServer() ...\n");
 	_schmRecord = new JagSchemaRecord( true );
-	//prt(("s5051 schema_self new JagSchemaRecord _schmRecord=%x\n", _schmRecord ));
-
 	_schmRecord->keyLength = KEYLEN;
 	_schmRecord->valueLength = VALLEN;
 	_schmRecord->ovalueLength = VALLEN;
 
-	_schema = new JagDiskArrayServer( _servobj, fpath, _schmRecord, true, 32, true );
 	// prt(("s3038 _schema = new JagDiskArrayServer fpath=[%s]\n", fpath.c_str() ));
+	_schema = new JagLocalDiskHash( fpath, KEYLEN, VALLEN );
 
 	if ( ! _schema ) {
 		raydebug( stdout, JAG_LOG_LOW, "s0314 error new JagDiskArrayServer, exit\n");
-		exit(1);
+		exit(12);
 	}
 
 	_schemaMap = new JagHashMap<AbaxString, JagSchemaRecord>;
 	_recordMap = new JagHashMap<AbaxString, AbaxString>;
-	//_defvalMap = new JagHashMap<AbaxString, AbaxString>;
 	_defvalMap = new JagHashStrStr;
 	_tableIndexMap = new JagHashMap<AbaxString, AbaxString>;
 	_columnMap = new JagHashMap<AbaxString, JagColumn>;
 
 	char *buf = (char*)jagmalloc(KVLEN+1);
 	memset( buf, '\0', KVLEN+1 );
-	abaxint length = _schema->_garrlen;
+	jagint length = _schema->getLength();
 	Jstr keystr, schemaText, dbobj;
-	JagBuffReader nti( _schema, length, KEYLEN, VALLEN, 0, 0 );
+	JagSingleBuffReader nti( _schema->getFD(), length, KEYLEN, VALLEN, 0, 0, 1 );
 	int prc;
 	while ( nti.getNext(buf) ) {
 		keystr = buf;
@@ -129,9 +122,6 @@ JagSchema::~JagSchema()
 
 void JagSchema::destroy( bool removelock )
 {
-	//JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	// printf("s3930 here in destroy\n");
-
 	if ( _schema ) {
 		delete _schema;
 		_schema = NULL;
@@ -163,7 +153,7 @@ void JagSchema::destroy( bool removelock )
 	}
 
 	if ( _lock && removelock ) {
-		delete _lock;
+		deleteJagReadWriteLock( _lock );
 		_lock = NULL;
 	}
 
@@ -175,7 +165,7 @@ void JagSchema::destroy( bool removelock )
 
 void JagSchema::printinfo()
 {
-	printf("schema printinfo %s _schema->elements=%lld\n", _schema->getFilePath().c_str(), (abaxint)_schema->_elements );
+	printf("schema printinfo %s _schema->elements=%lld\n", _schema->getFilePath().c_str(), (jagint)_schema->elements() );
 }
 
 void JagSchema::print() 
@@ -248,14 +238,13 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	JagColumn onecolrec;
 	bool rc;
 	int length = 0;
-	int errcheck = 0;
 	AbaxString dum;
+	Jstr  schemaText;
 	int buflen=4096;
 	char buf[buflen];
 	char ddd[32];
 	char buf2[2];
 	buf2[1] = '\0';
-	Jstr  schemaText;
 
 	if ( parseParam->keyLength < 1 ) {
 		// prt(("E0501 parseParam->keyLength=%d  < 1 error\n", parseParam->keyLength ));
@@ -285,20 +274,16 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	//prt(("s5134 schema this=%0x parseParam->polyDim=%d tableProperty=[%s]\n", parseParam->polyDim, tableProperty.c_str() ));
 	if ( parseParam->isMemTable ) {
 		// NM means memtable
-		// sprintf(buf, "NM|%d|%d|%d|{", parseParam->keyLength, parseParam->valueLength, parseParam->ovalueLength);
 		sprintf(buf, "NM|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.c_str() );
 	} else if ( parseParam->isChainTable ) { 
-		// sprintf(buf, "NC|%d|%d|%d|{", parseParam->keyLength, parseParam->valueLength, parseParam->ovalueLength);
 		sprintf(buf, "NC|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.c_str() );
 	} else {
-		// sprintf( buf, "NN|%d|%d|%d|{", parseParam->keyLength, parseParam->valueLength, parseParam->ovalueLength);
 		sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.c_str() );
 	}
 	schemaText += buf;
 	record.keyLength = parseParam->keyLength;
 	record.valueLength = parseParam->valueLength;
 	record.ovalueLength = parseParam->ovalueLength;
-	//record.polyDim = parseParam->polyDim;
 	record.tableProperty = tableProperty;
 	
 	for (int i = 0; i < parseParam->createAttrVec.size(); i++) {
@@ -333,19 +318,11 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 				onecolrec.begincol, onecolrec.endcol, onecolrec.dummy1 ));
 		***/
 
-		// record.columnVector->append( AbaxPair<AbaxString,JagColumn>(dum, onecolrec) );
 		if ( *(onecolrec.spare) == JAG_C_COL_KEY ) {
 			onecolrec.iskey = true;
-			/***
-			if ( !strstr(onecolrec.name.c_str(), "geo:" ) ) {
-				++ record.lastKeyColumn;
-			}
-			prt(("s5043 record.lastKeyColumn=%d\n", record.lastKeyColumn ));
-			***/
 		}
 		record.columnVector->append( onecolrec );
 		schemaText += buf;
-		//prt(("s3847 schemaText=[%s] JAG_SCHEMA_SPARE_LEN=%d\n", schemaText.c_str(), JAG_SCHEMA_SPARE_LEN ));
 		memset( buf, 0, buflen );
 		sprintf( buf, "!%d!", onecolrec.sig );
 		for ( int k = 0; k < JAG_SCHEMA_SPARE_LEN; ++k ) {
@@ -368,9 +345,9 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		sprintf( ddd, "%d!", onecolrec.dummy9 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy10 ); strcat(  buf, ddd );
 
-		prt(("s7183 onecolrec.begincol=%d onecolrec.endcol=%d onecolrec.metrics=%d\n", onecolrec.begincol, onecolrec.endcol, onecolrec.metrics ));
+		prt(("s7183 onecolrec.begincol=%d onecolrec.endcol=%d onecolrec.metrics=%d\n", 
+				onecolrec.begincol, onecolrec.endcol, onecolrec.metrics ));
 
-		// strcat( buf, "!|" );
 		strcat( buf, "|" );
 		schemaText += buf;
 	}
@@ -378,9 +355,6 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 
 	record.setLastKeyColumn();
 
-	// prt(("s3849 schemaText=[%s]\n", schemaText.c_str() ));
-
-	// char kvbuf[ KVLEN ];
 	char *kvbuf = (char*)jagmalloc(KVLEN+1);
 	memset( kvbuf, 0, KVLEN+1 );
 	strcpy( kvbuf, pathName.c_str() );
@@ -401,11 +375,8 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 			++length;
 			memcpy( kvbuf+length, colName.c_str(), colName.size() );
 			length += colName.size();
-			//kvbuf[length] = ':';
 			kvbuf[length] = '=';
 			++length;
-			prt(("s5603 i=%d colName=[%s] defValues=[%s] length=%d\n", i, colName.c_str(), defValues.c_str(), length ));
-			//prt(("s5603  parseParam=%x createAttrVec=%0x\n", parseParam, ((JagParseParam*)parseParam)->createAttrVec ));
 			prt(("s5603  parseParam=%0x \n", parseParam ));
 			memcpy( kvbuf+length, defValues.c_str(), defValues.size() );
 			length += defValues.size();
@@ -413,11 +384,9 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	}
 
 	JagDBPair pair( kvbuf, KEYLEN, kvbuf+KEYLEN, VALLEN, true );
-	int insertCode;
-	JagDBPair retpair;
-	bool check = _schema->insert( pair, insertCode, false, true, retpair );
+	bool check = _schema->insert( pair );
 	if ( !check ) {
-		prt(("ERR0505 _schema->insert check=%d insertCode=%d\n", check, insertCode ));
+		prt(("ERR0505 _schema->insert check=%d insertCode=%d\n", check ));
 		free( kvbuf );
 		return 0;
 	}
@@ -428,7 +397,6 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		prt(("WARN0201 _recordMap->addKeyValue pathName=[%s]\n", pathName.c_str() ));
 	}
 
-	//prt(("s2034 schemaMap->addKeyValue(%s record)\n", pathName.c_str() ));
 	rc = _schemaMap->addKeyValue( AbaxString(pathName), record );
 	if ( ! rc ) {
 		prt(("WARN0202 _schemaMap->addKeyValue pathName=[%s]\n", pathName.c_str() ));
@@ -459,28 +427,20 @@ bool JagSchema::remove( const Jstr &dbtable )
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
 
-	// char keybuf[KEYLEN+1];
 	char *keybuf = (char*)jagmalloc(KEYLEN+1);
 	memset(keybuf, '\0', KEYLEN+1);
 	strcpy(keybuf, dbtable.c_str());
-	JagFixString key(keybuf, KEYLEN );
+	JagFixString key(keybuf, KEYLEN, KEYLEN );
 	bool rc;
 
 	JagDBPair pair( key );
 	rc = _schema->remove( pair );
 	removeSchemaFile( key.c_str() );
 
-
 	// must apply before schemaMap and recordMap removeKey
 	setupDefvalMap( dbtable, NULL, 1 );
 	
-	rc=  _recordMap->removeKey( AbaxString(dbtable) );
-	if ( ! rc ) {
-		// printf("s9487 _recordMap->removeKey(%s) rc=%d error\n", dbtable.c_str(), rc );
-		// return false;
-	}
-
-	// two maps
+	_recordMap->removeKey( AbaxString(dbtable) );
 
 	JagStrSplit sp( dbtable, '.');
 	AbaxString dbobj;
@@ -493,8 +453,7 @@ bool JagSchema::remove( const Jstr &dbtable )
 	// prt(("s0283 remove from _tableIndexMap dbtable=[%s]\n", dbtable.c_str() ));
 	removeFromColumnMap( dbtable, dbobj.c_str() );
 
-	rc = _schemaMap->removeKey( AbaxString(dbtable) );
-
+	_schemaMap->removeKey( AbaxString(dbtable) );
 	free( keybuf );
 	return true;
 }
@@ -504,7 +463,6 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 	//prt(("s5590 JagSchema::renameColumn dbtable=[%s] ...\n", dbtable.s() ));
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
-	bool rc;
 	Jstr oldName, newName;
 
 	JagSchemaRecord record(true);
@@ -524,27 +482,21 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
 
 	// disk array update
-	bool check;
-	int insertCode, offset = 0;
+	int offset = 0;
 	JagDBPair retpair;
 	char *keybuf = (char*)jagmalloc(KEYLEN+1);
 	memset(keybuf, '\0', KEYLEN+1);
 	strcpy(keybuf, dbtable.c_str());
-	JagFixString key(keybuf, KEYLEN );
+	JagFixString key(keybuf, KEYLEN, KEYLEN );
 
 	char *valbuf = (char*)jagmalloc(VALLEN+1);
 	memset( valbuf, 0, VALLEN+1);
-	JagFixString value( valbuf, VALLEN );
+	JagFixString value( valbuf, VALLEN, VALLEN );
 	JagDBPair pair( key, value );
-
-	// for value part, reformat default value column part
-	// _schema->print();
 
 	if ( _schema->get( pair ) ) {
 		if ( parseParam->createAttrVec.size() < 1 ) {
 			Jstr cstr = Jstr(":") + oldName + ":";  // find oldName
-			//prt(("s2314 pair.value=[%s]\n", pair.value.c_str() ));
-			//prt(("s2314 cstr=[%s]\n", cstr.c_str() ));
 			const char *p = strstr( pair.value.c_str(), cstr.c_str() );
 			if ( p ) {
 				// default values of column
@@ -583,7 +535,6 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 				memcpy( valbuf+offset, parseParam->createAttrVec[0].objName.colName.c_str(), 
 						parseParam->createAttrVec[0].objName.colName.size() );
 				offset += parseParam->createAttrVec[0].objName.colName.size();
-				//valbuf[offset] = ':';
 				valbuf[offset] = '=';
 				++offset;
 				memcpy( valbuf+offset, parseParam->createAttrVec[0].defValues.c_str(), 
@@ -591,7 +542,7 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 				offset += parseParam->createAttrVec[0].defValues.size();
 			}
 		}
-		value = JagFixString( valbuf, VALLEN );
+		value = JagFixString( valbuf, VALLEN, VALLEN );
 	}
 
 	// then, add new column names to defvalMap after setValue of schemaMap and recordMap
@@ -714,16 +665,6 @@ const JagSchemaRecord* JagSchema::getAttr( const Jstr & pathName ) const
 	return _schemaMap->getValue( pathName );
 }
 
-
-/***
-bool JagSchema::getAttr( const Jstr & pathName, JagSchemaRecord & onerecord ) const 
-{ 
-	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	JAG_OVER;
-	return _schemaMap->getValue( AbaxString(pathName), onerecord ); 
-}
-***/
-	
 bool JagSchema::getAttr( const Jstr & pathName, AbaxString & keyInfo ) const 
 { 
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
@@ -761,9 +702,9 @@ const JagSchemaRecord *JagSchema::getOneIndexAttr( const Jstr &dbName, const Jst
 	const JagSchemaRecord *rec;
 
 	// use memory to read instead of disk
-    abaxint len = _recordMap->arrayLength();
+    jagint len = _recordMap->arrayLength();
     const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
-    for ( abaxint i = 0; i < len; ++i ) {
+    for ( jagint i = 0; i < len; ++i ) {
     	if ( _recordMap->isNull(i) ) continue;
 		
 		JagStrSplit oneSplit( arr[i].key.c_str(), '.' );
@@ -794,11 +735,11 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexesLabel( int inObjType, con
 
 	JagVector<AbaxString> *vec = new JagVector<AbaxString>();
 	// use memory to read instead of disk
-    abaxint len = _recordMap->arrayLength();
+    jagint len = _recordMap->arrayLength();
     const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
 
 	JagArray<AbaxPair<AbaxString,char>> xarr;
-    for ( abaxint i = 0; i < len; ++i ) {
+    for ( jagint i = 0; i < len; ++i ) {
     	if ( _recordMap->isNull(i) ) continue;
 
 		if ( like.size() > 0 ) {
@@ -821,7 +762,7 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexesLabel( int inObjType, con
 	len = xarr.size();
 	AbaxString rec;
 	int objtype;
-    for ( abaxint i = 0; i < len; ++i ) {
+    for ( jagint i = 0; i < len; ++i ) {
 		if ( xarr.isNull(i) ) continue;
 		rec = "";
 		objtype = _objectTypeNoLock( parr[i].key.c_str() );
@@ -833,6 +774,11 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexesLabel( int inObjType, con
     		}
 		} else if (  inObjType == JAG_CHAINTABLE_TYPE ) {
     		if ( JAG_CHAINTABLE_TYPE == objtype  ) {
+    			rec =  parr[i].key;
+			}
+		} else if ( inObjType == JAG_TABLE_OR_CHAIN_TYPE ) {
+			if ( JAG_MEMTABLE_TYPE == objtype || JAG_TABLE_TYPE == objtype 
+			     || JAG_CHAINTABLE_TYPE == objtype ) {
     			rec =  parr[i].key;
 			}
 		}
@@ -862,10 +808,10 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexes( const Jstr &dbtable, co
 
 	JagVector<AbaxString> *vec = new JagVector<AbaxString>();
 	// use memory to read instead of disk
-    abaxint len = _recordMap->arrayLength();
+    jagint len = _recordMap->arrayLength();
     const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
 	JagArray<AbaxPair<AbaxString,char>> xarr;
-    for ( abaxint i = 0; i < len; ++i ) {
+    for ( jagint i = 0; i < len; ++i ) {
     	if ( _recordMap->isNull(i) ) continue;
 
 		//prt(("s2339 arr[i].key=[%s]\n", arr[i].key.c_str() ));
@@ -889,7 +835,7 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexes( const Jstr &dbtable, co
 
 	const AbaxPair<AbaxString,char> *parr = xarr.array();
 	len = xarr.size();
-    for ( abaxint i = 0; i < len; ++i ) {
+    for ( jagint i = 0; i < len; ++i ) {
 		if ( xarr.isNull(i) ) continue;
 		vec->append( parr[i].key );
 	}
@@ -899,7 +845,6 @@ JagVector<AbaxString>* JagSchema::getAllTablesOrIndexes( const Jstr &dbtable, co
 
 JagVector<AbaxString>* JagSchema::getAllIndexes( const Jstr &dbname,  const Jstr &like ) const
 {
-	// JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
 
@@ -909,10 +854,10 @@ JagVector<AbaxString>* JagSchema::getAllIndexes( const Jstr &dbname,  const Jstr
 	char  *keybuf = (char*)jagmalloc(KEYLEN+1);
 	memset( buf, '\0', KVLEN+1 );
 	memset( keybuf, '\0', KEYLEN+1 );
-	abaxint getpos;
-	abaxint length = _schema->_garrlen;
+	jagint getpos;
+	jagint length = _schema->getLength();
 
-	JagBuffReader nti( _schema, length, KEYLEN, VALLEN, 0, 0 );
+	JagSingleBuffReader nti( _schema->getFD(), length, KEYLEN, VALLEN, 0, 0, 1 );
 	AbaxString nm;
 	JagArray<AbaxPair<AbaxString,char>> xarr;
 	while ( nti.getNext(buf, KVLEN, getpos) ) {
@@ -933,7 +878,7 @@ JagVector<AbaxString>* JagSchema::getAllIndexes( const Jstr &dbname,  const Jstr
 	free( keybuf );
 
 	const AbaxPair<AbaxString,char> *parr = xarr.array();
-	for ( abaxint i = 0; i < xarr.size(); ++i ) {
+	for ( jagint i = 0; i < xarr.size(); ++i ) {
 		if ( xarr.isNull(i) ) continue;
 		vec->append( parr[i].key );
 	}
@@ -947,9 +892,6 @@ Jstr JagSchema::getTableName( const Jstr &dbName, const Jstr &indexName ) const
 
 	Jstr  tabName;
 	AbaxString res;
-	// prt(("s2029  JagSchema::getTableName dbName=[%s] indexName=[%s] _tableIndexMap=%0x\n", dbName.c_str(),
-			// indexName.c_str(), _tableIndexMap ));
-	// first look in hashmap
 	AbaxString dbidx = dbName + "." + indexName;
 	if ( _tableIndexMap && _tableIndexMap->getValue( dbidx, res ) ) {
 		tabName = res.c_str();
@@ -957,21 +899,9 @@ Jstr JagSchema::getTableName( const Jstr &dbName, const Jstr &indexName ) const
 		return tabName;
 	}
 
-	/***
-    abaxint len = _recordMap->arrayLength();
-    const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
-    for ( abaxint i = 0; i < len; ++i ) {
-    	if ( _recordMap->isNull(i) ) continue;
-		
-		JagStrSplit oneSplit( arr[i].key.c_str(), '.' );
-		if ( oneSplit.length()>=3 && dbName == oneSplit[0] && indexName == oneSplit[2] ) {
-			tabName = oneSplit[1];
-		}
-    }
+	// for table, it will not get here
 	return tabName;
-	***/
 }
-
 
 Jstr JagSchema::getTableNameScan( const Jstr &dbName, const Jstr &indexName ) const
 {
@@ -979,9 +909,9 @@ Jstr JagSchema::getTableNameScan( const Jstr &dbName, const Jstr &indexName ) co
 
 	Jstr  tabName;
 
-    abaxint len = _recordMap->arrayLength();
+    jagint len = _recordMap->arrayLength();
     const AbaxPair<AbaxString, AbaxString> *arr = _recordMap->array();
-    for ( abaxint i = 0; i < len; ++i ) {
+    for ( jagint i = 0; i < len; ++i ) {
     	if ( _recordMap->isNull(i) ) continue;
 		
 		JagStrSplit oneSplit( arr[i].key.c_str(), '.' );
@@ -997,7 +927,6 @@ Jstr JagSchema::readSchemaText( const Jstr &key ) const
 	Jstr fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
 	Jstr text;
 	JagFileMgr::readTextFile( fpath, text );
-	// prt(("s8830 readSchemaText fpath=[%s] text=[%s]\n", fpath.c_str(), text.c_str() ));
 	return text;
 }
 
@@ -1112,3 +1041,37 @@ bool JagSchema::isIndexCol( const Jstr &dbname, const Jstr &colName )
 	return false;
 }
 
+
+#if 0
+// // format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!dummy1!dummy2!...!dummy10!|...}"
+void JagSchema::getJoinSchema( long skeylen, long svallen, const JagParam &parseParam, const JagSchemaRecord &rec, Jstr &hstr )
+{
+        char hbuf[JAG_SCHEMA_SPARE_LEN+1];
+		jagint offset = 0;
+        memset(hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
+        hbuf[JAG_SCHEMA_SPARE_LEN] = '\0';
+        hbuf[0] = JAG_C_COL_KEY;
+        hbuf[2] = JAG_RAND;
+        Jstr hstr = Jstr("NN|") + longToStr(skeylen) + "|" + longToStr(svallen) + "|0|{";
+        for ( int i = 0; i < parseParam.orderVec.size(); ++i ) {
+            hstr += Jstr("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(offset) + "!" +
+                    longToStr(lengths[i]) + "!0!" + hbuf + "|";
+            offset += lengths[i];
+        }
+
+        hbuf[1] = JAG_C_COL_TYPE_UUID[0];
+        hstr += Jstr("!") + "key_" + longToStr( THREADID ) + "_uuid" + "!s!" + longToStr(offset) + "!" +
+            	longToStr(JAG_UUID_FIELD_LEN) + "!0!" + hbuf + "!0! ! !|";
+        offset += JAG_UUID_FIELD_LEN;
+
+        memset( hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
+        hbuf[0] = JAG_C_COL_VALUE;
+        hbuf[2] = JAG_RAND;
+        for ( int i = 0; i < rec.columnVector->size(); ++i ) {
+            hstr += Jstr("!") + (*(rec.columnVector))[i].name.c_str() + "!s!" + longToStr(offset) + "!" +
+                    longToStr((*(rec.columnVector))[i].length) + "!0!" + hbuf + "!0! ! !|";
+            offset += (*(rec.columnVector))[i].length;
+        }
+        hstr += "}";
+}
+#endif

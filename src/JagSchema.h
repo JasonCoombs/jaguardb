@@ -27,7 +27,8 @@
 #include <JagVector.h>
 #include <JagBlock.h>
 #include <JagArray.h>
-#include <JagDiskArrayServer.h>
+//#include <JagDiskArrayServer.h>
+#include <JagLocalDiskHash.h>
 #include <JagHashMap.h>
 #include <JagBuffReader.h>
 #include <JagColumn.h>
@@ -100,13 +101,12 @@ class JagSchema
 	Jstr    readSchemaText( const Jstr &key ) const;
 	void   	writeSchemaText( const Jstr &key, const Jstr &value );
 	void   	removeSchemaFile( const Jstr &key );
-	const JagColumn *getColumn( const Jstr &dbname, const Jstr &objname, 
-								const Jstr &colname ); 
+	const JagColumn *getColumn( const Jstr &dbname, const Jstr &objname, const Jstr &colname ); 
 
 	static Jstr getDatabases( JagCfg *cfg = NULL, int replicateType=0 );
-	static const abaxint KEYLEN = JAG_SCHEMA_KEYLEN;
-	static const abaxint VALLEN = JAG_SCHEMA_VALLEN;
-	static const abaxint KVLEN = KEYLEN + VALLEN;
+	static const jagint KEYLEN = JAG_SCHEMA_KEYLEN;
+	static const jagint VALLEN = JAG_SCHEMA_VALLEN;
+	static const jagint KVLEN = KEYLEN + VALLEN;
 
   protected:	
 	JagHashMap<AbaxString,JagSchemaRecord> 	*_schemaMap;
@@ -120,12 +120,13 @@ class JagSchema
 
 	JagHashMap<AbaxString, JagColumn>       *_columnMap;
 
-	JagReadWriteLock    	*_lock;
+	pthread_rwlock_t    	*_lock;
 	JagCfg					*_cfg;
 	JagDBServer    			*_servobj;
 	JagSchemaRecord 		*_schmRecord;
-	JagDiskArrayServer  	*_schema;
-	Jstr 			_stype;
+	//JagDiskArrayServer  	*_schema;
+	JagLocalDiskHash  	    *_schema;
+	Jstr 			        _stype;
 	int						_replicateType;
 	JagColumn               _dummyColumn;
 

@@ -24,15 +24,16 @@
 #include <JaguarCPPClient.h>
 #include <JagStrSplit.h>
 #include <JagUtil.h>
+#include <JagParseParam.h>
 
 // ctor
 JagDBConnector::JagDBConnector( )
 {
-	_lock = newObject<JagReadWriteLock>();
+	_lock = newJagReadWriteLock();
 	_passwd = "dummy";
 	_parentCliNonRecover = NULL;
 	_parentCli = NULL;
-	_broadCastCli = NULL;
+	_broadcastCli = NULL;
 	
 	// get port
 	JagCfg cfg;
@@ -50,8 +51,11 @@ JagDBConnector::JagDBConnector( )
 JagDBConnector::~JagDBConnector()
 {
 	if ( _lock ) {
+		/**
 		delete _lock;
 		_lock = NULL;
+		**/
+		deleteJagReadWriteLock( _lock );
 	}
 	if ( _nodeMgr ) {
 		delete _nodeMgr;
@@ -65,9 +69,9 @@ JagDBConnector::~JagDBConnector()
 		delete _parentCli;
 		_parentCli = NULL;
 	}
-	if ( _broadCastCli ) {
-		delete _broadCastCli;
-		_broadCastCli = NULL;
+	if ( _broadcastCli ) {
+		delete _broadcastCli;
+		_broadcastCli = NULL;
 	}
 }
 
@@ -75,6 +79,7 @@ JagDBConnector::~JagDBConnector()
 // static connect JDB server, make init connection
 void JagDBConnector::makeInitConnection( bool debugClient )
 {
+	raydebug( stdout, JAG_LOG_LOW, "makeInitConnection debugClient=%d\n", debugClient );
 	Jstr username, dbname;
 	username = "admin";
 	dbname = "test";
@@ -88,25 +93,29 @@ void JagDBConnector::makeInitConnection( bool debugClient )
 		delete _parentCli;
 		_parentCli = NULL;
 	}
+	//	raydebug( stdout, JAG_LOG_LOW, "_parentCli NULL\n" );
 
-	if ( _broadCastCli ) {
-		delete _broadCastCli;
-		_broadCastCli = NULL;
+	if ( _broadcastCli ) {
+		delete _broadcastCli;
+		_broadcastCli = NULL;
 	}
+	//raydebug( stdout, JAG_LOG_LOW, "_broadcastCli NULL\n" );
 
 	_parentCliNonRecover = newObject<JaguarCPPClient>();
 	_parentCliNonRecover->setDebug( debugClient );
+	//raydebug( stdout, JAG_LOG_LOW, "new JaguarCPPClient\n" );
 
 	_parentCli = newObject<JaguarCPPClient>();
 	_parentCli->_deltaRecoverConnection = 1;
 	_parentCli->setDebug( debugClient );
 
-	_broadCastCli = newObject<JaguarCPPClient>();
-	_broadCastCli->setDebug( debugClient );
+	_broadcastCli = newObject<JaguarCPPClient>();
+	_broadcastCli->setDebug( debugClient );
+	//raydebug( stdout, JAG_LOG_LOW, "new _broadcastCli\n" );
 
 	Jstr unixSocket = Jstr("/TOKEN=") + _servToken;
 
-	raydebug( stdout, JAG_LOG_HIGH, "Init Connection Localhost [%s]\n", _nodeMgr->_selfIP.c_str() );
+	raydebug( stdout, JAG_LOG_LOW, "Init Connection Localhost [%s:%d]\n", _nodeMgr->_selfIP.c_str(), _port );
 	while ( !_parentCliNonRecover->connect( _nodeMgr->_selfIP.c_str(), _port, username.c_str(), _passwd.c_str(), 
 								  dbname.c_str(), unixSocket.c_str(), JAG_SERV_PARENT ) ) {
 		raydebug( stdout, JAG_LOG_LOW, "s4122 Connect (%s:%s) (%s:%d) error [%s], retry ...\n", 
@@ -121,45 +130,52 @@ void JagDBConnector::makeInitConnection( bool debugClient )
 		jagsleep(5, JAG_SEC);
 	}
 
-	while ( !_broadCastCli->connect( _nodeMgr->_selfIP.c_str(), _port, username.c_str(), _passwd.c_str(), 
+	while ( !_broadcastCli->connect( _nodeMgr->_selfIP.c_str(), _port, username.c_str(), _passwd.c_str(), 
 								  dbname.c_str(), unixSocket.c_str(), JAG_SERV_PARENT ) ) {
 		raydebug( stdout, JAG_LOG_LOW, "s4124 Connect (%s:%s) (%s:%d) error [%s], retry ...\n", 
-				  username.c_str(), _passwd.c_str(), _nodeMgr->_selfIP.c_str(), _port, _broadCastCli->error() );
+				  username.c_str(), _passwd.c_str(), _nodeMgr->_selfIP.c_str(), _port, _broadcastCli->error() );
 		jagsleep(5, JAG_SEC);
 	}
-	raydebug( stdout, JAG_LOG_HIGH, "Connection to %s:%d OK\n", _nodeMgr->_selfIP.c_str(), _port );
+	raydebug( stdout, JAG_LOG_LOW, "Connection to self %s:%d OK\n", _nodeMgr->_selfIP.c_str(), _port );
 }
 
 // send signal to all JDB servers
 // return false: no server list in cluster.conf, or some connection failure during broadcast
 // otherwise, if all broadcast successfully finished, return true
-bool JagDBConnector::broadCastSignal( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli )
+// if toAll==false, exclude self
+bool JagDBConnector::broadcastSignal( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli, bool toAll )
 {
+	prt(("s200987 broadcastSignal signal=[%s] hostlist=[%s] toAll=%d mutex ...\n", signal.s(), hostlist.s(), toAll ));
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	prt(("s200987 broadcastSignal signal=[%s] hostlist=[%s] toAll=%d mutex done\n", signal.s(), hostlist.s(), toAll ));
 
 	// get a list of all server IPs
 	// if not in localIP send command
 	bool rc = true;
 	JagStrSplit split(_nodeMgr->_allNodes, '|', true);
+	prt(("s532383 broadcastSignal _allNodes=[%s]\n", _nodeMgr->_allNodes.s() ));
 	int n = 0, len = split.length();
-	if ( len <= 1 ) {
-		// prt(("s5003 broadCastSignal allnodes.size()=%d return\n", len ));
+	if ( !toAll && len <= 1 ) {
+		prt(("s5003 broadcastSignal allnodes.size()=%d return\n", len ));
 		return false;
 	}
-	JaguarCPPClient *tcli = _broadCastCli;
+	JaguarCPPClient *tcli = _broadcastCli;
 	if ( ucli ) tcli = ucli;
 	
-    pthread_t thrd[len-1];
-    BroadCastAttr pass[len-1];
+    pthread_t thrd[len];
+	BroadCastAttr pass[len];
+	n = 0;
 	if ( hostlist.size() < 1 ) { // no hostlist, broadcast all
 	    for ( int i = 0; i < len; ++i ) {
-			if ( split[i] != _nodeMgr->_selfIP ) {
+			if ( toAll || split[i] != _nodeMgr->_selfIP ) {
 	   			pass[n].usecli = tcli;
    				pass[n].host = split[i];
    				pass[n].cmd = signal;
 				pass[n].getStr = 0;
 				pass[n].result = 1;
+				prt(("s333887 jagpthread_create n=%d host=%s\n", n, split[i].s() ));
 	   			jagpthread_create( &thrd[n], NULL, queryDBServerStatic, (void*)&pass[n] );
+				prt(("s333887 jagpthread_create done n=%d\n", n ));
 	   			++n;
 	   		}
 	   	}
@@ -167,7 +183,7 @@ bool JagDBConnector::broadCastSignal( const Jstr &signal, const Jstr &hostlist, 
 		// has hostlist: broadcast to len hosts ( except self )
 		JagStrSplit sp( hostlist, '|' );
 		for ( int i = 0; i < sp.length(); ++i ) {
-			if ( sp[i] != _nodeMgr->_selfIP ) {
+			if ( toAll || sp[i] != _nodeMgr->_selfIP ) {
 	   			pass[n].usecli = tcli;
    				pass[n].host = sp[i];
    				pass[n].cmd = signal;
@@ -179,10 +195,14 @@ bool JagDBConnector::broadCastSignal( const Jstr &signal, const Jstr &hostlist, 
 	   	}
 	}
     
+	prt(("s222088 pthread_join queryDBServerStatic len=%d n=%d ...\n", len, n ));
+	prt(("s2020229 join threads %s ....\n", signal.s() ));
     for ( int i = 0; i < n; ++i ) {
     	pthread_join(thrd[i], NULL);
 		if ( pass[i].result == 0 ) rc = false;
     }
+
+	prt(("s122288 done bcastsignal joined threds n=%d rc=%d signal=%s\n\n", n, rc, signal.s() ));
 
 	return rc;
 }
@@ -193,7 +213,7 @@ bool JagDBConnector::broadCastSignal( const Jstr &signal, const Jstr &hostlist, 
 //   host2_result1\n
 //   host3_result1\n
 //   host4_result1\n
-Jstr JagDBConnector::broadCastGet( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli )
+Jstr JagDBConnector::broadcastGet( const Jstr &signal, const Jstr &hostlist, JaguarCPPClient *ucli )
 {
 	// get a list of all server IPs
 	// if not in localIP send command
@@ -202,11 +222,11 @@ Jstr JagDBConnector::broadCastGet( const Jstr &signal, const Jstr &hostlist, Jag
 	JagStrSplit split(_nodeMgr->_allNodes, '|', true);
 	int n = 0, len = split.length();
 	if ( len <= 1 ) { return ""; }
-	JaguarCPPClient *tcli = _broadCastCli;
+	JaguarCPPClient *tcli = _broadcastCli;
 	if ( ucli ) tcli = ucli;
 
-	pthread_t thrd[len-1];
-	BroadCastAttr pass[len-1];
+	pthread_t thrd[len];
+	BroadCastAttr pass[len];
 
 	if ( hostlist.size() < 1 ) { // no hostlist, broadcast all
 	    for ( int i = 0; i < len; ++i ) {
@@ -264,20 +284,26 @@ void *JagDBConnector::queryDBServerStatic( void *ptr )
 	}
 
 	// direct send, no need to send backup serv message
-	if ( jcli->queryDirect( pass->cmd.c_str(), true, false, true ) == 0 ) {
+	if ( jcli->queryDirect( 0, pass->cmd.c_str(), pass->cmd.size(), true, false, true ) == 0 ) {
 		// send failure
 		pass->result = 0;
+		prt(("s344828 in queryDBServerStatic [%s] error\n",  pass->cmd.c_str() ));
 	} else {
 		// else, try reply: if broadCastGet, append message, otherwise ignore
 		while ( jcli->reply() > 0 ) {
 			p = jcli->getMessage();
 			if ( ! p ) continue;
+			prt(("s344824 in queryDBServerStatic [req=%s][resp=%s]\n",  pass->cmd.c_str(), p ));
 			if ( pass->getStr ) pass->value += p;
 		}
 		if ( jcli->getSocket() == -1 ) {
 			// reply connection failure, no finish receving _END_
 			pass->result = 0;
+			prt(("s344824 in queryDBServerStatic [req=%s] getSocket==-1\n",  pass->cmd.c_str() ));
 		}
 	}
 
+	prt(("s344826 queryDBServerStatic done\n"));
+	return NULL;
 }
+

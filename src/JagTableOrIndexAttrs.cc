@@ -27,6 +27,7 @@ JagTableOrIndexAttrs::JagTableOrIndexAttrs()
 	dbobjnum = 0;
 	defUpdDatetime = defDatetime = updDatetime = JAG_S_COL_SPARE_DEFAULT;
 	hasFile = false;
+	isSWO = false;
 
 	schAttr = NULL; 
 	numschAttr = 0;
@@ -74,11 +75,11 @@ JagTableOrIndexAttrs& JagTableOrIndexAttrs::operator=( const JagTableOrIndexAttr
 	
 	// JagSchemaAttribute *schAttr;  // to be array of JagSchemaAttribute objects 
 	if ( schAttr ) {
-		//prt(("s2039 delete [] schAttr=%0x ...\n", schAttr ));
+		//prt(("s203889 delete [] schAttr=%0x ...\n", schAttr ));
 		delete [] schAttr;
 		schAttr = NULL;
 		numschAttr = 0;
-		//prt(("s2039 delete [] schAttr=%0x doe ...\n", schAttr ));
+		//prt(("s4093939 delete [] schAttr=%0x doe ...\n", schAttr ));
 	}
 
 	if ( o.numschAttr > 0 ) {
@@ -104,6 +105,7 @@ void JagTableOrIndexAttrs::copyData( const JagTableOrIndexAttrs &o )
 	defDatetime = o.defDatetime; 
 	updDatetime = o.updDatetime;
 	hasFile = o.hasFile; 
+	isSWO = o.isSWO; 
 	dbName = o.dbName;
 	tableName = o.tableName;
 	indexName = o.indexName; 

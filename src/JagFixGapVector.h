@@ -39,34 +39,34 @@ class JagFixGapVector
 		void init( int sz );
 		~JagFixGapVector();
 
-		// inline const Pair & operator[] ( abaxint i ) const { return _arr[i]; }
-		const char * operator[] ( abaxint i ) const { return _arr+i*kvlen; }
-		void setNull( const char *pair, abaxint i );
-		bool isNull( abaxint i )  const;
-		bool exist( const char *pair ) { abaxint idx; return exist(pair, &idx); }
-		bool exist( const char *pair, abaxint *index );
+		// inline const Pair & operator[] ( jagint i ) const { return _arr[i]; }
+		const char * operator[] ( jagint i ) const { return _arr+i*kvlen; }
+		void setNull( const char *pair, jagint i );
+		bool isNull( jagint i )  const;
+		bool exist( const char *pair ) { jagint idx; return exist(pair, &idx); }
+		bool exist( const char *pair, jagint *index );
 
 		// bool remove( const char *pair ); 
 		bool get( char *pair ); 
 		bool set( const char *pair ); 
 		void destroy();
-		inline  abaxint capacity() const { return _arrlen; }
-		inline  abaxint size() const { return _elements; }
-		inline  abaxint last() const { return _last; }
+		inline  jagint capacity() const { return _arrlen; }
+		inline  jagint size() const { return _elements; }
+		inline  jagint last() const { return _last; }
 		inline  const char* array() const { return (const char*)_arr; }
-		// inline bool append( const char *newpair ) { abaxint idx; return append(newpair, &idx); }
-		// bool append( const char *newpair, abaxint *index );
-		// bool insertForce( const JagDBPair &pair, abaxint index );
-		bool insertForce( const char *newpair, abaxint index );
-		bool insertLess( const char *newpair, abaxint index );
-		void setValue( int val, bool isSet, abaxint index );
-		bool findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset );
+		// inline bool append( const char *newpair ) { jagint idx; return append(newpair, &idx); }
+		// bool append( const char *newpair, jagint *index );
+		// bool insertForce( const JagDBPair &pair, jagint index );
+		bool insertForce( const char *newpair, jagint index );
+		bool insertLess( const char *newpair, jagint index );
+		void setValue( int val, bool isSet, jagint index );
+		bool findLimitStart( jagint &startlen, jagint limitstart, jagint &soffset );
 		bool setNull();
-		abaxint getPartElements( abaxint pos ) const;
-		bool cleanPartPair( abaxint pos );
-		bool deleteUpdateNeeded( const char *dpair, const char *npair, abaxint pos );
+		jagint getPartElements( jagint pos ) const;
+		bool cleanPartPair( jagint pos );
+		bool deleteUpdateNeeded( const char *dpair, const char *npair, jagint pos );
 		void print() const;
-		// void makeDBPair( abaxint i, JagDBPair &dbpair );
+		// void makeDBPair( jagint i, JagDBPair &dbpair );
 
 		void 	reAlloc();
 		void 	reAllocShrink();
@@ -75,13 +75,13 @@ class JagFixGapVector
 		char   		*_arr;
 
 	protected:
-		abaxint  	_arrlen;
+		jagint  	_arrlen;
 
 		char   		*_newarr;
-		abaxint  	_newarrlen;
+		jagint  	_newarrlen;
 
-		abaxint  	_elements;
-		abaxint  	_last;
+		jagint  	_elements;
+		jagint  	_last;
 		static const int _GEO  = 2;	 // fixed
 };
 

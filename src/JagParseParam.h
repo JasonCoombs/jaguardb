@@ -74,6 +74,7 @@ class ObjectNameAttribute
 class GroupOrderVecAttribute
 {
   public:
+    GroupOrderVecAttribute() { isAsc = true; }
 	Jstr name;
 	bool isAsc;
 	void init() { name = ""; isAsc = true; }
@@ -84,19 +85,16 @@ class OtherAttribute
   public:
   	OtherAttribute();
   	~OtherAttribute();
-	// void init( bool keepPolygon=false ); 
 	void init(); 
 	void copyData( const OtherAttribute& other );
 	OtherAttribute& operator=( const OtherAttribute& other );
 	OtherAttribute( const OtherAttribute& other );
 	void print();
 
-
 	bool hasQuote;
 	ObjectNameAttribute objName;
 	Jstr valueData;
 	bool issubcol;
-
 	Jstr  type;
 	JagPoint 		point;
 	JagLineString 	linestr;
@@ -188,7 +186,6 @@ class UpdSetAttribute
 	Jstr colList;
 
 	UpdSetAttribute() {
-		// tree = new BinaryExpressionBuilder();
 		tree = NULL;
 	}
 
@@ -205,10 +202,6 @@ class UpdSetAttribute
 
 	void destroy() {
 		if ( tree ) {
-			/**
-			ExprElementNode *root = tree->getRoot();
-			if ( root ) { root->clear(); delete root; root=NULL; }
-			**/
 			tree->clean();
 			delete tree;
 			tree = NULL;
@@ -220,8 +213,8 @@ class UpdSetAttribute
 		colName = other.colName;
 		destroy();
 		tree = other.tree;
-		UpdSetAttribute *usa = (UpdSetAttribute*)&other;
-		usa->tree = NULL; // tree transfer
+		UpdSetAttribute *otherAttr = (UpdSetAttribute*)&other;
+		otherAttr->tree = NULL; // tree transfer
 		return *this;
 	}
 };
@@ -251,7 +244,6 @@ class SelColAttribute
 	JagFixString strResult;
 
 	SelColAttribute() {
-		// tree = new BinaryExpressionBuilder();
 		tree = NULL;
 		_pparam = NULL; 
 	}
@@ -307,9 +299,7 @@ class OnlyTreeAttribute
 	Jstr colList;
 
 	OnlyTreeAttribute( ) {
-		// tree = new BinaryExpressionBuilder();
 		tree = NULL;
-		// prt(("s4580 OnlyTreeAttribute NULL\n" ));
 	}
 
 	~OnlyTreeAttribute() {
@@ -324,7 +314,6 @@ class OnlyTreeAttribute
 		tree = other.tree;
 		OnlyTreeAttribute *ota = (OnlyTreeAttribute*)&other;
 		ota->tree = NULL; // tree transfer
-		// prt(("s2039 tree trsfer tree=%0x\n", tree ));
 		return *this;
 	}
 };
@@ -334,8 +323,11 @@ class JagParseParam
   public:
 	// methods
   	JagParseParam( const JagParser *jps = NULL );
+	void init( const JagParseAttribute *ijpa=NULL, bool needClean=true );
   	~JagParseParam();
+	JagParseParam( const JagParseParam &other ) { *this = other; }
 	void clean();
+	void destroy();
 	int setSelectWhere( );
 	int resetSelectWhere( const Jstr &extraWhere );
 	int setupCheckMap();
@@ -364,13 +356,12 @@ class JagParseParam
 	void fillSmallIntSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, int isSub = true );
 	void fillStringSubData( CreateAttribute &cattr, int &offset, int isKey, int len, int isMute, int isSub = true );
 	void fillRangeSubData( int colLen, CreateAttribute &cattr, int &offset, int isKey, int isSub = true );
-	void init( const JagParseAttribute *ijpa=NULL, bool needClean=true );
 	void clearRowHash();
 	void initColHash();
 	bool isSelectConst() const;
-
+	bool isJoin() const;
+	static bool isJoin( int code );
 	void addMetrics( const CreateAttribute &cattr, int offset, int isKey );
-
 	
 	// data memebers
 	bool parseOK;
@@ -389,9 +380,9 @@ class JagParseParam
 	bool hasExport;	
 	bool dorep;
 	bool getfileActualData;
-	abaxint limitStart;
-	abaxint limit;
-	abaxint timeout;
+	jagint limitStart;
+	jagint limit;
+	jagint timeout;
 	int keyLength;
 	int valueLength;
 	int ovalueLength;
@@ -431,43 +422,61 @@ class JagParseParam
 	Jstr loadColumnClause;
 	Jstr loadLineClause;
 	Jstr loadQuoteClause;
-
 	Jstr grantPerm;
 	Jstr grantObj;
 	Jstr grantUser;
 	Jstr grantWhere;
-
 	Jstr insertDCSyncHost;
-
 	Jstr origCmd;
 	Jstr dbNameCmd;
-
-	JagVector<ObjectNameAttribute> objectVec;
-	JagVector<GroupOrderVecAttribute> orderVec;
-	JagVector<GroupOrderVecAttribute> groupVec;
-	JagVector<OtherAttribute> otherVec;
-	JagVector<CreateAttribute> createAttrVec;
-	JagVector<UpdSetAttribute> updSetVec;
-	JagVector<SelColAttribute> selColVec;
-	JagVector<Jstr> selAllColVec;
-	JagVector<OnlyTreeAttribute> joinOnVec;
-	JagVector<OnlyTreeAttribute> whereVec;
-	JagVector<abaxint> offsetVec;
-	JagHashStrInt inscolmap;
-	JagHashStrInt joincolmap;
-	JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> treecheckmap;
-	JagParseAttribute jpa;
-	const JagParser  *jagParser;
-	JagParseParam    *parent;
-	JagHashStrStr    *_rowHash;
-	JagHashStrStr    *_colHash; // save column names in select and where
-	Jstr   _rowUUID;
-	JagLineFile	     *_lineFile;
+	Jstr  	_rowUUID;
 	Jstr    like;
 	Jstr    _allColumns;
 	bool    _selectStar;
 	short   cmd;
 	Jstr    value;
+
+
+	JagVector<ObjectNameAttribute> objectVec;
+
+	JagVector<GroupOrderVecAttribute> orderVec;
+
+	JagVector<GroupOrderVecAttribute> groupVec;
+
+	JagVector<OtherAttribute> otherVec;
+
+	JagVector<CreateAttribute> createAttrVec;
+
+	JagVector<UpdSetAttribute> updSetVec;
+
+	JagVector<SelColAttribute> selColVec;
+
+	JagVector<Jstr> selAllColVec;
+
+	JagVector<OnlyTreeAttribute> joinOnVec;
+
+	JagVector<OnlyTreeAttribute> whereVec;
+
+	JagVector<jagint> offsetVec;
+
+	JagHashStrInt *insColMap;
+	void initInsColMap();
+
+	JagHashStrInt *joinColMap;
+	void initJoinColMap();
+
+	JagHashMap<AbaxString, AbaxPair<AbaxString, jagint>> *treeCheckMap;
+	void initTreeCheckMap();
+
+	JagParseAttribute jpa;
+	const JagParser  *_jagParser;
+	JagParseParam    *_parent;
+	JagHashStrStr    *_rowHash;
+	JagHashStrStr    *_colHash; // save column names in select and where
+	JagLineFile	     *_lineFile;
+
+  protected:
+		void initCtor();
 
 };
 

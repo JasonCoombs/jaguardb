@@ -36,7 +36,7 @@ class JagHashStrInt
 		int getValue( const Jstr &key, bool &rc ) const;
 		void reset();
 		bool getValue( const Jstr &key, int &pos ) const;
-		JagVector<AbaxPair<Jstr,abaxint> > getStrIntVector();
+		JagVector<AbaxPair<Jstr,jagint> > getStrIntVector();
 		int  size(); // how many items
 		void removeAllKey();
 		void print();

@@ -132,7 +132,7 @@ class StringElementNode: public ExprElementNode
 	virtual int setAggregateValue( int nodenum, const char *buf, int length );
 	virtual int checkFuncValid(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[],
 								const char *buffers[], JagFixString &str, int &typeMode, Jstr &type, 
-								int &length, bool &first, bool useZero, bool setGlobal );
+								int &length, bool &first, bool useZero, bool setGlobal ) ;
 	virtual int checkFuncValidConstantOnly( JagFixString &str, int &typeMode, Jstr &type, int &length );
 	void makeDataString( const JagSchemaAttribute *attrs[], const char *buffers[], 
 						 const Jstr &colobjstr, JagFixString &str );
@@ -389,7 +389,7 @@ class BinaryOpNode: public ExprElementNode
 
 	// data members
 	JagFixString 	_opString;
-	abaxint 		_numCnts; // use for calcuations
+	jagint 		_numCnts; // use for calcuations
 	abaxdouble 		_initK; // use for stddev
 	abaxdouble 		_stddevSum; //use for stddev
 	abaxdouble 		_stddevSumSqr; // use for stddev
@@ -406,14 +406,14 @@ class BinaryExpressionBuilder
 	void clean();
 
 	BinaryOpNode *parse( const JagParser *jagParser, const char* str, int type,
-								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
+								const JagHashMap<AbaxString, AbaxPair<AbaxString, jagint>> &cmap, JagHashStrInt *&jmap, 
 								Jstr &colList );
 	ExprElementNode *getRoot() const;
 	
 	JagParseAttribute _jpa;
-	JagParseParam *_pparam;
-	bool doneClean;
-	int  		_lastOp;
+	JagParseParam 		*_pparam;
+	bool 				doneClean;
+	int  				_lastOp;
 	// holds either (, +, -, *, /, %, ^ or any other function type  
 	std::stack<int> operatorStack;	
 	std::stack<int> operatorArgStack;	
@@ -430,17 +430,19 @@ class BinaryExpressionBuilder
 	
 	// methods
 	void processBetween( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
-						const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
+						const JagHashMap<AbaxString, AbaxPair<AbaxString, jagint>> &cmap, JagHashStrInt *&jmap, 
 						Jstr &colList );
 	void processIn( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
-					const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, JagHashStrInt &jmap, 
+					const JagHashMap<AbaxString, AbaxPair<AbaxString, jagint>> &cmap, JagHashStrInt *&jmap, 
 					Jstr &colList );
 	void processOperand( const JagParser *jpars, const char *&p, const char *&q, StringElementNode &lastNode,
-						const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, Jstr &colList );
+						const JagHashMap<AbaxString, AbaxPair<AbaxString, jagint>> &cmap, Jstr &colList );
 
-	void processOperator( short op, int nargs, JagHashStrInt &jmap );
-	void processRightParenthesis( JagHashStrInt &jmap );
-	void doBinary( short op, int nargs, JagHashStrInt &jmap );
+	//void processOperator( short op, int nargs, JagHashStrInt &jmap );
+	void processOperator( short op, int nargs, JagHashStrInt *&jmap );
+	//void processRightParenthesis( JagHashStrInt &jmap );
+	void processRightParenthesis( JagHashStrInt *&jmap );
+	void doBinary( short op, int nargs, JagHashStrInt *&jmap );
 	short precedence( short fop );
 	bool funcHasZeroChildren( short fop );
 	bool funcHasOneConstant( short fop );
@@ -448,7 +450,7 @@ class BinaryExpressionBuilder
 	bool checkFuncType( short fop );
 	bool getCalculationType( const char *p, short &fop, short &len, short &ctype );
 	bool nameConvertionCheck( Jstr &name, int &tabnum,
-								const JagHashMap<AbaxString, AbaxPair<AbaxString, abaxint>> &cmap, 
+								const JagHashMap<AbaxString, AbaxPair<AbaxString, jagint>> &cmap, 
 								Jstr &colList );
     bool nameAndOpGood( const JagParser *jpsr, const Jstr &fullname, const StringElementNode &lastNode );
 };

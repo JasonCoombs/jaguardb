@@ -74,6 +74,7 @@ void jag_hash_init(jag_hash_t *htabptr, int buckets) {
   htabptr->bucket=(HashNodeT **) calloc(htabptr->size, sizeof(HashNodeT *));
 
   htabptr->empty = 0;
+  htabptr->doneInit = true;
 
   return;
 }
@@ -119,12 +120,12 @@ static void rebuild_table(jag_hash_t *htabptr)
  *  it or NULL if it wasn't found.
  *  htabptr: Pointer to the hash table
  *  key: The key to lookup
+ *  returns: pointer to value (no memory allocated, just use it)
  */
 char * jag_hash_lookup(const jag_hash_t *htabptr, const char *key )
 {
   int h;
   HashNodeT *node;
-
 
   /* find the entry in the hash table */
   h=hashcode(htabptr, key);
@@ -144,10 +145,12 @@ char * jag_hash_lookup(const jag_hash_t *htabptr, const char *key )
  *  htabptr: A pointer to the hash table
  *  key: The key to insert into the hash table
  *  data: A pointer to the data to insert into the hash table
+ *
+ *  key and value are memory allocated in the hash (strdup)
  */
 int jag_hash_insert(jag_hash_t *htabptr, const char *key, const char *value ) 
 {
-  int tmp;
+  //int tmp;
   HashNodeT *node;
   int h;
 
@@ -165,6 +168,7 @@ int jag_hash_insert(jag_hash_t *htabptr, const char *key, const char *value )
   node=(struct HashNodeT *) malloc(sizeof(HashNodeT));
   node->key= strdup(key);
   node->value= strdup(value); 
+  //node->valueReadOnly=false;
   node->next=htabptr->bucket[h];
   htabptr->bucket[h]=node;
   htabptr->entries++;
@@ -172,9 +176,9 @@ int jag_hash_insert(jag_hash_t *htabptr, const char *key, const char *value )
   return 1;
 }
 
-int jag_hash_insert_str_void(jag_hash_t *htabptr, const char *key, void *value ) 
+int jag_hash_insert_str_voidptr(jag_hash_t *htabptr, const char *key, void *value ) 
 {
-  int tmp;
+  //int tmp;
   HashNodeT *node;
   int h;
 
@@ -192,11 +196,19 @@ int jag_hash_insert_str_void(jag_hash_t *htabptr, const char *key, void *value )
   node=(struct HashNodeT *) malloc(sizeof(HashNodeT));
   node->key= strdup(key);
   node->value= (char*)value; 
+  //node->valueReadOnly=true;
   node->next=htabptr->bucket[h];
   htabptr->bucket[h]=node;
   htabptr->entries++;
 
   return 1;
+}
+
+int jag_hash_delete_int(jag_hash_t *htabptr, int key ) 
+{
+	char sk[16];
+	sprintf(sk, "%d", key );
+	return jag_hash_delete( htabptr, sk, true );
 }
 
 /*
@@ -234,6 +246,7 @@ int jag_hash_delete(jag_hash_t *htabptr, const char *key, bool freeval )
   }
 
   if ( node->key ) free( node->key );
+  //if ( freeval && node->value && ! node->valueReadOnly ) free( node->value );
   if ( freeval && node->value ) free( node->value );
   if ( node ) free(node);
   node = NULL;
@@ -249,6 +262,10 @@ int jag_hash_delete(jag_hash_t *htabptr, const char *key, bool freeval )
  */
 void jag_hash_destroy(jag_hash_t *htabptr, bool freeval ) 
 {
+  if ( htabptr->doneInit == false ) {
+  	  return;
+  }
+
   HashNodeT *node, *last;
   int i;
 
@@ -258,6 +275,7 @@ void jag_hash_destroy(jag_hash_t *htabptr, bool freeval )
       last = node;   
       node = node->next;
 	  if ( last->key ) free(last->key);
+      //if ( freeval && last->value && ! last->valueReadOnly ) free(last->value);
       if ( freeval && last->value ) free(last->value);
       if ( last ) free(last);
 	  last = NULL;
@@ -265,12 +283,16 @@ void jag_hash_destroy(jag_hash_t *htabptr, bool freeval )
   }     
 
   /* free the entire array of buckets */
-  if (htabptr->bucket != NULL) {
+  if (htabptr->bucket != NULL && htabptr->size > 0) {
+    // check size > 0 ? above
     free(htabptr->bucket);
+    htabptr->bucket = NULL;
     memset(htabptr, 0, sizeof(jag_hash_t));
   }
 
   htabptr->empty = 1;
+  htabptr->entries = 0;
+  htabptr->doneInit = false;
 
 }
 

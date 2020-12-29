@@ -20,6 +20,7 @@
 
 #include <JagUserRole.h>
 #include <JagDBServer.h>
+#include <JagParseParam.h>
 
 // ctor
 JagUserRole::JagUserRole( JagDBServer *servobj, int replicateType )
@@ -61,8 +62,7 @@ bool JagUserRole::addRole( const AbaxString &userid, const AbaxString& db, const
 	// parse role and add 
 	AbaxString rowKey;
     char *kv = (char*)jagmalloc(KVLEN+1);
-    JagDBPair retpair;
-	int rc, insertCode;
+	int rc;
 	Jstr lower; 
 
 	Jstr perm;
@@ -103,7 +103,8 @@ bool JagUserRole::addRole( const AbaxString &userid, const AbaxString& db, const
     		_darr->remove( dpair );
     	}
     
-       	rc = _darr->insert( pair, insertCode, false, true, retpair );
+       	// rc = _darr->insert( pair, insertCode, false, true, retpair );
+       	rc = _darr->insert( pair );
 		//prt(("s4831 darr insert rc=%d pair.key=[%s]\n", rc, pair.key.c_str() ));
 	}
 	
@@ -168,7 +169,7 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
 	} else if ( JAG_DELETE_OP == parseParam.opcode ) {
 		op = JAG_ROLE_DELETE;	
 	} else if ( JAG_SELECT_OP == parseParam.opcode || JAG_GETFILE_OP == parseParam.opcode || 
-				JAG_COUNT_OP == parseParam.opcode || isJoin( parseParam.opcode ) || JAG_INSERTSELECT_OP == parseParam.opcode ) {
+				JAG_COUNT_OP == parseParam.opcode || parseParam.isJoin() || JAG_INSERTSELECT_OP == parseParam.opcode ) {
 		// check cols for select
 		op = JAG_ROLE_SELECT;	
 		// prt(("s3220 select \n" ));
@@ -193,7 +194,7 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
 		//prt(("s4092  parseParam.updSetVec.size=%d db=[%s] tab=[%s]\n", parseParam.updSetVec.size(), db.c_str(), tab.c_str() ));
 		for ( int i = 0; i < parseParam.updSetVec.size(); ++i ) {
 			col  = parseParam.updSetVec[i].colName.c_str();
-			// prt(("s2039 colList=[%s] is empty\n",  parseParam.updSetVec[i].colList.c_str() ));
+			// prt(("s2029 colList=[%s] is empty\n",  parseParam.updSetVec[i].colList.c_str() ));
 			rc = isAuthed( op, req.session->uid, db, tab, col, rowFilter );
 			//prt(("s4540 isAuthed rc=%d col=[%s]\n", rc, col.c_str() ));
 			if ( !rc ) { 
@@ -261,7 +262,7 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
 		}
 
 		// join
-		// prt(("s2039 joinOnVecn.size=%d\n", parseParam.joinOnVec.size() ));
+		// prt(("s2439 joinOnVecn.size=%d\n", parseParam.joinOnVec.size() ));
 		for ( int i = 0; i < parseParam.joinOnVec.size(); ++i ) {
 			//prt(("s3024 join joinOnVec[i].colList=[%s]\n", parseParam.joinOnVec[i].colList.c_str() ));
 			JagStrSplit sp( parseParam.joinOnVec[i].colList, '|', true );
@@ -281,7 +282,7 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
 		}
 	} else {
 		// insert /alter/delete etc
-		//prt(("s2039 other command  parseParam.objectVec.size()=%d\n",  parseParam.objectVec.size() ));
+		//prt(("s2239 other command  parseParam.objectVec.size()=%d\n",  parseParam.objectVec.size() ));
 		for ( int i = 0; i < parseParam.objectVec.size(); ++i ) {
 			db = parseParam.objectVec[i].dbName;
 			tab = parseParam.objectVec[i].tableName;
@@ -418,9 +419,9 @@ Jstr JagUserRole::showRole( const AbaxString &uid )
 	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	AbaxString matchKey = uid + "|";
     const AbaxPair<AbaxString, AbaxString> *arr = _hashmap->array();
-    abaxint len = _hashmap->arrayLength();
+    jagint len = _hashmap->arrayLength();
 	Jstr db, tab, col, pm, permStr;
-	for ( abaxint i = 0; i < len; ++i ) {
+	for ( jagint i = 0; i < len; ++i ) {
 		if ( _hashmap->isNull(i) ) continue;
 		const AbaxPair<AbaxString, AbaxString> &kv = arr[i];
 		if ( 0 == strncmp(kv.key.c_str(), matchKey.c_str(), matchKey.size() ) ) {

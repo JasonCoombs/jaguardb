@@ -24,6 +24,12 @@
  *  */
 
 #include "JagMD5lib.h"
+static unsigned char PADDING[64] = {
+  0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 
 /* MD5 initialization. Begins an MD5 operation, writing a new context.
  */
@@ -104,7 +110,7 @@ void MD5Final (unsigned char digest[16], MD5_CTX *context)
 /* MD5 basic transformation. Transforms state based on block.  */
 static void MD5Transform (UINT4 state[4], unsigned char block[64])
 {
-int i=0;
+//int i=0;
  
  UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
 
@@ -243,7 +249,7 @@ static void MD5_memset (MD5POINTER output, int value, unsigned int len)
  ((char *)output)[i] = (char)value;
 }
 
-/* Digests a string and prints the result.  */
+/* Digests a string and print the result.  */
 // Must be freeed from caller.
 char* MDString (const char *string)
 {
@@ -278,7 +284,7 @@ char* MDString (const char *string)
   return output;
 }
 
-/* Digests a string and prints the result.  */
+/* Digests a string and print the result.  */
 // Must be freeed from caller.
 char* MDStringLen (const char *string, unsigned int len )
 {
@@ -312,7 +318,7 @@ char* MDStringLen (const char *string, unsigned int len )
   return output;
 }
   
-/* Digests a file and prints the result.
+/* Digests a file and print the result.
  */
 char* MDFile (char *filename)
  

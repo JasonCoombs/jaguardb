@@ -23,30 +23,30 @@ template <class Pair>
 class JagSimpleBoundedArray
 {
     public:
-		JagSimpleBoundedArray( abaxint limit );
+		JagSimpleBoundedArray( jagint limit );
 		~JagSimpleBoundedArray();
 
 		void insert( const Pair &newpair ); 
-		Pair& at( abaxint i ) const { return _arr[i]; }
+		Pair& at( jagint i ) const { return _arr[i]; }
 		void destroy() { delete [] _arr; }
 		void clean() { destroy(); init(); }
-		bool   isNull( abaxint i ) const { return _arr[i] == Pair::NULLVALUE; }
+		bool   isNull( jagint i ) const { return _arr[i] == Pair::NULLVALUE; }
 		void   init();
 
   		Pair    *_arr;
-		abaxint _limit;
-		abaxint _nextempty;
+		jagint _limit;
+		jagint _nextempty;
 		bool    _hasElement;
 		
 		// iterator
 		void begin();
 		bool next( Pair &pair );
-		abaxint _iterptr;
+		jagint _iterptr;
 		bool    _atend;
 };
 
 template <class Pair>
-JagSimpleBoundedArray<Pair>::JagSimpleBoundedArray( abaxint limit )
+JagSimpleBoundedArray<Pair>::JagSimpleBoundedArray( jagint limit )
 {
 	_limit = limit;
 	init();
@@ -56,7 +56,7 @@ template <class Pair>
 void JagSimpleBoundedArray<Pair>::init( )
 {
 	_arr = new Pair[_limit];
-	for ( abaxint i = 0; i < _limit; ++i ) {
+	for ( jagint i = 0; i < _limit; ++i ) {
 		_arr[i] = Pair::NULLVALUE;
 	}
 	_nextempty = 0;

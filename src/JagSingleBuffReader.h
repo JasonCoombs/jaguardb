@@ -21,35 +21,39 @@
 
 #include <abax.h>
 
+class JagCompFile;
+
 class JagSingleBuffReader
 {
 
   public:
-  	//                           readlen=# of kv
-	JagSingleBuffReader( int fd, abaxint readlen, int keylen, int vallen, abaxint start=0, abaxint headoffset=0, abaxint bufferSize=32 );
+	JagSingleBuffReader( JagCompFile *compf, jagint readlen, int keylen, int vallen, jagint start=0, jagint headoffset=0, jagint bufferSize=8 );
+	JagSingleBuffReader( int fd, jagint readlen, int keylen, int vallen, jagint start=0, jagint headoffset=0, jagint bufferSize=8 );
   	~JagSingleBuffReader( ); 
 	
-  	bool getNext ( char *buf, int len, abaxint &i );
+  	bool getNext ( char *buf, int len, jagint &i );
   	bool getNext ( char *buf );
-  	bool getNext ( char *buf, abaxint &i );
+  	bool getNext ( char *buf, jagint &i );
 		
   protected:
 
-	bool findNonblankElement( char *buf, abaxint &i );
-	abaxint getNumBlocks( int kvlen, abaxint bufferSize );
+	void 	init( jagint readlen, int keylen, int vallen, jagint start=0, jagint headoffset=0, jagint bufferSize=8 );
+	bool 	findNonblankElement( char *buf, jagint &i );
+	jagint 	getNumBlocks( int kvlen, jagint bufferSize );
 
-  	abaxint _elements;
-  	abaxint _headoffset;
-	int  _fd;
-	abaxint _start;
-	abaxint _readlen;
-	char  *_superbuf;
-	abaxint	  KEYLEN;
-	abaxint   VALLEN;
-	abaxint   KEYVALLEN;
+  	jagint 		_elements;
+  	jagint 		_headoffset;
+	JagCompFile *_compf;
+	int 		_intfd;
+	jagint 		_start;
+	jagint 		_readlen;
+	char  		*_superbuf;
+	jagint	  	KEYLEN;
+	jagint   	VALLEN;
+	jagint   	KEYVALLEN;
 
-	int   _lastSuperBlock;
-	abaxint   _relpos;
+	int   		_lastSuperBlock;
+	jagint   	_relpos;
 };
 
 #endif

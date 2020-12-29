@@ -25,23 +25,18 @@ class JagDiskArrayClient : public JagDiskArrayBase
 {
 	public:
 	
-		JagDiskArrayClient( const Jstr &fpathname, 
-							const JagSchemaRecord *record, bool dropClean=false, abaxint length=32 );
+		JagDiskArrayClient( const Jstr &fpathname, const JagSchemaRecord *record, bool dropClean=false, jagint length=32 );
 		virtual ~JagDiskArrayClient();
 
 		virtual void drop();
 		virtual void buildInitIndex( bool force=false );	
-		virtual void init( abaxint length, bool buildBlockIndex );
-		virtual int _insertData( JagDBPair &pair, abaxint *retindex, int &insertCode, bool doFirstRedist, JagDBPair &retpair );
-		virtual int reSize( bool force=false, abaxint newarrlen=-1 );
-		// virtual int reSize( bool force=false, abaxint newarrlen=-1, bool doFirstDist=true, bool sepThrdSelfCall=false );
-		virtual void reSizeLocal( );
-
-		// client own methods
-		int insertSync(  JagDBPair &pair );
-		int needResize();
-		abaxint flushInsertBufferSync();
-
+		virtual void init( jagint length, bool buildBlockIndex );
+		// virtual int _insertData( JagDBPair &pair, jagint *retindex, int &insertCode, bool doFirstRedist, JagDBPair &retpair );
+		// virtual int _insertData( JagDBPair &pair, int &insertCode, bool doFirstRedist, JagDBPair &retpair );
+		//virtual int reSize( bool force=false, jagint newarrlen=-1 );
+		//virtual void reSizeLocal( );
+		//int needResize();
+		jagint flushInsertBufferSync();
 		int _dropClean;
 
 };

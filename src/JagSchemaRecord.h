@@ -25,6 +25,8 @@
 #include <JagVector.h>
 #include <JagHashStrInt.h>
 
+class JagParseParam;
+
 class JagSchemaRecord
 {
 	public:
@@ -37,7 +39,7 @@ class JagSchemaRecord
 		bool renameColumn( const AbaxString &oldColName, const AbaxString & newColName );
 		bool setColumn( const AbaxString &oldColName, const AbaxString &attr, const AbaxString & value );
 		bool addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 
-									  abaxint length, abaxint sig );
+									  jagint length, jagint sig );
 		Jstr getString() const;
 		int parseRecord( const char *str );
 		Jstr formatHeadRecord() const;
@@ -49,6 +51,7 @@ class JagSchemaRecord
 		int getPosition( const AbaxString& colName ) const;
 		bool hasPoly(int &dim ) const;
 		void setLastKeyColumn();
+		void getJoinSchema( long skeylen, long svallen, const JagParseParam &parseParam, const jagint lengths[], Jstr &hstr );
 
 
 		char        type[2];

@@ -23,9 +23,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <time.h>
 #include <libgen.h>
@@ -188,7 +186,7 @@ int JagFileMgr::cleanDir( const Jstr &fullpath, time_t historySeconds )
 }
 
 // in bytes
-abaxint JagFileMgr:: fileSize( const Jstr &fullpath )
+jagint JagFileMgr:: fileSize( const Jstr &fullpath )
 {
 	struct stat   	statbuf;
 	if ( stat( fullpath.c_str(), &statbuf) < 0 )
@@ -250,7 +248,7 @@ void JagFileMgr::writeTextFile(const Jstr &fname, const char *content )
 
 #ifndef _WINDOWS64_
 // 1: OK   0: error
-int JagFileMgr::getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &freeGB )
+int JagFileMgr::getPathUsage( const char *fpath,  jagint &usedGB, jagint &freeGB )
 {
 	usedGB = 0;
 	freeGB = 0;
@@ -259,7 +257,7 @@ int JagFileMgr::getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &free
 		return 0;
 	}
 
-    uabaxint blksize, blocks, freeblks, disk_size, used, free;
+    jaguint blksize, blocks, freeblks, disk_size, used, free;
     blksize = buf.f_bsize;
     blocks = buf.f_blocks;
     freeblks = buf.f_bfree;
@@ -279,7 +277,7 @@ int JagFileMgr::getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &free
 #else
 // WINDOWS
 // 1: OK   0: error
-int JagFileMgr::getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &freeGB )
+int JagFileMgr::getPathUsage( const char *fpath,  jagint &usedGB, jagint &freeGB )
 {
 	usedGB = 0;
 	freeGB = 1024;
@@ -292,7 +290,7 @@ int JagFileMgr::getPathUsage( const char *fpath,  abaxint &usedGB, abaxint &free
 	}
 
 	freeGB = (i64FreeBytes/ ONE_GIGA_BYTES);
-    abaxint totGB = (i64TotalBytes/ONE_GIGA_BYTES);
+    jagint totGB = (i64TotalBytes/ONE_GIGA_BYTES);
 	usedGB = (totGB - freeGB);
 	return 1;
 }
@@ -321,7 +319,7 @@ Jstr JagFileMgr::getLocalLogDir( const Jstr &subdir )
 #ifndef _WINDOWS64_
 // Linux
 // get network reads and writes
-int JagFileMgr::getIOStat( uabaxint &reads, uabaxint & writes )
+int JagFileMgr::getIOStat( jaguint &reads, jaguint & writes )
 {
 	reads = writes = 0;
 	FILE *fp = jagfopen( "/proc/diskstats", "rb" );
@@ -342,7 +340,7 @@ int JagFileMgr::getIOStat( uabaxint &reads, uabaxint & writes )
 }
 #else
 // Windows
-int JagFileMgr::getIOStat( uabaxint &reads, uabaxint & writes )
+int JagFileMgr::getIOStat( jaguint &reads, jaguint & writes )
 {
 	reads = writes = 0;
 	IO_COUNTERS  cntr;
@@ -369,12 +367,12 @@ bool JagFileMgr::dirEmpty( const Jstr &fullpath )
 }
 
 
-int   JagFileMgr::fallocate(int fd, abaxint offset, abaxint len)
+int   JagFileMgr::fallocate(int fd, jagint offset, jagint len)
 {
 }
 
 
-// get files that have patter  file.N.jdb in a dir
+// get files that have pattern  file.N.jdb in a dir
 // tab1.1.jdb
 // tab1.2.jdb
 // tab1.3.jdb
@@ -478,9 +476,9 @@ Jstr JagFileMgr::getFileFamily( const Jstr &fullpath, const Jstr &objname, bool 
 }
 
 // objects in fullpath dir
-abaxint JagFileMgr::numObjects( const Jstr &fullpath )
+jagint JagFileMgr::numObjects( const Jstr &fullpath )
 {
-	abaxint num = 0;
+	jagint num = 0;
 
 	struct stat   	statbuf;
 	DIR 			*dp;
@@ -510,7 +508,8 @@ abaxint JagFileMgr::numObjects( const Jstr &fullpath )
 	return num;
 }
 
-Jstr JagFileMgr::listObjects( const Jstr &fullpath )
+// return "a|b|c" where a are object names under fullpath
+Jstr JagFileMgr::listObjects( const Jstr &fullpath, const Jstr &substr )
 {
 	struct stat   	statbuf;
 	DIR 			*dp;
@@ -533,8 +532,15 @@ Jstr JagFileMgr::listObjects( const Jstr &fullpath )
 		if ( 0==strcmp(dirp->d_name, ".") || 0==strcmp(dirp->d_name, "..") ) {
 			continue;
 		}
+
+		if ( substr.size() > 0 ) {
+			if ( ! strstr(dirp->d_name, substr.c_str()) ) {
+				continue;
+			}
+		}
+
 		if ( nextlevelpath.size() < 1 ) {
-			nextlevelpath += dirp->d_name;
+			nextlevelpath = dirp->d_name;
 		} else {
 			nextlevelpath += Jstr("|") + dirp->d_name;
 		}
@@ -600,4 +606,23 @@ int JagFileMgr::pathWritable( const Jstr &fullpath )
 	}
 }
 
+
+/***
+       path       dirname   basename
+       /usr/lib   /usr      lib
+       /usr/      /         usr
+       usr        .         usr
+       /          /         /
+       .          .         .
+       ..         .         ..
+***/
+Jstr JagFileMgr::dirName( const Jstr &fpath )
+{
+    return dirname( (char*)fpath.c_str() );
+}
+
+Jstr JagFileMgr::baseName( const Jstr &fpath )
+{
+    return basename( (char*)fpath.c_str() );
+}
 

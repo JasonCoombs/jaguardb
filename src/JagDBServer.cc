@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 DataJaguar, Inc.
+ * Copyright (C) 2018,2019,2020,2021 DataJaguar, Inc.
  *
  * This file is part of JaguarDB.
  *
@@ -37,6 +37,7 @@
 #undef JAG_CLIENT_SIDE
 #define JAG_SERVER_SIDE 1
 
+#include <JagDef.h>
 #include <JagUtil.h>
 #include <JagUserID.h>
 #include <JagUserRole.h>
@@ -53,7 +54,7 @@
 #include <JagRequest.h>
 #include <JagMutex.h>
 #include <JagSystem.h>
-#include <JDFSMgr.h>
+#include <JagFSMgr.h>
 #include <JagFastCompress.h>
 #include <JagTime.h>
 #include <JagHashLock.h>
@@ -61,14 +62,12 @@
 #include <JagDataAggregate.h>
 #include <JagUUID.h>
 #include <JagTableUtil.h>
-#include <JagParallelParse.h>
 #include <JagProduct.h>
 #include <JagTable.h>
 #include <JagIndex.h>
 #include <JagBoundFile.h>
 #include <JagDBConnector.h>
 #include <JagDiskArrayBase.h>
-#include <JagADB.h>
 #include <JagIPACL.h>
 #include <JagSingleMergeReader.h>
 #include <JagDBLogger.h>
@@ -76,34 +75,20 @@
 #include <JagParser.h>
 #include <JagLineFile.h>
 #include <JagCrypt.h>
+#include <JagBlockLock.h>
 
 
 extern int JAG_LOG_LEVEL;
-int JagDBServer::g_dtimeout = 0;
 int JagDBServer::g_receivedSignal = 0;
-abaxint JagDBServer::g_lastSchemaTime = 0;
-abaxint JagDBServer::g_lastHostTime = 0;
+jagint JagDBServer::g_lastSchemaTime = 0;
+jagint JagDBServer::g_lastHostTime = 0;
 
-// data member for testing only
-abaxint JagDBServer::g_icnt1 = 0;
-abaxint JagDBServer::g_icnt2 = 0;
-abaxint JagDBServer::g_icnt3 = 0;
-abaxint JagDBServer::g_icnt4 = 0;
-abaxint JagDBServer::g_icnt5 = 0;
-abaxint JagDBServer::g_icnt6 = 0;
-abaxint JagDBServer::g_icnt7 = 0;
-abaxint JagDBServer::g_icnt8 = 0;
-abaxint JagDBServer::g_icnt9 = 0;
-
-
-pthread_mutex_t JagDBServer::g_dbmutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t JagDBServer::g_dbschemamutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_flagmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_logmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_dlogmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_dinsertmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_datacentermutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t JagDBServer::g_selectmutex = PTHREAD_MUTEX_INITIALIZER;
-Jstr  JagDBServer::_allLockToken = "-1";
 
 // ctor
 JagDBServer::JagDBServer() 
@@ -114,12 +99,8 @@ JagDBServer::JagDBServer()
 		jagrename( fpath.c_str(), fpathnew.c_str() );
 	}
 
-	_whiteIPList = _blackIPList = NULL;
+	_allowIPList = _blockIPList = NULL;
 	_serverReady = false;
-
-
-	// data member for testing only
-	g_icnt1 = g_icnt2 = g_icnt3 = g_icnt4 = g_icnt5 = g_icnt6 = g_icnt7 = g_icnt8 = g_icnt9 = 0;
 
 	g_receivedSignal = g_lastSchemaTime = g_lastHostTime = 0;
 	_taskID = _numPrimaryServers = 1;
@@ -133,15 +114,13 @@ JagDBServer::JagDBServer()
 	
 	_hashRebalanceLen = 0;
 	_hashRebalanceFD = -1;
-	_msyncCount = 0;
 	
 	// in order to use JDFSMgr later in other classes, JDFSMgr must be create here	
-	jdfsMgr = newObject<JDFSMgr>();
+	jdfsMgr = newObject<JagFSMgr>();
 	servtimediff = JagTime::getTimeZoneDiff();
 
 	// build _cfg first
 	_cfg = newObject<JagCfg>();
-	g_dtimeout = atoi(_cfg->getValue("TRANSMIT_TIMEOUT", "3").c_str());
 	_userDB = NULL;
 	_prevuserDB = NULL;
 	_nextuserDB = NULL;
@@ -155,36 +134,35 @@ JagDBServer::JagDBServer()
 	_nexttableschema = NULL;
 	_nextindexschema = NULL;
 
-	_fpCommand = NULL;
-	_dinsertCommand = NULL;
-	_delPrevOriCommand = NULL;
-	_delPrevRepCommand = NULL;
-	_delPrevOriRepCommand = NULL;
-	_delNextOriCommand = NULL;
-	_delNextRepCommand = NULL;
-	_delNextOriRepCommand = NULL;
-	_recoveryRegCommand = NULL;
-	_recoverySpCommand = NULL;
+	_dinsertCommandFile = NULL;
+	_delPrevOriCommandFile = NULL;
+	_delPrevRepCommandFile = NULL;
+	_delPrevOriRepCommandFile = NULL;
+	_delNextOriCommandFile = NULL;
+	_delNextRepCommandFile = NULL;
+	_delNextOriRepCommandFile = NULL;
+	_recoveryRegCommandFile = NULL;
+	_recoverySpCommandFile = NULL;
 
 	_objectLock = new JagServerObjectLock( this );
-	_createIndexLock = newObject<JagHashLock>();
-	_tableUsingLock = newObject<JagHashLock>();
 	_jagUUID = new JagUUID();
 	pthread_rwlock_init(&_aclrwlock, NULL);
 
-	_internalHostNum = new JagHashMap<AbaxString, abaxint>();
+	_internalHostNum = new JagHashMap<AbaxString, jagint>();
 
 	// also, get other databases name
 	Jstr dblist, dbpath;
-	dbpath = _cfg->getJDBDataHOME( 0 );
+	dbpath = _cfg->getJDBDataHOME( JAG_MAIN );
 	dblist = JagFileMgr::listObjects( dbpath );
-	_objectLock->setInitDatabases( dblist, 0 );
-	dbpath = _cfg->getJDBDataHOME( 1 );
+	_objectLock->setInitDatabases( dblist, JAG_MAIN );
+
+	dbpath = _cfg->getJDBDataHOME( JAG_PREV );
 	dblist = JagFileMgr::listObjects( dbpath );
-	_objectLock->setInitDatabases( dblist, 1 );
-	dbpath = _cfg->getJDBDataHOME( 2 );
+	_objectLock->setInitDatabases( dblist, JAG_PREV );
+
+	dbpath = _cfg->getJDBDataHOME( JAG_NEXT );
 	dblist = JagFileMgr::listObjects( dbpath );
-	_objectLock->setInitDatabases( dblist, 2 );
+	_objectLock->setInitDatabases( dblist, JAG_NEXT );
 
 	_beginAddServer = 0;
 	_exclusiveAdmins = 0;
@@ -197,7 +175,7 @@ JagDBServer::JagDBServer()
 	init( _cfg );
 	_dbConnector = newObject<JagDBConnector>( );
 	_clusterMode = true;
-	_faultToleranceCopy = atoi(_cfg->getValue("REPLICATION", "3").c_str());
+	_faultToleranceCopy = atoi(_cfg->getValue("REPLICATION", "1").c_str());
 	if ( 0==strcasecmp(PRODUCT_VERSION, "FREETRIAL" ) ) {
 		_faultToleranceCopy = 1;
 	}
@@ -207,7 +185,6 @@ JagDBServer::JagDBServer()
 
 	loadACL(); // load self acl, no broadcast
 
-	_sea_records_limit = jagatoll(_cfg->getValue("SEA_RECORDS_LIMIT", "1000000").c_str());
 	_jdbMonitorTimedoutPeriod = jagatol(_cfg->getValue("JDB_MONITOR_TIMEDOUT", "600").c_str()); 
 	// jdb file monitor timed out period ( in seconds ), default is 600s
 	raydebug( stdout, JAG_LOG_LOW, "JdbMonitorTimedoutPeriod = [%d]\n", _jdbMonitorTimedoutPeriod );
@@ -237,7 +214,6 @@ JagDBServer::JagDBServer()
 		}
 	}
 
-	
 	if ( _numPrimaryServers == 1 ) {
 		if ( _faultToleranceCopy >= 2 ) {
 			_faultToleranceCopy = 1;
@@ -274,6 +250,17 @@ JagDBServer::JagDBServer()
 
 	_numCPUs = _jagSystem.getNumCPUs();
 	raydebug( stdout, JAG_LOG_LOW, "Number of cores %d\n", _numCPUs );
+
+	Jstr scaleMode = makeLowerString(_cfg->getValue("SCALE_MODE", "static"));
+	if  ( scaleMode == "static" ) {
+		// data kept on old clusters, dup data on new cluster is deleted if old clusters exist
+		_scaleMode = JAG_SCALE_STATIC;
+	} else {
+		// data is written on new cluster, old clusters will delete dup data
+		_scaleMode = JAG_SCALE_GOLAST;
+	}
+
+	pthread_mutex_init( &g_dbconnectormutex, NULL );
 }
 
 // dtor
@@ -375,16 +362,6 @@ void JagDBServer::destroy()
 		_objectLock = NULL;
 	}
 
-	if ( _createIndexLock ) {
-		delete _createIndexLock;
-		_createIndexLock = NULL;
-	}
-
-	if ( _tableUsingLock ) {
-		delete _tableUsingLock;
-		_tableUsingLock = NULL;
-	}
-
 	if ( _jagUUID ) {
 		delete _jagUUID;
 		_jagUUID = NULL;
@@ -395,54 +372,62 @@ void JagDBServer::destroy()
 		_internalHostNum = NULL;
 	}
 
-	if ( _delPrevOriCommand ) {
-		jagfclose( _delPrevOriCommand );
-		_delPrevOriCommand = NULL;
+	if ( _delPrevOriCommandFile ) {
+		jagfclose( _delPrevOriCommandFile );
+		_delPrevOriCommandFile = NULL;
 	}
 
-	if ( _delPrevRepCommand ) {
-		jagfclose( _delPrevRepCommand );
-		_delPrevRepCommand = NULL;
+	if ( _delPrevRepCommandFile ) {
+		jagfclose( _delPrevRepCommandFile );
+		_delPrevRepCommandFile = NULL;
 	}
 
-	if ( _delPrevOriRepCommand ) {
-		jagfclose( _delPrevOriRepCommand );
-		_delPrevOriRepCommand = NULL;
+	if ( _delPrevOriRepCommandFile ) {
+		jagfclose( _delPrevOriRepCommandFile );
+		_delPrevOriRepCommandFile = NULL;
 	}
 
-	if ( _delNextOriCommand ) {
-		jagfclose( _delNextOriCommand );
-		_delNextOriCommand = NULL;
+	if ( _delNextOriCommandFile ) {
+		jagfclose( _delNextOriCommandFile );
+		_delNextOriCommandFile = NULL;
 	}
 
-	if ( _delNextRepCommand ) {
-		jagfclose( _delNextRepCommand );
-		_delNextRepCommand = NULL;
+	if ( _delNextRepCommandFile ) {
+		jagfclose( _delNextRepCommandFile );
+		_delNextRepCommandFile = NULL;
 	}
 
-	if ( _delNextOriRepCommand ) {
-		jagfclose( _delNextOriRepCommand );
-		_delNextOriRepCommand = NULL;
+	if ( _delNextOriRepCommandFile ) {
+		jagfclose( _delNextOriRepCommandFile );
+		_delNextOriRepCommandFile = NULL;
 	}
 
-	if ( _recoveryRegCommand ) {
-		jagfclose( _recoveryRegCommand );
-		_recoveryRegCommand = NULL;
+	if ( _recoveryRegCommandFile ) {
+		jagfclose( _recoveryRegCommandFile );
+		_recoveryRegCommandFile = NULL;
 	}
 
-	if ( _recoverySpCommand ) {
-		jagfclose( _recoverySpCommand );
-		_recoverySpCommand = NULL;
+	if ( _recoverySpCommandFile ) {
+		jagfclose( _recoverySpCommandFile );
+		_recoverySpCommandFile = NULL;
 	}
 
-	delete _parsePool;
-	delete _selectPool;
 
-	if ( _blackIPList )  delete _blackIPList;
-	if ( _whiteIPList )  delete _whiteIPList;
+	if ( _blockIPList )  delete _blockIPList;
+	if ( _allowIPList )  delete _allowIPList;
 	pthread_rwlock_destroy(&_aclrwlock);
 
 	delete _dbLogger;
+
+	//pthread_mutex_destroy( &_walMutexMapMutex );
+	pthread_mutex_destroy( &g_dbschemamutex );
+	pthread_mutex_destroy( &g_flagmutex );
+	pthread_mutex_destroy( &g_logmutex );
+	pthread_mutex_destroy( &g_dlogmutex );
+	pthread_mutex_destroy( &g_dinsertmutex );
+	pthread_mutex_destroy( &g_datacentermutex );
+
+	pthread_mutex_destroy( &g_dbconnectormutex );
 
 	closeDataCenterConnection();
 
@@ -451,9 +436,9 @@ void JagDBServer::destroy()
 
 // dedicated thread
 // version4
-int JagDBServer::main(int argc, char**argv)
+int JagDBServer::main(int argc, char*argv[])
 {
-	abaxint callCounts = -1, lastBytes = 0;
+	jagint callCounts = -1, lastBytes = 0;
 	raydebug(stdout, JAG_LOG_LOW, "s1101 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
 
 	JagNet::socketStartup();
@@ -466,13 +451,13 @@ int JagDBServer::main(int argc, char**argv)
 
 	_jagSystem.initLoad(); // for load stats
 
-	pthread_mutex_init( &g_dbmutex, NULL );
+	pthread_mutex_init( &g_dbschemamutex, NULL );
 	pthread_mutex_init( &g_flagmutex, NULL );
 	pthread_mutex_init( &g_logmutex, NULL );
 	pthread_mutex_init( &g_dlogmutex, NULL );
 	pthread_mutex_init( &g_dinsertmutex, NULL );
 	pthread_mutex_init( &g_datacentermutex, NULL );
-	pthread_mutex_init( &g_selectmutex, NULL );
+	//pthread_mutex_init( &g_selectmutex, NULL );
 
 	// take acceptions
 	createSocket( argc, argv );
@@ -480,10 +465,11 @@ int JagDBServer::main(int argc, char**argv)
 	_activeThreadGroups = 0;
 	_activeClients = 0;
 	_threadGroupSeq = 0;
+
 	makeThreadGroups( _threadGroups + _initExtraThreads, _threadGroupSeq++ );
+
 	raydebug(stdout, JAG_LOG_LOW, "Created socket thread groups\n" );
 	raydebug(stdout, JAG_LOG_LOW, "s1105 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
-
 
 	initObjects();
 	raydebug(stdout, JAG_LOG_LOW, "s1102 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
@@ -501,7 +487,7 @@ int JagDBServer::main(int argc, char**argv)
 	resetRegSpLog();
 	raydebug(stdout, JAG_LOG_LOW, "s1104 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
 
-	mainInit( argc, argv );
+	mainInit();
 	raydebug(stdout, JAG_LOG_LOW, "s1106 availmem=%l M\n", availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES );
 
 	printResources();
@@ -510,15 +496,16 @@ int JagDBServer::main(int argc, char**argv)
 	openDataCenterConnection();
 	raydebug(stdout, JAG_LOG_LOW, "Jaguar server ready to process commands from clients\n" );
 
-	uabaxint seq = 1;
+	jaguint seq = 1;
 	
 	while ( true ) {
 		jagsleep(60, JAG_SEC);
 
 		doBackup( seq );
 		writeLoad( seq );
-		rotateWalLog();
+
 		rotateDinsertLog();
+
 		refreshDataCenterConnections( seq );
 
 		if ( 0 == (seq%15) ) {
@@ -533,6 +520,7 @@ int JagDBServer::main(int argc, char**argv)
 
 		++seq;
 		if ( seq >= ULLONG_MAX ) { seq = 0; }
+
 		jagmalloc_trim(0);
 
 		// dynamically increase thread groups
@@ -548,7 +536,7 @@ int JagDBServer::main(int argc, char**argv)
 }
 
 // static
-void JagDBServer::addTask(  uabaxint taskID, JagSession *session, const char *mesg )
+void JagDBServer::addTask(  jaguint taskID, JagSession *session, const char *mesg )
 {
 	char buf[256];
 	const int LEN=64;
@@ -565,94 +553,76 @@ void JagDBServer::addTask(  uabaxint taskID, JagSession *session, const char *me
 
 // static
 // Process commands in one thread
-int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msglen, JagDBServer *servobj, 
-	abaxint &threadSchemaTime, abaxint &threadHostTime, abaxint threadQueryTime, bool redoOnly, int isReadOrWriteCommand )
+int JagDBServer::processMultiSingleCmd( JagRequest &req, const char *mesg, jagint msglen, JagDBServer *servobj, 
+										jagint &threadSchemaTime, jagint &threadHostTime, jagint threadQueryTime, 
+										bool redoOnly, int isReadOrWriteCommand )
 {
-	//prt(("s0922 processMultiCmd mesg=[%s]\n", mesg ));
-	if ( servobj->_shutDownInProgress > 0 ) return 0;	
-
-	// add tasks	
-	uabaxint taskID;
-	++ ( servobj->_taskID );
-	taskID =  servobj->_taskID;
-	addTask( taskID, req.session, mesg );
+	//prt(("s0922 processMultiSingleCmd mesg=[%s] _shutDownInProgress=%d\n", mesg, int(servobj->_shutDownInProgress) ));
+	prt(("s0922 processMultiSingleCmd mesg=[%s] replcayeType=%d\n", mesg, req.session->replicateType ));
+	// replicateType=0: self copy  
+	// replicateType=1: copy for previous host
+	// replicateType=2: copy for next host 
 
 	if ( servobj->_shutDownInProgress > 0 ) {
-		servobj->_taskMap->removeKey( taskID );
 		return 0;
 	}	
 
-	// local variables
-	JagClock clock;
+	//JagClock clock;
 	int rc;
 	bool sucsync = true;
 	JagParseAttribute jpa( servobj, req.session->timediff, servobj->servtimediff, req.session->dbname, servobj->_cfg );
 	Jstr reterr, rowFilter;
 		
+	//prt(("s03382 req.batchReply=%d\n", req.batchReply ));
 	if ( req.batchReply ) {
-        abaxint callCounts = -1, lastBytes = 0;
-        raydebug(stdout, JAG_LOG_HIGH, "s5033 newbatch availmem=%l M\n", 
-				 availableMemory( callCounts, lastBytes)/ONE_MEGA_BYTES);
-		clock.start();
 		JagStrSplitWithQuote split( mesg, ';' );
-		int len = split.length();
-		if ( len >= 10000 ) {
-			clock.stop();
-			prt(("s5034 %lld splt %d type=%d batchReply=%d %d ms\n", 
-				THREADID, len, req.session->replicateType, req.batchReply, clock.elapsed() )); 
-		}
-
-		if ( !redoOnly ) { // write related commands, store in wallog
-			if ( req.batchReply ) {
-				clock.start();
-				JagDBServer::logCommand( req.session, mesg, msglen, 2 );
-				clock.stop();
-				servobj->_msyncCount += len;
-				raydebug( stdout, JAG_LOG_HIGH, "msynch %d/%l %s in %l msecs\n",
-					len, servobj->_msyncCount, servobj->_activeWalFpath.c_str(), clock.elapsed() );
-			}
-		}
-
-        //raydebug(stdout, JAG_LOG_LOW, "s5130 received %d commands\n", len );
-		JagParseParam *pparam[len];
-		for ( int i = 0; i < len; ++i ) {
-			pparam[i] = newObject<JagParseParam>();
-		}
-		// batch insert, put in server _insertBuffer, and return ED without update map
-		// for insert, lock fschema locks
-		int numCPUs = servobj->_numCPUs;
-		JagParallelParse pparser( numCPUs,  servobj->_parsePool );
-		pparser.parse( jpa, split, pparam );
-        //raydebug(stdout, JAG_LOG_LOW, "s5131 parsed %d commands on %d cores\n", len, numCPUs );
-
+		int msgnum = split.length();
 		if ( ! servobj->_isGate ) {
-    		for ( int i = 0; i < len; ++i ) {
-    			if ( pparam[i]->parseOK ) {
+			JagParser parser((void*)NULL);
+			//JagParser parser((void*)servobj);
+			JagParseParam pparam( &parser ); // todo
+    		for ( int i = 0; i < msgnum; ++i ) {
+				// JagParseParam pparam( &parser ); // slower
+				bool brc = parser.parseCommand( jpa, split[i], &pparam, reterr );
+    			if ( brc ) {
 					// before do insert, need to check permission of this user for insert
-					rc = checkUserCommandPermission( servobj, NULL, req, *(pparam[i]), 0, rowFilter, reterr );
+					rc = checkUserCommandPermission( servobj, NULL, req, pparam, 0, rowFilter, reterr );
 					if ( rc ) {
-						rc = doInsert( servobj, req, *(pparam[i]), reterr, split[i] );
+						if ( ! redoOnly && req.batchReply ) {
+							servobj->logCommand( &pparam, req.session, split[i].c_str(), split[i].size(), 2 );
+						}
+						
+						rc = doInsert( servobj, req, pparam, reterr, split[i] );
     					if ( ! rc ) {
-    						prt(("s3620 doInsert rc=%d reterr=[%s]\n", rc, reterr.c_str() ));
-    					}
+    						//prt(("s3620 doInsert rc=%d reterr=[%s]\n", rc, reterr.c_str() ));
+    					} 
 					} else {
-						prt(("no permission for user [%s] to do insert on current table\n", req.session->uid.c_str()));
+						//prt(("no permission for user [%s] to do insert on current table\n", req.session->uid.c_str()));
 					}
     			} else {
-    				prt(("s6349 parse error=%d i=%d split[i]=[%s]\n", pparam[i]->parseError, i, split[i].c_str() ));
+    				//prt(("s6349 parse error=%d i=%d split[i]=[%s]\n", pparam.parseError, i, split[i].c_str() ));
     			}
     		}
 		} else {
 			// if is gate, do not store data locally
 		}
 
+		//raydebug( stdout, JAG_LOG_LOW, "s22389 done %d batch insert\n", msgnum );
 		// sync command to other data-centers
 		if ( req.dorep ) {
+			JagParser parser((void*)NULL);
+			// JagParser parser((void*)servobj);
+			JagParseParam pparam( &parser );
 			JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
-			for ( int i = 0; i < len; ++i ) {
-				if ( JAG_SINSERT_OP == pparam[i]->opcode ) {
+			for ( int i = 0; i < msgnum; ++i ) {
+				// JagParseParam pparam( &parser );
+				if ( ! parser.parseCommand( jpa, split[i], &pparam, reterr ) ) {
+					continue; 
+				}
+
+				if ( JAG_FINSERT_OP == pparam.opcode ) {
 					servobj->synchToOtherDataCenters( split[i].c_str(), sucsync, req );
-					// sinsert to insert
+					// finsert to insert
 				} else {
 					servobj->synchToOtherDataCenters( split[i].c_str(), sucsync, req );
 				}	
@@ -662,6 +632,7 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 
 		// check timestamp to see if need to update schema for client SC
 		if ( !req.session->origserv && threadSchemaTime < g_lastSchemaTime ) {
+			//prt(("s4082 srvchk _cschema sendMapInfo\n" ));
 			servobj->sendMapInfo( "_cschema", req );
 			//servobj->sendMapInfo( "_cdefval", req );
 			threadSchemaTime = g_lastSchemaTime;
@@ -669,176 +640,150 @@ int JagDBServer::processMultiCmd( JagRequest &req, const char *mesg, abaxint msg
 
 		// check timestamp to see if need to update host list for client HL
 		if ( !req.session->origserv && threadHostTime < g_lastHostTime ) {
-			prt(("s4083 sendHostInfo _chost\n" ));
 			servobj->sendHostInfo( "_chost", req );
 			threadHostTime = g_lastHostTime;
 		}
 
 		Jstr endmsg = Jstr("_END_[T=20|E=|]");
 		if ( req.hasReply && !redoOnly ) {
-			// prt(("s7736 sendMessageLength ED endmsg=[%s]\n", endmsg.c_str() ));
 			sendMessageLength( req, endmsg.c_str(), endmsg.length(), "ED" );
 		} else {
-			prt(("s7738 *** not sent sendMessageLength ED endmsg=[%s] req.hasReply=%d redoOnly=%d\n", 
-				endmsg.c_str(), req.hasReply, redoOnly ));
+			//prt(("s7738 *** not sent sendMessageLength ED endmsg=[%s] req.hasReply=%d redoOnly=%d\n", 
+			//	endmsg.c_str(), req.hasReply, redoOnly ));
 		}
-
-		for ( int i = 0; i < len; ++i ) {
-			delete pparam[i];
-		}
-
 	} else {
-		// other single cmd
-		if ( ! servobj->_isGate ) {
-    		if ( !redoOnly && isReadOrWriteCommand > 0 ) { // write related commands, store in wallog
-    			if ( 0 == strncasecmp( mesg, "update", 6 ) || 0 == strncasecmp( mesg, "delete", 6 ) ) {
-    				JagDBServer::logCommand( req.session, mesg, msglen, 1 );
-    			} else if ( 0 == strncasecmp( mesg, "insert", 6 ) ) {
-    				JagDBServer::logCommand( req.session, mesg, msglen, 2 );
-    			} else {
-    				JagDBServer::logCommand( req.session, mesg, msglen, 0 );
-    			}
-    
-    		}
-		}
-
+		// single cmd (not batch insert)
 		JagParser parser( (void*)servobj );
 		JagParseParam pparam( &parser );
-		// prt(("s4072 parseCommand mesg=[%s]\n", mesg ));
 		if ( parser.parseCommand( jpa, mesg, &pparam, reterr ) ) {
 			if ( JAG_SHOWSVER_OP == pparam.opcode ) {
-				// show version cmd
 				char brand[32];
 				char hellobuf[128];
-				sprintf(brand, JAG_BRAND );
+				sprintf(brand, "jaguar" );
 				brand[0] = toupper( brand[0] );
 				sprintf( hellobuf, "%s Server %s", brand, servobj->_version.c_str() );
 				rc = sendMessage( req, hellobuf, "OK");  // SG: Server Greeting
-				servobj->_taskMap->removeKey( taskID );
 				sendMessage( req, "_END_[T=20|E=]", "ED");  // SG: Server Greeting
 				return 1;
-			} else {
-				// other cmds
-				// rc = JagDBServer::processCmd( req, servobj, mesg, pparam, reterr, threadQueryTime, threadSchemaTime );
-				// prt(("s9304 done processCmd mesg=[%s] rc=%d\n", mesg, rc ));
-			}
+			} 
 
-			// prt(("s02939 _isGate=%d\n", servobj->_isGate ));
-			if ( servobj->_isGate ) {
-					// prt(("pparam.opcode=%d\n", pparam.opcode ));
+    		if ( ! servobj->_isGate ) {
+        		if ( !redoOnly && isReadOrWriteCommand == JAG_WRITE_SQL ) { // write related commands, store in wallog
+					if ( JAG_INSERT_OP == pparam.opcode ) {
+        				servobj->logCommand(&pparam, req.session, mesg, msglen, 2 );
+					} else if ( JAG_UPDATE_OP == pparam.opcode || JAG_DELETE_OP == pparam.opcode ) {
+        				servobj->logCommand(&pparam, req.session, mesg, msglen, 1 );
+					} else if ( JAG_FINSERT_OP == pparam.opcode || JAG_CINSERT_OP == pparam.opcode ) {
+        				servobj->logCommand(&pparam, req.session, mesg, msglen, 2 );
+					} else {
+						// other commands (e.g. scheme changes) have no logs
+					}
+        		}
+
+				prt(("s40813 processCmd mesg=[%s]\n", mesg ));
+				rc = JagDBServer::processCmd( req, servobj, mesg, pparam, reterr, threadQueryTime, threadSchemaTime );
+				prt(("s40813 processCmd mesg=[%s] rc=%d\n", mesg, rc ));
+    			if ( reterr.size()< 1 && req.dorep && req.syncDataCenter && 0 == req.session->replicateType ) {
+    				JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
+    				servobj->synchToOtherDataCenters( mesg, sucsync, req );
+    				jaguar_mutex_unlock ( &g_datacentermutex );
+    			}
+
+    		} else {
+			        // servobj->_isGate 
 					if ( JAG_SELECT_OP == pparam.opcode || JAG_GETFILE_OP == pparam.opcode || JAG_COUNT_OP == pparam.opcode ||
 						 JAG_INNERJOIN_OP == pparam.opcode || JAG_LEFTJOIN_OP == pparam.opcode || JAG_RIGHTJOIN_OP == pparam.opcode ||
 						 JAG_FULLJOIN_OP == pparam.opcode ) {
-						//prt(("s0281 jaguar_mutex_lock g_datacentermutex\n" ));
+
     					JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
-						//prt(("s0282 synchFromOtherDataCenters mesg=[%s]\n", mesg ));
     					rc = servobj->synchFromOtherDataCenters( req, mesg, pparam );
-						//prt(("s0282 synchFromOtherDataCenters mesg=[%s] done rc=%d\n", mesg, rc ));
     					jaguar_mutex_unlock ( &g_datacentermutex );						
-						// sendMessageLength( req, err.c_str(), err.length(), "OK" );
 					} else {
-						//prt(("s9302 doing processCmd mesg=[%s] ... \n", mesg ));
 						rc = JagDBServer::processCmd( req, servobj, mesg, pparam, reterr, threadQueryTime, threadSchemaTime );
-						//prt(("s9304 done processCmd mesg=[%s] rc=%d reterr=[%s]\n", mesg, rc, reterr.c_str() ));
-						//prt(("s7391 reterr.size()=%d req.dorep=%d req.syncDataCenter=%d req.session->replicateType=%d\n",
-								 // reterr.size(), req.dorep, req.syncDataCenter, req.session->replicateType ));
     					if ( reterr.size() < 1 && req.dorep && req.syncDataCenter && 0 == req.session->replicateType ) {
-							//prt(("s0395 gate non-select op [%s] ...\n", mesg ));
     						JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
     						servobj->synchToOtherDataCenters( mesg, sucsync, req );
     						jaguar_mutex_unlock ( &g_datacentermutex );
     					}
 					}
-			} else {
-				// prt(("s4081 processCmd mesg=[%s]\n", mesg ));
-				rc = JagDBServer::processCmd( req, servobj, mesg, pparam, reterr, threadQueryTime, threadSchemaTime );
-				raydebug( stdout, JAG_LOG_HIGH, "s9304 done [%s] rc=%d\n", mesg, rc );
-    			if ( reterr.size()< 1 && req.dorep && req.syncDataCenter && 0 == req.session->replicateType ) {
-					//raydebug( stdout, JAG_LOG_HIGH, "s0395 NON-gate non-select op ...\n" );
-    				JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
-    				servobj->synchToOtherDataCenters( mesg, sucsync, req );
-    				jaguar_mutex_unlock ( &g_datacentermutex );
-    			}
-			}
-
-
+			} 
+			
 			// send endmsg: -111 is X1, when select sent one record data, no more endmsg
 			// send endmsg if not X1 ( one line select )
 			if ( -111 != rc && req.hasReply && !redoOnly ) { 
-				// prt(("s5029 rc=%d req.hasReply=%d redoOnly=%d mesg=[%s]\n", rc, req.hasReply, redoOnly, mesg ));
-				
+				prt(("s72620 rc not -111 hasReply not redoonly\n"));
 				// check timestamp to see if need to update schema for client SC
 				if ( !req.session->origserv && threadSchemaTime < g_lastSchemaTime ) {
-					// prt(("s0393 sendMapInfo _cschema ...\n" ));
+					prt(("s2022838 sendMapInfo() ...\n"));
 					servobj->sendMapInfo( "_cschema", req );
 					//servobj->sendMapInfo( "_cdefval", req );
-					// prt(("s0393 sendMapInfo _cschema done ...\n" ));
 					threadSchemaTime = g_lastSchemaTime;
+					prt(("s2022838 sendMapInfo() done\n"));
 				}
+
 				// check timestamp to see if need to update host list for client HL
 				if ( !req.session->origserv && threadHostTime < g_lastHostTime ) {
-					// prt(("s0393 sendHostInfo _chost ...\n" ));
+					prt(("s202011 sendHostInfo()...\n"));
 					servobj->sendHostInfo( "_chost", req );
-					// prt(("s0393 sendHostInfo _chost done\n" ));
 					threadHostTime = g_lastHostTime;
+					prt(("s202011 sendHostInfo() done\n"));
 				}
 				
-				Jstr resstr = "ED", endmsg = Jstr("_END_[T=20|E=");
+				Jstr resstr, endmsg;
 				if ( sucsync ) endmsg = Jstr("_END_[T=777|E=");
-				// prt(("s7721 reterr=[%s]\n", reterr.c_str() ));
+				else endmsg = Jstr("_END_[T=20|E=");
+
 				if ( reterr.length() > 0 ) {
 					endmsg += reterr;
 					resstr = "ER";
+				} else {
+					resstr = "ED";
 				}
+
 				endmsg += Jstr("|]");
-				// prt(("s0293 sendMessageLength endmsg=[%s] ...\n",  endmsg.c_str() ));
+				prt(("s09239 sendMessageLength endmsg=[%s] [%s] ...\n",  endmsg.c_str(), resstr.c_str() ));
 				sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
-				// prt(("s0239 sendMessageLength endmsg=[%s] done\n",  endmsg.c_str() ));
+				prt(("s02239 sendMessageLength endmsg=[%s] [%s] done\n",  endmsg.c_str(), resstr.c_str() ));
 			} else {
 				// prt(("s7378 no sendMessageLength req.hasReply=%d redoOnly=%d ************** \n", req.hasReply, redoOnly ));
-				// Jstr resstr = "ED", endmsg = Jstr("_END_[T=20|E=");
-				// sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
 			}
 		} else {
-			//prt(("E8383 parse error mesg=[%s] reterr=[%s]\n", mesg, reterr.c_str() ));
-			if ( req.hasReply && !redoOnly ) {
-				// Jstr resstr = "ER", endmsg = Jstr("_END_[T=20|E=E3018 Syntax error: ");
+			// parsing param got error
+			prt(("E8383 parse error mesg=[%s] reterr=[%s]\n", mesg, reterr.c_str() ));
+			if ( req.hasReply && !redoOnly )  {
 				Jstr resstr = "ER", endmsg = Jstr("_END_[T=20|E=");
-				// endmsg += Jstr(mesg) + " ";
 				endmsg += reterr + Jstr("|]");
-				// prt(("s02939 sendMessageLength endmsg=[%s] ...\n",  endmsg.c_str() ));
+				prt(("s0249 sendMessageLength endmsg=[%s] [%s] ...\n",  endmsg.c_str(), resstr.c_str() ));
 				sendMessageLength( req, endmsg.c_str(), endmsg.length(), resstr.c_str() );
-				// prt(("s02939 sendMessageLength endmsg=[%s] done\n",  endmsg.c_str() ));
+				prt(("s0249 sendMessageLength endmsg=[%s] [%s] done\n",  endmsg.c_str(), resstr.c_str() ));
 			}
 		}
+
 	}
-	
-	// removeTask
-	servobj->_taskMap->removeKey( taskID );
 	
 	return 1;
 }
 
 // static
 // Process commands in one thread
-abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const char *cmd, 
-								 JagParseParam &parseParam, Jstr &reterr, abaxint threadQueryTime, 
-								 abaxint &threadSchemaTime )
+jagint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const char *cmd, 
+								 JagParseParam &parseParam, Jstr &reterr, jagint threadQueryTime, 
+								 jagint &threadSchemaTime )
 {
-	// prt(("s4839 processCmd cmd=[%s] reterr=[%s] parseParam.opcode=%d ...\n", cmd, reterr.c_str(), parseParam.opcode ));
+	prt(("s480839 processCmd cmd=[%s] reterr=[%s] parseParam.opcode=%d ...\n", cmd, reterr.c_str(), parseParam.opcode ));
+
 	reterr = "";
 	if ( JAG_SELECT_OP != parseParam.opcode ) {
 		servobj->_dbLogger->logmsg( req, "DML", cmd );
 	}
 
 	bool rc;	
-	abaxint cnt = 0;
-	int insertCode = 0;
+	jagint cnt = 0;
 	JagCfg *cfg = servobj->_cfg;
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
-	// prt(("s3392 got getTableIndexSchema\n" ));
+	prt(("s3392 got getTableIndexSchema\n" ));
 	Jstr errmsg, dbtable, rowFilter; 
 	Jstr dbname = makeLowerString(req.session->dbname);
 	JagIndex *pindex = NULL;
@@ -865,7 +810,6 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 	if ( JAG_SELECT_OP == parseParam.opcode || JAG_INSERTSELECT_OP == parseParam.opcode 
 		 || JAG_GETFILE_OP == parseParam.opcode ) {
 
-
 		prt(("s3728 parseParam.isSelectConst()=%d\n", parseParam.isSelectConst() ));
 		if (  parseParam.isSelectConst() ) {
 			 servobj->processSelectConstData( req, &parseParam );
@@ -883,25 +827,24 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			if ( parseParam.objectVec[pos].indexName.length() > 0 ) {
 				// known index
 				pindex = servobj->_objectLock->readLockIndex( parseParam.opcode, parseParam.objectVec[pos].dbName, 
-							tabName, parseParam.objectVec[pos].indexName,
-					tableschema, indexschema, req.session->replicateType, 0 );
+															  tabName, parseParam.objectVec[pos].indexName,
+															  req.session->replicateType, 0 );
 					dbidx = parseParam.objectVec[pos].dbName;
 					idxName = parseParam.objectVec[pos].indexName;
 			} else {
 				// table object or index object
 				ptab = servobj->_objectLock->readLockTable( parseParam.opcode, parseParam.objectVec[pos].dbName, 
-							parseParam.objectVec[pos].tableName, req.session->replicateType, 0 );
-				// prt(("8829 readLockTable ptab=%0x\n", ptab ));
+															parseParam.objectVec[pos].tableName, req.session->replicateType, 0 );
 				if ( !ptab ) {
 					pindex = servobj->_objectLock->readLockIndex( parseParam.opcode, parseParam.objectVec[pos].dbName, 
-								tabName, parseParam.objectVec[pos].tableName,
-						tableschema, indexschema, req.session->replicateType, 0 );
+															      tabName, parseParam.objectVec[pos].tableName,
+																  req.session->replicateType, 0 );
 						dbidx = parseParam.objectVec[pos].dbName;
 						idxName = parseParam.objectVec[pos].tableName;
 					if ( !pindex ) {
 						pindex = servobj->_objectLock->readLockIndex( parseParam.opcode, parseParam.objectVec[pos].colName, 
-									tabName, parseParam.objectVec[pos].tableName,
-							tableschema, indexschema, req.session->replicateType, 0 );
+																	  tabName, parseParam.objectVec[pos].tableName,
+																	  req.session->replicateType, 0 );
 						dbidx = parseParam.objectVec[pos].colName;
 						idxName = parseParam.objectVec[pos].tableName;
 					}
@@ -920,47 +863,48 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 				if ( parseParam.objectVec[pos].indexName.size() > 0 ) {
 					reterr += Jstr(".") + parseParam.objectVec[pos].indexName;
 				}
-				//prt(("s3009 reterr=[%s]\n", reterr.c_str() ));
 				return 0;
 			}
 		
 			if ( ptab ) {
 				// table to select ...
 				rc = checkUserCommandPermission( servobj, &ptab->_tableRecord, req, parseParam, 0, rowFilter, errmsg );
-				//prt(("s3044 checkUserCommandPermission parseParam.opcode=%d rc=%d\n", parseParam.opcode, rc ));
 				if ( rc ) {
-					Jstr newcmd;
 					if ( rowFilter.size() > 0 ) {
 						parseParam.resetSelectWhere( rowFilter );
-						//prt(("s4031 parseParam.selectWhereCluase=[%s]\n", parseParam.selectWhereClause.c_str() ));
 						parseParam.setSelectWhere();
-						newcmd = parseParam.formSelectSQL();
+						Jstr newcmd = parseParam.formSelectSQL();
 						cmd = newcmd.c_str();
-						//prt(("s4708 formSelectSQL cmd=[%s]\n", cmd ));
 					} else {
-						//prt(("s3208 rowFilter.size <= 0 \n" ));
 					}
-					//prt(("s4820 ptab->select cmd=[%s]\n", cmd ));
+
+					prt(("s442228 ptab->select ...\n"));
+					if ( parseParam.exportType == JAG_EXPORT ) {
+						Jstr dbtab = dbname + "." + parseParam.objectVec[pos].tableName;
+						Jstr dirpath = jaguarHome() + "/export/" + dbtab;
+						JagFileMgr::rmdir( dirpath );
+						raydebug( stdout, JAG_LOG_LOW, "s22028 rmdir %s\n", dirpath.s() );
+					}
+
 					cnt = ptab->select( jda, cmd, req, &parseParam, errmsg, true, pos );
-					//prt(("s2873 ptab->select cnt=%d\n", cnt ));
+					// export is processed in select
+					prt(("s442228 ptab->select done cnt=%d ...\n", cnt ));
 				} else {
 					cnt = -1;
 				}
 
 				servobj->_objectLock->readUnlockTable( parseParam.opcode, parseParam.objectVec[pos].dbName, 
-					parseParam.objectVec[pos].tableName, req.session->replicateType, 0 );
-					// prt(("select cnt=%d cmd=[%s]\n", cnt, cmd ));
+													   parseParam.objectVec[pos].tableName, req.session->replicateType, 0 );
 			} else if ( pindex ) {
 				rc = checkUserCommandPermission( servobj, &pindex->_indexRecord, req, parseParam, 0, rowFilter, errmsg );
-				//prt(("s3044 checkUserCommandPermission parseParam.opcode=%d rc=%d\n", parseParam.opcode, rc ));
 				if ( rc ) {
 					cnt = pindex->select( jda, cmd, req, &parseParam, errmsg, true, pos );
 				} else {
 					cnt = -1;
 				}
 
-				servobj->_objectLock->readUnlockIndex( parseParam.opcode, dbidx, tabName, idxName,
-					tableschema, indexschema, req.session->replicateType, 0 );
+				servobj->_objectLock->readUnlockIndex( parseParam.opcode, dbidx, tabName, idxName, 
+													   req.session->replicateType, 0 );
 			}
 
 			if ( cnt == -1 ) {
@@ -971,20 +915,17 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 				++ servobj->numSelects;
 			}
 
-			raydebug( stdout, JAG_LOG_HIGH, "s2239 cnt=%d req.session->sessionBroken=%d\n", cnt, (int)req.session->sessionBroken );
 			//raydebug( stdout, JAG_LOG_LOW, "s2239 cnt=%d req.session->sessionBroken=%d\n", cnt, (int)req.session->sessionBroken );
-			//prt(("s3744 parseParam->opcode=%d\n", parseParam.opcode ));
-			// prt(("s3744 parseParam->hasCountAll=%d cnt=%d\n", parseParam.hasCountAll, cnt ));
 			if (  cnt > 0 && !req.session->sessionBroken ) {
 				if ( jda ) {
-					// in processcmd send data back to client
-					//prt(("s8284 send regular data ...\n" ));
+					prt(("s33673 sendDataToClient cnt=%d ...\n", cnt ));
 					jda->sendDataToClient( cnt, req );
 				}
-			}	
+			} else {
+				prt(("s33674 NO sendDataToClient cnt=%d \n", cnt ));
+			}
 
 			if ( !req.session->sessionBroken && parseParam._lineFile && parseParam._lineFile->size() > 0 ) {
-				prt(("s8283 send linefile string ...\n" ));
 				sendValueData( parseParam, req  );
 			} 
 
@@ -994,26 +935,26 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 	} else if ( JAG_UPDATE_OP == parseParam.opcode ) {
 		rc = checkUserCommandPermission( servobj, NULL, req, parseParam, 0, rowFilter, reterr );
 		if ( rc ) {
-			ptab = servobj->_objectLock->readLockTable( parseParam.opcode, dbname, parseParam.objectVec[0].tableName,
-				req.session->replicateType, 0 );
+			ptab = servobj->_objectLock->writeLockTable( parseParam.opcode, dbname, parseParam.objectVec[0].tableName,
+														tableschema, req.session->replicateType, 0 );
 			if ( !ptab ) {
 				reterr = "E4283 Update can only been applied to tables";
 			} else {
 				Jstr dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
-				servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
-				cnt = ptab->update( req, &parseParam, errmsg, insertCode );
-				servobj->_objectLock->readUnlockTable( parseParam.opcode, dbname, 
-					parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
-				servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
+				cnt = ptab->update( req, &parseParam, errmsg );
+				prt(("s888811 update cnt=%d\n", cnt ));
+
+				servobj->_objectLock->writeUnlockTable( parseParam.opcode, dbname, 
+														parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
 			}
 	
 			// prt(("s3389 JAG_UPDATE_OP cnt=%d errmsg=[%s]\n", cnt, errmsg.c_str() ));
 			if ( ! servobj->_isGate ) {
     			if ( 0 == cnt && reterr.size() < 1 ) {
     				if ( servobj->_totalClusterNumber > 1 && servobj->_curClusterNumber < (servobj->_totalClusterNumber -1) ) {
-    					reterr = "E3028 update error";
+    					reterr = "E3028 server update error";
     				} else {
-    					reterr = "E3208 update error";
+    					reterr = "E3209 server update error";
     					// prt(("s0393 logerr [%s]\n", reterr.c_str() ));
     					servobj->_dbLogger->logerr( req, reterr, cmd );
     				}
@@ -1028,40 +969,41 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
     			} else {
     				reterr= "";
     				++ servobj->numUpdates;
-    				// prt(("s2229 numUpdates=%d\n", (abaxint)servobj->numUpdates ));
+    				// prt(("s2229 numUpdates=%d\n", (jagint)servobj->numUpdates ));
     			}
 			} else {
     			reterr= "";
 			}
+
 			cnt = 100;  // temp fix
 			req.syncDataCenter = true;
 		} else {
 			// no permission for update
 		}
 	} else if ( JAG_DELETE_OP == parseParam.opcode ) {
-		// prt(("s3088 JAG_DELETE_OP checkUserCommandPermission ...\n" ));
+		prt(("s41828 JAG_DELETE_OP\n"));
 		rc = checkUserCommandPermission( servobj, NULL, req, parseParam, 0, rowFilter, reterr );
-		// prt(("s3088 JAG_DELETE_OP checkUserCommandPermission rc=%d\n", rc ));
 		if ( rc ) {
-			ptab = servobj->_objectLock->readLockTable( parseParam.opcode, dbname, parseParam.objectVec[0].tableName,
-				req.session->replicateType, 0 );
+			ptab = servobj->_objectLock->writeLockTable( parseParam.opcode, dbname, parseParam.objectVec[0].tableName,
+													tableschema, req.session->replicateType, 0 );
 			if ( !ptab ) {
 				reterr = "E0238 Delete can only be applied to tables";
 			} else {
+
                 Jstr dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
-                servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
                 cnt = ptab->remove( req, &parseParam, errmsg );
-                servobj->_objectLock->readUnlockTable( parseParam.opcode, dbname, 
-					parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
-				servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
+				prt(("s888811 remove cnt=%d\n", cnt ));
+
+                servobj->_objectLock->writeUnlockTable( parseParam.opcode, dbname, 
+													   parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
 			}
 
 			if ( ! servobj->_isGate ) {
     			if ( 0 == cnt && reterr.size() < 1 ) {
     				if ( servobj->_totalClusterNumber > 1 && servobj->_curClusterNumber < (servobj->_totalClusterNumber -1) ) {
-    					reterr = "E3772 delete error";
+    					reterr = "E37702 server delete error";
     				} else {
-    					reterr = "E3773 delete error";
+    					reterr = "E37703 server delete error";
     					servobj->_dbLogger->logerr( req, reterr, cmd );
     				}
     			} else if ( cnt < 0 ) {
@@ -1086,26 +1028,26 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 			cnt = 100;  // temp fix
 		}
 	} else if ( JAG_COUNT_OP == parseParam.opcode ) {
-		Jstr dbidx, tabName, idxName; abaxint keyCheckerCnt = 0;
+		Jstr dbidx, tabName, idxName; 
 		if ( parseParam.objectVec[0].indexName.length() > 0 ) {
 			// known index
 			pindex = servobj->_objectLock->readLockIndex( parseParam.opcode, dbname, tabName, parseParam.objectVec[0].indexName,
-					tableschema, indexschema, req.session->replicateType, 0 );
+														  req.session->replicateType, 0 );
 			dbidx = dbname;
 			idxName = parseParam.objectVec[0].indexName;
 		} else {
 				// table object or index object
 				ptab = servobj->_objectLock->readLockTable( parseParam.opcode, dbname, parseParam.objectVec[0].tableName,
-					req.session->replicateType, 0 );
+															req.session->replicateType, 0 );
 				if ( !ptab ) {
 					pindex = servobj->_objectLock->readLockIndex( parseParam.opcode, dbname, tabName, parseParam.objectVec[0].tableName,
-						tableschema, indexschema, req.session->replicateType, 0 );
+																  req.session->replicateType, 0 );
 					dbidx = dbname;
 					idxName = parseParam.objectVec[0].tableName;
 					if ( !pindex ) {
 						pindex = servobj->_objectLock->readLockIndex( parseParam.opcode, 
-									parseParam.objectVec[0].colName, tabName, parseParam.objectVec[0].tableName,
-							tableschema, indexschema, req.session->replicateType, 0 );
+																	  parseParam.objectVec[0].colName, tabName, parseParam.objectVec[0].tableName,
+																	  req.session->replicateType, 0 );
 						dbidx = parseParam.objectVec[0].colName;
 						idxName = parseParam.objectVec[0].tableName;
 					}
@@ -1129,7 +1071,8 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		if ( ptab ) {
 				rc = checkUserCommandPermission( servobj, &ptab->_tableRecord, req, parseParam, 0, rowFilter, errmsg );
 				if ( rc ) {
-					cnt = ptab->count( cmd, req, &parseParam, errmsg, keyCheckerCnt );
+					cnt = ptab->getCount( cmd, req, &parseParam, errmsg );
+					//raydebug( stdout, JAG_LOG_LOW, "s40298 count=%d ...\n", cnt );
 				} else {
 					cnt = -1;
 				}
@@ -1138,12 +1081,11 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		} else if ( pindex ) {
 				rc = checkUserCommandPermission( servobj, &pindex->_indexRecord, req, parseParam, 0, rowFilter, errmsg );
 				if ( rc ) {
-					cnt = pindex->count( cmd, req, &parseParam, errmsg, keyCheckerCnt );
+					cnt = pindex->getCount( cmd, req, &parseParam, errmsg );
 				} else {
 					cnt = -1;
 				}
-				servobj->_objectLock->readUnlockIndex( parseParam.opcode, dbidx, tabName, idxName,
-					tableschema, indexschema, req.session->replicateType, 0 );
+				servobj->_objectLock->readUnlockIndex( parseParam.opcode, dbidx, tabName, idxName, req.session->replicateType, 0 );
 		}
 
 		if ( cnt == -1 ) {
@@ -1156,13 +1098,12 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		}
 		
 		if ( cnt >= 0 ) {
-			prt(("selectcount type=%d %s keychecker=%lld diskarray=%lld\n", 
-				req.session->replicateType, parseParam.objectVec[0].tableName.c_str(), keyCheckerCnt, cnt));
+			prt(("selectcount type=%d %s cnt=%lld \n", 
+				req.session->replicateType, parseParam.objectVec[0].tableName.c_str(), cnt));
 		}
 			
 		// for testing use only, no need for production
-		servobj->objectCountTesting( parseParam );
-	} else if ( isJoin( parseParam.opcode ) ) {
+	} else if ( parseParam.isJoin() ) {
 		if ( !strcasestrskipquote( cmd, "count(*)" ) ) {
 			rc = joinObjects( req, servobj, &parseParam, reterr );
 		}
@@ -1195,8 +1136,8 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		else noGood( req, servobj, parseParam );
 	} else if ( JAG_CREATEINDEX_OP == parseParam.opcode ) {
 		rc = checkUserCommandPermission( servobj, NULL, req, parseParam, 0, rowFilter, reterr );
-		if ( rc ) rc = createIndex( req, servobj, dbname, &parseParam, ptab, pindex, reterr, threadQueryTime );		
-		else noGood( req, servobj, parseParam );
+		if ( rc ) { rc = createIndex( req, servobj, dbname, &parseParam, ptab, pindex, reterr, threadQueryTime ); }
+		else noGood( req, servobj, parseParam ); // if checkUserCommandPermission fails
 	} else if ( JAG_ALTER_OP == parseParam.opcode ) {
 		rc = checkUserCommandPermission( servobj, NULL, req, parseParam, 0, rowFilter, reterr );
 		if ( rc ) rc = renameColumn( req, servobj, dbname, &parseParam, reterr, threadQueryTime, threadSchemaTime );	
@@ -1209,15 +1150,10 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		rc = checkUserCommandPermission( servobj, NULL, req, parseParam, 0, rowFilter, reterr );
 		if ( rc ) rc = dropIndex( req, servobj, dbname, &parseParam, reterr, threadQueryTime );
    	} else if ( JAG_TRUNCATE_OP == parseParam.opcode ) {
-		//prt(("s3938 JAG_TRUNCATE_OP\n" ));
 		rc = checkUserCommandPermission( servobj, NULL, req, parseParam, 0, rowFilter, reterr );
 		if ( rc ) rc = truncateTable( req, servobj, dbname, &parseParam, reterr, threadQueryTime );
 		else noGood( req, servobj, parseParam );
    	} else if ( JAG_GRANT_OP == parseParam.opcode ) {
-		/**
-		prt(("s3044 JAG_GRANT_OP perm=[%s] obj=[%s] user=[%s] where=[%s] ..\n", 
-				parseParam.grantPerm.c_str(), parseParam.grantObj.c_str(), parseParam.grantUser.c_str(), parseParam.grantWhere.c_str()  ));
-		**/
 		grantPerm( req, servobj, parseParam, threadQueryTime );
    	} else if ( JAG_REVOKE_OP == parseParam.opcode ) {
 		// prt(("s3049 JAG_REVOKE_OP ..\n" ));
@@ -1227,11 +1163,6 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		showPerm( req, servobj, parseParam, threadQueryTime );
 		// methods to describe/show info
 	} else if ( JAG_DESCRIBE_OP == parseParam.opcode ) {
-		/***
-		prt(("s2291 JAG_DESCRIBE_OP parseParam.objectVec[0].indexName=[%s]\n",
-			 parseParam.objectVec[0].indexName.c_str() ));
-		 ***/
-
 		if ( parseParam.objectVec[0].indexName.length() > 0 ) {
 			describeIndex( parseParam, req, servobj, indexschema, parseParam.objectVec[0].dbName, 
 							parseParam.objectVec[0].indexName, reterr );
@@ -1262,29 +1193,31 @@ abaxint JagDBServer::processCmd( JagRequest &req, JagDBServer *servobj, const ch
 		if ( tableschema->existAttr ( dbtable ) ) {
 			describeTable( JAG_TABLE_TYPE, req, servobj, ptab, tableschema, dbtable, parseParam, 1 );
 		} else {
-			reterr = "Table " + dbtable + " does not exist";
+			reterr = "Table " + dbtable + " not found";
 		}
 	} else if ( JAG_SHOW_CREATE_CHAIN_OP == parseParam.opcode ) {
 		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		if ( tableschema->existAttr ( dbtable ) ) {
 			describeTable( JAG_CHAINTABLE_TYPE, req, servobj, ptab, tableschema, dbtable, parseParam, 1 );
 		} else {
-			reterr = "Chain " + dbtable + " does not exist";
+			reterr = "Chain " + dbtable + " not found";
 		}
 	} else if ( JAG_EXEC_DESC_OP == parseParam.opcode ) {
 		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		if ( tableschema->existAttr ( dbtable ) ) {
 			_describeTable( req, ptab, servobj, dbtable, 0 );
 		} else {
-			reterr = "Table " + dbtable + " does not exist";
+			reterr = "Table " + dbtable + " not found";
 		}
-	} else if ( JAG_EXEC_PKEY_OP == parseParam.opcode ) {
+		/***
+	} else if ( JAG_EXEC_PKEY_OP == parseParam.opcode ) { // not used
 		Jstr dbtable = dbname + "." + parseParam.objectVec[0].tableName;
 		if ( tableschema->existAttr ( dbtable ) ) {
 			_describeTable( req, ptab, servobj, dbtable, 1 );
 		} else {
-			reterr = "Table " + dbtable + " does not exist";
+			reterr = "Table " + dbtable + " not found";
 		}
+		***/
 	} else if ( JAG_SHOWUSER_OP == parseParam.opcode ) {
 		showUsers( req, servobj );
 	} else if ( JAG_SHOWDB_OP == parseParam.opcode ) {
@@ -1334,7 +1267,7 @@ void JagDBServer::sig_hup(int sig)
 {
 	// printf("sig_hup called, should reread cfg...\n");
 	// raydebug( stdout, JAG_LOG_LOW, "Server received SIGHUP, cfg and userdb refresh ...\n");
-	// JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	// JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	g_receivedSignal = SIGHUP;
 	/***
 	if ( _cfg ) {
@@ -1353,13 +1286,13 @@ void JagDBServer::sig_hup(int sig)
 	***/
 	// raydebug( stdout, JAG_LOG_LOW, "Server received SIGHUP, cfg/userDB refresh done\n");
 	raydebug( stdout, JAG_LOG_LOW, "Server received SIGHUP, ignored.\n");
-	// jaguar_mutex_unlock ( &g_dbmutex );
+	// jaguar_mutex_unlock ( &g_dbschemamutex );
 }
 
 // method to check non standard command is valid or not
 // may append more commands later
 // return 0: for error
-int JagDBServer::checkNonStandardCommandValidation( const char *mesg )
+int JagDBServer::isValidInternalCommand( const char *mesg )
 {	
 	if ( 0 == strncmp( mesg, "_noop", 5 ) ) return JAG_SCMD_NOOP;
 	else if ( 0 == strncmp( mesg, "_cschema", 8 ) ) return JAG_SCMD_CSCHEMA;
@@ -1391,10 +1324,13 @@ int JagDBServer::checkNonStandardCommandValidation( const char *mesg )
 	else if ( 0 == strncmp( mesg, "_ex_proclocalbackup", 19 ) ) return JAG_SCMD_EXPROCLOCALBACKUP;
 	else if ( 0 == strncmp( mesg, "_ex_procremotebackup", 20 ) ) return JAG_SCMD_EXPROCREMOTEBACKUP;
 	else if ( 0 == strncmp( mesg, "_ex_restorefromremote", 21 ) ) return JAG_SCMD_EXRESTOREFROMREMOTE;
-	else if ( 0 == strncmp( mesg, "_ex_repairocheck", 16 ) ) return JAG_SCMD_EXREPAIRCHECK;
-	else if ( 0 == strncmp( mesg, "_ex_repairobject", 16 ) ) return JAG_SCMD_EXREPAIROBJECT;
+	else if ( 0 == strncmp( mesg, "_ex_addclust_migrate", 20 ) ) return JAG_SCMD_EXADDCLUSTER_MIGRATE;
+	else if ( 0 == strncmp( mesg, "_ex_addclust_migrcontinue", 25 ) ) return JAG_SCMD_EXADDCLUSTER_MIGRATE_CONTINUE;
+	else if ( 0 == strncmp( mesg, "_ex_addclustr_mig_complete", 26 ) ) return JAG_SCMD_EXADDCLUSTER_MIGRATE_COMPLETE;
 	else if ( 0 == strncmp( mesg, "_ex_addcluster", 14 ) ) return JAG_SCMD_EXADDCLUSTER;
-	else if ( 0 == strncmp( mesg, "_ex_shutdown", 12 ) ) return JAG_SCMD_EXSHUTDOWN;
+	else if ( 0 == strncmp( mesg, "_ex_importtable", 15 ) ) return JAG_SCMD_IMPORTTABLE;
+	else if ( 0 == strncmp( mesg, "_ex_truncatetable", 17 ) ) return JAG_SCMD_TRUNCATETABLE;
+	else if ( 0 == strncmp( mesg, "_exe_shutdown", 13 ) ) return JAG_SCMD_EXSHUTDOWN;
 	else if ( 0 == strncmp( mesg, "_getpubkey", 10 ) ) return JAG_SCMD_GETPUBKEY;
 	// more commands to be added
 	else return 0;
@@ -1403,7 +1339,7 @@ int JagDBServer::checkNonStandardCommandValidation( const char *mesg )
 // method to check is simple command or not
 // may append more commands later
 // returns 0 for false (not simple commands)
-int JagDBServer::checkSimpleCommandValidation( const char *mesg )
+int JagDBServer::isSimpleCommand( const char *mesg )
 {	
 	if ( 0 == strncmp( mesg, "?", 1 ) || 0 == strncmp( mesg, "help", 4 )  ) return JAG_RCMD_HELP;
 	else if ( 0 == strncmp( mesg, "use ", 4 ) ) return JAG_RCMD_USE;
@@ -1419,48 +1355,34 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 {
 	pthread_detach ( pthread_self() );
  	JagPass *ptr = (JagPass*)passptr;
-	JagSession session( g_dtimeout );
  	JAGSOCK sock = ptr->sock;
-	JagDBServer  *servobj = (JagDBServer*)ptr->servobj;
-	session.sock = sock;
-	session.servobj = servobj;
-	session.ip = ptr->ip;
 
-	raydebug( stdout, JAG_LOG_HIGH, "Client IP: %s\n", session.ip.c_str() );
-
- 	int 	rc, simplerc, breakcode;
- 	char  	save, *pmesg, *saveptr, *tok, *p;
-	char    brand[32];
-	char	hellobuf[128];
-	abaxint 	threadSchemaTime = 0, threadHostTime = g_lastHostTime, threadQueryTime = 0, len, len2, clen;
-	abaxint cnt = 1;
+ 	int 	rc, simplerc;
+ 	char  	*pmesg, *p;
+	jagint 	threadSchemaTime = 0, threadHostTime = g_lastHostTime, threadQueryTime = 0, len;
+	jagint cnt = 1;
 
  	int  authed = 0;
  
-	sprintf(brand, JAG_BRAND );
-	brand[0] = toupper( brand[0] );
+	JagSession session;
+	session.sock = sock;
+	session.servobj = (JagDBServer*)ptr->servobj;
+	session.ip = ptr->ip;
+	session.active = 0;
+	raydebug( stdout, JAG_LOG_HIGH, "Client IP: %s\n", session.ip.c_str() );
 
-	// signal( SIGHUP, SIG_IGN ); 
-	// signal( SIGUSR1, catch_sig_usr1 );
-
-	// prt(("s9359 %lld server: in thread sock=%d passptr=%0x ptr=%0x session=%0x...\n", pthread_self(), sock, passptr, ptr, &session ));
-	#ifdef CHECK_LATENCY
-		JagClock clock; 
-	#endif
-
-   	// pthread_t  threadmo;
-	session.active = 1;
+	JagDBServer  *servobj = (JagDBServer*)ptr->servobj;
 	++ servobj->_activeClients; 
-	// prt(("s4480 client enters, _activeClients=%d\n", (abaxint)servobj->_activeClients ));
 
-	char rephdr[4];
-	rephdr[3] = '\0';
-	int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
- 	char hdr[hdrsz+1];
- 	char hdr2[hdrsz+1];
-	char *newbuf = NULL;
-	char *newbuf2 = NULL;
-	char sqlhdr[JAG_SOCK_SQL_HDR_LEN+1];
+	char *sbuf = (char*)jagmalloc(SERVER_SOCKET_BUFFER_BYTES+1);
+	char 	rephdr[4]; rephdr[3] = '\0';
+	int 	hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
+ 	char 	hdr[hdrsz+1];
+ 	char 	hdr2[hdrsz+1];
+	char 	*newbuf = NULL;
+	char 	*newbuf2 = NULL;
+	char 	sqlhdr[JAG_SOCK_SQL_HDR_LEN+1];
+
     for(;;)
     {
 		if ( ( cnt % 100000 ) == 0 ) { jagmalloc_trim( 0 ); }
@@ -1468,9 +1390,14 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 		// get new command and uncompress it if needed
 		JagRequest req;
 		req.session = &session;
-		// prt(("s3288 recvData from %s ...\n", session.ip.c_str() ));
-		len = recvData( sock, hdr, newbuf );
-		//prt(("s9310 recv() pid=%lld sock=%d len=%d hdr=[%s] newbuf=[%.200s] ...\n", pthread_self(), sock, len, hdr, newbuf ));
+
+		session.active = 0;
+		sbuf[0] = '\0';
+		len = recvMessageInBuf( sock, hdr, newbuf, sbuf, SERVER_SOCKET_BUFFER_BYTES );
+		session.active = 1;
+		// is newbuf is Not null, use newbuf, otherwise use sbuf
+		prt(("s92110 recvMessage() len=%d hdr=[%s] newbuf=[%.300s] sbuf=[%.300s] ...\n", len, hdr, newbuf, sbuf ));
+		// If receives no data, it is close of socket by client
 		if ( len <= 0 ) {
 			if ( session.uid == "admin" ) {
 				if ( session.exclusiveLogin ) {
@@ -1479,9 +1406,9 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 				}
 			}
 
+			// disconnecting ...
 			if ( newbuf ) { free( newbuf ); }
 			if ( newbuf2 ) { free( newbuf2 ); }
-			breakcode = 1;
 			-- servobj->_connections;
 
 			if ( ! session.origserv && 0 == session.replicateType ) {
@@ -1491,15 +1418,20 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 					// servobj->reconnectDataCenter( session.ip );
 				}
 			}
+
+			if ( ! session.origserv ) {
+				servobj->_clientSocketMap.removeKey( sock );
+			}
 			break;
 		}
+
 		++cnt;
 		getXmitSQLHdr( hdr, sqlhdr );
-		//prt(("s3809 receved sqlhdr=[%s]\n", sqlhdr ));
+		prt(("s3809 receved sqlhdr=[%s]\n", sqlhdr ));
 
 		struct timeval now;
 		gettimeofday( &now, NULL );
-		threadQueryTime = now.tv_sec * (abaxint)1000000 + now.tv_usec;
+		threadQueryTime = now.tv_sec * (jagint)1000000 + now.tv_usec;
 
 		// if recv heartbeat, ignore
 		if ( hdr[hdrsz-3] == 'H' && hdr[hdrsz-2] == 'B' ) {
@@ -1524,7 +1456,6 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 		}
 
 		// if from GATE to HOST, then req.norep = true; ie, req.dorep = false
-		// if ( JAG_DATACENTER_GATE == req.session->dcfrom && JAG_DATACENTER_HOST == JAG_DATACENTER_GATE == req.session->dcto ) {
 		// prt(("s2038 req.session->dcfrom=%d req.session->dcto=%d\n", req.session->dcfrom, req.session->dcto ));
 		if ( JAG_DATACENTER_GATE == req.session->dcfrom && JAG_DATACENTER_HOST == req.session->dcto ) {
 			req.dorep = false;
@@ -1537,294 +1468,101 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 			// prt(("s7739 hdr=[%s] req.dorep = true GATE->GATE/HOST->*\n", hdr ));
 		}
 
-		pmesg = newbuf;
+		if ( newbuf ) { pmesg = newbuf; } else { pmesg = sbuf; }
+
 		Jstr us;
 		if ( req.doCompress ) {
-			JagFastCompress::uncompress( newbuf, len, us );
+			if ( newbuf ) {
+				JagFastCompress::uncompress( newbuf, len, us );
+			} else {
+				JagFastCompress::uncompress( sbuf, len, us );
+			}
 			pmesg = (char*)us.c_str();
 			len = us.length();
 		}
 	
-		if ( 0 ) {
-		    prt(("s3828 %lld server: fromip=[%s] recover=%d replicateType=%d sock=%d msg=(%.200s) batchReply=%d len=%d\n", 
+		// debug
+		#if 0
+		prt(("s3828 %lld server: fromip=[%s] recover=%d replicateType=%d sock=%d msg=(%.200s) batchReply=%d len=%d\n", 
 	  	        THREADID, session.ip.c_str(), session.drecoverConn, session.replicateType, sock, pmesg, req.batchReply, len ));
-		}
+		#endif
 
-		while ( *pmesg == ' ' ) ++pmesg;
+		while ( *pmesg == ' ' || *pmesg == '\t' ) ++pmesg;
+		/*** not auth msg
 		if ( strncmp(pmesg, "auth", 4 ) && *pmesg != '_' ) {
-			raydebug( stdout, JAG_LOG_HIGH, "%s\n", pmesg );
+			raydebug( stdout, JAG_LOG_HIGH, "s00000 %s\n", pmesg );
 		}
-
-		simplerc = checkSimpleCommandValidation( pmesg );
+		***/
 		
 		// begin process message
 		// first, check and process non standard server command
-		if ( *pmesg == '_' && 0 != strncmp( pmesg, "_show", 5 ) 
-		     && 0 != strncmp( pmesg, "_desc", 5 ) 
-		     && 0 != strncmp( pmesg, "_pkey", 5 ) 
-			 ) {
+		if ( *pmesg == '_' && 0 != strncmp( pmesg, "_show", 5 ) && 0 != strncmp( pmesg, "_desc", 5 ) ) {
 			// non standard message, generated by program
-			rc = checkNonStandardCommandValidation( pmesg );
+			rc = isValidInternalCommand( pmesg ); // "_xxx" commands
 			if ( !rc ) {
 				prt(("E7845 invalid non standard server command [%s]\n", pmesg));
 				sendMessage( req, "_END_[T=10|E=Error non standard server command]", "ER" );			
 			} else {
 				if ( ! authed && JAG_SCMD_GETPUBKEY != rc ) {
-					// printf("s8003 %lld user not authed close\n", pthread_self() );
+					prt(("s8003 %lld user not authed close\n", pthread_self() ));
 					sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
-					breakcode = 5;
 					break;
 				}
-				if ( JAG_SCMD_NOOP == rc ) {
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_CSCHEMA == rc ) {
-					servobj->sendMapInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-					/***
-				} else if ( JAG_SCMD_CDEFVAL == rc ) {
-					servobj->sendMapInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-					***/
-				} else if ( JAG_SCMD_CHOST == rc ) {
-					servobj->sendHostInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_CRECOVER == rc ) {
-					servobj->cleanRecovery( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_CHECKDELTA == rc ) {
-					servobj->checkDeltaFiles( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_BFILETRANSFER == rc ) {
-					JagStrSplit sp( pmesg, '|', true );
-					if ( sp.length() >= 4 ) {
-						int fpos = atoi(sp[1].c_str());
-						if ( fpos < 10 ) {
-							servobj->recoveryFileReceiver( pmesg, req );
-						} else if ( fpos >= 10 && fpos < 20 ) {
-							servobj->walFileReceiver( pmesg, req );
-						}
-					}
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_ABFILETRANSFER == rc ) {
-					servobj->recoveryFileReceiver( pmesg, req );
-					servobj->_addClusterFlag = 1;
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_JOINDATAREQUEST == rc ) {
-					servobj->joinRequestSend( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );					
-				} else if ( JAG_SCMD_OPINFO == rc ) {
-					servobj->sendOpInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_COPYDATA == rc ) {
-					servobj->doCopyData( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_REFRESHACL == rc ) {
-					servobj->doRefreshACL( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_REQSCHEMAFROMDC == rc ) {
-					servobj->sendSchemaToDataCenter( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_UNPACKSCHINFO == rc ) {
-					servobj->unpackSchemaInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_ASKDATAFROMDC == rc ) {
-					servobj->askDataFromDC( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_PREPAREDATAFROMDC == rc ) {
-					servobj->prepareDataFromDC( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_DOLOCALBACKUP == rc ) {
-					servobj->doLocalBackup( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_DOREMOTEBACKUP == rc ) {
-					servobj->doRemoteBackup( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_DORESTOREREMOTE == rc ) {				
-					servobj->doRestoreRemote( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONDBTAB == rc ) {
-					servobj->dbtabInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONINFO == rc ) {
-					servobj->sendInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONRSINFO == rc ) {
-					servobj->sendResourceInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONCLUSTERINFO == rc ) {
-					servobj->sendClusterOpInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONHOSTS == rc ) {
-					servobj->sendHostsInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONBACKUPHOSTS == rc ) {
-					servobj->sendRemoteHostsInfo( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONLOCALSTAT == rc ) {
-					servobj->sendLocalStat6( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_MONCLUSTERSTAT == rc ) {
-					servobj->sendClusterStat6( pmesg, req );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				} else if ( JAG_SCMD_EXPROCLOCALBACKUP == rc ) {
-					// no _END_ ED sent, already sent in method
-					servobj->processLocalBackup( pmesg, req );
-				} else if ( JAG_SCMD_EXPROCREMOTEBACKUP == rc ) {
-					// no _END_ ED sent, already sent in method
-					servobj->processRemoteBackup( pmesg, req );
-				} else if ( JAG_SCMD_EXRESTOREFROMREMOTE == rc ) {
-					// no _END_ ED sent, already sent in method
-					servobj->processRestoreRemote( pmesg, req );
-				} else if ( JAG_SCMD_EXREPAIRCHECK == rc ) {
-					// no _END_ ED sent, already sent in method
-					servobj->repairCheck( pmesg, req );
-				} else if ( JAG_SCMD_EXREPAIROBJECT == rc ) {
-					// no _END_ ED sent, already sent in method
-					servobj->repairCheck( pmesg, req );
-				} else if ( JAG_SCMD_EXADDCLUSTER == rc ) {
-					// no _END_ ED sent, already sent in method
-					servobj->addCluster( pmesg, req );
-				} else if ( JAG_SCMD_EXSHUTDOWN == rc ) {
-					// no _END_ ED sent, already sent in method
-					servobj->shutDown( pmesg, req );
-				} else if ( JAG_SCMD_GETPUBKEY == rc ) {
-					// no _END_ ED sent, already sent in method
-					sendMessage( req, servobj->_publicKey.c_str(), "DS" );
-					sendMessage( req, "_END_[T=30|E=]", "ED" );
-				}				
+				processInternalCommands( rc, req, servobj, pmesg );
 			}
 			continue;
 		}
-		
+
+		simplerc = isSimpleCommand( pmesg ); // help helo auth use etc
 		// for simple request and new connection requests
 		if ( simplerc > 0 ) {
-			if ( ! authed && JAG_RCMD_AUTH != simplerc ) {
-				// printf("s8003 %lld user not authed close\n", pthread_self() );
-				sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
-				breakcode = 5;
+			int prc = processSimpleCommand( simplerc, req, pmesg, servobj, authed );
+			if ( prc < 0 ) {
 				break;
+			} else {
+				continue;
 			}
-			if ( JAG_RCMD_HELP == simplerc ) {
-				tok = strtok_r( pmesg, " ;", &saveptr );
-				tok = strtok_r( NULL, " ;", &saveptr );
-				if ( tok ) { helpTopic( req, tok ); } 
-				else { helpPrintTopic( req ); }
-				sendMessage( req, "_END_[T=10|E=]", "ED" );				
-			} else if ( JAG_RCMD_USE == simplerc ) {
-				// no _END_ ED sent, already sent in method
-				useDB( req, servobj, pmesg, saveptr );
-			} else if ( JAG_RCMD_AUTH == simplerc ) {
-				if ( doAuth( req, servobj, pmesg, saveptr, session ) ) {
-					// serv->serv still needs the insert pool when built init index from table
-					authed = 1; 
-					struct timeval now;
-					gettimeofday( &now, NULL );
-					session.connectionTime = now.tv_sec * (abaxint)1000000 + now.tv_usec;
-				} else {
-					req.session->active = 0;
-					breakcode = 2;
-					break;
-				}		
-			} else if ( JAG_RCMD_QUIT == simplerc ) {
-				noLinger( req );
-				breakcode = 3;
-				if ( session.exclusiveLogin ) {
-					servobj->_exclusiveAdmins = 0;
-				}
-				break;
-			} else if ( JAG_RCMD_HELLO == simplerc ) {
-				// pthread_t sessid = pthread_self();
-				// sprintf( pmesg, "%s Server %s %lld\r\n", brand, servobj->_version.c_str(), sessid );
-				// sprintf( hellobuf, "%s Server %s %lld", brand, servobj->_version.c_str(), sessid );
-				sprintf( hellobuf, "%s Server %s", brand, servobj->_version.c_str() );
-				// rc = sendMessage( req, pmesg, "OK");  // SG: Server Greeting
-				rc = sendMessage( req, hellobuf, "OK");  // SG: Server Greeting
-				sendMessage( req, "_END_[T=20|E=]", "ED" );
-				session.fromShell = 1;
-			}
+		}
+
+		if ( 0 == strcmp(pmesg, "YYY") || 0 == strcmp(sqlhdr, "SIG") ) {
+			prt(("s2029228 received YYY, ignore, continue sqlhdr=[%s]\n", sqlhdr ));
 			continue;
 		}
 		
 		// check session dbname and session authed, must be valid for both, otherwise, break connection
 		if ( req.session->dbname.size() < 1 ) {
 			int ok = 0;
-			if ( 0 == strncmp( pmesg, "show", 3 ) ) {
+			if ( 0 == strncmp( pmesg, "show", 4 ) ) {
 				p = pmesg;
-				while ( *p != ' ' && *p != '\0' ) ++p;
+				while ( *p != ' ' && *p != '\t' && *p != '\0' ) ++p;
 				if ( *p != '\0' ) {
-					while ( *p == ' ' ) ++p;
-					if ( tok && strncmp( p, "database", 8 ) == 0 ) {
-						ok = 1;
-					}
+					while ( *p == ' ' || *p == '\t' ) ++p;
+					if ( strncmp( p, "database", 8 ) == 0 ) { ok = 1; }
 				}
 			}
 			
 			if ( ! ok ) {
 				sendMessage( req, "_END_[T=20|E=No database selected]", "ER" );
-				breakcode = 4;
 				break;
 			}
 		}
 
 		if ( ! authed ) {
-			// printf("s8003 %lld user not authed close\n", pthread_self() );
 			sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
-			breakcode = 5;
 			break;
 		}
-		/**
-		if ( ! servobj->_serverReady && ! simplerc && *pmesg != '_' ) {
-			sendMessage( req, "_END_[T=10|E=Server not ready, please try later]", "ER" );			
-			continue;
-		}
-		**/
+
 		if ( ! servobj->_newdcTrasmittingFin && ! req.session->datacenter && ! req.session->samePID ) {
 			sendMessage( req, "_END_[T=20|E=Server not ready for datacenter to accept regular commands, please try later]", "ER" );
 			continue;
 		}
 
-
 		// if session.drecoverConn is 1 ( for delta recover commands )
 		// need to split first and second several bytes for timediff and batchReply
 		// logformat "timediff;isBatch;sqlmsg;...releat;..."
 		if ( 1 == session.drecoverConn ) {
-			char *p, *q;
-			int tdlen = 0;
-
-			p = q = pmesg;
-			while ( *q != ';' && *q != '\0' ) ++q;
-			if ( *q == '\0' ) {
-				prt(("ERROR tdiff hdr for delta recover\n"));
-				abort();
-			}
-			tdlen = q-p;
-			session.timediff = rayatoi( p, tdlen );
-
-			pmesg = q+1; // ;pmesg
-			len -= ( tdlen+1 );
-			++q;
-			p = q;
-			while ( *q != ';' && *q != '\0' ) ++q;
-			if ( *q == '\0' ) {
-				prt(("ERROR isBatch hdr for delta recover\n"));
-				abort();
-			}
-			tdlen = q-p;
-			req.batchReply = rayatoi( p, tdlen );
-
-
-			pmesg = q+1;
-			len -= ( tdlen+1 );
+			rePositionMessage( req, pmesg, len );
 		}
-		
-		/***
-		if ( req.batchReply && session.drecoverConn == 0 && !session.origserv ) {
-			JagStrSplitWithQuote sspp( pmesg, ';' );
-			if ( session.replicateType == 0 ) g_icnt1 += sspp.length();
-			else if ( session.replicateType == 1 ) g_icnt2 += sspp.length();
-			else if ( session.replicateType == 2 ) g_icnt3 += sspp.length();
-		}
-		***/
 		
 		// get recovery flag
 		// if yes, for non recover connections, store cmd to regSp log files for write cmd, otherwise continue to do cmd
@@ -1832,85 +1570,71 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 		// if no, for non recover connections, continue regular process
 		// for recover connections, ignore and reject commands
 		int isReadOrWriteCommand = checkReadOrWriteCommand( pmesg );
-		if ( isReadOrWriteCommand > 0 ) {
-			JAG_BLURT jaguar_mutex_lock ( &g_flagmutex ); JAG_OVER;
+		//prt(("s20283 [%s] isReadOrWriteCommand=%d _restartRecover=%d\n", pmesg, isReadOrWriteCommand, (int)servobj->_restartRecover ));
+		if ( isReadOrWriteCommand == JAG_WRITE_SQL ) {
+			//prt(("s222988 is JAG_WRITE_SQL\n"));
+			// write commands
+			//JAG_BLURT jaguar_mutex_lock ( &g_flagmutex ); JAG_OVER;
 			if ( servobj->_restartRecover ) {
-				int rspec = 0;
-				if ( req.batchReply ) {
-					JagDBServer::regSplogCommand( req.session, pmesg, len, 2 );
-				} else if ( 0 == strncasecmp( pmesg, "update", 4 ) || 0 == strncasecmp( pmesg, "delete", 6 ) ) {
-					JagDBServer::regSplogCommand( req.session, pmesg, len, 1 );
+				//prt(("s202928 handleRestartRecover...\n"));
+				jaguar_mutex_lock ( &g_flagmutex ); JAG_OVER;
+				int recovrc = servobj->handleRestartRecover( req, pmesg, len, hdr2, newbuf, newbuf2 );
+				if ( 0 == recovrc ) {
+					continue;
 				} else {
-					JagDBServer::regSplogCommand( req.session, pmesg, len, 0 );
-					rspec = 1;
+					break;
 				}
-				jaguar_mutex_unlock ( &g_flagmutex );
-
-				int sprc = 1;
-				char cond[3] = { 'O', 'K', '\0' };
-				if ( 0 == session.drecoverConn && rspec == 1 ) {
-					if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
-						sprc = 0;
-					}
-	
-					if ( sprc == 1 && recvData( session.sock, hdr2, newbuf2 ) < 0 ) {
-						sprc = 0;
-					}
-				}
-
-				sendMessage( req, "_END_[T=779|E=]", "ED" );
-				
-				// receive three bytes of signal
-				if ( sprc == 1 && servobj->_faultToleranceCopy > 1 && session.drecoverConn == 0 ) {
-					// receive status bytes
-					int rsmode = 0;
-					rephdr[0] = rephdr[1] = rephdr[2] = 'N';		
-					if ( recvData( sock, hdr2, newbuf2 ) < 0 ) {
-						rephdr[session.replicateType] = 'Y';
-						rsmode = servobj->getReplicateStatusMode( rephdr, session.replicateType );
-						if ( !session.spCommandReject ) servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
-						if ( session.uid == "admin" ) {
-							if ( session.exclusiveLogin ) {
-								servobj->_exclusiveAdmins = 0;
-								raydebug( stdout, JAG_LOG_LOW, "Exclusive admin disconnected from %s\n", session.ip.c_str() );
-							}
-						}
-						if ( newbuf ) { free( newbuf ); }
-						if ( newbuf2 ) { free( newbuf2 ); }
-						breakcode = 6;
-						-- servobj->_connections;
-						break;
-					}
-					rephdr[0] = *newbuf2; rephdr[1] = *(newbuf2+1); rephdr[2] = *(newbuf2+2);
-					rsmode = servobj->getReplicateStatusMode( rephdr );
-					if ( !session.spCommandReject ) servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
-					sendMessage( req, "_END_[T=7799|E=]", "ED" );
-				}
-				continue;
+			} else {
+				//jaguar_mutex_unlock ( &g_flagmutex );
+				//prt(("s202928 NO handleRestartRecover continue...\n"));
 			}
-			jaguar_mutex_unlock ( &g_flagmutex );
+			// handleRestartRecover did jaguar_mutex_unlock
+		}  // end isReadOrWriteCommand == JAG_WRITE_SQL
+		else {
+			//prt(("s222988 is NOT JAG_WRITE_SQL\n"));
 		}
 
-		// prt(("processMultiCmd: %lld %.200s ...\n", THREADID, pmesg));
+
+		// add tasks	
+		jaguint taskID;
+		++ ( servobj->_taskID );
+		taskID =  servobj->_taskID;
+		addTask( taskID, req.session, pmesg );
+
+		prt(("processMultiSingleCmd: %.200s ...\n", pmesg));
 		try {
-			processMultiCmd( req, pmesg, len, servobj, threadSchemaTime, threadHostTime, threadQueryTime, false, isReadOrWriteCommand );
+			processMultiSingleCmd( req, pmesg, len, servobj, threadSchemaTime, threadHostTime, 
+								   threadQueryTime, false, isReadOrWriteCommand );
 		} catch ( const char *e ) {
-			raydebug( stdout, JAG_LOG_LOW, "processMultiCmd [%s] caught exception [%s]\n", pmesg, e );
+			raydebug( stdout, JAG_LOG_LOW, "processMultiSingleCmd [%s] caught exception [%s]\n", pmesg, e );
 		} catch ( ... ) {
-			raydebug( stdout, JAG_LOG_LOW, "processMultiCmd [%s] caught unknown exception\n", pmesg );
+			raydebug( stdout, JAG_LOG_LOW, "processMultiSingleCmd [%s] caught unknown exception\n", pmesg );
 		}
-		// prt(("after processMultiCmd %lld\n", THREADID));
+
+		servobj->_taskMap->removeKey( taskID );
 
 		// receive replicate infomation again, to make sure if delta command needs to be stored or not
 		// write related cmd need to be stored
-		if ( servobj->_faultToleranceCopy > 1 && isReadOrWriteCommand > 0 && session.drecoverConn == 0 ) {
-			// receive status bytes
-			int rsmode = 0;
+		//prt(("processMultiSingleCmd: %.200s done now take care sig3 bytes\n", pmesg));
+		//prt(("s233337 _faultToleranceCopy=%d session.drecoverConn=%d\n", servobj->_faultToleranceCopy, session.drecoverConn ));
+		if ( servobj->_faultToleranceCopy > 1 && isReadOrWriteCommand == JAG_WRITE_SQL && session.drecoverConn == 0 ) {
+			//prt(("s782207 _faultToleranceCopy>1 JAG_WRITE_SQL drecoverConn == 0 ... recvmessage...\n"));
 			rephdr[0] = rephdr[1] = rephdr[2] = 'N';
-			if ( recvData( sock, hdr2, newbuf2 ) < 0 ) {
+			int rsmode = 0;
+
+			//prt(("s929388 recvMessage() three sig3 ...\n"));
+			int rcr = recvMessage( sock, hdr2, newbuf2 );
+			//prt(("s929388 recvMessage() done newbuf2=[%s] rcr=%d ...\n", newbuf2, rcr ));
+
+			if ( rcr < 0 ) {
+				//prt(("s38763 recvMessage rc < 0 \n"));
 				rephdr[session.replicateType] = 'Y';
 				rsmode = servobj->getReplicateStatusMode( rephdr, session.replicateType );
-				if ( !session.spCommandReject ) servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
+
+				if ( !session.spCommandReject && rsmode > 0 ) {
+					servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
+				}
+
 				if ( session.uid == "admin" ) {
 					if ( session.exclusiveLogin ) {
 						servobj->_exclusiveAdmins = 0;
@@ -1920,28 +1644,32 @@ void *JagDBServer::oneClientThreadTask( void *passptr )
 
 				if ( newbuf ) { free( newbuf ); }
 				if ( newbuf2 ) { free( newbuf2 ); }
-				breakcode = 7;
 				-- servobj->_connections;
 				break;
 			}
-			rephdr[0] = *newbuf2; rephdr[1] = *(newbuf2+1); rephdr[2] = *(newbuf2+2);
-			rsmode = servobj->getReplicateStatusMode( rephdr );
-			if ( !session.spCommandReject ) servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
-			sendMessage( req, "_END_[T=77999|E=]", "ED" );
-		}
-    }
 
-	// servobj->_threadMap->removeKey( AbaxLong( pthread_self() ) );
+			//rephdr[0] = *newbuf2; rephdr[1] = *(newbuf2+1); rephdr[2] = *(newbuf2+2);
+			memcpy( rephdr, newbuf2, 3 );
+			rsmode = servobj->getReplicateStatusMode( rephdr );
+			if ( !session.spCommandReject && rsmode >0 ) {
+				//prt(("s233227 deltalogCommand rephdr=%s\n", rephdr ));
+				servobj->deltalogCommand( rsmode, &session, pmesg, req.batchReply );
+			} else {
+				//prt(("s233227 NO deltalogCommand rephdr=%s\n", rephdr ));
+			}
+
+			//prt(("s097273 req sendMessage ED JAG_WRITE_SQL \n"));
+			//sendMessage( req, "_END_[T=77999|E=]", "ED" );
+		}
+    } // for ( ; ; )
+
 	session.active = 0;
-	--  servobj->_activeClients; 
-	// prt(("s4481 client quit, _activeClients=%d\n", (abaxint)servobj->_activeClients ));
+	-- servobj->_activeClients; 
 
    	jagclose(sock);
-	// prt(("s9999 closed sock ptr=%0x\n", ptr));
 	delete ptr;
-	// prt(("s9999 deleted ptr\n"));
 	jagmalloc_trim(0);
-	// prt(("s9999 malloc_trim(0)\n"));
+	free(sbuf);
    	return NULL;
 }
 
@@ -1992,8 +1720,8 @@ int JagDBServer::getReplicateStatusMode( char *pmesg, int replicateType )
 			}
 		}
 		// ask each server of pos1 and pos2 to see if them is up
-		rc1 = _dbConnector->broadCastSignal( "_noop", sp[pos1] );
-		rc2 = _dbConnector->broadCastSignal( "_noop", sp[pos2] );
+		rc1 = _dbConnector->broadcastSignal( "_noop", sp[pos1] );
+		rc2 = _dbConnector->broadcastSignal( "_noop", sp[pos2] );
 		// set correct bytes for pmesg
 		if ( 0 == replicateType ) {
 			if ( !rc1 ) *(pmesg+1) = 'N';
@@ -2032,18 +1760,18 @@ int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj,
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
 
-	bool found = false, found2 = false;
+	bool found1 = false, found2 = false;
 	Jstr dbtable = dbname + "." + parseParam->objectVec[0].tableName;
 	Jstr dbindex = dbname + "." + parseParam->objectVec[0].tableName + 
 							 "." + parseParam->objectVec[1].indexName;
 	parseParam->isMemTable = tableschema->isMemTable( dbtable );
-	found = indexschema->indexExist( dbname, parseParam );
+	found1 = indexschema->indexExist( dbname, parseParam );
 	found2 = indexschema->existAttr( dbindex );
-	if ( found || found2 ) {
+	if ( found1 || found2 ) {
 		return 0;
 	}
 
-	abaxint getpos;
+	jagint getpos;
 	Jstr errmsg;
 	Jstr dbcol;
 	Jstr defvalStr;
@@ -2145,29 +1873,28 @@ int JagDBServer::createIndexSchema( const JagRequest &req, JagDBServer *servobj,
 		parseParam->createAttrVec.append( createTemp );
 	}
 	parseParam->valueLength = vallen;
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
     int rc = indexschema->insert( parseParam, false );
-	jaguar_mutex_unlock ( &g_dbmutex );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
     if ( rc ) raydebug(stdout, JAG_LOG_LOW, "user [%s] create index [%s]\n", req.session->uid.c_str(), dbindex.c_str() );
-	//if ( schmap ) delete schmap;
-	//if ( checkmap ) delete checkmap;
-	// schmap = checkmap = NULL;
 	return rc;
 }
 
+// "import into db.tab" or "import into db.tab complete"
 int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname,
-	JagParseParam *parseParam, Jstr &reterr )
+							  JagParseParam *parseParam, Jstr &reterr )
 {
+	prt(("s111228 importTable ...\n"));
 	JagTable *ptab = NULL;
 	char cond[3] = { 'O', 'K', '\0' };
 	if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
-		// prt(("s3828 return 0\n"));
+		prt(("s3828 importTable return 0\n"));
 		return 0;
 	}
 	// waiting for signal; if NG, reject and return
  	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *newbuf = NULL;
-	if ( recvData( req.session->sock, hdr, newbuf ) < 0 || 
+	if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || 
 					*(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 		if ( newbuf ) free( newbuf );
 		// connection abort or not OK signal, reject
@@ -2179,19 +1906,22 @@ int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 
 	Jstr dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
 	Jstr scdbobj = dbtab + "." + intToStr( req.session->replicateType );
-	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
+	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) {
+		return 0;
+	}
+
 	Jstr dirpath = jaguarHome() + "/export/" + dbtab;
 	if ( parseParam->impComplete ) {
 		JagFileMgr::rmdir( dirpath );
-		// prt(("s3418 return 1\n"));
-		// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 		servobj->schemaChangeCommandSyncRemove( scdbobj );
 		return 1;
 	}
+
 	ptab = servobj->_objectLock->readLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
 		parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
-	Jstr host = "localhost", objname = dbtab + ".sql", fpath;
-	fpath = JagFileMgr::getFileFamily( dirpath, objname );
+
+	Jstr host = "localhost", objname = dbtab + ".sql";
+	// fpath = JagFileMgr::getFileFamily( dirpath, objname );
 	if ( servobj->_listenIP.size() > 0 ) { host = servobj->_listenIP; }
 	JaguarCPPClient pcli;
 	Jstr unixSocket = Jstr("/TOKEN=") + servobj->_servToken;
@@ -2202,28 +1932,27 @@ int JagDBServer::importTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 	}
 
 	// prt(("s5292 pcli.importLocalFileFamily(%s) ...\n", fpath.c_str() ));
-	servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbtab, req.session->replicateType, 1, ptab, NULL );
 	if ( ptab ) {	
 		servobj->_objectLock->readUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-			parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
+											   parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 	}
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 
+	//prt(("s222183 getFileFamily fpath=[%s]\n", fpath.s() ));
+	Jstr fpath = JagFileMgr::getFileFamily( dirpath, objname );
 	int rc = pcli.importLocalFileFamily( fpath );
-	// prt(("s5292 pcli.importLocalFileFamily(%s) done rc=%d ...\n", fpath.c_str(), rc ));
 	pcli.close();
 	if ( rc < 0 ) {
-		reterr = "Import file does not exist on server";
-		prt(("s4418 Import file does not exist on server 1\n"));
+		reterr = "Import file not found on server";
+		prt(("s4418 Import file not found on server 1\n"));
 	}
+	prt(("s1111028 importTable done\n"));
 	return (rc>=0);
 }
 
 void JagDBServer::init( JagCfg *cfg )
 {
-
-	Jstr jagdatahome = cfg->getJDBDataHOME( 0 );
+	Jstr jagdatahome = cfg->getJDBDataHOME( JAG_MAIN );
 
     Jstr sysdir = jagdatahome + "/system";
     Jstr newdir;
@@ -2232,14 +1961,14 @@ void JagDBServer::init( JagCfg *cfg )
     sysdir = jagdatahome + "/test";
    	jagmkdir( sysdir.c_str(), 0700 );
 	
-	jagdatahome = cfg->getJDBDataHOME( 1 );
+	jagdatahome = cfg->getJDBDataHOME( JAG_PREV );
 	sysdir = jagdatahome + "/system";
     jagmkdir( sysdir.c_str(), 0700 );
 
     sysdir = jagdatahome + "/test";
     jagmkdir( sysdir.c_str(), 0700 );
 	
-	jagdatahome = cfg->getJDBDataHOME( 2 );
+	jagdatahome = cfg->getJDBDataHOME( JAG_NEXT );
 	sysdir = jagdatahome + "/system";
     jagmkdir( sysdir.c_str(), 0700 );
 
@@ -2265,17 +1994,6 @@ void JagDBServer::init( JagCfg *cfg )
     jagmkdir( newdir.c_str(), 0700 );
 
 	Jstr cs;
-	/***
-	cs = cfg->getValue("STORAGE_TYPE", "HDD");
-	if ( cs == "SSD" ) {
-		_isSSD = 1;
-		raydebug( stdout, JAG_LOG_LOW, "STORAGE_TYPE is SSD\n" );
-	} else {
-		_isSSD = 0;
-		raydebug( stdout, JAG_LOG_LOW, "STORAGE_TYPE is HDD\n" );
-	}
-	***/
-
 	raydebug( stdout, JAG_LOG_LOW, "Jaguar start\n" );
 	cs = cfg->getValue("MEMORY_MODE", "high");
 	if ( cs == "high" || cs == "HIGH" ) {
@@ -2292,7 +2010,6 @@ void JagDBServer::helpPrintTopic( const JagRequest &req )
 {
 	Jstr str;
 	str += "You can enter the following commands:\n\n";
-
 
 	str += "help use;           (how to use databases)\n";
 	str += "help desc;          (how to describe tables)\n";
@@ -2335,8 +2052,6 @@ void JagDBServer::helpPrintTopic( const JagRequest &req )
 
 void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 {
-	// prt(("s3384 cmd=[%s]\n", cmd ));
-
 	Jstr str;
 	str += "\n";
 
@@ -2347,9 +2062,12 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "use userdb;\n";
 	} else if ( 0 == strncasecmp( cmd, "admin", 5 ) ) {
     		str += "createdb DBNAME;\n"; 
+    		str += "create database DBNAME;\n"; 
     		str += "dropdb [force] DBNAME;\n"; 
     		str += "createuser UID;\n"; 
+    		str += "create user UID;\n"; 
     		str += "createuser UID:PASSWORD;\n"; 
+    		str += "create user UID:PASSWORD;\n"; 
     		str += "dropuser UID;\n"; 
     		str += "showusers;\n"; 
     		str += "grant PERM1, PERM2, ... PERM on DB.TAB.COL to USER [where ...];\n"; 
@@ -2358,13 +2076,15 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
     		str += "\n"; 
     		str += "Example:\n";
     		str += "createdb mydb;\n";
+    		str += "create database mydb2;\n";
     		str += "dropdb mydb;\n";
     		str += "dropdb force mydb123;\n";
     		str += "createuser test;\n"; 
     		str += "  New user password: ******\n"; 
     		str += "  New user password again: ******\n"; 
-    		str += "createuser test:mypassword888;\n"; 
-    		str += "(Maximum length of user ID and password is 32 characters.\n";
+    		str += "createuser test:mypassword888000;\n"; 
+    		str += "create user test2:mypassword888888;\n"; 
+    		str += "(Maximum length of user ID and password is 32 characters.)\n";
     		str += "dropuser test;\n"; 
     		str += "grant all on all to test;\n";
     		str += "grant select, update, delete on all to test;\n";
@@ -2422,11 +2142,48 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
     		str += "jaguar> addcluster;\n"; 
     		str += "\n";
     		str += "Only the admin account can issue this command to add new servers.\n"; 
-    		str += "The admin account must login with exclusive mode, i.e., using \"-x yes\" in jag command.\n"; 
-    		str += "Before starting this operation, on the admin client host there must exist \n";
-    		str += "$JAGUAR_HOME/jaguar/conf/newcluster.conf which contains the IP addresses of new hosts on each line\n";
-    		str += "in the file. Once this file is ready and correct, the addcluster command will include and activate \n";
-    		str += "the new servers.\n";
+    		str += "The admin user must login to an existing host, connect to jaguardb with exclusive mode, i.e., \n";
+    		str += " using \"-x yes\" option in the jag command.\n"; 
+    		str += "Before starting this operation, on the host that the admin user is on, there must exist a file \n";
+    		str += "$JAGUAR_HOME/conf/newcluster.conf that contains the IP addresses of new hosts on each line\n";
+    		str += "in the file. DO NOT inclue existing hosts in the file newcluster.conf. Once this file is ready and correct, \n";
+    		str += " execute the addcluster command which will include and activate the new servers.\n";
+    		str += "\n";
+    		str += "Example:\n";
+    		str += "\n";
+    		str += "Suppose you have 192.168.1.10, 192.168.1.11, 192.168.1.12, 192.168.1.13 on your current cluster.\n";
+    		str += "You want to add a new cluster with new hosts: 192.168.1.14, 192.168.1.15, 192.168.1.16, 192.168.1.17 to the system.\n";
+    		str += "The following steps demonstrate the process to add the new cluster into the system:\n";
+    		str += "\n";
+    		str += "1. Provision the new hosts 192.168.1.14, 192.168.1.15, 192.168.1.16, 192.168.1.17 and install jaguardb on these hosts\n";
+    		str += "2. Configure the new cluster with new hosts 192.168.1.14, 192.168.1.15, 192.168.1.16, 192.168.1.17\n";
+    		str += "3. The new cluster is a blank cluster, with no database schema and table data\n";
+    		str += "4. Admin user should log in (or ssh) to a host in EXISTING cluster, e.g., 192.168.1.10\n";
+    		str += "5. Prepare the newcluster.conf file, with the IP addresses of the hosts on each line separately\n";
+    		str += "   In newcluster.conf file:\n";
+    		str += "   192.168.1.14\n";
+    		str += "   192.168.1.15\n";
+    		str += "   192.168.1.16\n";
+    		str += "   192.168.1.17\n";
+    		str += "\n";
+    		str += "6. Save the newcluster.conf file in $JAGUAR_HOME/conf/ directory\n";
+    		str += "7. Connect to local jaguardb server from the host that contains the newcluster.conf file\n";
+    		str += "       $JAGUAR_HOME/bin/jag -u admin -p <adminpassword> -h 192.168.1.10:8888 -x yes\n";
+    		str += "8. While connected to the jagaurdb, execute the addcluster command:\n";
+    		str += "       jaguardb> addcluster; \n";
+    		str += "\n";
+    		str += "Note:\n";
+    		str += "\n";
+    		str += "1. Never directly add new hosts in the file $JAGUAR_HOME/conf/cluster.conf manually\n";
+    		str += "2. Any plan to add a new cluster of hosts must implement the addcluster process described here\n";
+    		str += "3. Execute addcluster in the existing cluster, NOT in the new cluster\n";
+    		str += "4. It is recommended that existing clusters and new cluster contain large number of hosts. (dozens or hundreds)\n";
+    		str += "   For example, the existing cluster can have 30 hosts, and the new cluster can have 100 hosts.\n";
+    		str += "5. Make sure jaguardb is installed on all the hosts of the new cluster, and connectivity is good among all the hosts\n";
+    		str += "6. The server and client must have the same version, on all the hosts of existing clusters and the new cluster\n";
+    		str += "7. If the new cluster is setup with a new version of jaguardb, the old clusters most likely will need an upgrade\n";
+    		str += "8. After adding a new cluster, all hosts will have the same cluster.conf file\n";
+    		str += "9. Make sure REPLICATION factor is the same on all the hosts\n";
    	} else if (  0 == strncasecmp( cmd, "grant", 5 ) ) {
     		str += "jaguar> grant all on all to user;\n"; 
     		str += "jaguar> grant PERM1, PERM2, ... PERM on DB.TAB.COL to user;\n"; 
@@ -2513,13 +2270,16 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "show task;\n";
 	} else if ( 0 == strncasecmp( cmd, "create", 3 ) ) {
 		str += "create table [if not exists] TABLE ( key: KEY TYPE(size), ..., value: VALUE TYPE(size), ...  );\n";
-		str += "create table TABLE ( key: KEY TYPE(size), ..., value: VALUE TYPE(srid:ID,metrics:M), ...  );\n";
-		str += "create index INDEXNAEME on TABLE(COL1, COL2, ...[, value: COL,COL]);\n";
-		str += "create index INDEXNAEME on TABLE(key: COL1, COL2, ...[, value: COL,COL]);\n";
+		str += "create table [if not exists] TABLE ( key: KEY TYPE(size), ..., value: VALUE TYPE(srid:ID,metrics:M), ...  );\n";
+		str += "create index [if not exists] INDEXNAEME on TABLE(COL1, COL2, ...[, value: COL,COL]);\n";
+		str += "create index [if not exists] INDEXNAEME on TABLE(key: COL1, COL2, ...[, value: COL,COL]);\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "create table dept ( key: name char(32),  value: age int, b bit default b'0' );\n";
-		str += "create table log ( key: id bitint,  value: tm timestamp default current_timestmap on update current_timestmap );\n";
+		str += "create table log ( key: id bigint,  value: tm timestamp default current_timestamp);\n";
+		str += "create table log ( key: id bigint,  value: tm timestamp default current_timestamp on update current_timestamap );\n";
+		str += "create table log ( key: id bigint,  value: tn timestampnano default current_timestampnano );\n";
+		str += "create table log ( key: id bigint,  value: tn timestampnano default current_timestampnano on update current_timestampnano );\n";
 		str += "create table user ( key: name char(32),  value: age int, address char(128), rdate date );\n";
 		str += "create table sales ( key: name varchar(32), stime datetime, value: author varchar(32), id uuid );\n";
 		str += "create table message ( key: name varchar(32), value: msg text );\n";
@@ -2529,7 +2289,7 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "create table park ( key: id bigint, value: lake polygon(srid:wgs84), farm rectangle(srid:wgs84) );\n";
 		str += "create table tm ( key: id bigint, value: name char(32), range(datetime) );\n";
 		str += "create table pt ( key: id int, value: s linestring(srid:4326,metrics:5) );\n";
-		str += "create index addr_index on user( address );\n";
+		str += "create index if not exists addr_index on user( address );\n";
 		str += "create index addr_index on user( address, value: zipcode );\n";
 		str += "create index addr_index on user( key: address, value: zipcode, city );\n";
 	} else if ( 0 == strncasecmp( cmd, "insert", 3 ) ) {
@@ -2728,6 +2488,12 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    xmax(geom)              -- get the maximum x-coordinate of a shape with raster data\n";
 		str += "    ymax(geom)              -- get the maximum y-coordinate of a shape with raster data\n";
 		str += "    zmax(geom)              -- get the maximum z-coordinate of a shape with raster data\n";
+		str += "    xminpoint(geom)         -- get the coordinates of minimum x-coordinate of a shape\n";
+		str += "    yminpoint(geom)         -- get the coordinates of minimum y-coordinate of a shape\n";
+		str += "    zminpoint(geom)         -- get the coordinates of minimum z-coordinate of a 3D shape\n";
+		str += "    xmaxpoint(geom)         -- get the coordinates of maximum x-coordinate of a shape\n";
+		str += "    ymaxpoint(geom)         -- get the coordinates of maximum y-coordinate of a shape\n";
+		str += "    zmaxpoint(geom)         -- get the coordinates of maximum z-coordinate of a 3D shape\n";
 		str += "    convexhull(geom)        -- get the convex hull of a shape with raster data\n";
 		str += "    centroid(geom)          -- get the centroid coordinates of a vector or raster shape\n";
 		str += "    volume(geom)            -- get the volume of a 3D shape\n";
@@ -2951,11 +2717,13 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "\n";
 	} else if ( 0 == strncasecmp( cmd, "shell", 5 ) ) {
 		str += "!command;\n";
+		str += "shell command;\n";
 		str += "Execute shell command";
 		str += "\n";
 		str += "Example:\n";
 		str += "!cat my.sql;\n";
-		str += "(The above command will cat my.sql file and display its content.)\n";
+		str += "shell ls -l /tmp;\n";
+		str += "(The above shell commands are executed.)\n";
 		str += "\n";
 	} else {
 		str += Jstr("Command not supported [") + cmd + "]\n";
@@ -3191,13 +2959,13 @@ void JagDBServer::showTask( const JagRequest &req, JagDBServer *servobj )
 	Jstr str;
 	char buf[1024];
 	const AbaxPair<AbaxLong,AbaxString> *arr = servobj->_taskMap->array();
-	abaxint len = servobj->_taskMap->arrayLength();
+	jagint len = servobj->_taskMap->arrayLength();
 	sprintf( buf, "%14s  %20s  %16s  %16s  %16s %s\n", "TaskID", "ThreadID", "User", "Database", "StartTime", "Command");
 	str += Jstr( buf );
 	sprintf( buf, "------------------------------------------------------------------------------------------------------------\n");
 	str += Jstr( buf );
 
-	for ( abaxint i = 0; i < len; ++i ) {
+	for ( jagint i = 0; i < len; ++i ) {
 		if ( ! servobj->_taskMap->isNull( i ) ) {
 			const AbaxPair<AbaxLong,AbaxString> &pair = arr[i];
 			JagStrSplit sp( pair.value.c_str(), '|' );
@@ -3307,11 +3075,14 @@ int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagD
 		spare4 =  *((*(record->columnVector))[i].spare+4);
 		//prt(("\ns5623 i=%d spare+4=[%c]\n", i, spare4 ));
 
-		if ( JAG_CREATE_DEFDATETIME == spare4 ||
-			 JAG_CREATE_DEFDATE == spare4 ) {
+		if ( JAG_CREATE_DEFDATETIME == spare4 || JAG_CREATE_DEFDATE == spare4 ) {
 			res += " DEFAULT CURRENT_TIMESTAMP";
+		} else if ( JAG_CREATE_DEFDATETIMENANO == spare4 ) {
+			res += " DEFAULT CURRENT_TIMESTAMPNANO";
 		} else if ( JAG_CREATE_DEFUPDATETIME == spare4 || JAG_CREATE_DEFUPDATE == spare4 ) {
 			res += " DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+		} else if ( JAG_CREATE_DEFUPDATETIMENANO == spare4 ) {
+			res += " DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMPNANO";
 		} else if ( JAG_CREATE_UPDATETIME == spare4 ||
 			*((*(record->columnVector))[i].spare+4) == JAG_CREATE_UPDDATE ) {
 			res += " ON UPDATE CURRENT_TIMESTAMP";
@@ -3322,7 +3093,7 @@ int JagDBServer::describeTable( int inObjType, const JagRequest &req, const JagD
 			if ( type == JAG_C_COL_TYPE_DBIT ) {
 				res += Jstr(" DEFAULT b") + defvalStr.c_str();
 			} else {
-				if ( *((*(record->columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM_CHAR ) {
+				if ( *((*(record->columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM[0] ) {
 					JagStrSplitWithQuote sp( defvalStr.c_str(), '|' );
 					res += Jstr(" DEFAULT ") + sp[sp.length()-1].c_str();
 				} else {
@@ -3478,6 +3249,12 @@ void JagDBServer::_describeTable( const JagRequest &req, JagTable *ptab, const J
 		} else if ( type == JAG_C_COL_TYPE_DMEDINT ) {
 			rec.addNameValue("DATA_TYPE", "4"); 
 			rec.addNameValue("TYPE_NAME", "INTEGER");
+		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO ) {
+			rec.addNameValue("DATA_TYPE", "98"); // time
+			rec.addNameValue("TYPE_NAME", "DATETIMENANO");
+		} else if ( type == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
+			rec.addNameValue("DATA_TYPE", "99"); // time
+			rec.addNameValue("TYPE_NAME", "TIMESTAMPNANO");
 		} else {
 			rec.addNameValue("DATA_TYPE", "12"); // varchar
 			rec.addNameValue("TYPE_NAME", "VARCHAR");
@@ -3507,7 +3284,7 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 {
 	Jstr tab = indexschema->getTableName( dbname, indexName );
 	if ( tab.size() < 1 ) {
-		reterr = Jstr("E2380 Index ") + indexName + " does not exist";
+		reterr = Jstr("E2380 table or index ") + indexName + " not found";
 		return;
 	}
 
@@ -3518,7 +3295,7 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 
 	// prt(("s2838 describeIndex dbtabidx=[%s]\n", dbtabidx.c_str() ));
 	if ( schemaText.size() < 1 ) {
-		reterr = Jstr("E2080 Index ") + indexName + " does not exist";
+		reterr = Jstr("E2080 Index ") + indexName + " not found";
 		return;
 	}
 
@@ -3540,6 +3317,7 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 	res += AbaxString("(\n");
 	res += AbaxString("  key:\n");
 	int sz = record.columnVector->size();
+	char spare4;
 	for (int i = 0; i < sz; i++) {
 		if ( ! pparam.detail ) {
 			if ( *((*(record.columnVector))[i].spare+6) == JAG_SUB_COL ) {
@@ -3568,22 +3346,27 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 
 		res += servobj->fillDescBuf( indexschema, (*(record.columnVector))[i], dbtabidx );
 
-		if ( *((*(record.columnVector))[i].spare+4) == JAG_CREATE_DEFDATETIME ||
-			 *((*(record.columnVector))[i].spare+4) == JAG_CREATE_DEFDATE ) {
+		spare4 = *((*(record.columnVector))[i].spare+4);
+
+		if ( spare4 == JAG_CREATE_DEFDATETIME || spare4 == JAG_CREATE_DEFDATE ) {
 			res += " DEFAULT CURRENT_TIMESTAMP";
-		} else if ( *((*(record.columnVector))[i].spare+4) == JAG_CREATE_DEFUPDATETIME ||
-					*((*(record.columnVector))[i].spare+4) == JAG_CREATE_DEFUPDATE ) {
+		} else if ( spare4 == JAG_CREATE_DEFDATETIMENANO ) {
+			res += " DEFAULT CURRENT_TIMESTAMPNANO";
+		} else if ( spare4 == JAG_CREATE_DEFUPDATETIME || spare4 == JAG_CREATE_DEFUPDATE ) {
 			res += " DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
-		} else if ( *((*(record.columnVector))[i].spare+4) == JAG_CREATE_UPDATETIME ||
-					*((*(record.columnVector))[i].spare+4) == JAG_CREATE_UPDDATE ) {
+		} else if ( spare4 == JAG_CREATE_DEFUPDATETIMENANO ) {
+			res += " DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMPNANO";
+		} else if ( spare4 == JAG_CREATE_UPDATETIME || spare4 == JAG_CREATE_UPDDATE ) {
 			res += " ON UPDATE CURRENT_TIMESTAMP";
-		} else if ( *((*(record.columnVector))[i].spare+4) == JAG_CREATE_DEFINSERTVALUE ) {
+		} else if ( spare4 == JAG_CREATE_UPDATETIMENANO ) {
+			res += " ON UPDATE CURRENT_TIMESTAMPNANO";
+		} else if ( spare4 == JAG_CREATE_DEFINSERTVALUE ) {
 			defvalStr = "";
 			indexschema->getAttrDefVal( dbcol, defvalStr );
 			if ( type == JAG_C_COL_TYPE_DBIT ) {
 				res += Jstr(" DEFAULT b") + defvalStr.c_str();
 			} else {
-				if ( *((*(record.columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM_CHAR ) {
+				if ( *((*(record.columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM[0]  ) {
 					JagStrSplitWithQuote sp( defvalStr.c_str(), '|' );
 					res += Jstr(" DEFAULT ") + sp[sp.length()-1].c_str();
 				} else {
@@ -3609,13 +3392,13 @@ void JagDBServer::describeIndex( const JagParseParam &pparam, const JagRequest &
 
 // static Task for a thread
 // sequential
-void *JagDBServer::makeTableObjects( void *servptr )
+void *JagDBServer::makeTableObjects( void *servptr, bool doRestoreInserBufferMap )
 {
 	JagDBServer *servobj = (JagDBServer*)servptr;
 
 	AbaxString dbtab;
 	JagRequest req;
-	JagSession session( g_dtimeout );
+	JagSession session;
 	req.session = &session;
 	session.servobj = servobj;
 	time_t t1 = time(NULL);
@@ -3633,55 +3416,67 @@ void *JagDBServer::makeTableObjects( void *servptr )
 	req.session->replicateType = 0;
 	tableschema = servobj->_tableschema;
 	JagVector<AbaxString> *vec = servobj->_tableschema->getAllTablesOrIndexes( "", "" );
+	prt(("s1111028 replicate=%d vec.size=%d\n", req.session->replicateType,  vec->size() ));
 	for ( int i = 0; i < vec->size(); ++i ) {
 		dbtab = (*vec)[i];
 		JagStrSplit split(  dbtab.c_str(), '.' );
 		pparam.objectVec[0].dbName = split[0];
 		pparam.objectVec[0].tableName = split[1];
+		prt(("s222029 writeLockTable ...\n"));
 		ptab = servobj->_objectLock->writeLockTable( JAG_CREATETABLE_OP, pparam.objectVec[0].dbName, 
-			pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-		if ( ptab ) ptab->buildInitIndexlist();
+													 pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+		prt(("s222029 writeLockTable done ...\n"));
+		if ( ptab ) {
+			ptab->buildInitIndexlist();
+		}
+
 		if ( ptab ) servobj->_objectLock->writeUnlockTable( JAG_CREATETABLE_OP, pparam.objectVec[0].dbName, 
-						pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+															pparam.objectVec[0].tableName, req.session->replicateType, 0 );
 	}
-	delete vec;
+	if ( vec ) delete vec;
 
 	req.session->replicateType = 1;
 	tableschema = servobj->_prevtableschema;
 	vec = servobj->_prevtableschema->getAllTablesOrIndexes( "", "" );
+	prt(("s1111026 replicate=%d vec.size=%d\n", req.session->replicateType,  vec->size() ));
 	for ( int i = 0; i < vec->size(); ++i ) {
 		dbtab = (*vec)[i];
 		JagStrSplit split(  dbtab.c_str(), '.' );
 		pparam.objectVec[0].dbName = split[0];
 		pparam.objectVec[0].tableName = split[1];
 		ptab = servobj->_objectLock->writeLockTable( JAG_CREATETABLE_OP, pparam.objectVec[0].dbName, 
-			pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-		if ( ptab ) ptab->buildInitIndexlist();
+													 pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+		if ( ptab ) {
+			ptab->buildInitIndexlist();
+		}
 		if ( ptab ) servobj->_objectLock->writeUnlockTable( JAG_CREATETABLE_OP, pparam.objectVec[0].dbName, 
-						pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+						pparam.objectVec[0].tableName, req.session->replicateType, 0 );
 	}
 	delete vec;
 
 	req.session->replicateType = 2;
 	tableschema = servobj->_nexttableschema;
 	vec = servobj->_nexttableschema->getAllTablesOrIndexes( "", "" );
+	prt(("s1111024 replicate=%d vec.size=%d\n", req.session->replicateType,  vec->size() ));
 	for ( int i = 0; i < vec->size(); ++i ) {
 		dbtab = (*vec)[i];
 		JagStrSplit split(  dbtab.c_str(), '.' );
 		pparam.objectVec[0].dbName = split[0];
 		pparam.objectVec[0].tableName = split[1];
 		ptab = servobj->_objectLock->writeLockTable( JAG_CREATETABLE_OP, pparam.objectVec[0].dbName, 
-			pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-		if ( ptab ) ptab->buildInitIndexlist();
+													 pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+		if ( ptab ) {
+			ptab->buildInitIndexlist();
+		}
 		if ( ptab ) servobj->_objectLock->writeUnlockTable( JAG_CREATETABLE_OP, pparam.objectVec[0].dbName, 
-			pparam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+															pparam.objectVec[0].tableName, req.session->replicateType, 0 );
 	}
-	delete vec;
 
 	time_t  t2 = time(NULL);
 	int min = (t2-t1)/60;
 	int sec = (t2-t1) % 60;
 	raydebug( stdout, JAG_LOG_LOW, "Initialized all %d tables in %d minutes %d seconds\n", vec->size(), min, sec );
+	delete vec;
 
    	return NULL;
 }
@@ -3726,7 +3521,7 @@ Jstr JagDBServer::getLocalHostIP( JagDBServer *servobj, const Jstr &hostips )
 	JagNet::getLocalIPs( vec );
 	
 	//printf("s4931 local host IPs:\n");
-	//vec.printString();
+	//vec.prttring();
 	raydebug( stdout, JAG_LOG_HIGH, "Local Interface IPs [%s]\n", vec.asString().c_str() );
 
 	JagStrSplit sp( hostips, '|' );
@@ -3747,7 +3542,7 @@ Jstr JagDBServer::getLocalHostIP( JagDBServer *servobj, const Jstr &hostips )
 	return "";
 }
 
-Jstr JagDBServer::getBroadCastRecoverHosts( int replicateCopy )
+Jstr JagDBServer::getBroadcastRecoverHosts( int replicateCopy )
 {
 	Jstr hosts;
 	int pos1, pos2, pos3, pos4;
@@ -3789,7 +3584,7 @@ Jstr JagDBServer::getBroadCastRecoverHosts( int replicateCopy )
 		if ( pos4 >= 0 ) hosts += Jstr("|") + sp[pos4];
 	}
 
-	raydebug(stdout, JAG_LOG_LOW, "BroadCastRecoverHosts [%s]\n", hosts.c_str() );
+	raydebug(stdout, JAG_LOG_LOW, "broadcastRecoverHosts [%s]\n", hosts.c_str() );
 	return hosts;
 }	
 
@@ -3805,10 +3600,10 @@ void  JagDBServer::noLinger( const JagRequest &req )
 
 
 // object method: do initialization for server
-int JagDBServer::mainInit( int argc, char *argv[] )
+int JagDBServer::mainInit()
 {
-    int rc;
-    int len;
+    //int rc;
+    //int len;
 	AbaxString  ports;
 	AbaxString  cs;
 
@@ -3823,27 +3618,25 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 	// remove the blockindex-disk files
 	// removeAllBlockIndexInDisk();
 	JagRequest req;
-	JagSession session( g_dtimeout );
+	JagSession session;
 	req.session = &session;
 	session.replicateType = 0;
 	session.servobj = this;
-	refreshSchemaInfo( req, this, g_lastSchemaTime );
-	char *rp = getenv("DO_RECOVER");
+	//refreshSchemaInfo( req, this, g_lastSchemaTime );
+	refreshSchemaInfo( session.replicateType, this, g_lastSchemaTime );
+	//char *rp = getenv("DO_RECOVER");
 	char *rp2 = getenv("NEW_DATACENTER");
 
 	// recover un-flushed insert data
-	if ( rp ) {
+	if ( 1 ) {
 		raydebug(stdout, JAG_LOG_LOW, "begin recover wallog ...\n");
-		Jstr walpath = JagFileMgr::getLocalLogDir("cmd") + "/walactive.log";
-		recoverWalLog( walpath );
-		walpath = JagFileMgr::getLocalLogDir("cmd") + "/walbackup.log";
-		recoverWalLog( walpath );
-		raydebug(stdout, JAG_LOG_LOW, "end recover wallog\n");
+		recoverWalLog();
+		raydebug(stdout, JAG_LOG_LOW, "done recover wallog\n");
 	}
-	resetWalLog();
+	// resetWalLog(); // reopen
 
 	// recover un-flushed dinsert data
-	if ( rp ) {
+	if ( 1 ) {
 		raydebug(stdout, JAG_LOG_LOW, "begin recover dinsertlog ...\n");
 		Jstr dinpath = JagFileMgr::getLocalLogDir("delta") + "/dinsertactive.log";
 		recoverDinsertLog( dinpath );
@@ -3855,7 +3648,7 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 
 	// set recover flag, check to see if need to do drecover ( delta log recovery, if hard disk is ok )
 	// or do crecover ( tar copy file, if hard disk is brand new )
-	Jstr recoverCmd, bcasthosts = getBroadCastRecoverHosts( _faultToleranceCopy );
+	Jstr recoverCmd, bcasthosts = getBroadcastRecoverHosts( _faultToleranceCopy );
 	_crecoverFpath = "";
 	_prevcrecoverFpath = "";
 	_nextcrecoverFpath = "";
@@ -3863,12 +3656,12 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 	_prevwalrecoverFpath = "";
 	_nextwalrecoverFpath = "";
 
-	int isCrecover = 0;
+	//int isCrecover = 0;
 
 	// first broadcast crecover to get package
-	if ( rp ) {
+	if ( 1 ) {
 		// ask to do crecover
-		_dbConnector->broadCastSignal( "_serv_crecover", bcasthosts );
+		_dbConnector->broadcastSignal( "_serv_crecover", bcasthosts );
 		recoveryFromTransferredFile();
 		// wait for this socket to be ready to recv data from client
 		// then request delta data from neighbor
@@ -3938,26 +3731,23 @@ int JagDBServer::mainInit( int argc, char *argv[] )
 
 int JagDBServer::mainClose()
 {
-	pthread_mutex_destroy( &g_dbmutex );
+	pthread_mutex_destroy( &g_dbschemamutex );
 	pthread_mutex_destroy( &g_flagmutex );
 	pthread_mutex_destroy( &g_logmutex );
 	pthread_mutex_destroy( &g_dlogmutex );
 	pthread_mutex_destroy( &g_dinsertmutex );
 	pthread_mutex_destroy( &g_datacentermutex );
-	pthread_mutex_destroy( &g_selectmutex );
-
-	// thpool_destroy( _threadPool );
 }
 
 // object method: make thread groups
 int JagDBServer::makeThreadGroups( int threadGroups, int threadGroupNum )
 {
-	prt(("s4912 Begin makeThreadGroups grpnum=%lld thrdgrps=%lld ...\n", threadGroupNum, _threadGroups ));
+	prt(("s4912 Begin makeThreadGroups grpnum=%lld thrdgrps=%lld ...\n", threadGroupNum, threadGroups ));
 	this->_threadGroupNum = threadGroupNum;
 	pthread_t thr[threadGroups];
 	for ( int i = 0; i < threadGroups; ++i ) {
 		this->_groupSeq = i;
-    	jagpthread_create( &thr[i], NULL, threadGroupTask, (void*)this );
+    	jagpthread_create( &thr[i], NULL, oneThreadGroupTask, (void*)this );
     	pthread_detach( thr[i] );
 	}
 
@@ -3965,36 +3755,33 @@ int JagDBServer::makeThreadGroups( int threadGroups, int threadGroupNum )
 }
 
 // static method
-void* JagDBServer::threadGroupTask( void *servptr )
+void* JagDBServer::oneThreadGroupTask( void *servptr )
 {
 	JagDBServer *servobj = (JagDBServer*)servptr;
-	abaxint threadGroupNum = (abaxint)servobj->_threadGroupNum;
-	int grpSeq = (abaxint)servobj->_groupSeq;
-	JAGSOCK sock = servobj->_sock;
+	jagint 		threadGroupNum = (jagint)servobj->_threadGroupNum;
     struct sockaddr_in cliaddr;
-    socklen_t clilen;
-	JAGSOCK connfd;
-	int  	rc;
-	int     timeout = 600;
-	int     lasterrno = -1;
-	abaxint     toterrs = 0;
+    socklen_t 	clilen;
+	JAGSOCK 	connfd;
+	//int     	timeout = 600;
+	int     	lasterrno = -1;
+	jagint     	toterrs = 0;
 	
 	++ servobj->_activeThreadGroups;
 
-	// threadpool thpool = thpool_init( servobj->_threadGroupSize );
-    listen( servobj->_sock, 30);
+    listen( servobj->_sock, 300);
 
     for(;;) {
 		servobj->_dumfd = dup2( jagopen("/dev/null", O_RDONLY ), 0 );
-        clilen=sizeof(cliaddr);
+        clilen = sizeof(cliaddr);
 
 		memset(&cliaddr, 0, clilen );
         connfd = accept( servobj->_sock, (struct sockaddr *)&cliaddr, ( socklen_t* )&clilen);
-		timeout = 30;
+
 		#if 0
 		prt(("s9989 accept connfd=%d ip=[%s] errno=%d thrdGrpN=%d grpSeq=%d\n", 
-			connfd, inet_ntoa( cliaddr.sin_addr ), errno, threadGroupNum, grpSeq ));
+				connfd, inet_ntoa( cliaddr.sin_addr ), errno, threadGroupNum, grpSeq ));
 		#endif
+
 		if ( connfd < 0 ) {
 			if ( errno == lasterrno ) {
 				if ( toterrs < 10 ) {
@@ -4013,7 +3800,6 @@ void* JagDBServer::threadGroupTask( void *servptr )
 			jagsleep(3, JAG_SEC);
 			continue;
 		}
-		// prt(("s8042 accept connfd=%d client=[%s]\n", connfd, inet_ntoa( cliaddr.sin_addr ) ));
 
 		if ( 0 == connfd ) {
 			jagclose( connfd );
@@ -4022,37 +3808,26 @@ void* JagDBServer::threadGroupTask( void *servptr )
 			continue;
 		}
 
+		//servobj->_clientSocketMap.addKeyValue( connfd, 1 );
+
 		++ servobj->_connections;
 
-		//JagPass *passmo = new JagPass();
 		JagPass *passmo = newObject<JagPass>();
 		passmo->sock = connfd;
 		passmo->servobj = servobj;
 		passmo->ip = inet_ntoa( cliaddr.sin_addr );
 
-		// dbg(("s3301 accepetd sock=%d add work threadTask lastThread=%d ...\n", connfd, lastThread ));
-		// prt(("s9999 threadTask passmo=%0x\n", passmo));
-		// rc = thpool_add_work(thpool, oneClientThreadTask, (void*)passmo );
 		oneClientThreadTask( (void*)passmo );  // loop inside
 
-		// prt(("s5088 threadGroupNum=%d _activeClients=%d\n", threadGroupNum, (abaxint)servobj->_activeClients ));
-		if ( threadGroupNum > 0 && abaxint(servobj->_activeClients) * 100 <= servobj->_activeThreadGroups * 40  ) {
-			// raydebug( stdout, JAG_LOG_LOW, "c9499 threadGroup=%l idling quit\n", threadGroupNum );
+		if ( threadGroupNum > 0 && jagint(servobj->_activeClients) * 100 <= servobj->_activeThreadGroups * 40  ) {
+			raydebug( stdout, JAG_LOG_LOW, "c9499 threadGroup=%l idle quit\n", threadGroupNum );
 			break;
 		}
-
 	}
 	
-	/***
-	prt(("s0293 thpool_wait ...\n" ));
-	thpool_wait( thpool );
-	prt(("s0293 thpool_wait done\n" ));
-	thpool_destroy( thpool );
-	***/
-
 	-- servobj->_activeThreadGroups;
    	raydebug( stdout, JAG_LOG_LOW, "s2894 thread group=%l done, activeThreadGroups=%l\n", 
-				threadGroupNum, (abaxint)servobj->_activeThreadGroups );
+				threadGroupNum, (jagint)servobj->_activeThreadGroups );
 
 	return NULL;
 }
@@ -4062,19 +3837,19 @@ void* JagDBServer::threadGroupTask( void *servptr )
 // 0: error
 // 1: OK
 // static
-bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pmesg, char *&saveptr, 
-							JagSession &session )
+//bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pmesg, JagSession &session )
+bool JagDBServer::doAuth( JagRequest &req, JagDBServer *servobj, char *pmesg )
 {
 	// prt(("s3032 doauth pmesg=[%s]\n", pmesg ));
 	// check client IP address
 	int ipOK = 0;
 	pthread_rwlock_rdlock( & servobj->_aclrwlock );
-	if ( servobj->_whiteIPList->size() < 1 && servobj->_blackIPList->size() < 1 ) {
-		// no witelist and blacklist setup, pass
+	if ( servobj->_allowIPList->size() < 1 && servobj->_blockIPList->size() < 1 ) {
+		// no witelist and blocklist setup, pass
 		ipOK = 1;
 	} else {
-		if ( servobj->_whiteIPList->match( req.session->ip ) ) {
-			if ( ! servobj->_blackIPList->match(  req.session->ip ) ) {
+		if ( servobj->_allowIPList->match( req.session->ip ) ) {
+			if ( ! servobj->_blockIPList->match(  req.session->ip ) ) {
 				ipOK = 1;
 			}
 		}
@@ -4099,68 +3874,71 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 	Jstr uid = sp[1];
 	Jstr encpass = sp[2];
 	Jstr pass = JagDecryptStr( servobj->_privateKey, encpass );
-	session.timediff = atoi( sp[3].c_str() );
-	session.origserv = atoi( sp[4].c_str() );
-	session.replicateType = atoi( sp[5].c_str() );
-	session.drecoverConn = atoi( sp[6].c_str() );
-	session.unixSocket = sp[7];
-	session.samePID = atoi( sp[8].c_str() );
-	session.cliPID = sp[8];
-	session.uid = uid;
-	session.passwd = pass;
-	if ( getpid() == session.samePID ) session.samePID = 1;
-	else session.samePID = 0;
+	req.session->timediff = atoi( sp[3].c_str() );
+	req.session->origserv = atoi( sp[4].c_str() );
+	req.session->replicateType = atoi( sp[5].c_str() );
+	req.session->drecoverConn = atoi( sp[6].c_str() );
+	req.session->unixSocket = sp[7];
+	req.session->samePID = atoi( sp[8].c_str() );
+	req.session->cliPID = sp[8];
+	req.session->uid = uid;
+	req.session->passwd = pass;
+	if ( getpid() == req.session->samePID ) req.session->samePID = 1;
+	else req.session->samePID = 0;
 
-	if ( ! servobj->_serverReady && ! session.origserv ) {
+	prt(("s222020  servobj->_serverReady=%d session->origserv=%d\n", servobj->_serverReady, req.session->origserv ));
+
+	if ( ! servobj->_serverReady && ! req.session->origserv ) {
 		sendMessage( req, "_END_[T=20|E=Server not ready, please try later]", "ER" );
+		prt(("s33032 server not ready , try later\n"));
 		return false;
 	}
 	
 	JagHashMap<AbaxString, AbaxString> hashmap;
 	convertToHashMap( sp[7], '/', hashmap);
 	AbaxString exclusive, clear, checkip;
-	session.exclusiveLogin = 0;
+	req.session->exclusiveLogin = 0;
 
 	if ( uid == "admin" ) {
     	if ( hashmap.getValue("clearex", clear ) ) {
     		if ( clear == "yes" || clear == "true" || clear == "1" ) {
         		servobj->_exclusiveAdmins = 0;
-        		raydebug( stdout, JAG_LOG_LOW, "admin cleared exclusive from %s\n", session.ip.c_str() );
+        		raydebug( stdout, JAG_LOG_LOW, "admin cleared exclusive from %s\n", req.session->ip.c_str() );
 			}
 		}
 
-		session.datacenter = false;
+		req.session->datacenter = false;
     	if ( hashmap.getValue("DATACENTER", clear ) ) {
     		if ( clear == "1" ) {
-				session.datacenter = true;
+				req.session->datacenter = true;
         		// raydebug( stdout, JAG_LOG_LOW, "admin from datacenter\n" );
 			}
 		}
 
-		session.dcfrom = 0;
+		req.session->dcfrom = 0;
 		if ( hashmap.getValue("DATC_FROM", clear ) ) {
 			if ( clear == "GATE" ) {
-				session.dcfrom = JAG_DATACENTER_GATE;
+				req.session->dcfrom = JAG_DATACENTER_GATE;
 			} else if ( clear == "HOST" ) {
-				session.dcfrom = JAG_DATACENTER_HOST;
+				req.session->dcfrom = JAG_DATACENTER_HOST;
 			}
 		}
 
-		session.dcto = 0;
+		req.session->dcto = 0;
 		if ( hashmap.getValue("DATC_TO", clear ) ) {
 			if ( clear == "GATE" ) {
-				session.dcto = JAG_DATACENTER_GATE;
+				req.session->dcto = JAG_DATACENTER_GATE;
 			} else if ( clear == "HOST" ) {
-				session.dcto = JAG_DATACENTER_HOST;
+				req.session->dcto = JAG_DATACENTER_HOST;
 			} else if ( clear == "PGATE" ) {
-				session.dcto = JAG_DATACENTER_PGATE;
+				req.session->dcto = JAG_DATACENTER_PGATE;
 			}
 		}
 
     	if ( hashmap.getValue("exclusive", exclusive ) ) {
     		if ( exclusive == "yes" || exclusive == "true" || exclusive == "1" ) {
-				session.exclusiveLogin = 1;
-				if ( session.replicateType == 0 ) {
+				req.session->exclusiveLogin = 1;
+				if ( req.session->replicateType == 0 ) {
 					// main connection accept exclusive login, other backup connection ignore it
 					if ( servobj->_exclusiveAdmins > 0 ) {
 						sendMessage( req, "_END_[T=120|E=Failed to login in exclusive mode]", "ER" );
@@ -4171,20 +3949,13 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
     	}  
 	}
 
-	/***
-	if ( ! servobj->_newdcTrasmittingFin && ! session.datacenter && ! session.samePID ) {
-		sendMessage( req, "_END_[T=20|E=Server not ready for datacenter, please try later]", "ER" );
-		return false;
-	}
-	***/
-
 	// prt(("s4418 exclusiveAdmins=%d\n", (int)servobj->_exclusiveAdmins ));
 	// dbg(("s9403 uid=[%s]  pass=[%s]\n", uid.c_str(), pass.c_str() ));
 
  	JagUserID *userDB;
-	if ( session.replicateType == 0 ) userDB = servobj->_userDB;
-	else if ( session.replicateType == 1 ) userDB = servobj->_prevuserDB;
-	else if ( session.replicateType == 2 ) userDB = servobj->_nextuserDB;
+	if ( req.session->replicateType == 0 ) userDB = servobj->_userDB;
+	else if ( req.session->replicateType == 1 ) userDB = servobj->_prevuserDB;
+	else if ( req.session->replicateType == 2 ) userDB = servobj->_nextuserDB;
 	// check password first
 	bool isGood = false;
 	int passOK = 0;
@@ -4198,7 +3969,7 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 			passOK = 1;
 		} else {
 			passOK = -1;
-       		raydebug( stdout, JAG_LOG_HIGH, "dbpass=[%s] inmd5pass=[%s]\n", dbpass.c_str(), md5pass.c_str() );
+       		//raydebug( stdout, JAG_LOG_HIGH, "dbpass=[%s] inmd5pass=[%s]\n", dbpass.c_str(), md5pass.c_str() );
 		}
 	} else {
 		passOK = -2;
@@ -4225,43 +3996,44 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 	// prt(("s8822 isGood=%d\n", isGood ));
 	if ( ! isGood ) {
        	sendMessage( req, "_END_[T=20|E=Error password or token]", "ER" );
-       	raydebug( stdout, JAG_LOG_LOW, "Connection from %s, Error password or TOKEN\n", session.ip.c_str() );
-       	raydebug( stdout, JAG_LOG_LOW, "%s passOK=%d tokenOK=%d\n", session.ip.c_str(), passOK, tokenOK );
+       	raydebug( stdout, JAG_LOG_LOW, "Connection from %s, Error password or TOKEN\n", req.session->ip.c_str() );
+       	raydebug( stdout, JAG_LOG_LOW, "%s passOK=%d tokenOK=%d\n", req.session->ip.c_str(), passOK, tokenOK );
        	return false;
 	}
 
 	if ( uid == "admin" ) {
-		if ( session.exclusiveLogin ) {
-        	raydebug( stdout, JAG_LOG_LOW, "Exclusive admin connected from %s\n", session.ip.c_str() );
+		if ( req.session->exclusiveLogin ) {
+        	raydebug( stdout, JAG_LOG_LOW, "Exclusive admin connected from %s\n", req.session->ip.c_str() );
         	servobj->_exclusiveAdmins = 1;
 		}
 	}
 	
-	if ( ! session.origserv && 0 == session.replicateType ) {
-    	raydebug( stdout, JAG_LOG_LOW, "user %s connected from %s\n", uid.c_str(), session.ip.c_str() );
+	if ( ! req.session->origserv && 0 == req.session->replicateType ) {
+    	raydebug( stdout, JAG_LOG_LOW, "user %s connected from %s\n", uid.c_str(), req.session->ip.c_str() );
 	}
 
 
 	// prt(("s5091 sending client OK ...\n"));
 	Jstr oksid = "OK ";
 	oksid += longToStr(  pthread_self() );
-	oksid += Jstr(" 1 ") + servobj->_dbConnector->_nodeMgr->_sendNodes + " ";
-   	// raydebug( stdout, JAG_LOG_LOW, "sendNodes(%s)\n", servobj->_dbConnector->_nodeMgr->_sendNodes.c_str() );
+	oksid += Jstr(" 1 ") + servobj->_dbConnector->_nodeMgr->_sendAllNodes + " ";
 	oksid += longToStr( servobj->_nthServer ) + " " + longToStr( servobj->_faultToleranceCopy );
-	if ( session.samePID ) oksid += Jstr(" 1 ");
+	if ( req.session->samePID ) oksid += Jstr(" 1 ");
 	else oksid += Jstr(" 0 ");
-	oksid += longToStr( session.exclusiveLogin );
-	oksid += Jstr(" ") + servobj->_cfg->getValue("HASHJOIN_TABLE_MAX_RECORDS", "500000");
+	oksid += longToStr( req.session->exclusiveLogin );
+	oksid += Jstr(" ") + servobj->_cfg->getValue("HASHJOIN_TABLE_MAX_RECORDS", "100000");
 	oksid += Jstr(" ") + intToStr( servobj->_isGate );
+
+	prt(("s39382737 s9999 process auth _sendAllNodes=[%s]\n", servobj->_dbConnector->_nodeMgr->_sendAllNodes.s() ));
 
 	sendMessageLength( req, oksid.c_str(), oksid.size(), "CD" );
 	sendMessage( req, "_END_[T=20|E=]", "ED" );
-	session.uid = uid;
+	req.session->uid = uid;
 
 	// set timer for session if recover connection is not 2 ( clean recover )
-	if ( session.drecoverConn != 2 && !session.samePID ) session.createTimer();
-	// hearbeat timer
-	// prt(("s9999 fin doauth\n"));
+	if ( req.session->drecoverConn != 2 && !req.session->samePID ) {
+		req.session->createTimer();
+	}
 
 	// prt(("s7734 _threadMap->addKeyValue( %lld ) \n", AbaxLong(THREADID) ));
 	// servobj->_threadMap->addKeyValue( AbaxLong(THREADID), time(NULL) );
@@ -4271,15 +4043,16 @@ bool JagDBServer::doAuth( const JagRequest &req, JagDBServer *servobj, char *pme
 
 // static
 // method for make connection use only
-bool JagDBServer::useDB( const JagRequest &req, JagDBServer *servobj, char *pmesg, char *&saveptr )
+bool JagDBServer::useDB( JagRequest &req, JagDBServer *servobj, char *pmesg  )
 {
-	raydebug( stdout, JAG_LOG_HIGH, "%s\n", pmesg );
+	raydebug( stdout, JAG_LOG_HIGH, "useDB %s\n", pmesg );
 
 	char *tok;
 	char dbname[JAG_MAX_DBNAME+1];
+	char *saveptr;
 
 	// prt(("s9999 usedb1\n"));
-	tok = strtok_r( pmesg, " ", &saveptr );
+	tok = strtok_r( pmesg, " ", &saveptr );  // pmesg is modified!!
 	tok = strtok_r( NULL, " ;", &saveptr );
 	if ( ! tok ) {
 		// prt(("s9999 usedb2\n"));
@@ -4315,10 +4088,10 @@ bool JagDBServer::useDB( const JagRequest &req, JagDBServer *servobj, char *pmes
     				sendMessage( req, "_END_[T=20|E=]", "ED" );
     			} else {
 					// prt(("s9999 usedb10\n"));
-    				//sendMessage( req, "Database does not exist", "OK" );
-    				//sendMessage( req, "_END_[T=40|E=Database does not exist]", "ED" );
-    				// sendMessage( req, "_END_[T=40|E=Database does not exist]", "EE" );
-    				sendMessage( req, "_END_[T=20|E=Database does not exist]", "ER" );
+    				//sendMessage( req, "Database not found", "OK" );
+    				//sendMessage( req, "_END_[T=40|E=Database not found]", "ED" );
+    				// sendMessage( req, "_END_[T=40|E=Database not found]", "EE" );
+    				sendMessage( req, "_END_[T=20|E=Database not found]", "ER" );
     			}
 			}
 		}
@@ -4328,13 +4101,17 @@ bool JagDBServer::useDB( const JagRequest &req, JagDBServer *servobj, char *pmes
 }
 
 // method to refresh schemaMap and schematime for dbConnector
-void JagDBServer::refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj, abaxint &schtime )
+//void JagDBServer::refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj, jagint &schtime )
+void JagDBServer::refreshSchemaInfo( int replicateType, JagDBServer *servobj, jagint &schtime )
 {
 	Jstr schemaInfo;
 
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
-	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
+
+	//servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
+	servobj->getTableIndexSchema( replicateType, tableschema, indexschema );
+
 	Jstr obj;
 	AbaxString recstr;
 
@@ -4367,24 +4144,24 @@ void JagDBServer::refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj
 	}
 
 	// prt(("s8393 schemaInfo=[%s]\n", schemaInfo.c_str() ));
-	servobj->_dbConnector->_parentCliNonRecover->_mapLock->writeLock( -1 );
+	servobj->_dbConnector->_parentCliNonRecover->_schemaMapLock->writeLock( -1 );
 	servobj->_dbConnector->_parentCliNonRecover->rebuildSchemaMap();
 	servobj->_dbConnector->_parentCliNonRecover->updateSchemaMap( schemaInfo.c_str() );
-	servobj->_dbConnector->_parentCliNonRecover->_mapLock->writeUnlock( -1 );
+	servobj->_dbConnector->_parentCliNonRecover->_schemaMapLock->writeUnlock( -1 );
 
-	servobj->_dbConnector->_parentCli->_mapLock->writeLock( -1 );
+	servobj->_dbConnector->_parentCli->_schemaMapLock->writeLock( -1 );
 	servobj->_dbConnector->_parentCli->rebuildSchemaMap();
 	servobj->_dbConnector->_parentCli->updateSchemaMap( schemaInfo.c_str() );
-	servobj->_dbConnector->_parentCli->_mapLock->writeUnlock( -1 );
+	servobj->_dbConnector->_parentCli->_schemaMapLock->writeUnlock( -1 );
 
-	servobj->_dbConnector->_broadCastCli->_mapLock->writeLock( -1 );
-	servobj->_dbConnector->_broadCastCli->rebuildSchemaMap();
-	servobj->_dbConnector->_broadCastCli->updateSchemaMap( schemaInfo.c_str() );
-	servobj->_dbConnector->_broadCastCli->_mapLock->writeUnlock( -1 );
+	servobj->_dbConnector->_broadcastCli->_schemaMapLock->writeLock( -1 );
+	servobj->_dbConnector->_broadcastCli->rebuildSchemaMap();
+	servobj->_dbConnector->_broadcastCli->updateSchemaMap( schemaInfo.c_str() );
+	servobj->_dbConnector->_broadcastCli->_schemaMapLock->writeUnlock( -1 );
 
 	struct timeval now;
 	gettimeofday( &now, NULL );
-	schtime = now.tv_sec * (abaxint)1000000 + now.tv_usec;
+	schtime = now.tv_sec * (jagint)1000000 + now.tv_usec;
 }
 
 // Reload ACL list
@@ -4397,31 +4174,29 @@ void JagDBServer::refreshACL( int bcast )
 	loadACL();
 
 	if ( bcast ) {
-		Jstr bcastCmd = "_serv_refreshacl|" + _whiteIPList->_data+ "|" + _blackIPList->_data;
-		_dbConnector->broadCastSignal( bcastCmd, "" );
+		Jstr bcastCmd = "_serv_refreshacl|" + _allowIPList->_data+ "|" + _blockIPList->_data;
+		_dbConnector->broadcastSignal( bcastCmd, "" );
 	}
 }
 
 // Load ACL list
 void JagDBServer::loadACL()
 {
-	Jstr fpath = jaguarHome() + "/conf/whitelist.conf";
-	//raydebug( stdout, JAG_LOG_LOW, "Check %s\n", fpath.c_str() );
+	Jstr fpath = jaguarHome() + "/conf/allowlist.conf";
 	pthread_rwlock_wrlock(&_aclrwlock);
-	if ( _whiteIPList ) delete _whiteIPList;
-	_whiteIPList = new JagIPACL( fpath );
+	if ( _allowIPList ) delete _allowIPList;
+	_allowIPList = new JagIPACL( fpath );
 
-	fpath = jaguarHome() + "/conf/blacklist.conf";
-	//raydebug( stdout, JAG_LOG_LOW, "Check %s\n", fpath.c_str() );
-	if ( _blackIPList ) delete _blackIPList;
-	_blackIPList = new JagIPACL( fpath );
+	fpath = jaguarHome() + "/conf/blocklist.conf";
+	if ( _blockIPList ) delete _blockIPList;
+	_blockIPList = new JagIPACL( fpath );
 	pthread_rwlock_unlock(&_aclrwlock);
 
 }
 
 // back up schema and other meta data
 // seq should be every minute
-void JagDBServer::doBackup( uabaxint seq )
+void JagDBServer::doBackup( jaguint seq )
 {
 	// use _cfg
 	Jstr cs = _cfg->getValue("LOCAL_BACKUP_PLAN", "" );
@@ -4446,42 +4221,42 @@ void JagDBServer::doBackup( uabaxint seq )
 	if ( ( seq%15 ) == 0 && sp.contains( "15MIN", rec ) ) {
 		copyData( rec, false );
 		bcastCmd = "_serv_copydata|" + rec + "|0";
-		_dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
+		_dbConnector->broadcastSignal( bcastCmd, bcasthosts ); 
 	}
 
 	// copy meta data to hourly directory
 	if ( ( seq % 60 ) == 0 && sp.contains( "HOURLY", rec ) ) {
 		copyData( rec, false );
 		bcastCmd = "_serv_copydata|" + rec + "|0";
-		_dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
+		_dbConnector->broadcastSignal( bcastCmd, bcasthosts ); 
 	}
 
 	// copy meta data to daily directory
 	if ( ( seq % 1440 ) == 0 && sp.contains( "DAILY", rec ) ) {
 		copyData( rec );
 		bcastCmd = "_serv_copydata|" + rec + "|1";
-		_dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
+		_dbConnector->broadcastSignal( bcastCmd, bcasthosts ); 
 	}
 
 	// copy meta data to weekly directory
 	if ( ( seq % 10080 ) == 0 && sp.contains( "WEEKLY", rec ) ) {
 		copyData( rec );
 		bcastCmd = "_serv_copydata|" + rec + "|1";
-		_dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
+		_dbConnector->broadcastSignal( bcastCmd, bcasthosts ); 
 	}
 
 	// copy meta data to monthly directory
 	if ( ( seq % 43200 ) == 0 && sp.contains( "MONTHLY", rec ) ) {
 		copyData( rec );
 		bcastCmd = "_serv_copydata|" + rec + "|1";
-		_dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
+		_dbConnector->broadcastSignal( bcastCmd, bcasthosts ); 
 	}
 }
 
 // back up schema and other meta data
 #ifndef _WINDOWS64_
 #include <sys/sysinfo.h>
-void JagDBServer::writeLoad( uabaxint seq )
+void JagDBServer::writeLoad( jaguint seq )
 {
 	if ( ( seq%15) != 0 ) {
 		return;
@@ -4490,7 +4265,7 @@ void JagDBServer::writeLoad( uabaxint seq )
 	struct sysinfo info;
     sysinfo( &info );
 
-	abaxint usercpu, syscpu, idle;
+	jagint usercpu, syscpu, idle;
 	_jagSystem.getCPUStat( usercpu, syscpu, idle );
 
 	Jstr userCPU = ulongToString( usercpu );
@@ -4502,7 +4277,7 @@ void JagDBServer::writeLoad( uabaxint seq )
 	Jstr freeswaps = ulongToString( info.freeswap / ONE_GIGA_BYTES );
 	Jstr procs = intToString( info.procs );
 
-	uabaxint diskread, diskwrite, netread, netwrite;
+	jaguint diskread, diskwrite, netread, netwrite;
 	JagNet::getNetStat( netread, netwrite );
 	JagFileMgr::getIOStat( diskread, diskwrite );
 	Jstr netReads = ulongToString( netread /ONE_GIGA_BYTES );
@@ -4528,18 +4303,18 @@ void JagDBServer::writeLoad( uabaxint seq )
 }
 #else
 // Windows
-void JagDBServer::writeLoad( uabaxint seq )
+void JagDBServer::writeLoad( jaguint seq )
 {
 	if ( ( seq%15) != 0 ) {
 		return;
 	}
 
-	abaxint usercpu, syscpu, idlecpu;
+	jagint usercpu, syscpu, idlecpu;
 	_jagSystem.getCPUStat( usercpu, syscpu, idlecpu );
 	Jstr userCPU = ulongToString( usercpu );
 	Jstr sysCPU = ulongToString( syscpu );
 
-	abaxint totm, freem, used; //GB
+	jagint totm, freem, used; //GB
 	JagSystem::getMemInfo( totm, freem, used );
 	Jstr totrams = ulongToString( totm );
 	Jstr freerams = ulongToString( freem );
@@ -4554,7 +4329,7 @@ void JagDBServer::writeLoad( uabaxint seq )
 	Jstr nupdates = ulongToString( numUpdates );
 	Jstr ndeletes = ulongToString( numDeletes );
 
-	uabaxint diskread, diskwrite, netread, netwrite;
+	jaguint diskread, diskwrite, netread, netwrite;
 	JagNet::getNetStat( netread, netwrite );
 	JagFileMgr::getIOStat( diskread, diskwrite );
 	Jstr netReads = ulongToString( netread / ONE_GIGA_BYTES );
@@ -4696,12 +4471,12 @@ int JagDBServer::copyLocalData( const Jstr &dirname, const Jstr &policy, const J
 
 void JagDBServer::doCreateIndex( JagTable *ptab, JagIndex *pindex, JagDBServer *servobj )
 {
-	abaxint keyCheckerCnt = 0;
 	ptab->_indexlist.append( pindex->getIndexName() );
-	if ( ptab->_darrFamily->getElements( keyCheckerCnt ) < 1 ) {
-		// prt(("s3023 getElements < 1 return. No formatCreateIndex\n" ));
+	if ( ptab->_darrFamily->getCount( ) < 1 ) {
+		// prt(("s3023 getCount < 1 return. No formatCreateIndex\n" ));
 		return;
 	}
+
 	//prt(("s5401 ptab->formatCreateIndex(pindex=%0x)\n", pindex ));
 	ptab->formatCreateIndex( pindex );
 }
@@ -4713,7 +4488,8 @@ void JagDBServer::dropAllTablesAndIndexUnderDatabase( const JagRequest &req, Jag
 	JagTable *ptab;
 	Jstr dbobj, errmsg;
 	JagVector<AbaxString> *vec = schema->getAllTablesOrIndexes( dbname, "" );
-	if ( vec ) {
+	if ( NULL == vec ) return;
+
     	for ( int i = 0; i < vec->size(); ++i ) {
 			ptab = NULL;
     		dbobj = (*vec)[i].c_str();
@@ -4730,19 +4506,19 @@ void JagDBServer::dropAllTablesAndIndexUnderDatabase( const JagRequest &req, Jag
 			pparam.opcode = JAG_DROPTABLE_OP;
 			
 			ptab = servobj->_objectLock->writeLockTable( pparam.opcode, pparam.objectVec[0].dbName,
-				pparam.objectVec[0].tableName, schema, req.session->replicateType, 1 );
+														 pparam.objectVec[0].tableName, schema, req.session->replicateType, 1 );
 			if ( ptab ) {
 				servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
         		ptab->drop( errmsg );  //_darr is gone, raystat has cleaned up this darr
     			schema->remove( dbobj );
         		delete ptab; ptab = NULL;
 				servobj->_objectLock->writeUnlockTable( pparam.opcode, pparam.objectVec[0].dbName,
-					pparam.objectVec[0].tableName, schema, req.session->replicateType, 1 );
+														pparam.objectVec[0].tableName, req.session->replicateType, 1 );
 			}
     	}
+
 		delete vec;
 		vec = NULL;
-	}
 }
 
 // method to drop all tables and indexs under all databases
@@ -4769,13 +4545,13 @@ void JagDBServer::dropAllTablesAndIndex( const JagRequest &req, JagDBServer *ser
 			pparam.opcode = JAG_DROPTABLE_OP;
 			
 			ptab = servobj->_objectLock->writeLockTable( pparam.opcode, pparam.objectVec[0].dbName,
-				pparam.objectVec[0].tableName, schema, req.session->replicateType, 1 );
+														 pparam.objectVec[0].tableName, schema, req.session->replicateType, 1 );
 			if ( ptab ) {
         		ptab->drop( errmsg );  //_darr is gone, raystat has cleaned up this darr
     			schema->remove( dbobj );
         		delete ptab; ptab = NULL;
 				servobj->_objectLock->writeUnlockTable( pparam.opcode, pparam.objectVec[0].dbName,
-					pparam.objectVec[0].tableName, schema, req.session->replicateType, 1 );
+														pparam.objectVec[0].tableName, req.session->replicateType, 1 );
 			}
     	}
 		delete vec;
@@ -4831,7 +4607,7 @@ void JagDBServer::makeAdmin( JagUserID *uiddb )
 	if ( md5 ) free( md5 );
 	md5 = NULL;
 
-	bool rc = uiddb->addUser(uid, mdpass, JAG_USER, JAG_WRITE );
+	uiddb->addUser(uid, mdpass, JAG_USER, JAG_WRITE );
 	// printf("s8339 createAdmin uid=[%s] mdpass=[%s] rc=%d\n", uid.c_str(), mdpass.c_str(), rc );
 }
 
@@ -4848,20 +4624,20 @@ Jstr JagDBServer::getClusterOpInfo( const JagRequest &req, JagDBServer *servobj)
 	Jstr res;
 	char buf[1024];
 	sprintf( buf, "%d|%d|%d|%lld|%lld|%lld|%lld|%lld", nsrv, dbs, tabs, 
-			(abaxint)servobj->numSelects, (abaxint)servobj->numInserts, 
-			(abaxint)servobj->numUpdates, (abaxint)servobj->numDeletes, 
+			(jagint)servobj->numSelects, (jagint)servobj->numInserts, 
+			(jagint)servobj->numUpdates, (jagint)servobj->numDeletes, 
 			servobj->_taskMap->size() );
 	res = buf;
 
 	// broadcast other server request info
 	Jstr resp, bcasthosts;
-	resp = servobj->_dbConnector->broadCastGet( "_serv_opinfo", bcasthosts ); 
+	resp = servobj->_dbConnector->broadcastGet( "_serv_opinfo", bcasthosts ); 
 	resp += res + "\n";
-	//printf("s4820 broadCastGet(_serv_opinfo)  resp=[%s]\n", resp.c_str() );
+	//printf("s4820 broadcastGet(_serv_opinfo)  resp=[%s]\n", resp.c_str() );
 	//fflush( stdout );
 
 	JagStrSplit sp( resp, '\n', true );
-	abaxint sel, ins, upd, del, sess;
+	jagint sel, ins, upd, del, sess;
 	sel = ins = upd = del = sess =  0;
 
 	for ( int i = 0 ; i < sp.length(); ++i ) {
@@ -4897,40 +4673,26 @@ void JagDBServer::numDBTables( int &databases, int &tables )
 // object method
 int JagDBServer::initObjects()
 {
-	//printf("s4200 initObjects() ...\n");
 	raydebug( stdout, JAG_LOG_LOW, "begin initObjects ...\n" );
 	
 	_tableschema = new JagTableSchema( this, 0 );
-	//prt(("s4201 _tableschema done\n"));
 	_prevtableschema = new JagTableSchema( this, 1 );
-	// printf("s4202 _tableschema done\n"); fflush( stdout );
 	_nexttableschema = new JagTableSchema( this, 2 );
-	// printf("s4203 _tableschema done\n"); fflush( stdout );
 
 	_indexschema = new JagIndexSchema( this, 0 );
-	// printf("s4204 _indexschema done\n"); fflush( stdout );
 	_previndexschema = new JagIndexSchema( this, 1 );
-	// printf("s4205 _indexschema done\n"); fflush( stdout );
 	_nextindexschema = new JagIndexSchema( this, 2 );
-	// printf("s4206 _indexschema done\n"); fflush( stdout );
 	
 	_userDB = new JagUserID( this, 0 );
-	// printf("s4207 _userDB done\n"); fflush( stdout );
 	_prevuserDB = new JagUserID( this, 1 );
-	// printf("s4208 _userDB done\n"); fflush( stdout );
 	_nextuserDB = new JagUserID( this, 2 );
-	// printf("s4209 _userDB done\n"); fflush( stdout );
 
 	_userRole = new JagUserRole( this, 0 );
-	// printf("s4210 _userRole done\n"); fflush( stdout );
 	_prevuserRole = new JagUserRole( this, 1 );
-	// printf("s4211 _userRole done\n"); fflush( stdout );
 	_nextuserRole = new JagUserRole( this, 2 );
-	// printf("s4212 _userRole done\n"); fflush( stdout );
 
 	raydebug( stdout, JAG_LOG_LOW, "end initObjects\n" );
 	raydebug( stdout, JAG_LOG_HIGH, "Initialized schema objects\n" );
-	// printf("s4210 initObjects() done \n");
 	return 1;
 }
 
@@ -4947,7 +4709,7 @@ int JagDBServer::createSocket( int argc, char *argv[] )
 	_sock = JagNet::createIPV4Socket( _listenIP.c_str(), _port );
 	if ( _sock < 0 ) {
 		raydebug( stdout, JAG_LOG_LOW, "Failed to create server socket, exit\n" );
-		exit( 1 );
+		exit( 51 );
 	}
 
 	if ( _listenIP.size() > 1 ) {
@@ -4971,11 +4733,11 @@ int JagDBServer::initConfigs()
 	}
 
 	int threads = _numCPUs*atoi(_cfg->getValue("CPU_SELECT_FACTOR", "4").c_str());
-	_selectPool = new JaguarThreadPool( threads );
+	// _selectPool = new JaguarThreadPool( threads );
 	raydebug( stdout, JAG_LOG_LOW, "Select thread pool %d\n", threads );
 
 	threads = _numCPUs*atoi(_cfg->getValue("CPU_PARSE_FACTOR", "2").c_str());
-	_parsePool = new JaguarThreadPool( threads );
+	// _parsePool = new JaguarThreadPool( threads );
 	raydebug( stdout, JAG_LOG_LOW, "Parser thread pool %d\n", threads );
 
 	cs = _cfg->getValue("JAG_LOG_LEVEL", "0");
@@ -4987,36 +4749,20 @@ int JagDBServer::initConfigs()
 	raydebug( stdout, JAG_LOG_LOW, "Server version is %s\n", _version.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "Server license is %s\n", PRODUCT_VERSION );
 
-	// int trg = 8*_numCPUs;
-	// int trg = _dbConnector->_nodeMgr->_numNodes * 30;
-	// cs = _cfg->getValue("THREAD_GROUPS", intToStr(trg) );
-	// _threadGroups = atoi( cs.c_str() );
-	_threadGroups = _faultToleranceCopy * _dbConnector->_nodeMgr->_numAllNodes * 10;
-	raydebug( stdout, JAG_LOG_LOW, "Thread Groups = %d\n", _threadGroups );
+	_threadGroups = _faultToleranceCopy * _dbConnector->_nodeMgr->_numAllNodes * 15;
 	if ( _isGate ) {
 		cs = _cfg->getValue("INIT_EXTRA_THREADS", "100" );
 	} else {
-		cs = _cfg->getValue("INIT_EXTRA_THREADS", "30" );
+		cs = _cfg->getValue("INIT_EXTRA_THREADS", "50" );
 	}
 	_initExtraThreads = atoi( cs.c_str() );
+
+
+	raydebug( stdout, JAG_LOG_LOW, "Thread Groups = %d\n", _threadGroups );
 	raydebug( stdout, JAG_LOG_LOW, "Init Extra Threads = %d\n", _initExtraThreads );
 
-	/***
-	Jstr schmpath = jaguarHome() + "/data/system/schema";
-	abaxint numtabs = JagFileMgr::numObjects( schmpath );
-	if ( numtabs < 1 ) numtabs = 4;
-	abaxint grpsz = _dbConnector->_nodeMgr->_numNodes * numtabs;
-	***/
-	/***
-	abaxint grpsz = 8 * _dbConnector->_nodeMgr->_numNodes;
-	cs = _cfg->getValue("THREAD_GROUP_SIZE", longToStr(grpsz) );
-	_threadGroupSize = atoi( cs.c_str() );
-	**/
-	// raydebug( stdout, JAG_LOG_LOW, "Group Size = %d\n", _threadGroupSize );
-	// _connMax = _threadGroups * _threadGroupSize;
-
 	// write process ID
-	Jstr logpath = jaguarHome() + "/log/" + JAG_BRAND + ".pid";
+	Jstr logpath = jaguarHome() + "/log/jaguar.pid";
 	FILE *pidf = loopOpen( logpath.c_str(), "wb" );
 	fprintf( pidf, "%d\n", getpid() );
 	fflush( pidf ); jagfclose( pidf );
@@ -5032,7 +4778,6 @@ int JagDBServer::initConfigs()
 
 	cs = _cfg->getValue("FLUSH_WAIT", "1");
 	_flushWait = atoi( cs.c_str() );
-	// raydebug( stdout, JAG_LOG_LOW, "Wait Count %d\n", _flushWait );
 
 	_debugClient = 0;
 	cs = _cfg->getValue("DEBUG_CLIENT", "no");
@@ -5041,11 +4786,6 @@ int JagDBServer::initConfigs()
 	} 
 	raydebug( stdout, JAG_LOG_LOW, "DEBUG_CLIENT %s\n", cs.c_str() );
 
-	// cs = _cfg->getValue("INSERT_SYNC_PERIOD", "20");
-	// _insertSyncPeriod = atoi( cs.c_str() );
-	// raydebug( stdout, JAG_LOG_LOW, "Wait Count %d\n", _flushWait );
-
-	//_threadMap = new JagHashMap<AbaxLong,AbaxLong>();
 	_taskMap = new JagHashMap<AbaxLong,AbaxString>();
 	_joinMap = new JagHashMap<AbaxString, AbaxPair<AbaxPair<AbaxLong, AbaxPair<AbaxLong, AbaxLong>>, AbaxPair<JagDBPair, AbaxPair<AbaxBuffer, AbaxPair<AbaxBuffer, AbaxBuffer>>>>>();
 	_scMap = new JagHashMap<AbaxString, AbaxInt>();
@@ -5059,7 +4799,7 @@ int JagDBServer::initConfigs()
 			raydebug( stdout, JAG_LOG_LOW, "Key file %s not found, wait ...\n", keyFile.c_str() );
 			raydebug( stdout, JAG_LOG_LOW, "Please execute createKeyPair program to generate it.\n");
 			raydebug( stdout, JAG_LOG_LOW, "Once conf/public.key and conf/private.key are generated, server will use them.\n");
-			sleep(10);
+			jagsleep(10, JAG_SEC);
 		} else {
 			keyExists = 1;
 		}
@@ -5073,7 +4813,7 @@ int JagDBServer::initConfigs()
 			raydebug( stdout, JAG_LOG_LOW, "Key file %s not found, wait ...\n", keyFile.c_str() );
 			raydebug( stdout, JAG_LOG_LOW, "Please execute createKeyPair program to generate it.\n");
 			raydebug( stdout, JAG_LOG_LOW, "Once conf/public.key and conf/private.key are generated, server will use them.\n");
-			sleep(10);
+			jagsleep(10, JAG_SEC);
 		} else {
 			keyExists = 1;
 		}
@@ -5081,54 +4821,55 @@ int JagDBServer::initConfigs()
 }
 
 // dinsert log command to the command log file
-void JagDBServer::dinsertlogCommand( JagSession *session, const char *mesg, abaxint len )
+void JagDBServer::dinsertlogCommand( JagSession *session, const char *mesg, jagint len )
 {
+	// JAG_REDO_MSGLEN is 10, %010ld--> prepend 0, max 10 long digits 
 	JAG_BLURT jaguar_mutex_lock ( &g_dinsertmutex ); JAG_OVER;
-	if ( session->servobj->_dinsertCommand ) {
-		fprintf( session->servobj->_dinsertCommand, "%d;%016ld%s",
-			session->timediff, len, mesg );
+	if ( session->servobj->_dinsertCommandFile ) {
+		fprintf( session->servobj->_dinsertCommandFile, "%d;%010ld%s", session->timediff, len, mesg );
 	}
 	jaguar_mutex_unlock ( &g_dinsertmutex );
 }
 
-// log command to the command log file
-// spMode = 0 : special cmds, create/drop etc. spMode = 1 : single regular cmds, update/delete etc.
+// log command to the command wallog file
+// spMode = 0 : special cmds, create/drop etc. 
+// spMode = 1 : single regular cmds, update/delete etc.
 // spMode = 2 : batch regular cmds, insert/cinsert/dinsert etc. 
-void JagDBServer::logCommand( JagSession *session, const char *mesg, abaxint len, int spMode )
+void JagDBServer::logCommand( const JagParseParam *pparam, JagSession *session, const char *mesg, jagint msglen, int spMode )
 {
-	// new logformat  "clientIP;sqlhdr;replicatetype;clienttimediff;isbatch;ddddddddmessage"
-	JAG_BLURT jaguar_mutex_lock ( &g_logmutex ); JAG_OVER;
-	if ( session->servobj->_fpCommand ) {
-		fprintf( session->servobj->_fpCommand, "%d;%d;%d;%016ld%s",
-			     session->replicateType, session->timediff, 2==spMode, len, mesg );
-		if ( 0 == spMode || 2 == spMode ) {
-			// fflush( session->servobj->_fpCommand );
-			jagfdatasync( fileno(session->servobj->_fpCommand ) );
-		}
+	Jstr db = pparam->objectVec[0].dbName;
+	Jstr tab = pparam->objectVec[0].tableName;
+	if ( db.size() < 1 || tab.size() <1 ) { return; }
+
+	Jstr fpath = _cfg->getWalLogHOME() + "/" + db + "." + tab + ".wallog";
+
+	FILE *walFile = _walLogMap.ensureFile( fpath );
+	if ( NULL == walFile ) {
+		raydebug( stdout, JAG_LOG_LOW, "error open wallog %s\n", fpath.c_str() );
+	} else {
+		// JAG_REDO_MSGLEN is 10, %010ld--> prepend 0, max 10 long digits 
+		fprintf( walFile, "%d;%d;%d;%010ld%s",
+		         session->replicateType, session->timediff, 2==spMode, msglen, mesg );
 	}
-	jaguar_mutex_unlock ( &g_logmutex );
 }
 
 // log command to the recovery log file
 // spMode = 0 : special cmds, create/drop etc. spMode = 1 : single regular cmds, update/delete etc.
 // spMode = 2 : batch regular cmds, insert/cinsert/dinsert etc. 
-void JagDBServer::regSplogCommand( JagSession *session, const char *mesg, abaxint len, int spMode )
+void JagDBServer::regSplogCommand( JagSession *session, const char *mesg, jagint len, int spMode )
 {
 	// logformat
+	// JAG_REDO_MSGLEN is 10, %010ld--> prepend 0, max 10 long digits 
 	JAG_BLURT jaguar_mutex_lock ( &g_dlogmutex ); JAG_OVER;
-	if ( 0 == spMode && session->servobj->_recoverySpCommand ) {
-		fprintf( session->servobj->_recoverySpCommand, "%d;%d;0;%016ld%s",
+	if ( 0 == spMode && session->servobj->_recoverySpCommandFile ) {
+		fprintf( session->servobj->_recoverySpCommandFile, "%d;%d;0;%010ld%s",
 			     session->replicateType, session->timediff, len, mesg );
-		// fflush( session->servobj->_recoverySpCommand );
-		jagfdatasync( fileno(session->servobj->_recoverySpCommand ) );
-	} else if ( 0 != spMode && session->servobj->_recoveryRegCommand ) {
-		fprintf( session->servobj->_recoverySpCommand, "%d;%d;%d;%016ld%s",
+		jagfdatasync( fileno(session->servobj->_recoverySpCommandFile ) );
+	} else if ( 0 != spMode && session->servobj->_recoveryRegCommandFile ) {
+		fprintf( session->servobj->_recoverySpCommandFile, "%d;%d;%d;%010ld%s",
 			     session->replicateType, session->timediff, 2==spMode, len, mesg );
 		if ( 2 == spMode ) {
-			// fflush ( session->servobj->_recoveryRegCommand );
-			jagfdatasync( fileno(session->servobj->_recoveryRegCommand ) );
-	 		// fflush ( session->servobj->_recoveryRegCommand );
-			// jagfdatasync( fileno(session->servobj->_recoveryRegCommand ) );
+			jagfdatasync( fileno(session->servobj->_recoveryRegCommandFile ) );
 		}
 	}
 	jaguar_mutex_unlock ( &g_dlogmutex );
@@ -5153,7 +4894,6 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 		rc = parser.parseCommand( jpa, mesg, &parseParam, reterr );
 		if ( rc ) {
 			cmd = parseParam.dbNameCmd;
-			// rebuildCommandWithDBName( mesg, parseParam, cmd );
 		}
 		if ( parseParam.opcode != JAG_UPDATE_OP && parseParam.opcode != JAG_DELETE_OP ) {
 			needSync = 1;
@@ -5172,36 +4912,36 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 	// store to correct delta files
 	if ( 1 == mode ) {
 		if ( 0 == session->replicateType ) {
-			f1 = session->servobj->_delPrevRepCommand;
+			f1 = session->servobj->_delPrevRepCommandFile;
 		} else if ( 1 == session->replicateType ) {
-			f1 = session->servobj->_delPrevOriRepCommand;
+			f1 = session->servobj->_delPrevOriRepCommandFile;
 		} 
 	} else if ( 2 == mode ) {
 		if ( 0 == session->replicateType ) {
-			f1 = session->servobj->_delNextRepCommand;
+			f1 = session->servobj->_delNextRepCommandFile;
 		} else if ( 2 == session->replicateType ) {
-			f1 = session->servobj->_delNextOriRepCommand;
+			f1 = session->servobj->_delNextOriRepCommandFile;
 		} 
 	} else if ( 3 == mode ) {
 		if ( 0 == session->replicateType ) {
-			f1 = session->servobj->_delPrevRepCommand;
-			f2 = session->servobj->_delNextRepCommand;
+			f1 = session->servobj->_delPrevRepCommandFile;
+			f2 = session->servobj->_delNextRepCommandFile;
 		} 
 	} else if ( 4 == mode ) {
 		if ( 1 == session->replicateType ) {
-			f1 = session->servobj->_delPrevOriCommand;
+			f1 = session->servobj->_delPrevOriCommandFile;
 		} else if ( 2 == session->replicateType ) {
-			f1 = session->servobj->_delNextOriCommand;		
+			f1 = session->servobj->_delNextOriCommandFile;		
 		} 
 	} else if ( 5 == mode ) {
 		if ( 1 == session->replicateType ) {
-			f1 = session->servobj->_delPrevOriCommand;
-			f2 = session->servobj->_delPrevOriRepCommand;
+			f1 = session->servobj->_delPrevOriCommandFile;
+			f2 = session->servobj->_delPrevOriRepCommandFile;
 		}
 	} else if ( 6 == mode ) {
 		if ( 2 == session->replicateType ) {
-			f1 = session->servobj->_delNextOriCommand;
-			f2 = session->servobj->_delNextOriRepCommand;
+			f1 = session->servobj->_delNextOriCommandFile;
+			f2 = session->servobj->_delNextOriRepCommandFile;
 		}
 	}
 	
@@ -5214,11 +4954,9 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 	}
 	if ( needSync ) {
 		if ( f1 ) {
-			// fflush( f1 );
 			jagfdatasync( fileno( f1 ) );
 		}
 		if ( f2 ) {
-			// fflush( f2 );
 			jagfdatasync( fileno( f2 ) );
 		}
 		if ( 0 == session->replicateType && ! session->origserv ) {
@@ -5226,7 +4964,6 @@ void JagDBServer::deltalogCommand( int mode, JagSession *session, const char *me
 		}
 	}
 
-	// prt(("s9999 deltalogCommand type=%d mode=%d\n", session->replicateType, mode));
 	jaguar_mutex_unlock ( &g_dlogmutex );
 }
 
@@ -5236,53 +4973,41 @@ void JagDBServer::onlineRecoverDeltaLog()
 	if ( _faultToleranceCopy <= 1 ) return; // no replicate
 	Jstr fpaths;
 	// use client to recover delta log
-	if ( _delPrevOriCommand && JagFileMgr::fileSize(_actdelPOpath) > 0 ) {
+	if ( _delPrevOriCommandFile && JagFileMgr::fileSize(_actdelPOpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelPOpath;
 		else fpaths += Jstr("|") + _actdelPOpath;
-		// fflush( _delPrevOriCommand );
-		// jagfdatasync( fileno( _delPrevOriCommand ) );
-		jagfclose( _delPrevOriCommand );
-		_delPrevOriCommand = NULL;
+		jagfclose( _delPrevOriCommandFile );
+		_delPrevOriCommandFile = NULL;
 	}
-	if ( _delPrevRepCommand && JagFileMgr::fileSize(_actdelPRpath) > 0 ) { 
+	if ( _delPrevRepCommandFile && JagFileMgr::fileSize(_actdelPRpath) > 0 ) { 
 		if ( fpaths.size() < 1 ) fpaths = _actdelPRpath;
 		else fpaths += Jstr("|") + _actdelPRpath;
-		// fflush( _delPrevRepCommand );
-		// jagfdatasync( fileno( _delPrevRepCommand ) );
-		jagfclose( _delPrevRepCommand );
-		_delPrevRepCommand = NULL;
+		jagfclose( _delPrevRepCommandFile );
+		_delPrevRepCommandFile = NULL;
 	}
-	if ( _delPrevOriRepCommand && JagFileMgr::fileSize(_actdelPORpath) > 0 ) {
+	if ( _delPrevOriRepCommandFile && JagFileMgr::fileSize(_actdelPORpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelPORpath;
 		else fpaths += Jstr("|") + _actdelPORpath;
-		// fflush( _delPrevOriRepCommand );
-		// jagfdatasync( fileno( _delPrevOriRepCommand ) );
-		jagfclose( _delPrevOriRepCommand );
-		_delPrevOriRepCommand = NULL;
+		jagfclose( _delPrevOriRepCommandFile );
+		_delPrevOriRepCommandFile = NULL;
 	}
-	if ( _delNextOriCommand && JagFileMgr::fileSize(_actdelNOpath) > 0 ) {
+	if ( _delNextOriCommandFile && JagFileMgr::fileSize(_actdelNOpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelNOpath;
 		else fpaths += Jstr("|") + _actdelNOpath;
-		// fflush( _delNextOriCommand );
-		// jagfdatasync( fileno( _delNextOriCommand ) );
-		jagfclose( _delNextOriCommand );
-		_delNextOriCommand = NULL;
+		jagfclose( _delNextOriCommandFile );
+		_delNextOriCommandFile = NULL;
 	}
-	if ( _delNextRepCommand && JagFileMgr::fileSize(_actdelNRpath) > 0 ) {
+	if ( _delNextRepCommandFile && JagFileMgr::fileSize(_actdelNRpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelNRpath;
 		else fpaths += Jstr("|") + _actdelNRpath;
-		// fflush( _delNextRepCommand );
-		// jagfdatasync( fileno( _delNextRepCommand ) );
-		jagfclose( _delNextRepCommand );
-		_delNextRepCommand = NULL;
+		jagfclose( _delNextRepCommandFile );
+		_delNextRepCommandFile = NULL;
 	}
-	if ( _delNextOriRepCommand && JagFileMgr::fileSize(_actdelNORpath) > 0 ) {
+	if ( _delNextOriRepCommandFile && JagFileMgr::fileSize(_actdelNORpath) > 0 ) {
 		if ( fpaths.size() < 1 ) fpaths = _actdelNORpath;
 		else fpaths += Jstr("|") + _actdelNORpath;
-		// fflush( _delNextOriRepCommand );
-		// jagfdatasync( fileno( _delNextOriRepCommand ) );
-		jagfclose( _delNextOriRepCommand );
-		_delNextOriRepCommand = NULL;
+		jagfclose( _delNextOriRepCommandFile );
+		_delNextOriRepCommandFile = NULL;
 	}
 
 	if ( fpaths.size() > 0 ) { // has delta files, recover using delta
@@ -5291,24 +5016,24 @@ void JagDBServer::onlineRecoverDeltaLog()
 		raydebug( stdout, JAG_LOG_LOW, "end online recoverDeltaLog\n");
 	}
 
-	if ( !_delPrevOriCommand ) {
-		_delPrevOriCommand = loopOpen( _actdelPOpath.c_str(), "ab" );
+	if ( !_delPrevOriCommandFile ) {
+		_delPrevOriCommandFile = loopOpen( _actdelPOpath.c_str(), "ab" );
 	}
-	if ( !_delNextRepCommand ) {
-		_delNextRepCommand = loopOpen( _actdelNRpath.c_str(), "ab" );
+	if ( !_delNextRepCommandFile ) {
+		_delNextRepCommandFile = loopOpen( _actdelNRpath.c_str(), "ab" );
 	}
 	if ( 3 == _faultToleranceCopy ) {
-		if ( !_delPrevRepCommand ) {
-			_delPrevRepCommand = loopOpen( _actdelPRpath.c_str(), "ab" );
+		if ( !_delPrevRepCommandFile ) {
+			_delPrevRepCommandFile = loopOpen( _actdelPRpath.c_str(), "ab" );
 		}
-		if ( !_delPrevOriRepCommand ) {
-			_delPrevOriRepCommand = loopOpen( _actdelPORpath.c_str(), "ab" );
+		if ( !_delPrevOriRepCommandFile ) {
+			_delPrevOriRepCommandFile = loopOpen( _actdelPORpath.c_str(), "ab" );
 		}
-		if ( !_delNextOriCommand ) {
-			_delNextOriCommand = loopOpen( _actdelNOpath.c_str(), "ab" );
+		if ( !_delNextOriCommandFile ) {
+			_delNextOriCommandFile = loopOpen( _actdelNOpath.c_str(), "ab" );
 		}
-		if ( !_delNextOriRepCommand ) {
-			_delNextOriRepCommand = loopOpen( _actdelNORpath.c_str(), "ab" );
+		if ( !_delNextOriRepCommandFile ) {
+			_delNextOriRepCommandFile = loopOpen( _actdelNORpath.c_str(), "ab" );
 		}
 	}
 }
@@ -5353,64 +5078,64 @@ void JagDBServer::resetDeltaLog()
 	host4 = sp[pos4];
 	
 	if ( _faultToleranceCopy == 2 ) {
-		if ( _delPrevOriCommand ) {
-			jagfclose( _delPrevOriCommand );
+		if ( _delPrevOriCommandFile ) {
+			jagfclose( _delPrevOriCommandFile );
 		}
-		if ( _delNextRepCommand ) {
-			jagfclose( _delNextRepCommand );
+		if ( _delNextRepCommandFile ) {
+			jagfclose( _delNextRepCommandFile );
 		}
 		
 		fpath = deltahome + "/" + host2 + "_0";
-		_delPrevOriCommand = loopOpen( fpath.c_str(), "ab" );
+		_delPrevOriCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelPOpath = fpath;
 		_actdelPOhost = host2;
 		
 		fpath = deltahome + "/" + host0 + "_1";	
-		_delNextRepCommand = loopOpen( fpath.c_str(), "ab" );
+		_delNextRepCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelNRpath = fpath;
 		_actdelNRhost = host1;
 	} else if ( _faultToleranceCopy == 3 ) {
-		if ( _delPrevOriCommand ) {
-			jagfclose( _delPrevOriCommand );
+		if ( _delPrevOriCommandFile ) {
+			jagfclose( _delPrevOriCommandFile );
 		}
-		if ( _delPrevRepCommand ) {
-			jagfclose( _delPrevRepCommand );
+		if ( _delPrevRepCommandFile ) {
+			jagfclose( _delPrevRepCommandFile );
 		}
-		if ( _delPrevOriRepCommand ) {
-			jagfclose( _delPrevOriRepCommand );
+		if ( _delPrevOriRepCommandFile ) {
+			jagfclose( _delPrevOriRepCommandFile );
 		}
-		if ( _delNextOriCommand ) {
-			jagfclose( _delNextOriCommand );
+		if ( _delNextOriCommandFile ) {
+			jagfclose( _delNextOriCommandFile );
 		}
-		if ( _delNextRepCommand ) {
-			jagfclose( _delNextRepCommand );
+		if ( _delNextRepCommandFile ) {
+			jagfclose( _delNextRepCommandFile );
 		}
-		if ( _delNextOriRepCommand ) {
-			jagfclose( _delNextOriRepCommand );
+		if ( _delNextOriRepCommandFile ) {
+			jagfclose( _delNextOriRepCommandFile );
 		}
 		
 		fpath = deltahome + "/" + host2 + "_0";
-		_delPrevOriCommand = loopOpen( fpath.c_str(), "ab" );
+		_delPrevOriCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelPOpath = fpath;
 		_actdelPOhost = host2;
 		fpath = deltahome + "/" + host0 + "_2";
-		_delPrevRepCommand = loopOpen( fpath.c_str(), "ab" );
+		_delPrevRepCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelPRpath = fpath;
 		_actdelPRhost = host2;
 		fpath = deltahome + "/" + host2 + "_2";
-		_delPrevOriRepCommand = loopOpen( fpath.c_str(), "ab" );
+		_delPrevOriRepCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelPORpath = fpath;
 		_actdelPORhost = host4; 
 		fpath = deltahome + "/" + host1 + "_0";
-		_delNextOriCommand = loopOpen( fpath.c_str(), "ab" );
+		_delNextOriCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelNOpath = fpath;
 		_actdelNOhost = host1;
 		fpath = deltahome + "/" + host0 + "_1";
-		_delNextRepCommand = loopOpen( fpath.c_str(), "ab" );
+		_delNextRepCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelNRpath = fpath;
 		_actdelNRhost = host1;
 		fpath = deltahome + "/" + host1 + "_1";
-		_delNextOriRepCommand = loopOpen( fpath.c_str(), "ab" );
+		_delNextOriRepCommandFile = loopOpen( fpath.c_str(), "ab" );
 		_actdelNORpath = fpath;
 		_actdelNORhost = host3;
 	}
@@ -5442,10 +5167,11 @@ void JagDBServer::organizeCompressDir( int mode, Jstr &fpath )
 }
 
 // file open a.tar.gz and send to another server
-// mode 0: data; mode 1: pdata; mode 2: ndata  
-// mode 10: transmit wallog file
+// mode=0: main data; mode=1: pdata; mode=2: ndata  
+// mode=10: transmit wallog file
+// return 0: error; 1: OK
 int JagDBServer::fileTransmit( const Jstr &host, unsigned int port, const Jstr &passwd, 
-	const Jstr &unixSocket, int mode, const Jstr &fpath, int isAddCluster )
+								const Jstr &unixSocket, int mode, const Jstr &fpath, int isAddCluster )
 {
 	prt(("s3082 fileTransmit host=[%s] mode=%d fath=[%s] isAddCluster=%d\n", host.c_str(), mode, fpath.c_str(), isAddCluster ));
 	if ( fpath.size() < 1 ) {
@@ -5454,6 +5180,17 @@ int JagDBServer::fileTransmit( const Jstr &host, unsigned int port, const Jstr &
 	raydebug( stdout, JAG_LOG_LOW, "begin fileTransmit [%s]\n", fpath.c_str() );
 	int pkgsuccess = false;
 	
+	int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
+	jagint rc;
+	ssize_t rlen;
+	struct stat sbuf;
+	if ( 0 != stat(fpath.c_str(), &sbuf) || sbuf.st_size <= 0 ) {
+		raydebug( stdout, JAG_LOG_LOW, "E12028 error stat [%s], return\n", fpath.c_str() );
+		return 0;
+	}
+
+	//char tothdr[ hdrsz +1 ];
+	char sqlhdr[ 8 ];
 	while ( !pkgsuccess ) {
 		JaguarCPPClient pcli;
 		pcli._deltaRecoverConnection = 2;
@@ -5464,70 +5201,57 @@ int JagDBServer::fileTransmit( const Jstr &host, unsigned int port, const Jstr &
 		}
 
 		// open binary tar.gz file to send, malloc 128MB buffer to use
-		abaxint rc;
-		ssize_t rlen;
-		struct stat sbuf;
-		Jstr cmd;
-		int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
-		if ( 0 == stat(fpath.c_str(), &sbuf) && sbuf.st_size > 0 ) {
-			int fd = jagopen( fpath.c_str(), O_RDONLY, S_IRWXU);
-			if ( fd < 0 ) {
-				if ( !isAddCluster ) jagunlink( fpath.c_str() );
-				pcli.close();
-				raydebug( stdout, JAG_LOG_LOW, "E0838 end fileTransmit [%s] open error\n", fpath.c_str() );
-				return 0;
-			}
-			char buf[100];
-			memset( buf, 0, 100 );
-			if ( !isAddCluster ) {
-				cmd = "_serv_beginftransfer|" + intToStr( mode ) + "|" + longToStr(sbuf.st_size) + "|" + longToStr(THREADID);
-			} else {
-				cmd = "_serv_addbeginftransfer|" + intToStr( mode ) + "|" + longToStr(sbuf.st_size) + "|" + longToStr(THREADID);
-			}
 
-			memcpy( buf+hdrsz, cmd.c_str(), cmd.size() );
-			sprintf( buf, "%0*lld", hdrsz-4, cmd.size() );
-			// width of buf os JAG_SOCK_TOTAL_HDR_LEN; number is cmd.size()
-			memcpy( buf+hdrsz-4, "ANCC", 4 );
-			rc = sendData( pcli.getSocket(), buf, hdrsz+cmd.size() ); // 016838ANCCmessage client query mode
-			if ( rc < 0 ) {
-				jagclose( fd );
-				pcli.close();
-				raydebug( stdout, JAG_LOG_LOW, "E0831 retry fileTransmit [%s] senddata error\n", fpath.c_str() );
-				continue;
-			}
-			
-			beginBulkSend( pcli.getSocket() );
-			rlen = jagsendfile( pcli.getSocket(), fd, sbuf.st_size );
-			endBulkSend( pcli.getSocket() );
-			if ( rlen < sbuf.st_size ) {
-				jagclose( fd );
-				pcli.close();
-				raydebug( stdout, JAG_LOG_LOW, "E8371 retry fileTransmit [%s] sendfile error\n", fpath.c_str() );
-				continue;
-			}
-			raydebug( stdout, JAG_LOG_LOW, "fileTransmit [%s] sendfile %l bytes\n", fpath.c_str(), rlen );
-			rlen = sendData( pcli.getSocket(), "try", 3 );
-			if ( rlen < 3 ) {
-				jagclose( fd );
-				pcli.close();
-				raydebug( stdout, JAG_LOG_LOW, "E7723 retry fileTransmit [%s] try error\n", fpath.c_str() );
-				continue;
-			}
-			rlen = recvData( pcli.getSocket(), buf, 3 );
-			if ( rlen < 3 || memcmp( buf, "end", 3 ) != 0 ) {
-				jagclose( fd );
-				pcli.close();
-				raydebug( stdout, JAG_LOG_LOW, "retry fileTransmit [%s] package integrity check failure\n", fpath.c_str() );
-				continue;
-			}
-			jagclose( fd );
+		Jstr cmd;
+		int fd = jagopen( fpath.c_str(), O_RDONLY, S_IRWXU);
+		if ( fd < 0 ) {
 			if ( !isAddCluster ) jagunlink( fpath.c_str() );
-			pkgsuccess = true;
 			pcli.close();
-			raydebug( stdout, JAG_LOG_LOW, "end fileTransmit [%s] OK\n", fpath.c_str() );
+			raydebug( stdout, JAG_LOG_LOW, "E0838 end fileTransmit [%s] open error\n", fpath.c_str() );
+			return 0;
 		}
+
+		if ( isAddCluster ) {
+			cmd = "_serv_addbeginftransfer|";
+		} else {
+			cmd = "_serv_beginftransfer|";
+		}
+		cmd += intToStr( mode ) + "|" + longToStr(sbuf.st_size) + "|" + longToStr(THREADID);
+		char cmdbuf[JAG_SOCK_TOTAL_HDR_LEN+cmd.size()+1];
+		makeSQLHeader( sqlhdr );
+		putXmitHdrAndData( cmdbuf, sqlhdr, cmd.c_str(), cmd.size(), "ANCC" );
+
+		//prt(("s220223 ANCC sendRawData in filetransfer ...\n"));
+		rc = sendRawData( pcli.getSocket(), cmdbuf, hdrsz+cmd.size() ); // xxx00000000168ANCCmessage client query mode
+		//prt(("s220223 ANCC sendRawData in filetransfer done rc=%d\n", rc ));
+		if ( rc < 0 ) {
+			jagclose( fd );
+			pcli.close();
+			raydebug( stdout, JAG_LOG_LOW, "E0831 retry fileTransmit [%s] sendrawdata error\n", fpath.c_str() );
+			continue;
+		}
+			
+		beginBulkSend( pcli.getSocket() );
+
+		rlen = jagsendfile( pcli.getSocket(), fd, sbuf.st_size );
+
+		endBulkSend( pcli.getSocket() );
+		if ( rlen < sbuf.st_size ) {
+			jagclose( fd );
+			pcli.close();
+			raydebug( stdout, JAG_LOG_LOW, "E8371 retry fileTransmit [%s] sendfile error\n", fpath.c_str() );
+			continue;
+		}
+		raydebug( stdout, JAG_LOG_LOW, "fileTransmit [%s] sendfile %l bytes\n", fpath.c_str(), rlen );
+
+		jagclose( fd );
+		if ( !isAddCluster ) jagunlink( fpath.c_str() );
+		pkgsuccess = true;
+		pcli.close();
+		//if ( nbuf ) free(nbuf);
+		raydebug( stdout, JAG_LOG_LOW, "end fileTransmit [%s] OK\n", fpath.c_str() );
 	}
+
 	return 1;
 }
 
@@ -5541,13 +5265,13 @@ void JagDBServer::recoveryFromTransferredFile()
 
 	// first, need to drop all current tables and indexs if untar needed
 	JagRequest req;
-	JagSession session( g_dtimeout );
+	JagSession session;
 	req.session = &session;
 	session.servobj = this;
 
 	// process original data first
-	tmppath = _cfg->getTEMPDataHOME( 0 );
-	datapath = _cfg->getJDBDataHOME( 0 );
+	tmppath = _cfg->getTEMPDataHOME( JAG_MAIN );
+	datapath = _cfg->getJDBDataHOME( JAG_MAIN );
 	JagStrSplit sp( _crecoverFpath.c_str(), '|', true );
 	if ( sp.length() > 0 ) {
 		raydebug( stdout, JAG_LOG_LOW, "cleanredo file [%s]\n", _crecoverFpath.c_str() );
@@ -5571,8 +5295,8 @@ void JagDBServer::recoveryFromTransferredFile()
 	}
 	if ( _faultToleranceCopy >= 2 ) {
 		// process prev data dir
-		tmppath = _cfg->getTEMPDataHOME( 1 );
-		datapath = _cfg->getJDBDataHOME( 1 );
+		tmppath = _cfg->getTEMPDataHOME( JAG_PREV );
+		datapath = _cfg->getJDBDataHOME( JAG_PREV );
 		sp.init( _prevcrecoverFpath.c_str(), '|', true );
 		if ( sp.length() > 0 ) {
 			raydebug( stdout, JAG_LOG_LOW, "prevcleanredo file [%s]\n", _prevcrecoverFpath.c_str() );
@@ -5597,8 +5321,8 @@ void JagDBServer::recoveryFromTransferredFile()
 	}
 	if ( _faultToleranceCopy >= 3 ) {
 		// process next data dir
-		tmppath = _cfg->getTEMPDataHOME( 2 );
-		datapath = _cfg->getJDBDataHOME( 2 );
+		tmppath = _cfg->getTEMPDataHOME( JAG_NEXT );
+		datapath = _cfg->getJDBDataHOME( JAG_NEXT );
 		sp.init( _nextcrecoverFpath.c_str(), '|', true );
 		if ( sp.length() > 0 ) {
 			raydebug( stdout, JAG_LOG_LOW, "nextcleanredo file [%s]\n", _nextcrecoverFpath.c_str() );
@@ -5625,21 +5349,21 @@ void JagDBServer::recoveryFromTransferredFile()
 	raydebug( stdout, JAG_LOG_LOW, "end redo xfer data\n" );
 	
 	// after finish copying files, refresh some related memory objects
-	if ( isdo ) crecoverRefreshSchema( 0 );
+	if ( isdo ) crecoverRefreshSchema( JAG_MAKE_OBJECTS_CONNECTIONS );
 	_crecoverFpath = "";
 	_prevcrecoverFpath = "";
 	_nextcrecoverFpath = "";
 }
 
-// mode 0: rebuild all objects and remake connections
-// mode 1: rebuild all objects only
-// mode 2: remake connections only
-void JagDBServer::crecoverRefreshSchema( int mode )
+// mode JAG_MAKE_OBJECTS_CONNECTIONS: rebuild all objects and remake connections
+// mode JAG_MAKE_OBJECTS_ONLY: rebuild all objects only
+// mode JAG_MAKE_CONNECTIONS_ONLY: remake connections only
+void JagDBServer::crecoverRefreshSchema( int mode, bool doRestoreInsertBufferMap )
 {
 	// destory schema related objects and rebuild them
-	raydebug( stdout, JAG_LOG_LOW, "begin redo schema...\n" );
+	raydebug( stdout, JAG_LOG_LOW, "begin redo schema mode=%d ...\n", mode );
 
-	if ( 0 == mode || 1 == mode ) {
+	if ( JAG_MAKE_OBJECTS_CONNECTIONS == mode || JAG_MAKE_OBJECTS_ONLY == mode ) {
 		if ( _userDB ) {
 			delete _userDB;
 			_userDB = NULL;
@@ -5700,33 +5424,47 @@ void JagDBServer::crecoverRefreshSchema( int mode )
 			_nextindexschema = NULL;
 		}
 
+		prt(("s393828 rebuildObjects ...\n"));
 		_objectLock->rebuildObjects();
+		prt(("s393828 rebuildObjects done\n"));
 
 		// also, get other databases name
 		Jstr dblist, dbpath;
-		dbpath = _cfg->getJDBDataHOME( 0 );
+		dbpath = _cfg->getJDBDataHOME( JAG_MAIN );
 		dblist = JagFileMgr::listObjects( dbpath );
-		_objectLock->setInitDatabases( dblist, 0 );
-		dbpath = _cfg->getJDBDataHOME( 1 );
-		dblist = JagFileMgr::listObjects( dbpath );
-		_objectLock->setInitDatabases( dblist, 1 );
-		dbpath = _cfg->getJDBDataHOME( 2 );
-		dblist = JagFileMgr::listObjects( dbpath );
-		_objectLock->setInitDatabases( dblist, 2 );
+		_objectLock->setInitDatabases( dblist, JAG_MAIN );
 
+		dbpath = _cfg->getJDBDataHOME( JAG_PREV );
+		dblist = JagFileMgr::listObjects( dbpath );
+		_objectLock->setInitDatabases( dblist, JAG_PREV );
+
+		dbpath = _cfg->getJDBDataHOME( JAG_NEXT );
+		dblist = JagFileMgr::listObjects( dbpath );
+		_objectLock->setInitDatabases( dblist, JAG_NEXT );
+
+		prt(("s08271 initObjects ...\n"));
 		initObjects();
-		makeTableObjects( (void*)this );
+
+		prt(("s08272 makeTableObjects ...\n"));
+		makeTableObjects( (void*)this, doRestoreInsertBufferMap );
+		prt(("s08273 initObjects makeTableObjects done\n"));
 	}
 
-	if ( 0 == mode || 2 == mode ) {
+	if ( JAG_MAKE_OBJECTS_CONNECTIONS == mode || JAG_MAKE_CONNECTIONS_ONLY == mode ) {
+		prt(("s3011827 makeInitConnection ...\n"));
 		_dbConnector->makeInitConnection( _debugClient );
+		prt(("s3011827 makeInitConnection done\n"));
 		JagRequest req;
-		JagSession session( g_dtimeout );
+		JagSession session;
 		req.session = &session;
 		session.servobj = this;
 		session.replicateType = 0;
-		refreshSchemaInfo( req, this, g_lastSchemaTime );
+		prt(("s3011828 refreshSchemaInfo ...\n"));
+		//refreshSchemaInfo( req, this, g_lastSchemaTime );
+		refreshSchemaInfo( session.replicateType, this, g_lastSchemaTime );
+		prt(("s3011828 refreshSchemaInfo done\n"));
 	}
+
 	raydebug( stdout, JAG_LOG_LOW, "end redo schema\n" );
 }
 
@@ -5737,41 +5475,39 @@ void JagDBServer::resetRegSpLog()
 	
     Jstr deltahome = JagFileMgr::getLocalLogDir("delta");
     Jstr fpath = deltahome + "/redodata.log";
-    if ( _recoveryRegCommand ) {
-        jagfclose( _recoveryRegCommand );
+    if ( _recoveryRegCommandFile ) {
+        jagfclose( _recoveryRegCommandFile );
     }
-    if ( _recoverySpCommand ) {
-        jagfclose( _recoverySpCommand );
+    if ( _recoverySpCommandFile ) {
+        jagfclose( _recoverySpCommandFile );
     }
 	
 	_recoveryRegCmdPath = fpath;
-    _recoveryRegCommand = loopOpen( fpath.c_str(), "ab" );
+    _recoveryRegCommandFile = loopOpen( fpath.c_str(), "ab" );
 	
 	fpath = deltahome + "/redometa.log";
 	_recoverySpCmdPath = fpath;
-    _recoverySpCommand = loopOpen( fpath.c_str(), "ab" );
+    _recoverySpCommandFile = loopOpen( fpath.c_str(), "ab" );
 	raydebug( stdout, JAG_LOG_LOW, "end reset data/schema log\n" );
 }
 
 void JagDBServer::recoverRegSpLog()
 {
 	raydebug( stdout, JAG_LOG_LOW, "begin redo data and schema ...\n" );
-	abaxint cnt;
+	jagint cnt;
 
 	// global lock
 	JAG_BLURT jaguar_mutex_lock ( &g_flagmutex ); JAG_OVER;
 
 	// check sp command first
-	if ( _recoverySpCommand && JagFileMgr::fileSize(_recoverySpCmdPath) > 0 ) {
-		// fflush( _recoverySpCommand );
-		// jagfdatasync( fileno( _recoverySpCommand ) );
-		jagfclose( _recoverySpCommand );
-		_recoverySpCommand = NULL;
+	if ( _recoverySpCommandFile && JagFileMgr::fileSize(_recoverySpCmdPath) > 0 ) {
+		jagfclose( _recoverySpCommandFile );
+		_recoverySpCommandFile = NULL;
 		raydebug( stdout, JAG_LOG_LOW, "begin redo metadata [%s] ...\n", _recoverySpCmdPath.c_str() );
 		cnt = redoLog( _recoverySpCmdPath );
 		raydebug( stdout, JAG_LOG_LOW, "end redo metadata [%s] count=%l\n", _recoverySpCmdPath.c_str(), cnt );
 		jagunlink( _recoverySpCmdPath.c_str() );
-		_recoverySpCommand = loopOpen( _recoverySpCmdPath.c_str(), "ab" );
+		_recoverySpCommandFile = loopOpen( _recoverySpCmdPath.c_str(), "ab" );
 	}
 
 	// unlock global lock
@@ -5779,16 +5515,14 @@ void JagDBServer::recoverRegSpLog()
 	jaguar_mutex_unlock ( &g_flagmutex );
 
 	// check reg command to redo log
-	if ( _recoveryRegCommand && JagFileMgr::fileSize(_recoveryRegCmdPath) > 0 ) {
-		// fflush( _recoveryRegCommand );
-		// jagfdatasync( fileno( _recoveryRegCommand ) );
-		jagfclose( _recoveryRegCommand );
-		_recoveryRegCommand = NULL;
+	if ( _recoveryRegCommandFile && JagFileMgr::fileSize(_recoveryRegCmdPath) > 0 ) {
+		jagfclose( _recoveryRegCommandFile );
+		_recoveryRegCommandFile = NULL;
 		raydebug( stdout, JAG_LOG_LOW, "begin redo data [%s] ...\n", _recoveryRegCmdPath.c_str() );
 		cnt = redoLog( _recoveryRegCmdPath );
 		raydebug( stdout, JAG_LOG_LOW, "end redo data [%s] count=%l\n", _recoveryRegCmdPath.c_str(), cnt );
 		jagunlink( _recoveryRegCmdPath.c_str() );
-		_recoveryRegCommand = loopOpen( _recoveryRegCmdPath.c_str(), "ab" );
+		_recoveryRegCommandFile = loopOpen( _recoveryRegCmdPath.c_str(), "ab" );
 	}
 
 	raydebug( stdout, JAG_LOG_LOW, "end redo data and schema\n" );
@@ -5798,28 +5532,28 @@ void JagDBServer::recoverRegSpLog()
 void JagDBServer::resetDinsertLog()
 {
 	Jstr fpath = JagFileMgr::getLocalLogDir("delta") + "/dinsertactive.log";
-	if ( _dinsertCommand ) {
-		jagfclose( _dinsertCommand );
+	if ( _dinsertCommandFile ) {
+		jagfclose( _dinsertCommandFile );
 	}
 	raydebug( stdout, JAG_LOG_LOW, "open new dinsert %s\n", fpath.c_str() );
-	_dinsertCommand = loopOpen( fpath.c_str(), "ab" );
+	_dinsertCommandFile = loopOpen( fpath.c_str(), "ab" );
 	_activeDinFpath = fpath;
 }
 
+// This is called periodically
 // do dinsertbackup if not empty, and then rename dinsertactive to dinsertbackup
 void JagDBServer::rotateDinsertLog()
 {
 	Jstr backupDinPath = JagFileMgr::getLocalLogDir("delta") + "/dinsertbackup.log";
+
 	recoverDinsertLog( backupDinPath );
-	// JAG_BLURT jaguar_mutex_lock ( &g_dinsertmutex ); JAG_OVER;
+
 	jaguar_mutex_lock ( &g_dinsertmutex ); 
-	if ( _dinsertCommand ) {
-		// fflush( _dinsertCommand );
-		// jagfdatasync( fileno( _dinsertCommand ) );
-		jagfclose( _dinsertCommand );
+	if ( _dinsertCommandFile ) {
+		jagfclose( _dinsertCommandFile );
 	}
 	jagrename( _activeDinFpath.c_str(), backupDinPath.c_str() );
-	_dinsertCommand = loopOpen( _activeDinFpath.c_str(), "ab" );
+	_dinsertCommandFile = loopOpen( _activeDinFpath.c_str(), "ab" );
 	jaguar_mutex_unlock ( &g_dinsertmutex );
 }
 
@@ -5828,15 +5562,17 @@ void JagDBServer::recoverDinsertLog( const Jstr &fpath )
 {
 	if ( JagFileMgr::fileSize( fpath ) < 1 ) return;
 	raydebug( stdout, JAG_LOG_LOW, "begin redo %s ...\n",  fpath.c_str() );
-	abaxint cnt = redoDinsertLog( fpath );
+
+	jagint cnt = redoDinsertLog( fpath );
+
 	raydebug( stdout, JAG_LOG_LOW, "end redo %s cnt=%l\n",  fpath.c_str(), cnt );
 	jagunlink( fpath.c_str() );
-	raydebug( stdout, JAG_LOG_LOW, "unlink %s\n",  fpath.c_str() );
+	raydebug( stdout, JAG_LOG_LOW, "jagunlink %s\n",  fpath.c_str() );
 }
 
 // process commands in fpath one by one and send them to corresponding servers
 // client_timediff;ddddddddddddddddstrclient_timediff;ddddddddddddddddstr
-abaxint JagDBServer::redoDinsertLog( const Jstr &fpath )
+jagint JagDBServer::redoDinsertLog( const Jstr &fpath )
 {
 	if ( JagFileMgr::fileSize( fpath ) <= 0 ) {
 		return 0;
@@ -5845,16 +5581,22 @@ abaxint JagDBServer::redoDinsertLog( const Jstr &fpath )
 	int i, fd = jagopen( fpath.c_str(), O_RDONLY|JAG_NOATIME );
 	if ( fd < 0 ) return 0;
 	char buf16[17];
-	abaxint len;
+	jagint len;
 	char c;
 	char *buf = NULL;
 
 	prt(("s3950 redoDinsertLog [%s]\n", fpath.c_str() ));
 
-	abaxint cnt = 0, onecnt = 0;
+	jagint cnt = 0, onecnt = 0;
 	Jstr cmd;
 	_dbConnector->_parentCliNonRecover->_servCurrentCluster = _dbConnector->_nodeMgr->_curClusterNumber;
 	JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer>> qmap;
+
+	JagParser parser( (void*)this, false );
+	JagParseAttribute jpa;
+	jpa.dfdbname = _dbConnector->_parentCliNonRecover->_dbname;
+	jpa.servobj = this;
+
 	while ( 1 ) {
 		// get timediff
 		i = 0;
@@ -5876,16 +5618,21 @@ abaxint JagDBServer::redoDinsertLog( const Jstr &fpath )
 			printf("s3398 end timediff 0 is 0\n");
 			break;
 		}
-		_dbConnector->_parentCliNonRecover->_tdiff = atoi( buf16 );
+		_dbConnector->_parentCliNonRecover->_tdiff = jpa.timediff = jpa.servtimediff = atoi( buf16 );
 
-		memset( buf16, 0, 17 );
-		read( fd, buf16, 16 );
+		// read msglen
+		memset( buf16, 0, JAG_REDO_MSGLEN+1 );
+		raysaferead( fd, buf16, JAG_REDO_MSGLEN );
 		len = jagatoll( buf16 );
+
+		// read msg
 		buf = (char*)jagmalloc(len+1);
 		memset(buf, 0, len+1);
-		read( fd, buf, len );
+		raysaferead( fd, buf, len );
 		cmd = Jstr( buf, len );
-		onecnt += _dbConnector->_parentCliNonRecover->oneCmdInsertPool( qmap, cmd );
+
+		onecnt += _dbConnector->_parentCliNonRecover->oneCmdInsertPool( jpa, parser, qmap, cmd );
+
 		if ( onecnt > 99999 ) {
 			_dbConnector->_parentCliNonRecover->flushQMap( qmap );
 			cnt += onecnt;
@@ -5894,122 +5641,36 @@ abaxint JagDBServer::redoDinsertLog( const Jstr &fpath )
 		free( buf );
 		buf = NULL;
 	}
+
 	_dbConnector->_parentCliNonRecover->flushQMap( qmap );
 	cnt += onecnt;
 	jagclose( fd );
 	return cnt;
 }
 
-// open new walactive log
-void JagDBServer::resetWalLog()
-{
-	if ( ! _walLog ) return;
-	
-    Jstr fpath = JagFileMgr::getLocalLogDir("cmd") + "/walactive.log";
-    if ( _fpCommand ) {
-        jagfclose( _fpCommand );
-    }
-	raydebug( stdout, JAG_LOG_LOW, "open new WAL %s\n", fpath.c_str() );
-
-    _fpCommand = loopOpen( fpath.c_str(), "wb" );
-	_activeWalFpath = fpath;
-	// prt(("s8018 open [%s] _fpCommand=%0x\n", fpath.c_str(), _fpCommand ));
-}
-
-// rename walactive to walbackup
-void JagDBServer::rotateWalLog()
-{
-	if ( ! _walLog ) return;
-	Jstr backupWalPath = JagFileMgr::getLocalLogDir("cmd") + "/walbackup.log";
-	// JAG_BLURT jaguar_mutex_lock ( &g_logmutex ); JAG_OVER;
-	jaguar_mutex_lock ( &g_logmutex ); 
-    if ( _fpCommand ) {
-        jagfclose( _fpCommand );
-    }
-	// jagsync();
-
-	// find a remote Data-center and fileTransmit to a random server in that data-center
-	// Jstr host = findHostInOtherDataCenter();
-	// if ( host.size() > 0 ) {
-		// fileTransmit( host, 10,  _activeWalFpath, 0 );
-	// }
-
-	jagrename( _activeWalFpath.c_str(), backupWalPath.c_str() );
-	_fpCommand = loopOpen( _activeWalFpath.c_str(), "wb" );
-	jaguar_mutex_unlock ( &g_logmutex );
-}
-
-
 // read uncommited logs in cmd/ dir and execute them
-void JagDBServer::recoverWalLog( const Jstr &fpath )
+void JagDBServer::recoverWalLog( )
 {
 	if ( ! _walLog ) return;
 	
-	if ( JagFileMgr::fileSize( fpath ) < 1 ) return;
-	raydebug( stdout, JAG_LOG_LOW, "begin redo %s ...\n",  fpath.c_str() );
-	abaxint cnt = redoLog( fpath );
-	raydebug( stdout, JAG_LOG_LOW, "end redo %s cnt=%l\n",  fpath.c_str(), cnt );
-	jagunlink( fpath.c_str() );
-	raydebug( stdout, JAG_LOG_LOW, "unlink %s\n",  fpath.c_str() );
-}
+	Jstr walpath = _cfg->getWalLogHOME();
+	Jstr fpath;
+	Jstr fileNames = JagFileMgr::listObjects( walpath, ".wallog" );
+	JagStrSplit sp( fileNames, '|');
+	for ( int i=0; i < sp.size(); ++i ) {
+		fpath = walpath + "/" + sp[i];
+		raydebug( stdout, JAG_LOG_LOW, "begin redoLog %s ...\n",  fpath.c_str() );
+		jagint cnt = redoLog( fpath );
+		raydebug( stdout, JAG_LOG_LOW, "end redoLog %s cnt=%l\n",  fpath.c_str(), cnt );
 
-// fsync log files
-void JagDBServer::syncLogs()
-{
-	if ( ! _walLog ) return;
-
-    Jstr fullpath = JagFileMgr::getLocalLogDir("cmd");
-
-	struct stat   	statbuf;
-	DIR 			*dp;
-	struct dirent  	*dirp;
-	Jstr  fpath;
-	abaxint cnt = 0;
-	int  fd;
-
-	if ( stat( fullpath.c_str(), &statbuf) < 0 ) {
-		raydebug( stdout, JAG_LOG_LOW, "Error stat [%s], recovery not done\n", fullpath.c_str() );
-		return;
+		//jagunlink( fpath.c_str() );
+		//raydebug( stdout, JAG_LOG_LOW, "removed redoLog %s\n",  fpath.c_str() );
 	}
-
-	if ( NULL == (dp=opendir(fullpath.c_str())) ) {
-		raydebug( stdout, JAG_LOG_LOW, "Error opendir [%s], recovery not done\n", fullpath.c_str() );
-		return;
-	}
-
-	// raydebug( stdout, JAG_LOG_LOW, "Recover log...\n"); 
-	while( NULL != (dirp=readdir(dp)) ) {
-		if ( 0==strcmp(dirp->d_name, ".") || 0==strcmp(dirp->d_name, "..") ) {
-			// prt(("s6307 dirp->d_name=[%s] skip\n", dirp->d_name ));
-			continue;
-		}
-
-		fpath = fullpath + "/" + dirp->d_name;
-		if ( 0 != strncmp( dirp->d_name, "command-", 8 ) ) { 
-			continue; 
-		}
-
-		if ( JagFileMgr::fileSize( fpath ) > 0 ) {
-			fd = jagopen((char *)fpath.c_str(), O_RDWR|JAG_NOATIME );
-			if ( fd >= 0 ) {
-				jagfsync( fd );
-				raydebug( stdout, JAG_LOG_LOW, "synch %s\n", fpath.c_str() );
-				jagclose( fd );
-			}
-		} else {
-			if ( _activeWalFpath != fpath ) {
-		    	prt(("s6208 filesize=0  delete %s\n", fpath.c_str() ));
-				jagunlink( fpath.c_str() );
-			}
-		}
-	}
-
-	closedir(dp);
 }
 
 // execute commands in fpath one by one
 // replicateType;client_timediff;isBatch;ddddddddddddddddqstrreplicateType;client_timediff;isBatch;ddddddddddddddddqstr
-abaxint JagDBServer::redoLog( const Jstr &fpath )
+jagint JagDBServer::redoLog( const Jstr &fpath )
 {
 	if ( JagFileMgr::fileSize( fpath ) <= 0 ) {
 		return 0;
@@ -6017,12 +5678,13 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 
 	int i, fd = jagopen( fpath.c_str(), O_RDONLY|JAG_NOATIME );
 	if ( fd < 0 ) return 0;
+
 	char buf16[17];
-	abaxint len;
+	jagint len;
 	char c;
 	char *buf = NULL;
 	JagRequest req;
-	JagSession session( 0 );
+	JagSession session;
 	req.hasReply = false;
 	req.session = &session;
 	session.servobj = this;
@@ -6033,14 +5695,15 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 
 	prt(("s3949 redoLog [%s]\n", fpath.c_str() ));
 
-	abaxint cnt = 0;
+	jagint cnt = 0;
 	while ( 1 ) {
 		// get replicateType
 		i = 0;
-		memset( buf16, 0, 17 );
+		memset( buf16, 0, 4 );
 		while( 1==read(fd, &c, 1) ) {
 			buf16[i] = c;
 			if ( c == ';' ) {
+				// ; is field separator
 				buf16[i] =  '\0';
 				break;
 			} else {
@@ -6052,13 +5715,14 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 			}
 			++i;
 		}
+
 		if ( buf16[0] == '\0' ) {
-			printf("s3398 end replicateType 0 is 0\n");
+			prt(("s13398 end replicateType 0 is 0\n"));
 			break;
 		}
 		session.replicateType = atoi( buf16 );
 
-		// get timediff
+		// get time zone diff
 		i = 0;
 		memset( buf16, 0, 17 );
 		while( 1==read(fd, &c, 1) ) {
@@ -6082,7 +5746,7 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 
 		// get isBatch
 		i = 0;
-		memset( buf16, 0, 17 );
+		memset( buf16, 0, 4 );
 		while( 1==read(fd, &c, 1) ) {
 			buf16[i] = c;
 			if ( c == ';' ) {
@@ -6096,34 +5760,43 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 			}
 			++i;
 		}
+
 		if ( buf16[0] == '\0' ) {
 			printf("s3398 end isBatch 0 is 0\n");
 			break;
 		}
+
 		req.batchReply = atoi( buf16 );
+		prt(("s130874 in redoLog req.batchReply=%d\n", req.batchReply ));
 
 		// get mesg len
-		memset( buf16, 0, 17 );
-		raysaferead( fd, buf16, 16 );
+		memset( buf16, 0, JAG_REDO_MSGLEN+1 );
+		raysaferead( fd, buf16, JAG_REDO_MSGLEN );
 		len = jagatoll( buf16 );
 
 		buf = (char*)jagmalloc(len+1);
 		memset(buf, 0, len+1);
 		raysaferead( fd, buf, len );
 		try {
-			processMultiCmd( req, buf, len, this, g_lastSchemaTime, g_lastHostTime, 0, true, 1 );
+			prt(("s35008 processMultiSingleCmd buf=[%s]\n", buf ));
+			processMultiSingleCmd( req, buf, len, this, g_lastSchemaTime, g_lastHostTime, 0, true, 1 );
 		} catch ( const char *e ) {
-			raydebug( stdout, JAG_LOG_LOW, "redo log processMultiCmd [%s] caught exception [%s]\n", buf, e );
+			raydebug( stdout, JAG_LOG_LOW, "redo log processMultiSingleCmd [%s] caught exception [%s]\n", buf, e );
 		} catch ( ... ) {
-			raydebug( stdout, JAG_LOG_LOW, "redo log processMultiCmd [%s] caught unknown exception\n", buf );
+			raydebug( stdout, JAG_LOG_LOW, "redo log processMultiSingleCmd [%s] caught unknown exception\n", buf );
 		}
 
 		free( buf );
 		buf = NULL;
 		if ( req.session->replicateType == 0 ) ++cnt;
+
+		if ( (cnt%50000) == 0 ) {
+			raydebug( stdout, JAG_LOG_LOW, "redo count=%d\n", cnt );
+		}
 	}
 
 	jagclose( fd );
+	raydebug( stdout, JAG_LOG_LOW, "redoLog done count=%d\n", cnt );
 	return cnt;
 }
 
@@ -6131,8 +5804,6 @@ abaxint JagDBServer::redoLog( const Jstr &fpath )
 // goto to each table/index, write the bottom level to a disk file
 void JagDBServer::flushAllBlockIndexToDisk()
 {
-	// raydebug( stdout, JAG_LOG_LOW, "Flush block index to disk ...\n" );
-	// indexs will be flushed inside table object
 	JagTable *ptab; Jstr str;
 	for ( int i = 0; i < _faultToleranceCopy; ++i ) {
 		raydebug( stdout, JAG_LOG_LOW, "Copy %d/%d:\n", i, _faultToleranceCopy );
@@ -6176,7 +5847,7 @@ void JagDBServer::removeAllBlockIndexInDiskAll( const JagTableSchema *tableschem
 
 			fpath = jaguarHome() + datapath + db + "/" + tab +"/" + tab + ".bid";
 			jagunlink( fpath.c_str() );
-			//printf("s4401 unlink [%s]\n", fpath.c_str() );
+			//printf("s4401 jagunlink [%s]\n", fpath.c_str() );
 		}
 	}
 	if ( vec ) delete vec;
@@ -6184,13 +5855,13 @@ void JagDBServer::removeAllBlockIndexInDiskAll( const JagTableSchema *tableschem
 
 // obj method
 // look at _taskMap and get all TaskIDs with the same threadID
-Jstr JagDBServer::getTaskIDsByThreadID( abaxint threadID )
+Jstr JagDBServer::getTaskIDsByThreadID( jagint threadID )
 {
 	Jstr taskIDs;
 	const AbaxPair<AbaxLong,AbaxString> *arr = _taskMap->array();
-	abaxint len = _taskMap->arrayLength();
+	jagint len = _taskMap->arrayLength();
 	// sprintf( buf, "%14s  %20s  %16s  %16s  %16s %s\n", "TaskID", "ThreadID", "User", "Database", "StartTime", "Command");
-	for ( abaxint i = 0; i < len; ++i ) {
+	for ( jagint i = 0; i < len; ++i ) {
 		if ( ! _taskMap->isNull( i ) ) {
 			const AbaxPair<AbaxLong,AbaxString> &pair = arr[i];
 			if ( pair.key != AbaxLong(threadID) ) { continue; }
@@ -6212,13 +5883,11 @@ int JagDBServer::schemaChangeCommandSyncRemove( const Jstr & dbobj )
 	return 1;
 }
 
-// method to make sure schema change command, such as drop/create table etc, is synchronized among servers using hashmap before actually lock it
+// method to make sure schema change command, such as drop/create table etc, 
+// is synchronized among servers using hashmap before actually lock it
 // isRemove 0: addKeyValue; isRemove 1: removeKey from hashMap
-int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr &dbobj, abaxint opcode, int isRemove )
+int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr &dbobj, jagint opcode, int isRemove )
 {
-	// disable for now
-	// return 1;
-
 	if ( isRemove ) {
 		_scMap->removeKey( dbobj );
 		return 1;
@@ -6229,43 +5898,42 @@ int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr
 	if ( _scMap->addKeyValue( dbobj, opcode ) ) {
 		cond[0] = 'O'; cond[1] = 'K';
 		setmap = 1;
-		//prt(("s0393 schemaChangeCommandSyncCheck() addKeyValue true  OK\n" ));
+		//prt(("s023093 schemaChangeCommandSyncCheck() addKeyValue %s true  OK\n", dbobj.s() ));
 	} else {
-		//prt(("s0394 schemaChangeCommandSyncCheck() addKeyValue false NG\n" ));
+		//prt(("s023294 schemaChangeCommandSyncCheck() addKeyValue %s false NG\n", dbobj.s() ));
 	}
 
-	//prt(("s4402 schemaChangeCommandSyncCheck() sendMessageLength(cond=%s) ...\n", cond ));
-	if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+	prt(("s4402 schemaChangeCommandSyncCheck() sendMessageLength(cond=%s) ...\n", cond ));
+	int rc;
+	if ( ( rc = sendMessageLength( req, cond, 2, "SS" ) ) < 0 ) {
 		if ( setmap > 0 ) _scMap->removeKey( dbobj );
-		raydebug( stdout, JAG_LOG_LOW, "s6027 send SS < 0, return 0\n" );
+		raydebug( stdout, JAG_LOG_LOW, "s6027 sendMessageLength(%s) SS < 0 (%d), return 0\n", cond, rc  );
 		return 0;
 	}
-	//prt(("s4402 sendMessageLength() done ...\n" ));
+	prt(("s4402 sendMessageLength() done ...\n" ));
 
 	// waiting for signal; if NG, reject and return
 	int hdrsz = JAG_SOCK_TOTAL_HDR_LEN; 
 	char hdr[hdrsz+1];
 	char *newbuf = NULL;
-	// prt(("s5002 schemaChangeCommandSyncCheck() recvData ...\n" ));
-	// if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || *(newbuf+1) != 'K' ) {
-	if ( recvData( req.session->sock, hdr, newbuf ) >=0 && ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) ) {
-		// prt(("s3039 recvData got OK from %s\n", req.session->ip.c_str() ));
+	prt(("s2202833 recvMessage() ... expect OK ...\n" ));
+	if ( recvMessage( req.session->sock, hdr, newbuf ) >=0 && ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) ) {
 		// sendMessageLength( req, "OK", 2, "SS" );
 		// DONOT send OK to client; if recv OK, do nothing
 	} else {
 		// connection abort or not OK signal, reject
 		if ( setmap > 0 ) _scMap->removeKey( dbobj );
 		if ( newbuf ) {
-			raydebug( stdout, JAG_LOG_LOW, "s6328 recvData < 0 or not OK, buf=[%s] return 0\n", newbuf );
+			raydebug( stdout, JAG_LOG_LOW, "s6328 recvMessage < 0 or not OK, buf=[%s] return 0\n", newbuf );
 		} else {
-			raydebug( stdout, JAG_LOG_LOW, "s6328 recvData < 0 or not OK, newbuf==NULL return 0\n" );
+			raydebug( stdout, JAG_LOG_LOW, "s6328 recvMessage < 0 or not OK, newbuf==NULL return 0\n" );
 		}
 		if ( newbuf ) free( newbuf );
 		return 0;
 	}
 
 	if ( newbuf ) free( newbuf );
-	// prt(("s5002 schemaChangeCommandSyncCheck() recvData done\n" ));
+	prt(("s5002 schemaChangeCommandSyncCheck() recvMessage done\n" ));
 	return 1;
 }
 
@@ -6274,6 +5942,9 @@ int JagDBServer::schemaChangeCommandSyncCheck( const JagRequest &req, const Jstr
 void JagDBServer::flushOneTableAndRelatedIndexsInsertBuffer( const Jstr &dbobj, int replicateType, int isTable, 
 	JagTable *iptab, JagIndex *ipindex )
 {
+	return;  // new method of compf
+
+	/***
 	// prt(("s6630 JagDBServer::flushOneTableAndRelatedIndexsInsertBuffer() _faultToleranceCopy=%d ...\n", _faultToleranceCopy ));
 	// indexs will be flushed inside table object
 	JagTable *ptab; JagIndex *pindex; Jstr tabName;
@@ -6305,8 +5976,10 @@ void JagDBServer::flushOneTableAndRelatedIndexsInsertBuffer( const Jstr &dbobj, 
 			}
 		}
 	}
+	***/
 }
 
+/**
 // only applied if global locked all 
 void JagDBServer::flushAllTableAndRelatedIndexsInsertBuffer()
 {
@@ -6326,32 +5999,38 @@ void JagDBServer::flushAllTableAndRelatedIndexsInsertBuffer()
 		}
 	}
 }
+**/
 
+// insert one record
 int JagDBServer::doInsert( JagDBServer *servobj, JagRequest &req, JagParseParam &parseParam, 
 							Jstr &reterr, const Jstr &oricmd )
 {
-	abaxint cnt = 0;
-	int insertCode = 0, rc;
+	jagint cnt = 0;
+	int insertCode = 0;
 	JagTableSchema *tableschema = servobj->getTableSchema( req.session->replicateType );
 	Jstr dbobj;
 	JagTable *ptab = NULL;
 	if ( parseParam.objectVec.size() > 0 ) {
+		/***
 		ptab = servobj->_objectLock->readLockTable( parseParam.opcode, parseParam.objectVec[0].dbName, 
-			parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
+													parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
+													***/
+		ptab = servobj->_objectLock->writeLockTable( parseParam.opcode, parseParam.objectVec[0].dbName, 
+													parseParam.objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
 	}
 
 	if ( ptab ) {
 		if ( JAG_INSERT_OP == parseParam.opcode ) {
 			cnt = ptab->insert( req, &parseParam, reterr, insertCode, false );
-			// prt(("s9383 ptab->insert cnt=%d reterr=[%s]\n", cnt, reterr.c_str() ));
+			prt(("s92383 ptab->insert cnt=%d reterr=[%s]\n", cnt, reterr.c_str() ));
 			++ servobj->numInserts;
 			if ( 1 == cnt ) {
 				servobj->_dbLogger->logmsg( req, "INS", oricmd );
 			} else {
 				servobj->_dbLogger->logerr( req, reterr, oricmd );
 			}
-		} else if ( JAG_SINSERT_OP == parseParam.opcode ) {
-			cnt = ptab->sinsert( req, &parseParam, reterr, insertCode, false );
+		} else if ( JAG_FINSERT_OP == parseParam.opcode ) {
+			cnt = ptab->finsert( req, &parseParam, reterr, insertCode, false );
 			++ servobj->numInserts;
 			if ( 1 == cnt ) {
 				servobj->_dbLogger->logmsg( req, "INS", oricmd );
@@ -6359,19 +6038,31 @@ int JagDBServer::doInsert( JagDBServer *servobj, JagRequest &req, JagParseParam 
 				servobj->_dbLogger->logerr( req, reterr, oricmd );
 			}
 		} else if ( JAG_CINSERT_OP == parseParam.opcode ) {
-			cnt = ptab->cinsert( req, &parseParam, reterr, insertCode, false );
-			if ( cnt > 0 ) {
-				JagDBServer::dinsertlogCommand( req.session, oricmd.c_str(), oricmd.length() );
+			// I am on a old cluster, so I can receive this cinsert command
+			if ( JAG_SCALE_GOLAST == servobj->_scaleMode ) {
+				// I should delete this record in cinsert
+				cnt = ptab->dinsert( req, &parseParam, reterr, insertCode, false );
+			} else {
+				cnt = ptab->cinsert( req, &parseParam, reterr, insertCode, false );
+				if ( cnt > 0 ) {
+					// if data exists on this node
+					// log them, and later to be sent to last two clusters for deletion
+					JagDBServer::dinsertlogCommand( req.session, oricmd.c_str(), oricmd.length() );
+				}
 			}
 		} else if ( JAG_DINSERT_OP == parseParam.opcode ) {
 			cnt = ptab->dinsert( req, &parseParam, reterr, insertCode, false );
 		}
+		/***
 		servobj->_objectLock->readUnlockTable( parseParam.opcode, parseParam.objectVec[0].dbName, 
-			parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
+												parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
+												***/
+		servobj->_objectLock->writeUnlockTable( parseParam.opcode, parseParam.objectVec[0].dbName, 
+												parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
 	} else {
 		dbobj = parseParam.objectVec[0].dbName + "." + parseParam.objectVec[0].tableName;
-		raydebug( stdout, JAG_LOG_HIGH, "s4304 table %s does not exist\n", dbobj.c_str() );
-		reterr = "Table " + dbobj + " does not exist";
+		raydebug( stdout, JAG_LOG_HIGH, "s4304 table %s not found\n", dbobj.c_str() );
+		reterr = "Table " + dbobj + " not found";
 		return 0;
 	}
 	
@@ -6393,7 +6084,7 @@ int JagDBServer::processSignal( int sig )
 		session.servobj = this;
 		req.session = &session;
 		raydebug( stdout, JAG_LOG_LOW, "Processing [%s(%d)] ...\n", strsignal(sig), sig );
-		shutDown( "_ex_shutdown", req );
+		shutDown( "_exe_shutdown", req );
 	} else {
 		if ( sig != SIGCHLD && sig != SIGWINCH ) {
 			raydebug( stdout, JAG_LOG_LOW, "Unknown signal [%s(%d)] ignored.\n", strsignal(sig), sig );
@@ -6416,7 +6107,7 @@ int JagDBServer::processSignal( int sig )
 		session.servobj = this;
 		req.session = &session;
 		raydebug( stdout, JAG_LOG_LOW, "Processing [%d] ...\n", sig );
-		shutDown( "_ex_shutdown", req );
+		shutDown( "_exe_shutdown", req );
 	} else {
 		raydebug( stdout, JAG_LOG_LOW, "Unknown signal [%d] ignored.\n", sig );
 	}
@@ -6493,6 +6184,7 @@ void JagDBServer::initDirs()
 // negative reply to client
 void JagDBServer::noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam )
 {
+	prt(("s22239 noGood ...\n" ));
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 
@@ -6516,7 +6208,7 @@ void JagDBServer::noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &
 		int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
  		char hdr[hdrsz+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -6531,15 +6223,16 @@ void JagDBServer::noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &
 
 	servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 	servobj->schemaChangeCommandSyncRemove( scdbobj ); 
+	prt(("s20029 noGood is done [%s]\n", cond ));
 }
 
 // methods will affect userid or schema
 // static  
 // createuser uid password
 void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj, 
-	JagParseParam &parseParam, abaxint threadQueryTime )
+							  JagParseParam &parseParam, jagint threadQueryTime )
 {
-	abaxint len;
+	//jagint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr uid = parseParam.uid;
@@ -6576,7 +6269,7 @@ void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj,
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
@@ -6594,11 +6287,12 @@ void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj,
 	if ( md5 ) free( md5 );
 	md5 = NULL;
 
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	if ( uiddb ) {
 		uiddb->addUser(uid, mdpass, JAG_USER, JAG_WRITE );
 	}
-	jaguar_mutex_unlock ( &g_dbmutex );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
+
 	servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj ); 
@@ -6607,9 +6301,9 @@ void JagDBServer::createUser( JagRequest &req, JagDBServer *servobj,
 // static  
 // dropuser uid
 void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj, 
-	JagParseParam &parseParam, abaxint threadQueryTime )
+							JagParseParam &parseParam, jagint threadQueryTime )
 {
-	abaxint len;
+	//jagint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr uid = parseParam.uid;
@@ -6634,7 +6328,6 @@ void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj,
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
 		}
@@ -6642,7 +6335,7 @@ void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj,
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
@@ -6654,12 +6347,15 @@ void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj,
 		}
 		if ( newbuf ) free( newbuf );
 	}
+
 	req.session->spCommandReject = 0;
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	if ( uiddb ) {
 		uiddb->dropUser( uid );
 	}
-	jaguar_mutex_unlock ( &g_dbmutex );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
+
 	servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -6668,9 +6364,9 @@ void JagDBServer::dropUser( JagRequest &req, JagDBServer *servobj,
 // static  
 // changepass uid password
 void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj, 
-	JagParseParam &parseParam, abaxint threadQueryTime )
+							  JagParseParam &parseParam, jagint threadQueryTime )
 {
-	abaxint len;
+	//jagint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr uid = parseParam.uid;
@@ -6698,20 +6394,18 @@ void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj,
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
-			prt(("s0239 changepass return\n" ));
+			prt(("s10239 changepass return\n" ));
 			return;
 		}
 
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			prt(("s3239 changepass return\n" ));
 			return;
@@ -6720,18 +6414,19 @@ void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj,
 		}
 		if ( newbuf ) free( newbuf );
 	}
+
 	req.session->spCommandReject = 0;
 	char *md5 = MDString( pass.c_str() );
 	Jstr mdpass = md5;
 	if ( md5 ) free( md5 );
 	md5 = NULL;
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	if ( uiddb ) {
 		uiddb->setValue( uid, JAG_PASS, mdpass );
 	}
-	jaguar_mutex_unlock ( &g_dbmutex );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
 	servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 	raydebug(stdout, JAG_LOG_LOW, "user [%s] changepass uid=[%s]\n", req.session->uid.c_str(),  parseParam.uid.c_str() );
 
@@ -6741,10 +6436,10 @@ void JagDBServer::changePass( JagRequest &req, JagDBServer *servobj,
 // method to change dfdb ( use db command input by user, not via connection )
 // changedb dbname
 void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj, 
-	JagParseParam &parseParam, abaxint threadQueryTime )
+							JagParseParam &parseParam, jagint threadQueryTime )
 {
 	// prt(("s4408 changeDB ...\n" ));
-	abaxint len, rc;
+	jagint lockrc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
@@ -6755,11 +6450,11 @@ void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj,
 	prt(("s2238 schemaChangeCommandSyncCheck scdbobj=[%s] parseParam.opcode=%d done ...\n", scdbobj.c_str(), parseParam.opcode ));
 
 	prt(("s3081 readLockDatabase %s ...\n", parseParam.dbName.c_str()  ));
-	rc = servobj->_objectLock->readLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+	lockrc = servobj->_objectLock->readLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 	prt(("s3081 readLockDatabase %s done ...\n", parseParam.dbName.c_str()  ));
 	// if ( 0 == strcmp( parseParam.dbName.c_str(), "test" ) || 0 == jagaccess( fpath.c_str(), X_OK ) ) {
 	if ( 0 == strcmp( parseParam.dbName.c_str(), "test" ) || 0 == jagaccess( sysdir.c_str(), X_OK ) ) {
-		if ( rc ) {
+		if ( lockrc ) {
 			cond[0] = 'O'; cond[1] = 'K';
 		}
 	}
@@ -6773,7 +6468,7 @@ void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj,
 		// prt(("s2209 sendMessageLength ...\n" ));
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			prt(("s4407 sendMessageLength < 0 \n" ));
-			if ( rc ) servobj->_objectLock->readUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+			if ( lockrc ) servobj->_objectLock->readUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
@@ -6782,23 +6477,24 @@ void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj,
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		prt(("s2204 recvData ...\n" ));
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
-			prt(("s2407 recvData < 0 or not OK \n" ));
+		prt(("s2204 recvMessage ...\n" ));
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
-			if ( rc ) servobj->_objectLock->readUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+			if ( lockrc ) servobj->_objectLock->readUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
 		} else if ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) {
 			req.syncDataCenter = true;
 		}
-		prt(("s2204 recvData done ...\n" ));
+		prt(("s2204 recvMessage done ...\n" ));
 		if ( newbuf ) free( newbuf );
 	}
 	req.session->dbname = parseParam.dbName;
-	servobj->_objectLock->readUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+	if ( lockrc )  {
+		servobj->_objectLock->readUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+	}
 	// prt(("s4402 schemaChangeCommandSyncCheck ...\n" ));
 	// servobj->schemaChangeCommandSyncCheck( req, fpath, parseParam.opcode, 1 );
 	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
@@ -6809,17 +6505,17 @@ void JagDBServer::changeDB( JagRequest &req, JagDBServer *servobj,
 // static 
 // createdb dbname
 void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj, 
-	JagParseParam &parseParam, abaxint threadQueryTime )
+							JagParseParam &parseParam, jagint threadQueryTime )
 {
-	abaxint len, rc;
+	jagint lockrc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
     Jstr sysdir = jagdatahome + "/" + parseParam.dbName;
 	Jstr scdbobj = sysdir + "." + intToStr( req.session->replicateType );
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) return;
-	rc = servobj->_objectLock->writeLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
-	if ( JagFileMgr::isDir( sysdir ) < 1 && rc ) {
+	lockrc = servobj->_objectLock->writeLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+	if ( JagFileMgr::isDir( sysdir ) < 1 && lockrc ) {
 		cond[0] = 'O'; cond[1] = 'K';
 	}
 	
@@ -6830,8 +6526,7 @@ void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj,
 
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
 		}
@@ -6839,11 +6534,10 @@ void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj,
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
 		} else if ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) {
@@ -6854,7 +6548,6 @@ void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj,
 	req.session->spCommandReject = 0;
     jagmkdir( sysdir.c_str(), 0700 );
 	servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 	raydebug(stdout, JAG_LOG_LOW, "user [%s] create database [%s]\n", req.session->uid.c_str(),  parseParam.dbName.c_str() );
 }
@@ -6862,10 +6555,10 @@ void JagDBServer::createDB( JagRequest &req, JagDBServer *servobj,
 // static  
 // dropdb dbname
 void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj, 
-	JagParseParam &parseParam, abaxint threadQueryTime )
+						  JagParseParam &parseParam, jagint threadQueryTime )
 {
 
-	abaxint len, rc;
+	jagint lockrc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr jagdatahome = servobj->_cfg->getJDBDataHOME( req.session->replicateType );
@@ -6873,8 +6566,8 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 	Jstr scdbobj = sysdir + "." + intToStr( req.session->replicateType );
 
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 0 ) ) return;
-	rc = servobj->_objectLock->writeLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
-	if ( JagFileMgr::isDir( sysdir ) > 0 && rc ) {
+	lockrc = servobj->_objectLock->writeLockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+	if ( JagFileMgr::isDir( sysdir ) > 0 && lockrc ) {
 		cond[0] = 'O'; cond[1] = 'K';
 	} 
 	
@@ -6889,7 +6582,7 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
 		}
@@ -6897,11 +6590,10 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return;
 		} else if ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) {
@@ -6916,9 +6608,11 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 	// drop all tables and indexes under this database
 	dropAllTablesAndIndexUnderDatabase( req, servobj, tableschema, parseParam.dbName );
     JagFileMgr::rmdir( sysdir );
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
-	servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam.opcode, 1 );
+	//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	refreshSchemaInfo( req.session->replicateType, servobj, g_lastSchemaTime );
+	if ( lockrc ) {
+		servobj->_objectLock->writeUnlockDatabase( parseParam.opcode, parseParam.dbName, req.session->replicateType );
+	}
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 	if ( parseParam.hasForce ) {
 		raydebug(stdout, JAG_LOG_LOW, "user [%s] force dropped database [%s]\n", req.session->uid.c_str(),  parseParam.dbName.c_str() );
@@ -6929,7 +6623,7 @@ void JagDBServer::dropDB( JagRequest &req, JagDBServer *servobj,
 
 // create table schema
 int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-		JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
+							  JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime )
 {
 	bool found = false, found2 = false;
 	int repType =  req.session->replicateType;
@@ -6941,9 +6635,9 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 	}  else {
 		parseParam->isChainTable = 0;
 	}
-	// prt(("s9330 createTable isChainTable=%d\n", parseParam->isChainTable ));
+	prt(("s9330 createTable isChainTable=%d\n", parseParam->isChainTable ));
 
-	abaxint len, len2, rc;
+	jagint lockrc;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr dbtable = dbname + "." + parseParam->objectVec[0].tableName;
@@ -6954,13 +6648,13 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 	}
 	// for createtable, write lock db first, insert schema then lock table
 	prt(("s7723 writeLockDatabase %s reptype=%d ...\n", dbname.c_str(), repType )); 
-	rc = servobj->_objectLock->writeLockDatabase( parseParam->opcode, dbname, repType );
-	prt(("s7723 writeLockDatabase %s is locked reptype=%d rc=%d\n", dbname.c_str(), repType, rc )); 
+	lockrc = servobj->_objectLock->writeLockDatabase( parseParam->opcode, dbname, repType );
+	prt(("s7723 writeLockDatabase %s is locked reptype=%d lockrc=%d\n", dbname.c_str(), repType, lockrc )); 
 	found = indexschema->tableExist( dbname, parseParam );
 	found2 = tableschema->existAttr( dbtable );
 	//prt(("s5221 indexschema->tableExist(%s) found=%d\n", dbname.c_str(), found ));
 	//prt(("s5222 tableschema->existAttr(%s) found2=%d\n", dbtable.c_str(), found2 ));
-	if ( !found && !found2 && rc ) {
+	if ( !found && !found2 && lockrc ) {
 		cond[0] = 'O'; cond[1] = 'K';
 	}
 	
@@ -6972,8 +6666,7 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 	prt(("s5839 createTable cond=[%s] reptype=%d\n", cond, repType ));
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			// prt(("s5003 return 0\n"));
 			prt(("s3203 writeUnlockDatabase return 0\n" ));
@@ -6983,11 +6676,10 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			prt(("s5004 createTable %s return 0\n", scdbobj.c_str()));
 			return 0;
@@ -7000,30 +6692,35 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 	req.session->spCommandReject = 0;
 
 	//prt(("s4029 jaguar_mutex_lock insert schema ...\n" ));
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
-	rc = tableschema->insert( parseParam );
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
+	tableschema->insert( parseParam );
 	//prt(("s4029 jaguar_mutex_lock insert schema done rc=%d\n", rc ));
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
-	jaguar_mutex_unlock ( &g_dbmutex );
+	//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	refreshSchemaInfo( repType, servobj, g_lastSchemaTime );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
+
 	prt(("s4025 refreshSchemaInfo done.\n" ));
 	//prt(("s4026 Thrd=%lld lccking %s reptype=%d ...\n", THREADID, parseParam->objectVec[0].tableName.c_str(), repType ));
 
+	// create table object 
 	if ( servobj->_objectLock->writeLockTable( parseParam->opcode, dbname, 
-			parseParam->objectVec[0].tableName, tableschema, repType, 1 ) ) {
+											   parseParam->objectVec[0].tableName, tableschema, repType, 1 ) ) {
 		//prt(("s8273 Thrd=%lld locked %s reptype=%d \n", THREADID, parseParam->objectVec[0].tableName.c_str(), repType ));
 		servobj->_objectLock->writeUnlockTable( parseParam->opcode, dbname, 
-			parseParam->objectVec[0].tableName, tableschema, repType, 1 );
+												parseParam->objectVec[0].tableName, repType, 1 );
 		//prt(("s8273 Thrd=%lld unlocked %s reptype=%d \n", THREADID, parseParam->objectVec[0].tableName.c_str(), repType ));
 	}
-	servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+
+	if ( lockrc ) {
+		servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
+	}
 	prt(("s7523 writeUnlockDatabase %s is unlocked reptype=%d\n", dbname.c_str(), repType )); 
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 	if ( parseParam->isChainTable ) {
-		raydebug(stdout, JAG_LOG_LOW, "user [%s] create chain [%s] done reptype=%d\n", 
+		raydebug(stdout, JAG_LOG_LOW, "user [%s] create chain [%s] reptype=%d\n", 
 				req.session->uid.c_str(), dbtable.c_str(), repType );
 	} else {
-		raydebug(stdout, JAG_LOG_LOW, "user [%s] create table [%s] done reptype=%d\n", 
+		raydebug(stdout, JAG_LOG_LOW, "user [%s] create table [%s] reptype=%d\n", 
 				req.session->uid.c_str(), dbtable.c_str(), repType );
 	}
 
@@ -7032,13 +6729,13 @@ int JagDBServer::createTable( JagRequest &req, JagDBServer *servobj, const Jstr 
 
 // create memtable schema
 int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-							     JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
+							     JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime )
 {
 	bool found = false, found2 = false;
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema(  req.session->replicateType, tableschema, indexschema );
-	abaxint len, rc;
+	jagint lockrc;
 	int repType = req.session->replicateType;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
@@ -7047,11 +6744,11 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Js
 	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
 	parseParam->isMemTable = 1;
 	prt(("s3523 writeLockDatabase %s is being locked reptype=%da ...\n", dbname.c_str(), repType )); 
-	rc = servobj->_objectLock->writeLockDatabase( parseParam->opcode, dbname, repType );
+	lockrc = servobj->_objectLock->writeLockDatabase( parseParam->opcode, dbname, repType );
 	prt(("s3523 writeLockDatabase %s is locked reptype=%d\n", dbname.c_str(), repType )); 
 	found = indexschema->tableExist( dbname, parseParam );
 	found2 = tableschema->existAttr( dbtable );
-	if ( !found && !found2 && rc ) {
+	if ( !found && !found2 && lockrc ) {
 		cond[0] = 'O'; cond[1] = 'K';
 	}
 
@@ -7063,8 +6760,7 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Js
 	
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
 			prt(("s3523 writeUnlockDatabase %s is unlocked reptype=%d\n", dbname.c_str(), repType )); 
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return 0;
@@ -7073,11 +6769,10 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Js
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
-			if ( rc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+			if ( lockrc ) servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return 0;
 		} else if ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) {
@@ -7087,17 +6782,21 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Js
 	}
 	req.session->spCommandReject = 0;
 
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	tableschema->insert( parseParam );
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
-	jaguar_mutex_unlock ( &g_dbmutex );
+	//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	refreshSchemaInfo( repType, servobj, g_lastSchemaTime );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
 
-	if ( servobj->_objectLock->writeLockTable( parseParam->opcode, dbname, 
-			parseParam->objectVec[0].tableName, tableschema, repType, 1 ) ) {
+	if ( servobj->_objectLock->writeLockTable(  parseParam->opcode, dbname, 
+												parseParam->objectVec[0].tableName, tableschema, repType, 1 ) ) {
 		servobj->_objectLock->writeUnlockTable( parseParam->opcode, dbname, 
-			parseParam->objectVec[0].tableName, tableschema, repType, 1 );
+												parseParam->objectVec[0].tableName, repType, 1 );
 	}
-	servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
+
+	if ( lockrc ) {
+		servobj->_objectLock->writeUnlockDatabase( parseParam->opcode, dbname, repType );
+	}
 	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 	raydebug(stdout, JAG_LOG_LOW, "user [%s] create memtable [%s]\n", req.session->uid.c_str(), dbtable.c_str() );
@@ -7108,11 +6807,12 @@ int JagDBServer::createMemTable( JagRequest &req, JagDBServer *servobj, const Js
 // new method for createIndex to deal with asc index keys
 //  return 0: error with reterr;  1: success
 int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam,
-							   JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, abaxint threadQueryTime )
+							   JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, jagint threadQueryTime )
 {
 	// create index on schema or get errmsg
-	// prt(("s1206 create index on schema\n"));
-	JagIndexSchema *indexschema; JagTableSchema *tableschema;
+	//prt(("s1206 createIndex \n"));
+	JagIndexSchema *indexschema; 
+	JagTableSchema *tableschema;
 	servobj->getTableIndexSchema(  req.session->replicateType, tableschema, indexschema );
 	Jstr dbindex = dbname + "." + parseParam->objectVec[0].tableName + 
 							 "." + parseParam->objectVec[1].indexName;
@@ -7125,7 +6825,7 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr 
 	}
 
 	int rc = 0;
-	abaxint len;
+	//jagint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
@@ -7138,11 +6838,11 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr 
 
 	//prt(("s2263 createIndex scdbobj=[%s] writeLockTable(%s) ...\n", scdbobj.c_str(), parseParam->objectVec[0].tableName.c_str() ));
 	ptab = servobj->_objectLock->writeLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+												 parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
 	if ( ptab ) {
 		// prt(("s0921 got ptab createIndexSchema() %s ...\n", scdbobj.c_str() ));
 		rc = createIndexSchema( req, servobj, ptab, dbname, parseParam, reterr );
-		// prt(("s0921 got ptab createIndexSchema() rc=%d ...\n", rc ));
+		prt(("s0921 got ptab createIndexSchema() rc=%d ...\n", rc ));
 		if ( rc ) {
 			cond[0] = 'O'; cond[1] = 'K';
 		}
@@ -7161,15 +6861,14 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr 
 			if ( rc ) {
 				// rollback index schema
 				prt(("E3481 SS sent error remove dbindex ...\n" ));
-				JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+				JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	    		indexschema->remove( dbindex );
-				jaguar_mutex_unlock ( &g_dbmutex );
+				jaguar_mutex_unlock ( &g_dbschemamutex );
 				prt(("E3481 SS sent error remove dbindex done\n" ));
 			}
 
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-							parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+																parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			//prt(("s3012 return 0 %s\n", scdbobj.c_str() ));
 			return 0;
@@ -7178,21 +6877,20 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr 
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		// prt(("s3052 recvData %s ...\n", scdbobj.c_str() ));
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		// prt(("s3052 recvMessage %s ...\n", scdbobj.c_str() ));
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			if ( rc ) {
 				// rollback index schema
 				// prt(("s4401 remove dbindex %s ...\n", scdbobj.c_str() ));
-				JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+				JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	    		indexschema->remove( dbindex );
-				jaguar_mutex_unlock ( &g_dbmutex );
+				jaguar_mutex_unlock ( &g_dbschemamutex );
 				// prt(("s4401 remove dbindex done\n" ));
 			}
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-							parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+																parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			//prt(("s3081 return 0 %s\n", scdbobj.c_str()  ));
 			return 0;
@@ -7204,68 +6902,74 @@ int JagDBServer::createIndex( JagRequest &req, JagDBServer *servobj, const Jstr 
 	}
 
 	req.session->spCommandReject = 0;
-	// prt(("s5092 refreshSchemaInfo...\n" ));
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
-	jaguar_mutex_unlock ( &g_dbmutex );
-	// prt(("s5092 refreshSchemaInfo done\n" ));
+	prt(("s5092 refreshSchemaInfo...\n" ));
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
+	//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	refreshSchemaInfo( req.session->replicateType, servobj, g_lastSchemaTime );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
+	prt(("s5092 refreshSchemaInfo done\n" ));
 
 	pindex = servobj->_objectLock->writeLockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
-					parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
-					tableschema, indexschema, req.session->replicateType, 1 );
+												   parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
+												   tableschema, indexschema, req.session->replicateType, 1 );
 	if ( ptab && pindex ) {
 		// if successfully create index, begin process table's data
 		//prt(("s6021 flushOneTableAndRelatedIndexsInsertBuffer %s ...\n", dbobj.c_str() ));
-		servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, pindex );
+		//servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, pindex );
 		//prt(("s6021 flushOneTableAndRelatedIndexsInsertBuffer %s done\n", dbobj.c_str() ));
+		//prt(("s29220 doCreateIndex ...\n"));
+
 		doCreateIndex( ptab, pindex, servobj );
+
 		//prt(("s6022 doCreateIndex %s done\n", dbobj.c_str() ));
 		//after create index, flush this index's data
-		servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 0, ptab, pindex );
+		// servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 0, ptab, pindex );
 		//prt(("s6023 flushOneTableAndRelatedIndexsInsertBuffer %s done\n", dbobj.c_str() ));
 		servobj->_objectLock->writeUnlockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
-			parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
-			tableschema, indexschema, req.session->replicateType, 1 );		
+												parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
+												req.session->replicateType, 1 );		
 		rc = 1;
 	} else {
 		// rollback index schema
 		// prt(("s6086 remove dbindex %s ...\n", dbindex.c_str() ));
-		JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+		JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	    indexschema->remove( dbindex );
-		jaguar_mutex_unlock ( &g_dbmutex );
+		jaguar_mutex_unlock ( &g_dbschemamutex );
 		//prt(("s6086 remove dbindex %s done pindex=%0x ...\n", dbindex.c_str(), pindex ));
 		rc = 0;
 	}
 
 	if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-					parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+														parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 	raydebug(stdout, JAG_LOG_LOW, "user [%s] create index [%s]\n", req.session->uid.c_str(), scdbobj.c_str() );
 	return rc;
 }
 
 int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr &dbname,
-							   const JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime, 
-							   abaxint &threadSchemaTime )
+							   const JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime, 
+							   jagint &threadSchemaTime )
 {
-	prt(("s6028 renameColumn...\n"));
+	prt(("s68028 renameColumn...\n"));
 
 	JagTableSchema *tableschema = servobj->getTableSchema( req.session->replicateType );
 	JagTable *ptab = NULL;
-	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr dbtable = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
 	Jstr scdbobj = dbtable + "." + intToStr( req.session->replicateType );
-	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
+
+	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) {
+		//prt(("s34483 schemaChangeCommandSyncCheck failed return 0\n"));
+		return 0;
+	}
 	ptab = servobj->_objectLock->writeLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+												 parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
 	if ( ptab && tableschema->existAttr( dbtable ) ) {
 		cond[0] = 'O'; cond[1] = 'K';
 	}
 	
-	if ( threadQueryTime > 0 && threadQueryTime < g_lastHostTime ) 
-	{
+	if ( threadQueryTime > 0 && threadQueryTime < g_lastHostTime ) {
 		// command comes at an inappropriate time, reject
 		cond[0] = 'N'; cond[1] = 'G';
 	}
@@ -7280,20 +6984,18 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-							parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+																parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return 0;
 		}
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+																parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return 0;
 		} else if ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) {
@@ -7302,9 +7004,9 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 		if ( newbuf ) free( newbuf );
 	}
 
-	servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbtable, req.session->replicateType, 1, ptab, NULL );
 	req.session->spCommandReject = 0;
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;	
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;	
+
 	// prt(("s0938 ptab->refreshSchema();...\n"));
 	bool hasChange = false;
 	if ( ptab ) {
@@ -7339,28 +7041,37 @@ int JagDBServer::renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr
 	}
 
 	if ( hasChange ) {
-		refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+		//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+		refreshSchemaInfo( req.session->replicateType, servobj, g_lastSchemaTime );
 	}
 
-	jaguar_mutex_unlock ( &g_dbmutex );
-	servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
+	if ( ptab ) {
+		servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
+				parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
+	}
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 
 	// bcast schema change
 	if ( hasChange ) {
-		servobj->sendMapInfo( "_cschema", req );
+		//prt(("s20338 sendMapInfo ...\n"));
+		//servobj->sendMapInfo( "_cschema", req );
+
+		if ( !req.session->origserv && !servobj->_restartRecover ) {
+			//prt(("s2033802 broadcastSchemaToClients ...\n"));
+			servobj->broadcastSchemaToClients();
+			//prt(("s2033802 broadcastSchemaToClients done ...\n"));
+		}
+
 		threadSchemaTime = g_lastSchemaTime;
 	}
 	//servobj->sendMapInfo( "_cdefval", req );
-	// prt(("s6029 done\n"));
 	return 1;
 }
 
 // return 1: OK  0: error
 int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-							JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
+							JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime )
 {
 	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
 	Jstr scdbobj = dbobj + "." + intToStr( req.session->replicateType );
@@ -7373,15 +7084,15 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &d
 	prt(("s6263 dropTable continue ...\n" ));
 
 	JagTable *ptab = NULL;
-	JagIndex *pindex = NULL;
+	//JagIndex *pindex = NULL;
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
-	abaxint len;
+	//jagint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	ptab = servobj->_objectLock->writeLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );	
+												 parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );	
 	if ( ptab ) {
 		cond[0] = 'O'; cond[1] = 'K';
 	}
@@ -7400,9 +7111,10 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &d
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
 			// client conn disconnected
-			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+			if ( ptab ) {
+				servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
+														parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
+			}
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return 0;
 		}
@@ -7410,12 +7122,11 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &d
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+				parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return 0;
 		} else if ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) {
@@ -7428,27 +7139,26 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &d
 	Jstr dbtabidx;
 	if ( ptab ) {
 		servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
-		// prt(("s4941 ptab->drop() ...\n"));
-		ptab->drop( reterr );
+		ptab->drop( reterr ); 
 	}
 	dbtabidx = dbname + "." + parseParam->objectVec[0].tableName; 
 
 	prt(("s4950 mutext lock ...\n" ));
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	prt(("s4951 tableschema->remove(%s) ...\n", dbtabidx.c_str() ));
 	tableschema->remove( dbtabidx );
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
-	jaguar_mutex_unlock ( &g_dbmutex );
+	//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	refreshSchemaInfo( req.session->replicateType, servobj, g_lastSchemaTime );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
 	
 	// drop table and related indexs
 	if ( ptab ) {
 		prt(("s49403 delete ptab ...\n"));
+		servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
+				parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 		delete ptab; 
+		ptab = NULL;
 	}
-	ptab = NULL;
-	servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 	prt(("s0283 droptable done\n"));
 	if ( parseParam->hasForce ) {
@@ -7461,7 +7171,7 @@ int JagDBServer::dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &d
 
 // return 1: OK  0: error
 int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-							JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
+							JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime )
 {
 	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
 	Jstr scdbobj = dbobj + "." + intToStr( req.session->replicateType );
@@ -7471,14 +7181,14 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &d
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
-	abaxint len;
+	//jagint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	ptab = servobj->_objectLock->writeLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );	
+												 parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );	
 
 	pindex = servobj->_objectLock->writeLockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
-			parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
+													parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
 			tableschema, indexschema, req.session->replicateType, 1 );
 
 	if ( ptab ) {
@@ -7494,11 +7204,15 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &d
 
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
-			if ( pindex ) servobj->_objectLock->writeUnlockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
-				parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
-				tableschema, indexschema, req.session->replicateType, 1 );
-			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+			if ( pindex ) {
+				servobj->_objectLock->writeUnlockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
+													    parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
+														req.session->replicateType, 1 );
+			}
+			if ( ptab ) {
+				servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
+														parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
+			}
 			servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 			return 0;
 		}
@@ -7506,14 +7220,14 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &d
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			if ( pindex ) servobj->_objectLock->writeUnlockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
-				parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
-				tableschema, indexschema, req.session->replicateType, 1 );
+																	parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
+																	req.session->replicateType, 1 );
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+																parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
 			return 0;
@@ -7543,19 +7257,22 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &d
 	pindex->drop();
 	dbtabidx = dbname + "." + parseParam->objectVec[0].tableName + "." + parseParam->objectVec[1].indexName;
 
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	indexschema->remove( dbtabidx );
 	ptab->dropFromIndexList( parseParam->objectVec[1].indexName );	
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
-	jaguar_mutex_unlock ( &g_dbmutex );
+	//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	refreshSchemaInfo( req.session->replicateType, servobj, g_lastSchemaTime );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
 	
 	// drop one index
 	delete pindex; pindex = NULL;
 	servobj->_objectLock->writeUnlockIndex( parseParam->opcode, parseParam->objectVec[1].dbName,
 		parseParam->objectVec[0].tableName, parseParam->objectVec[1].indexName,
-		tableschema, indexschema, req.session->replicateType, 1 );
+		req.session->replicateType, 1 );
+
 	servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+		parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
+
 	raydebug( stdout, JAG_LOG_LOW, "user [%s] drop index [%s]\n", req.session->uid.c_str(), dbtabidx.c_str() );
 	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -7563,23 +7280,26 @@ int JagDBServer::dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &d
 }
 
 int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-							JagParseParam *parseParam, Jstr &reterr, abaxint threadQueryTime )
+							JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime )
 {
 	Jstr dbobj = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
 	Jstr scdbobj = dbobj + "." + intToStr( req.session->replicateType );
+	prt(("s51128 truncateTable() dbobj=%s scdbobj=%s ...\n", dbobj.s(), scdbobj.s() ));
 	Jstr indexNames;
-	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) return 0;
+	if ( !servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 0 ) ) {
+		prt(("s3082727 schemaChangeCommandSyncCheck error, return 0\n"));
+		return 0;
+	}
 	JagTable *ptab = NULL;
 	JagIndex *pindex = NULL;
 	JagTableSchema *tableschema;
 	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
 
-	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	ptab = servobj->_objectLock->writeLockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-		parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+												 parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
 
 	if ( ptab ) {
 		cond[0] = 'O'; cond[1] = 'K';
@@ -7593,22 +7313,22 @@ int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jst
 	if ( 0 == req.session->drecoverConn ) {
 		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {		
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+																parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
+			prt(("s22220 sendMessageLength < 0 return 0 here\n"));
 			return 0;
 		}
 	
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			// connection abort or not OK signal, reject
 			if ( ptab ) servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
-			// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+																parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
+			prt(("s22221 recvMessage not OK return 0 here\n"));
 			return 0;
 		} else if ( *(newbuf) == 'O' && *(newbuf+1) == 'K' ) {
 			req.syncDataCenter = true;
@@ -7616,14 +7336,15 @@ int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jst
 		if ( newbuf ) free( newbuf );
 	}
 	req.session->spCommandReject = 0;
-	servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
+	//servobj->flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
 
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	//JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	if ( ptab ) {
 		indexNames = ptab->drop( reterr, true );
 	}
-	refreshSchemaInfo( req, servobj, g_lastSchemaTime );
-	jaguar_mutex_unlock ( &g_dbmutex );
+	//refreshSchemaInfo( req, servobj, g_lastSchemaTime );
+	refreshSchemaInfo( req.session->replicateType, servobj, g_lastSchemaTime );
+	//jaguar_mutex_unlock ( &g_dbschemamutex );
 	
 	if ( ptab ) {
 		delete ptab; ptab = NULL;
@@ -7634,23 +7355,25 @@ int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jst
 			JagStrSplit sp( indexNames, '|', true );
 			for ( int i = 0; i < sp.length(); ++i ) {
 				pindex = servobj->_objectLock->writeLockIndex( JAG_CREATEINDEX_OP, parseParam->objectVec[0].dbName,
-					parseParam->objectVec[0].tableName, sp[i],
-					tableschema, indexschema, req.session->replicateType, 1 );
+																parseParam->objectVec[0].tableName, sp[i],
+																tableschema, indexschema, req.session->replicateType, 1 );
 				if ( pindex ) {
 					ptab->_indexlist.append( pindex->getIndexName() );
 				}
 				if ( pindex ) servobj->_objectLock->writeUnlockIndex( JAG_CREATEINDEX_OP, parseParam->objectVec[0].dbName,
-								parseParam->objectVec[0].tableName, sp[i],
-								tableschema, indexschema, req.session->replicateType, 1 );
+																		parseParam->objectVec[0].tableName, sp[i],
+																		req.session->replicateType, 1 );
 			}
 			servobj->_objectLock->writeUnlockTable( parseParam->opcode, parseParam->objectVec[0].dbName, 
-				parseParam->objectVec[0].tableName, tableschema, req.session->replicateType, 0 );
+													parseParam->objectVec[0].tableName, req.session->replicateType, 0 );
 		}
 		Jstr dbtab = dbname + "." + parseParam->objectVec[0].tableName;
 		raydebug( stdout, JAG_LOG_LOW, "user [%s] truncate table [%s]\n", req.session->uid.c_str(), dbtab.c_str() );
 	}
-	// servobj->schemaChangeCommandSyncCheck( req, scdbobj, parseParam->opcode, 1 );
+
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
+	prt(("s502181 schemaChangeCommandSyncRemove done return 1\n"));
+	prt(("s51128 truncateTable() dbobj=%s scdbobj=%s done\n", dbobj.s(), scdbobj.s() ));
 
 	return 1;
 }
@@ -7662,18 +7385,18 @@ int JagDBServer::truncateTable( JagRequest &req, JagDBServer *servobj, const Jst
 // pmesg: "_cschema"
 void JagDBServer::sendMapInfo( const char *mesg, const JagRequest &req )
 {	
-	//if ( 0==strcmp(mesg, "_cschema") ) {
-		if ( !req.session->origserv && !_restartRecover ) {	
-			Jstr schemaInfo;
-			_dbConnector->_broadCastCli->getSchemaMapInfo( schemaInfo );
-			// prt(("send map info=[%s]\n", schemaInfo.c_str()));
-			if ( schemaInfo.size() > 0 ) {
-				// prt(("s3330 sendMapInfo schemaInfo=[%s]\n", schemaInfo.c_str() ));
-				sendMessageLength( req, schemaInfo.c_str(), schemaInfo.size(), "SC" );
-			}
+	if ( !req.session->origserv && !_restartRecover ) {	
+		Jstr schemaInfo;
+		_dbConnector->_broadcastCli->getSchemaMapInfo( schemaInfo );
+		//prt(("bcast map info=[%s]\n", schemaInfo.c_str()));
+
+		//prt(("send map info=[%s] to my client\n", schemaInfo.c_str()));
+		if ( schemaInfo.size() > 0 ) {
+			//prt(("s3330 sendMapInfo schemaInfo=[%s]\n", schemaInfo.c_str() ));
+			sendMessageLength( req, schemaInfo.c_str(), schemaInfo.size(), "SC" );
 		}
-		return;
-	//}
+	}
+	return;
 
 	/***
 	if ( 0==strcmp(mesg, "_cdefval") ) {
@@ -7696,8 +7419,14 @@ void JagDBServer::sendMapInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_chost"
 void JagDBServer::sendHostInfo( const char *mesg, const JagRequest &req )
 {	
+	prt(("s202238 sendHostInfo() origserv=%d _restartRecover=%d\n", req.session->origserv, (int)_restartRecover ));
 	if ( !req.session->origserv && !_restartRecover ) {	
-		Jstr snodes = _dbConnector->_nodeMgr->_sendNodes;
+		prt(("s9999 39282 mutext g_dbconnectormutex ...\n"));
+		jaguar_mutex_lock ( &g_dbconnectormutex );
+		prt(("s9999 39282 mutext g_dbconnectormutex done ...\n"));
+		Jstr snodes = _dbConnector->_nodeMgr->_sendAllNodes;
+		prt(("s202928 _chost snodes=[%s]\n", snodes.s() ));
+		jaguar_mutex_unlock ( &g_dbconnectormutex );
 		sendMessageLength( req, snodes.c_str(), snodes.size(), "HL" );
 	}
 }
@@ -7755,9 +7484,9 @@ void JagDBServer::cleanRecovery( const char *mesg, const JagRequest &req )
 		return;
 	}
 
-	Jstr bcasthosts = getBroadCastRecoverHosts( _faultToleranceCopy );
+	Jstr bcasthosts = getBroadcastRecoverHosts( _faultToleranceCopy );
 	prt(("s8120 bcasthosts=[%s]\n", bcasthosts.c_str() ));
-	Jstr resp = _dbConnector->broadCastGet( "_serv_checkdelta", bcasthosts, &reqcli );
+	Jstr resp = _dbConnector->broadcastGet( "_serv_checkdelta", bcasthosts, &reqcli );
 	JagStrSplit checksp( resp, '\n', true );
 	if ( checksp.length() > 1 || checksp[0].length() > 0 ) {
 		// prt(("request clean recover, but not done=[%s]\n", req.session->ip.c_str()));
@@ -7768,12 +7497,14 @@ void JagDBServer::cleanRecovery( const char *mesg, const JagRequest &req )
 
 	JagStrSplit sp( _dbConnector->_nodeMgr->_curClusterNodes, '|' );
 	raydebug( stdout, JAG_LOG_LOW, "begin proc request of clean redo from %s ...\n", req.session->ip.c_str() );
+	/***
 	_objectLock->writeLockSchema( -1 );
 	flushAllTableAndRelatedIndexsInsertBuffer();
 	_objectLock->writeUnlockSchema( -1 );
+	***/
 	jagsync();
 	raydebug( stdout, JAG_LOG_LOW, "begin cleanRecovery ...\n");
-	abaxint reqservi;
+	jagint reqservi;
 	req.session->servobj->_internalHostNum->getValue(req.session->ip, reqservi);
 	int pos1, pos2, pos3, pos4, rc;
 	Jstr filePath, passwd = "dummy";
@@ -7888,17 +7619,17 @@ void JagDBServer::recoveryFileReceiver( const char *mesg, const JagRequest &req 
 	if ( sp.length() < 4 ) return;
 	int fpos = atoi(sp[1].c_str());
 	size_t rlen;
-	abaxint fsize = jagatoll(sp[2].c_str());
-	abaxint memsize = 128*1024*1024;
-	abaxint totlen = 0;
-	abaxint recvlen = 0;
+	jagint fsize = jagatoll(sp[2].c_str());
+	jagint memsize = 128*1024*1024;
+	jagint totlen = 0;
+	jagint recvlen = 0;
 	Jstr recvpath = req.session->servobj->_cfg->getTEMPDataHOME( fpos ) + "/" + req.session->ip + "_" + sp[3] + ".tar.gz";
 	int fd = jagopen( recvpath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRWXU);
-	raydebug( stdout, JAG_LOG_LOW, "s6207 open recvpath=[%s]\n", recvpath.c_str() );
+	raydebug( stdout, JAG_LOG_LOW, "s6207 open recvpath=[%s] for recoveryFile\n", recvpath.c_str() );
 	if ( fd < 0 ) {
 		raydebug( stdout, JAG_LOG_LOW, "s6208 error open recvpath=[%s]\n", recvpath.c_str() );
 		raydebug( stdout, JAG_LOG_LOW, "end recoveryFileReceiver error open\n" );
-		return;
+		//return;
 	}
 
 	raydebug( stdout, JAG_LOG_LOW, "expect to recv %l bytes \n", fsize );
@@ -7911,35 +7642,41 @@ void JagDBServer::recoveryFileReceiver( const char *mesg, const JagRequest &req 
 		} else {
 			recvlen = memsize;
 		}
-		rlen = recvData( req.session->sock, buf, recvlen );
+
+		// even if fd < 0; still recv data
+		rlen = recvRawData( req.session->sock, buf, recvlen );
 		if ( rlen < recvlen ) {
 			if ( buf ) free ( buf );
 			jagclose( fd );
 			jagunlink( recvpath.c_str() );
-			raydebug( stdout, JAG_LOG_LOW, "end recoveryFileReceiver error recvdata\n" );
+			raydebug( stdout, JAG_LOG_LOW, "end recoveryFileReceiver error recvrawdata\n" );
 			return;
 		}
-		rlen = raysafewrite( fd, buf, recvlen );
-		if ( rlen < recvlen ) {
-			if ( buf ) free ( buf );
-			jagclose( fd );
-			jagunlink( recvpath.c_str() );
-			raydebug( stdout, JAG_LOG_LOW, "end recoveryFileReceiver error savedata\n" );
-			return;
+
+		if ( fd > 0 ) {
+			rlen = raysafewrite( fd, buf, recvlen );
+			if ( rlen < recvlen ) {
+				if ( buf ) free ( buf );
+				jagclose( fd );
+				jagunlink( recvpath.c_str() );
+				raydebug( stdout, JAG_LOG_LOW, "end recoveryFileReceiver error savedata\n" );
+				return;
+			}
 		}
+
 		totlen += rlen;
 	}
-	jagfdatasync( fd );
-	jagclose( fd );
+
+	if ( fd > 0 ) {
+		jagfdatasync( fd );
+		jagclose( fd );
+		raydebug( stdout, JAG_LOG_LOW, "saved %l bytes\n", totlen );
+	}
 	raydebug( stdout, JAG_LOG_LOW, "recved %l bytes\n", totlen );
 	
-	rlen = recvData( req.session->sock, buf, 3 );
-	raydebug( stdout, JAG_LOG_LOW, "recved %d try bytes b0=[%c] b1=[%c] b2=[%c]\n", rlen, buf[0], buf[1], buf[2] );
-
 	// check number of bytes
 	struct stat sbuf;
-	if ( 0 != stat(recvpath.c_str(), &sbuf) || sbuf.st_size != fsize || totlen != fsize ||
-		rlen < 3 || memcmp( buf, "try", 3 ) != 0 ) {
+	if ( 0 != stat(recvpath.c_str(), &sbuf) || sbuf.st_size != fsize || totlen != fsize ) {
 		// incorrect number of bytes of file, remove file
 		jagunlink( recvpath.c_str() );
 	} else {
@@ -7964,116 +7701,18 @@ void JagDBServer::recoveryFileReceiver( const char *mesg, const JagRequest &req 
 			}
 		}
 		jaguar_mutex_unlock ( &g_dlogmutex );
-		sendData( req.session->sock, "end", 3 );
-		raydebug( stdout, JAG_LOG_LOW, "sent 3 end bytes\n" );
 		raydebug( stdout, JAG_LOG_LOW, "end recoveryFileReceiver OK\n" );
 	}
+
 	if ( buf ) free ( buf );
 	raydebug( stdout, JAG_LOG_LOW, "end proc request of xfer from %s\n", req.session->ip.c_str() );
 }
+
 
 // method to receive tar.gz recovery file
 // pmesg: "_serv_beginftransfer|10|123456|sender_tid" 
 void JagDBServer::walFileReceiver( const char *mesg, const JagRequest &req )
 {
-	#if 0
-	if ( req.session->drecoverConn != 2 ) return;
-	raydebug( stdout, JAG_LOG_LOW, "begin proc request of xfer from %s ...\n", req.session->ip.c_str() );
-	raydebug( stdout, JAG_LOG_LOW, "begin walFileReceiver ...\n" );
-	
-	JagStrSplit sp( mesg, '|', true );
-	if ( sp.length() < 4 ) return;
-	int fpos = atoi(sp[1].c_str());
-	size_t rlen;
-	abaxint fsize = jagatoll(sp[2].c_str());
-	abaxint memsize = 128*1024*1024;
-	abaxint totlen = 0;
-	abaxint recvlen = 0;
-	Jstr recvpath = req.session->servobj->_cfg->getTEMPDataHOME( fpos ) + "/" + req.session->ip + "_" + sp[3] + ".wal";
-	int fd = jagopen( recvpath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRWXU);
-	raydebug( stdout, JAG_LOG_LOW, "s6217 open recvpath=[%s]\n", recvpath.c_str() );
-	if ( fd < 0 ) {
-		raydebug( stdout, JAG_LOG_LOW, "s6218 error open recvpath=[%s]\n", recvpath.c_str() );
-		raydebug( stdout, JAG_LOG_LOW, "end walFileReceiver error open\n" );
-		return;
-	}
-
-	raydebug( stdout, JAG_LOG_LOW, "expect to recv %l bytes \n", fsize );
-	char *buf =(char*)jagmalloc(memsize);
-	
-	while( 1 ) {
-		if ( totlen >= fsize ) break;
-		if ( fsize-totlen < memsize ) {
-			recvlen = fsize-totlen;
-		} else {
-			recvlen = memsize;
-		}
-		rlen = recvData( req.session->sock, buf, recvlen );
-		if ( rlen < recvlen ) {
-			if ( buf ) free ( buf );
-			jagclose( fd );
-			jagunlink( recvpath.c_str() );
-			raydebug( stdout, JAG_LOG_LOW, "end walFileReceiver error recvdata\n" );
-			return;
-		}
-		rlen = raysafewrite( fd, buf, recvlen );
-		if ( rlen < recvlen ) {
-			if ( buf ) free ( buf );
-			jagclose( fd );
-			jagunlink( recvpath.c_str() );
-			raydebug( stdout, JAG_LOG_LOW, "end walFileReceiver error savedata\n" );
-			return;
-		}
-		totlen += rlen;
-	}
-	jagfdatasync( fd );
-	jagclose( fd );
-	raydebug( stdout, JAG_LOG_LOW, "recved %l bytes\n", totlen );
-	
-	rlen = recvData( req.session->sock, buf, 3 );
-	raydebug( stdout, JAG_LOG_LOW, "recved %d try bytes b0=[%c] b1=[%c] b2=[%c]\n", rlen, buf[0], buf[1], buf[2] );
-
-	// check number of bytes
-	struct stat sbuf;
-	if ( 0 != stat(recvpath.c_str(), &sbuf) || sbuf.st_size != fsize || totlen != fsize ||
-		rlen < 3 || memcmp( buf, "try", 3 ) != 0 ) {
-		// incorrect number of bytes of file, remove file
-		jagunlink( recvpath.c_str() );
-	} else {
-		// JAG_BLURT jaguar_mutex_lock ( &g_dlogmutex ); JAG_OVER;
-		if ( 10 == fpos ) {
-			if ( _walrecoverFpath.size() < 1 ) {
-				_walrecoverFpath = req.session->ip + "_" + sp[3] + ".wal";
-			} else {
-				_walrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".wal";
-			}
-		} else if ( 11 == fpos ) {
-			if ( _prevwalrecoverFpath.size() < 1 ) {
-				_prevwalrecoverFpath = req.session->ip + "_" + sp[3] + ".wal";
-			} else {
-				_prevwalrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".wal";
-			}
-		} else if ( 12 == fpos ) {
-			if ( _nextwalrecoverFpath.size() < 1 ) {
-				_nextwalrecoverFpath = req.session->ip + "_" + sp[3] + ".wal";
-			} else {
-				_nextwalrecoverFpath += Jstr("|") + req.session->ip + "_" + sp[3] + ".wal";
-			}
-		}
-		// jaguar_mutex_unlock ( &g_dlogmutex );
-		sendData( req.session->sock, "end", 3 );
-		raydebug( stdout, JAG_LOG_LOW, "sent 3 end bytes\n" );
-		raydebug( stdout, JAG_LOG_LOW, "end walFileReceiver OK\n" );
-	}
-	if ( buf ) free ( buf );
-	raydebug( stdout, JAG_LOG_LOW, "end proc request of xfer from %s\n", req.session->ip.c_str() );
-
-	raydebug( stdout, JAG_LOG_LOW, "begin do %s ...\n",  recvpath.c_str() );
-	abaxint cnt = redoLog( recvpath );
-	raydebug( stdout, JAG_LOG_LOW, "end do %s cnt=%l\n",  recvpath.c_str(), cnt );
-	jagunlink( recvpath.c_str() );
-	raydebug( stdout, JAG_LOG_LOW, "unlink %s\n",  recvpath.c_str() );
-	#endif
 }
 
 // client expects: "numservs|numDBs|numTables|selects|inserts|updates|deletes|usersessions"
@@ -8089,8 +7728,8 @@ void JagDBServer::sendOpInfo( const char *mesg, const JagRequest &req )
 	Jstr res;
 	char buf[1024];
 	sprintf( buf, "%d|%d|%d|%lld|%lld|%lld|%lld|%lld", nsrv, dbs, tabs, 
-			(abaxint)numSelects, (abaxint)numInserts, 
-			(abaxint)numUpdates, (abaxint)numDeletes, 
+			(jagint)numSelects, (jagint)numInserts, 
+			(jagint)numUpdates, (jagint)numDeletes, 
 			_connections );
 
 	res = buf;
@@ -8148,7 +7787,7 @@ void JagDBServer::doRemoteBackup( const char *mesg, const JagRequest &req )
 	chmod( passwdfile.c_str(), 0600 );
 
 	Jstr intip = _localInternalIP;
-	Jstr jagdatahome = _cfg->getJDBDataHOME( 0 ); // /home/jaguar/data
+	Jstr jagdatahome = _cfg->getJDBDataHOME( JAG_MAIN ); // /home/jaguar/data
 	Jstr backupdir = jaguarHome() + "/tmp/remotebackup";
 	JagFileMgr::rmdir( backupdir );
 	JagFileMgr::makedirPath( backupdir );
@@ -8179,7 +7818,6 @@ void JagDBServer::doRestoreRemote( const char *mesg, const JagRequest &req )
 	}
 
 	JagStrSplit sp( mesg, '|', true );	// sp[1] is rserv, sp[2] is passwd
-	// if ( rserv.length() < 1 || passwd.length() < 1 ) {
 	if ( sp[1].length() < 1 ) {
 		// do not comment out
 		prt(("s1193 rserv empty, skip doRestoreRemote\n" ));
@@ -8199,11 +7837,11 @@ void JagDBServer::doRestoreRemote( const char *mesg, const JagRequest &req )
 	_doingRestoreRemote = 0;
 	raydebug( stdout, JAG_LOG_LOW, "exit. Please restart jaguar after restore completes\n", res.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "dorestoreremote done\n" );
-	exit(0);
+	exit(39);
 }
 
-// refresh local server whitelist and blacklist
-// pmesg: "_serv_refreshacl|whitelistIPS|blacklistIPS"
+// refresh local server allowlist and blocklist
+// pmesg: "_serv_refreshacl|allowlistIPS|blocklistIPS"
 void JagDBServer::doRefreshACL( const char *mesg, const JagRequest &req )
 {
 	JagStrSplit sp( mesg, '|' );
@@ -8212,12 +7850,12 @@ void JagDBServer::doRefreshACL( const char *mesg, const JagRequest &req )
 		return;
 	}
 
-	Jstr whitelist = sp[1];  // ip1\nip2\nip3\n
-	Jstr blacklist = sp[2];  // ip4\nip5\ip6\n
-	// prt(("s1209 doRefreshACL whitelist=[%s] blacklist=[%s]\n", whitelist.c_str(), blacklist.c_str() ));
+	Jstr allowlist = sp[1];  // ip1\nip2\nip3\n
+	Jstr blocklist = sp[2];  // ip4\nip5\ip6\n
+	// prt(("s1209 doRefreshACL allowlist=[%s] blocklist=[%s]\n", allowlist.c_str(), blocklist.c_str() ));
 	pthread_rwlock_wrlock( &_aclrwlock);
-	_whiteIPList->refresh( whitelist );
-	_blackIPList->refresh( blacklist );
+	_allowIPList->refresh( allowlist );
+	_blockIPList->refresh( blocklist );
 	pthread_rwlock_unlock( &_aclrwlock );
 
 }
@@ -8272,10 +7910,10 @@ void JagDBServer::sendResourceInfo( const char *mesg, const JagRequest &req )
 {
 	int rc = 0;
 	Jstr res;
-	abaxint usedDisk, freeDisk;
-	abaxint usercpu, syscpu, idle;
+	jagint usedDisk, freeDisk;
+	jagint usercpu, syscpu, idle;
 	_jagSystem.getCPUStat( usercpu, syscpu, idle );
-	abaxint totm, freem, used; //GB
+	jagint totm, freem, used; //GB
 	rc = _jagSystem.getMemInfo( totm, freem, used );
 	// prt(("s0394 _jagSystem.getMemInfo rc=%d totm=%d freem=%d used=%d\n", rc, totm, freem, used ));
 
@@ -8319,7 +7957,7 @@ void JagDBServer::sendRemoteHostsInfo( const char *mesg, const JagRequest &req )
 // pmesg: "_mon_local_stat6"
 void JagDBServer::sendLocalStat6( const char *mesg, const JagRequest &req )
 {
-	abaxint totalDiskGB, usedDiskGB, freeDiskGB, nproc, tcp;
+	jagint totalDiskGB, usedDiskGB, freeDiskGB, nproc, tcp;
 	float loadvg;
 	_jagSystem.getStat6( totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp );
 	char line[256];
@@ -8332,7 +7970,7 @@ void JagDBServer::sendLocalStat6( const char *mesg, const JagRequest &req )
 // pmesg: "_mon_cluster_stat6"
 void JagDBServer::sendClusterStat6( const char *mesg, const JagRequest &req )
 {
-	abaxint totalDiskGB=0, usedDiskGB=0, freeDiskGB=0, nproc=0, tcp=0;
+	jagint totalDiskGB=0, usedDiskGB=0, freeDiskGB=0, nproc=0, tcp=0;
 	float loadvg;
 
 	_jagSystem.getStat6( totalDiskGB, usedDiskGB, freeDiskGB, nproc, loadvg, tcp );
@@ -8341,7 +7979,7 @@ void JagDBServer::sendClusterStat6( const char *mesg, const JagRequest &req )
 	Jstr self = line;
 
 	Jstr resp, bcasthosts;
-	resp = _dbConnector->broadCastGet( "_mon_local_stat6", bcasthosts ); 
+	resp = _dbConnector->broadcastGet( "_mon_local_stat6", bcasthosts ); 
 	// \n separated data from all nodes
 
 	resp += self + "\n";
@@ -8396,7 +8034,7 @@ void JagDBServer::processLocalBackup( const char *mesg, const JagRequest &req )
 	Jstr bcastCmd, bcasthosts;
 	bcastCmd = Jstr("_serv_dolocalbackup|") + tmstr;
 	raydebug( stdout, JAG_LOG_LOW, "broadcast localbackup to all servers ...\n" ); 
-	_dbConnector->broadCastSignal( bcastCmd, bcasthosts );
+	_dbConnector->broadcastSignal( bcastCmd, bcasthosts );
 	raydebug( stdout, JAG_LOG_LOW, "localbackup finished\n" );
 	sendMessage( req, "localbackup finished", "OK" );
 	sendMessage( req, "_END_[T=30|E=]", "ED" );
@@ -8471,7 +8109,7 @@ void JagDBServer::processRemoteBackup( const char *mesg, const JagRequest &req )
     	Jstr bcastCmd, bcasthosts;
     	bcastCmd = Jstr("_serv_doremotebackup|") + remthost +"|" + passwd;
     	raydebug( stdout, JAG_LOG_LOW, "broadcast remotebackup to all servers ...\n" ); 
-    	_dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
+    	_dbConnector->broadcastSignal( bcastCmd, bcasthosts ); 
 
 		jagsleep(10, JAG_SEC);
 	}
@@ -8538,7 +8176,7 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
     Jstr bcastCmd, bcasthosts;
     bcastCmd = Jstr("_serv_dorestoreremote|") + remthost +"|" + passwd;
     raydebug( stdout, JAG_LOG_LOW, "broadcast restoreremote to all servers ...\n" ); 
-    _dbConnector->broadCastSignal( bcastCmd, bcasthosts ); 
+    _dbConnector->broadcastSignal( bcastCmd, bcasthosts ); 
 
 	jagsleep(3, JAG_SEC);
 
@@ -8550,91 +8188,393 @@ void JagDBServer::processRestoreRemote( const char *mesg, const JagRequest &req 
 	sendMessage( req, "_END_[T=30|E=]", "ED" );
 }
 
-// method to check and repair given object data
-// pmesg: "_ex_repairocheck" or "_ex_repairobject"
-void JagDBServer::repairCheck( const char *mesg, const JagRequest &req )
+// begin and prepare hosts, files, etc. no broadcast to other servers
+// method to add new servers in a cluster, do full data migration
+// pmesg: "_ex_addclust_migrate|#ip1|ip2#ip3|ip4!ip5|ip6"
+void JagDBServer::addClusterMigrate( const char *mesg, const JagRequest &req )
 {
-	int isCheck = 0;
-	if ( 0 == strncmp( mesg, "_ex_repairocheck", 16 ) ) isCheck = 1;
 	if ( req.session->uid!="admin" || !req.session->exclusiveLogin ) {
-		raydebug( stdout, JAG_LOG_LOW, "check/repair object rejected. admin exclusive login is required\n" );
+		raydebug( stdout, JAG_LOG_LOW, "add cluster rejected. admin exclusive login is required\n" );
 		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 
-	JagTableSchema *tableschema;
-	JagIndexSchema *indexschema;
-	getTableIndexSchema(  req.session->replicateType, tableschema, indexschema );
-	Jstr dbobj = mesg+17, gettab;
-	abaxint rc = 0, elem = 1;
-	Jstr msg;
-	JagParseParam pparam;
-	ObjectNameAttribute objNameTemp;
-	JagStrSplit sp( dbobj.c_str(), '.' );
-	objNameTemp.init();
-	objNameTemp.dbName = sp[0];
-	objNameTemp.tableName = sp[1];
-	pparam.objectVec.append(objNameTemp);
-	pparam.optype = 'R';
-	pparam.opcode = JAG_REPAIRCHECK_OP;
-	JagTable *ptab = NULL;
-	JagIndex *pindex = NULL;
+	prt(("s9999 810298 addClusterMigrate() ...\n"));
 
-	ptab = _objectLock->readLockTable( pparam.opcode, pparam.objectVec[0].dbName, 
-		pparam.objectVec[0].tableName, req.session->replicateType, 0 );
-	if ( !ptab ) {
-		pindex = _objectLock->readLockIndex( pparam.opcode, pparam.objectVec[0].dbName,
-			gettab, pparam.objectVec[0].tableName,
-			tableschema, indexschema, req.session->replicateType, 0 );
+	Jstr oldHosts = _dbConnector->_nodeMgr->_allNodes.s(); // existing hosts "ip1|ip2|ip3"
+	this->_migrateOldHosts = oldHosts;
+	JagHashMap<AbaxString, AbaxInt> ipmap;
+
+	int elen = strlen("_ex_addclust_migrate") + 2; 
+	
+	const char *end = strchr( mesg+elen, '|' ); // skip _ex_addcluster_migrate|#
+	if ( !end ) end = strchr( mesg+elen, '!' );
+	if ( !end ) end = mesg+elen;
+	Jstr hstr = mesg+elen-1, absfirst( mesg+elen, end-mesg-elen );
+	// split to get original cluster(s) and new added cluster
+	prt(("s333309 end=[%s]\n", end ));
+	JagStrSplit sp( hstr, '!', true );
+	JagStrSplit sp2( sp[1], '|', true ); // new nodes
+	_objectLock->writeLockSchema( -1 );
+	prt(("s200321 addCluster migrate hstr=[%s] absfirst=[%s] sp[1]=[%s]\n", hstr.s(), absfirst.s(), sp[1].s()  ));
+	
+	// form new cluster.conf string as the form of: #\nip1\nip2\n#\nip3\nip4...
+	int clusternum = 1;
+	Jstr nhstr, ip, err, clustname;
+	JagStrSplit sp3( sp[0], '#', true );
+	for ( int i = 0; i < sp3.length(); ++i ) {
+		++ clusternum;
+		JagStrSplit sp4( sp3[i], '|', true );
+		for ( int j = 0; j < sp4.length(); ++j ) {
+			ip = JagNet::getIPFromHostName( sp4[j] );
+			if ( ip.length() < 2 ) {
+				err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of " ) +  sp4[j] ;
+				raydebug( stdout, JAG_LOG_LOW, "E1300 addcluster error %s \n", err.c_str() );
+				sendMessage( req, err.c_str(), "ER" );
+				_objectLock->writeUnlockSchema( -1 );
+				return;
+			}
+
+			if ( ! ipmap.keyExist( ip.c_str() ) ) {
+				ipmap.addKeyValue( ip.c_str(), 1 );
+				nhstr += ip + "\n";
+			}
+		}
+	}
+
+	// nhstr += "# Do not delete this line\n";
+	//clustname = Jstr("# Subcluster ") + intToStr(clusternum) + " (New. Do not delete this line)";
+	//nhstr += clustname + "\n";
+	for ( int i = 0; i < sp2.length(); ++i ) { // new hosts
+		// nhstr += sp2[i] + "\n";
+		ip = JagNet::getIPFromHostName( sp2[i] );
+		if ( ip.length() < 2 ) {
+			err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of newhost " ) +  sp2[i] ;
+			raydebug( stdout, JAG_LOG_LOW, "E1301 addcluster error %s \n", err.c_str() );
+			sendMessage( req, err.c_str(), "ER" );
+			_objectLock->writeUnlockSchema( -1 );
+			return;
+		}
+
+		if ( ! ipmap.keyExist( ip.c_str() ) ) {
+			ipmap.addKeyValue( ip.c_str(), 1 );
+			nhstr += ip + "\n";
+		}
+	}
+	// nhstr has all hosts now ( old + new )
+	raydebug( stdout, JAG_LOG_LOW, "addcluster migrate updated set of hosts:\n%s\n", nhstr.c_str() );
+
+	Jstr fpath, cmd, dirpath, tmppath, passwd = "dummy", unixSocket = Jstr("/TOKEN=") + _servToken;
+	unsigned int uport = _port;
+	// first, let host0 of cluster0 send schema info to new server(s)
+	bool isDirector = false;
+	if ( _dbConnector->_nodeMgr->_selfIP == absfirst ) {
+		isDirector = true; // the main old host
+		prt(("s4122382 host0 of cluster0 send schema info to new servers ...\n"));
+		dirpath = _cfg->getJDBDataHOME( JAG_MAIN );
+		tmppath = _cfg->getTEMPDataHOME( JAG_MAIN );
+		// make schema package -- empty database dirs and full system dir
+		// cd /home/$USER/$BRAND/$DATA; tar -zcf /home/$USER/$BRAND/tmp/$DATA/a.tar.gz --no-recursion *;
+		// tar -zcf /home/$USER/$BRAND/tmp/$DATA/b.tar.gz system
+		cmd = Jstr("cd ") + dirpath + "; tar -zcf " + tmppath + "/a.tar.gz --no-recursion *; tar -zcf ";
+		cmd += tmppath + "/b.tar.gz system";
+		system(cmd.c_str());
+		raydebug( stdout, JAG_LOG_LOW, "s6300 [%s]\n", cmd.c_str() );
+		
+		// untar the above two tar.gzs, remove them and remake a new tar.gz
+		// cd /home/$USER/$BRAND/tmp/$DATA; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm a.tar.gz; b.tar.gz; tar -zcf a.tar.gz *
+		cmd = Jstr("cd ") + tmppath + "; tar -zxf a.tar.gz; tar -zxf b.tar.gz; rm -f a.tar.gz b.tar.gz; tar -zcf c.tar.gz *";
+		system(cmd.c_str());
+		raydebug( stdout, JAG_LOG_LOW, "s6302 [%s]\n", cmd.c_str() );
+		fpath = tmppath + "/c.tar.gz";
+		// make connection and transfer package to each server
+		for ( int i = 0; i < sp2.length(); ++i ) {
+			prt(("s3982712 fileTransmit %s:%d %s ...\n", sp2[i].s(), uport, fpath.s() )); 
+			fileTransmit( sp2[i], uport, passwd, unixSocket, 0, fpath, 1 );
+			prt(("s3982712 fileTransmit %s:%d %s done\n", sp2[i].s(), uport, fpath.s() )); 
+		}
+		//jagunlink tar.gz file
+		jagunlink(fpath.c_str());
+		// clean up tmp dir
+		JagFileMgr::rmdir( tmppath, false );
+	} else {
+		prt(("s2767172 i am not host0 of cluster, no tar file and fileTransmit\n"));
 	}
 	
-	rc = 0;
-	abaxint keyCheckerCnt = 0;
-	if ( ptab ) {
-		flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 1, ptab, NULL );
-		if ( isCheck ) {
-			rc = ptab->_darrFamily->checkFileOrder( req );
+	// for new added servers, wait for package receive, and then format schema
+	bool amNewNode = false;
+	for ( int i = 0; i < sp2.length(); ++i ) {
+		prt(("s9999 1110 _dbConnector->_nodeMgr->_selfIP=[%s] sp2[i=%d]=[%s]\n", _dbConnector->_nodeMgr->_selfIP.s(), sp2[i].s() ));
+		if ( _dbConnector->_nodeMgr->_selfIP == sp2[i] ) {
+			amNewNode = true;
+			prt(("s307371 I am a new server %s , wait for schema files to arrive ...\n", sp2[i].s() ));
+			// is new server, waiting for package to receive
+			while ( _addClusterFlag < 1 ) {
+				jagsleep(1, JAG_SEC);
+				prt(("s402981 sleep 1 sec ...\n"));
+			}
+			prt(("s307371 i am a new server %s , _addClusterFlag=%d schema files arrived\n", sp2[i].s(), (int)_addClusterFlag ));
+			// received new schema package
+			// 1. cp tar.gz to pdata and ndata
+			// 2. drop old tables, untar packages, cp -rf of data to pdata and ndata and rebuild new table objects
+			// 3. init clean other dirs ( /tmp etc. )
+			JagRequest req;
+			JagSession session;
+			req.session = &session;
+			session.servobj = this;
+
+			// for data dir
+			dirpath = _cfg->getJDBDataHOME( JAG_MAIN );
+			session.replicateType = 0;
+
+			dropAllTablesAndIndex( req, this, _tableschema );
+
+			JagFileMgr::rmdir( dirpath, false );
+			fpath = _cfg->getTEMPDataHOME( JAG_MAIN ) + "/" + _crecoverFpath;
+			cmd = Jstr("tar -zxf ") + fpath + " --directory=" + dirpath;
+			system( cmd.c_str() );
+			raydebug( stdout, JAG_LOG_LOW, "s6304 [%s]\n", cmd.c_str() );
+			jagunlink(fpath.c_str());
+			raydebug( stdout, JAG_LOG_LOW, "delete %s\n", fpath.c_str() );
+			
+			// for pdata dir
+			if ( _faultToleranceCopy >= 2 ) {
+				dirpath = _cfg->getJDBDataHOME( JAG_PREV );
+				session.replicateType = 1;
+				dropAllTablesAndIndex( req, this, _prevtableschema );
+				JagFileMgr::rmdir( dirpath, false );
+				cmd = Jstr("/bin/cp -rf ") + _cfg->getJDBDataHOME( JAG_MAIN ) + "/* " + dirpath;
+				system( cmd.c_str() );
+				raydebug( stdout, JAG_LOG_LOW, "s6307 [%s]\n", cmd.c_str() );
+			}
+
+			// for ndata dir
+			if ( _faultToleranceCopy >= 3 ) {
+				dirpath = _cfg->getJDBDataHOME( JAG_NEXT );
+				session.replicateType = 2;
+				dropAllTablesAndIndex( req, this, _nexttableschema );
+				JagFileMgr::rmdir( dirpath, false );
+				cmd = Jstr("/bin/cp -rf ") + _cfg->getJDBDataHOME( JAG_MAIN ) + "/* " + dirpath;
+				system( cmd.c_str() );
+				raydebug( stdout, JAG_LOG_LOW, "s6308 [%s]\n", cmd.c_str() );
+			}
+
+			_objectLock->writeUnlockSchema( -1 );
+			/***
+			prt(("s4028272 crecoverRefreshSchema ...\n"));
+			crecoverRefreshSchema( JAG_MAKE_OBJECTS_ONLY );
+			prt(("s4028272 crecoverRefreshSchema done\n"));
+			***/
+			_objectLock->writeLockSchema( -1 );
+			_crecoverFpath = "";
+
+			// 2.
+			makeNeededDirectories();
+
+			_addClusterFlag = 0;
+			break;
 		} else {
-			rc = ptab->_darrFamily->orderRepair( req );
-			elem = ptab->_darrFamily->getElements( keyCheckerCnt );
 		}
-		_objectLock->readUnlockTable( pparam.opcode, pparam.objectVec[0].dbName, 
-			pparam.objectVec[0].tableName, req.session->replicateType, 0 );
-	} else if ( pindex ) {
-		flushOneTableAndRelatedIndexsInsertBuffer( dbobj, req.session->replicateType, 0, NULL, pindex );
-		if ( isCheck ) {
-			rc = pindex->_darrFamily->checkFileOrder( req );
+	}
+
+	// then, for all servers, refresh cluster.conf and remake connections
+	raydebug( stdout, JAG_LOG_LOW, "s11 existing allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+
+	prt(("s9999 30292 isDirector=%d amNewNode=%d\n", isDirector, amNewNode ));
+
+	if ( ! isDirector || amNewNode ) {
+		this->_isDirectorNode = false;
+		this->_migrateOldHosts = "";
+		prt(("s1029191 s9999 refreshClusterFile....\n"));
+		_dbConnector->_nodeMgr->refreshClusterFile( nhstr );
+		prt(("s1029191 s9999 refreshClusterFile done....\n"));
+
+		struct timeval now;
+		gettimeofday( &now, NULL );
+		g_lastHostTime = now.tv_sec * (jagint)1000000 + now.tv_usec;
+		_objectLock->writeUnlockSchema( -1 );
+
+		raydebug( stdout, JAG_LOG_LOW, "s003 new node or follower, existing allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+		raydebug( stdout, JAG_LOG_LOW, "s032 _sendAllNodes: [%s]\n", _dbConnector->_nodeMgr->_sendAllNodes.s() );
+
+		prt(("s999 28228 g_dbconnectormutex ...\n" ));
+		jaguar_mutex_lock ( &g_dbconnectormutex );
+		prt(("s999 28228 g_dbconnectormutex done ...\n" ));
+		if ( _dbConnector ) {
+			prt(("s2202928 s9999 delete _dbConnector \n"));
+			delete _dbConnector;
+			raydebug( stdout, JAG_LOG_LOW, "s2028 done delete _dbConnector, new JagDBConnector...\n" );
+			_dbConnector = newObject<JagDBConnector>( );
+			raydebug( stdout, JAG_LOG_LOW, "s2029 done new JagDBConnector\n" );
+		}
+		jaguar_mutex_unlock ( &g_dbconnectormutex );
+
+		prt(("s2220291 crecoverRefreshSchema 0\n"));
+		raydebug( stdout, JAG_LOG_LOW, "s20292 crecoverRefreshSchema(0)... \n" );
+		if ( amNewNode ) {
+			prt(("s3330288 amNewNode JAG_MAKE_OBJECTS_CONNECTIONS\n"));
+			crecoverRefreshSchema( JAG_MAKE_OBJECTS_CONNECTIONS, true );
 		} else {
-			rc = pindex->_darrFamily->orderRepair( req );
-			elem = pindex->_darrFamily->getElements( keyCheckerCnt );
+			prt(("s3330288 follower JAG_MAKE_CONNECTIONS_ONLY\n"));
+			crecoverRefreshSchema( JAG_MAKE_CONNECTIONS_ONLY, true );
 		}
-		_objectLock->readUnlockIndex( pparam.opcode, pparam.objectVec[0].dbName,
-			gettab, pparam.objectVec[0].tableName,
-			tableschema, indexschema, req.session->replicateType, 0 );
-	} else {
-		msg = dbobj + " does not exist. Please check the name";
-		sendMessage( req, msg.c_str(), "ER" );
+		raydebug( stdout, JAG_LOG_LOW, "s20292 crecoverRefreshSchema(0) done \n" );
+
+
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+		raydebug( stdout, JAG_LOG_LOW, "s999 done new node or old non-main node, allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+		raydebug( stdout, JAG_LOG_LOW, "s132 _sendAllNodes: [%s]\n", _dbConnector->_nodeMgr->_sendAllNodes.s() );
+
+		prt(("s999 282890 new/follower  _dbConnector=%0x _dbConnector->_nodeMgr=%0x return\n\n", _dbConnector, _dbConnector->_nodeMgr ));
+		return;
+
+	}
+
+	_objectLock->writeUnlockSchema( -1 );
+	this->_isDirectorNode = true;
+
+
+	struct timeval now;
+	gettimeofday( &now, NULL );
+	g_lastHostTime = now.tv_sec * (jagint)1000000 + now.tv_usec;
+
+	raydebug( stdout, JAG_LOG_LOW, "s1927 existing allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+
+	_dbConnector->_nodeMgr->refreshClusterFile( nhstr );
+	prt(("s999 28238 g_dbconnectormutex ...\n" ));
+	jaguar_mutex_lock ( &g_dbconnectormutex );
+	prt(("s999 28238 g_dbconnectormutex done ...\n" ));
+	if ( _dbConnector ) {
+		delete _dbConnector;
+		_dbConnector = newObject<JagDBConnector>( );
+	}
+	jaguar_mutex_unlock ( &g_dbconnectormutex );
+	raydebug( stdout, JAG_LOG_LOW, "s13 new allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+	raydebug( stdout, JAG_LOG_LOW, "s132 _sendAllNodes: [%s]\n", _dbConnector->_nodeMgr->_sendAllNodes.s() );
+
+	prt(("\n"));
+	prt(("s2203727 crecoverRefreshSchema (0) ...\n"));
+	// restore insertBufferMap is available
+	//crecoverRefreshSchema( JAG_MAKE_OBJECTS_CONNECTIONS, true );
+	crecoverRefreshSchema( JAG_MAKE_CONNECTIONS_ONLY, true );
+	prt(("s2203727 crecoverRefreshSchema (0) done ...\n"));
+	prt(("\n"));
+
+	raydebug( stdout, JAG_LOG_LOW, "s23 new allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
+
+	raydebug( stdout, JAG_LOG_LOW, "s14 new allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+	raydebug( stdout, JAG_LOG_LOW, "s30087 addclustermigrate() begin is done\n" );
+}
+
+
+// after  preparing hosts, files, etc. now do broadcast to other servers
+// method to add new servers in a cluster, do full data migration
+// pmesg: "_ex_addclust_migrcontinue"
+void JagDBServer::addClusterMigrateContinue( const char *mesg, const JagRequest &req )
+{
+	if ( req.session->uid!="admin" || !req.session->exclusiveLogin ) {
+		raydebug( stdout, JAG_LOG_LOW, "add cluster rejected. admin exclusive login is required\n" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
 		return;
 	}
 
-	if ( isCheck ) {
-		if ( rc > 0 ) {
-			msg = dbobj + " is in right order. No need to repair";
+	prt(("s9999 122028 addClusterMigrateContinue() ...\n"));
+
+	// this->_migrateOldHosts = oldHosts;
+	Jstr oldHosts = this->_migrateOldHosts;
+
+	// If not director node, returns
+	if ( ! this->_isDirectorNode ) {
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+		prt(("s999 282890 new/follower  _dbConnector=%0x _dbConnector->_nodeMgr=%0x return\n\n", _dbConnector, _dbConnector->_nodeMgr ));
+		return;
+
+	}
+
+	JagVector<AbaxString> *vec = _tableschema->getAllTablesOrIndexesLabel( JAG_TABLE_OR_CHAIN_TYPE, "", "" );
+	Jstr sql;
+	int bad = 0;
+	bool erc;
+	Jstr dbtab, db, tab;
+	prt(("s120291 getAllTablesOrIndexesLabel vec.size=%d\n", vec->size() ));
+	for ( int j=0; j < vec->length(); ++j ) {
+		dbtab = (*vec)[j].s();  // "db.tab123"
+		sql = Jstr("select * from ") + dbtab + " export;";
+		prt(("s2220833 dbtab=[%s] sql=[%s] broadcastSignal ...\n", dbtab.s(),  sql.s() ));
+		erc = _dbConnector->broadcastSignal( sql, oldHosts, NULL, true ); // all hosts including self
+		prt(("s2220834 dbtab=[%s] sql=[%s] broadcastSignal done erc=%d\n", dbtab.s(),  sql.s(), erc ));
+		if ( erc ) {
+			raydebug( stdout, JAG_LOG_LOW, "requested exporting %s\n", dbtab.s() );
 		} else {
-			msg = dbobj + " has misplaced records. Please use repair command to fix it";
-		}
-	} else {
-		if ( rc > 0 ) {
-			msg = dbobj + " has been corrected";
-			prt(("s8180 %s repair wrong records=%lld elements=%lld\n", dbobj.c_str(), rc, elem ));
-		} else {
-			msg = dbobj + " all records are in right order";
+			raydebug( stdout, JAG_LOG_LOW, "requesting exporting %s has error\n", dbtab.s() );
+			bad ++;
+			break;
 		}
 	}
-	prt(("s7459 %s\n", msg.c_str()));
-	sendMessage( req, msg.c_str(), "OK" );
+
+	prt(("s333300 done select export\n"));
+
+	Jstr resp;
+	if ( bad > 0 ) {
+		prt(("s2220976 broadcastSignal _ex_importtable cleanup oldHosts=[%s] ...\n", oldHosts.s() ));
+		for ( int j=0; j < vec->length(); ++j ) {
+			dbtab = (*vec)[j].s();
+			JagStrSplit sp( dbtab, '.' );
+			db = sp[0];
+			tab = sp[1];
+			sql= Jstr("_ex_importtable|") + db + "|" + tab + "|YES";
+			prt(("s223308 _dbConnector->broadcastSignal( sql=%s ) ...\n", sql.s() ));
+			_dbConnector->broadcastSignal( sql, oldHosts, NULL, true ); 
+			prt(("s2233082 _dbConnector->broadcastSignal( sql=%s ) done\n", sql.s() ));
+			raydebug( stdout, JAG_LOG_LOW, "s387 broadcastSignal %s to hosts=[%s]\n", sql.s(), oldHosts.s() );
+		}
+		prt(("s22209762 broadcastSignal %s finishup done\n",  sql.s() ));
+	} else {
+		for ( int j=0; j < vec->length(); ++j ) {
+			dbtab = (*vec)[j].s();
+			JagStrSplit sp( dbtab, '.' );
+			db = sp[0];
+			tab = sp[1];
+
+			// qwer
+			for ( int r = 0; r < _faultToleranceCopy; ++r ) {
+				sql= Jstr("_ex_truncatetable|") + intToStr(r) + "|" + db + "|" + tab;
+				prt(("s2233082 _dbConnector->broadcastSignal( sql=%s ) ...\n", sql.s() ));
+				_dbConnector->broadcastSignal( sql, oldHosts, NULL, true ); 
+				prt(("s22330823 _dbConnector->broadcastSignal( sql=%s ) done\n", sql.s() ));
+			}
+
+			raydebug( stdout, JAG_LOG_LOW, "s387 broadcastSignal %s to hosts=[%s]\n", sql.s(), oldHosts.s() );
+		}
+	}
+
+	if ( bad == 0 ) {
+		prt(("s2220976 broadcastSignal _ex_importtable oldHosts=[%s] ...\n", oldHosts.s() ));
+		for ( int j=0; j < vec->length(); ++j ) {
+			dbtab = (*vec)[j].s();
+			JagStrSplit sp( dbtab, '.' );
+			db = sp[0];
+			tab = sp[1];
+			sql= Jstr("_ex_importtable|") + db + "|" + tab + "|NO";
+			prt(("s223308 _dbConnector->broadcastSignal( sql=%s ) oldHosts=[%s]  ...\n", sql.s(), oldHosts.s() ));
+			_dbConnector->broadcastSignal( sql, oldHosts, NULL, true ); 
+			prt(("s2233082 _dbConnector->broadcastSignal( sql=%s ) done\n", sql.s() ));
+			raydebug( stdout, JAG_LOG_LOW, "s387 broadcastSignal %s to hosts=[%s]\n", sql.s(), oldHosts.s() );
+		}
+		prt(("s22209762 broadcastSignal %s done\n",  sql.s() ));
+
+		//sendMessageLength( req, resp.s(), resp.size(), "OK");  
+	}
+
+	delete vec;
 	sendMessage( req, "_END_[T=30|E=]", "ED" );
+
+	raydebug( stdout, JAG_LOG_LOW, "s14 new allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+	raydebug( stdout, JAG_LOG_LOW, "s30087 addclustermigratecontnue() broadcast is done bad=%d\n", bad );
 }
+
 
 // method to add new cluster
 // pmesg: "_ex_addcluster|#ip1|ip2#ip3|ip4!ip5|ip6"
@@ -8648,16 +8588,17 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 
 	JagHashMap<AbaxString, AbaxInt> ipmap;
 
-	
-	const char *end = strchr( mesg+16, '|' );
-	if ( !end ) end = strchr( mesg+16, '!' );
-	if ( !end ) end = mesg+16;
-	Jstr hstr = mesg+15, absfirst( mesg+16, end-mesg-16 );
+	int elen = strlen("_ex_addcluster") + 2; 
+	const char *end = strchr( mesg+elen, '|' ); // skip _ex_addcluster|#
+	if ( !end ) end = strchr( mesg+elen, '!' );
+	if ( !end ) end = mesg+elen;
+	Jstr hstr = mesg+elen-1, absfirst( mesg+elen, end-mesg-elen );
 	// split to get original cluster(s) and new added cluster
 	JagStrSplit sp( hstr, '!', true );
 	JagStrSplit sp2( sp[1], '|', true );
 	_objectLock->writeLockSchema( -1 );
-	flushAllTableAndRelatedIndexsInsertBuffer();
+	//flushAllTableAndRelatedIndexsInsertBuffer();
+	prt(("s200321 addCluster hstr=[%s] absfirst=[%s]\n", hstr.s(), absfirst.s() ));
 	
 	// form new cluster.conf string as the form of: #\nip1\nip2\n#\nip3\nip4...
 	int clusternum = 1;
@@ -8675,6 +8616,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 				err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of " ) +  sp4[j] ;
 				raydebug( stdout, JAG_LOG_LOW, "E1300 addcluster error %s \n", err.c_str() );
 				sendMessage( req, err.c_str(), "ER" );
+				_objectLock->writeUnlockSchema( -1 );
 				return;
 			}
 
@@ -8686,7 +8628,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	}
 
 	// nhstr += "# Do not delete this line\n";
-	clustname = Jstr("# Subcluster ") + intToStr(clusternum) + " (New. Do not delete this line)";
+	clustname = Jstr("# Subcluster ") + intToStr(clusternum) + " (New hosts. Do not delete this line)";
 	nhstr += clustname + "\n";
 	for ( int i = 0; i < sp2.length(); ++i ) {
 		// nhstr += sp2[i] + "\n";
@@ -8695,6 +8637,7 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 			err = Jstr( "_END_[T=130|E=Command Failed. Unable to resolve IP address of newhost " ) +  sp2[i] ;
 			raydebug( stdout, JAG_LOG_LOW, "E1301 addcluster error %s \n", err.c_str() );
 			sendMessage( req, err.c_str(), "ER" );
+			_objectLock->writeUnlockSchema( -1 );
 			return;
 		}
 
@@ -8709,8 +8652,9 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	unsigned int uport = _port;
 	// first, let host0 of cluster0 send schema info to new server(s)
 	if ( _dbConnector->_nodeMgr->_selfIP == absfirst ) {
-		dirpath = _cfg->getJDBDataHOME( 0 );
-		tmppath = _cfg->getTEMPDataHOME( 0 );
+		prt(("s412238 host0 of cluster0 send schema info to new servers ...\n"));
+		dirpath = _cfg->getJDBDataHOME( JAG_MAIN );
+		tmppath = _cfg->getTEMPDataHOME( JAG_MAIN );
 		// make schema package -- empty database dirs and full system dir
 		// cd /home/$USER/$BRAND/$DATA; tar -zcf /home/$USER/$BRAND/tmp/$DATA/a.tar.gz --no-recursion *;
 		// tar -zcf /home/$USER/$BRAND/tmp/$DATA/b.tar.gz system
@@ -8727,37 +8671,46 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 		fpath = tmppath + "/c.tar.gz";
 		// make connection and transfer package to each server
 		for ( int i = 0; i < sp2.length(); ++i ) {
+			prt(("s398271 fileTransmit %s:%d %s ...\n", sp2[i].s(), uport, fpath.s() )); 
 			fileTransmit( sp2[i], uport, passwd, unixSocket, 0, fpath, 1 );
+			prt(("s398271 fileTransmit %s:%d %s done\n", sp2[i].s(), uport, fpath.s() )); 
 		}
-		//unlink tar.gz file
+		//jagunlink tar.gz file
 		jagunlink(fpath.c_str());
 		// clean up tmp dir
 		JagFileMgr::rmdir( tmppath, false );
+	} else {
+		prt(("s276717 i am not host0 of cluster, no tar file and fileTransmit\n"));
 	}
 	
 	// for new added servers, wait for package receive, and then format schema
+	//bool amNewNode = false;
 	for ( int i = 0; i < sp2.length(); ++i ) {
 		if ( _dbConnector->_nodeMgr->_selfIP == sp2[i] ) {
+			//amNewNode = true;
+			prt(("s307371 I am a new server %s , wait for schema files to arrive ...\n", sp2[i].s() ));
 			// is new server, waiting for package to receive
 			while ( _addClusterFlag < 1 ) {
 				jagsleep(1, JAG_SEC);
+				prt(("s402981 sleep 1 sec ...\n"));
 			}
+			prt(("s307371 I am a new server %s , _addClusterFlag=%d schema files arrived\n", sp2[i].s(), (int)_addClusterFlag ));
 			// received new schema package
 			// 1. cp tar.gz to pdata and ndata
 			// 1. drop old tables, untar packages, cp -rf of data to pdata and ndata and rebuild new table objects
 			// 3. init clean other dirs ( /tmp etc. )
 			// 1.
 			JagRequest req;
-			JagSession session( g_dtimeout );
+			JagSession session;
 			req.session = &session;
 			session.servobj = this;
 
 			// for data dir
-			dirpath = _cfg->getJDBDataHOME( 0 );
+			dirpath = _cfg->getJDBDataHOME( JAG_MAIN );
 			session.replicateType = 0;
 			dropAllTablesAndIndex( req, this, _tableschema );
 			JagFileMgr::rmdir( dirpath, false );
-			fpath = _cfg->getTEMPDataHOME( 0 ) + "/" + _crecoverFpath;
+			fpath = _cfg->getTEMPDataHOME( JAG_MAIN ) + "/" + _crecoverFpath;
 			cmd = Jstr("tar -zxf ") + fpath + " --directory=" + dirpath;
 			system( cmd.c_str() );
 			raydebug( stdout, JAG_LOG_LOW, "s6304 [%s]\n", cmd.c_str() );
@@ -8766,57 +8719,35 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 			
 			// for pdata dir
 			if ( _faultToleranceCopy >= 2 ) {
-				dirpath = _cfg->getJDBDataHOME( 1 );
+				dirpath = _cfg->getJDBDataHOME( JAG_PREV );
 				session.replicateType = 1;
 				dropAllTablesAndIndex( req, this, _prevtableschema );
 				JagFileMgr::rmdir( dirpath, false );
-				cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+				cmd = Jstr("/bin/cp -rf ") + _cfg->getJDBDataHOME( JAG_MAIN ) + "/* " + dirpath;
 				system( cmd.c_str() );
 				raydebug( stdout, JAG_LOG_LOW, "s6307 [%s]\n", cmd.c_str() );
 			}
 
 			// for ndata dir
 			if ( _faultToleranceCopy >= 3 ) {
-				dirpath = _cfg->getJDBDataHOME( 2 );
+				dirpath = _cfg->getJDBDataHOME( JAG_NEXT );
 				session.replicateType = 2;
 				dropAllTablesAndIndex( req, this, _nexttableschema );
 				JagFileMgr::rmdir( dirpath, false );
-				cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+				cmd = Jstr("/bin/cp -rf ") + _cfg->getJDBDataHOME( JAG_MAIN ) + "/* " + dirpath;
 				system( cmd.c_str() );
 				raydebug( stdout, JAG_LOG_LOW, "s6308 [%s]\n", cmd.c_str() );
 			}
+
 			_objectLock->writeUnlockSchema( -1 );
-			crecoverRefreshSchema( 1 );
+			prt(("s4028271 crecoverRefreshSchema ...\n"));
+			crecoverRefreshSchema( JAG_MAKE_OBJECTS_ONLY );
+			prt(("s4028271 crecoverRefreshSchema done\n"));
 			_objectLock->writeLockSchema( -1 );
 			_crecoverFpath = "";
 
 			// 2.
-			fpath = jaguarHome() + "/tmp";
-			JagFileMgr::rmdir( fpath );
-			JagFileMgr::makedirPath( fpath );
-			fpath = jaguarHome() + "/tmp/data";
-			JagFileMgr::rmdir( fpath );
-			JagFileMgr::makedirPath( fpath );
-			fpath = jaguarHome() + "/tmp/pdata";
-			JagFileMgr::rmdir( fpath );
-			JagFileMgr::makedirPath( fpath );
-			fpath = jaguarHome() + "/tmp/ndata";
-			JagFileMgr::rmdir( fpath );
-			JagFileMgr::makedirPath( fpath );
-			fpath = jaguarHome() + "/tmp/join";
-			JagFileMgr::rmdir( fpath );
-			JagFileMgr::makedirPath( fpath );
-			fpath = jaguarHome() + "/export";
-			JagFileMgr::rmdir( fpath );
-			JagFileMgr::makedirPath( fpath );
-			fpath = jaguarHome() + "/backup";
-			JagFileMgr::rmdir( fpath );
-			JagFileMgr::makedirPath( fpath );
-			JagFileMgr::makedirPath( fpath+"/15min" );
-			JagFileMgr::makedirPath( fpath+"/hourly" );
-			JagFileMgr::makedirPath( fpath+"/daily" );
-			JagFileMgr::makedirPath( fpath+"/weekly" );
-			JagFileMgr::makedirPath( fpath+"/monthly" );
+			makeNeededDirectories();
 
 			_addClusterFlag = 0;
 			break;
@@ -8824,19 +8755,64 @@ void JagDBServer::addCluster( const char *mesg, const JagRequest &req )
 	}
 
 	// then, for all servers, refresh cluster.conf and remake connections
-	_dbConnector->_nodeMgr->refreshFile( nhstr );
-	crecoverRefreshSchema( 2 );
+	_dbConnector->_nodeMgr->refreshClusterFile( nhstr );
+	crecoverRefreshSchema( JAG_MAKE_CONNECTIONS_ONLY );
 	_localInternalIP = _dbConnector->_nodeMgr->_selfIP;
 	sendMessage( req, "_END_[T=30|E=]", "ED" );
 
 	struct timeval now;
 	gettimeofday( &now, NULL );
-	g_lastHostTime = now.tv_sec * (abaxint)1000000 + now.tv_usec;
+	g_lastHostTime = now.tv_sec * (jagint)1000000 + now.tv_usec;
 	_objectLock->writeUnlockSchema( -1 );
 
-	// remove $HOME/.jagsetupssh
-	Jstr setup = Jstr( getenv("HOME") ) + "/.jagsetupssh";
-	jagunlink( setup.c_str() );
+	raydebug( stdout, JAG_LOG_LOW, "s30087 addcluster() is done\n" );
+}
+
+
+
+// method to cleanup saved sql files for import
+// pmesg: "_ex_addclustr_mig_complete|#ip1|ip2#ip3|ip4!ip5|ip6"
+void JagDBServer::addClusterMigrateComplete( const char *mesg, const JagRequest &req )
+{
+	if ( req.session->uid!="admin" || !req.session->exclusiveLogin ) {
+		raydebug( stdout, JAG_LOG_LOW, "add cluster rejected. admin exclusive login is required\n" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		return;
+	}
+
+	Jstr oldHosts = this->_migrateOldHosts;
+	if ( oldHosts.size() < 1 ) {
+		raydebug( stdout, JAG_LOG_LOW, "I am a new host or non-main host. Do not do broadcast\n" );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+		return;
+	}
+
+	JagVector<AbaxString> *vec = _tableschema->getAllTablesOrIndexesLabel( JAG_TABLE_OR_CHAIN_TYPE, "", "" );
+	Jstr sql;
+	int bad = 0;
+	Jstr dbtab, db, tab;
+	prt(("s120291 getAllTablesOrIndexesLabel vec.size=%d\n", vec->size() ));
+
+	prt(("s2220976 broadcastSignal _ex_importtable cleanup oldHosts=[%s] ...\n", oldHosts.s() ));
+	for ( int j=0; j < vec->length(); ++j ) {
+		dbtab = (*vec)[j].s();
+		JagStrSplit sp( dbtab, '.' );
+		db = sp[0];
+		tab = sp[1];
+		sql= Jstr("_ex_importtable|") + db + "|" + tab + "|YES";
+		prt(("s223308 _dbConnector->broadcastSignal( sql=%s ) ...\n", sql.s() ));
+		_dbConnector->broadcastSignal( sql, oldHosts, NULL, true ); 
+		prt(("s2233082 _dbConnector->broadcastSignal( sql=%s ) done\n", sql.s() ));
+		raydebug( stdout, JAG_LOG_LOW, "s387 broadcastSignal %s to hosts=[%s]\n", sql.s(), oldHosts.s() );
+	}
+	prt(("s22209762 broadcastSignal %s finishup done\n",  sql.s() ));
+
+	if ( vec ) delete vec;
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
+
+	raydebug( stdout, JAG_LOG_LOW, "s14 new allnodes: [%s]\n", _dbConnector->_nodeMgr->_allNodes.s() );
+	raydebug( stdout, JAG_LOG_LOW, "s30087 addclustermigratecomplete() is done bad=%d\n", bad );
+
 }
 
 // method to request schema info from old datacenter to current one
@@ -8923,7 +8899,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 			if ( 0 == rc ) {
 				raydebug( stdout, JAG_LOG_LOW, "Error connect to datacenter [%s], %s, retry %d/%d ...\n", 
 					vecdc[i].c_str(), pcli->error(), trynum, MAXTRY );
-				sleep(10);
+				jagsleep(10, JAG_SEC );
 			}
 			++trynum;
 		}
@@ -8943,7 +8919,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 		return;
 	}
 	
-	if ( pcli->queryDirect( dcmd.c_str(), true, false, true ) == 0 ) {
+	if ( pcli->queryDirect( 0, dcmd.c_str(), dcmd.size(), true, false, true ) == 0 ) {
 		delete pcli;
         return;
 	}
@@ -8958,7 +8934,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 	 				Jstr("/TOKEN=") + _servToken;
 	// then, send package to all other servers -- inner datacenter
 	Jstr bcmd = "_serv_unpackschinfo"; JagRequest req;
-	fpath = _cfg->getTEMPDataHOME( 0 ) + "/" + _crecoverFpath;
+	fpath = _cfg->getTEMPDataHOME( JAG_MAIN ) + "/" + _crecoverFpath;
 	for ( int i = 0; i < vecinnerdc.length(); ++i ) {
 		JaguarCPPClient pcli2;
 		pcli2._datcSrcType = JAG_DATACENTER_GATE;
@@ -8970,7 +8946,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 			if ( 0 == rc ) {
 				raydebug( stdout, JAG_LOG_LOW, "Error connect to datacenter [%s], %s, retry %d/%d ...\n", 
 					vecinnerdc[i].c_str(), pcli2.error(), trynum, MAXTRY );
-				sleep(10);
+				jagsleep(10, JAG_SEC );
 			}
 			++trynum;
 		}
@@ -8980,7 +8956,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 		} else {
 			raydebug( stdout, JAG_LOG_LOW, "connected to datacenter=%s, beginning to request schema ...\n", vecinnerdc[i].c_str() );
 			// when connect success, get the host lists and send schema info to all inner datacenter hosts
-			JagStrSplit sp2( pcli2._primaryHostString, '#', true );			
+			JagStrSplit sp2( pcli2._allHostsString, '#', true );			
 			for ( int i = 0; i < sp2.length(); ++i ) {
 				JagVector<Jstr> chosts;
 				JagStrSplit sp3( sp2[i], '|', true );
@@ -8988,7 +8964,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 					fileTransmit( sp3[j], atoi( innerdcport[i].c_str() ), "dummy", unixSocket, 0, fpath, 1 );
 					// then, ask each server to unpack schema info
 					JaguarCPPClient* jcli = (JaguarCPPClient*) jag_hash_lookup ( &pcli2._connMap, sp3[j].c_str() );
-					if ( jcli->queryDirect( bcmd.c_str(), true, false, true ) != 0 ) {
+					if ( jcli->queryDirect( 0, bcmd.c_str(), bcmd.size(), true, false, true ) != 0 ) {
 						while ( jcli->reply() > 0 ) {}
 					}
 				}
@@ -9001,7 +8977,6 @@ void JagDBServer::requestSchemaFromDataCenter()
 
 	// then, send cmd to let old datacenter prepare to export and import data by separate thread
 	pthread_t  nthread;
-	//JagCliCmdPass *jp = new JagCliCmdPass();
 	JagCliCmdPass *jp = newObject<JagCliCmdPass>();
 	jp->servobj = this;
 	jp->cli = pcli;
@@ -9014,7 +8989,7 @@ void JagDBServer::requestSchemaFromDataCenter()
 void *JagDBServer::copyDataToNewDCStatic( void *ptr )
 {
 	JagCliCmdPass *pass = (JagCliCmdPass*)ptr;
-	if ( pass->cli->queryDirect( pass->cmd.c_str(), true, false, true ) == 0 ) {
+	if ( pass->cli->queryDirect( 0, pass->cmd.c_str(), pass->cmd.size(), true, false, true ) == 0 ) {
 		delete pass->cli;
 		return NULL;
 	}
@@ -9042,10 +9017,10 @@ void JagDBServer::sendSchemaToDataCenter( const char *mesg, const JagRequest &re
 	Jstr unixSocket = Jstr("/DATACENTER=1") + Jstr("/TOKEN=") + _servToken;
 	Jstr fpath, cmd, dirpath, tmppath;
 	_objectLock->writeLockSchema( -1 );
-	flushAllTableAndRelatedIndexsInsertBuffer();	
+	//flushAllTableAndRelatedIndexsInsertBuffer();	
 
-	dirpath = _cfg->getJDBDataHOME( 0 );
-	tmppath = _cfg->getTEMPDataHOME( 0 );
+	dirpath = _cfg->getJDBDataHOME( JAG_MAIN );
+	tmppath = _cfg->getTEMPDataHOME( JAG_MAIN );
 	// make schema package -- empty database dirs and full system dir
 	// cd /home/$USER/$BRAND/$DATA; tar -zcf /home/$USER/$BRAND/tmp/$DATA/a.tar.gz --no-recursion *;
 	// tar -zcf /home/$USER/$BRAND/tmp/$DATA/b.tar.gz system
@@ -9062,7 +9037,7 @@ void JagDBServer::sendSchemaToDataCenter( const char *mesg, const JagRequest &re
 	fpath = tmppath + "/c.tar.gz";
 	// make connection and transfer package to new server
 	fileTransmit( host, port, adminpass, unixSocket, 0, fpath, 1 );
-	//unlink tar.gz file
+	//jagunlink tar.gz file
 	jagunlink(fpath.c_str());
 	// clean up tmp dir
 	JagFileMgr::rmdir( tmppath, false );
@@ -9083,16 +9058,16 @@ void JagDBServer::unpackSchemaInfo( const char *mesg, const JagRequest &req )
 	// 3. init clean other dirs ( /tmp etc. )
 	// 1.
 	JagRequest req2;
-	JagSession session( g_dtimeout );
+	JagSession session;
 	req2.session = &session;
 	session.servobj = this;
 
 	// for data dir
-	Jstr dirpath = _cfg->getJDBDataHOME( 0 );
+	Jstr dirpath = _cfg->getJDBDataHOME( JAG_MAIN );
 	session.replicateType = 0;
 	dropAllTablesAndIndex( req2, this, _tableschema );
 	JagFileMgr::rmdir( dirpath, false );
-	Jstr fpath = _cfg->getTEMPDataHOME( 0 ) + "/" + _crecoverFpath;
+	Jstr fpath = _cfg->getTEMPDataHOME( JAG_MAIN ) + "/" + _crecoverFpath;
 	Jstr cmd = Jstr("tar -zxf ") + fpath + " --directory=" + dirpath;
 	system( cmd.c_str() );
 	raydebug( stdout, JAG_LOG_LOW, "s6304 [%s]\n", cmd.c_str() );
@@ -9101,58 +9076,34 @@ void JagDBServer::unpackSchemaInfo( const char *mesg, const JagRequest &req )
 	
 	// for pdata dir
 	if ( _faultToleranceCopy >= 2 ) {
-		dirpath = _cfg->getJDBDataHOME( 1 );
+		dirpath = _cfg->getJDBDataHOME( JAG_PREV );
 		session.replicateType = 1;
 		dropAllTablesAndIndex( req2, this, _prevtableschema );
 		JagFileMgr::rmdir( dirpath, false );
-		cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+		cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( JAG_MAIN ) + "/* " + dirpath;
 		system( cmd.c_str() );
 		raydebug( stdout, JAG_LOG_LOW, "s6307 [%s]\n", cmd.c_str() );
 	}
 
 	// for ndata dir
 	if ( _faultToleranceCopy >= 3 ) {
-		dirpath = _cfg->getJDBDataHOME( 2 );
+		dirpath = _cfg->getJDBDataHOME( JAG_NEXT );
 		session.replicateType = 2;
 		dropAllTablesAndIndex( req2, this, _nexttableschema );
 		JagFileMgr::rmdir( dirpath, false );
-		cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( 0 ) + "/* " + dirpath;
+		cmd = Jstr("cp -rf ") + _cfg->getJDBDataHOME( JAG_MAIN ) + "/* " + dirpath;
 		system( cmd.c_str() );
 		raydebug( stdout, JAG_LOG_LOW, "s6308 [%s]\n", cmd.c_str() );
 	}
 	_objectLock->writeUnlockSchema( -1 );
-	crecoverRefreshSchema( 1 );
+	crecoverRefreshSchema( JAG_MAKE_OBJECTS_ONLY );
 	_objectLock->writeLockSchema( -1 );
 	_crecoverFpath = "";
 
 	// 2.
-	fpath = jaguarHome() + "/tmp";
-	JagFileMgr::rmdir( fpath );
-	JagFileMgr::makedirPath( fpath );
-	fpath = jaguarHome() + "/tmp/data";
-	JagFileMgr::rmdir( fpath );
-	JagFileMgr::makedirPath( fpath );
-	fpath = jaguarHome() + "/tmp/pdata";
-	JagFileMgr::rmdir( fpath );
-	JagFileMgr::makedirPath( fpath );
-	fpath = jaguarHome() + "/tmp/ndata";
-	JagFileMgr::rmdir( fpath );
-	JagFileMgr::makedirPath( fpath );
-	fpath = jaguarHome() + "/tmp/join";
-	JagFileMgr::rmdir( fpath );
-	JagFileMgr::makedirPath( fpath );
-	fpath = jaguarHome() + "/export";
-	JagFileMgr::rmdir( fpath );
-	JagFileMgr::makedirPath( fpath );
-	fpath = jaguarHome() + "/backup";
-	JagFileMgr::rmdir( fpath );
-	JagFileMgr::makedirPath( fpath );
-	JagFileMgr::makedirPath( fpath+"/15min" );
-	JagFileMgr::makedirPath( fpath+"/hourly" );
-	JagFileMgr::makedirPath( fpath+"/daily" );
-	JagFileMgr::makedirPath( fpath+"/weekly" );
-	JagFileMgr::makedirPath( fpath+"/monthly" );
-	crecoverRefreshSchema( 2 );
+	makeNeededDirectories();
+
+	crecoverRefreshSchema( JAG_MAKE_CONNECTIONS_ONLY );
 
 	_addClusterFlag = 0;
 	_newdcTrasmittingFin = 1;
@@ -9166,7 +9117,7 @@ void JagDBServer::unpackSchemaInfo( const char *mesg, const JagRequest &req )
 void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 {
 	Jstr bcmd = Jstr("_serv_preparedatafromdc|") + _dbConnector->_nodeMgr->_selfIP.c_str() + "|" 
-		+ intToStr(_port) + "|" + (mesg+20);
+				+ intToStr(_port) + "|" + (mesg+20);
 	
 	Jstr fpath = jaguarHome() + "/conf/datacenter.conf";
 	if ( ! JagFileMgr::exist( fpath ) || !_isGate ) {
@@ -9174,7 +9125,7 @@ void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 		return;
 	}
 	
-	int rc = 0, succ = 0, MAXTRY = 12, trynum;
+	int rc = 0, MAXTRY = 12, trynum;
 	Jstr adminpass = "dummy";
 		
 	Jstr uphost, seeds, host, port, destType;
@@ -9194,8 +9145,7 @@ void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 	}
 	
 	JaguarCPPClient pcli;
-	Jstr unixSocket = Jstr("/DATACENTER=1") + srcDestType( _isGate, destType ) + 
-								Jstr("/TOKEN=") + _servToken;	
+	Jstr unixSocket = Jstr("/DATACENTER=1") + srcDestType( _isGate, destType ) + Jstr("/TOKEN=") + _servToken;	
 	pcli._datcSrcType = JAG_DATACENTER_GATE;
 	pcli._datcDestType = JAG_DATACENTER_HOST;
 	rc = 0; trynum = 0;
@@ -9204,8 +9154,8 @@ void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 		rc = pcli.connect( host.c_str(), atoi( port.c_str() ), "admin", adminpass.c_str(), "test", unixSocket.c_str(), 0 );
 		if ( 0 == rc ) {
 			raydebug( stdout, JAG_LOG_LOW, "Error connect to datacenter [%s], %s, retry %d/%d ...\n", 
-				host.c_str(), pcli.error(), trynum, MAXTRY );
-			sleep(10);
+					  host.c_str(), pcli.error(), trynum, MAXTRY );
+			jagsleep(10, JAG_SEC );
 		}
 		++trynum;
 	}
@@ -9215,14 +9165,14 @@ void JagDBServer::askDataFromDC( const char *mesg, const JagRequest &req )
 	} else {
 		raydebug( stdout, JAG_LOG_LOW, "connected to datacenter=%s, beginning to request schema ...\n", host.c_str() );
 		JagVector<JaguarCPPClient*> jclilist;
-		JagStrSplit sp2( pcli._primaryHostString, '#', true );			
+		JagStrSplit sp2( pcli._allHostsString, '#', true );			
 		// send query to each server
 		for ( int i = 0; i < sp2.length(); ++i ) {
 			JagVector<Jstr> chosts;
 			JagStrSplit sp3( sp2[i], '|', true );
 			for ( int j = 0; j < sp3.length(); ++j ) {
 				JaguarCPPClient* jcli = (JaguarCPPClient*) jag_hash_lookup ( &pcli._connMap, sp3[j].c_str() );
-				if ( jcli->queryDirect( bcmd.c_str(), true, false, true ) != 0 ) {
+				if ( jcli->queryDirect( 0, bcmd.c_str(), bcmd.size(), true, false, true ) != 0 ) {
 					jclilist.append( jcli );
 					// while ( jcli->reply() > 0 ) {}
 				}
@@ -9250,11 +9200,7 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 	unsigned int port = atoi ( sp[1].c_str() );
 	Jstr adminpass =  "dummy";
 	Jstr unixSocket = Jstr("/DATACENTER=1") + srcDestType( _isGate, destType ) +
-					Jstr("/TOKEN=") + _servToken;
-	_objectLock->writeLockSchema( -1 );
-	flushAllTableAndRelatedIndexsInsertBuffer();	
-	_objectLock->writeUnlockSchema( -1 );
-
+					  Jstr("/TOKEN=") + _servToken;
 	int rc = 0, trynum = 0, MAXTRY = 12;
 	JaguarCPPClient pcli;
 	while ( ! rc ) {
@@ -9262,8 +9208,8 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 		rc = pcli.connect( host.c_str(), port, "admin", adminpass.c_str(), "test", unixSocket.c_str(), 0 );
 		if ( 0 == rc ) {
 			raydebug( stdout, JAG_LOG_LOW, "Error connect to datacenter [%s], %s, retry %d/%d ...\n", 
-				host.c_str(), pcli.error(), trynum, MAXTRY );
-			sleep(10);
+					  host.c_str(), pcli.error(), trynum, MAXTRY );
+			jagsleep(10, JAG_SEC );
 		}
 		++trynum;
 	}
@@ -9282,12 +9228,12 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 	req2.session = &session;
 	Jstr str = _objectLock->getAllTableNames( 0 ), cmd, reterr, dbtab, dirpath, objname, fpath;
 	JagStrSplit sp2( str, '|', true );
-	abaxint threadSchemaTime = 0, threadQueryTime = 0;
+	jagint threadSchemaTime = 0, threadQueryTime = 0;
 	for ( int i = 0; i < sp2.length(); ++i ) {
 		cmd = Jstr("select * from ") + sp2[i] + " export;";
 		JagParseAttribute jpa( this, servtimediff, servtimediff, req2.session->dbname, _cfg );
 		prt(("s4071 parseCommand cmd=[%s]\n", cmd.c_str() ));
-		JagParser parser( this );
+		JagParser parser( (void*)this );
 		JagParseParam pparam( &parser );
 		if ( parser.parseCommand( jpa, cmd.c_str(), &pparam, reterr ) ) {
 			// select table export;
@@ -9296,6 +9242,7 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 			dirpath = jaguarHome() + "/export/" + sp2[i];
 			objname = sp2[i] + ".sql";
 			fpath = JagFileMgr::getFileFamily( dirpath, objname );
+			//prt(("s222017 getFileFamily fpath=[%s]\n", fpath.s() ));
 			rc = pcli.importLocalFileFamily( fpath, spstr.c_str() );
 			JagFileMgr::rmdir( dirpath );
 		}
@@ -9304,7 +9251,7 @@ void JagDBServer::prepareDataFromDC( const char *mesg, const JagRequest &req )
 }
 
 // method to shut down servers
-// pmesg: "_ex_shutdown"
+// pmesg: "_exe_shutdown"
 void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 {
 	if ( req.session && (req.session->uid!="admin" || !req.session->exclusiveLogin ) ) {
@@ -9323,7 +9270,6 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 	_shutDownInProgress = 1;
 	
 	_objectLock->writeLockSchema( -1 );
-	flushAllTableAndRelatedIndexsInsertBuffer();
 
 	while ( _taskMap->size() > 0 ) {
 		jagsleep(1, JAG_SEC);
@@ -9332,25 +9278,16 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 
 	JAG_BLURT jaguar_mutex_lock ( &g_logmutex ); JAG_OVER;
 	JAG_BLURT jaguar_mutex_lock ( &g_dlogmutex ); JAG_OVER;
-	if ( _fpCommand ) jagfsync( fileno( _fpCommand ) );
 	
-	if ( _delPrevOriCommand ) jagfsync( fileno( _delPrevOriCommand ) );
-	if ( _delPrevRepCommand ) jagfsync( fileno( _delPrevRepCommand ) );
-	if ( _delPrevOriRepCommand ) jagfsync( fileno( _delPrevOriRepCommand ) );
-	if ( _delNextOriCommand ) jagfsync( fileno( _delNextOriCommand ) );
-	if ( _delNextRepCommand ) jagfsync( fileno( _delNextRepCommand ) );
-	if ( _delNextOriRepCommand ) jagfsync( fileno( _delNextOriRepCommand ) );
-	if ( _recoveryRegCommand ) jagfsync( fileno( _recoveryRegCommand ) );
-	if ( _recoverySpCommand ) jagfsync( fileno( _recoverySpCommand ) );
+	if ( _delPrevOriCommandFile ) jagfsync( fileno( _delPrevOriCommandFile ) );
+	if ( _delPrevRepCommandFile ) jagfsync( fileno( _delPrevRepCommandFile ) );
+	if ( _delPrevOriRepCommandFile ) jagfsync( fileno( _delPrevOriRepCommandFile ) );
+	if ( _delNextOriCommandFile ) jagfsync( fileno( _delNextOriCommandFile ) );
+	if ( _delNextRepCommandFile ) jagfsync( fileno( _delNextRepCommandFile ) );
+	if ( _delNextOriRepCommandFile ) jagfsync( fileno( _delNextOriRepCommandFile ) );
+	if ( _recoveryRegCommandFile ) jagfsync( fileno( _recoveryRegCommandFile ) );
+	if ( _recoverySpCommandFile ) jagfsync( fileno( _recoverySpCommandFile ) );
 
-	/***
-	// remove all WAL logs
-	Jstr cmdpath = JagFileMgr::getLocalLogDir("cmd");
-	raydebug( stdout, JAG_LOG_LOW, "Remove %s ...\n", cmdpath.c_str() );
-	JagFileMgr::rmdir( cmdpath, false );
-	***/
-
-	// resetLog();
 	jaguar_mutex_unlock ( &g_logmutex );
 	jaguar_mutex_unlock ( &g_dlogmutex );
 
@@ -9358,69 +9295,10 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 	flushAllBlockIndexToDisk();
 	raydebug( stdout, JAG_LOG_LOW, "Shutdown: Completed\n");
 
-	// _shutDownInProgress = 0;
 	JagFileMgr::writeTextFile(stopPath, "DONE");
 	jagsync();
 	_objectLock->writeUnlockSchema( -1 );
 	exit(0);
-}
-
-// for testing use only, no need for production
-void JagDBServer::objectCountTesting( JagParseParam &parseParam )
-{
-	const char *cmd = NULL;
-	Jstr errmsg, dbidx, tabName, idxName;
-	abaxint cnt, keyCheckerCnt;
-	JagTable *ptab; JagIndex *pindex;
-	JagRequest req; JagSession session;
-	req.session = &session; session.servobj = this;
-	JagTableSchema *tableschema; JagIndexSchema *indexschema;
-	
-	for ( int i = 0; i < _faultToleranceCopy; ++i ) {
-		ptab = NULL; pindex = NULL; cnt = -1;
-		session.replicateType = i;
-		getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
-		if ( parseParam.objectVec[0].indexName.length() > 0 ) {
-			// known index
-			pindex = _objectLock->readLockIndex( parseParam.opcode, parseParam.objectVec[0].dbName, tabName, parseParam.objectVec[0].indexName,
-				tableschema, indexschema, req.session->replicateType, 0 );
-				dbidx = parseParam.objectVec[0].dbName;
-				idxName = parseParam.objectVec[0].indexName;
-		} else {
-			// table object or index object
-			ptab = _objectLock->readLockTable( parseParam.opcode, parseParam.objectVec[0].dbName, parseParam.objectVec[0].tableName,
-				req.session->replicateType, 0 );
-			if ( !ptab ) {
-				pindex = _objectLock->readLockIndex( parseParam.opcode, parseParam.objectVec[0].dbName, tabName, parseParam.objectVec[0].tableName,
-					tableschema, indexschema, req.session->replicateType, 0 );
-					dbidx = parseParam.objectVec[0].dbName;
-					idxName = parseParam.objectVec[0].tableName;
-				if ( !pindex ) {
-					pindex = _objectLock->readLockIndex( parseParam.opcode, parseParam.objectVec[0].colName, tabName, parseParam.objectVec[0].tableName,
-						tableschema, indexschema, req.session->replicateType, 0 );
-					dbidx = parseParam.objectVec[0].colName;
-					idxName = parseParam.objectVec[0].tableName;
-				}
-			}
-		}
-
-		if ( ptab ) {
-			cnt = ptab->count( cmd, req, &parseParam, errmsg, keyCheckerCnt );
-			_objectLock->readUnlockTable( parseParam.opcode, parseParam.objectVec[0].dbName, 
-				parseParam.objectVec[0].tableName, req.session->replicateType, 0 );
-		} else if ( pindex ) {
-			cnt = pindex->count( cmd, req, &parseParam, errmsg, keyCheckerCnt );
-			_objectLock->readUnlockIndex( parseParam.opcode, dbidx, tabName, idxName,
-				tableschema, indexschema, req.session->replicateType, 0 );
-		}
-
-		if ( cnt >= 0 ) {
-			prt(("selectcount type=%d %s keychecker=%lld diskarray=%lld\n", 
-				req.session->replicateType, parseParam.objectVec[0].tableName.c_str(), keyCheckerCnt, cnt));
-			// prt(("cnt1=%lld cnt2=%lld cnt3=%lld cnt4=%lld cnt5=%lld cnt6=%lld cnt7=%lld cnt8=%lld cnt9=%lld\n",	
-			//	g_icnt1, g_icnt2, g_icnt3, g_icnt4, g_icnt5, g_icnt6, g_icnt7, g_icnt8, g_icnt9));
-		}
-	}
 }
 
 // method to do inner/outer join for multiple tables/indexs
@@ -9434,34 +9312,46 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		return 0;
 	}
 
-	JagTableSchema *tableschema; JagIndexSchema *indexschema;
+	// disable join for multi-host cluster
+	//prt(("s49228 joinObjects _numAllNodes=%d\n", servobj->_dbConnector->_nodeMgr->_numAllNodes ));
+	if ( servobj->_dbConnector->_nodeMgr->_numAllNodes > 1 ) {
+		reterr = "E2203 Join is not supported on a multi-node database system";
+		return 0;
+	}
+
+	parseParam->initJoinColMap();
+
+	JagTableSchema *tableschema; 
+	JagIndexSchema *indexschema;
 	servobj->getTableIndexSchema( req.session->replicateType, tableschema, indexschema );
 	
 	// init variables
 	struct timeval now;
 	gettimeofday( &now, NULL );
 	int num = 2;  // 2 obects join only
-	int rc, tmode = 0, tnum = 0, tlength = 0, st, nst;
+	int rc, tmode = 0, tnum = 0, st, nst;
 	int collen, siglen, cmode = 0, useHash = -1;
 	int numCPUs = servobj->_numCPUs; 
-	abaxint i, j, stime = now.tv_sec, totlen = 0, kcheckerCnt = 0, finalsendlen = 0, gbvsendlen = 0;
+	jagint i, j, stime = now.tv_sec, totlen = 0, finalsendlen = 0, gbvsendlen = 0;
 	int pos;
-	abaxint offset = 0, objelem[num], jlen[num], sklen[num];
+	jagint offset = 0, objelem[num], jlen[num], sklen[num];
 	char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	Jstr ttype = " ";
 	char *newbuf = NULL;
-	bool hasValCol = 0, needInit = 1, timeout = 0, isagg, hasagg = 0, dfSorted[num];
+	bool hasValCol = 0, timeout = 0, isagg, hasagg = 0, dfSorted[num];
 	JagFixString rstr, tstr, fkey, fval;
 	Jstr jname, jpath, jdapath, jdapath2, sigpath, sigpath2, sigpath3, newhdr, gbvhdr;
 	Jstr unixSocket = Jstr("/TOKEN=") + servobj->_servToken;
 	ExprElementNode *root = NULL;
 	JagDataAggregate *jda = NULL;
-	JagVector<abaxint> jsvec[num];
+	JagVector<jagint> jsvec[num];
 	JaguarCPPClient hcli;
 	hcli._sleepTime = 1; // reduce regular client object monitor sleep time to 1*1000
 	
 	// get all ptabs/pindexs info
-	JagTable *ptab[num]; JagIndex *pindex[num];
+	JagTable *ptab[num]; 
+	JagIndex *pindex[num];
+
 	int klen[num], vlen[num], kvlen[num], numKeys[num], numCols[num];
 	const JagHashStrInt *maps[num]; 
 	const JagSchemaAttribute *attrs[num]; 
@@ -9470,8 +9360,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	Jstr dbidx[num], tabName[num], idxName[num];
 	Jstr dbName, colName, tableName, oneFilter, rowFilter;
 
-	// prt(("s4202 selectWhereClause=[%s]\n", parseParam->selectWhereClause.c_str() ));
-
+	prt(("s333471 num=%d\n", num ));
 	for ( i = 0; i < num; ++i ) {
 		colName = parseParam->objectVec[i].colName;
 		tableName = parseParam->objectVec[i].tableName;
@@ -9485,7 +9374,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		if ( parseParam->objectVec[i].indexName.length() > 0 ) {
 			// known index
 			pindex[i] = servobj->_objectLock->readLockIndex( parseParam->opcode, dbName, 
-								tabName[i], parseParam->objectVec[i].indexName, tableschema, indexschema, 
+								tabName[i], parseParam->objectVec[i].indexName,
 								req.session->replicateType, 0 );
 			dbidx[i] = dbName;
 			idxName[i] = parseParam->objectVec[i].indexName;
@@ -9495,24 +9384,26 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 														   req.session->replicateType, 0 );
 			if ( !ptab[i] ) {
 				pindex[i] = servobj->_objectLock->readLockIndex( parseParam->opcode, dbName, 
-								tabName[i], tableName, tableschema, indexschema, req.session->replicateType, 0 );
+								tabName[i], tableName, req.session->replicateType, 0 );
 
 				dbidx[i] = dbName;
 				idxName[i] = tableName;
 				if ( !pindex[i] ) {
 					pindex[i] = servobj->_objectLock->readLockIndex( parseParam->opcode, colName, 
-									tabName[i], tableName, tableschema, indexschema, req.session->replicateType, 0 );
+									tabName[i], tableName, req.session->replicateType, 0 );
 					dbidx[i] = colName;
 					idxName[i] = tableName;
 				}
+			} else {
+		    	prt(("s310087 got ptab[i=%d]\n", i ));
 			}
 		}
 		
 		if ( !ptab[i] && !pindex[i] ) {
 			if ( colName.length() > 0 ) {
-				reterr = Jstr("E4023 Unable to select for ") + tableName + "." + colName;
+				reterr = Jstr("E4023 unable to select ") + tableName + "." + colName;
 			} else {
-				reterr = Jstr("E4024 Unable to select for ") + dbName + "." + tableName;
+				reterr = Jstr("E4024 unable to select ") + dbName + "." + tableName;
 			}
 
 			if ( parseParam->objectVec[i].indexName.size() > 0 ) {
@@ -9525,10 +9416,10 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		if ( ptab[i] ) {
 			rc = checkUserCommandPermission( servobj, &ptab[i]->_tableRecord, req, *parseParam, i, oneFilter, reterr );
 			if ( ! rc ) {
-				reterr = Jstr("E4524 No permission for table");
+				reterr = Jstr("E4524 no permission for table");
 				return 0;
 			}
-			// prt(("s2039 tab i=%d oneFilter=[%s]\n", i, oneFilter.c_str() ));
+			prt(("s2039 tab i=%d oneFilter=[%s]\n", i, oneFilter.c_str() ));
 			if ( oneFilter.size() > 0 ) { rowFilter += oneFilter + "|"; }
 
 			totlen += ptab[i]->KEYVALLEN;
@@ -9536,13 +9427,14 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 			vlen[i] = ptab[i]->VALLEN;
 			kvlen[i] = ptab[i]->KEYVALLEN;
 			numKeys[i] = ptab[i]->_numKeys;
+			prt(("s110283 i=%d numKeys[i]=%d\n", i, numKeys[i] ));
 			numCols[i] = ptab[i]->_numCols;
 			maps[i] = ptab[i]->_tablemap;
 			attrs[i] = ptab[i]->_schAttr;
 			minmax[i].setbuflen( klen[i] );
 			df[i] = ptab[i]->_darrFamily;
 			rec[i] = &ptab[i]->_tableRecord;
-			objelem[i] = df[i]->getElements( kcheckerCnt );
+			objelem[i] = df[i]->getElements( );
 		} else {
 			rc = checkUserCommandPermission( servobj, &pindex[i]->_indexRecord, req, *parseParam, i, oneFilter, reterr );
 			if ( ! rc ) {
@@ -9564,36 +9456,60 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 			minmax[i].setbuflen( klen[i] );
 			df[i] = pindex[i]->_darrFamily;
 			rec[i] = &pindex[i]->_indexRecord;
-			objelem[i] = df[i]->getElements( kcheckerCnt );			
+			objelem[i] = df[i]->getElements( );			
 		}
 	}
 
 	// send all table elements info to client
-	Jstr elemInfo = longToStr( objelem[0] ) + "|" + longToStr( objelem[1] );
+	Jstr elemInfo = Jstr("usehash|") + longToStr( objelem[0] ) + "|" + longToStr( objelem[1] );
 
+	prt(("s34400 sendMessage elemInfo=[%s]...\n", elemInfo.s() ));
 	sendMessage( req, elemInfo.c_str(), "OK" );
+	prt(("s34400 sendMessage done\n"));
 
  	char ehdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *enewbuf = NULL;
 
-	abaxint clen = recvData( req.session->sock, ehdr, enewbuf );
+	prt(("s0029120 reevMessage ...\n"));
+	jagint clen = recvMessage( req.session->sock, ehdr, enewbuf );
+	prt(("s0029120 reevMessage done enewbuf=[%s]\n", enewbuf ));
 
 	if ( clen > 0 ) {
-		useHash = jagatoll( enewbuf );
+		JagStrSplit sp( enewbuf, '|');
+		//useHash = jagatoll( enewbuf );
+		//sp[0] == "usehash";
+		if ( 2 == sp.size() ) {
+			useHash = jagatoll( sp[1].c_str() );
+			prt(("s100287 useHash=%d\n", useHash ));
+		}
 	}
 	if ( enewbuf ) jagfree ( enewbuf );
+	// usehash: -1 for mergejoin; 0: left small, right big; 1: left big; right small
+
+	// error, clean up users
+	if ( reterr.length() > 0 ) {
+		for ( i = 0; i < num; ++i ) {
+			if ( ptab[i] ) {
+				servobj->_objectLock->readUnlockTable( parseParam->opcode, parseParam->objectVec[i].dbName, 
+														parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
+			} else if ( pindex[i] ) {
+				servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], 
+														idxName[i], req.session->replicateType, 0 );				
+			}
+		}
+		return 0;
+	}
 
 	// reparse where from rowFilter
 	if ( reterr.length() < 1 && rowFilter.size() > 0  ) {
-		//prt(("s2231 rowFilter=[%s]\n", rowFilter.c_str() ));
 		parseParam->resetSelectWhere( rowFilter );
-		//prt(("s4231 parseParam.selectWhereCluase=[%s]\n", parseParam->selectWhereClause.c_str() ));
 		parseParam->setSelectWhere( );
 	}
 
 	// if has join_on part, check its validation
 	// select * from t join t2 on t.a=t2.a  joinOnVec.size=1
 	// selecct * from t1, t2 where t1.a=t2.a; joinOnVec.size=0
+	prt(("s311102 parseParam->joinOnVec.size()=%d \n", parseParam->joinOnVec.size() ));
 	if ( reterr.length() < 1 && parseParam->joinOnVec.size() > 0 ) {
 		root = parseParam->joinOnVec[0].tree->getRoot();
 		rc = root->setWhereRange( maps, attrs, klen, numKeys, num, hasValCol, minmax, tstr, tmode, tnum );
@@ -9625,8 +9541,10 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 
 	// if has column calculations and/or group by, reformat data
 	if ( reterr.length() < 1 && ( parseParam->hasGroup || parseParam->hasColumn ) ) {
+		prt(("s102638 hasGroup or hasColumn \n" ));
 		// first, arrange hdr
-		JagVector<SetHdrAttr> spa; SetHdrAttr onespa;
+		JagVector<SetHdrAttr> spa; 
+		SetHdrAttr onespa;
 		for ( i = 0; i < num; ++i ) {
 			if ( ptab[i] ) onespa.setattr( numKeys[i], false, ptab[i]->_dbtable, rec[i] );
 			else onespa.setattr( numKeys[i], false, pindex[i]->_dbobj, rec[i] );
@@ -9635,6 +9553,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		}
 
 		rc = rearrangeHdr( num, maps, attrs, parseParam, spa, newhdr, gbvhdr, finalsendlen, gbvsendlen );
+		prt(("rearrangeHdr: rc=%d\n", rc ));
 		if ( !rc ) {
 			reterr = "E5004 Error header for join";
 		} else if ( gbvsendlen <= 0 && parseParam->hasGroup ) {
@@ -9661,23 +9580,24 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 				}
 			}
 		}
-	}	
+	} // end if	
 
+	/***
 	// error, clean up users
 	if ( reterr.length() > 0 ) {
 		for ( i = 0; i < num; ++i ) {
 			if ( ptab[i] ) {
 				servobj->_objectLock->readUnlockTable( parseParam->opcode, parseParam->objectVec[i].dbName, 
-					parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
+														parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
 			} else if ( pindex[i] ) {
-				servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], idxName[i],
-					tableschema, indexschema, req.session->replicateType, 0 );				
+				servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], idxName[i], req.session->replicateType, 0 );				
 			}
 		}
 		return 0;
 	}
+	***/
 	
-	// make /home/tmp/join/cliPID_cliIP dir for use
+	// make /home/jaguar/tmp/join/cliPID_cliIP dir for use
 	jname = req.session->cliPID + "_" + req.session->ip;
 	jpath = servobj->_cfg->getTEMPJoinHOME() + "/" + jname;
 	jdapath = jpath + "/alldata";
@@ -9688,93 +9608,137 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	//jda = new JagDataAggregate();
 	jda = newObject<JagDataAggregate>();
 	jda->setwrite( jdapath, jdapath, 2 );
+	// defualt join 100K records
 	jda->setMemoryLimit( jagatoll(servobj->_cfg->getValue("JOIN_MEMLINE", "100000").c_str())*totlen );	
+
+	prt(("s22334 jpath=[%s] jpath.size()=%d\n", jpath.c_str(), jpath.size() ));
 	
 	// for each table, get join len based on columns
 	// AbaxPair is column number and table number for each memory array
 	/******
-	JagArray<AbaxPair<AbaxLong, abaxint>> *sarr[num];
-	const AbaxPair<AbaxString, abaxint> *jmarr = parseParam->joincolmap.array();
+	JagArray<AbaxPair<AbaxLong, jagint>> *sarr[num];
+	const AbaxPair<AbaxString, jagint> *jmarr = parseParam->joinColMap.array();
 	for ( i = 0; i < num; ++i ) { sarr[i] = NULL; }
-	for ( i = 0; i < parseParam->joincolmap.arrayLength(); ++i ) {
+	for ( i = 0; i < parseParam->joinColMap.arrayLength(); ++i ) {
 		if ( jmarr[i].key.size() > 0 ) {
 			// put column name into sort arr
 			if ( maps[jmarr[i].value]->getValue( jmarr[i].key, pos ) ) {
-				AbaxPair<AbaxLong, abaxint> pair( AbaxLong( pos ), jmarr[i].value );
+				AbaxPair<AbaxLong, jagint> pair( AbaxLong( pos ), jmarr[i].value );
 				if ( !sarr[jmarr[i].value] ) {
-					sarr[jmarr[i].value] = new JagArray<AbaxPair<AbaxLong, abaxint>>();
+					sarr[jmarr[i].value] = new JagArray<AbaxPair<AbaxLong, jagint>>();
 				}
 				sarr[jmarr[i].value]->insert( pair );
 			}
 		}
 	}
 	*****/
-	JagArray<AbaxPair<AbaxLong, abaxint>> *sarr[num];
+	prt(("s406373 num=%d\n", num ));
+	JagArray<AbaxPair<AbaxLong, jagint>> *sarr[num];
 	for ( i = 0; i < num; ++i ) { sarr[i] = NULL; }
 
-	JagVector<AbaxPair<Jstr,abaxint>> jmarr = parseParam->joincolmap.getStrIntVector();
+	JagVector<AbaxPair<Jstr,jagint>> jmarr = parseParam->joinColMap->getStrIntVector();
 	Jstr kstr;
 	for ( i = 0; i < jmarr.length(); ++i ) {
 		if( jmarr[i].key.size() > 0 ) {
 			kstr = jmarr[i].key;
 			if ( maps[jmarr[i].value]->getValue( kstr, pos ) ) {
-				AbaxPair<AbaxLong, abaxint> pair( AbaxLong( pos ), jmarr[i].value );
+				AbaxPair<AbaxLong, jagint> pair( AbaxLong( pos ), jmarr[i].value );
 				if ( !sarr[jmarr[i].value] ) {
-					sarr[jmarr[i].value] = new JagArray<AbaxPair<AbaxLong, abaxint>>();
+					sarr[jmarr[i].value] = new JagArray<AbaxPair<AbaxLong, jagint>>();
 				}
 				sarr[jmarr[i].value]->insert( pair );
+				prt(("s520021 sarr[%d] insert key=[%d] value=[%d]\n", jmarr[i].value, pos,  jmarr[i].value ));
 			}
 		}
 	}
 
-
-
+	prt(("s203939 jmarr.len=%d num=%d\n", jmarr.size(), num ));
+	bool needSort = false;
 	for ( i = 0; i < num; ++i ) {
-		if ( sarr[i] ) {
-			abaxint hval = 0, hcont = 1, hall = 0, lpos = -1, upos = 0;
-			AbaxPair<AbaxLong, abaxint> pair;
-			sarr[i]->setGetpos( 0 );
-			while ( sarr[i]->getNext( pair ) ) {
-				upos = pair.key.value();
-				jsvec[i].append( upos );
-				jlen[i] += attrs[i][upos].length;
-				if ( upos < numKeys[i] ) {
-					++hall;
-					if ( upos == lpos+1 ) {
-						lpos = upos;
-					} else {
-						hcont = 0;
-					}
+		if ( ! sarr[i] ) continue;
+
+		int hasval = 0, colContiguous = 1, keyCols = 0, hasAllKeyCols = 0;
+		int lpos = -1, upos = 0; // track join-column positions
+		AbaxPair<AbaxLong, jagint> pair;
+		sarr[i]->initGetPosition( 0 );
+		prt(("s20349 after initGetPosition  i=%d\n"));
+		while ( sarr[i]->getNext( pair ) ) {
+			prt(("s32803 getNext pair=[%d][%d]\n", pair.key, pair.value ));
+			upos = pair.key.value();
+			jsvec[i].append( upos );
+			jlen[i] += attrs[i][upos].length;
+			prt(("s420878 upos=%d numKeys[%d]=%d\n", upos, i, numKeys[i] ));
+			if ( upos < numKeys[i] ) {
+				++keyCols;
+				if ( upos == lpos+1 ) {
+					lpos = upos;
 				} else {
-					hval = 1;
+					colContiguous = 0;
 				}
+				prt(("s500242 hasAllKeyCols=%d lpos=%d colContiguous=%d\n", hasAllKeyCols, lpos, colContiguous ));
+			} else {
+				hasval = 1; // has value column
+				prt(("s20837 hasval=1\n"));
 			}
-
-			if ( hall >= numKeys[i] ) hall = 1;
-			else hall = 0;
-
-			if ( !hcont || ( !hall && hval ) ) {
-				if ( useHash < 0 ) dfSorted[i] = 1;
-				sklen[i] = jlen[i] + JAG_UUID_FIELD_LEN;
-			}
-
-			delete sarr[i];
 		}
+		prt(("s33773 i=%d jsvec.size=%d\n", i, jsvec[i].size() ));
+
+		if ( keyCols >= numKeys[i] ) hasAllKeyCols = 1;
+		else hasAllKeyCols = 0;
+
+		prt(("s487678 colContiguous=%d hasAllKeyCols=%d hasval=%d\n", colContiguous, hasAllKeyCols, hasval ));
+
+		// !colContiguous: keys are not contiguous in join columns
+		// !hasAllKeyCols: not having all keys   in join columns
+		// hasval: has a non-key column in join columns
+		if ( !colContiguous || ( !hasAllKeyCols && hasval ) ) {
+			if ( useHash < 0 ) {
+				prt(("s400283 i=%d useHash < 0 dfSorted[i] = 1\n", i ));
+				dfSorted[i] = 1;
+				needSort = true;
+			}
+			sklen[i] = jlen[i] + JAG_UUID_FIELD_LEN;
+		} else {
+			prt(("s309882 here dfSorted not set to 1\n"));
+		}
+
+		delete sarr[i];
+	} // end for loop
+
+	if ( needSort ) {
+		for ( i = 0; i < num; ++i ) {
+			if ( ptab[i] ) {
+				servobj->_objectLock->readUnlockTable( parseParam->opcode, parseParam->objectVec[i].dbName, 
+														parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
+			} else if ( pindex[i] ) {
+				servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], 
+														idxName[i], req.session->replicateType, 0 );				
+			}
+		}
+
+		sendMessage( req, "E80158 Join operation would take too long, aborted", "ER" );
+		JagFileMgr::rmdir( jpath, true );
+		delete jda;
+		if ( newbuf ) free( newbuf );
+		if ( enewbuf ) free( enewbuf );
+		return 0;
 	}
 
+
+	prt(("s102838 hcli connect...\n"));
 	if ( !hcli.connect( servobj->_dbConnector->_nodeMgr->_selfIP.c_str(), servobj->_port, 
 					    "admin", "dummy", "test", unixSocket.c_str(), JAG_SERV_PARENT ) ) 
 	{
 		raydebug( stdout, JAG_LOG_LOW, "s4058 join connection, unable to make connection, retry ...\n" );
 		if ( jda ) delete jda;
 		if ( newbuf ) free( newbuf );
+		if ( enewbuf ) free( enewbuf );
 		for ( i = 0; i < num; ++i ) {
 			if ( ptab[i] ) {
 				servobj->_objectLock->readUnlockTable( parseParam->opcode, parseParam->objectVec[i].dbName, 
-					parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
+													   parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
 			} else if ( pindex[i] ) {
-				servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], idxName[i],
-					tableschema, indexschema, req.session->replicateType, 0 );				
+				servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], idxName[i], req.session->replicateType, 0 );				
 			}
 		}
 		hcli.close();
@@ -9783,19 +9747,22 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	}
 	
 	// separate hashjoin and regular join here
-	if ( useHash >= 0 ) {
-		//prt(("s5338 use hash join useHash=%d ...\n", useHash ));
+	prt(("s400321 useHash=%d\n", useHash ));
+	if ( useHash == 0 || useHash > 0 ) {
+		prt(("s53338 useHash=%d ...\n", useHash ));
 		// use hash join
 		JagStrSplit srv( servobj->_dbConnector->_nodeMgr->_allNodes, '|' );	
 		if ( srv.length() < numCPUs ) numCPUs = srv.length();
 		JagHashMap<JagFixString, JagFixString> hmaps[numCPUs];
 		if ( 0 == useHash ) {
-			st = 1;
-			nst = 0;
+			// left small, rigt big
+			st = 1; // bigger table
+			nst = 0; // smaller table
 			//prt(("s4023 st = 1; nst = 0;\n" ));
 		} else {
-			st = 0;
-			nst = 1;
+			// left big, right small
+			st = 0; // bigger table
+			nst = 1; // smaller table
 			//prt(("s4024 st = 0; nst = 1;\n" ));
 		}
 		AbaxString jmkey = jname + "_" + intToStr( nst );
@@ -9812,20 +9779,19 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		pair.value.value.value.key = (void*)attrs[nst];
 		pair.value.value.value.value = (void*)parseParam;
 		servobj->_joinMap->addKeyValue( jmkey, pair );
-		/***
-		prt(("s2836 sz=%lld k=[%s] sortklen=%lld, kvlen=%lld, numKs=%lld, minbf=[%s] maxbf=[%s] dfam=[%0x] atrs=[%0x] pprm=[%0x]\n", 
+		prt(("s283766 sz=%lld k=[%s] sortklen=%lld, kvlen=%lld, numKs=%lld, minbf=[%s] maxbf=[%s] dfam=[%0x] atrs=[%0x] pprm=[%0x]\n", 
 			  servobj->_joinMap->size(), jmkey.c_str(), sklen[nst], kvlen[nst], numKeys[nst], minmax[nst].minbuf,
 			  minmax[nst].maxbuf, df[nst], attrs[nst], parseParam));
-			  ***/
 		sigpath2 = sigpath + "/" + intToStr( nst );
 		JagFileMgr::makedirPath( sigpath2 );
+		prt(("s11209 makedirPath sigpath2=%s\n", sigpath2.s() ));
 		
 		// for hash join, first ask each servers to send small table's data		
 		pthread_t thrd[srv.length()];  // sr is all servers splitvec
 		ParallelJoinPass pjp[srv.length()];
 		for ( i = 0; i < srv.length(); ++i ) {
-			pjp[i].ptab = ptab[st];
-			pjp[i].ptab2 = ptab[nst];
+			pjp[i].ptab = ptab[st]; 	// bigger table
+			pjp[i].ptab2 = ptab[nst]; 	// smaller table
 			pjp[i].pindex = pindex[st];
 			pjp[i].pindex2 = pindex[nst];
 			pjp[i].klen = klen[st];
@@ -9874,23 +9840,36 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 			pjp[i].uhost = srv[i];
 			pjp[i].hmaps = hmaps;
 			pjp[i].numCPUs = numCPUs;
-			jagpthread_create( &thrd[i], NULL, joinRequestStatic, (void*)&pjp[i] );
+			prt(("s334022 thread i=%d joinRequestStatic ...\n", i ));
+			jagpthread_create( &thrd[i], NULL, joinRequestStatic, (void*)&(pjp[i]) );
 		}
 
-		//prt(("s5081 pthread_join %d threads ...\n", srv.length() ));
+		prt(("s5081 pthread_join %d threads jpath=[%s] jpath.size=%d ...\n", srv.length(), jpath.c_str(), jpath.size() ));
 		for ( i = 0; i < srv.length(); ++i ) {
 			pthread_join(thrd[i], NULL);
 			if ( pjp[i].timeout ) timeout = 1;
 		}
-		//prt(("s5081 pthread_join %d threads done\n", srv.length() ));
+		prt(("s5081 pthread_join %d threads done\n", srv.length() ));
 
 		if ( !timeout ) {
 			// then, after get all data and successfully create hashmaps, separate files by diskarray and join by piece
-			pthread_t thrd2[df[st]->_darrlistlen];
-			ParallelJoinPass pjp2[df[st]->_darrlistlen];
-			for ( i = 0; i < df[st]->_darrlistlen; ++i ) {
+
+			int stnum = df[st]->_darrlist.size();
+			if ( stnum < 1 ) stnum = 1;
+			prt(("s107383 nst=%d st=%d _darrlist.size=%d\n", nst, st, stnum ));
+			pthread_t thrd2[ stnum ];
+
+			ParallelJoinPass pjp2[ stnum ] ;
+
+			for ( i = 0; i < stnum; ++i ) {
 				pjp2[i].ptab = ptab[st];
+				// debug
+				prt(("s3300773 i=%d st=%d  ptab[st]->_darrFamily=%0x\n", i, st, ptab[st]->_darrFamily ));
+
 				pjp2[i].ptab2 = ptab[nst];
+
+				prt(("s3300774 i=%d nst=%d  ptab[nst]->_darrFamily=%0x\n", i, nst, ptab[nst]->_darrFamily ));
+
 				pjp2[i].pindex = pindex[st];
 				pjp2[i].pindex2 = pindex[nst];
 				pjp2[i].klen = klen[st];
@@ -9932,6 +9911,8 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 				pjp2[i].pos = i;
 				pjp2[i].totlen = totlen;
 				pjp2[i].jpath = jpath;
+				prt(("s333721 jpath=[%s] jpath.size=%d\n", jpath.c_str(), jpath.size() ));
+				prt(("s333721 pjp2[i].jpath=[%s] jpath.size=%d\n",  pjp2[i].jpath.c_str(),  pjp2[i].jpath.size() ));
 				pjp2[i].jname = jname;
 				pjp2[i].req = req;
 				pjp2[i].parseParam = parseParam;
@@ -9940,21 +9921,23 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 				pjp2[i].stime = stime;
 				pjp2[i].hmaps = hmaps;
 				pjp2[i].numCPUs = numCPUs;
-				jagpthread_create( &thrd2[i], NULL, joinHashStatic, (void*)&pjp2[i] );
+				prt(("s20028365 joinHashMapData thread() use pjp2 data ...\n"));
+				jagpthread_create( &thrd2[i], NULL, joinHashMapData, (void*)&(pjp2[i]) );
 			}
 
-			//prt(("s4008 pthread_join ...\n" ));
-			for ( i = 0; i < df[st]->_darrlistlen; ++i ) {
+			prt(("s400328 pthread_join ...\n" ));
+			//for ( i = 0; i < df[st]->_darrlist.size(); ++i ) 
+			for ( i = 0; i < stnum; ++i ) {
 				pthread_join(thrd2[i], NULL);
 				if ( pjp2[i].timeout ) timeout = 1;
 			}
-			//prt(("s4008 pthread_join done \n" ));
+			prt(("s400328 pthread_join done \n" ));
 		}
 	} else {
-		//prt(("s5838 use regular join ...\n" ));
+		prt(("s58380 do regular merge join ...\n" ));
 		// use regular join
 		// for regular join, ask each table to sort if needed and then begin join with data request
-		pthread_t thrd[num];
+		pthread_t thrd[num]; // num=2
 		ParallelJoinPass pjp[num];
 		for ( i = 0; i < num; ++i ) {
 			if ( 0 == i ) {
@@ -10011,21 +9994,23 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 			pjp[i].jda = jda;
 			pjp[i].stime = stime;
 			pjp[i].numCPUs = numCPUs;
-			jagpthread_create( &thrd[i], NULL, joinSortStatic, (void*)&pjp[i] );
+			prt(("s312664 thread i=%d doMergeJoinStatic ...\n", i ));
+			jagpthread_create( &thrd[i], NULL, doMergeJoinStatic, (void*)&pjp[i] );
 		}
 		
-		// concurrently, do peices of join for current servers
+		// concurrently, do pieces of join for current servers
 		// first, wait for needed sort first, need to have two items ( dirs ) to make sure each table has finished sort procedure
-		// currently, only has 2 tables to be join, use hardcode 2; later need to change to num of tables
+		// currently, only has 2 tables to be joined, use hardcode 2; later need to change to num of tables
 		//prt(("s6002 JagFileMgr::numObjects( sigpath )=%d wait ...\n", JagFileMgr::numObjects( sigpath ) ));
 		while ( JagFileMgr::numObjects( sigpath ) < 2 ) {		
+			prt(("s350241  JagFileMgr::numObjects( %s ) < 2, sleep 100ms ...\n", sigpath.s() ));
 			jagsleep( 100000, JAG_USEC );
 			if ( req.session->sessionBroken ) { 
 				timeout = 1;
 				break; 
 			}
 		}
-		//prt(("s6002 JagFileMgr::numObjects( sigpath )=%d done \n", JagFileMgr::numObjects( sigpath ) ));
+		prt(("s6002 JagFileMgr::numObjects( sigpath=%s )=%d done \n", sigpath.c_str(), JagFileMgr::numObjects( sigpath ) ));
 
 		// then, reset diskarray family pointer to possible value-sorted diskarray family object
 		for ( i = 0; i < num; ++i ) {
@@ -10036,21 +10021,21 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		
 		if ( !timeout ) {
 			// after sorted, join self pieces for current servers
-			int wrc = 1, goNext[num];
-			char *jbuf[num];
+			int 	wrc = 1; 
+			int 	goNext[num];
+			char 	*jbuf[num];
 			const char *buffers[num], *buffers2[num];
-			char *buf = (char*)jagmalloc( totlen+1 );
-			char *cmpbuf = (char*)jagmalloc( jlen[0]+1 );
+			char 	*buf = (char*)jagmalloc( totlen+1 );
+			//char 	*cmpbuf = (char*)jagmalloc( jlen[0]+1 );
 			JagMergeReader *jntr[num];
 
 			//prt(("s4023 cmpbuf:jlen[0]=%d buf:totlen=%d\n", jlen[0], totlen ));
-
 			memset( buf, 0, totlen+1 );
-			memset( cmpbuf, 0, jlen[0]+1 );
+			//memset( cmpbuf, 0, jlen[0]+1 );
 			j = 0;
 
 			for ( i = 0; i < num; ++i ) {
-				goNext[i] = 1;
+				goNext[i] = 1; // both can go down
 				jbuf[i] = (char*)jagmalloc( kvlen[i]+sklen[i]+1 );
 				//prt(("s0203 i=%d jbuf kvlen[i]+sklen[i]+1=%d\n", i, kvlen[i]+sklen[i]+1 ));
 				memset( jbuf[i], 0, kvlen[i]+sklen[i]+1 );
@@ -10066,225 +10051,91 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 				j += kvlen[i];
 				if ( !jntr[i] ) wrc = 0;
 			}
+
+			// debug only ///////////////////////////////////////////
+			/***
+			prt(("s777777777 debug data only\n"));
+			while ( 1 ) {
+				rc = jntr[0]->getNext(jbuf[0]);
+				if ( !rc ) { break; }
+				prt(("s2988388888 leftside jntr[0] gotbuf=[%s]\n", jbuf[0] ));
+			}
+			while ( 1 ) {
+				rc = jntr[1]->getNext(jbuf[1]);
+				if ( !rc ) { break; }
+				prt(("s2988388888 rightside jntr[1] gotbuf=[%s]\n", jbuf[1] ));
+			}
+			***/
+			//////////////////////////////////////////////////////////////
 			
 			// begin pieces merge join
 			// however, if any of merge reader is empty, ignore join
 			if ( wrc ) {
+				prt(("s0019282 jlen[0]=%d jlen[1]=%d   sklen[0]=%d sklen[1]=%d\n", jlen[0], jlen[1], sklen[0], sklen[1] ));
+				jntr[1]->unsetMark();
+				rc = advanceLeftTable( jntr[0], maps, jbuf, numKeys, sklen, attrs, parseParam, buffers);
+				if ( rc < 0 ) { goto outofloop; }
+
+				rc = advanceRightTable( jntr[1], maps, jbuf, numKeys, sklen, attrs, parseParam, buffers);
+				if ( rc < 0 ) { goto outofloop; }
+
 				while ( 1 ) {
-					if ( checkCmdTimeout( stime, parseParam->timeout ) ) {
-						timeout = 1;
-						break;
+					if ( checkCmdTimeout( stime, parseParam->timeout ) || req.session->sessionBroken ) {
+						timeout = 1; break;
 					}
 
-					if ( req.session->sessionBroken ) { 
-						timeout = 1;	
-						break; 
-					}
-					
-					// read data from file
-					if ( goNext[0] > 0 ) {
-						// get next line of data ( filter by parseParam if needed )
-						while ( 1 ) {
-							rc = jntr[0]->getNext(jbuf[0]);
-							if ( !rc ) {
-								// table 0 reaches to the end, break
-								goNext[0] = -1;
-								break;
-							}
-
-							if ( dfSorted[0] ) {
-								goNext[0] = 0;
-								break;
-							}
-
-							// read, check and send				
-							dbNaturalFormatExchange( jbuf[0], numKeys[0], attrs[0], 0,0, " " ); // db format -> natural format
-							if ( parseParam->hasWhere ) {
-								root = parseParam->whereVec[0].tree->getRoot();
-								buffers[1] = NULL;
-								//prt(("s2939 in jagdbserver.cc calling root->checkFuncValid() bufers[0]=[%s]\n",  buffers[0] ));
-								rc = root->checkFuncValid( jntr[0], maps, attrs, buffers, rstr, tmode, ttype, tlength, needInit, 0, 0 );
-								buffers[1] = jbuf[1]+sklen[1];
-							} else {
-								rc = 1;
-							}
-
-							dbNaturalFormatExchange( jbuf[0], numKeys[0], attrs[0], 0, 0, " " ); // natural format -> db format
-							if ( rc > 0 ) { // rc may be 1 or 2
-								goNext[0] = 0;
-								break;
-							}
+					prt(("s90101 jntr[1]->isMarked()=%d\n", jntr[1]->isMarked() ));
+					if ( ! jntr[1]->isMarked() ) {
+						while ( memcmp( jbuf[0], jbuf[1], jlen[0] ) < 0 ) {
+								// left < right
+								prt(("s912387 rc < 0 jbuf[0]=[%s] jbuf[1]=[%s]  go left\n", jbuf[0], jbuf[1] ));
+								rc = advanceLeftTable( jntr[0], maps, jbuf, numKeys, sklen, attrs, parseParam, buffers);
+								if ( rc < 0 ) { prt(("s8888203 left got < 0 \n")); goto outofloop; }
 						}
 
-						if ( goNext[0] < 0 ) break; // reaches to the end
-						// after get jbuf[0], check if it's joinlen jbuf is same to the previous one
-						if ( cmpbuf[0] != '\0' && memcmp( cmpbuf, jbuf[0], jlen[0] ) == 0 ) {
-							// next data joinlen of buf is same as previous one, move back buffreader for second table
-							cmpbuf[0] = '\0';
-							jntr[1]->getRestartPos();
-							goNext[1] = 1;
-						} else if ( cmpbuf[0] != '\0' && memcmp( cmpbuf, jbuf[0], jlen[0] ) != 0 ) {
-							// next data joinlen of buf is different from previous one, clean flag
-							cmpbuf[0] = '\0';
-							jntr[1]->setClearRestartPosFlag();
+						while ( memcmp( jbuf[0], jbuf[1], jlen[0] ) > 0 ) {
+								// left > right
+								prt(("s912387 rc > 0 jbuf[0]=[%s] jbuf[1]=[%s] go right\n", jbuf[0], jbuf[1] ));
+								rc = advanceRightTable( jntr[1], maps, jbuf, numKeys, sklen, attrs, parseParam, buffers);
+								if ( rc < 0 ) { prt(("s8888209 righ got < 0 \n")); goto outofloop; }
 						}
-					}
 
-					if ( goNext[1] > 0 ) {
-						// get next line of data ( filter by parseParam if needed )
-						while ( 1 ) {
-							rc = jntr[1]->getNext(jbuf[1]);
-							if ( !rc ) {
-								// table 1 reaches to the end, get next table 0 data ( filter by parseParam is needed )
-								while ( 1 ) {
-									rc = jntr[0]->getNext(jbuf[0]);
-									if ( !rc ) {
-										// table 0 reaches to the end, break
-										goNext[0] = -1;
-										break;
-									}
+						// left == right
+						prt(("s402834 left==right setMark\n"));
+						jntr[1]->setRestartPos();
+					} // end if ! isMarkSet 
 
-									if ( dfSorted[0] ) {
-										goNext[0] = 0;
-										break;
-									}
-
-									// read, check and send				
-									dbNaturalFormatExchange( jbuf[0], numKeys[0], attrs[0], 0,0, " " ); // db format -> natural format
-									if ( parseParam->hasWhere ) {
-										root = parseParam->whereVec[0].tree->getRoot();
-										buffers[1] = NULL;
-										//prt(("s2949 in jagdbserver.cc calling root->checkFuncValid() bufers[0]=[%s]\n",  buffers[0] ));
-										rc = root->checkFuncValid( jntr[0], maps, attrs, buffers, rstr, tmode, ttype, tlength, needInit, 0, 0 );
-										buffers[1] = jbuf[1]+sklen[1];
-									} else {
-										rc = 1;
-									}
-									dbNaturalFormatExchange( jbuf[0], numKeys[0], attrs[0], 0,0, " " ); // natural format -> db format
-									if ( rc > 0 ) { // rc may be 1 or 2
-										goNext[0] = 0;
-										break;
-									}
-								}
-
-								if ( goNext[0] < 0 ) break; // reaches to the end
-								// if table 0 next buf is different from previous one for joinlen, end and break
-								// otherwise, move back mergereader pointer for table 1 and get next buf for table 1
-								if ( cmpbuf[0] == '\0' || memcmp( cmpbuf, jbuf[0], jlen[0] ) != 0 ) {
-									goNext[0] = -1;
-									break;
-								}
-
-								cmpbuf[0] = '\0';
-								jntr[1]->getRestartPos();
-								while ( 1 ) {
-									rc = jntr[1]->getNext(jbuf[1]);
-									if ( !rc ) {
-										// table 1 reaches to the end, break for table 0 next boolean
-										goNext[0] = -1;
-										break;
-									}
-									if ( dfSorted[1] ) {
-										goNext[1] = 0;
-										break;
-									}
-									// read, check and send				
-									dbNaturalFormatExchange( jbuf[1], numKeys[1], attrs[1], 0,0, " " ); // db format -> natural format
-									if ( parseParam->hasWhere ) {
-										root = parseParam->whereVec[0].tree->getRoot();
-										buffers[0] = NULL;
-										//prt(("s2959 in jagdbserver.cc calling root->checkFuncValid() bufers[1]=[%s]\n",  buffers[1] ));
-										rc = root->checkFuncValid( jntr[1], maps, attrs, buffers, rstr, tmode, ttype, tlength, needInit, 0, 0 );
-										buffers[0] = jbuf[0]+sklen[0];
-									} else {
-										rc = 1;
-									}
-
-									dbNaturalFormatExchange( jbuf[1], numKeys[1], attrs[1], 0,0, " " ); // natural format -> db format
-									if ( rc > 0 ) { // rc may be 1 or 2
-										goNext[1] = 0;
-										break;
-									}
-								}
-								break;
-							}
-
-							if ( dfSorted[1] ) {
-								goNext[1] = 0;
-								break;
-							}
-
-							// read, check and send				
-							dbNaturalFormatExchange( jbuf[1], numKeys[1], attrs[1], 0, 0, " " ); // db format -> natural format
-							if ( parseParam->hasWhere ) {
-								root = parseParam->whereVec[0].tree->getRoot();
-								buffers[0] = NULL;
-								//prt(("s2969 in jagdbserver.cc calling root->checkFuncValid() bufers[1]=[%s]\n",  buffers[1] ));
-								rc = root->checkFuncValid(jntr[1], maps, attrs, buffers, rstr, tmode, ttype, tlength, needInit, 0, 0 );
-								buffers[0] = jbuf[0]+sklen[0];
-							} else {
-								rc = 1;
-							}
-
-							dbNaturalFormatExchange( jbuf[1], numKeys[1], attrs[1], 0,0, " " ); // natural format -> db format
-							if ( rc > 0 ) { // rc may be 1 or 2
-								goNext[1] = 0;
-								break;
-							}						
-						} // end while
-						if ( goNext[0] < 0 ) break; // reaches to the end
-					}
-					
-					wrc = 0;
-					// compare two buffers and set for innerjoin/leftjoin/rightjoin/fulljoin
-					rc = memcmp( jbuf[0], jbuf[1], jlen[0] );
-					if ( rc == 0 ) {
-						// left and right table has the same join key
+					if ( 0 == memcmp( jbuf[0], jbuf[1], jlen[0] ) ) {
 						memcpy( buf, jbuf[0]+sklen[0], kvlen[0] );
 						memcpy( buf+kvlen[0], jbuf[1]+sklen[1], kvlen[1] );
-						wrc = 1;
-						// only move one of the key, use 2nd table for now
-						if ( goNext[1] == 0 ) goNext[1] = 1;
-						if ( jntr[1]->setRestartPos() ) {
-							memcpy( cmpbuf, jbuf[0], jlen[0] ); // store current joinlen data, and also set buffreader position
+						prt(("s91236 left==right go right, output data %s [%s][%s]\n", jdapath.c_str(), buf,  buf+kvlen[0] ));
+						//jda->writeit( jdapath, buf, totlen, NULL, true );
+						jda->writeit( 0, buf, totlen, NULL, true );
+						rc = advanceRightTable( jntr[1], maps, jbuf, numKeys, sklen, attrs, parseParam, buffers);
+						if ( rc < 0 ) {
+							//goto outofloop;
+							prt(("s230333 advanceRightTable got < 0 \n"));
+							jbuf[1][0] = '\0';
+							if ( ! jntr[1]->isMarked() ) {
+								goto outofloop;
+							}
 						}
-					} else if ( rc < 0 ) {
-						// left data is smaller than right data
-						if ( JAG_LEFTJOIN_OP == parseParam->opcode && goNext[0] >= 0 ) {
-							memcpy( buf, jbuf[0]+sklen[0], kvlen[0] );
-							memset( buf+kvlen[0], 0, kvlen[1] );
-							wrc = 1;
-						} else if ( JAG_FULLJOIN_OP == parseParam->opcode ) {
-							memcpy( buf, jbuf[0]+sklen[0], kvlen[0] );
-							memcpy( buf+kvlen[0], jbuf[1]+sklen[1], kvlen[1] );
-							wrc = 1;
-						}
-						if ( goNext[0] == 0 ) goNext[0] = 1;
-					} else {
-						// left data is larger that right data
-						if ( JAG_RIGHTJOIN_OP == parseParam->opcode ) {
-							memset( buf, 0, kvlen[0] );
-							memcpy( buf+kvlen[0], jbuf[1]+sklen[1], kvlen[1] );
-							wrc = 1;	
-						} else if ( JAG_FULLJOIN_OP == parseParam->opcode ) {			
-							memcpy( buf, jbuf[0]+sklen[0], kvlen[0] );
-							memcpy( buf+kvlen[0], jbuf[1]+sklen[1], kvlen[1] );
-							wrc = 1;
-						}
-						if ( goNext[1] == 0 ) goNext[1] = 1;
+						continue;
 					}
-					
-					dbNaturalFormatExchange( (char**)buffers2, num, numKeys, attrs ); // db format -> natural format
-					if ( parseParam->hasWhere ) {
-						root = parseParam->whereVec[0].tree->getRoot();
-						//prt(("s2999 345 in jagdbserver.cc calling root->checkFuncValid() bufers2[0]=[%s]\n",  buffers2[0] ));
-						rc = root->checkFuncValid( NULL, maps, attrs, buffers2, rstr, tmode, ttype, tlength, needInit, 0, 0 );
-					} else {
-						rc = 1;
-					}
-					if ( wrc && rc ) jda->writeit( jdapath, buf, totlen, NULL, true );
-				}
-			}
+
+					prt(("s913078 not euqal, right go back to restart positon, go left next \n"));
+					jntr[1]->moveToRestartPos();
+					// pop to jbuf[1]
+					advanceRightTable( jntr[1], maps, jbuf, numKeys, sklen, attrs, parseParam, buffers);
+
+					prt(("s912342 right unset mark\n"));
+					rc = advanceLeftTable( jntr[0], maps, jbuf, numKeys, sklen, attrs, parseParam, buffers);
+					if ( rc < 0 ) { prt(("s11112301 left < 0\n")); goto outofloop; }
+					jntr[1]->unsetMark();
+				}  // end while(1)
+			} // end if wrc (ntrs are all good)
+			outofloop:
+
 
 			//prt(("s3722 pthread_join num=%d ...\n", num ));
 			for ( i = 0; i < num; ++i ) {
@@ -10296,22 +10147,27 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 			//prt(("s3722 pthread_join num=%d done\n", num ));
 
 			if ( buf ) free ( buf );
-			if ( cmpbuf ) free ( cmpbuf );
+			//if ( cmpbuf ) free ( cmpbuf );
+			// end of not timedout
 		} else {
+			// time out happened
 			for ( i = 0; i < num; ++i ) {
 				pthread_join(thrd[i], NULL);
 			}
 		}
-	}
+	} // end regular merge join
 
 	jda->flushwrite();
+	prt(("s48710 flushwrite done\n"));
 	
 	// if has column calculations and/or group by, reformat data
-	if ( (parseParam->hasGroup || parseParam->hasColumn) && !timeout ) {
+	if (  !timeout && (parseParam->hasGroup || parseParam->hasColumn) ) {
 		// then, setup finalbuf and gbvbuf if needed
 		// finalbuf, hasColumn len or KEYVALLEN*n if !hasColumn
 		// gbvbuf, if has group by
-		bool hasFirst = 0; std::atomic<abaxint> cnt; cnt = 0; JagFixString data;
+		bool hasFirst = 0; 
+		std::atomic<jagint> cnt; cnt = 0; 
+		JagFixString data;
 		char *finalbuf = (char*)jagmalloc(finalsendlen+1);
 		char *gbvbuf = (char*)jagmalloc(gbvsendlen+1);
 		const char *buffers[num];
@@ -10354,12 +10210,13 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 
 		if ( gmdarr ) {
 			JagTable::groupByFinalCalculation( gbvbuf, true, finalsendlen, cnt, parseParam->limit, req, 
-				jdapath2, parseParam, jda2, gmdarr, NULL );
+												jdapath2, parseParam, jda2, gmdarr, NULL );
 		} else if ( hasagg ) {
 			JagTable::aggregateFinalbuf( req, newhdr, 1, pparam, finalbuf, finalsendlen, jda2, jdapath2, cnt, true, NULL );
 		}
 
 		jda2->flushwrite();
+		prt(("s2862635 jda2->flushwrite() done\n"));
 		// after finish format group by and/or calculations, replace jda pointer to jda2
 		if ( jda ) delete jda;
 		jda = jda2;
@@ -10367,7 +10224,7 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		if ( finalbuf ) free( finalbuf );
 		if ( gbvbuf ) free( gbvbuf );
 		if ( gmdarr ) free( gmdarr );		
-	}
+	} // end if !timeout && ( hasgroup || hascolumns )
 
 	if ( timeout ) {
 		sendMessage( req, "E8012 Join command has timed out. Results have been truncated;", "ER" );
@@ -10376,12 +10233,21 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 	if ( jda->elements() > 0 && !req.session->sessionBroken && jda ) {
 		// in join
 		// dataAggregateSendData( jda->elements(), req, jda );
+		prt(("s1029283 sendDataToClient with sqlhdr ...\n"));
 		jda->sendDataToClient( jda->elements(), req );
+		prt(("s1029283 sendDataToClient done\n"));
 	}
 	// send "JOINEND" to client and wait for signal to free all memory ( make sure all servers finish join job )
 	hcli.close();
+
+
+	prt(("s20004 sendMessage JOINED OK ...\n"));
 	sendMessage( req, "JOINEND", "OK" );
-	recvData( req.session->sock, hdr, newbuf );
+	// with sqlhdr
+	prt(("s20004 sendMessage JOINED OK done recvMessage...\n"));
+	// with sqlhdr
+	recvMessage( req.session->sock, hdr, newbuf );
+	prt(("s20004 recvMessage done\n"));
 	
 	// free all memory, and also remove all files and dirs under clipid_ip
 	if ( jda ) delete jda;
@@ -10396,37 +10262,45 @@ int JagDBServer::joinObjects( const JagRequest &req, JagDBServer *servobj, JagPa
 		}
 		AbaxString jmkey = jname + "_" + intToStr( i );
 		servobj->_joinMap->removeKey( jmkey );
-		// prt(("s2837 remove joinmap elem=%d name=[%s]\n", servobj->_joinMap->size(), jmkey.c_str()));
+		prt(("s2837 remove joinmap elem=%d name=[%s]\n", servobj->_joinMap->size(), jmkey.c_str()));
 		if ( ptab[i] ) {
 			servobj->_objectLock->readUnlockTable( parseParam->opcode, parseParam->objectVec[i].dbName, 
-				parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
+													parseParam->objectVec[i].tableName, req.session->replicateType, 0 );
 		} else if ( pindex[i] ) {
-			servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], idxName[i],
-				tableschema, indexschema, req.session->replicateType, 0 );				
+			servobj->_objectLock->readUnlockIndex( parseParam->opcode, dbidx[i], tabName[i], idxName[i], req.session->replicateType, 0 );				
 		}
 	}
 
+	prt(("s1029373 here rmdir %s\n", jpath.s() ));
 	JagFileMgr::rmdir( jpath, true );
 	return 1;
 }
 
 // method to sort by columns if needed for each table
-void *JagDBServer::joinSortStatic( void *ptr )
+void *JagDBServer::doMergeJoinStatic( void *ptr )
 {
+	prt(("s2083746 doMergeJoinStatic ...\n"));
 	ParallelJoinPass *pass = (ParallelJoinPass*)ptr;
 	Jstr fpath; 
-	abaxint i;
+	jagint i;
 	
 	if ( pass->ptab ) {
 		fpath = pass->jpath + "/" + pass->ptab->getdbName() + "_" + pass->ptab->getTableName();
 	} else {
 		fpath = pass->jpath + "/" + pass->pindex->getdbName() + "_" + pass->pindex->getIndexName();	
 	}
+	
 	JagFileMgr::makedirPath( fpath );
-	// need to check if sort needed
-	if ( pass->dfSorted ) {
+	prt(("s12987 makedirPath fpath=%s\n", fpath.s() ));
+	// need to check if is sort needed
+	if ( ! pass->dfSorted ) {
+		pass->dfSorted = 0;
+		prt(("s100827 pass->dfSorted = 0\n"));
+	} else {
+		prt(("s201976  do sort first pass->dfSorted true\n"));
 		// first, use numCPUs to get num threads to sort concurrently
-		abaxint len = pass->df->_darrlistlen;
+		jagint len = pass->df->_darrlist.size();
+		if ( len < 1 ) len = 1;
 		if ( len >= pass->numCPUs ) len = pass->numCPUs;
 		
 		pthread_t thrd[len];
@@ -10480,22 +10354,27 @@ void *JagDBServer::joinSortStatic( void *ptr )
 			pjp[i].tabnum = i;
 			pjp[i].tabnum2 = pass->tabnum2;
 			pjp[i].numCPUs = len;
+			prt(("s2200800 joinSortStatic2 i=%d thread created ...\n", i));
 			jagpthread_create( &thrd[i], NULL, joinSortStatic2, (void*)&pjp[i] );
 		}
 		
+		prt(("s32108 pthread_join len=%d wait for joinSortStatic2 to complete ...\n", len ));
 		for ( i = 0; i < len; ++i ) {
 			pthread_join(thrd[i], NULL);
 			if ( pjp[i].timeout ) pass->timeout = 1;
 		}
+		prt(("s32108 pthread_join len=%d\n", len ));
+
 		if ( pass->timeout ) {
 			Jstr sigpath = pass->jpath + "/fprep/" + intToStr( pass->tabnum );
 			JagFileMgr::makedirPath( sigpath );
+			prt(("s36631 pass->timeout makedirPath sigpath=%s\n", sigpath.s() ));
 			pass->dfSorted = 0;
 			return NULL;
 		}
 		
 		// after get each file, make new darrfamily to use later
-		abaxint aoffset = 0;
+		jagint aoffset = 0;
 		Jstr nhdr;
 		if ( pass->ptab ) {
 			fpath += Jstr("/") + pass->ptab->getTableName();
@@ -10527,10 +10406,8 @@ void *JagDBServer::joinSortStatic( void *ptr )
 		pass->rec->parseRecord( nhdr.c_str() );
 		***/
 		pass->rec = rec;
-		pass->df = new JagDiskArrayFamily( pass->req.session->servobj, fpath, pass->rec, false, 32, true );
-	} else {
-		pass->dfSorted = 0;
-	}
+		pass->df = new JagDiskArrayFamily( pass->req.session->servobj, fpath, pass->rec, 0, false );
+	} // end else pass->dfSorted == true 
 	
 	// store joinmap object attributes
 	// pair order is: <sortlen, <kvlen, numKeys>>, <<minbuf, maxbuf>, <diskfamily, <attrs, parseParam>>
@@ -10549,9 +10426,10 @@ void *JagDBServer::joinSortStatic( void *ptr )
 	// pass->minbuf, pass->maxbuf, pass->df, pass->attrs, pass->parseParam));
 	Jstr sigpath = pass->jpath + "/fprep/" + intToStr( pass->tabnum );
 	JagFileMgr::makedirPath( sigpath );
+	prt(("s33462 makedirPath sigpath=%s\n", sigpath.s() ));
 	
 	
-	/*** for even and odd: e.g. ( both started with 0 )
+	/*** for even and odd: e.g. ( both starts from 0 )
 	host_num  host_list  table0  table1  isOddTable(based on table number)  selfIsOdd(based on server list number)  svec[0]  svec[1]
 		0		ip0			Y		N			F									F								  ip0	  N/A
 		1		ip1			Y		N			F									T								  N/A	  ip1
@@ -10567,7 +10445,7 @@ void *JagDBServer::joinSortStatic( void *ptr )
 		4		ip4			N		Y			T									F								  ip4	  N/A
 	***/
 	
-	// after prepare data, parallel send data to each other server for join
+	// after preparing data, parallelly send data to each other server for join
 	// for each table, get how many servers to be sent for data
 	JagStrSplit srv( pass->req.session->servobj->_dbConnector->_nodeMgr->_allNodes, '|' );
 	JagVector<Jstr> svec[2];
@@ -10597,6 +10475,8 @@ void *JagDBServer::joinSortStatic( void *ptr )
 		}
 	}
 	
+	prt(("s200913 snum=%d\n", snum ));
+	// if only onnserver, snum is 0
 	pthread_t thrd[snum];
 	ParallelJoinPass pjp[snum];
 	for ( i = 0; i < snum; ++i ) {
@@ -10661,6 +10541,7 @@ void *JagDBServer::joinSortStatic( void *ptr )
 				pjp[i].uhost = svec[0][pos++];
 			}
 		}
+		prt(("s082738 i=%d joinRequestStatic ...\n", i ));
 		jagpthread_create( &thrd[i], NULL, joinRequestStatic, (void*)&pjp[i] );
 	}
 
@@ -10668,23 +10549,33 @@ void *JagDBServer::joinSortStatic( void *ptr )
 		pthread_join(thrd[i], NULL);
 		if ( pjp[i].timeout ) pass->timeout = 1;
 	}
+	prt(("s122386 doMergeJoinStatic done\n"));
 }
 
-// method to parallel sort table for join
+// method to parallel mergesort table for join
 void *JagDBServer::joinSortStatic2( void *ptr )
 {
+	prt(("s776331 joinSortStatic2...\n"));
 	ParallelJoinPass *pass = (ParallelJoinPass*)ptr;
 	int rc, tmode = 0, tlength = 0;
 	bool needInit = 1;
 	Jstr ttype = " ";
-	abaxint i, j, k, aoffset, deach = pass->df->_darrlistlen/pass->numCPUs+1;
-	abaxint dstart = deach*pass->tabnum;
-	abaxint dend = dstart+deach;
-	abaxint index = 0, slimit, rlimit, callCounts = -1, lastBytes = 0, tmpcnt;
-	abaxint mlimit = availableMemory( callCounts, lastBytes )/8/pass->df->_darrlistlen/1024/1024;
-	abaxint pairmapMemLimit = jagatoll(pass->req.session->servobj->_cfg->getValue("JOIN_BUFFER_SIZE_MB", "100").c_str())*1024*1024;
+	int dlen = pass->df->_darrlist.size();
+	if ( dlen < 1 ) dlen = 1;
+	jagint i, j, aoffset;
+
+	jagint deach = pass->df->_darrlist.size()/pass->numCPUs+1;
+	//jagint i, j, aoffset, deach = dlen/pass->numCPUs+1;
+	jagint dstart = deach * pass->tabnum;
+	jagint dend = dstart+deach;
+	//jagint index = 0, slimit, rlimit, callCounts = -1, lastBytes = 0, tmpcnt;
+	jagint callCounts = -1, lastBytes = 0, tmpcnt;
+	jagint mlimit = availableMemory( callCounts, lastBytes )/8/ dlen/1024/1024;
+	jagint pairmapMemLimit = jagatoll(pass->req.session->servobj->_cfg->getValue("JOIN_BUFFER_SIZE_MB", "100").c_str())*1024*1024;
 	if ( mlimit <= 0 ) mlimit = 1;
-	if ( dend > pass->df->_darrlistlen ) dend = pass->df->_darrlistlen;
+	//if ( dend > pass->df->_darrlist.size() ) dend = pass->df->_darrlist.size();
+	if ( dend > dlen ) dend = dlen;
+
 	Jstr fpath, tpath; 
 	JagFixString sres, value;
 	ExprElementNode *root;
@@ -10696,8 +10587,10 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 	memset( sbuf, 0, pass->sklen+1 );
 	memset( tbuf, 0, pass->sklen+pass->kvlen+1 );
 	const char *buffers[2];
+
 	JagDBMap pairmap;
 	JagDBPair retpair;
+
 	if ( pass->tabnum ) {
 		buffers[0] = NULL;
 		buffers[1] = buf;
@@ -10706,25 +10599,23 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 		buffers[1] = NULL;
 	}
 	
-	for ( i = dstart; i < dend; ++i ) {
+	prt(("s2200865 dstart=%d dend=%d\n", dstart, dend ));
+	//for ( i = dstart; i < dend; ++i ) {
+	while ( 1 ) {
+		i = 0;
 		tmpcnt = 0;
-		JagDiskArrayServer *darr = pass->df->_darrlist[i];
-		JagDBPair minpair( JagFixString( pass->minbuf, darr->KEYLEN ), value );
-		JagDBPair maxpair( JagFixString( pass->maxbuf, darr->KEYLEN ), value );
-		rc = darr->exist( minpair, &index, retpair );
-		if ( !rc ) ++index;
-		slimit = index;
-		if ( slimit < 0 ) slimit = 0;
-		rc = darr->exist( maxpair, &index, retpair );
-		if ( !rc ) ++index;
-		rlimit = index;
-		rlimit = rlimit - slimit + 1;
-		JagBuffReader br( darr, rlimit, darr->KEYLEN, darr->VALLEN, slimit, 0, mlimit );
+
+		// new method
+		JagMergeReader *ntr = NULL;
+		pass->df->setFamilyRead( ntr, pass->minbuf, pass->maxbuf );
+
 		fpath = pass->jpath + "/" + longToStr( THREADID ) + "_" + longToStr( tmpcnt );
 		tpath = fpath;
 		jda.setwrite( fpath, fpath, 3 );
 		
-		while ( br.getNext( buf ) ) {
+		//while ( br.getNext( buf ) ) 
+		while ( ntr && ntr->getNext( buf ) ) {
+			prt(("s3330009 br pass->df br.getNext( buf=[%s] )\n", buf ));
 			if ( checkCmdTimeout( pass->stime, pass->parseParam->timeout ) ) {
 				pass->timeout = 1;
 				break;
@@ -10751,37 +10642,53 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 				JagDBPair pair( sbuf, pass->sklen, buf, pass->kvlen );				
 				pairmap.insert( pair );
 				if ( pairmap.elements()*(pass->sklen+pass->kvlen) > pairmapMemLimit ) {
-					FixMap::iterator it;
+					// flush pairmap to disk
+					JagFixMapIterator it;
 					for ( it = pairmap._map->begin(); it != pairmap._map->end(); ++it ) {
 						memcpy( tbuf, it->first.c_str(), pass->sklen );
-						memcpy( tbuf+pass->sklen, it->second.first.c_str(), pass->kvlen );
-						jda.writeit( fpath, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
+						//memcpy( tbuf+pass->sklen, it->second.first.c_str(), pass->kvlen );
+						memcpy( tbuf+pass->sklen, it->second.c_str(), pass->kvlen );
+						//jda.writeit( fpath, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
+						jda.writeit( 0, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
 					}
 					jda.flushwrite();
 					++tmpcnt;
 					fpath = pass->jpath + "/" + longToStr( THREADID ) + "_" + longToStr( tmpcnt );
 					tpath += Jstr("|") + fpath;
 					jda.setwrite( fpath, fpath, 3 );
-					pairmap.clean();
+					prt(("s122880 pairmap.clear()\n"));
+					pairmap.clear();
 				}
 			}
-		}
+		} // end of ntr getNext()
+
+		if ( ntr ) delete ntr;
+
 		if ( 1 == pass->timeout ) break;
 		if ( pairmap.elements() > 0 ) {
-			FixMap::iterator it;
+			// flush to disk
+			JagFixMapIterator it;
 			for ( it = pairmap._map->begin(); it != pairmap._map->end(); ++it ) {
 				memcpy( tbuf, it->first.c_str(), pass->sklen );
-				memcpy( tbuf+pass->sklen, it->second.first.c_str(), pass->kvlen );
-				jda.writeit( fpath, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
+				//memcpy( tbuf+pass->sklen, it->second.first.c_str(), pass->kvlen );
+				memcpy( tbuf+pass->sklen, it->second.c_str(), pass->kvlen );
+				prt(("s102280 jda.writeit( fpath=%s tbuf %d mlimit=%d\n", fpath.c_str(), pass->sklen+pass->kvlen, mlimit ));
+				//jda.writeit( fpath, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
+				jda.writeit( 0, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
 			}
 			jda.flushwrite();
-			pairmap.clean();
+			pairmap.clear();
 		}
+
 		// after fliter all data in one jdb file, merge tmp files to a single big file
+		prt(("s20287 tpath=[%s]\n", tpath.s() ));
 		JagStrSplit sp( tpath.c_str(), '|' );
 		int fd[sp.length()];
+		//JagCompFile* fd[sp.length()];
 		for ( j = 0; j < sp.length(); ++j ) {
 			fd[j] = jagopen( sp[j].c_str(), O_CREAT|O_RDWR|JAG_NOATIME, S_IRWXU);
+			//prt(("s40042 new JagCompFile darr->_KLEN=%d darr->_VLEN=%d\n", darr->_KLEN, darr->_VLEN ));
+			//fd[j] = new JagCompFile( nullptr, tpath, darr->_KLEN, darr->_VLEN );
 		}
 		JagVector<OnefileRangeFD> fRange(8);
 		OnefileRangeFD tempRange;
@@ -10792,21 +10699,27 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 			tempRange.memmax = mlimit;
 			fRange.append( tempRange );
 		}
+
 		JagSingleMergeReader nts( fRange, fRange.size(), pass->sklen, pass->kvlen );
+
 		if ( 0 == i ) {
 			if ( pass->ptab ) {
 				fpath = pass->jpath + "/" + pass->ptab->getTableName() + ".jdb";
 			} else {
 				fpath = pass->jpath + "/" + pass->pindex->getTableName() + "." + pass->pindex->getIndexName() + ".jdb";
 			}
+			prt(("s308870 0==i fpath=%s\n", fpath.s() ));
 		} else {
 			if ( pass->ptab ) {
 				fpath = pass->jpath + "/" + pass->ptab->getTableName() + "." + intToStr( i ) + ".jdb";
 			} else {
 				fpath = pass->jpath + "/" + pass->pindex->getTableName() + "." + pass->pindex->getIndexName() + "." + intToStr( i ) + ".jdb";
 			}
+			prt(("s308870 0!=i fpath=%s\n", fpath.s() ));
 		}
+
 		jda.setwrite( fpath, fpath, 3 );
+
 		while ( nts.getNext( tbuf ) ) {
 			if ( checkCmdTimeout( pass->stime, pass->parseParam->timeout ) ) {
 				pass->timeout = 1;
@@ -10816,50 +10729,72 @@ void *JagDBServer::joinSortStatic2( void *ptr )
 				pass->timeout = 1;	
 				break; 
 			}
-			jda.writeit( fpath, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
+			//jda.writeit( fpath, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
+			jda.writeit( 0, tbuf, pass->sklen+pass->kvlen, NULL, false, mlimit );
+			prt(("s220778 jda.writeit fpath=%s\n", fpath.s() ));
 		}
 		jda.flushwrite();
 		
 		for ( j = 0; j < sp.length(); ++j ) {
 			jagclose( fd[j] );
+			//delete  fd[j];
 			jagunlink( sp[j].c_str() );
+			prt(("s0128 jagclose and unlink %s\n",  sp[j].c_str() ));
 		}
+
 		if ( 1 == pass->timeout ) break;
-	}
+
+		break;
+
+	} //end for each darr
+
 	free( buf );
 	free( sbuf );
 	free( tbuf );
 }
 
-// method to join main table with multiple hash tables
-void *JagDBServer::joinHashStatic( void *ptr )
+
+// method to join main(bigger) table with hashmap data (second smaller table)
+void *JagDBServer::joinHashMapData( void *ptr )
 {
-	ParallelJoinPass *pass = (ParallelJoinPass*)ptr;
+	prt(("s28847 joinHashMapData...\n"));
+	ParallelJoinPass *pass = (ParallelJoinPass*)ptr; // second table
 	// for each of the family file, move one by one and check each hash maps for join part	
-    JagDiskArrayServer *darr;
-    if ( pass->ptab ) darr = pass->ptab->_darrFamily->_darrlist[pass->pos];
-    else darr = pass->pindex->_darrFamily->_darrlist[pass->pos];
-	
+	JagDiskArrayFamily *dfam = NULL;
+    //JagDiskArrayServer *darr;
+	// second table
+    if ( pass->ptab ) {
+		dfam = pass->ptab->_darrFamily;
+	} else {
+		dfam = pass->pindex->_darrFamily;
+	}
+
     JagDBPair retpair;
     JagFixString key, value;
-	abaxint i, aoffset = 0, alen = 0, callCounts = -1, lastBytes = 0, mlimit, slimit = 0, rlimit = darr->_arrlen;
+	jagint i, aoffset = 0, alen = 0;
+
 	ExprElementNode *root;
 	JagFixString sres;
-	Jstr jdapath = pass->jpath + "/alldata";
-	int rc, tmode = 0, tlength = 0, insertCode;
-	bool needInit = 1;
+	Jstr jpath = pass->jpath;
+	Jstr 	jdapath = jpath + "/alldata";
+	int 	rc, tmode = 0, tlength = 0;
+	bool 	needInit = 1;
 	const char *buffers[2], *buffers2[2];
-	Jstr ttype = " ";
-    char jbuf[pass->jlen+1], *buf = (char*)jagmalloc(pass->kvlen+1), *tbuf = (char*)jagmalloc(pass->totlen+1);
+	Jstr 	ttype = " ";
+    char 	jbuf[pass->jlen+1];
+	char 	*buf = (char*)jagmalloc(pass->kvlen+1);
+	char 	*tbuf = (char*)jagmalloc(pass->totlen+1);
+
     memset(buf, 0, pass->kvlen+1);
 	memset(jbuf, 0, pass->jlen+1);
 	memset(tbuf, 0, pass->totlen+1);
-	mlimit = availableMemory( callCounts, lastBytes )/8/pass->df->_darrlistlen/1024/1024;
-	if ( mlimit <= 0 ) mlimit = 1;
+
 	key.point( jbuf, pass->jlen );
-	int vnumKeys[2]; const JagSchemaAttribute *vattrs[2];
+	int vnumKeys[2]; 
+	const JagSchemaAttribute *vattrs[2];
 
 	if ( pass->tabnum ) {
+		prt(("s222038 pass->tabnum=%d\n", pass->tabnum ));
 		buffers[0] = NULL;
 		buffers[1] = buf;
 		buffers2[0] = tbuf;
@@ -10869,6 +10804,7 @@ void *JagDBServer::joinHashStatic( void *ptr )
 		vattrs[0] = pass->attrs2;
 		vattrs[1] = pass->attrs;
 	} else {
+		prt(("s222039 pass->tabnum=%d\n", pass->tabnum ));
 		buffers[0] = buf;
 		buffers[1] = NULL;
 		buffers2[0] = tbuf;
@@ -10879,20 +10815,11 @@ void *JagDBServer::joinHashStatic( void *ptr )
 		vattrs[1] = pass->attrs2;
 	}
 
-    if ( pass->parseParam->hasWhere ) {
-        JagFixString minkey( pass->minbuf, darr->KEYLEN );
-        JagDBPair minpair( minkey, value );
-        JagFixString maxkey( pass->maxbuf, darr->KEYLEN );
-        JagDBPair maxpair( maxkey, value );
-        darr->exist( minpair, &slimit, retpair );
-        if ( slimit < 0 ) slimit = 0;
-        darr->exist( maxpair, &rlimit, retpair );
-        if ( rlimit >= darr->_arrlen ) rlimit = darr->_arrlen;
-        rlimit = rlimit - slimit + 1;
-    }
-    JagBuffReader br( darr, rlimit, darr->KEYLEN, darr->VALLEN, slimit, 0, mlimit );
+	JagMergeReader *ntr = NULL;
+	dfam->setFamilyRead( ntr, pass->minbuf, pass->maxbuf );
 
-    while ( br.getNext( buf ) ) {
+    while ( ntr->getNext( buf ) ) {
+		//prt(("s45004 br.getNext buf=[%s]\n", buf ));
 		if ( checkCmdTimeout( pass->stime, pass->parseParam->timeout ) ) {
 			pass->timeout = 1;
 			break;
@@ -10909,6 +10836,7 @@ void *JagDBServer::joinHashStatic( void *ptr )
 		} else {
 			rc = 1;
 		}
+
 		dbNaturalFormatExchange( buf, pass->numKeys, pass->attrs, 0,0, " " ); // natural format -> db format	
 		if ( rc > 0 ) { // rc may be 1 or 2
 			aoffset = 0;
@@ -10916,9 +10844,10 @@ void *JagDBServer::joinHashStatic( void *ptr )
 				memcpy(jbuf+aoffset, buf+pass->attrs[(*(pass->jsvec))[i]].offset, pass->attrs[(*(pass->jsvec))[i]].length);
 				aoffset += pass->attrs[(*(pass->jsvec))[i]].length;
 			}
-			// then, go through each of the hashmap to see if current line of data is exist or not, and insert to jda if exists
+			// then, go through each of the hashmap to see if current line of data exist or not, and insert to jda if exists
 			for ( i = 0; i < pass->numCPUs; ++i ) {	
 				if ( (pass->hmaps)[i].getValue( key, value ) ) {
+					prt(("s33876 i=%d hmap getValue key=[%s] value=[%s]\n", key.c_str(), value.c_str() ));
 					aoffset = 0;
 					alen = value.length();
 					while ( aoffset < alen ) {
@@ -10934,17 +10863,27 @@ void *JagDBServer::joinHashStatic( void *ptr )
 						// at last, need to make sure data is valid with where before store it
 						if ( pass->parseParam->hasWhere ) {
 							root = pass->parseParam->whereVec[0].tree->getRoot();
-							rc = root->checkFuncValid( NULL, &pass->maps, &pass->attrs, buffers2, sres, tmode, ttype, tlength, needInit, 0, 0 );
+							rc = root->checkFuncValid( NULL, &pass->maps, &pass->attrs, buffers2, sres, tmode, ttype, 
+													   tlength, needInit, 0, 0 );
 						} else {
 							rc = 1;
 						}
-						if ( rc ) pass->jda->writeit( jdapath, tbuf, pass->totlen, NULL, true );
+
+						if ( rc ) {
+							prt(("s1088220 >jda->writeit jdapath=%s tbuf totlen=%d\n", jdapath.s(), pass->totlen ));
+							//pass->jda->writeit( jdapath, tbuf, pass->totlen, NULL, true );
+							pass->jda->writeit( 0, tbuf, pass->totlen, NULL, true );
+						}
 						aoffset += pass->kvlen2;
 					}
 				}
 			}
 		}
 	}
+
+	if ( ntr ) delete ntr;
+
+	prt(("s42074 while out\n"));
     free( buf );
     free( tbuf );
 }
@@ -10955,278 +10894,365 @@ void *JagDBServer::joinHashStatic( void *ptr )
 void *JagDBServer::joinRequestStatic( void * ptr )
 {
 	ParallelJoinPass *pass = (ParallelJoinPass*)ptr;
-	JaguarCPPClient* jcli = (JaguarCPPClient*) jag_hash_lookup ( &pass->hcli->_connMap, pass->uhost.c_str() );
 	int useHash = 0;
 	if ( pass->hmaps ) useHash = 1;
-	Jstr rcmd = Jstr("_serv_reqdatajoin|") + intToStr( useHash ) + "|" + intToStr( pass->tabnum2 ) + "|" + pass->jname;
-	char jbuf[pass->jlen+1];
-	const char *p = NULL;
-	memset( jbuf, 0, pass->jlen+1 );
-	abaxint i, offset, aoffset, len = 0;
+	prt(("s20088 joinRequestStatic useHash=%d...\n", useHash ));
 	
 	if ( useHash ) {
-		// hash join, get data and store to hashmap
-		abaxint hpos = pass->pos % pass->numCPUs;
-		JagFixString key, val, val2, val3;
-		key.point( jbuf, pass->jlen );
-		// first, check if request host is same as self host, if not, send request to other servers
-		// otherwise, read current server's small table and store them to hashmap
-		if ( pass->req.session->servobj->_localInternalIP == pass->uhost ) {
-			JagMergeReader *ntr = NULL;
-			pass->df2->setFamilyRead( ntr, pass->minbuf2, pass->maxbuf2 );
+		prt(("s333776 hashJoinStatic hashJoinStaticGetMap() ...\n"));
+		// get data in hashmap
+		hashJoinStaticGetMap( pass );
+	} else {
+		prt(("s333778 mergeJoinStatic ...\n"));
+		mergeJoinGetData( pass );
+	}
+}
 
-			if ( ntr ) {
-				ExprElementNode *root;
-				JagFixString sres;
-				int rc, tmode = 0, tlength = 0;
-				bool needInit = 1;
-				char *buf = (char*)jagmalloc( pass->kvlen2+1 );
-				const char *buffers[2];
-				Jstr ttype= " ";
-				memset( buf, 0, pass->kvlen2+1 );
-				// prt(("s5982 pass->tabnum2=%d\n", pass->tabnum2 ));
-				if ( pass->tabnum2 ) {
-					buffers[0] = NULL;
-					buffers[1] = buf;
+// read one table, read another into hashmap
+void JagDBServer::hashJoinStaticGetMap( ParallelJoinPass *pass ) 
+{
+	prt(("s33874 hashJoinStatic() pass->jlen=%d ...\n", pass->jlen ));
+	int useHash = 1;
+	char jbuf[pass->jlen+1];
+	memset( jbuf, 0, pass->jlen+1 );
+	Jstr rcmd = Jstr("_serv_reqdatajoin|") + intToStr( useHash ) + "|" + intToStr( pass->tabnum2 ) + "|" + pass->jname;
+	jagint i, offset, aoffset, len = 0;
+	JaguarCPPClient* jcli = (JaguarCPPClient*) jag_hash_lookup ( &pass->hcli->_connMap, pass->uhost.c_str() );
+	const char *p = NULL;
+
+	// hash join, get data and store to hashmap
+	jagint hpos = pass->pos % pass->numCPUs;
+	JagFixString key, val;
+	key.point( jbuf, pass->jlen );
+
+	// first, check if request host is same as self host. 
+	// If yes, read current server's small table and store them to hashmap.
+	// if not, send request to other servers
+	if ( pass->req.session->servobj->_localInternalIP == pass->uhost ) {
+		prt(("s20393 read df2 local \n"));
+		JagMergeReader *ntr = NULL;
+		pass->df2->setFamilyRead( ntr, pass->minbuf2, pass->maxbuf2 );
+
+		if ( ntr ) {
+			prt(("s18744 use local ntr\n"));
+			ExprElementNode *root;
+			JagFixString 	sres;
+			int 			rc, tmode = 0, tlength = 0;
+			bool 			needInit = 1;
+			char 			*buf = (char*)jagmalloc( pass->kvlen2+1 );
+			const char 		*buffers[2];
+			Jstr 			ttype= " ";
+
+			memset( buf, 0, pass->kvlen2+1 );
+			prt(("s5982 pass->tabnum2=%d\n", pass->tabnum2 ));
+			if ( pass->tabnum2 ) {
+				buffers[0] = NULL;
+				buffers[1] = buf;
+			} else {
+				buffers[0] = buf;
+				buffers[1] = NULL;
+			}
+
+			while ( ntr->getNext( buf ) ) {
+				// read, check and send	
+				prt(("s0302  buffers[0]=%0x  &buf=%0x buf=[%s]\n", buffers[0], buf, buf ));
+				dbNaturalFormatExchange( buf, pass->numKeys2, pass->attrs2, 0,0, " " ); // db format -> natural format
+				//prt(("s0303  buffers[0]=%0x  &buf=%0x buf=[%s]\n", buffers[0], buf, buf ));
+				if ( pass->parseParam->hasWhere ) {
+					root = pass->parseParam->whereVec[0].tree->getRoot();
+					rc = root->checkFuncValid( ntr, &pass->maps, &pass->attrs, buffers, sres, tmode, ttype, tlength, needInit, 0, 0 );
 				} else {
-					buffers[0] = buf;
-					buffers[1] = NULL;
+					rc = 1;
 				}
-	
-				while ( ntr->getNext( buf ) ) {
-					// read, check and send	
-					//prt(("s0302  buffers[0]=%0x  &buf=%0x buf=[%s]\n", buffers[0], buf, buf ));
-					dbNaturalFormatExchange( buf, pass->numKeys2, pass->attrs2, 0,0, " " ); // db format -> natural format
-					//prt(("s0303  buffers[0]=%0x  &buf=%0x buf=[%s]\n", buffers[0], buf, buf ));
-					if ( pass->parseParam->hasWhere ) {
-						root = pass->parseParam->whereVec[0].tree->getRoot();
-						rc = root->checkFuncValid( ntr, &pass->maps, &pass->attrs, buffers, sres, tmode, ttype, tlength, needInit, 0, 0 );
-					} else {
-						rc = 1;
-					}
 
-					dbNaturalFormatExchange( buf, pass->numKeys2, pass->attrs2, 0,0, " " ); // natural format -> db format
-					if ( rc > 0 ) { // rc may be 1 or 2
-						aoffset = 0;
-						for ( i = 0; i < pass->jsvec2->length(); ++i ) {
-							memcpy(jbuf+aoffset, buf+pass->attrs2[(*(pass->jsvec2))[i]].offset, pass->attrs2[(*(pass->jsvec2))[i]].length);
-							aoffset += pass->attrs2[(*(pass->jsvec2))[i]].length;
-						}
-						// then, append joinkey, original buffers into hashmap
-						val.point( buf, pass->kvlen2 );
-						rc = (pass->hmaps)[hpos].appendValue( key, val );
-						(pass->hmaps)[hpos].getValue( key, val2 );
-					}
-				}
-				if ( buf ) free( buf );
-				if ( ntr ) delete ntr;
-			}
-		} else {
-			if ( jcli->queryDirect( rcmd.c_str(), true, false, false ) == 0 ) {
-				return NULL;
-			}
-			while ( jcli->reply() > 0 ) {
-				if ( checkCmdTimeout( pass->stime, pass->parseParam->timeout ) ) {
-					pass->timeout = 1;
-					while( jcli->reply() > 0 ) {}
-					break;
-				}
-				if ( pass->req.session->sessionBroken ) {
-					pass->timeout = 1;
-					while( jcli->reply() > 0 ) {}
-					break;
-				}
-				offset = 0;
-				p = jcli->getMessage();
-				len = jcli->getMessageLen();
-				while ( offset < len ) {
+				dbNaturalFormatExchange( buf, pass->numKeys2, pass->attrs2, 0,0, " " ); // natural format -> db format
+				if ( rc > 0 ) { // rc may be 1 or 2
 					aoffset = 0;
 					for ( i = 0; i < pass->jsvec2->length(); ++i ) {
-						memcpy(jbuf+aoffset, p+offset+pass->attrs2[(*(pass->jsvec2))[i]].offset, pass->attrs2[(*(pass->jsvec2))[i]].length);
+						memcpy(jbuf+aoffset, buf+pass->attrs2[(*(pass->jsvec2))[i]].offset, pass->attrs2[(*(pass->jsvec2))[i]].length);
 						aoffset += pass->attrs2[(*(pass->jsvec2))[i]].length;
 					}
 					// then, append joinkey, original buffers into hashmap
-					val.point( p+offset, pass->kvlen2 );
-					int rc = (pass->hmaps)[hpos].appendValue( key, val );
-					(pass->hmaps)[hpos].getValue( key, val2 );
-					offset += pass->kvlen2;
+					val.point( buf, pass->kvlen2 );
+					rc = (pass->hmaps)[hpos].appendValue( key, val );
+					//(pass->hmaps)[hpos].getValue( key, val2 ); 
+					prt(("s3028830 hpos=%d hmaps appendValue key=[%s] val=[%s]\n", hpos, key.c_str(), val.c_str() ));
 				}
 			}
+			if ( buf ) free( buf );
+			if ( ntr ) delete ntr;
 		}
 	} else {
-		if ( jcli->queryDirect( rcmd.c_str(), true, false, false ) == 0 ) {
-			return NULL;
+		prt(("s308182 query remote host queryDirect()...\n"));
+		if ( jcli->queryDirect( 0, rcmd.c_str(), rcmd.size(), true, false, false ) == 0 ) {
+			prt(("s102922 queryDirect==0 return NULL\n"));
+			return;
 		}
-		// regular join, get data and join to get result together ( store in jda )
-		ExprElementNode *root;
-		JagMergeReader *jntr = NULL;
-		if ( pass->dfSorted ) {
-			pass->df->setFamilyRead( jntr );
+
+		while ( jcli->reply() > 0 ) {
+			if ( checkCmdTimeout( pass->stime, pass->parseParam->timeout ) ) {
+				pass->timeout = 1;
+				while( jcli->reply() > 0 ) {}
+				break;
+			}
+			if ( pass->req.session->sessionBroken ) {
+				pass->timeout = 1;
+				while( jcli->reply() > 0 ) {}
+				break;
+			}
+			offset = 0;
+			p = jcli->getMessage();
+			len = jcli->getMessageLen();
+			while ( offset < len ) {
+				aoffset = 0;
+				for ( i = 0; i < pass->jsvec2->length(); ++i ) {
+					memcpy(jbuf+aoffset, p+offset+pass->attrs2[(*(pass->jsvec2))[i]].offset, pass->attrs2[(*(pass->jsvec2))[i]].length);
+					aoffset += pass->attrs2[(*(pass->jsvec2))[i]].length;
+				}
+				// then, append joinkey, original buffers into hashmap
+				val.point( p+offset, pass->kvlen2 );
+				(pass->hmaps)[hpos].appendValue( key, val );
+				//(pass->hmaps)[hpos].getValue( key, val2 ); 
+				offset += pass->kvlen2;
+			}
+		}
+	}
+}
+
+// merge two tables
+void JagDBServer::mergeJoinGetData( ParallelJoinPass *pass )
+{
+	prt(("s200837 mergeJoinGetData ...\n"));
+
+	JaguarCPPClient* jcli = (JaguarCPPClient*) jag_hash_lookup ( &pass->hcli->_connMap, pass->uhost.c_str() );
+	int useHash = 0;
+	Jstr rcmd = Jstr("_serv_reqdatajoin|") + intToStr( useHash ) + "|" + intToStr( pass->tabnum2 ) + "|" + pass->jname;
+	jagint offset, len = 0;
+	const char *p = NULL;
+
+	prt(("s36633 not usehash...\n"));
+	if ( jcli->queryDirect( 0, rcmd.c_str(), rcmd.size(), true, false, false ) == 0 ) {
+		return;
+	}
+	// regular join, get data and join to get result together ( store in jda )
+	ExprElementNode *root;
+	JagMergeReader *jntr = NULL;
+	if ( pass->dfSorted ) {
+		pass->df->setFamilyRead( jntr );
+	} else {
+		pass->df->setFamilyRead( jntr, pass->minbuf, pass->maxbuf );
+	}
+
+	if ( jntr ) {
+		prt(("s330066 jntr not NULL\n"));
+		Jstr jdapath = pass->jpath + "/alldata"; 
+		JagFixString sres;
+		int 		wrc, rc, tmode = 0, tlength = 0, vnumKeys[2];
+		bool 		needInit = 1;
+		const char *buffers[2], *buffers2[2];
+		char 		cmpbuf[pass->jlen+1];
+		Jstr 		ttype = " ";
+		const 		JagSchemaAttribute *vattrs[2];
+		int 		goNext[2] = {1, 1};
+
+		char 	*jbuf = (char*)jagmalloc( pass->kvlen+pass->sklen+1 );
+		char 	*buf = (char*)jagmalloc( pass->totlen+1 );	
+		memset( buf, 0, pass->totlen+1 );
+		memset( jbuf, 0, pass->kvlen+pass->sklen+1 );
+		memset( cmpbuf, 0, pass->jlen+1 );
+	
+		if ( pass->tabnum ) {
+			vnumKeys[0] = pass->numKeys2;
+			vnumKeys[1] = pass->numKeys;
+			vattrs[0] = pass->attrs2;
+			vattrs[1] = pass->attrs;
+			buffers[0] = NULL;
+			buffers[1] = jbuf+pass->sklen;
+			buffers2[0] = buf;
+			buffers2[1] = buf+pass->kvlen2;
 		} else {
-			pass->df->setFamilyRead( jntr, pass->minbuf, pass->maxbuf );
+			vnumKeys[0] = pass->numKeys;
+			vnumKeys[1] = pass->numKeys2;
+			vattrs[0] = pass->attrs;
+			vattrs[1] = pass->attrs2;
+			buffers[0] = jbuf+pass->sklen;
+			buffers[1] = NULL;
+			buffers2[0] = buf;
+			buffers2[1] = buf+pass->kvlen;
 		}
-		if ( jntr ) {
-			Jstr jdapath = pass->jpath + "/alldata"; JagFixString sres;
-			int wrc, rc, tmode = 0, tlength = 0, hostLeft = pass->tabnum, vnumKeys[2];
-			bool needInit = 1;
-			const char *buffers[2], *buffers2[2];
-			char cmpbuf[pass->jlen+1];
-			Jstr ttype = " ";
-			const JagSchemaAttribute *vattrs[2];
-			int goNext[2] = {1, 1};
-			char *jbuf = (char*)jagmalloc( pass->kvlen+pass->sklen+1 ), *buf = (char*)jagmalloc( pass->totlen+1 );	
-			memset( buf, 0, pass->totlen+1 );
-			memset( jbuf, 0, pass->kvlen+pass->sklen+1 );
-			memset( cmpbuf, 0, pass->jlen+1 );
 		
-			if ( pass->tabnum ) {
-				vnumKeys[0] = pass->numKeys2;
-				vnumKeys[1] = pass->numKeys;
-				vattrs[0] = pass->attrs2;
-				vattrs[1] = pass->attrs;
-				buffers[0] = NULL;
-				buffers[1] = jbuf+pass->sklen;
-				buffers2[0] = buf;
-				buffers2[1] = buf+pass->kvlen2;
-			} else {
-				vnumKeys[0] = pass->numKeys;
-				vnumKeys[1] = pass->numKeys2;
-				vattrs[0] = pass->attrs;
-				vattrs[1] = pass->attrs2;
-				buffers[0] = jbuf+pass->sklen;
-				buffers[1] = NULL;
-				buffers2[0] = buf;
-				buffers2[1] = buf+pass->kvlen;
+		while ( 1 ) {
+			if ( checkCmdTimeout( pass->stime, pass->parseParam->timeout ) ) {
+				pass->timeout = 1;
+				break;
+			}
+			if ( pass->req.session->sessionBroken ) { 
+				pass->timeout = 1;
+				break; 
 			}
 			
-			while ( 1 ) {
-				if ( checkCmdTimeout( pass->stime, pass->parseParam->timeout ) ) {
-					pass->timeout = 1;
-					break;
-				}
-				if ( pass->req.session->sessionBroken ) { 
-					pass->timeout = 1;
-					break; 
-				}
-				
-				// read data from socket buffer and local merge reader
-				// pay attention, goNext[0] is always from socket buffer
-				if ( goNext[0] > 0 ) {
-					// get next data
-					offset += pass->kvlen2+pass->sklen2;
-					while ( 1 ) {
-						if ( offset >= len ) {
-							if ( jcli->reply() <= 0 ) {
-								goNext[0] = -1;
-								break;
-							} else {
-								offset = 0;
-								p = jcli->getMessage();
-								len = jcli->getMessageLen();
-							}
-						} else {
-							goNext[0] = 0;
+			// read data from socket buffer and local merge reader
+			// pay attention, goNext[0] is always from socket buffer
+			// consider _insertBufferMap
+			if ( goNext[0] > 0 ) {
+				// get next data
+				prt(("s00862  goNext[0] > 0 \n"));
+				offset += pass->kvlen2+pass->sklen2;
+				while ( 1 ) {
+					if ( offset >= len ) {
+						if ( jcli->reply() <= 0 ) {
+							goNext[0] = -1;
 							break;
+						} else {
+							offset = 0;
+							p = jcli->getMessage();
+							len = jcli->getMessageLen();
 						}
-					}
-					if ( goNext[0] < 0 || !p ) break; // reach to the end
-					// after get next position of p, check if it's joinlen jbuf is same to the previous one
-					if ( cmpbuf[0] != '\0' && memcmp( cmpbuf, p+offset, pass->jlen ) == 0 ) {
-						// next data joinlen of buf is same as previous one, move back buffreader for second table
-						cmpbuf[0] = '\0';
-						jntr->getRestartPos();
-						goNext[1] = 1;
-					} else if ( cmpbuf[0] != '\0' && memcmp( cmpbuf, p+offset, pass->jlen ) != 0 ) {
-						// next data joinlen of buf is different from previous one, clean flag
-						cmpbuf[0] = '\0';
-						jntr->setClearRestartPosFlag();
+					} else {
+						goNext[0] = 0;
+						break;
 					}
 				}
-				if ( goNext[1] > 0 ) {
-					// get next line of data ( filter by parseParam if needed )				
-					while ( 1 ) {
-						rc = jntr->getNext(jbuf);
-						if ( !rc ) {
-							// table 1 reaches to the end, get next table 0 data from socket buffer
-							offset += pass->kvlen2+pass->sklen2;
-							while ( 1 ) {
-								if ( offset >= len ) {
-									if ( jcli->reply() <= 0 ) {
-										goNext[0] = -1;
-										break;
-									} else {
-										offset = 0;
-										p = jcli->getMessage();
-										len = jcli->getMessageLen();
-									}
-								} else {
-									goNext[0] = 0;
-									break;
-								}
-							}
-							if ( goNext[0] < 0 ) break; // reaches to the end
-							// if table 0 next buf is different from previous one for joinlen, end and break
-							// otherwise, move back mergereader pointer for table 1 and get next buf for table 1
-							if ( cmpbuf[0] == '\0' || memcmp( cmpbuf, p+offset, pass->jlen ) != 0 ) {
-								goNext[0] = -1;
-								break;
-							}
-							cmpbuf[0] = '\0';
-							jntr->getRestartPos();
-							while ( 1 ) {
-								rc = jntr->getNext(jbuf);
-								if ( !rc ) {
-									// table 1 reaches to the end, break for table 0 next boolean
+
+				if ( goNext[0] < 0 || !p ) break; // reach to the end
+				// after get next position of p, check if it's joinlen jbuf is same to the previous one
+				if ( cmpbuf[0] != '\0' && memcmp( cmpbuf, p+offset, pass->jlen ) == 0 ) {
+					// next data joinlen of buf is same as previous one, move back buffreader for second table
+					cmpbuf[0] = '\0';
+					jntr->moveToRestartPos();
+					goNext[1] = 1;
+					prt(("s100978  jntr->moveToRestartPos(); goNext[1] = 1;\n"));
+				} else if ( cmpbuf[0] != '\0' && memcmp( cmpbuf, p+offset, pass->jlen ) != 0 ) {
+					// next data joinlen of buf is different from previous one, clean flag
+					cmpbuf[0] = '\0';
+					//jntr->setClearRestartPosFlag();
+					jntr->unsetMark();
+					prt(("s120033  cmpbuf[0] = '\0'; jntr->setClearRestartPosFlag()\n" ));
+				}
+			}
+
+			if ( goNext[1] > 0 ) {
+				// get next line of data ( filter by parseParam if needed )				
+				prt(("s231287 goNext[1] > 0 \n"));
+				while ( 1 ) {
+					rc = jntr->getNext(jbuf);
+					if ( !rc ) {
+						// table 1 reaches to the end, get next table 0 data from socket buffer
+						offset += pass->kvlen2+pass->sklen2;
+						while ( 1 ) {
+							if ( offset >= len ) {
+								if ( jcli->reply() <= 0 ) {
 									goNext[0] = -1;
 									break;
-								}
-								if ( pass->dfSorted ) {
-									goNext[1] = 0;
-									break;
-								}
-								// read, check and send				
-								dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // db format -> natural format
-								if ( pass->parseParam->hasWhere ) {
-									root = pass->parseParam->whereVec[0].tree->getRoot();
-									rc = root->checkFuncValid( jntr, &pass->maps, &pass->attrs, buffers, sres, tmode, ttype, tlength, needInit, 0, 0 );
 								} else {
-									rc = 1;
+									offset = 0;
+									p = jcli->getMessage();
+									len = jcli->getMessageLen();
 								}
-								dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // natural format -> db format
-								if ( rc > 0 ) { // rc may be 1 or 2
-									goNext[1] = 0;
-									break;
-								}
+							} else {
+								goNext[0] = 0;
+								break;
 							}
+						}
+						if ( goNext[0] < 0 ) break; // reaches to the end
+						// if table 0 next buf is different from previous one for joinlen, end and break
+						// otherwise, move back mergereader pointer for table 1 and get next buf for table 1
+						if ( cmpbuf[0] == '\0' || memcmp( cmpbuf, p+offset, pass->jlen ) != 0 ) {
+							goNext[0] = -1;
 							break;
 						}
-						if ( pass->dfSorted ) {
-							goNext[1] = 0;
-							break;
+						cmpbuf[0] = '\0';
+						jntr->moveToRestartPos();
+						prt(("s20064  jntr->moveToRestartPos()\n"));
+						while ( 1 ) {
+							rc = jntr->getNext(jbuf);
+							if ( !rc ) {
+								// table 1 reaches to the end, break for table 0 next boolean
+								goNext[0] = -1;
+								break;
+							}
+							if ( pass->dfSorted ) {
+								goNext[1] = 0;
+								break;
+							}
+							// read, check and send				
+							dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // db format -> natural format
+							if ( pass->parseParam->hasWhere ) {
+								root = pass->parseParam->whereVec[0].tree->getRoot();
+								rc = root->checkFuncValid( jntr, &pass->maps, &pass->attrs, buffers, sres, tmode, ttype, tlength, needInit, 0, 0 );
+							} else {
+								rc = 1;
+							}
+							dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // natural format -> db format
+							if ( rc > 0 ) { // rc may be 1 or 2
+								goNext[1] = 0;
+								break;
+							}
 						}
-						// read, check and send				
-						dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // db format -> natural format
-						if ( pass->parseParam->hasWhere ) {
-							root = pass->parseParam->whereVec[0].tree->getRoot();
-							rc = root->checkFuncValid( jntr, &pass->maps, &pass->attrs, buffers, sres, tmode, ttype, tlength, needInit, 0, 0 );
-						} else {
-							rc = 1;
-						}
-						dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // natural format -> db format
-						if ( rc > 0 ) { // rc may be 1 or 2
-							goNext[1] = 0;
-							break;
-						}						
+						break;
 					}
-					if ( goNext[0] < 0 ) break; // reaches to the end
+
+					if ( pass->dfSorted ) {
+						goNext[1] = 0;
+						break;
+					}
+					// read, check and send				
+					dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // db format -> natural format
+					if ( pass->parseParam->hasWhere ) {
+						root = pass->parseParam->whereVec[0].tree->getRoot();
+						rc = root->checkFuncValid( jntr, &pass->maps, &pass->attrs, buffers, sres, tmode, ttype, tlength, needInit, 0, 0 );
+					} else {
+						rc = 1;
+					}
+					dbNaturalFormatExchange( jbuf, pass->numKeys, pass->attrs, 0,0, " " ); // natural format -> db format
+					if ( rc > 0 ) { // rc may be 1 or 2
+						goNext[1] = 0;
+						break;
+					}						
 				}
-				
-				wrc = 0;
-				// compare two buffers and set for innerjoin/leftjoin/rightjoin/fulljoin
-				if ( pass->tabnum ) rc = memcmp( p+offset, jbuf, pass->jlen );		
-				else rc = memcmp( jbuf, p+offset, pass->jlen );
-				if ( rc == 0 ) {
-					// left and right table has the same join key
+				if ( goNext[0] < 0 ) break; // reaches to the end
+			} // end if ( goNext[1] > 0 )
+			
+			wrc = 0;
+			// compare two buffers and set for innerjoin/leftjoin/rightjoin/fulljoin
+			if ( pass->tabnum ) rc = memcmp( p+offset, jbuf, pass->jlen );		
+			else rc = memcmp( jbuf, p+offset, pass->jlen );
+
+			if ( rc == 0 ) {
+				// left and right table has the same join key
+				if ( pass->tabnum ) {
+					memcpy( buf, p+offset+pass->sklen2, pass->kvlen2 );
+					memcpy( buf+pass->kvlen2, jbuf+pass->sklen, pass->kvlen );
+				} else {
+					memcpy( buf, jbuf+pass->sklen, pass->kvlen );
+					memcpy( buf+pass->kvlen, p+offset+pass->sklen2, pass->kvlen2 );
+				}
+				wrc = 1;
+				// move next for the non socket-buffer one, goNext[1]
+				if ( goNext[1] == 0 ) goNext[1] = 1;
+				/**
+				if ( jntr->setRestartPos() ) {
+					memcpy( cmpbuf, p+offset, pass->jlen ); // store current joinlen data, and also set buffreader position
+				}
+				**/
+				if ( ! jntr->isMarked() ) {
+					jntr->setRestartPos();
+					memcpy( cmpbuf, p+offset, pass->jlen ); // store current joinlen data, and also set buffreader position
+				}
+
+				prt(("s2206431  rc == 0\n"));
+			} else if ( rc < 0 ) {
+				// left data is smaller than right data
+				if ( JAG_LEFTJOIN_OP == pass->parseParam->opcode ) {
+					if ( pass->tabnum ) {
+						memcpy( buf, p+offset+pass->sklen2, pass->kvlen2 );
+						memset( buf+pass->kvlen2, 0, pass->kvlen );
+					} else {
+						memcpy( buf, jbuf+pass->sklen, pass->kvlen );
+						memset( buf+pass->kvlen, 0, pass->kvlen2 );
+					}
+					wrc = 1;
+				} else if ( JAG_FULLJOIN_OP == pass->parseParam->opcode ) {
 					if ( pass->tabnum ) {
 						memcpy( buf, p+offset+pass->sklen2, pass->kvlen2 );
 						memcpy( buf+pass->kvlen2, jbuf+pass->sklen, pass->kvlen );
@@ -11235,84 +11261,69 @@ void *JagDBServer::joinRequestStatic( void * ptr )
 						memcpy( buf+pass->kvlen, p+offset+pass->sklen2, pass->kvlen2 );
 					}
 					wrc = 1;
-					// move next for the non socket-buffer one, goNext[1]
-					if ( goNext[1] == 0 ) goNext[1] = 1;
-					if ( jntr->setRestartPos() ) {
-						memcpy( cmpbuf, p+offset, pass->jlen ); // store current joinlen data, and also set buffreader position
-					}
-				} else if ( rc < 0 ) {
-					// left data is smaller than right data
-					if ( JAG_LEFTJOIN_OP == pass->parseParam->opcode ) {
-						if ( pass->tabnum ) {
-							memcpy( buf, p+offset+pass->sklen2, pass->kvlen2 );
-							memset( buf+pass->kvlen2, 0, pass->kvlen );
-						} else {
-							memcpy( buf, jbuf+pass->sklen, pass->kvlen );
-							memset( buf+pass->kvlen, 0, pass->kvlen2 );
-						}
-						wrc = 1;
-					} else if ( JAG_FULLJOIN_OP == pass->parseParam->opcode ) {
-						if ( pass->tabnum ) {
-							memcpy( buf, p+offset+pass->sklen2, pass->kvlen2 );
-							memcpy( buf+pass->kvlen2, jbuf+pass->sklen, pass->kvlen );
-						} else {
-							memcpy( buf, jbuf+pass->sklen, pass->kvlen );
-							memcpy( buf+pass->kvlen, p+offset+pass->sklen2, pass->kvlen2 );
-						}
-						wrc = 1;
-					}
-					if ( pass->tabnum && 0 == goNext[0] ) {
-						goNext[0] = 1;
-					} else if ( !pass->tabnum && 0 == goNext[1] ) {
-						goNext[1] = 1;
-					}
-				} else {
-					// left data is larger that right data
-					if ( JAG_RIGHTJOIN_OP == pass->parseParam->opcode ) {
-						if ( pass->tabnum ) {
-							memset( buf, 0, pass->kvlen2 );
-							memcpy( buf+pass->kvlen2, jbuf+pass->sklen, pass->kvlen );
-						} else {
-							memset( buf, 0, pass->kvlen );
-							memcpy( buf+pass->kvlen, p+offset+pass->sklen2, pass->kvlen2 );
-						}
-						wrc = 1;	
-					} else if ( JAG_FULLJOIN_OP == pass->parseParam->opcode ) {			
-						if ( pass->tabnum ) {
-							memcpy( buf, p+offset+pass->sklen2, pass->kvlen2 );
-							memcpy( buf+pass->kvlen2, jbuf+pass->sklen, pass->kvlen );
-						} else {
-							memcpy( buf, jbuf+pass->sklen, pass->kvlen );
-							memcpy( buf+pass->kvlen, p+offset+pass->sklen2, pass->kvlen2 );
-						}
-						wrc = 1;
-					}
-					if ( pass->tabnum && 0 == goNext[1] ) {
-						goNext[1] = 1;
-					} else if ( !pass->tabnum && 0 == goNext[0] ) {
-						goNext[0] = 1;
-					}
 				}
-				
-				dbNaturalFormatExchange( (char**)buffers2, 2, vnumKeys, vattrs ); // db format -> natural format
-				// at last, need to make sure data is valid with where before store it
-				if ( pass->parseParam->hasWhere ) {
-					root = pass->parseParam->whereVec[0].tree->getRoot();
-					rc = root->checkFuncValid( jntr, &pass->maps, &pass->attrs, buffers2, sres, tmode, ttype, tlength, needInit, 0, 0 );
-				} else {
-					rc = 1;
+
+				prt(("s2206431  rc < 0\n"));
+
+				if ( pass->tabnum && 0 == goNext[0] ) {
+					goNext[0] = 1;
+				} else if ( !pass->tabnum && 0 == goNext[1] ) {
+					goNext[1] = 1;
 				}
-				if ( wrc && rc ) pass->jda->writeit( jdapath, buf, pass->totlen, NULL, true );
+			} else {
+				// left data is larger that right data
+				if ( JAG_RIGHTJOIN_OP == pass->parseParam->opcode ) {
+					if ( pass->tabnum ) {
+						memset( buf, 0, pass->kvlen2 );
+						memcpy( buf+pass->kvlen2, jbuf+pass->sklen, pass->kvlen );
+					} else {
+						memset( buf, 0, pass->kvlen );
+						memcpy( buf+pass->kvlen, p+offset+pass->sklen2, pass->kvlen2 );
+					}
+					wrc = 1;	
+				} else if ( JAG_FULLJOIN_OP == pass->parseParam->opcode ) {			
+					if ( pass->tabnum ) {
+						memcpy( buf, p+offset+pass->sklen2, pass->kvlen2 );
+						memcpy( buf+pass->kvlen2, jbuf+pass->sklen, pass->kvlen );
+					} else {
+						memcpy( buf, jbuf+pass->sklen, pass->kvlen );
+						memcpy( buf+pass->kvlen, p+offset+pass->sklen2, pass->kvlen2 );
+					}
+					wrc = 1;
+				}
+				prt(("s2206431  rc > 0\n"));
+				if ( pass->tabnum && 0 == goNext[1] ) {
+					goNext[1] = 1;
+				} else if ( !pass->tabnum && 0 == goNext[0] ) {
+					goNext[0] = 1;
+				}
 			}
-			if ( buf ) free( buf );
-			if ( jbuf ) free( jbuf );
-			if ( jntr ) delete jntr;
-			if ( goNext[0] >= 0 ) {
-				while ( jcli->reply() > 0 ) {}
+			
+			dbNaturalFormatExchange( (char**)buffers2, 2, vnumKeys, vattrs ); // db format -> natural format
+			// at last, need to make sure data is valid with where before store it
+			if ( pass->parseParam->hasWhere ) {
+				root = pass->parseParam->whereVec[0].tree->getRoot();
+				rc = root->checkFuncValid( jntr, &pass->maps, &pass->attrs, buffers2, sres, tmode, ttype, tlength, needInit, 0, 0 );
+			} else {
+				rc = 1;
 			}
+			//if ( wrc && rc ) pass->jda->writeit( jdapath, buf, pass->totlen, NULL, true );
+			if ( wrc && rc ) pass->jda->writeit( 0, buf, pass->totlen, NULL, true );
 		}
+
+		if ( buf ) free( buf );
+		if ( jbuf ) free( jbuf );
+		if ( jntr ) delete jntr;
+		if ( goNext[0] >= 0 ) {
+			prt(("s209812 while reply() ...\n"));
+			while ( jcli->reply() > 0 ) {} //
+			prt(("s209812 while reply() done\n"));
+		}
+	} else {
+		prt(("s330016 jntr is NULL\n"));
 	}
 }
+
 
 // for each join request, begin processing and send requested data block batch
 // pmesg: "_serv_reqdatajoin|useHash|reqtabnum|jname"
@@ -11345,7 +11356,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 		return;
 	}
 	
-	abaxint sklen = pair.key.key.value(), kvlen = pair.key.value.key.value(), numKeys = pair.key.value.value.value();
+	jagint sklen = pair.key.key.value(), kvlen = pair.key.value.key.value(), numKeys = pair.key.value.value.value();
 	const char *minbuf = pair.value.key.key.c_str(), *maxbuf = pair.value.key.value.c_str();
 	JagDiskArrayFamily *df = (JagDiskArrayFamily*)pair.value.value.key.value();
 	const JagSchemaAttribute *attrs = (const JagSchemaAttribute*)pair.value.value.value.key.value();
@@ -11364,7 +11375,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 		ExprElementNode *root;
 		JagFixString sres;
 		int rc, tmode = 0, tlength = 0;
-		abaxint boffset = 0, totlen = sklen+kvlen, totbytes = jagatoll(_cfg->getValue("JOIN_BATCH_LINE", "100000").c_str())*totlen;
+		jagint boffset = 0, totlen = sklen+kvlen, totbytes = jagatoll(_cfg->getValue("JOIN_BATCH_LINE", "100000").c_str())*totlen;
 		bool needInit = 1;
 		char *bbuf = (char*)jagmalloc( totbytes+1 ), *buf = (char*)jagmalloc( totlen+1 );
 		const char *buffers[2];
@@ -11423,7 +11434,7 @@ void JagDBServer::joinRequestSend( const char *mesg, const JagRequest &req )
 #ifdef _WINDOWS64_
 void JagDBServer::printResources() 
 {
-	abaxint totm, freem, used; //GB
+	jagint totm, freem, used; //GB
 	JagSystem::getMemInfo( totm, freem, used );
 	int maxopen = _getmaxstdio();
 	_setmaxstdio(2048);
@@ -11495,7 +11506,7 @@ void JagDBServer::getTableIndexSchema( int replicateType, JagTableSchema *& tabl
 // "alter ... "
 int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const JagRequest &req )
 {
-	abaxint rc = 0, cnt = 0, onedc = 0;
+	jagint rc = 0, cnt = 0, onedc = 0;
 	sucsync = true;
 	// prt(("s6380 synchToOtherDataCenters begin _numDataCenter=%d mesg=[%s]\n", _numDataCenter, mesg ));
 	// need to check if mesg is insertsyncdconly, if yes, sync only to requested datacenter; otherwise, sync all
@@ -11538,7 +11549,7 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 		// prt(("s2338 useindex.append(%d)\n", i ));
 	}
 	
-	if ( 0 == strncasecmp( pp, "sinsert", 7 ) && _isGate ) {
+	if ( 0 == strncasecmp( pp, "finsert", 7 ) && _isGate ) {
 		if ( req.session->replicateType != 0 ) {
 			// if not main server ( not replicate server ), do not sync
 			// prt(("s6381 synchToOtherDataCenters done cnt=0\n" ));
@@ -11559,16 +11570,14 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 			}
 		}
 
-		abaxint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT; ssize_t rlen = 0;
+		jagint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT; ssize_t rlen = 0;
 		char *newbuf = NULL, *nbuf = NULL; 
 		int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
-		char hdr[hdrsz+1], ebuf[JAG_ONEFILESIGNAL+1];
+		char hdr[hdrsz+1];
 		while ( 1 ) {
 			// recv one peice from client, send to another server, then waiting for server's reply, send back to client;
 			// only repeat recv peices from client and send one by one to another server during file transfer
-			// prt(("s2402 recvData ...\n" ));
-			rlen = recvData( req.session->sock, hdr, newbuf );
-			// prt(("s7734 recvData newbuf=[%s]\n", newbuf ));
+			rlen = recvMessage( req.session->sock, hdr, newbuf );
 			if ( rlen < 0 ) {
 				break;
 			} else if ( rlen == 0 || ( hdr[hdrsz-3] == 'H' && hdr[hdrsz-2] == 'B' ) ) {
@@ -11592,7 +11601,6 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 					rc = _dataCenter[useindex[i]]->sendDirectToSockAll( nbuf, rlen );
 					// prt(("s2939 sendDirectToSockAll done nbuf=[%s]\n", nbuf ));
 					// rc = _dataCenter[useindex[i]]->recvDirectFromSockAll( rbuf, hdr );
-					// prt(("s7737 recvData rbuf=[%s]\n", rbuf ));
 				}
 
 				// else, while to recv pieces
@@ -11606,13 +11614,13 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 					} else {
 						recvlen = memsize;
 					}
-					// prt(("s3039 recvData ...\n" ));
-					rlen = recvData( req.session->sock, mbuf, recvlen );
+					rlen = recvRawData( req.session->sock, mbuf, recvlen );
 					// prt(("s7739 recvData mbuf=[%s]\n", mbuf ));
 					if ( rlen >= recvlen ) {
 						for ( int i = 0; i < useindex.size(); ++i ) {
 							// prt(("s9344 sendDirectToSockAll mbuf=[%s]\n", mbuf ));
 							rlen = _dataCenter[useindex[i]]->sendDirectToSockAll( mbuf, recvlen, true );
+							// nohdr is true, send raw data without sqlhdr
 							// prt(("s7740 sendData mbuf=[%s]\n", mbuf ));
 						}		
 					} else {
@@ -11632,7 +11640,7 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 				memcpy( nbuf, newbuf, rlen ); nbuf[rlen] = '\0';
 				for ( int i = 0; i < useindex.size(); ++i ) {
 					// prt(("s7745 sendDirectToSockAll nbuf=[%s] rlen=%d ...\n", nbuf, rlen ));
-					rlen = _dataCenter[useindex[i]]->sendDirectToSockAll( nbuf, rlen );
+					rlen = _dataCenter[useindex[i]]->sendRawDirectToSockAll( nbuf, rlen );
 					// prt(("s7745 sendDirectToSockAll nbuf=[%s] rlen=%d done\n", nbuf, rlen ));
 				}
 				if ( nbuf ) { free( nbuf ); nbuf = NULL; }
@@ -11672,9 +11680,9 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 			++cnt;
 		}
 	} else {
-		// sinsert not gate
+		// finsert not gate
 		// prt(("s7308 pp=[%s]\n", pp ));
-		if ( 0 == strncasecmp( pp, "sinsert", 7 ) ) {
+		if ( 0 == strncasecmp( pp, "finsert", 7 ) ) {
 			++pp;
 			if ( req.session->replicateType != 0 ) {
 				// if not main server ( not replicate server, do sync
@@ -11726,11 +11734,11 @@ int JagDBServer::synchToOtherDataCenters( const char *mesg, bool &sucsync, const
 int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *mesg, const JagParseParam &pparam )
 {
 	const char *pmsg;
-	abaxint msglen;
-	JagDataAggregate *jda = NULL;
+	jagint msglen;
+	//JagDataAggregate *jda = NULL;
 	Jstr dbobj = longToStr( THREADID ) + ".tmp";
 	
-	abaxint rc = 0, cnt = 0, useindex = -1, hasX1 = false;
+	jagint rc = 0, cnt = 0, useindex = -1, hasX1 = false;
 	raydebug( stdout, JAG_LOG_HIGH, "s6380 synchFromOtherDataCenters begin _numDataCenter=%d mesg=[%s]\n", _numDataCenter, mesg );
 	
 	for ( int i = 0; i < _numDataCenter; ++i ) {
@@ -11756,16 +11764,14 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 		rc = _dataCenter[useindex]->query( mesg );
 		// prt(("s7733 query(%s) done rc=%d\n",  mesg, rc ));
 		if ( rc > 0 ) {
-			abaxint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT; ssize_t rlen = 0;
+			jagint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT; ssize_t rlen = 0;
 			int hdrsz = JAG_SOCK_TOTAL_HDR_LEN;
-			char *newbuf = NULL, *nbuf = NULL;  char hdr[hdrsz+1], ebuf[JAG_ONEFILESIGNAL+1];
+			char *newbuf = NULL, *nbuf = NULL;  char hdr[hdrsz+1];
 			while ( 1 ) {
 				// recv one peice from another HOST, send to client, then waiting for client's reply, send back to another HOST;
 				// only repeat recv peices from HOST and send one by one to client during file transfer
 				memset( hdr, 0, hdrsz+1);
-				//prt(("s3039 _dataCenter useindex=%d recvDirectFromSockAll ....\n", useindex ));
 				rlen = _dataCenter[useindex]->recvDirectFromSockAll( newbuf, hdr );
-				// prt(("s6122 _dataCenter recvDirectFromSockAll hdr=[%s]  newbuf=[%s]\n", hdr, newbuf ));
 				if ( rlen < 0 ) {
 					// prt(("s4028 recvDirectFromSockAll rlen<0 break\n" ));
 					break;
@@ -11809,7 +11815,7 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 						} else {
 							recvlen = memsize;
 						}
-						rlen = _dataCenter[useindex]->recvDirectFromSockAll( mbuf, recvlen );
+						rlen = _dataCenter[useindex]->recvRawDirectFromSockAll( mbuf, recvlen );
 						if ( rlen >= recvlen ) {
 							rlen = sendDirectToSock( req.session->sock, mbuf, recvlen, true ); 
 						} else {
@@ -11818,24 +11824,20 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 						totlen += rlen;
 					}
 					if ( mbuf ) { free( mbuf ); mbuf = NULL; }
-					//prt(("s6291 reved data done totlen=%d\n", totlen ));
 				} else {
 					if ( 0 == strncmp( newbuf, "_BEGINFILEUPLOAD_", 17 ) ) { rc = 10; }
 					else if ( 0 == strncmp( newbuf, "_ENDFILEUPLOAD_", 15 ) ) { rc = 20; }
 					else { rc = 30; }
-					//prt(("s2839 recved newbuf=[%s]\n", newbuf ));
 					nbuf = (char*)jagmalloc( rlen+1 );
 					memcpy( nbuf, newbuf, rlen ); nbuf[rlen] = '\0';
-					//prt(("s5892 sendDirectToSock nbuf=[%s] rlen=%d\n", nbuf, rlen ));
 					rlen = sendDirectToSock( req.session->sock, nbuf, rlen ); 
-					//prt(("s5892 sendDirectToSock nbuf=[%s] rlen=%d done\n", nbuf, rlen ));
 					if ( nbuf ) { free( nbuf ); nbuf = NULL; }
 					if ( 10 != rc && 20 != rc ) {
 					}
 
 					if ( 20 == rc ) {
 						// end, break while
-						// prt(("s5233 got _ENDFILEUPLOAD_ break\n" ));
+						// prt(("s105233 got _ENDFILEUPLOAD_ break\n" ));
 						break;
 					}
 				}
@@ -11843,9 +11845,9 @@ int JagDBServer::synchFromOtherDataCenters( const JagRequest &req, const char *m
 			if ( newbuf ) { free( newbuf ); newbuf = NULL; }
 			if ( nbuf ) { free( nbuf ); nbuf = NULL; }
 
-			// prt(("s7383 _dataCenter replyAll...\n"));
+			// prt(("s73383 _dataCenter replyAll...\n"));
 			_dataCenter[useindex]->replyAll();
-			// prt(("s7383 _dataCenter replyAll done\n"));
+			// prt(("s73383 _dataCenter replyAll done\n"));
 
 			if ( _dataCenter[useindex]->allSocketsBad() ) {
 				JagStrSplit sp( _centerHostPort[useindex], ':');
@@ -11993,7 +11995,7 @@ void JagDBServer::openDataCenterConnection()
 			if ( 0 == rc ) {
 				raydebug( stdout, JAG_LOG_LOW, "Error connect to datacenter [%s], %s, retry %d/%d ...\n", 
 					uphost.c_str(),  _dataCenter[_numDataCenter]->error(), trynum, MAXTRY );
-				sleep(10);
+				jagsleep(10, JAG_SEC );
 			}
 			++trynum;
 		}
@@ -12105,7 +12107,7 @@ void JagDBServer::reconnectDataCenter( const Jstr &ip, bool doLock )
 			if ( 0 == rc ) {
 				raydebug( stdout, JAG_LOG_LOW, 
 						  "Error connect to datacenter [%s], %s, retry %d/%d ...\n", host.c_str(), _dataCenter[i]->error(), trynum, MAXTRY );
-				sleep(10);
+				jagsleep(10, JAG_SEC );
 			}
 			++trynum;
 		}
@@ -12172,7 +12174,7 @@ int JagDBServer::countOtherDataCenters()
 	return cnt;
 }
 
-void JagDBServer::refreshDataCenterConnections( abaxint seq )
+void JagDBServer::refreshDataCenterConnections( jagint seq )
 {
 	int rc;
 	int newCnt = countOtherDataCenters();
@@ -12217,13 +12219,13 @@ void JagDBServer::checkAndCreateThreadGroups()
 {
 	#ifdef DEVDEBUG
 	raydebug( stdout, JAG_LOG_HIGH, "s5328 activeClients=%l activeThreads=%l\n", 
-			  (abaxint)_activeClients, (abaxint)_activeThreadGroups );
+			  (jagint)_activeClients, (jagint)_activeThreadGroups );
     #endif
 
-	abaxint percent = 70;
-	if ( abaxint(_activeClients) * 100 >= percent * (abaxint)_activeThreadGroups ) {
+	jagint percent = 70;
+	if ( jagint(_activeClients) * 100 >= percent * (jagint)_activeThreadGroups ) {
 		raydebug( stdout, JAG_LOG_LOW, "s3380 create new threads activeClients=%l activeGrps=%l makeThreadGroups(%l) ...\n",
-				(abaxint) _activeClients, (abaxint)_activeThreadGroups, _threadGroupSeq );
+				(jagint) _activeClients, (jagint)_activeThreadGroups, _threadGroupSeq );
 		makeThreadGroups( _threadGroups, _threadGroupSeq++ );
 	}
 }
@@ -12275,7 +12277,7 @@ Jstr JagDBServer::srcDestType( int isGate, const Jstr &destType )
 	return conn;
 }
 
-void JagDBServer::refreshUserDB( abaxint seq )
+void JagDBServer::refreshUserDB( jagint seq )
 {
 	if ( ( seq % 10 ) != 0 ) return;
 
@@ -12292,7 +12294,7 @@ void JagDBServer::refreshUserDB( abaxint seq )
 	}
 }
 
-void JagDBServer::refreshUserRole( abaxint seq )
+void JagDBServer::refreshUserRole( jagint seq )
 {
 	if ( ( seq % 10 ) != 0 ) return;
 
@@ -12313,10 +12315,10 @@ void JagDBServer::refreshUserRole( abaxint seq )
 // methods will affect userrole or schema
 // static  
 void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj, 
-	const JagParseParam &parseParam, abaxint threadQueryTime )
+							 const JagParseParam &parseParam, jagint threadQueryTime )
 {
 	// prt(("s3722 grantPerm obj=[%s] ...\n", parseParam.grantObj.c_str() ));
-	abaxint len;
+	//jagint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr uid  = parseParam.grantUser;
@@ -12339,7 +12341,7 @@ void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj,
 			// db.tab.col  check DB
 			if ( ! servobj->dbExist( sp[0], req.session->replicateType ) ) {
 				cond[0] = 'N'; cond[1] = 'G';
-				// prt(("s0391 db=[%s] does not exist\n", sp[0].c_str() ));
+				// prt(("s0391 db=[%s] not found\n", sp[0].c_str() ));
 			} else if (  sp[1] != "*" ) {
 				if ( ! servobj->objExist( sp[0], sp[1], req.session->replicateType ) ) {
 					cond[0] = 'N'; cond[1] = 'G';
@@ -12362,7 +12364,7 @@ void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj,
 	if ( uiddb ) {
 		if ( ! uiddb->exist( uid ) ) {
 			cond[0] = 'N'; cond[1] = 'G';
-			// prt(("s0394 user does not exist\n" ));
+			// prt(("s0394 user not found\n" ));
 		} 
 	} else {
 		cond[0] = 'N'; cond[1] = 'G';
@@ -12381,7 +12383,7 @@ void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj,
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -12394,22 +12396,21 @@ void JagDBServer::grantPerm( JagRequest &req, JagDBServer *servobj,
 	}
 	req.session->spCommandReject = 0;
 
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	if ( uidrole ) {
 		uidrole->addRole( uid, sp[0], sp[1], sp[2], parseParam.grantPerm, parseParam.grantWhere );
 	} else {
 		// prt(("s5835 no addrole\n"));
 	}
-	jaguar_mutex_unlock ( &g_dbmutex );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
 	servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 	servobj->schemaChangeCommandSyncRemove( scdbobj ); 
 }
 
 // static  
 void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj, 
-	const JagParseParam &parseParam, abaxint threadQueryTime )
+	const JagParseParam &parseParam, jagint threadQueryTime )
 {
-	abaxint len;
 	char cond[3] = { 'N', 'G', '\0' };
 	req.session->spCommandReject = 1;
 	Jstr uid = parseParam.grantUser;
@@ -12437,13 +12438,13 @@ void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj,
 	else if ( req.session->replicateType == 1 ) uiddb = servobj->_prevuserDB;
 	else if ( req.session->replicateType == 2 ) uiddb = servobj->_nextuserDB;
 
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	bool rc = false;
 	if ( uiddb ) {
 		rc = uiddb->exist( uid );
 	}
 	// prt(("s3123 exist rc=%d\n", rc ));
-	jaguar_mutex_unlock ( &g_dbmutex );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
 	if ( ! rc ) {
 		cond[0] = 'N'; cond[1] = 'G';
 	}
@@ -12458,7 +12459,7 @@ void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj,
 		// waiting for signal; if NG, reject and return
  		char hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 		char *newbuf = NULL;
-		if ( recvData( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
+		if ( recvMessage( req.session->sock, hdr, newbuf ) < 0 || *(newbuf) != 'O' || ( *(newbuf+1) != 'K' && *(newbuf+1) != 'N' ) ) {
 			if ( newbuf ) free( newbuf );
 			servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 			servobj->schemaChangeCommandSyncRemove( scdbobj );
@@ -12470,13 +12471,13 @@ void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj,
 	}
 	req.session->spCommandReject = 0;
 	
-	JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	rc = false;
 	if ( uidrole ) {
 		rc = uidrole->dropRole( uid, sp[0], sp[1], sp[2], parseParam.grantPerm );
 	}
 	// prt(("s3123 dropRole rc=%d\n", rc ));
-	jaguar_mutex_unlock ( &g_dbmutex );
+	jaguar_mutex_unlock ( &g_dbschemamutex );
 	servobj->_objectLock->writeUnlockSchema( req.session->replicateType );
 	servobj->schemaChangeCommandSyncRemove( scdbobj );
 }
@@ -12484,7 +12485,7 @@ void JagDBServer::revokePerm( JagRequest &req, JagDBServer *servobj,
 // method read affect userrole or schema
 // static  
 void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj, 
-	const JagParseParam &parseParam, abaxint threadQueryTime )
+	const JagParseParam &parseParam, jagint threadQueryTime )
 {
 	//prt(("s3722 showPerm ...\n" ));
 	Jstr uid  = parseParam.grantUser;
@@ -12506,7 +12507,7 @@ void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj,
 	else if ( req.session->replicateType == 2 ) uidrole = servobj->_nextuserRole;
 
 
-	// JAG_BLURT jaguar_mutex_lock ( &g_dbmutex ); JAG_OVER;
+	// JAG_BLURT jaguar_mutex_lock ( &g_dbschemamutex ); JAG_OVER;
 	Jstr perms;
 	if ( uidrole ) {
 		perms = uidrole->showRole( uid );
@@ -12516,7 +12517,7 @@ void JagDBServer::showPerm( JagRequest &req, JagDBServer *servobj,
 
 	// prt(("s2473 perms=[%s] send to cleint\n", perms.c_str() ));
 	sendMessageLength( req, perms.c_str(), perms.length(), "DS" );
-	// jaguar_mutex_unlock ( &g_dbmutex );
+	// jaguar_mutex_unlock ( &g_dbschemamutex );
 }
 
 bool JagDBServer::checkUserCommandPermission( JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
@@ -12570,7 +12571,7 @@ Jstr JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column,
 {
 	char buf[512];
 	Jstr type = column.type;
-	int  offset = column.length;
+	//int  offset = column.length;
 	int  len = column.length;
 	int  sig = column.sig;
 	int  srid = column.srid;
@@ -12617,6 +12618,9 @@ Jstr JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column,
 			res += buf;
 		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO ) {
 			sprintf( buf, "datetimenano" );
+			res += buf;
+		} else if ( type == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
+			sprintf( buf, "timestampnano" );
 			res += buf;
 		} else if ( type == JAG_C_COL_TYPE_TIMENANO ) {
 			sprintf( buf, "timenano" );
@@ -12692,13 +12696,13 @@ Jstr JagDBServer::fillDescBuf( const JagSchema *schema, const JagColumn &column,
 				sprintf( buf, "range" );
 			}
 			res += buf;
-		} else if ( column.spare[1] == JAG_C_COL_TYPE_UUID_CHAR ) {
+		} else if ( column.spare[1] == JAG_C_COL_TYPE_UUID[0] ) {
 			sprintf( buf, "uuid" );
 			res += buf;
-		} else if ( column.spare[1] == JAG_C_COL_TYPE_FILE_CHAR ) {
+		} else if ( column.spare[1] == JAG_C_COL_TYPE_FILE[0] ) {
 			sprintf( buf, "file" );
 			res += buf;
-		} else if ( column.spare[1] == JAG_C_COL_TYPE_ENUM_CHAR ) {
+		} else if ( column.spare[1] == JAG_C_COL_TYPE_ENUM[0] ) {
 			Jstr defvalStr;
 			Jstr enumstr =  "enum(";
 			schema->getAttrDefVal( dbcol, defvalStr );
@@ -12779,4 +12783,653 @@ int JagDBServer::processSelectConstData( const JagRequest &req, const JagParsePa
 		} else {
 			return 0;
 		}
+}
+
+// static
+void JagDBServer::processInternalCommands( int rc, const JagRequest &req, JagDBServer *servobj, const char *pmesg )
+{
+	if ( JAG_SCMD_NOOP == rc ) {
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_CSCHEMA == rc ) {
+		servobj->sendMapInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+		/***
+	} else if ( JAG_SCMD_CDEFVAL == rc ) {
+		servobj->sendMapInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+		***/
+	} else if ( JAG_SCMD_CHOST == rc ) {
+		servobj->sendHostInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_CRECOVER == rc ) {
+		servobj->cleanRecovery( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_CHECKDELTA == rc ) {
+		servobj->checkDeltaFiles( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_BFILETRANSFER == rc ) {
+		JagStrSplit sp( pmesg, '|', true );
+		if ( sp.length() >= 4 ) {
+			int fpos = atoi(sp[1].c_str());
+			if ( fpos < 10 ) {
+				servobj->recoveryFileReceiver( pmesg, req );
+			} else if ( fpos >= 10 && fpos < 20 ) {
+				// should not get this
+				servobj->walFileReceiver( pmesg, req );
+			}
+		}
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_ABFILETRANSFER == rc ) {
+		servobj->recoveryFileReceiver( pmesg, req );
+		servobj->_addClusterFlag = 1;
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_JOINDATAREQUEST == rc ) {
+		servobj->joinRequestSend( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );					
+	} else if ( JAG_SCMD_OPINFO == rc ) {
+		servobj->sendOpInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_COPYDATA == rc ) {
+		servobj->doCopyData( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_REFRESHACL == rc ) {
+		servobj->doRefreshACL( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_REQSCHEMAFROMDC == rc ) {
+		servobj->sendSchemaToDataCenter( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_UNPACKSCHINFO == rc ) {
+		servobj->unpackSchemaInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_ASKDATAFROMDC == rc ) {
+		servobj->askDataFromDC( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_PREPAREDATAFROMDC == rc ) {
+		servobj->prepareDataFromDC( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_DOLOCALBACKUP == rc ) {
+		servobj->doLocalBackup( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_DOREMOTEBACKUP == rc ) {
+		servobj->doRemoteBackup( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_DORESTOREREMOTE == rc ) {				
+		servobj->doRestoreRemote( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONDBTAB == rc ) {
+		servobj->dbtabInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONINFO == rc ) {
+		servobj->sendInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONRSINFO == rc ) {
+		servobj->sendResourceInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONCLUSTERINFO == rc ) {
+		servobj->sendClusterOpInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONHOSTS == rc ) {
+		servobj->sendHostsInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONBACKUPHOSTS == rc ) {
+		servobj->sendRemoteHostsInfo( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONLOCALSTAT == rc ) {
+		servobj->sendLocalStat6( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_MONCLUSTERSTAT == rc ) {
+		servobj->sendClusterStat6( pmesg, req );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	} else if ( JAG_SCMD_EXPROCLOCALBACKUP == rc ) {
+		// no _END_ ED sent, already sent in method
+		servobj->processLocalBackup( pmesg, req );
+	} else if ( JAG_SCMD_EXPROCREMOTEBACKUP == rc ) {
+		// no _END_ ED sent, already sent in method
+		servobj->processRemoteBackup( pmesg, req );
+	} else if ( JAG_SCMD_EXRESTOREFROMREMOTE == rc ) {
+		// no _END_ ED sent, already sent in method
+		servobj->processRestoreRemote( pmesg, req );
+	} else if ( JAG_SCMD_EXADDCLUSTER == rc ) {
+		// no _END_ ED sent, already sent in method
+		servobj->addCluster( pmesg, req );
+		if ( !req.session->origserv && !servobj->_restartRecover ) {
+			servobj->broadcastHostsToClients();
+		}
+	} else if ( JAG_SCMD_EXADDCLUSTER_MIGRATE == rc ) {
+		servobj->addClusterMigrate( pmesg, req );
+	} else if ( JAG_SCMD_EXADDCLUSTER_MIGRATE_CONTINUE == rc ) {
+		servobj->addClusterMigrateContinue( pmesg, req );
+	} else if ( JAG_SCMD_EXADDCLUSTER_MIGRATE_COMPLETE == rc ) {
+		servobj->addClusterMigrateComplete( pmesg, req );
+	} else if ( JAG_SCMD_IMPORTTABLE == rc ) {
+		servobj->importTableDirect( pmesg, req );
+	} else if ( JAG_SCMD_TRUNCATETABLE == rc ) {
+		servobj->truncateTableDirect( pmesg, req );
+	} else if ( JAG_SCMD_EXSHUTDOWN == rc ) {
+		// no _END_ ED sent, already sent in method
+		servobj->shutDown( pmesg, req );
+	} else if ( JAG_SCMD_GETPUBKEY == rc ) {
+		// no _END_ ED sent, already sent in method
+		prt(("s112923 JAG_SCMD_GETPUBKEY==rc send pubkey=[%s]\n", servobj->_publicKey.c_str() ));
+		sendMessage( req, servobj->_publicKey.c_str(), "DS" );
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+	}				
+
+}
+
+// static
+// return < 0 for break; else for continue
+int JagDBServer::processSimpleCommand( int simplerc, JagRequest &req, char *pmesg, JagDBServer *servobj, int &authed )
+{
+	int rc = 0;
+	while ( 1 ) {
+    	if ( ! authed && JAG_RCMD_AUTH != simplerc ) {
+    		sendMessage( req, "_END_[T=20|E=Not authed before requesting query]", "ER" );
+			rc = -10;
+    		break;
+    	}
+
+		char *tok;
+		char *saveptr;
+    	if ( JAG_RCMD_HELP == simplerc ) {
+    		tok = strtok_r( pmesg, " ;", &saveptr );
+    		tok = strtok_r( NULL, " ;", &saveptr );
+    		if ( tok ) { helpTopic( req, tok ); } 
+    		else { helpPrintTopic( req ); }
+    		sendMessage( req, "_END_[T=10|E=]", "ED" );				
+    	} else if ( JAG_RCMD_USE == simplerc ) {
+    		// no _END_ ED sent, already sent in method
+    		//useDB( req, servobj, pmesg, saveptr );
+    		useDB( req, servobj, pmesg );
+    	} else if ( JAG_RCMD_AUTH == simplerc ) {
+    		if ( doAuth( req, servobj, pmesg ) ) {
+    			// serv->serv still needs the insert pool when built init index from table
+    			authed = 1; 
+    			struct timeval now;
+    			gettimeofday( &now, NULL );
+    			req.session->connectionTime = now.tv_sec * (jagint)1000000 + now.tv_usec;
+
+				if ( !req.session->origserv && !servobj->_restartRecover ) {
+					servobj->_clientSocketMap.addKeyValue( req.session->sock, 1 );
+				}
+
+    		} else {
+    			req.session->active = 0;
+				rc = -20;
+    			break;
+    		}		
+    	} else if ( JAG_RCMD_QUIT == simplerc ) {
+    		noLinger( req );
+    		if ( req.session->exclusiveLogin ) {
+    			servobj->_exclusiveAdmins = 0;
+    		}
+			rc = -30;
+    		break;
+    	} else if ( JAG_RCMD_HELLO == simplerc ) {
+			char hellobuf[128];
+			char brand[32];
+			sprintf(brand, "jaguar" );
+			brand[0] = toupper( brand[0] );
+    		sprintf( hellobuf, "%s Server %s", brand, servobj->_version.c_str() );
+    		rc = sendMessage( req, hellobuf, "OK");  // SG: Server Greeting
+    		sendMessage( req, "_END_[T=20|E=]", "ED" );
+    		req.session->fromShell = 1;
+    	}
+
+		rc = 0;
+		break;
+	}
+
+	return rc;
+}
+
+
+// returns -1 for end of file, 
+// returns 1  for one qualified record
+int JagDBServer::advanceLeftTable( JagMergeReader *jntr, const JagHashStrInt **maps, char *jbuf[], int numKeys[], jagint sklen[],
+								   const JagSchemaAttribute *attrs[], JagParseParam *parseParam, const char *buffers[] )
+{
+	bool grc;
+	ExprElementNode *root;
+	int rc;
+	JagFixString rstr;
+	Jstr ttype = " ";
+	int tlength = 0;
+	bool needInit = true;
+	int tmode = 0;
+
+	while ( 1 ) {
+		grc = jntr->getNext(jbuf[0] );
+		if ( ! grc ) {
+			// left has no more data
+			prt(("s90134 left no more data\n"));
+			return -1;
+		}
+
+		dbNaturalFormatExchange( jbuf[0], numKeys[0], attrs[0], 0,0, " " ); 
+		if ( parseParam->hasWhere ) {
+		 	root = parseParam->whereVec[0].tree->getRoot();
+			buffers[1] = NULL;
+			rc = root->checkFuncValid( jntr, maps, attrs, buffers, rstr, tmode, ttype, tlength, needInit, 0, 0 );
+			buffers[1] = jbuf[1]+sklen[1];
+		} else {
+		 	rc = 1;
+		}
+		dbNaturalFormatExchange( jbuf[0], numKeys[0], attrs[0], 0,0, " " ); 
+
+		if ( rc > 0 ) {
+			prt(("s90122 got left qualified in advance left jbuf[0]=[%s]\n", jbuf[0] ));
+			return 1;
+		} else {
+			prt(("901321 left not qualified, read next rec\n"));
+		 	continue; // look for next qualified record
+		}
+	} // end while(1)
+}
+
+// returns -1 for end of file, 
+// returns 1  for one qualified record
+int JagDBServer::advanceRightTable( JagMergeReader *jntr, const JagHashStrInt **maps, char *jbuf[], int numKeys[], jagint sklen[], 
+								   const JagSchemaAttribute *attrs[], JagParseParam *parseParam, const char *buffers[] )
+{
+	bool grc;
+	ExprElementNode *root;
+	int rc;
+	JagFixString rstr;
+	Jstr ttype = " ";
+	int tlength = 0;
+	bool needInit = true;
+	int tmode = 0;
+
+	while ( 1 ) {
+		grc = jntr->getNext(jbuf[1] );
+		if ( ! grc ) {
+			// left has no more data
+			prt(("s90138 right no more data\n"));
+			return -1;
+		}
+
+		dbNaturalFormatExchange( jbuf[1], numKeys[1], attrs[1], 0,0, " " ); 
+		if ( parseParam->hasWhere ) {
+		 	root = parseParam->whereVec[0].tree->getRoot();
+			buffers[0] = NULL;
+			rc = root->checkFuncValid( jntr, maps, attrs, buffers, rstr, tmode, ttype, tlength, needInit, 0, 0 );
+			buffers[0] = jbuf[1]+sklen[1];
+		} else {
+		 	rc = 1;
+		}
+		dbNaturalFormatExchange( jbuf[1], numKeys[1], attrs[1], 0,0, " " ); 
+
+		if ( rc > 0 ) {
+			prt(("s90124 got right qualified in advance right jbuf[1]=[%s]\n", jbuf[1] ));
+			return 1;
+		} else {
+			prt(("s901321 right not qualified, read next rec\n"));
+		 	continue; // look for next qualified record
+		}
+	} // end while(1)
+}
+
+
+// return < 0 : for error; 0 for OK
+int JagDBServer::handleRestartRecover( const JagRequest &req, 
+									   const char *pmesg, jagint len,
+									   char *hdr2, char *&newbuf, char *&newbuf2 )
+{
+	//prt(("s550283 handleRestartRecover ...\n"));
+	int rspec = 0;
+	if ( req.batchReply ) {
+		JagDBServer::regSplogCommand( req.session, pmesg, len, 2 );
+	} else if ( 0 == strncasecmp( pmesg, "update", 6 ) || 0 == strncasecmp( pmesg, "delete", 6 ) ) {
+		//prt(("s43083 update or delete regSplogComman ...\n"));
+		JagDBServer::regSplogCommand( req.session, pmesg, len, 1 );
+	} else {
+		JagDBServer::regSplogCommand( req.session, pmesg, len, 0 );
+		rspec = 1;
+	}
+	jaguar_mutex_unlock ( &g_flagmutex );
+
+	int sprc = 1;
+	char cond[3] = { 'O', 'K', '\0' };
+	if ( 0 == req.session->drecoverConn && rspec == 1 ) {
+		if ( sendMessageLength( req, cond, 2, "SS" ) < 0 ) {
+			sprc = 0;
+		}
+
+		if ( sprc == 1 && recvMessage( req.session->sock, hdr2, newbuf2 ) < 0 ) {
+			sprc = 0;
+		}
+	}
+
+	sendMessage( req, "_END_[T=779|E=]", "ED" );
+				
+	// receive three bytes of signal  3byte
+	if ( sprc == 1 && _faultToleranceCopy > 1 && req.session->drecoverConn == 0 ) {
+		// receive status bytes
+		char rephdr[4];
+		rephdr[3] = '\0';
+		rephdr[0] = rephdr[1] = rephdr[2] = 'N';		
+
+		int rsmode = 0;
+		// "YYY" "NNN" "YNY" etc
+
+		if ( recvMessage( req.session->sock, hdr2, newbuf2 ) < 0 ) {
+			rephdr[req.session->replicateType] = 'Y';
+			rsmode = getReplicateStatusMode( rephdr, req.session->replicateType );
+			if ( !req.session->spCommandReject && rsmode >0 ) deltalogCommand( rsmode, req.session, pmesg, req.batchReply );
+			if ( req.session->uid == "admin" ) {
+				if ( req.session->exclusiveLogin ) {
+					_exclusiveAdmins = 0;
+					raydebug( stdout, JAG_LOG_LOW, "Exclusive admin disconnected from %s\n", req.session->ip.c_str() );
+				}
+			}
+			if ( newbuf ) { free( newbuf ); }
+			if ( newbuf2 ) { free( newbuf2 ); }
+			-- _connections;
+
+			return -1;
+		}
+
+		rephdr[0] = *newbuf2; rephdr[1] = *(newbuf2+1); rephdr[2] = *(newbuf2+2);
+		rsmode = getReplicateStatusMode( rephdr );
+		if ( !req.session->spCommandReject && rsmode >0 ) {
+			deltalogCommand( rsmode, req.session, pmesg, req.batchReply );
+		}
+
+		sendMessage( req, "_END_[T=7799|E=]", "ED" );
+	}
+
+	return 0;
+}
+
+// shift pmesage from beginning special header bytes
+void JagDBServer::rePositionMessage( JagRequest &req, char *&pmesg, jagint &len )
+{
+			char *p, *q;
+			int tdlen = 0;
+
+			p = q = pmesg;
+			while ( *q != ';' && *q != '\0' ) ++q;
+			if ( *q == '\0' ) {
+				prt(("ERROR tdiff hdr for delta recover\n"));
+				abort();
+			}
+			tdlen = q-p;
+			req.session->timediff = rayatoi( p, tdlen );
+
+			pmesg = q+1; // ;pmesg
+			len -= ( tdlen+1 );
+			++q;
+			p = q;
+			while ( *q != ';' && *q != '\0' ) ++q;
+			if ( *q == '\0' ) {
+				prt(("ERROR isBatch hdr for delta recover\n"));
+				abort();
+			}
+			tdlen = q-p;
+			req.batchReply = rayatoi( p, tdlen );
+
+			pmesg = q+1;
+			len -= ( tdlen+1 );
+}
+
+int JagDBServer::broadcastSchemaToClients()
+{
+	Jstr schemaInfo;
+	_dbConnector->_broadcastCli->getSchemaMapInfo( schemaInfo );
+	//prt(("bcast map info=[%s]\n", schemaInfo.c_str()));
+	if ( schemaInfo.size() < 1 ) {
+		return 0;
+	}
+
+    char code4[5];
+	char *buf = NULL;
+    char sqlhdr[8]; makeSQLHeader( sqlhdr );
+	sqlhdr[0] = 'S'; sqlhdr[1] = 'C'; sqlhdr[2] = 'H'; // "SCH" -- schema change
+
+	jagint msglen = schemaInfo.size();
+	const char *mesg = schemaInfo.c_str();
+    if ( msglen >= JAG_SOCK_COMPRSS_MIN ) {
+        Jstr comp;
+        JagFastCompress::compress( mesg, msglen, comp );
+        msglen = comp.size();
+        buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+comp.size()+1+64 );
+        strcpy( code4, "ZSCC" );
+        putXmitHdrAndData( buf, sqlhdr, comp.c_str(), msglen, code4 );
+    } else {
+        buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+msglen+1+64 );
+        strcpy( code4, "CSCC" );
+        putXmitHdrAndData( buf, sqlhdr, mesg, msglen, code4 );
+    }
+
+	JagVector<int> vec = _clientSocketMap.getIntVector();
+	int cnt = 0;
+	int clientsock;
+	jagint rc;
+	for ( int i=0; i < vec.size(); ++i ) {
+		clientsock = vec[i];
+		rc = sendRawData( clientsock, buf, JAG_SOCK_TOTAL_HDR_LEN+msglen ); 
+		if ( rc == JAG_SOCK_TOTAL_HDR_LEN+msglen ) {
+			++ cnt;
+		}
+	}
+
+	if ( buf ) free( buf );
+	//prt(("s39388 broadast schema to %d clients\n", cnt ));
+	return cnt;
+}
+
+
+int JagDBServer::broadcastHostsToClients()
+{
+    Jstr snodes = _dbConnector->_nodeMgr->_sendAllNodes;
+	if ( snodes.size() < 1 ) {
+		return 0;
+	}
+	prt(("s39388 broadast hosts to %d clients ...\n", snodes.size() ));
+
+    char code4[5];
+	char *buf = NULL;
+    char sqlhdr[8]; makeSQLHeader( sqlhdr );
+	sqlhdr[0] = 'H'; sqlhdr[1] = 'O'; sqlhdr[2] = 'S'; // "HOS" -- hosts change
+
+	jagint msglen = snodes.size();
+	const char *mesg = snodes.c_str();
+    if ( msglen >= JAG_SOCK_COMPRSS_MIN ) {
+        Jstr comp;
+        JagFastCompress::compress( mesg, msglen, comp );
+        msglen = comp.size();
+        buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+comp.size()+1+64 );
+        strcpy( code4, "ZHLC" );
+        putXmitHdrAndData( buf, sqlhdr, comp.c_str(), msglen, code4 );
+    } else {
+        buf = (char*)jagmalloc( JAG_SOCK_TOTAL_HDR_LEN+msglen+1+64 );
+        strcpy( code4, "CHLC" );
+        putXmitHdrAndData( buf, sqlhdr, mesg, msglen, code4 );
+    }
+
+	JagVector<int> vec = _clientSocketMap.getIntVector();
+	int cnt = 0;
+	int clientsock;
+	jagint rc;
+	for ( int i=0; i < vec.size(); ++i ) {
+		clientsock = vec[i];
+		rc = sendRawData( clientsock, buf, JAG_SOCK_TOTAL_HDR_LEN+msglen ); 
+		if ( rc == JAG_SOCK_TOTAL_HDR_LEN+msglen ) {
+			++ cnt;
+		}
+	}
+
+	if ( buf ) free( buf );
+	prt(("s39388 broadast hosts to %d clients\n", cnt ));
+	return cnt;
+}
+
+void JagDBServer::makeNeededDirectories()
+{
+	Jstr fpath;
+
+	fpath = jaguarHome() + "/tmp";
+	JagFileMgr::rmdir( fpath );
+	JagFileMgr::makedirPath( fpath );
+
+	fpath = jaguarHome() + "/tmp/data";
+	JagFileMgr::rmdir( fpath );
+	JagFileMgr::makedirPath( fpath );
+
+	fpath = jaguarHome() + "/tmp/pdata";
+	JagFileMgr::rmdir( fpath );
+	JagFileMgr::makedirPath( fpath );
+
+	fpath = jaguarHome() + "/tmp/ndata";
+	JagFileMgr::rmdir( fpath );
+	JagFileMgr::makedirPath( fpath );
+
+	fpath = jaguarHome() + "/tmp/join";
+	JagFileMgr::rmdir( fpath );
+	JagFileMgr::makedirPath( fpath );
+
+	fpath = jaguarHome() + "/export";
+	JagFileMgr::rmdir( fpath );
+	JagFileMgr::makedirPath( fpath );
+
+	fpath = jaguarHome() + "/backup";
+	JagFileMgr::rmdir( fpath );
+
+	JagFileMgr::makedirPath( fpath );
+	JagFileMgr::makedirPath( fpath+"/15min" );
+	JagFileMgr::makedirPath( fpath+"/hourly" );
+	JagFileMgr::makedirPath( fpath+"/daily" );
+	JagFileMgr::makedirPath( fpath+"/weekly" );
+	JagFileMgr::makedirPath( fpath+"/monthly" );
+
+}
+
+// method to import local cached records and insert to a table
+// pmesg: "_ex_importtable|db|table|finish(YES/NO)"
+void JagDBServer::importTableDirect( const char *mesg, const JagRequest &req )
+{
+	if ( req.session->uid!="admin" ) {
+		raydebug( stdout, JAG_LOG_LOW, "importTableDirect rejected. admin login is required\n" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin login is required]", "ER" );
+		return;
+	}
+
+	JagStrSplit sp( mesg, '|');
+	if ( sp.length() < 4 ) {
+		raydebug( stdout, JAG_LOG_LOW, "importTableDirect rejected. wrong command [%s]\n", mesg );
+		sendMessage( req, "_END_[T=130|E=Command Failed. importTableDirect rejected. wrong command]", "ER" );
+		return;
+	}
+
+	Jstr db = sp[1];
+	Jstr tab = sp[2];
+	Jstr doFinishUp = sp[3]; // YES/NO
+
+	Jstr dbtab = db + "." + tab;
+	Jstr dirpath = jaguarHome() + "/export/" + dbtab;
+	if ( doFinishUp == "YES" || doFinishUp == "Y" ) {
+		JagFileMgr::rmdir( dirpath );
+		prt(("s22029288 importTableDirect doFinishUp yes, rmdir %s\n", dirpath.s() ));
+		sendMessage( req, "_END_[T=30|E=]", "ED" );
+		return;
+	}
+
+	Jstr host = "localhost"; 
+	Jstr objname = dbtab + ".sql";
+	if ( this->_listenIP.size() > 0 ) { host = this->_listenIP; }
+	Jstr unixSocket = Jstr("/TOKEN=") + this->_servToken;
+	JaguarCPPClient pcli;
+	pcli.setDebug( true ); // todo
+	while ( !pcli.connect( host.c_str(), this->_port, "admin", "dummy", "test", unixSocket.c_str(), 0 ) ) {
+		raydebug( stdout, JAG_LOG_LOW, "s4022 Connect (%s:%s) (%s:%d) error [%s], retry ...\n", 
+				  "admin", "dummy", host.c_str(), this->_port, pcli.error() );
+		jagsleep(5, JAG_SEC);
+	}
+
+	prt(("s344877 connect to localhost got pcli._allHostsString=[%s]\n", pcli._allHostsString.s() ));
+
+	Jstr fpath = JagFileMgr::getFileFamily( dirpath, objname );
+	prt(("s220291 fpath=[%s]\n", fpath.s() ));
+	int rc = pcli.importLocalFileFamily( fpath );
+	pcli.close();
+	if ( rc < 0 ) {
+		prt(("s4418 Import file not found on server %s\n", fpath.s() ));
+	}
+	prt(("s1111028 importTable done rc=%d (<0 is error)\n", rc ));
+
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
+
+	raydebug( stdout, JAG_LOG_LOW, "s300873 importTableDirect() is done\n" );
+}
+
+// method to truncate a table
+// pmesg: "_ex_truncatetable|replicate_type(0/1/2)|db|table"
+void JagDBServer::truncateTableDirect( const char *mesg, const JagRequest &req )
+{
+	if ( req.session->uid!="admin" ) {
+		raydebug( stdout, JAG_LOG_LOW, "truncateTableDirect rejected. admin login is required\n" );
+		sendMessage( req, "_END_[T=130|E=Command Failed. admin exclusive login is required]", "ER" );
+		return;
+	}
+
+	JagStrSplit sp( mesg, '|');
+	if ( sp.length() < 4 ) {
+		raydebug( stdout, JAG_LOG_LOW, "truncateTableDirect rejected. wrong command [%s]\n", mesg );
+		sendMessage( req, "_END_[T=130|E=Command Failed. truncateTableDirect rejected. wrong command]", "ER" );
+		return;
+	}
+
+	Jstr reterr, indexNames;
+	Jstr replicateTypeStr = sp[1];
+	int replicateType = replicateTypeStr.toInt();
+	Jstr db = sp[2];
+	Jstr tab = sp[3];
+
+	Jstr dbobj = db + "." + tab;
+	prt(("s22208 truncateTableDirect dbobj=%s replicateType=%d\n", dbobj.s(), replicateType ));
+
+	JagTable *ptab = NULL;
+	JagIndex *pindex = NULL;
+	JagTableSchema *tableschema;
+	JagIndexSchema *indexschema;
+	getTableIndexSchema( replicateType, tableschema, indexschema );
+
+	ptab = this->_objectLock->writeLockTable( JAG_TRUNCATE_OP, db, tab, tableschema, replicateType, 0 );
+
+	if ( ptab ) {
+		indexNames = ptab->drop( reterr, true );
+		prt(("s222029  ptab->drop() indexNames=%s\n", indexNames.s() ));
+	}
+
+	refreshSchemaInfo( replicateType, this, g_lastSchemaTime );
+	
+	if ( ptab ) {
+		delete ptab; 
+		// rebuild ptab, and possible related indexs
+
+		ptab = _objectLock->writeTruncateTable( JAG_TRUNCATE_OP, db, tab, tableschema, replicateType, 0 );
+		if ( ptab ) {
+			JagStrSplit sp( indexNames, '|', true );
+			for ( int i = 0; i < sp.length(); ++i ) {
+				pindex = _objectLock->writeLockIndex( JAG_CREATEINDEX_OP, db, tab, sp[i],
+														tableschema, indexschema, replicateType, 1 );
+				if ( pindex ) {
+					ptab->_indexlist.append( pindex->getIndexName() );
+				}
+				if ( pindex ) _objectLock->writeUnlockIndex( JAG_CREATEINDEX_OP, db, tab, sp[i],
+																replicateType, 1 );
+			}
+			this->_objectLock->writeUnlockTable( JAG_TRUNCATE_OP, db, tab, replicateType, 0 );
+		}
+		raydebug( stdout, JAG_LOG_LOW, "user [%s] truncate table [%s]\n", req.session->uid.c_str(), dbobj.c_str() );
+	} else {
+		prt(("s2200112 no ptab\n"));
+	}
+
+	prt(("s51128 truncateTableDirect() dbobj=%s done replicateType=%d\n", dbobj.s(), replicateType  ));
+
+	sendMessage( req, "_END_[T=30|E=]", "ED" );
+
+	raydebug( stdout, JAG_LOG_LOW, "s300873 truncateTableDirect() replicateType=%d is done\n", replicateType );
 }

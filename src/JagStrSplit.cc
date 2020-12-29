@@ -170,16 +170,16 @@ Jstr& JagStrSplit::operator[](int i )
 	}
 }
 
-abaxint JagStrSplit::length() const
+jagint JagStrSplit::length() const
 {
 	return length_ - start_;
 }
-abaxint JagStrSplit::size() const
+jagint JagStrSplit::size() const
 {
 	return length_ - start_;
 }
 
-abaxint JagStrSplit::slength() const
+jagint JagStrSplit::slength() const
 {
 	return length_ - start_;
 }

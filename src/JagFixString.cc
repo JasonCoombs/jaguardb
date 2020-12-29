@@ -1,5 +1,4 @@
-/*
- * Copyright (C) 2018 DataJaguar, Inc.
+/* * Copyright (C) 2018 DataJaguar, Inc.
  *
  * This file is part of JaguarDB.
  *
@@ -26,6 +25,7 @@ JagFixString::JagFixString()
 	_buf = NULL;
 	_length = 0;
 	_readOnly = false;
+	memset( dtype, 0, 4 );
 }
 
 JagFixString::JagFixString( const char *str ) 
@@ -37,16 +37,46 @@ JagFixString::JagFixString( const char *str )
 	memcpy( _buf, str, len );
 	_buf[len] = '\0';
 	_length = len;
+	memset( dtype, 0, 4 );
 }
 
 JagFixString::JagFixString( const char *str, unsigned int len ) 
 { 
 	_readOnly = false;
 
+	/**
 	_buf = (char*)jagmalloc(len+1);
 	memcpy( _buf, str, len );
 	_buf[len] = '\0';
 	_length = len;
+	**/
+
+	_buf = (char*)jagmalloc(len+1);
+	memset( _buf, 0, len+1);
+	unsigned int slen = strlen(str);
+	if ( slen > len ) {
+		memcpy( _buf, str, len );
+	} else {
+		memcpy( _buf, str, slen );
+	}
+	_length = len;
+	memset( dtype, 0, 4 );
+}
+
+
+JagFixString::JagFixString( const char *str, unsigned int slen, unsigned int capacity ) 
+{ 
+	_readOnly = false;
+
+	_buf = (char*)jagmalloc(capacity+1);
+	memset( _buf, 0, capacity+1);
+	if ( slen > capacity ) {
+		memcpy( _buf, str, capacity );
+	} else {
+		memcpy( _buf, str, slen );
+	}
+	_length = capacity;
+	memset( dtype, 0, 4 );
 }
 
 /***
@@ -68,6 +98,8 @@ JagFixString::JagFixString( const JagFixString &str )
 		memcpy( _buf, str._buf, len );
 		_buf[len] = '\0';
 		_length = len;
+
+		memcpy( dtype, str.dtype, 3 );
 }
 	
 JagFixString::JagFixString( const Jstr &str ) 
@@ -79,6 +111,7 @@ JagFixString::JagFixString( const Jstr &str )
 		_buf[len] = '\0';
 		_length = len;
 		// printf("s3929 JagFixString(int) called\n"); fflush( stdout );
+		memcpy( dtype, str.dtype, 3 );
 }
 
 JagFixString& JagFixString::operator=( const char *str ) 
@@ -97,6 +130,7 @@ JagFixString& JagFixString::operator=( const char *str )
 		_length = len;
 		_buf[len] = '\0';
 		_readOnly = false;
+		memset( dtype, 0, 4 );
 		return *this;
 }
 
@@ -116,6 +150,7 @@ JagFixString& JagFixString::operator=( const JagFixString &str )
 		_length = len;
 		_buf[len] = '\0';
 		_readOnly = false;
+		memcpy( dtype, str.dtype, 3 );
 		return *this;
 }
  		
@@ -131,6 +166,7 @@ JagFixString& JagFixString:: operator=( const Jstr &str )
 		_buf[len] = '\0';
 		_length = len;
 		_readOnly = false;
+		memcpy( dtype, str.dtype, 3 );
 		return *this;
 }
 
@@ -205,11 +241,13 @@ void JagFixString::point(const char *str, unsigned int len )
 		_readOnly = true;
 }
 
+/**
 JagFixString::JagFixString( const char *str, unsigned int len, bool ref ) 
 {
 		_readOnly = true;
 		point( str, len );
 }
+**/
 
 // caller make sure length(data) <= _length
 void JagFixString::strcpy( const char *data )
@@ -232,8 +270,8 @@ JagFixString::~JagFixString()
 }
 
 /********
-// inline abaxint hashCode64() const 
-abaxint JagFixString::hashCode() const 
+// inline jagint hashCode64() const 
+jagint JagFixString::hashCode() const 
 {
     unsigned int hash[4];                
     unsigned int seed = 42;             
@@ -241,16 +279,18 @@ abaxint JagFixString::hashCode() const
     int len = _length;
     MurmurHash3_x64_128( str, len, seed, hash);
     uint64_t res2 = ((uint64_t*)hash)[0]; 
-    abaxint res = res2 % LLONG_MAX;
+    jagint res = res2 % LLONG_MAX;
     return res;
 }
 *******/
-// inline abaxint hashCode64() const 
-abaxint JagFixString::hashCode() const 
+// inline jagint hashCode64() const 
+jagint JagFixString::hashCode() const 
 {
+	//prt(("s220220 fixstring.dump:\n"));
+	//dump();
+
     unsigned int hash[4];                
     unsigned int seed = 42;             
-    register void *str = (void *)_buf;
 	char *p;
 	char *newbuf = (char*)jagmalloc( _length + 1 );
 	memset( newbuf, 0, _length +1);
@@ -259,16 +299,17 @@ abaxint JagFixString::hashCode() const
 	for ( int i =0; i < _length; ++i ) {
 		if ( _buf[i] != '\0' ) {
 			*p ++ = _buf[i];
+			//prt(("s333387 len=%d added [%c]\n", len, _buf[i] ));
 			++len;
 		}
 	}
-	//printf("s6231 buf=[%s] newbuf=[%s]\n", _buf, newbuf );
+	//prt(("s6231 _length=%d  buf=[%s] newbuf=[%s] len=%d\n", _length, _buf, newbuf, len ));
 
     // MurmurHash3_x64_128( str, len, seed, hash);
     MurmurHash3_x64_128( (void*)newbuf, len, seed, hash);
 
     uint64_t res2 = ((uint64_t*)hash)[0]; 
-    abaxint res = res2 % LLONG_MAX;
+    jagint res = res2 % LLONG_MAX;
 	// printf("s9226 JagFixString::hashCode() buf=[%s] newbuf=[%s] hashcode=%lld _length=[%lld]\n", _buf, newbuf, res, _length );
 	free( newbuf );
     return res;
@@ -305,7 +346,7 @@ void JagFixString::trim()
 	rtrim();
 }
 
-void JagFixString::substr( abaxint start, abaxint len )
+void JagFixString::substr( jagint start, jagint len )
 {
 	int i;
 	if ( start < 0 ) start = 0;
@@ -368,7 +409,7 @@ void JagFixString::dump() const
 		if ( _buf[i] ) {
 			printf("%c", _buf[i] );
 		} else {
-			printf("\\0" );
+			printf("@" );
 		}
 	}
 	printf("\n"); fflush( stdout );
@@ -390,5 +431,12 @@ Jstr JagFixString::firstToken( char sep ) const
     char *p = _buf;
     while ( *p != sep && *p != '\0' ) ++p;
     return AbaxCStr(_buf, p-_buf);
+}
+
+void JagFixString::setDtype( const char *typ )
+{
+    int len = strlen(typ);
+    if ( len > 3 ) { len = 3; }
+    memcpy( dtype, typ, len );
 }
 

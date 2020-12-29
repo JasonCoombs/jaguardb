@@ -20,22 +20,39 @@
 
 #include <JagMergeReaderBase.h>
 #include <JagUtil.h>
+#include <JagDBPair.h>
+#include <JagDBMap.h>
 
-///////////////// implementation /////////////////////////////////
-
-JagMergeReaderBase::JagMergeReaderBase( int veclen, int keylen, int vallen )
+JagMergeReaderBase::JagMergeReaderBase( const JagDBMap *dbmap, int veclen, int keylen, int vallen, 
+										const char *minbuf, const char *maxbuf )
+    :_dbmap( dbmap )
 {
+	prt(("s400822 JagMergeReaderBase ctor this=%0x dbmap=%0x\n", this, dbmap ));
 	_setRestartPos = 0;
 	_endcnt = 0;
-	_veclen = veclen;
+	_readerPtrlen = veclen;
 	KEYLEN = keylen;
 	VALLEN = vallen;
 	KEYVALLEN = keylen + vallen;
 	
-	_goNext =(int*)calloc(_veclen, sizeof(int));
-	_buf = (char*)jagmalloc(KEYVALLEN*_veclen+1);
+	_goNext = NULL; 
+	if ( _readerPtrlen > 0 ) {
+		_goNext =(int*)calloc( _readerPtrlen, sizeof(int));
+	}
+
+	//_buf = (char*)jagmalloc(KEYVALLEN*_veclen+1);
+	_buf = (char*)jagmalloc(KEYVALLEN+1);
 	_cacheBuf = NULL;
 
+	// get min and max positon of insertBufferMap
+	//beginPair = JagDBPair( minbuf, KEYLEN );
+	//endPair = JagDBPair( maxbuf, KEYLEN );
+	// _dbmap = dbmap;
+	prt(("s27901 JagMergeReaderBase ctor  _dbmap=%0x\n", _dbmap ));
+	memReadDone = false;
+	//findBeginPos( minbuf, maxbuf );
+	_pqueue = NULL;
+	prt(("s27903 JagMergeReaderBase ctor this=%0x  _dbmap=%0x\n", this, _dbmap ));
 }
 
 JagMergeReaderBase::~JagMergeReaderBase()
@@ -43,12 +60,21 @@ JagMergeReaderBase::~JagMergeReaderBase()
 	if ( _goNext ) {
 		free ( _goNext );
 	}
-	_goNext = NULL;
 	
 	if ( _buf ) {
 		free ( _buf );
+		//_buf = NULL;
 	}
-	_buf = NULL;
+
+	if ( _cacheBuf ) {
+		free( _cacheBuf );
+		//_cacheBuf = NULL;
+	}
+
+	if ( _pqueue ) {
+		prt(("s300822 delete _pqueue=%0x\n", _pqueue ));
+		delete _pqueue;
+	}
 	
 }
 
@@ -61,3 +87,15 @@ void JagMergeReaderBase::putBack( const char *buf )
 	_cacheBuf = (char*)jagmalloc(KEYVALLEN + 1 );
 	memcpy( _cacheBuf, buf, KEYVALLEN );
 }
+
+
+void JagMergeReaderBase::unsetMark()
+{
+    _isMarkSet = false;
+}
+
+bool JagMergeReaderBase::isMarked() const
+{
+    return _isMarkSet;
+}
+

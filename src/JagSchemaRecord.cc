@@ -23,6 +23,7 @@
 #include <JagStrSplit.h>
 
 #include <JagSchemaRecord.h>
+#include <JagParseParam.h>
 
 JagSchemaRecord::JagSchemaRecord( bool newVec )
 {
@@ -73,7 +74,7 @@ JagSchemaRecord::JagSchemaRecord( const JagSchemaRecord& other )
 	columnVector = NULL;
 
 	if ( other.columnVector ) {
-    	abaxint  size =  other.columnVector->size();
+    	jagint  size =  other.columnVector->size();
     	columnVector = new JagVector<JagColumn>( size+8 );
     	for ( int i = 0; i < size; ++i ) {
     		columnVector->append( (*other.columnVector)[i] );
@@ -92,7 +93,7 @@ JagSchemaRecord& JagSchemaRecord::operator=( const JagSchemaRecord& other )
 	copyData( other );
 	_nameMap.reset();
 
-	abaxint  size = 0;
+	jagint  size = 0;
 	if ( other.columnVector ) {
 		size =  other.columnVector->size();
 		columnVector = new JagVector<JagColumn>( size ); 
@@ -207,7 +208,7 @@ bool JagSchemaRecord::setColumn( const AbaxString &colName, const AbaxString &at
 
 // add new column using spare space
 bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 
-											   abaxint length, abaxint sig )
+											   jagint length, jagint sig )
 {
 	if ( ! columnVector ) {
 		columnVector = new JagVector<JagColumn>();
@@ -357,7 +358,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 	}
 
 	//prt(("s3980 parseRecord str=[%s]\n", str ));
-	abaxint actkeylen = 0, actvallen = 0, rc = 0;
+	jagint actkeylen = 0, actvallen = 0, rc = 0;
 	JagColumn onecolrec;
 	const char *p, *q;
 	q = p = str;
@@ -683,3 +684,38 @@ bool JagSchemaRecord::hasPoly(int &dim ) const
 	if ( dim < 1 ) return false;
 	return true;
 }
+
+// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!dummy1!dummy2!...!dummy10!|...}"
+void JagSchemaRecord::getJoinSchema( long skeylen, long svallen, const JagParseParam &parseParam, const jagint lengths[], Jstr &hstr )
+{
+		//const const JagSchemaRecord &rec = *this;
+
+        char hbuf[JAG_SCHEMA_SPARE_LEN+1];
+        jagint offset = 0;
+        memset(hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
+        hbuf[JAG_SCHEMA_SPARE_LEN] = '\0';
+        hbuf[0] = JAG_C_COL_KEY;
+        hbuf[2] = JAG_RAND;
+        hstr = Jstr("NN|") + longToStr(skeylen) + "|" + longToStr(svallen) + "|0|{";
+        for ( int i = 0; i < parseParam.orderVec.size(); ++i ) {
+            hstr += Jstr("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(offset) + "!" +
+                    longToStr(lengths[i]) + "!0!" + hbuf + "|";
+            offset += lengths[i];
+        }
+
+        hbuf[1] = JAG_C_COL_TYPE_UUID[0];
+        hstr += Jstr("!") + "key_" + longToStr( THREADID ) + "_uuid" + "!s!" + longToStr(offset) + "!" +
+                longToStr(JAG_UUID_FIELD_LEN) + "!0!" + hbuf + "!0! ! !|";
+        offset += JAG_UUID_FIELD_LEN;
+
+        memset( hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
+        hbuf[0] = JAG_C_COL_VALUE;
+        hbuf[2] = JAG_RAND;
+        for ( int i = 0; i < columnVector->size(); ++i ) {
+            hstr += Jstr("!") + (*(columnVector))[i].name.c_str() + "!s!" + longToStr(offset) + "!" +
+                    longToStr((*(columnVector))[i].length) + "!0!" + hbuf + "!0! ! !|";
+            offset += (*(columnVector))[i].length;
+        }
+        hstr += "}";
+}
+

@@ -27,29 +27,29 @@ class JagIndexString
 	JagIndexString();
 	~JagIndexString();
 
-	abaxint length() const { return _length; }
-	abaxint size() const { return _length; }
-	abaxint capacity() const { return _capacity; }
-	abaxint tokens() const { return _tokens; }
+	jagint length() const { return _length; }
+	jagint size() const { return _length; }
+	jagint capacity() const { return _capacity; }
+	jagint tokens() const { return _tokens; }
 	const char  *c_str() const { return _buf; }
 	void destroy();
 	void init();
 	void reset();
 
-	void add( const JagFixString &key, abaxint i, int isnew, int force );
+	void add( const JagFixString &key, jagint i, int isnew, int force );
   	
   protected:
-	abaxint  _length;
-	abaxint  _capacity;
-	abaxint  _tokens;
+	jagint  _length;
+	jagint  _capacity;
+	jagint  _tokens;
 	char  *_buf;
-	abaxint  _lasti;
+	jagint  _lasti;
 
 	// temp vars
 	char  _tmp[32];
 	char  _tmp2[32];
-	abaxint   _tmplen;
-	abaxint  _tokenLen;
+	jagint   _tmplen;
+	jagint  _tokenLen;
 
 };
 

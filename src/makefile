@@ -1,33 +1,24 @@
-jaguarprog: progdyn
-all: clean progdyn  
+jaguarprog: prog createKeyPair lib jql glibcversion
+all: clean prog
+test: testjdbserv 
 
-BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include \
+BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include -IWeb/libcds/include \
 		  -IWeb/Tencent/rapidjson/include -IWeb/TomCrypt/include \
 		  -IWeb/Snappy -IWeb/UTF -IWeb/Boost/boost_1_68_0/include \
+		  -IWeb/Google/Btree/include \
 		  -IWeb/CGAL/CGAL-4.13/include -IWeb/ConcaveHull \
-	      -D_REENTRANT -std=c++11 -Wno-register \
-		  -DCHECK_LATENCY1 -DJAG_DEBUGCHECK1 -DDEVDEBUG1 -DTFM_DESC $(USER_DEFINE)
-         
+	      -D_REENTRANT -std=c++11 -Wno-register -Wunused-variable \
+		  -DCHECK_LATENCY1 -DDEVDEBUG1 -DTFM_DESC $(USER_DEFINE)
 
-CCFLAGS_STATIC=$(BASICFLAGS)  -fpermissive -static-libgcc -static-libstdc++ -static  
-CCFLAGS_DYNAMIC=$(BASICFLAGS) -fPIC
+CCFLAGS_STATIC=$(BASICFLAGS)  -static-libgcc -static-libstdc++ -static  
 CCFLAGS=$(CCFLAGS_STATIC)
-CCFLAGS=$(CCFLAGS_DYNAMIC)
 
-STDLIBS_STATIC =  Web/GeographicLib-1.49/lib/libGeographic.a /usr/lib64/libpthread.a \
+STDLIBS_STATIC =  Web/GeographicLib-1.49/lib/libGeographic.a  \
                   Web/CGAL/CGAL-4.13/lib64/libCGAL.a Web/Boost/boost_1_68_0/lib/libboost_system.a \
-				  Web/Boost/boost_1_68_0/lib/libboost_thread.a 
-STDLIBS_DYNAMIC_BASIC =  -LWeb/Boost/boost_1_68_0/lib -lboost_thread -lboost_system -lpthread
-GEOLIBS_DYNAMIC = -LWeb/GeographicLib-1.49/lib -LWeb/CGAL/CGAL-4.13/lib64 -lGeographic -lCGAL 
-STDLIBS_DYNAMIC = $(GEOLIBS_DYNAMIC) $(STDLIBS_DYNAMIC_BASIC)
+				  Web/Boost/boost_1_68_0/lib/libboost_thread.a Web/Boost/boost_1_68_0/lib/libboost_system.a \
+				  /usr/lib64/libpthread.a 
 
 STDLIBS=$(STDLIBS_STATIC)
-STDLIBS=$(STDLIBS_DYNAMIC)
-
-JAVA_HOME:=$(shell jrunscript -e "java.lang.System.out.println(new java.io.File(java.lang.System.getProperty(\"java.home\")));")
-JAVAINC=$(JAVA_HOME)/../include
-DRIZZLE=Web/DrizzleJDBC
-DRIZZLEINC=$(DRIZZLE)/src/main/java
 
 GCC=gcc
 GPP=g++
@@ -37,13 +28,19 @@ CPP=$(GPP)  -g3 -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -g -DJAG_DEBUGCHECK
 CPP=$(GPP)  -O3 -DJAG_DEBUGCHECK
 CPP=$(GPP)  -ggdb
-CPP=$(GPP) 
+CPP=$(GPP)  -pg
+CPP=$(GPP)  -g
 CPP=$(GPP)  -O3
+CPP=$(GPP) 
+CPP=$(GPP)  -g
+CPP=$(GPP)  -O3 -g
 
 #### makefile.obj has $(OBJS)
 include makefile.obj
 
-EXTOBJS=Web/TomCrypt/lib/*.o Web/Snappy/*.o
+EXTOBJS=Web/TomCrypt/static/lib/*.o Web/Snappy/static/*.o 
+ALLCLIENTOBJS=$(CLIENTOBJS) JaguarCPPClient_static.o
+ALLEXTOBJS=$(EXTOBJS) JaguarCPPClient_static.o
 
 JagParseExpr.o: JagExprStack.h
 
@@ -52,25 +49,31 @@ JagParseExpr.o: JagExprStack.h
 	$(CPP) $(CCFLAGS) -c -o $@ $<  
 	date
 
+JagParseExprClient.o: JagParseExpr.cc
+JagParseExprServer.o: JagParseExpr.cc
+
 clean:
-	/bin/rm -f *.o *.class *.gz core.* jaguar jql ~/jaguar/lib/jagserv.o ~/jaguar/lib/jql.o
-
-Jaguar.o: Jaguar.cc
-	$(CPP) $(CCFLAGS) -I. -I$(JAVAINC) -I$(JAVAINC)/linux -I$(DRIZZLEINC)  -c Jaguar.cc
-
-javahdr:
-	/bin/cp -f Jaguar.java $(DRIZZLE)/src/main/java/com/jaguar/jdbc/internal/jaguar/
-	cd $(DRIZZLE)/src/main/java; javah -jni com.jaguar.jdbc.internal.jaguar.Jaguar
-
-javalib: Jaguar.o  $(CLIENTOBJS) 
-	$(CPP) $(CCFLAGS) -shared -Wl,-soname,libJaguarClient.so -o libJaguarClient.so \
-	Jaguar.o $(CLIENTOBJS) Web/TomCrypt/lib/*.o Web/Snappy/*.o 
+	/bin/rm -f *.class core.* jaguar jql.bin ~/jaguar/lib/jagserv.o ~/jaguar/lib/jql.o
 
 glibcversion: glibcversion.o
-	$(CPP) -o glibcversion glibcversion.o
+	$(CPP) $(CCFLAGS) -o glibcversion glibcversion.o
 
-progdyn:  $(SERVEROBJS) jql.o JagParseExprClient.o JagParseExprServer.o jagserv.o javahdr javalib
-	$(CPP) -o jql.bin jql.o -L. -lJaguarClient -lpthread
-	$(CPP) -o jaguar.bin jagserv.o $(SERVEROBJS) $(EXTOBJS) $(STDLIBS) 
 
+lib: $(ALLCLIENTOBJS) $(EXTOBJS)
+	ar cr libJaguarClient.a $(ALLCLIENTOBJS) $(EXTOBJS) 
+
+
+jql:  $(ALLCLIENTOBJS) $(SERVEROBJS) jagserv.o jql.o
+	$(CPP) $(CCFLAGS) -o jql.bin jql.o $(ALLCLIENTOBJS) $(EXTOBJS) /usr/lib64/libpthread.a
+	/bin/cp -f jql.bin ~/jbin
+
+prog:  $(ALLCLIENTOBJS) $(SERVEROBJS) jagserv.o jql.o
+	$(CPP) $(CCFLAGS) -o jql.bin jql.o $(ALLCLIENTOBJS) $(EXTOBJS) /usr/lib64/libpthread.a
+	$(CPP) $(CCFLAGS) -o jaguar.bin jagserv.o $(SERVEROBJS) $(ALLEXTOBJS) $(STDLIBS) 
+
+createKeyPair: createKeyPair.o
+	$(CPP) $(CCFLAGS) -o createKeyPair.bin  createKeyPair.o $(SERVEROBJS) $(ALLEXTOBJS) $(STDLIBS)
+
+testjdbserv: testjdbserv.o $(OBJS) 
+	$(CPP) $(CCFLAGS) -o testjdbserv testjdbserv.o $(SERVEROBJS) $(ALLEXTOBJS) /usr/local/lib64/libcds-s.a $(STDLIBS) 
 

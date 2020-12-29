@@ -23,8 +23,8 @@
 class JagSystem
 {
   public:
-	int getCPUStat( abaxint &user, abaxint &sys, abaxint &idle );
-	int getStat6( abaxint &totalDiskGB, abaxint &usedDiskGB, abaxint &freeDiskGB, abaxint &nproc, float &loadvg, abaxint &tcp ); 
+	int getCPUStat( jagint &user, jagint &sys, jagint &idle );
+	int getStat6( jagint &totalDiskGB, jagint &usedDiskGB, jagint &freeDiskGB, jagint &nproc, float &loadvg, jagint &tcp ); 
 	void initLoad();
 
 	#ifdef _WINDOWS64_
@@ -36,7 +36,7 @@ class JagSystem
 	float getLoadAvg();
 	static int getNumCPUs();
 	static int  getNumProcs();
-	static int  getMemInfo( abaxint &totm, abaxint &freem, abaxint &used );
+	static int  getMemInfo( jagint &totm, jagint &freem, jagint &used );
 
 
 };

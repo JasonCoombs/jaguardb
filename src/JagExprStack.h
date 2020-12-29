@@ -34,8 +34,8 @@ class JagExprStack
 		ExprElementNode* top() const;
 		const   ExprElementNode* operator[](int i) const;
 		ExprElementNode*& operator[](int i);
-		inline  abaxint size() const { return _last+1; }
-		inline  abaxint capacity() const { return _arrlen; }
+		inline  jagint size() const { return _last+1; }
+		inline  jagint capacity() const { return _arrlen; }
 		void 	destroy();
 		void 	print();
 		void 	reAlloc();
@@ -47,8 +47,8 @@ class JagExprStack
 
 	protected:
 		ExprElementNode **_arr;
-		abaxint  	_arrlen;
-		abaxint  	_last;
+		jagint  	_arrlen;
+		jagint  	_last;
 		static const int _GEO  = 2;
 		bool        _isDestroyed;
 };

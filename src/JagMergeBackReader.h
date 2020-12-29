@@ -21,31 +21,37 @@
 
 #include <abax.h>
 #include <JagMergeReaderBase.h>
+#include <JagDBMap.h>
 
 class JagMergeBackReader : public JagMergeReaderBase
 {
   public:
-	JagMergeBackReader( JagVector<OnefileRange> &fRange, int veclen, int keylen, int vallen );
+	JagMergeBackReader( const JagDBMap *dbmap, const JagVector<OnefileRange> &fRange, int veclen, 
+					    int keylen, int vallen, const char *minbuf, const char *maxbuf );
   	virtual ~JagMergeBackReader(); 	
-  	virtual bool getNext( char *buf, abaxint &pos );
+
   	virtual bool getNext( char *buf );
-	virtual bool setRestartPos();
-	virtual bool getRestartPos();
-	virtual void setClearRestartPosFlag();
+
+	void findBeginPos( const char *minbuf, const char *maxbuf );
+	void setRestartPos();
+	void moveToRestartPos();
+	void  initHeap();
+
+	/////// new: similiar to map begin means rbegin() direction and end means rend() direction
+    void    setMemRestartPos();
+    void    moveMemToRestartPos();
+    bool    isAtREnd( JagFixMapReverseIterator iter );  // rend(): left en
+    void    print( const char *hdr,  JagFixMapReverseIterator iter );
+
+    JagFixMapReverseIterator   beginPos;
+    JagFixMapReverseIterator   endPos;
+    JagFixMapReverseIterator   prevPos;
+    JagFixMapReverseIterator   currentPos;
 
   protected:
-  	/***
-	int _veclen;
-	int _endcnt;
-	abaxint KEYLEN;
-	abaxint VALLEN;
-	abaxint KEYVALLEN;
-	int *_goNext;
-	char *_buf;
-	bool _setRestartPos;
-	***/
+	JagBuffBackReaderPtr *_buffBackReaderPtr;
+	JagFixMapReverseIterator  _restartMemPos;
 
-	JagBuffBackReaderPtr *_vec;
 };
 
 

@@ -21,22 +21,90 @@
 
 #include <math.h>
 #include "JagHashMap.h"
-//#include "JagSchemaRecord.h"
 
-// template <class KType,class VType>
 class JagDBPair
 {
-    // template <class K2,class V2> friend abaxstream& operator<< ( abaxstream &os, const JagDBPair<K2, V2> & pair );
     friend abaxstream& operator<< ( abaxstream &os, const JagDBPair & pair );
 
     public:
-
         JagFixString  key;
         JagFixString  value;
-		bool           upsertFlag;
+		//bool           upsertFlag;
 		static  JagDBPair  NULLVALUE;
+		
+		JagDBPair( ) { /*upsertFlag = 0;*/ } 
+        JagDBPair( const JagFixString &k ) : key(k) { /*upsertFlag = 0;*/ }
+        JagDBPair( const JagFixString &k, const JagFixString &v ) : key(k), value(v) { /*upsertFlag = 0;*/ } 
+		void point( const JagFixString &k, const JagFixString &v ) {
+			key.point(k.addr(), k.size() );
+			value.point( v.addr(), v.size() );
+		}
 
-        inline int compareKeys( const JagDBPair &d2 ) const {
+		void point( const JagFixString &k ) {
+			key.point(k.addr(), k.size() );
+		}
+
+
+		void point( const char *k, jagint klen ) {
+			key.point( k, klen);
+		}
+
+        JagDBPair( const JagFixString &k, const JagFixString &v, bool ref ) 
+		{
+			//upsertFlag = 0;
+			key.point(k.addr(), k.size() );
+			value.point( v.addr(), v.size() );
+		}
+
+        JagDBPair( const JagFixString &k, bool point ) 
+		{
+			//upsertFlag = 0;
+			key.point(k.addr(), k.size() );
+		}
+
+        JagDBPair( const char *kstr, jagint klen, const char *vstr, jagint vlen ) 
+		{
+			//upsertFlag = 0;
+			//key = JagFixString(kstr, klen);
+			//value = JagFixString(vstr, vlen);
+
+			key = JagFixString(kstr, klen, klen);
+			value = JagFixString(vstr, vlen, vlen);
+		}
+
+        JagDBPair( const char *kvstr, jagint klen, jagint vlen ) 
+		{
+			//upsertFlag = 0;
+			//key = JagFixString(kvstr, klen);
+			//value = JagFixString(kvstr+klen, vlen);
+			key = JagFixString(kvstr, klen, klen );
+			value = JagFixString(kvstr+klen, vlen, vlen );
+		}
+
+		void point( const char *k, jagint klen,  const char *v, jagint vlen ) {
+			key.point( k, klen);
+			value.point( v, vlen );
+		}
+
+        JagDBPair( const char *kstr, jagint klen, const char *vstr, jagint vlen, bool point ) 
+		{
+			//upsertFlag = 0;
+			key.point(kstr, klen);
+			value.point(vstr, vlen);
+		}
+
+        JagDBPair( const char *kstr, jagint klen ) 
+		{
+			//key = JagFixString(kstr, klen);
+			key = JagFixString(kstr, klen, klen );
+		}
+
+        JagDBPair( const char *kstr, jagint klen, bool point ) 
+		{
+			key.point(kstr, klen);
+		}
+
+        int compareKeys( const JagDBPair &d2 ) const {
 			if ( key.addr() == NULL || key.addr()[0] == '\0' ) {
 				if ( d2.key.size()<1 || d2.key.addr() == NULL || d2.key.addr()[0] == '\0' ) {
 					return 0;
@@ -50,62 +118,6 @@ class JagDBPair
 					return ( memcmp(key.addr(), d2.key.addr(), key.size() ) );
 				}
 			}
-		}
-		
-		JagDBPair( ) { upsertFlag = 0; } 
-        JagDBPair( const JagFixString &k ) : key(k) { upsertFlag = 0; }
-        JagDBPair( const JagFixString &k, const JagFixString &v ) : key(k), value(v) { upsertFlag = 0; } 
-		void point( const JagFixString &k, const JagFixString &v ) {
-			key.point(k.addr(), k.size() );
-			value.point( v.addr(), v.size() );
-		}
-
-		void point( const JagFixString &k ) {
-			key.point(k.addr(), k.size() );
-		}
-		void point( const char *k, abaxint klen,  const char *v, abaxint vlen ) {
-			key.point( k, klen);
-			value.point( v, vlen );
-		}
-		void point( const char *k, abaxint klen ) {
-			key.point( k, klen);
-		}
-        JagDBPair( const JagFixString &k, const JagFixString &v, bool ref ) 
-		{
-			upsertFlag = 0;
-			key.point(k.addr(), k.size() );
-			value.point( v.addr(), v.size() );
-		}
-        JagDBPair( const JagFixString &k, bool point ) 
-		{
-			upsertFlag = 0;
-			key.point(k.addr(), k.size() );
-		}
-
-        JagDBPair( const char *kstr, abaxint klen, const char *vstr, abaxint vlen ) 
-		{
-			upsertFlag = 0;
-			key = JagFixString(kstr, klen);
-			value = JagFixString(vstr, vlen);
-		}
-
-        JagDBPair( const char *kstr, abaxint klen, const char *vstr, abaxint vlen, bool point ) 
-		{
-			upsertFlag = 0;
-			key.point(kstr, klen);
-			value.point(vstr, vlen);
-		}
-
-        JagDBPair( const char *kstr, abaxint klen ) 
-		{
-			upsertFlag = 0;
-			key = JagFixString(kstr, klen);
-		}
-
-        JagDBPair( const char *kstr, abaxint klen, bool point ) 
-		{
-			upsertFlag = 0;
-			key.point(kstr, klen);
 		}
 
 		// operators
@@ -137,7 +149,7 @@ class JagDBPair
         {
             key = d3.key;
             value = d3.value;
-			upsertFlag = d3.upsertFlag;
+			//upsertFlag = d3.upsertFlag;
             return *this;
         }
 
@@ -145,7 +157,7 @@ class JagDBPair
 			value.destroy( action );
 		}
 
-		inline abaxint hashCode() const {
+		inline jagint hashCode() const {
 			return key.hashCode();
 		}
 
@@ -163,12 +175,11 @@ class JagDBPair
 			printf("\n");
 		}
 
-		inline abaxint size() { return (key.size() + value.size()); }
+		inline jagint size() { return (key.size() + value.size()); }
 		void toBuffer(char *buffer) const {
 			memcpy(buffer, key.c_str(), key.size() );
 			memcpy(buffer + key.size(), value.c_str(), value.size() );
 		}
-
 
 };
 

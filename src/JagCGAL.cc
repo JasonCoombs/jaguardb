@@ -968,7 +968,7 @@ void JagCGAL::getUniqueStr( const JagStrSplit &sp, const Jstr &hdr, const Jstr &
 	bool firstPoint = true;
 	int num;
 	Jstr lastP;
-	const char *str;
+	//const char *str;
 	for  ( int i=JAG_SP_START; i < sp.length(); ++i ) {
 		if ( sp[i] == "|" || sp[i] == "!" ) {
 			firstPoint = true;
@@ -1184,19 +1184,19 @@ void JagCGAL::getVoronoiPolygons2D( int srid, const JagStrSplit &sp, double tole
 	long long ix, iy;
 
 	if ( 0 == srid  ) {
-		xmin = abaxint(xmin/tolerance) * factor;
-		ymin = abaxint(ymin/tolerance) * factor;
-		xmax = abaxint(xmax/tolerance) * factor;
-		ymax = abaxint(ymax/tolerance) * factor;
+		xmin = jagint(xmin/tolerance) * factor;
+		ymin = jagint(ymin/tolerance) * factor;
+		xmax = jagint(xmax/tolerance) * factor;
+		ymax = jagint(ymax/tolerance) * factor;
 	} else {
 		unitlon = JagGeo::meterToLon( srid, tolerance, (xmin+xmax)/2.0, (ymin+ymax)/2.0 );
 		unitlat = JagGeo::meterToLat( srid, tolerance, (xmin+xmax)/2.0, (ymin+ymax)/2.0 );
 		//prt(("s1029 unitlon=%f unitlat=%f\n", unitlon, unitlat ));
 		// tolerance is meters, change to lon lat
-		xmin = abaxint(xmin/unitlon) * factor;
-		ymin = abaxint(ymin/unitlat) * factor;
-		xmax = abaxint(xmax/unitlon) * factor;
-		ymax = abaxint(ymax/unitlat) * factor;
+		xmin = jagint(xmin/unitlon) * factor;
+		ymin = jagint(ymin/unitlat) * factor;
+		xmax = jagint(xmax/unitlon) * factor;
+		ymax = jagint(ymax/unitlat) * factor;
 	}
 	JagBox2D bbox(xmin, ymin, xmax, ymax );
 

@@ -143,29 +143,29 @@ bool JagGeo::doPointWithin( const JagStrSplit &sp1, const Jstr &mk2, const Jstr 
 		double lat = meterToLat( srid2, r, x0, y0);
 		return pointWithinRectangle( px0, py0, x0, y0, lon, lat, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_RECTANGLE ) {
-		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
-		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-		double w = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-		double h = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+		double x0 = jagatof( sp2[JAG_SP_START+0] ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1] ); 
+		double w = jagatof( sp2[JAG_SP_START+2] ); 
+		double h = jagatof( sp2[JAG_SP_START+3] ); 
 		double nx = safeget(sp2, JAG_SP_START+4);
 		double lon = meterToLon( srid2, w, x0, y0);
 		double lat = meterToLat( srid2, h, x0, y0);
 		return pointWithinRectangle( px0, py0, x0, y0, lon, lat, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_CIRCLE ) {
-		double x = jagatof( sp2[JAG_SP_START+0].c_str() ); 
-		double y = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-		double r = jagatof( sp2[JAG_SP_START+2].c_str() );
+		double x = jagatof( sp2[JAG_SP_START+0] ); 
+		double y = jagatof( sp2[JAG_SP_START+1] ); 
+		double r = jagatof( sp2[JAG_SP_START+2] );
 		double lon = meterToLon( srid2, r, x, y);
 		double lat = meterToLat( srid2, r, x, y);
 		// return pointWithinCircle( px0, py0, x, y, r, strict );
 		return pointWithinEllipse( px0, py0, x, y, lon, lat, 0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
-		double x0 = jagatof( sp2[JAG_SP_START+0].c_str() ); 
-		double y0 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
-		double w = jagatof( sp2[JAG_SP_START+2].c_str() );
-		double h = jagatof( sp2[JAG_SP_START+3].c_str() );
+		double x0 = jagatof( sp2[JAG_SP_START+0] ); 
+		double y0 = jagatof( sp2[JAG_SP_START+1] ); 
+		double w = jagatof( sp2[JAG_SP_START+2] );
+		double h = jagatof( sp2[JAG_SP_START+3] );
 		double nx = safeget(sp2, JAG_SP_START+4);
-		double ny = safeget(sp2, JAG_SP_START+5);
+		//double ny = safeget(sp2, JAG_SP_START+5);
 		double lon = meterToLon( srid2, w, x0, y0);
 		double lat = meterToLat( srid2, h, x0, y0);
 		return pointWithinEllipse( px0, py0, x0, y0, lon, lat, nx, strict );
@@ -1403,7 +1403,7 @@ bool JagGeo::doPolygonWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1
 	***/
 
 	// like point within
-	prt(("s6683 doPolygonWithin colType2=[%s]\n", colType2.c_str() ));
+	//prt(("s6683 doPolygonWithin colType2=[%s]\n", colType2.c_str() ));
 	if (  colType2 == JAG_C_COL_TYPE_TRIANGLE ) {
 		// JAG_C_COL_TYPE_TRIANGLE is 2D already
 		double x1 = jagatof( sp2[JAG_SP_START+0].c_str() );
@@ -1455,7 +1455,7 @@ bool JagGeo::doPolygonWithin( const Jstr &mk1, int srid1, const JagStrSplit &sp1
 
 double JagGeo::doMultiPolygonArea( const Jstr &mk1, int srid1, const JagStrSplit &sp1 )
 {
-	prt(("s7739 doMultiPolygonArea sp1.print():\n" ));
+	// prt(("s7739 doMultiPolygonArea sp1.print():\n" ));
 	//sp1.print();
 
 	int start = JAG_SP_START;
@@ -1926,27 +1926,35 @@ bool JagGeo::pointWithinCircle( double px, double py, double x0, double y0, doub
 bool JagGeo::pointWithinEllipse( double px0, double py0, double x0, double y0, 
 									double w, double h, double nx, bool strict )
 {
-	if ( jagIsZero(w) || jagIsZero(h) ) return false;
-	if (  bound2DDisjoint( px0, py0, 0.0,0.0, x0, y0, w,h ) ) { return false; }
+	if ( jagIsZero(w) || jagIsZero(h) ) {
+		return false;
+	}
+
+	if (  bound2DDisjoint( px0, py0, 0.0,0.0, x0, y0, w,h ) ) { 
+		return false; 
+	}
 
     double px, py;
 	transform2DCoordGlobal2Local( x0, y0, px0, py0, nx, px, py );
 
-	if ( px < -w || px > w || py < -h || py > h ) return false;
+	if ( px < -w || px > w || py < -h || py > h ) {
+		return false;
+	}
 	double f = px*px/(w*w) + py*py/(h*h);
 	if ( strict ) {
 		if ( f < 1.0 ) return true; 
 	} else {
 		if ( jagLE(f, 1.0) ) return true; 
 	}
+
 	return false;
 }
 
 bool JagGeo::pointWithinPolygon( double x, double y, 
 								const Jstr &mk2, const JagStrSplit &sp2, bool strict )
 {
-    const char *str;
-    char *p;
+    //const char *str;
+    //char *p;
 	JagPolygon pgon;
 	int rc;
 	rc = JagParser::addPolygonData( pgon, sp2, false );
@@ -2535,8 +2543,8 @@ bool JagGeo::lineWithinPolygon( double x10, double y10, double x20, double y20,
 		return false;
 	}
 
-    const char *str;
-    char *p;
+    //const char *str;
+    //char *p;
 	//JagLineString3D linestr;
 	JagPolygon pgon;
 	int rc;
@@ -3371,7 +3379,7 @@ bool JagGeo::lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &
 	}
 
 	int len = j;
-	rc = sortLinePoints<JagSortPoint2D>( points, len );
+	rc = inlineQuickSort<JagSortPoint2D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -3386,8 +3394,7 @@ bool JagGeo::lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &
 		seg.key.x2 =  points[i].x2; seg.key.y2 =  points[i].y2;
 		seg.color = points[i].color;
 		/**
-		prt(("s0088 seg print:\n" ));
-		seg.println();
+		// prt(("s0088 seg print:\n" )); seg.println();
 		**/
 
 		if ( JAG_LEFT == points[i].end ) {
@@ -3440,8 +3447,7 @@ bool JagGeo::lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &
 									    seg.key.x1,seg.key.y1,seg.key.x2,seg.key.y2) ) {
 					/***
 					prt(("s7641 left above seg intersect\n" ));
-					above->println();
-					seg.println();
+					// above->println(); seg.println();
 					***/
 					if ( doRes ) {
 						found = true;
@@ -3495,7 +3501,7 @@ bool JagGeo::lineStringIntersectLineString( const Jstr &mk1, const JagStrSplit &
 				/***
 				prt(("72098 below is NULLVALUE abort\n" ));
 				jarr->printKey();
-				seg.println();
+				// seg.println();
 				//abort();
 				***/
 				below = NULL;
@@ -3618,7 +3624,7 @@ bool JagGeo::lineStringIntersectRectangle( const Jstr &mk1, const JagStrSplit &s
 
 	JagLine2D line[4];
 	edgesOfRectangle( a, b, line );
-	double gx1,gy1, gx2,gy2;
+	//double gy1, gx2,gy2;
 	for ( int i=0; i < 4; ++i ) {
 		line[i].transform(x0,y0,nx);
 	}
@@ -3773,7 +3779,7 @@ bool JagGeo::polygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1
 	}
 
 	int len = j;
-	rc = sortLinePoints<JagSortPoint2D>( points, len );
+	rc = inlineQuickSort<JagSortPoint2D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -3788,8 +3794,7 @@ bool JagGeo::polygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1
 		seg.key.x2 =  points[i].x2; seg.key.y2 =  points[i].y2;
 		seg.color = points[i].color;
 		/**
-		prt(("s0088 seg print:\n" ));
-		seg.println();
+		prt(("s0088 seg print:\n" )); seg.println();
 		**/
 
 		if ( JAG_LEFT == points[i].end ) {
@@ -3873,7 +3878,7 @@ bool JagGeo::polygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1
 				/***
 				prt(("72098 below is NULLVALUE abort\n" ));
 				jarr->printKey();
-				seg.println();
+				//seg.println();
 				//abort();
 				***/
 				below = NULL;
@@ -4036,7 +4041,7 @@ bool JagGeo::polygonIntersectRectangle( const Jstr &mk1, const JagStrSplit &sp1,
 
 	JagLine2D line[4];
 	edgesOfRectangle( a, b, line );
-	double gx1,gy1, gx2,gy2;
+	//double gx1,gy1, gx2,gy2;
 	for ( int i=0; i < 4; ++i ) {
 		line[i].transform(x0,y0,nx);
 	}
@@ -4361,7 +4366,7 @@ bool JagGeo::rectangle3DWithinCube(  double px0, double py0, double pz0, double 
 	point[1].x = -a0; point[1].y = b0; point[1].z = 0.0;
 	point[2].x = a0; point[2].y = b0; point[2].z = 0.0;
 	point[3].x = a0; point[3].y = -b0; point[3].z = 0.0;
-	double sq_x, sq_y, sq_z, px, py, pz, loc_x, loc_y, loc_z;
+	double sq_x, sq_y, sq_z, loc_x, loc_y, loc_z;
 	for ( int i=0; i < 4; ++i ) {
 		// sq_x, sq_y, sq_z are coords in x-y-z of each cube corner node
 		transform3DCoordLocal2Global( px0, py0, pz0, point[i].x, point[i].y, point[i].z, nx0, ny0, sq_x, sq_y, sq_z );
@@ -5314,7 +5319,7 @@ bool JagGeo::boxWithinSphere(  double px0, double py0, double pz0, double a0, do
 	point[6].x = a0; point[6].y = b0; point[6].z = c0;
 	point[7].x = a0; point[7].y = -b0; point[7].z = c0;
 
-	double sq_x, sq_y, sq_z, loc_x, loc_y, loc_z;
+	double sq_x, sq_y, sq_z;
 	for ( int i=0; i < 8; ++i ) {
 		// sq_x, sq_y, sq_z are coords in x-y-z of each cube corner node
 		transform3DCoordLocal2Global( px0, py0, pz0, point[i].x, point[i].y, point[i].z, nx0, ny0, sq_x, sq_y, sq_z );
@@ -5371,7 +5376,7 @@ bool JagGeo::boxWithinCone(  double px0, double py0, double pz0, double a0, doub
 	point[5].x = -a0; point[5].y = b0; point[5].z = c0;
 	point[6].x = a0; point[6].y = b0; point[6].z = c0;
 	point[7].x = a0; point[7].y = -b0; point[7].z = c0;
-	double sq_x, sq_y, sq_z, loc_x, loc_y, loc_z;
+	double sq_x, sq_y, sq_z;
 	for ( int i=0; i < 8; ++i ) {
 		transform3DCoordLocal2Global( px0, py0, pz0, point[i].x, point[i].y, point[i].z, nx0, ny0, sq_x, sq_y, sq_z );
 		if ( ! point3DWithinCone( sq_x, sq_y, sq_z, x0,y0,z0, r,h, nx,ny, strict ) ) { return false; }
@@ -5459,7 +5464,7 @@ bool JagGeo::ellipsoidWithinCone(  double px0, double py0, double pz0, double a0
 	if ( ! validDirection(nx, ny) ) return false;
 	if (  bound3DDisjoint( px0, py0, pz0, a0,b0,b0, x0, y0, z0, r,r,h ) ) { return false; }
 	JagVector<JagPoint3D> vec;
-	double loc_x, loc_y, loc_z;
+	//double loc_x, loc_y, loc_z;
 	samplesOnEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, NUM_SAMPLE, vec );
 	for ( int i=0; i <vec.size(); ++i ) {
 		if ( ! point3DWithinCone( vec[i].x, vec[i].y, vec[i].z, x0,y0,z0, r, h, nx, ny, strict ) ) {
@@ -6190,7 +6195,7 @@ bool JagGeo::doPointIntersect( int srid1, const JagStrSplit &sp1, const Jstr &mk
 			double w = jagatof( sp2[JAG_SP_START+2].c_str() );
 			double h = jagatof( sp2[JAG_SP_START+3].c_str() );
 			double nx = safeget(sp2, JAG_SP_START+4);
-			double ny = safeget(sp2, JAG_SP_START+5);
+			//double ny = safeget(sp2, JAG_SP_START+5);
 			return pointWithinEllipse( px0, py0, x0, y0, w, h, nx, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 			return pointWithinPolygon( px0, py0, mk2, sp2, false );
@@ -7843,7 +7848,7 @@ bool JagGeo::triangleIntersectLine( double x10, double y10, double x20, double y
 
 {
 	double X1, Y1, R1x, R1y;
-	double X2, Y2, R2x, R2y;
+	//double X2, Y2, R2x, R2y;
 	triangleRegion( x10, y10, x20, y20, x30, y30, X1, Y1, R1x, R1y );
 
 	double trix, triy, rx, ry;
@@ -8323,7 +8328,7 @@ bool JagGeo::lineString3DIntersectLineString3D( const Jstr &mk1, const JagStrSpl
 	}
 
 	int len = j;
-	rc = sortLinePoints<JagSortPoint3D>( points, len );
+	rc = inlineQuickSort<JagSortPoint3D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -8439,7 +8444,7 @@ bool JagGeo::lineString3DIntersectLineString3D( const Jstr &mk1, const JagStrSpl
 				#if 0
 				prt(("7258 below is NULLVALUE abort\n" ));
 				jarr->printKey();
-				seg.println();
+				//seg.println();
 				//abort();
 				#endif
 				below = NULL;
@@ -8971,7 +8976,7 @@ bool JagGeo::polygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit 
 	}
 
 	int len = j;
-	rc = sortLinePoints<JagSortPoint3D>( points, len );
+	rc = inlineQuickSort<JagSortPoint3D>( points, len );
 	if ( rc ) {
 		//prt(("s7732 sortIntersectLinePoints rc=%d retur true intersect\n", rc ));
 		// return true;
@@ -9057,7 +9062,7 @@ bool JagGeo::polygon3DIntersectLineString3D( const Jstr &mk1, const JagStrSplit 
 				#if 0
 				prt(("7258 below is NULLVALUE abort\n" ));
 				jarr->printKey();
-				seg.println();
+				//seg.println();
 				//abort();
 				#endif
 				below = NULL;
@@ -10179,7 +10184,7 @@ bool JagGeo::ellipsoidIntersectCone(  double px0, double py0, double pz0, double
 
 
 	JagVector<JagPoint3D> vec;
-	double loc_x, loc_y, loc_z;
+	//double loc_x, loc_y, loc_z;
 	samplesOnEllipsoid( px0, py0, pz0, a0, b0, c0, nx0, ny0, NUM_SAMPLE, vec );
 	for ( int i=0; i <vec.size(); ++i ) {
 		if ( point3DWithinCone( vec[i].x, vec[i].y, vec[i].z, x0,y0,z0, r, h, nx, ny, strict ) ) {
@@ -10392,8 +10397,8 @@ bool JagGeo::doClosestPoint(  const Jstr& colType1, int srid, double px, double 
 {
 	prt(("s1102 doAllClosestPoint sp2:\n" ));
 	//sp2.print();
-	char *str, p;
-	double dx,dy,dz;
+	//char *str, p;
+	//double dx,dy,dz;
 
 	// colType1 must be point or point3d
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
@@ -11731,7 +11736,7 @@ void JagGeo::rotate3DCoordGlobal2Local( double inx, double iny, double inz, doub
                                     double &outx, double &outy, double &outz )
 {
 	double n2 = nx*nx + ny*ny;
-	if ( jagIsPosZero(n2) || n2 > 1.0 ) {
+	if ( jagEQ(n2, 0.0) || n2 > 1.0 ) {
 		outx = inx;
 		outy = iny;
 		outz = inz;
@@ -11752,7 +11757,7 @@ void JagGeo::rotate3DCoordLocal2Global( double inx, double iny, double inz, doub
                                     double &outx, double &outy, double &outz )
 {
 	double n2 = nx*nx + ny*ny;
-	if ( jagIsPosZero(n2) || n2 > 1.0 ) {
+	if ( jagEQ(n2, 0.0) || n2 > 1.0 ) {
 		outx = inx;
 		outy = iny;
 		outz = inz;
@@ -12643,7 +12648,7 @@ bool JagGeo::bound3DLineBoxDisjoint( double x10, double y10, double z10,
 	if ( ymin > y0+mxd ) return true;
 
 	double zmin = jagmin(z10,z20);
-	if ( ymin > z0+mxd ) return true;
+	if ( zmin > z0+mxd ) return true;
 
 	return false;
 }
@@ -12879,7 +12884,7 @@ int JagGeo::relationLine3DNormalCone( double x0, double y0, double z0,  double x
 	//double Z = c-z;
 	double C = a/c;
 
-	double a2=a*a;
+	//double a2=a*a;
 	// double b2=b*b;
 	double c2=C*C;
 	double k2=k*k;
@@ -12978,7 +12983,7 @@ int JagGeo::relationLine3DNormalCylinder( double x0, double y0, double z0,  doub
 	double a2=a*a;
 	double b2=b*b;
 	double k2=k*k;
-	double h2=h*h;
+	//double h2=h*h;
 
 	double x0sq=x0*x0;
 	double y0sq=y0*y0;
@@ -14861,7 +14866,7 @@ bool JagGeo::doPointDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr
 		double w = jagatof( sp2[JAG_SP_START+2].c_str() );
 		double h = jagatof( sp2[JAG_SP_START+3].c_str() );
 		double nx = safeget(sp2, JAG_SP_START+4);
-		double ny = safeget(sp2, JAG_SP_START+5);
+		//double ny = safeget(sp2, JAG_SP_START+5);
 		return pointDistanceEllipse( srid, px0, py0, x0, y0, w, h, nx, arg, dist);
 	} else if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		return pointDistancePolygon( srid, px0, py0, mk2, sp2, arg, dist);
@@ -15957,7 +15962,7 @@ double JagGeo::doEllipsoidArea( int srid1, const JagStrSplit& sp1 )
 	double p=1.6075; // Knud Thomsen approximation formula
 	double ap = pow(a, p);
 	double bp = pow(b, p);
-	double cp = pow(b, p);
+	double cp = pow(c, p);
 	double f = ( ap*(bp+cp)+bp*cp)/3.0;
 	f = pow(f, 1.0/p);
 	return 4.0*JAG_PI*f ;
@@ -16613,7 +16618,7 @@ bool JagGeo::pointDistanceEllipse( int srid, double px, double py, double x0, do
 
     double locx, locy;
     transform2DCoordGlobal2Local( x0,y0, px, py, nx, locx, locy );
-    double mx, my;
+    //double mx, my;
     if ( arg.caseEqual("max") ) {
         dist = pointDistanceToEllipse( srid, px, py, x0, y0, a, b, nx, false );
     } else {
@@ -16672,7 +16677,7 @@ bool JagGeo::pointDistanceTriangle(int srid, double px, double py, double x1, do
 bool JagGeo::pointDistancePolygon( int srid, double x, double y, const Jstr &mk2, const JagStrSplit &sp2, 
 								   const Jstr& arg, double &dist )
 {
-    const char *str;
+    //const char *str;
     //char *p;
 	JagPolygon pgon;
 	int rc;
@@ -16780,13 +16785,13 @@ bool JagGeo::point3DDistanceBox(int srid, double dx, double dy, double dz,
 								  double x0, double y0, double z0, double d, double w, double h, double nx, double ny,
 								  const Jstr& arg, double &dist )
 {
-    double px, py, pz, maxd1, maxd2, maxd3, mind1;
-    double xsum = 0, ysum = 0, zsum = 0;
-    long counter = 0;
+    double px, py, pz, maxd1, mind1;
+    //double xsum = 0, ysum = 0, zsum = 0;
+    //long counter = 0;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    const char *str;
-    char *p;
+    //const char *str;
+    //char *p;
 
     transform3DCoordGlobal2Local( x0, y0, z0, dx, dy, dz, nx, ny, px, py, pz );
     if (fabs(px) <= d && fabs(py) <= w){
@@ -18188,7 +18193,7 @@ bool JagGeo::lineStringDistanceLineString(int srid, const Jstr &mk1, const JagSt
             return true;
      }
 
-    double dx, dy, d, dx2, dy2, d2;
+    double dx, dy, d, dx2, dy2;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     const char *str;
@@ -18310,7 +18315,7 @@ bool JagGeo::lineStringDistanceRectangle(int srid, const Jstr &mk1, const JagStr
             return true;
      }
     prt(("rect----------------------\n"));
-    double dx, dy, d, mind1, maxd1, px, py;
+    double dx, dy, mind1, maxd1, px, py;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     const char *str;
@@ -18371,8 +18376,8 @@ bool JagGeo::lineStringDistanceEllipse(int srid, const Jstr &mk1, const JagStrSp
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    double xsum = 0.0, ysum = 0.0;
-    long counter = 0;
+    //double xsum = 0.0, ysum = 0.0;
+    //long counter = 0;
     const char *str;
     char *p;
 
@@ -18417,8 +18422,8 @@ bool JagGeo::lineStringDistanceCircle(int srid, const Jstr &mk1, const JagStrSpl
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    double xsum = 0, ysum = 0;
-    long counter = 0;
+    //double xsum = 0, ysum = 0;
+    //long counter = 0;
     const char *str;
     char *p;
 
@@ -18452,13 +18457,13 @@ bool JagGeo::lineStringDistancePolygon(int srid, const Jstr &mk1, const JagStrSp
     JagPolygon pgon;
     int rc;
 	int start = JAG_SP_START;
-	int start2 = JAG_SP_START;
+	//int start2 = JAG_SP_START;
     double dx, dy, d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     const char *str;
     char *p;
-    char *p2;
+    //char *p2;
     //prt(("s10001 colType2=[%s]\n", colType2.c_str() ));
     //prt(("s10001 mk1=[%s]\n , mk2=[%s]\n", mk1.c_str(), mk2.c_str() ));
     rc = JagParser::addPolygonData( pgon, sp2, false );
@@ -18514,11 +18519,11 @@ bool JagGeo::lineString3DDistanceLineString3D(int srid, const Jstr &mk1, const J
 	int start = JAG_SP_START;
 	int start2 = JAG_SP_START;
 
-    double dx, dy, dz, d, dx2, dy2, dz2, d2;
+    double dx, dy, dz, d, dx2, dy2, dz2;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
-    double xsum = 0, ysum = 0, zsum = 0, xsum2 = 0, ysum2 = 0, zsum2 = 0;
-    long counter = 0;
+    //double xsum = 0, ysum = 0, zsum = 0, xsum2 = 0, ysum2 = 0, zsum2 = 0;
+    //long counter = 0;
     const char *str;
     const char *str2;
     char *p;
@@ -18582,7 +18587,7 @@ bool JagGeo::lineString3DDistanceBox(int srid,  const Jstr &mk1, const JagStrSpl
     //	dist = 0.0;
     //sp1.print();
 	int start = JAG_SP_START;
-    double dx, dy, dz, pd, d1, px, py, pz, maxd1, maxd2, maxd3, mind1;
+    double dx, dy, dz, px, py, pz, maxd1, mind1;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
     double mind = LONG_MAX;
@@ -18667,7 +18672,7 @@ bool JagGeo::lineString3DDistanceSphere(int srid,  const Jstr &mk1, const JagStr
 {
 	int start = JAG_SP_START;
 
-    double dx, dy, dz, d, d1;
+    double dx, dy, dz, d;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
     double mind = LONG_MAX;
@@ -18801,16 +18806,16 @@ bool JagGeo::polygonDistanceTriangle(int srid, const Jstr &mk1, const JagStrSpli
 
     JagPolygon pgon;
 
-    const char *str;
-    char *p1;
+    //const char *str;
+    //char *p1;
     int rc;
-    double d, d1, d2, d3, mind, maxd;
+    double d1, d2, d3, mind, maxd;
     double min = LONG_MAX;
     double max = LONG_MIN;
     double xsum = 0, ysum = 0;
     long counter = 0;
 
-	int start = JAG_SP_START;
+	//int start = JAG_SP_START;
     rc = JagParser::addPolygonData( pgon, sp1, true );
     if ( rc < 0 ) { return false; }
 
@@ -18842,7 +18847,7 @@ bool JagGeo::polygonDistanceTriangle(int srid, const Jstr &mk1, const JagStrSpli
     } else if (arg.caseEqual( "min" )) {
         dist = min;
     } else if (arg.caseEqual( "center" )) {
-        double px, py;
+        //double px, py;
         if ( 0 == counter ) dist = 0.0;
         else dist = JagGeo::distance( (x1 + x2 + x3) / 3, (y1 + y2 +y3) / 3, xsum / counter, ysum / counter, srid );
     }
@@ -18859,7 +18864,7 @@ bool JagGeo::polygonDistanceRectangle(int srid, const Jstr &mk1, const JagStrSpl
 {
     JagPolygon pgon;
     int rc;
-    double dx, dy, d;
+    double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     rc = JagParser::addPolygonData( pgon, sp1, false );
@@ -18934,7 +18939,7 @@ bool JagGeo::polygonDistanceCircle(int srid, const Jstr &mk1, const JagStrSplit 
 {
     JagPolygon pgon;
     int rc;
-    double dx, dy, d;
+    double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     rc = JagParser::addPolygonData( pgon, sp1, false );
@@ -18971,7 +18976,7 @@ bool JagGeo::polygonDistancePolygon(int srid, const Jstr &mk1, const JagStrSplit
     JagPolygon pgon2;
 
     int rc1, rc2;
-    double dx, dy, d;
+    double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     rc1 = JagParser::addPolygonData( pgon1, sp1, false );
@@ -19026,7 +19031,7 @@ bool JagGeo::polygon3DDistanceBox(int srid,  const Jstr &mk1, const JagStrSplit 
 {
     JagPolygon pgon;
     int rc;
-    double d1, d2, d3, min, max;
+    //double d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
     double dist1;
@@ -19073,7 +19078,7 @@ bool JagGeo::polygon3DDistanceSphere(int srid,  const Jstr &mk1, const JagStrSpl
 {
 	JagPolygon pgon;
     int rc;
-    double d1, d2, d3, min, max;
+    //double d1, d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
     double dist1;
@@ -19120,7 +19125,7 @@ bool JagGeo::polygon3DDistanceEllipsoid(int srid,  const Jstr &mk1, const JagStr
 {
     JagPolygon pgon;
     int rc;
-    double d1, d2, d3, min, max;
+    //double d1, d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
     double dist1;
@@ -19169,7 +19174,7 @@ bool JagGeo::polygon3DDistanceCone(int srid,  const Jstr &mk1, const JagStrSplit
 {
     JagPolygon pgon;
     int rc;
-    double d1, d2, d3, min, max;
+    //double d1, d2, d3, min, max;
     double xsum = 0, ysum = 0, zsum = 0;
     long counter = 0;
     double dist1;
@@ -19463,7 +19468,7 @@ bool JagGeo::multiPolygon3DDistanceCube(int srid, const Jstr &mk1, const JagStrS
 								double x0, double y0, double z0, double r, double nx, double ny, const Jstr& arg, double &dist )
 {
     int rc;
-    double d;
+    //double d;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
     double dist1;
@@ -19509,7 +19514,7 @@ bool JagGeo::multiPolygon3DDistanceBox(int srid,  const Jstr &mk1, const JagStrS
                                 double x0, double y0, double z0,
                                 double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
-    int rc;
+    //int rc;
     int rc1;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
@@ -19554,7 +19559,7 @@ bool JagGeo::multiPolygon3DDistanceBox(int srid,  const Jstr &mk1, const JagStrS
 bool JagGeo::multiPolygon3DDistanceSphere(int srid,  const Jstr &mk1, const JagStrSplit &sp1,
                                        double x, double y, double z, double r, const Jstr& arg, double &dist )
 {
-    int rc;
+    //int rc;
     int rc1;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
@@ -19600,7 +19605,7 @@ bool JagGeo::multiPolygon3DDistanceEllipsoid(int srid,  const Jstr &mk1, const J
                                     double x0, double y0, double z0,
                                     double w, double d, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
-    int rc;
+    //int rc;
     int rc1;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
@@ -19644,7 +19649,7 @@ bool JagGeo::multiPolygon3DDistanceCone(int srid,  const Jstr &mk1, const JagStr
                                     double x0, double y0, double z0,
                                     double r, double h, double nx, double ny, const Jstr& arg, double &dist )
 {
-    int rc;
+    //int rc;
     int rc1;
     double mind = LONG_MAX;
     double maxd = LONG_MIN;
@@ -19734,7 +19739,7 @@ double JagGeo::pointToLineGeoDistance( double lata1, double lona1, double lata2,
   	const GeographicLib::Gnomonic gn(geod);
 
 	double xa1, ya1, xa2, ya2;
-	double xb1, yb1, xb2, yb2;
+	double xb1, yb1;
 	double lat1, lon1;
 	for (int i = 0; i < 10; ++i) {
 		gn.Forward(lat0, lon0, lata1, lona1, xa1, ya1);
@@ -20188,7 +20193,7 @@ bool JagGeo::closestPoint2DPolygon( int srid, double px, double py, const Jstr &
 bool JagGeo::closestPoint2DRaster( int srid, double px, double py, const Jstr &mk,
                                     const JagStrSplit &sp, Jstr &res )
 {
-	bool rc;
+	//bool rc;
 
 	double x, y, projx, projy;
 	double d, mind = LONG_MAX;
@@ -20246,7 +20251,7 @@ bool JagGeo::closestPoint3DPolygon( int srid, double px, double pz, double py, c
 bool JagGeo::closestPoint3DRaster( int srid, double px, double py, double pz, const Jstr &mk,
                                     const JagStrSplit &sp, Jstr &res )
 {
-	bool rc;
+	//bool rc;
 
 	double x, y, z, projx, projy, projz;
 	double d, mind = LONG_MAX;
@@ -21491,7 +21496,7 @@ Jstr JagGeo::doPolygonUnion( const Jstr &mk1, int srid1, const JagStrSplit &sp1,
 	JagFixString txt;
 	std::vector< std::string> vec;
 	Jstr uwkt;
-	char *p;
+	//char *p;
 	int rc;
 	if ( colType2 == JAG_C_COL_TYPE_POLYGON ) {
 		rc = JagCGAL::unionOfTwoPolygons( sp1, sp2, uwkt );
@@ -21734,8 +21739,8 @@ Jstr  JagGeo::doLineStringIntersection( const Jstr &colType1,const JagStrSplit &
 		val = Jstr("CJAG=0=0=MP3=d 0:0:0:0:0:0");
 	}
 
-	const char *str; char *p;
-	double px1,py1,pz1,px2,py2,pz2;
+	//const char *str; char *p;
+	//double px1,py1,pz1,px2,py2,pz2;
 	int cnt = 0;
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING || colType2 == JAG_C_COL_TYPE_LINESTRING3D ) {
 		if ( 2 == dim2 ) {
@@ -21808,8 +21813,8 @@ Jstr  JagGeo::doLineStringIntersection( const Jstr &colType1,const JagStrSplit &
 			JagPoint2D *pt2 =new JagPoint2D[len2];
 			for ( int i=0; i < len1; ++i ) { pt1[i] = vec1[i]; }
 			for ( int i=0; i < len2; ++i ) { pt2[i] = vec2[i]; }
-			sortLinePoints<JagPoint2D>( pt1, len1 );
-			sortLinePoints<JagPoint2D>( pt2, len2 );
+			inlineQuickSort<JagPoint2D>( pt1, len1 );
+			inlineQuickSort<JagPoint2D>( pt2, len2 );
 			JagVector<JagPoint2D> pvec;
 			JagSortedSetJoin<JagPoint2D>( pt1, len1, pt2, len2, pvec );
 			for ( int i=0; i < pvec.size(); ++i ) {
@@ -21829,8 +21834,8 @@ Jstr  JagGeo::doLineStringIntersection( const Jstr &colType1,const JagStrSplit &
 			JagPoint3D *pt2 =new JagPoint3D[len2];
 			for ( int i=0; i < len1; ++i ) { pt1[i] = vec1[i]; }
 			for ( int i=0; i < len2; ++i ) { pt2[i] = vec2[i]; }
-			sortLinePoints<JagPoint3D>( pt1, len1 );
-			sortLinePoints<JagPoint3D>( pt2, len2 );
+			inlineQuickSort<JagPoint3D>( pt1, len1 );
+			inlineQuickSort<JagPoint3D>( pt2, len2 );
 			JagVector<JagPoint3D> pvec;
 			JagSortedSetJoin<JagPoint3D>( pt1, len1, pt2, len2, pvec );
 			for ( int i=0; i < pvec.size(); ++i ) {
@@ -22322,7 +22327,7 @@ Jstr  JagGeo::doLineStringDifference( const Jstr &colType1,const JagStrSplit &sp
 		getVectorPoints( sp1, true, vec1 );
 	}
 
-	const char *str; char *p;
+	//const char *str; char *p;
 	double px1,py1,pz1,px2,py2,pz2;
 	int cnt = 0;
 	if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
@@ -22521,7 +22526,7 @@ Jstr  JagGeo::doMultiLineStringDifference( const Jstr &colType1,const JagStrSpli
 	Jstr value;
 
 	int cnt = 0;
-    bool intsect;
+    //bool intsect;
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	int n = JagParser::addPolygonData( pgon1, sp1, false );
@@ -22731,9 +22736,9 @@ Jstr JagGeo::doPointSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
 			double z1 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
 			JagPoint3D p2(x1,y1,z1);
 
-			double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
-			double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
-			double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
+			//double x2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			//double y2 = jagatof( sp2[JAG_SP_START+4].c_str() ); 
+			//double z2 = jagatof( sp2[JAG_SP_START+5].c_str() ); 
 			JagPoint3D p3(x1,y1,z1);
 
 			if ( p1 == p2 && p1 != p3 ) {
@@ -22753,8 +22758,8 @@ Jstr JagGeo::doPointSymDifference( const Jstr &colType1,const JagStrSplit &sp1,
 			double y1 = jagatof( sp2[JAG_SP_START+1].c_str() ); 
 			JagPoint3D p2(x1,y1,0.0);
 
-			double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
-			double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
+			//double x2 = jagatof( sp2[JAG_SP_START+2].c_str() ); 
+			//double y2 = jagatof( sp2[JAG_SP_START+3].c_str() ); 
 			JagPoint3D p3(x1,y1,0.0);
 
 			if ( p1 == p2 && p1 != p3 ) {
@@ -22965,7 +22970,7 @@ Jstr  JagGeo::doLineStringSymDifference( const Jstr &colType1,const JagStrSplit 
 		getVectorPoints( sp1, true, vec1 );
 	}
 
-	const char *str; char *p;
+	//const char *str; char *p;
 	double px1,py1,pz1,px2,py2,pz2;
 	int cnt = 0;
 	if ( colType2 == JAG_C_COL_TYPE_POINT || colType2 == JAG_C_COL_TYPE_POINT3D ) {
@@ -23180,7 +23185,7 @@ Jstr  JagGeo::doMultiLineStringSymDifference( const Jstr &colType1,const JagStrS
 	Jstr value;
 
 	int cnt = 0;
-    bool intsect;
+    //bool intsect;
 	if ( colType2 == JAG_C_COL_TYPE_LINESTRING ) {
        	JagPolygon pgon1;  // use pgon to hold m-lines
        	int n = JagParser::addPolygonData( pgon1, sp1, false );
@@ -23713,8 +23718,8 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const JagStrSplit &sp, 
                                     bool is3D, JagVector<JagPoint3D> &resvec )
 {
-	double x,y,z;
-	const char *str; char *p;
+	//double x,y,z;
+	//const char *str; char *p;
 	JagPoint3D *arr1 = new JagPoint3D[vec1.size()];
 	for ( int i=0; i< vec1.size(); ++i ) { arr1[i] = vec1[i]; }
 	JagVector<JagPoint3D>  vec2;
@@ -23728,7 +23733,7 @@ void JagGeo::getIntersectionPoints( const JagVector<JagPoint3D> &vec1, const Jag
 
 void JagGeo::vectorToHash( const JagVector<JagPoint3D> &resvec, JagHashSetStr &hashset )
 {
-	char buf[32];
+	//char buf[32];
 	Jstr s;
 	for ( int i=0; i < resvec.size(); ++i ) {
 		s = resvec[i].hashString();

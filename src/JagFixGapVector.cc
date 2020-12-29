@@ -66,7 +66,7 @@ JagFixGapVector::JagFixGapVector( const JagFixGapVector<P>& other )
 	_last = other._last;
 
 	_arr = new Pair[_arrlen];
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = other._arr[i];
 	}
 }
@@ -91,7 +91,7 @@ JagFixGapVector& JagFixGapVector::operator=( const JagFixGapVector& other )
 	_last = other._last;
 
 	_arr = new Pair[_arrlen];
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		_arr[i] = other._arr[i];
 	}
 
@@ -121,7 +121,7 @@ JagFixGapVector::~JagFixGapVector( )
 
 void JagFixGapVector::reAlloc()
 {
-	abaxint i, j;
+	jagint i, j;
 	_newarrlen = _arrlen + _arrlen/2;
 	j = _newarrlen % JAG_BLOCK_SIZE;
 	_newarrlen += JAG_BLOCK_SIZE - j;
@@ -152,7 +152,7 @@ void JagFixGapVector::reAlloc()
 
 void JagFixGapVector::reAllocShrink()
 {
-	abaxint i;
+	jagint i;
 
 	_newarrlen  = _arrlen/_GEO; 
 
@@ -182,7 +182,7 @@ void JagFixGapVector::reAllocShrink()
 
 
 /***
-bool JagFixGapVector::append( const char *newpair, abaxint *index )
+bool JagFixGapVector::append( const char *newpair, jagint *index )
 {
 	if ( _elements == _arrlen ) { reAlloc(); }
 	*index = _elements;
@@ -195,7 +195,7 @@ bool JagFixGapVector::append( const char *newpair, abaxint *index )
 ***/
 
 /**
-bool JagFixGapVector::insertForce( const JagDBPair &pair, abaxint index )
+bool JagFixGapVector::insertForce( const JagDBPair &pair, jagint index )
 {
 	char buf[ pair.key.size() + pair.value.size() ];
 	memcpy( buf, pair.key.c_str(), pair.key.size() );
@@ -204,7 +204,7 @@ bool JagFixGapVector::insertForce( const JagDBPair &pair, abaxint index )
 }
 **/
 
-bool JagFixGapVector::insertForce( const char *newpair, abaxint index )
+bool JagFixGapVector::insertForce( const char *newpair, jagint index )
 {
 	// char z = 0;
 	while ( index >= _arrlen ) { 
@@ -249,7 +249,7 @@ bool JagFixGapVector::insertForce( const char *newpair, abaxint index )
 	return true;
 }
 
-bool JagFixGapVector::insertLess( const char *newpair, abaxint index )
+bool JagFixGapVector::insertLess( const char *newpair, jagint index )
 {
 	bool rc = false;
 	// char z = 0;
@@ -281,7 +281,7 @@ bool JagFixGapVector::insertLess( const char *newpair, abaxint index )
 	return rc;
 }
 
-void JagFixGapVector::setValue( int val, bool isSet, abaxint index )
+void JagFixGapVector::setValue( int val, bool isSet, jagint index )
 {
 	// prt(("s4391 JagFixGapVector::setValue val=%d  isSet=%d index=%lld\n", val, isSet, index  ));
 
@@ -303,7 +303,7 @@ void JagFixGapVector::setValue( int val, bool isSet, abaxint index )
 			// prt(("s3003 this=%0x val=%d index=%d v-part=%d\n", this, val, index,_arr[index*kvlen+klen] ));
 			val += _arr[index*kvlen+klen];
 		} else {
-			// prt(("s3004 this=%0x index=%d v-part=%d is 0\n", this, index,_arr[index*kvlen+klen] ));
+			// prt(("s193004 this=%0x index=%d v-part=%d is 0\n", this, index,_arr[index*kvlen+klen] ));
 		}
 
 		if ( val < 0 ) val = 0;
@@ -323,11 +323,11 @@ void JagFixGapVector::setValue( int val, bool isSet, abaxint index )
 	_arr[index*kvlen+klen] = val;
 }		
 
-bool JagFixGapVector::findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset )
+bool JagFixGapVector::findLimitStart( jagint &startlen, jagint limitstart, jagint &soffset )
 {
 	bool isEnd = false;
 	int v;
-	for ( abaxint i = 0; i < _arrlen; ++i ) {
+	for ( jagint i = 0; i < _arrlen; ++i ) {
 		v = _arr[i*kvlen+klen];
 		if (  v > 0 ) {
 			startlen += v;
@@ -351,7 +351,7 @@ bool JagFixGapVector::findLimitStart( abaxint &startlen, abaxint limitstart, aba
 /******
 bool JagFixGapVector::remove( const char *pair )
 {
-	abaxint i, index;
+	jagint i, index;
 	bool rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
@@ -363,7 +363,7 @@ bool JagFixGapVector::remove( const char *pair )
 	-- _elements;
 
 	if ( _arrlen >= 64 ) {
-    	abaxint loadfactor  = 100 * (abaxint)_elements / _arrlen;
+    	jagint loadfactor  = 100 * (jagint)_elements / _arrlen;
     	if (  loadfactor < 15 ) {
     		reAllocShrink();
     	}
@@ -381,7 +381,7 @@ bool JagFixGapVector::setNull()
 {
 	bool rc = false;
 	if ( _elements > 0 ) {
-		for ( abaxint i = 0; i < _arrlen; ++i ) {
+		for ( jagint i = 0; i < _arrlen; ++i ) {
 	    	//_arr[i] = Pair::NULLVALUE;
 	    	_arr[i*kvlen] = NBT;
 		}	
@@ -393,7 +393,7 @@ bool JagFixGapVector::setNull()
 	return rc;
 }
 
-void JagFixGapVector::setNull( const char *pair, abaxint i )
+void JagFixGapVector::setNull( const char *pair, jagint i )
 {
 	/***
 	if ( pair != Pair::NULLVALUE && _arr[i] == pair ) {
@@ -407,7 +407,7 @@ void JagFixGapVector::setNull( const char *pair, abaxint i )
 	}
 }
 
-bool JagFixGapVector::isNull( abaxint i )  const
+bool JagFixGapVector::isNull( jagint i )  const
 {
 	if ( _arr[i*kvlen] == NBT ) {
 		return true;
@@ -416,14 +416,14 @@ bool JagFixGapVector::isNull( abaxint i )  const
 	}
 }
 
-abaxint JagFixGapVector::getPartElements( abaxint pos )  const
+jagint JagFixGapVector::getPartElements( jagint pos )  const
 {
 	// if ( pos <= _last && _arr[pos].value.size() ) return *(_arr[pos].value.c_str());
 	if ( pos <= _last && _arr[pos*kvlen+klen] > 0 ) return _arr[pos*kvlen+klen];
 	else return 0;
 }
 
-bool JagFixGapVector::cleanPartPair( abaxint pos ) 
+bool JagFixGapVector::cleanPartPair( jagint pos ) 
 {
 	if( pos <= _last ) {
 		_arr[pos*kvlen] = NBT;
@@ -434,7 +434,7 @@ bool JagFixGapVector::cleanPartPair( abaxint pos )
 	return false;
 }
 
-bool JagFixGapVector::deleteUpdateNeeded( const char *dpair, const char *npair, abaxint pos ) 
+bool JagFixGapVector::deleteUpdateNeeded( const char *dpair, const char *npair, jagint pos ) 
 {
 	if( pos <= _last ) {
 		if ( memcmp(dpair, _arr+pos*kvlen, klen) <= 0 ) {
@@ -454,7 +454,7 @@ bool JagFixGapVector::deleteUpdateNeeded( const char *dpair, const char *npair, 
 void JagFixGapVector::print() const
 {
 	printf("arrlen=%d, elements=%d, last=%d\n", _arrlen, _elements, _last);
-	for ( abaxint i = 0; i <= _last; ++i ) {
+	for ( jagint i = 0; i <= _last; ++i ) {
 		printf("i=%d   \n", i  );
 		for ( int j=0; j < klen; ++j ) {
 			if ( _arr[i*kvlen] == NBT ) break;
@@ -466,7 +466,7 @@ void JagFixGapVector::print() const
 }
 
 /**
-void JagFixGapVector::makeDBPair( abaxint i, JagDBPair &dbpair )
+void JagFixGapVector::makeDBPair( jagint i, JagDBPair &dbpair )
 {
 	dbpair.key = JagFixString( _arr+i*kvlen, klen );
 	// dbpair.value = JagFixString( _arr+i*kvlen+klen, vlen );

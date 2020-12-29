@@ -37,8 +37,7 @@ JagFixKV::JagFixKV( JagDBServer *servobj, const Jstr &dbname, const Jstr & tabna
     KLEN = _onerecord.keyLength = 256;
     VLEN = _onerecord.valueLength = 4096;
 	KVLEN = KLEN + VLEN;
-    //_lock = new JagReadWriteLock();
-    _lock = newObject<JagReadWriteLock>();
+    _lock = newJagReadWriteLock();
 
 	init();
 }
@@ -54,7 +53,10 @@ void JagFixKV::init( )
     Jstr fpath;
     Jstr jagdatahome = _servobj->_cfg->getJDBDataHOME( _replicateType );
     fpath = jagdatahome + "/" + _dbname + "/" + _tabname;
-    _darr = new JagDiskArrayServer ( _servobj, fpath, &_onerecord, true, 32, true );
+
+    //_darr = new JagDiskArrayServer ( _servobj, NULL, -1, fpath, &_onerecord, 0, true, false );
+    _darr = new JagLocalDiskHash( fpath, KLEN, VLEN );
+	int fd = _darr->getFD();
 
 	_hashmap = new JagHashMap<AbaxString, AbaxString>();
 	bool rc;
@@ -64,10 +66,12 @@ void JagFixKV::init( )
 	memset( k, 0, KLEN + 1 );
 	memset( v, 0, VLEN + 1 );
 	memset( kv, 0, KLEN + VLEN + 1 );
-	abaxint length = _darr->_garrlen;
+	// jagint length = _darr->_garrlen;
+	jagint length = _darr->getLength();
 	// printf("s3030 fpath=[%s] length = %lld\n", fpath.c_str(), length ); 
 	// JagBuffReader nti( _darr->_jdfs, length, KLEN, VLEN, 0, 0 );
-	JagBuffReader nti( _darr, length, KLEN, VLEN, 0, 0, 1 );
+	//JagBuffReader nti( _darr, length, KLEN, VLEN, 0, 0, 1 );
+	JagSingleBuffReader nti( fd, length, KLEN, VLEN, 0, 0, 1 );
     while ( true ) {
 		memset( k, 0, KLEN );
 		memset( v, 0, VLEN );
@@ -100,9 +104,10 @@ void JagFixKV::destroy( bool removelock )
 	_hashmap = NULL;
 
 	if ( _lock && removelock ) {
-		delete _lock;
+		//delete _lock;
+		deleteJagReadWriteLock( _lock );
+		_lock = NULL;
 	}
-	_lock = NULL;
 
 }
 
@@ -151,15 +156,17 @@ bool JagFixKV::setValue( const AbaxString &userid, const AbaxString &name, const
     char *kv = (char*) jagmalloc ( KVLEN+1 );
     memset(kv, 0, KVLEN + 1 );
     strcpy( kv, userid.c_str() );
-    JagDBPair pair, retpair;
+    JagDBPair pair;
     pair.point( kv, KLEN, kv+KLEN, VLEN );
     JagDBPair getPair(kv, KLEN, kv+KLEN, VLEN );
     bool rc = _darr->get( getPair );
-	int insertCode;
+	//int insertCode;
     if ( ! rc ) {
         record.addNameValue( name.c_str(), value.c_str() );
         strcpy( kv+KLEN, record.getSource() );
-        _darr->insert( pair, insertCode, false, true, retpair );
+        // _darr->insert( pair, insertCode, false, true, retpair );
+        // _darr->insertData( pair, insertCode, false, retpair );
+        _darr->insert( pair );
     } else {
         record.setSource( pair.value.c_str() );
         record.setValue( name.c_str(),  value.c_str() );

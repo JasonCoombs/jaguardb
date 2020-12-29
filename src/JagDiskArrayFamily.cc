@@ -17,6 +17,7 @@
  * along with JaguarDB (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
  */
 #include <JagGlobalDef.h>
+#include <values.h>
 
 #include <JagDiskArrayFamily.h>
 #include <JagDiskArrayServer.h>
@@ -25,78 +26,89 @@
 #include <JagFamilyKeyChecker.h>
 #include <JagDiskKeyChecker.h>
 #include <JagFixKeyChecker.h>
+#include <JagDBMap.h>
+#include <JagCompFile.h>
 
-JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const Jstr &filePathName,
-    const JagSchemaRecord *record, bool buildInitIndex, abaxint length, bool noMonitor ) : _schemaRecord(record)
+JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const Jstr &filePathName, const JagSchemaRecord *record, 
+									    jagint length, bool buildInitIndex ) : _schemaRecord(record)
 {
+	prt(("s100439 JagDiskArrayFamily ctor filePathName=[%s]\n", filePathName.c_str() ));
+	// filePathName=/home/dev2/jaguar/data/test/jbench/jbench
 	int kcrc = 0;
 	_insdelcnt = 0;
-	_hasCompressThrd = 0;
 	_KLEN = record->keyLength;
 	_VLEN = record->valueLength;
-	_isDestroyed = false;
-	_darrlistlen = 0;
-	_activepos = 0;
+	_KVLEN = _KLEN + _VLEN;
 	_servobj = (JagDBServer*)servobj;
-	_compthrdhold = _servobj->_sea_records_limit/10; 
-	abaxint		_compthrdhold;
-	_lock = new JagReadWriteLock();
+	//_lock = newJagReadWriteLock();
 	_pathname = filePathName;
 	if ( JAG_MEM_LOW == servobj->_memoryMode ) {
 		_keyChecker = new JagDiskKeyChecker( _pathname, _KLEN, _VLEN );
 	} else {
 		_keyChecker = new JagFixKeyChecker( _pathname, _KLEN, _VLEN );
 	}
+
 	Jstr existFiles, fullpath, objname;
 	const char *p = strrchr( filePathName.c_str(), '/' );
 	if ( p == NULL ) {
 		printf("s7482 error _pathname=%s, exit\n", _pathname.c_str() );
-		exit(1);
+		fflush(stdout);
+		exit(34);
 	}
+
+    _insertBufferMap = new JagDBMap();
+
 	fullpath = Jstr( filePathName.c_str(), p-filePathName.c_str() );
+	//prt(("s08283 fullpath=%s\n", fullpath.c_str() )); // /home/dev2/jaguar/data/test/jbench
 	_tablepath = fullpath; 
 	_sfilepath = fullpath + "/files";
-	objname = Jstr( p+1 ) + ".jdb";
+	JagStrSplit sp(fullpath, '/');
+	int splen = sp.length();
+	//_taboridxname = Jstr( p+1 );
+	_taboridxname = sp[splen-1];
+	_dbname = sp[splen-2];
+	objname = _taboridxname + ".jdb";
 	_objname = objname;
 	existFiles = JagFileMgr::getFileFamily( fullpath, objname );
-	if ( existFiles.size() < 1 ) {	
+	//prt(("s404338 getFileFamily existFiles=[%s]\n", existFiles.c_str() ));
+	if ( existFiles.size() > 0 ) {	
+		//prt(("s100032 buildInitKeyCheckerFromSigFile...\n"));
 		kcrc = _keyChecker->buildInitKeyCheckerFromSigFile();
-		JagDiskArrayServer *ldarr = new JagDiskArrayServer( servobj, filePathName, record, buildInitIndex, length, noMonitor );
-		_darrlist.append(ldarr);
-		_darrlistlen = _darrlist.size();
-		_activepos = 0;
-		_filecnt = 0;
-	} else {
-		kcrc = _keyChecker->buildInitKeyCheckerFromSigFile();
+
 		JagStrSplit split( existFiles, '|' );
 		// need to rearrange files by order, and remove .jdb
 		JagVector<Jstr> paths( split.length() );
+		int filenum;
 		for ( int i = 0; i < split.length(); ++i ) {
 			const char *ss = strrchr( split[i].c_str(), '/' );
 			if ( !ss ) ss = split[i].c_str();
 			JagStrSplit split2( ss, '.' );
 			if ( split2.length() < 2 ) {
-				printf("s7482 error _pathname=%s, exit\n", split[i].c_str() );
-				exit(1);
+				raydebug(stdout, JAG_LOG_LOW, "s74182 fatal error _pathname=%s, exit\n", split[i].c_str() );
+				exit(35);
 			}
-			int pos = atoi( split2[split2.length()-2].c_str() );
-			if ( pos >= split.length() ) {
-				printf("s7482 error family has %d files, but %d %s >= max num files\n", split.length(), pos, split[i].c_str() );
-				exit(1);
+
+			filenum = atoi( split2[split2.length()-2].c_str() );
+			if ( filenum >= split.length() ) {
+				raydebug( stdout, JAG_LOG_LOW, "s74183 fatal error family has %d files, but %d %s >= max files\n", 
+							split.length(), filenum, split[i].c_str() );
+				exit(36);
 			}
+
 			const char *q = strrchr( split[i].c_str(), '.' );
-			paths[pos] = Jstr(split[i].c_str(), q-split[i].c_str());
+			paths[filenum] = Jstr(split[i].c_str(), q-split[i].c_str());
+			//prt(("s50928 i=%d paths[%d]=[%s]\n", i, filenum, paths[filenum].c_str() ));
 			paths._elements++;
 		}
 
-		abaxint cnt;
+		jagint cnt;
+		prt(("s51230 paths.size=%d\n", paths.size() ));
 		for ( int i = 0; i < paths.size(); ++i ) {
-			JagDiskArrayServer *ldarr = 
-			    new JagDiskArrayServer( servobj, paths[i], record, buildInitIndex, 
-				                        length, noMonitor, i==paths.size()-1 );
-			_darrlist.append(ldarr);
-			_darrlistlen = _darrlist.size();
-			_activepos = _darrlistlen-1;
+			JagDiskArrayServer *darr = new JagDiskArrayServer( servobj, this, i, paths[i], record, length, buildInitIndex );
+				                        // length,  i==paths.size()-1 );
+			_darrlist.append(darr);
+			//_activepos = _darrlist.size()-1;
+			//raydebug( stdout, JAG_LOG_LOW, "s6274 _activepos =%d\n", _activepos );
 		}
 
 		bool  readJDB = false;
@@ -104,8 +116,9 @@ JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const Jstr &
 			readJDB = true;
 			raydebug( stdout, JAG_LOG_LOW, "s6281 skip sig or hdb\n");
 		} else {
-			abaxint keyCheckerCnt;
-			if ( getElements( keyCheckerCnt ) != _keyChecker->size() ) {
+			// redo log has not done, getElements() will not have memory elements
+			/***
+			if ( getElements() != _keyChecker->size() ) {
 				// remove old .hdb file if exists
 				raydebug( stdout, JAG_LOG_LOW, "s6381 famelems not equal hdb elements\n");
 				Jstr hdbpath = _keyChecker->getPath() + ".hdb";
@@ -114,6 +127,8 @@ JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const Jstr &
 				}
 				readJDB = true;
 			}
+			***/
+			//prt(("s10292 kcrc true  has read sigfile OK getElements()=%d _keyChecker->size()=%d\n",  getElements(), _keyChecker->size() ));
 		}
 
 		// read JDB files and build keychecker
@@ -123,47 +138,85 @@ JagDiskArrayFamily::JagDiskArrayFamily( const JagDBServer *servobj, const Jstr &
 				raydebug( stdout, JAG_LOG_LOW, "s3736 obj=%s %d/%d readjdb cnt=%l\n", _objname.c_str(), i,  _darrlist.size(), cnt );
 			}
 		}
-
-		_filecnt = paths.size()-1;
-
 	}
 
-	_needCompressThrd = buildInitIndex || !noMonitor;
-
+	_isFlushing = 0;
+	_doForceFlush = false;
 }
 
 // reach each jdb file and update keychecker
-abaxint JagDiskArrayFamily::addKeyCheckerFromJDB( const JagDiskArrayServer *ldarr, int activepos )
+jagint JagDiskArrayFamily::addKeyCheckerFromJDB( JagDiskArrayServer *ldarr, int activepos )
+{
+	prt(("s392838 addKeyCheckerFromJDB activepos=%d\n", activepos ));
+	char vbuf[3]; vbuf[2] = '\0';
+	int div, rem;
+
+ 	char *kvbuf = (char*)jagmalloc( _KVLEN+1 + JAG_KEYCHECKER_VLEN);
+	memset( kvbuf, 0,  _KVLEN + 1 + JAG_KEYCHECKER_VLEN );
+	jagint rlimit = getBuffReaderWriterMemorySize( ldarr->_arrlen*_KVLEN/1024/1024 );
+	JagBuffReader nav( ldarr, ldarr->_arrlen, _KLEN, _VLEN, ldarr->_nthserv*ldarr->_arrlen, 0, rlimit );
+				
+	div = activepos / (JAG_BYTE_MAX+1);
+	rem = activepos % (JAG_BYTE_MAX+1);
+	vbuf[0] = div; 
+	vbuf[1] = rem;
+
+	jagint cnt = 0;
+	jagint cntDone = 0;
+	while ( nav.getNext( kvbuf ) ) { 
+		memcpy(kvbuf+_KLEN, vbuf, 2 );
+		if ( _keyChecker->addKeyValueNoLock( kvbuf ) ) {
+			++cntDone;
+		}
+
+		++cnt;
+	}
+	free( kvbuf );
+
+	prt(("s1029383 addKeyCheckerFromJDB cnt=%d cntDone=%d\n", cnt, cntDone ));
+	return cnt;
+}
+
+// reach each jdb file and update keychecker
+jagint JagDiskArrayFamily::addKeyCheckerFromInsertBuffer( int darrNum )
 {
 	char vbuf[3]; vbuf[2] = '\0';
 	int div, rem;
 
- 	char *keyvalbuf = (char*)jagmalloc( ldarr->KEYVALLEN+1 + JAG_KEYCHECKER_VLEN);
-	memset( keyvalbuf, 0,  ldarr->KEYVALLEN + 1 + JAG_KEYCHECKER_VLEN );
-	abaxint rlimit = getBuffReaderWriterMemorySize( ldarr->_arrlen*ldarr->KEYVALLEN/1024/1024 );
-	JagBuffReader nav( ldarr, ldarr->_arrlen, ldarr->KEYLEN, ldarr->VALLEN, 
-					   ldarr->_nthserv*ldarr->_arrlen, 0, rlimit );
+ 	//char *kvbuf = (char*)jagmalloc( _KVLEN+1 + JAG_KEYCHECKER_VLEN);
+	//memset( kvbuf, 0,  _KVLEN + 1 + JAG_KEYCHECKER_VLEN );
+ 	char *kvbuf = (char*)jagmalloc( _KLEN+1 + JAG_KEYCHECKER_VLEN);
+	//memset( kvbuf, 0,  _KLEN + 1 + JAG_KEYCHECKER_VLEN );
 				
-	div = activepos / (JAG_BYTE_MAX+1);
-	rem = activepos % (JAG_BYTE_MAX+1);
-	vbuf[0] = div; vbuf[1] = rem;
-	abaxint cnt = 0;
-	while ( nav.getNext( keyvalbuf ) ) { 
-		memcpy(keyvalbuf+ldarr->KEYLEN, vbuf, 2 );
-		_keyChecker->addKeyValueNoLock( keyvalbuf );
-		++cnt;
+	div = darrNum / (JAG_BYTE_MAX+1);
+	rem = darrNum % (JAG_BYTE_MAX+1);
+	vbuf[0] = div; 
+	vbuf[1] = rem;
+
+	jagint cntDone = 0;
+	JagFixMapIterator iter = _insertBufferMap->_map->begin();
+	while ( iter != _insertBufferMap->_map->end() ) {
+		// copy _KLEN bytes from iter.first to keyvalbuf
+		memset( kvbuf, 0,  _KLEN + 1 + JAG_KEYCHECKER_VLEN );
+		//memcpy( kvbuf, iter->first.c_str(), _KLEN );
+		memcpy( kvbuf, iter->first.c_str(), iter->first.size() );
+		// copy vbuf to val part
+		memcpy(kvbuf+_KLEN, vbuf, JAG_KEYCHECKER_VLEN );
+
+		//prt(("\n"));
+		if ( _keyChecker->addKeyValueNoLock( kvbuf ) ) {
+			//prt(("s222006  qwer _keyChecker->addKeyValueNoLock( [%s][%d]\n", kvbuf, darrNum ));
+			++cntDone;
+		}
+		++ iter;
 	}
-	free( keyvalbuf );
-	return cnt;
+	free( kvbuf );
+	return cntDone;
 }
 
+// dtor
 JagDiskArrayFamily::~JagDiskArrayFamily()
 {
-	_isDestroyed = true;
-	while ( _hasCompressThrd ) {
-		jagsleep(1, JAG_SEC);
-	}
-
 	if ( _keyChecker ) {
 		delete _keyChecker;
 		_keyChecker = NULL;
@@ -176,229 +229,203 @@ JagDiskArrayFamily::~JagDiskArrayFamily()
 		}
 	}
 
-	if ( _lock ) {
-		delete _lock;
-		_lock = NULL;
+	// destroyMonitor(); // delete insertBufferMap
+    if ( _insertBufferMap ) { 
+		prt(("s22203838 s9999  delete _insertBufferMap \n"));
+		delete _insertBufferMap; 
+		_insertBufferMap=NULL; 
 	}
 }
 
-int JagDiskArrayFamily::insert( JagDBPair &pair, int &insertCode, bool doFirstRedist, bool direct, JagDBPair &retpair, bool noDupPrint )
+
+// protected by _insertBufferMutex: _insertBufferMap, _family
+jagint JagDiskArrayFamily::processFlushInsertBuffer() 
 {
-	char buf[pair.key.size() + 2 ];
-	char vbuf[3]; vbuf[2] = '\0';
-	int pos, rc, div, rem, addkc;
+	//prt(("s3004 processFlushInsertBuffer ...\n" ));
+	jagint cnt = 0; 
+	bool doneFlush = false;
 
-	// find which family file to be inserted
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	if ( _darrlist[_activepos]->_familyInsPairCnt >= _darrlist[_activepos]->_fileSplitCntLimit ) {
-		// if current file is full, check previous files to see if any of them is not full
-		// if true, use that file; otherwise, use new file
-		for ( int i = 0; i < _darrlistlen-1; ++i ) {
-			if ( _darrlist[i]->_familyInsPairCnt*100 < _darrlist[i]->_fileSplitCntLimit*JAG_FILE_RAND_EXPAND ) {
-				_activepos = i;
-				break;
-			}
-		}
-		if ( _darrlistlen-1 == _activepos && _filecnt < JAG_TWOBYTES_MAX ) {
-			++_filecnt;
-			Jstr nfpath = _pathname + "." + intToStr( _filecnt );
-			JagDiskArrayServer *ldarr = new JagDiskArrayServer( _darrlist[_activepos]->_servobj, nfpath, _schemaRecord );
-			_darrlist.append(ldarr);
-			_darrlistlen = _darrlist.size();
-			_activepos = _darrlistlen-1;
-		}
-	}
-	div = _activepos / (JAG_BYTE_MAX+1);
-	rem = _activepos % (JAG_BYTE_MAX+1);
-	vbuf[0] = div; vbuf[1] = rem;
-	memcpy(buf,  pair.key.c_str(), _KLEN );
-	memcpy(buf+_KLEN,  vbuf, 2 );
-	addkc = _keyChecker->addKeyValue( buf );
-	if ( addkc ) ++_darrlist[_activepos]->_familyInsPairCnt;
-	pos = _activepos;
-
-	// also, if cnt > sea_record_limit/10, clear the counter;
-	// and if no compress thread, create one; otherwise, ignore
-	if ( _needCompressThrd ) {
-		++_insdelcnt;
-		if ( _insdelcnt >= _compthrdhold ) {
-			_insdelcnt = 0;
-			if ( !_hasCompressThrd ) {
-				_hasCompressThrd = 1;
-				SepThrdDACompressPass *pass = new SepThrdDACompressPass();
-				pass->darrFamily = this;
-				pthread_t septhrd;
-				// separateDACompressStatic wait until 3AM to do compress
-				jagpthread_create( &septhrd, NULL, separateDACompressStatic, (void*)pass );
-				pthread_detach( septhrd );
-			}
-		}
-	}
-	mutex.writeUnlock();
-
-	// actual insert and check duplicate issue
-	if ( !addkc ) {
-		if ( pair.upsertFlag ) {
-			// prt(("Duplicate key exist [%s]\n", _darrlist[0]->_pdbobj.c_str()));
-			// pair.key.dump();
-			return set( pair );
-		} else {
-			return 0;
-		}
+	//prt(("s19834 _darrlist.size=%d\n", _darrlist.size() ));
+	if ( _darrlist.size() < 1 ) {
+		doneFlush = false;  // new darr will be added, see below
+		//raydebug(stdout, JAG_LOG_LOW, "s200828 first seg, new darr will be added\n" );
 	} else {
-		rc = _darrlist[pos]->insert( pair, insertCode, doFirstRedist, direct, retpair );
-		// prt(("s5501 rc=%d\n", rc ));
-		if ( rc < 1 ) {
-			prt(("s3829 Insert error [%s]\n", _darrlist[0]->_pdbobj.c_str()));
-			pair.key.dump();
-			rc = 0;
+		// find min-cost file and try to merge
+		JagVector<JagMergeSeg> vec;
+		int mtype;
+		//prt(("s448810 findMinCostFile ...\n"));
+		int which = findMinCostFile( vec, _doForceFlush, mtype ); // uses _insertBufferMap and _darrlist
+		//prt(("s448810 findMinCostFile done which=%d mtype=%d\n", which, mtype ));
+		if ( which < 0 ) {
+			raydebug(stdout, JAG_LOG_LOW, "s2647 min-cost file not found, _darrlist.size=%d\n", _darrlist.size() );
+		} else {
+			if (  mtype == JAG_MEET_TIME ) {  
+				// flush time is small
+				//raydebug(stdout, JAG_LOG_LOW, "s2644 min-cost file found, MEET_TIME which=%d ...\n", which );
+				//prt(("s4402851 fam mergeBufferToFile which=%d ...\n", which ));
+				cnt = _darrlist[which]->mergeBufferToFile( _insertBufferMap, vec );	
+				//prt(("s4402852 fam mergeBufferToFile done elements cnt=%ld\n", cnt ));
+				doneFlush = true;
+				//jagint addKC = addKeyCheckerFromInsertBuffer( which );
+				addKeyCheckerFromInsertBuffer( which );
+				//prt(("s20395 merge buffer to darr=%d added keychecker addKC=%d/%d\n", which, addKC, _insertBufferMap->size() ));
+				//raydebug(stdout, JAG_LOG_LOW, "s30881 min-cost file found and MEET_TIME merged to which=%d %d\n", which, addKC );
+			} else {
+				//raydebug(stdout, JAG_LOG_LOW, "s2645 min-cost file found, but no MEET_TIME found which=%d ...\n", which );
+			}
 		}
-		return rc;
+	}
+
+	if ( ! doneFlush ) {
+		JagDiskArrayServer *extraDarr = flushBufferToNewFile();
+		if ( extraDarr != nullptr ) {
+
+			_darrlist.append( extraDarr );
+
+			int which = _darrlist.size() - 1; 
+			cnt = extraDarr->size()/_KVLEN;
+
+			addKeyCheckerFromInsertBuffer( which );
+			doneFlush = true;
+		} else {
+			raydebug(stdout, JAG_LOG_LOW, "s20345 Error flushBufferToNewFile()\n" ); 
+		}
+	}
+
+	if ( doneFlush ) {
+		raydebug(stdout, JAG_LOG_LOW, "cleanup insertbuffer\n" ); 
+		_insertBufferMap->clear();
+
+		removeAndReopenWalLog();
+
+	 	jagmalloc_trim(0);
+	}
+
+	return cnt;
+}
+
+// input:  _insertBufferMap and  _darrlist
+// remember regions in insertbuffer to be merged to simp files (in case meeting requirement)
+int JagDiskArrayFamily::findMinCostFile( JagVector<JagMergeSeg> &vec, bool forceFlush, int &mtype )
+{
+	// MB bytes/second
+	jagint sequentialReadSpeed = _servobj->_cfg->getLongValue("SEQ_READ_SPEED", 200);
+	jagint sequentialWriteSpeed = _servobj->_cfg->getLongValue("SEQ_WRITE_SPEED", 150);
+	float  allowedFlushTimeLimit  = _servobj->_cfg->getFloatValue("MAX_FLUSH_TIME", 1.0); 
+
+	float spendSeconds = 0;
+	float minTime = FLT_MAX;
+	int minDarr = -1;
+	JagVector<JagMergeSeg> oneVec;
+
+	for ( int i = 0 ; i < _darrlist.size(); ++i ) {
+		oneVec.clear();
+		spendSeconds = _darrlist[i]->computeMergeCost( _insertBufferMap, sequentialReadSpeed, sequentialWriteSpeed, oneVec );	
+		if ( spendSeconds < minTime ) {
+			minTime = spendSeconds;
+			minDarr = i;
+			vec = oneVec;
+			//break; // for debug only, choose the first one, to be removed totally in production
+		}
+	}
+
+	if ( forceFlush ) {
+		mtype = JAG_MEET_TIME;
+		return minDarr;
+	}
+
+	//prt(("s2093444 minTime=%f\n", minTime ));
+	if ( minTime <= allowedFlushTimeLimit ) {
+		mtype = JAG_MEET_TIME;
+		return minDarr;
+	} else {
+		mtype = 0;
+		return -1;
 	}
 }
 
-// static
-// DiskArray Compress
-void *JagDiskArrayFamily::separateDACompressStatic( void *ptr )
+// return 0: if exists
+// return 1: if not exist
+int JagDiskArrayFamily::insert( const JagDBPair &pair, int &insertCode, bool doFirstRedist, bool direct, 
+							    JagDBPair &retpair, bool noDupPrint )
 {
-	SepThrdDACompressPass *pass = (SepThrdDACompressPass*)ptr;
-	JagDiskArrayFamily *darr = (JagDiskArrayFamily*) pass->darrFamily;
+	char kbuf[_KLEN+1];
+	memset( kbuf, 0, _KLEN+1);
+	memcpy( kbuf, pair.key.c_str(), _KLEN );
 
-	// sleep until specific time, now at 3AM
-	time_t rawtime, rawtime2;
-  	struct tm * timeinfo;
-  	struct tm  result;
-  	time (&rawtime);
-  	// timeinfo = localtime (&rawtime);
-  	timeinfo = jag_localtime_r (&rawtime, &result );
-	timeinfo->tm_sec = 0;
-	timeinfo->tm_min = 0;
-	timeinfo->tm_hour = 3;
-	++timeinfo->tm_mday;
-
-	rawtime2 = mktime( timeinfo );
-	double dtime = difftime( rawtime2, rawtime );
-	int stime = (int)dtime;
-	stime += rand()%1800;
-	stime /= 2;
-	raydebug( stdout, JAG_LOG_LOW, "s5629 %s wait %d secs then compress\n", darr->_objname.c_str(), stime*2 );
-	for ( int i = 0; i < stime; ++i ) {
-		jagsleep(2, JAG_SEC);
-		if ( darr->_isDestroyed ) {
-			raydebug( stdout, JAG_LOG_LOW, "s5630 break waiting compress\n", darr->_objname.c_str(), stime*2 );
-			darr->_hasCompressThrd = 0;
-			delete pass;
-			return NULL;
-		}
+	if ( _keyChecker && _keyChecker->exist( kbuf ) ) {
+		prt(("s303928 JagDiskArrayFamily::insert _keyChecker->exist(%s) return 0\n", kbuf ));
+		//_keyChecker->print();
+		return 0;
 	}
 
-	// prt(("s2930 darr->_darrlistlen-1=%d\n", darr->_darrlistlen-1 ));
+	// push to buffer
+    int rc;
+	if ( _insertBufferMap->exist( pair ) ) {
+		prt(("s2038271 _pathname=[%s]\n", _pathname.s() ));
+		// _insertBufferMap->print();
+		return 0;
+	}
+
+    rc = _insertBufferMap->insert( pair );
+    if ( !rc ) ++_dupwrites;
+	jagint  currentCnt = _insertBufferMap->elements();
+	jagint  currentMem = currentCnt *_KVLEN;
+	if ( currentMem < JAG_SIMPFILE_LIMIT_BYTES ) {
+		return 1; // done put to buffer
+	}
+
+	// flush the buffer
+	processFlushInsertBuffer();
 	
-	for ( int i = 0; i < darr->_darrlistlen-1; ++i ) {
-		darr->_darrlist[i]->_fileCompress = true; // not used now
-		/***
-		prt(("s2037 darr->_darrlist[i]->_familyInsPairCnt=%d darr->_darrlist[i]->_elements=%d\n",
-				(int)darr->_darrlist[i]->_familyInsPairCnt, (int)darr->_darrlist[i]->_elements ));
-		***/
-		if ( darr->_darrlist[i]->_familyInsPairCnt <= darr->_darrlist[i]->_elements ) {
-			// when darr is clean of new insert, compress file
-			raydebug( stdout, JAG_LOG_LOW, "s5546 %s begin sep darr comp\n", darr->_darrlist[i]->_dbobj.c_str() );
-			if ( darr->_darrlist[i]->reSizeCompress() ) {
-				raydebug( stdout, JAG_LOG_LOW, "s5547 %s end sep darr comp\n", darr->_darrlist[i]->_dbobj.c_str() );
-			}
-			if ( darr->_isDestroyed ) {
-				raydebug( stdout, JAG_LOG_LOW, "s5630 break waiting compress\n", darr->_objname.c_str(), stime*2 );
-				darr->_hasCompressThrd = 0;
-				delete pass;
-				return NULL;
-			}
-		}
-	}
-
-	raydebug( stdout, JAG_LOG_LOW, "s5630 finish compress thrd\n", darr->_objname.c_str(), stime*2 );
-	darr->_hasCompressThrd = 0;
-	delete pass;
-	return NULL;
+    return 1;
 }
 
-/***
-void JagDiskArrayFamily::forceSleepTime( int time )
+jagint JagDiskArrayFamily::getCount( )
 {
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		_darrlist[i]->_forceSleepTime = time;
+	jagint mem = 0;
+	jagint kchn = 0;
+	if ( _insertBufferMap && _insertBufferMap->size() > 0 ) {
+		mem = _insertBufferMap->size();
 	}
-}
-***/
 
-abaxint JagDiskArrayFamily::getElements( abaxint &keyCheckerCnt )
+	kchn = _keyChecker->size();
+	return mem+kchn;	
+}
+
+jagint JagDiskArrayFamily::getElements( )
 {
-	abaxint totelem = 0;
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		totelem += _darrlist[i]->_elements;
-	}
-	keyCheckerCnt = _keyChecker->size();
-	return totelem;	
+	return getCount();
 }
 
 bool JagDiskArrayFamily::isFlushing()
 {
-	int totFlushing = 0;
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		totFlushing += _darrlist[i]->_isFlushing;	
-	}
-	return totFlushing;
+	return _isFlushing;
 }
-
-bool JagDiskArrayFamily::hasdarrnew()
-{
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		if ( _darrlist[i]->_darrnew ) return true;
-	}
-	return false;
-}
-
 
 bool JagDiskArrayFamily::remove( const JagDBPair &pair )
 {
 	int rc = 0;
 	int pos = 0, div, rem;
 	char v[2];
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	// also, if cnt > sea_record_limit/10, clear the counter;
-	// and if no compress thread, create one; otherwise, ignore
-	if ( _needCompressThrd ) {
-		++_insdelcnt;
-		if ( _insdelcnt >= _compthrdhold ) {
-			_insdelcnt = 0;
-			if ( !_hasCompressThrd ) {
-				_hasCompressThrd = 1;
-				SepThrdDACompressPass *pass = new SepThrdDACompressPass();
-				pass->darrFamily = this;
-				pthread_t septhrd;
-				// separateDACompressStatic wait until 3AM to do compress
-				jagpthread_create( &septhrd, NULL, separateDACompressStatic, (void*)pass );
-				pthread_detach( septhrd );
-			}
-		}
-	}
-	mutex.writeUnlock();
 
-	if ( _keyChecker->getValue( pair.key.c_str(), v ) ) {
-		div = (int)v[0];
-		rem = (int)v[1];
-		if ( div < 0 ) {
-			div += JAG_BYTE_MAX+1;
-		}
-		if ( rem < 0 ) {
-			rem += JAG_BYTE_MAX+1;
-		}
+	if ( _insertBufferMap && _insertBufferMap->remove( pair ) ) {
+		return true;
+	}
+
+	char kbuf[_KLEN+1];
+	memset( kbuf, 0, _KLEN+1);
+	memcpy( kbuf, pair.key.c_str(), _KLEN );
+
+	if ( _keyChecker->getValue( kbuf, v ) ) {
+		div = (jagbyte)v[0];
+		rem = (jagbyte)v[1];
 		pos = div*(JAG_BYTE_MAX+1)+rem;
+
 		rc = _darrlist[pos]->remove( pair );
+
 		if ( rc ) {
 			rc = _keyChecker->removeKey( pair.key.c_str() );
-			if ( rc ) {
-				--_darrlist[pos]->_familyInsPairCnt;
-			}
 		}
 		return rc;
 	} else {
@@ -406,24 +433,31 @@ bool JagDiskArrayFamily::remove( const JagDBPair &pair )
 	}
 }
 
+// check if pair exist and return data in pair
 bool JagDiskArrayFamily::exist( JagDBPair &pair )
 {
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
+	// check insertBuffer first
+	if ( _insertBufferMap && _insertBufferMap->get( pair ) ) {
+		return true;
+	}
+
 	int rc = 0, pos = 0;
 	int div, rem;
-	abaxint idx;
+	//jagint idx;
 	char v[2];
-	if ( _keyChecker->getValue( pair.key.c_str(), v ) ) {
-		div = (int)v[0];
-		rem = (int)v[1];
-		if ( div < 0 ) {
-			div += JAG_BYTE_MAX+1;
-		}
-		if ( rem < 0 ) {
-			rem += JAG_BYTE_MAX+1;
-		}
+
+	char kbuf[_KLEN+1];
+	memset( kbuf, 0, _KLEN+1);
+	memcpy( kbuf, pair.key.c_str(), _KLEN );
+
+	//if ( _keyChecker->getValue( pair.key.c_str(), v ) ) 
+	if ( _keyChecker->getValue( kbuf, v ) ) {
+		div = (jagbyte)v[0];
+		rem = (jagbyte)v[1];
 		pos = div*(JAG_BYTE_MAX+1)+rem;
 		rc = _darrlist[pos]->exist( pair );
-		return 1;
+		return rc;
 	} else {
 		return 0;
 	}
@@ -431,21 +465,31 @@ bool JagDiskArrayFamily::exist( JagDBPair &pair )
 
 bool JagDiskArrayFamily::get( JagDBPair &pair )
 {
+	// check insertBuffer first
+	if ( _insertBufferMap && _insertBufferMap->get( pair ) ) {
+		//prt(("s222020 _insertBufferMap got pair=[%s][%s]\n", pair.key.c_str(), pair.value.c_str() ));
+		return true;
+	}
+
 	int rc = 0, pos = 0;
 	int div, rem;
 	char v[2];
-	if ( _keyChecker->getValue( pair.key.c_str(), v ) ) {
-		div = (int)v[0];
-		rem = (int)v[1];
-		if ( div < 0 ) {
-			div += JAG_BYTE_MAX+1;
-		}
-		if ( rem < 0 ) {
-			rem += JAG_BYTE_MAX+1;
-		}
+
+	char kbuf[_KLEN+1];
+	memset( kbuf, 0, _KLEN+1);
+	memcpy( kbuf, pair.key.c_str(), _KLEN );
+	/**
+	prt(("s33338 pair.key.dump:\n"));
+	pair.key.dump();
+	**/
+
+	//if ( _keyChecker->getValue( pair.key.c_str(), v ) ) 
+	if ( _keyChecker->getValue( kbuf, v ) ) {
+		div = (jagbyte)v[0];
+		rem = (jagbyte)v[1];
 		pos = div*(JAG_BYTE_MAX+1)+rem;
 		rc = _darrlist[pos]->get( pair );
-		// prt(("s0921 pos=%d rc=%d  pair.key=[%s]\n", pos, rc,  pair.key.c_str() ));
+		//prt(("s222023 darr filenum=%d got pair=[%s][%s]\n", pos, pair.key.c_str(), pair.value.c_str() ));
 		return rc;
 	} else {
 		// prt(("s8282 JagDiskArrayFamily get pair.key=[%s] return 0\n", pair.key.c_str() ));
@@ -453,59 +497,85 @@ bool JagDiskArrayFamily::get( JagDBPair &pair )
 	}
 }
 
-bool JagDiskArrayFamily::set( JagDBPair &pair )
+bool JagDiskArrayFamily::set( const JagDBPair &pair )
 {
+	//prt(("s242023 JagDiskArrayFamily::set pair=[%s][%s]\n", pair.key.c_str(), pair.value.c_str() ));
+	if ( _insertBufferMap && _insertBufferMap->set( pair ) ) {
+		//prt(("s242024 JagDiskArrayFamily::set pair=[%s][%s] _insertBufferMap set true\n", pair.key.c_str(), pair.value.c_str() ));
+		return true;
+	}
+
 	int rc = 0, pos = 0;
 	int div, rem;
 	char v[2];
-	if ( _keyChecker->getValue( pair.key.c_str(), v ) ) {
-		div = (int)v[0];
-		rem = (int)v[1];
-		if ( div < 0 ) {
-			div += JAG_BYTE_MAX+1;
-		}
-		if ( rem < 0 ) {
-			rem += JAG_BYTE_MAX+1;
-		}
+	char kbuf[_KLEN+1];
+	memset( kbuf, 0, _KLEN+1);
+	memcpy( kbuf, pair.key.c_str(), _KLEN );
+	//if ( _keyChecker->getValue( pair.key.c_str(), v ) ) 
+	if ( _keyChecker->getValue( kbuf, v ) ) {
+		div = (jagbyte)v[0];
+		rem = (jagbyte)v[1];
 		pos = div*(JAG_BYTE_MAX+1)+rem;
+
 		rc = _darrlist[pos]->set( pair );
+
 		return rc;
 	} else {
+		//prt(("s242026 JagDiskArrayFamily::set pair=[%s][%s] not in keychecker return 0\n", pair.key.c_str(), pair.value.c_str() ));
 		return 0;
 	}
 }
 
 bool JagDiskArrayFamily::setWithRange( const JagRequest &req, JagDBPair &pair, const char *buffers[], bool uniqueAndHasValueCol, 
-	ExprElementNode *root, JagParseParam *parseParam, int numKeys, const JagSchemaAttribute *schAttr, 
-	abaxint setposlist[], JagDBPair &retpair )
+										ExprElementNode *root, const JagParseParam *pParam, int numKeys, const JagSchemaAttribute *schAttr, 
+										jagint setposlist[], JagDBPair &retpair )
 {
-	int pos = 0;
+	bool rc1 = get(pair); 
+	if ( ! rc1 ) {
+		//prt(("s939393 JagDiskArrayFamily::setWithRange get false return false\n"));
+		return false;
+	}
+	//prt(("s22233 JagDiskArrayFamily::setWithRange got pair=[%s][%s]\n", pair.key.c_str(), pair.value.c_str() ));
+
+	// get retpair from here
+    rc1 = JagDiskArrayBase::checkSetPairCondition( _servobj, req, pair, (char**)buffers, uniqueAndHasValueCol, root, pParam,
+                                numKeys, schAttr, _KLEN, _VLEN, setposlist, retpair );
+    if ( ! rc1 ) return false;
+
+	//prt(("s22233 JagDiskArrayFamily::setWithRange retpair=[%s][%s]\n", retpair.key.c_str(), retpair.value.c_str() ));
 	bool rc;
+	if ( _insertBufferMap && _insertBufferMap->set( retpair ) ) {
+		//prt(("s222029 _insertBufferMap->set OK return true\n"));
+		return true;
+	}
+
+	int pos = 0;
 	int div, rem;
 	char v[2];
-	if ( _keyChecker->getValue( pair.key.c_str(), v ) ) {
-		div = (int)v[0];
-		rem = (int)v[1];
-		if ( div < 0 ) {
-			div += JAG_BYTE_MAX+1;
-		}
-		if ( rem < 0 ) {
-			rem += JAG_BYTE_MAX+1;
-		}
+
+	char kbuf[_KLEN+1];
+	memset( kbuf, 0, _KLEN+1);
+	memcpy( kbuf, pair.key.c_str(), _KLEN );
+
+	//if ( _keyChecker->getValue( pair.key.c_str(), v ) ) 
+	if ( _keyChecker->getValue( kbuf, v ) ) {
+		div = (jagbyte)v[0];
+		rem = (jagbyte)v[1];
 		pos = div*(JAG_BYTE_MAX+1)+rem;
-		rc = _darrlist[pos]->setWithRange( req, pair, buffers, uniqueAndHasValueCol, root, parseParam, 
-							numKeys, schAttr, setposlist, retpair );
-		// prt(("s2220 rc=%d\n", rc ));
+		rc = _darrlist[pos]->set (retpair ); 
+		//prt(("s2220 filenum=pos=%d rc=%d\n", pos, rc ));
 		return rc;
 	} else {
-		// prt(("s5091 _keyChecker->getValue false key=[%s]\n", pair.key.c_str() ));
+		//prt(("s5091 _keyChecker->getValue false key=[%s]\n", pair.key.c_str() ));
 		return 0;
 	}
 }
 
+
 void JagDiskArrayFamily::drop()
 {
-	for ( int i = 0; i < _darrlistlen; ++i ) {
+	// JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	for ( int i = 0; i < _darrlist.size(); ++i ) {
 		_darrlist[i]->drop();
 	}
 	_keyChecker->removeAllKey();
@@ -513,14 +583,14 @@ void JagDiskArrayFamily::drop()
 
 void JagDiskArrayFamily::flushBlockIndexToDisk()
 {
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		raydebug( stdout, JAG_LOG_LOW, "    File %d/%d ...\n", i, _darrlistlen );
+	for ( int i = 0; i < _darrlist.size(); ++i ) {
+		raydebug( stdout, JAG_LOG_LOW, "    Flush Index File %d/%d ...\n", i, _darrlist.size() );
 		_darrlist[i]->flushBlockIndexToDisk();
 	}
 	
 	// also, flush key checker md5 string to disk
 	if ( JAG_MEM_HIGH == _servobj->_memoryMode ) {
-		raydebug( stdout, JAG_LOG_LOW, "    Mem high ...\n" );
+		raydebug( stdout, JAG_LOG_LOW, "    Flush Memory ...\n" );
 		flushKeyCheckerString();
 	}
 }
@@ -528,7 +598,15 @@ void JagDiskArrayFamily::flushBlockIndexToDisk()
 // read bottom level of blockindex and write it to a disk file
 void JagDiskArrayFamily::flushKeyCheckerString()
 {
-	Jstr keyCheckerPath = renameFilePath( _darrlist[0]->_filePath, "sig" );
+	if( _darrlist.size() < 1 ) {
+		//prt(("s002811 _darrlist is zero, return\n"));
+		return;
+	}
+
+	JagStrSplit sp(  _darrlist[0]->_filePath, '.' );
+	Jstr keyCheckerPath = sp[0] + ".sig";
+	//prt(("s1122201 flushKeyCheckerString _darrlist[0]->_filePath=[%s]\n", _darrlist[0]->_filePath.c_str() ));
+
 	int fd = jagopen( keyCheckerPath.c_str(), O_CREAT|O_RDWR|JAG_NOATIME, S_IRWXU);
 	if ( fd < 0 ) {
 		printf("s3804 error open [%s] for write\n", keyCheckerPath.c_str() );
@@ -549,9 +627,9 @@ void JagDiskArrayFamily::flushKeyCheckerString()
 
 	// begin flush key checker map to disk
 	const char *arr = _keyChecker->array();
-	abaxint len = _keyChecker->arrayLength();
+	jagint len = _keyChecker->arrayLength();
 	if ( len >= 1 ) {
-		for ( abaxint i = 0; i < len; ++i ) {
+		for ( jagint i = 0; i < len; ++i ) {
 			if ( arr[i*kvlen] == '\0' ) continue;
 			raysafewrite( fd, arr+i*kvlen, kvlen );
 		}
@@ -562,103 +640,56 @@ void JagDiskArrayFamily::flushKeyCheckerString()
 	jagclose( fd );
 }
 
-void JagDiskArrayFamily::copyAndInsertBufferAndClean()
-{
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		_darrlist[i]->copyAndInsertBufferAndClean();
-	}
-}
-
-bool JagDiskArrayFamily::checkFileOrder( const JagRequest &req )
-{
-	int rc = 0;
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		rc += _darrlist[i]->checkFileOrder( req );
-	}
-	return rc;	
-}
-
-abaxint JagDiskArrayFamily::orderRepair( const JagRequest &req )
-{
-	abaxint rc = 0;
-	for ( int i = 0; i < _darrlistlen; ++i ) {
-		rc += _darrlist[i]->orderRepair( req );
-	}
-	return rc;
-}
-
-void JagDiskArrayFamily::debugJDBFile( int flag, abaxint limit, abaxint hold, abaxint instart, abaxint inend ) 
-{ 
-	if ( flag == 5 ) {
-		for ( int i = 0; i < _darrlist.size(); ++i ) {
-			if ( _darrlist[i] ) {
-				delete _darrlist[i];
-				_darrlist[i] = NULL;
-			}
-		}
-	} else if ( flag == 6 ) {
-		if ( _keyChecker ) {
-			delete _keyChecker;
-			_keyChecker = NULL;
-		}
-	} else { 
-		for ( int i = 0; i < _darrlistlen; ++i ) {
-			_darrlist[i]->debugJDBFile( flag, limit, hold, instart, inend ); 
-		}
-	}
-}
-
 // set range family of all jdbs
-abaxint JagDiskArrayFamily::setFamilyRead( JagMergeReader *&nts, const char *minbuf, const char *maxbuf ) 
+jagint JagDiskArrayFamily::setFamilyRead( JagMergeReader *&nts, const char *minbuf, const char *maxbuf ) 
 {
+	//prt(("s222110 setFamilyRead\n"));
 	bool startFlag = false;
-    abaxint index = 0, rc, slimit, rlimit;
+    jagint index = 0, rc, slimit, rlimit;
     JagDBPair retpair;
 	JagFixString value;
 	char *lminbuf = NULL;
 	char *lmaxbuf = NULL;
-	abaxint maxPossibleElem = 0;
+	jagint maxPossibleElem = 0;
 	JagVector<OnefileRange> fRange(8);
 	OnefileRange tempRange;
 
 	if ( !minbuf || !maxbuf ) {
 		if ( maxbuf ) {
-			lminbuf = (char*)jagmalloc(_darrlist[0]->KEYLEN+1);
-			memset(lminbuf, 0, _darrlist[0]->KEYLEN+1);
+			lminbuf = (char*)jagmalloc(_KLEN+1);
+			memset(lminbuf, 0, _KLEN+1);
 			minbuf = lminbuf;
 		} else if ( minbuf ) {
-			lmaxbuf = (char*)jagmalloc(_darrlist[0]->KEYLEN+1);
-			memset(lmaxbuf, 255, _darrlist[0]->KEYLEN);
-			lmaxbuf[_darrlist[0]->KEYLEN] = '\0';
+			lmaxbuf = (char*)jagmalloc(_KLEN+1);
+			memset(lmaxbuf, 255, _KLEN);
+			lmaxbuf[_KLEN] = '\0';
 			maxbuf = lmaxbuf;
 		}
 	}
 			
 	if ( minbuf || maxbuf ) {
-		JagDBPair minpair( JagFixString( minbuf, _darrlist[0]->KEYLEN ), value );
-		JagDBPair maxpair( JagFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
-		for ( int i = _darrlistlen-1; i >= 0; --i ) {
+		//prt(("s4440283 minbuf || maxbuf _darrlist.size()=%d\n", _darrlist.size() ));
+		JagDBPair minpair( JagFixString( minbuf, _KLEN, _KLEN ), value );
+		JagDBPair maxpair( JagFixString( maxbuf, _KLEN, _KLEN ), value );
+		for ( int i = _darrlist.size()-1; i >= 0; --i ) {
 			rc = _darrlist[i]->exist( minpair, &index, retpair );
 			if ( startFlag && !rc ) ++index;
 			slimit = index;
 			if ( slimit < 0 ) slimit = 0;
 			rc = _darrlist[i]->exist( maxpair, &index, retpair );
 			if ( startFlag && !rc ) ++index;
-			rlimit = index;
-			rlimit = rlimit - slimit + 1;
+			rlimit = index - slimit + 1;
 			if ( rlimit > 0 ) {
 				tempRange.darr = _darrlist[i];
 				tempRange.startpos = slimit;
 				tempRange.readlen = rlimit;
 				tempRange.memmax = 128;
-				JAG_BLURT _darrlist[i]->_memLock->readLock( -1 ); JAG_OVER;
-				maxPossibleElem += _darrlist[i]->getRegionElements( slimit, rlimit/JAG_BLOCK_SIZE );
-				_darrlist[i]->_memLock->readUnlock( -1 );
 				fRange.append( tempRange );
 			}
 		}
 	} else {
-		for ( int i = _darrlistlen-1; i >= 0; --i ) {
+		//prt(("s4440283 no minbuf no maxbuf _darrlist.size()=%d\n", _darrlist.size() ));
+		for ( int i = _darrlist.size()-1; i >= 0; --i ) {
 			tempRange.darr = _darrlist[i];
 			tempRange.startpos = -1;
 			tempRange.readlen = -1;
@@ -672,79 +703,85 @@ abaxint JagDiskArrayFamily::setFamilyRead( JagMergeReader *&nts, const char *min
 		nts = NULL;
 	}
 	
-	if ( fRange.size() > 0 ) {
-		nts = new JagMergeReader( fRange, fRange.size(), _darrlist[0]->KEYLEN, _darrlist[0]->VALLEN );
+	//prt(("s2222037 before new JagMergeReader frange.size=%d\n", fRange.size() ));
+
+	if ( fRange.size() >= 0 ) {
+		nts = new JagMergeReader(this->_insertBufferMap, fRange, fRange.size(), 
+								 _KLEN, _VLEN, minbuf, maxbuf );
 	} else {
 		nts = NULL;
 	}
 
-	if ( lminbuf ) {
-		free( lminbuf );
-		minbuf = NULL;
-	}
-	if ( lmaxbuf ) {
-		free( lmaxbuf );
-		maxbuf = NULL;
-	}
+	if ( lminbuf ) { free( lminbuf ); }
+	if ( lmaxbuf ) { free( lmaxbuf ); }
 	return maxPossibleElem;
 }
 
 // set range family of range jdbs
-abaxint JagDiskArrayFamily::setFamilyReadPartial( JagMergeReader *&nts, const char *minbuf, const char *maxbuf, 
-	abaxint spos, abaxint epos, abaxint mmax ) 
+jagint JagDiskArrayFamily::setFamilyReadPartial( JagMergeReader *&nts, const char *minbuf, const char *maxbuf, 
+												  jagint spos, jagint epos, jagint mmax ) 
 {
+	//prt(("s204949 JagDiskArrayFamily::setFamilyReadPartial spos=%d  epos=%d fam=%0x\n", spos, epos, this ));
 	if ( spos < 0 ) spos = 0;
-	if ( epos >= _darrlistlen ) epos = _darrlistlen-1;
+	if ( epos >= _darrlist.size() ) epos = _darrlist.size()-1;
 	if ( epos < 0 ) epos = 0;
 	if ( spos > epos ) spos = epos;
+	int darrsize = _darrlist.size();
+	//prt(("s10393 darrsize=%d\n", darrsize ));
+
 	bool startFlag = false;
-    abaxint index = 0, rc, slimit, rlimit;
+    jagint index = 0, rc, slimit, rlimit;
     JagDBPair retpair;
 	JagFixString value;
 	char *lminbuf = NULL;
 	char *lmaxbuf = NULL;
-	abaxint maxPossibleElem = 0;
+	jagint maxPossibleElem = 0;
 	JagVector<OnefileRange> fRange(8);
 	OnefileRange tempRange;
 
 	if ( !minbuf || !maxbuf ) {
 		if ( maxbuf ) {
-			lminbuf = (char*)jagmalloc(_darrlist[0]->KEYLEN+1);
-			memset(lminbuf, 0, _darrlist[0]->KEYLEN+1);
+			lminbuf = (char*)jagmalloc(_KLEN+1);
+			memset(lminbuf, 0, _KLEN+1);
 			minbuf = lminbuf;
 		} else if ( minbuf ) {
-			lmaxbuf = (char*)jagmalloc(_darrlist[0]->KEYLEN+1);
-			memset(lmaxbuf, 255, _darrlist[0]->KEYLEN);
-			lmaxbuf[_darrlist[0]->KEYLEN] = '\0';
+			lmaxbuf = (char*)jagmalloc(_KLEN+1);
+			memset(lmaxbuf, 255, _KLEN);
+			lmaxbuf[_KLEN] = '\0';
 			maxbuf = lmaxbuf;
 		}
 	}
 			
 	if ( minbuf || maxbuf ) {
-		JagDBPair minpair( JagFixString( minbuf, _darrlist[0]->KEYLEN ), value );
-		JagDBPair maxpair( JagFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
-		for ( int i = epos; i >= spos; --i ) {
+		JagDBPair minpair( JagFixString( minbuf, _KLEN, _KLEN ), value );
+		JagDBPair maxpair( JagFixString( maxbuf, _KLEN, _KLEN ), value );
+		for ( int i = epos; i >= spos && darrsize > 0; --i ) {
 			rc = _darrlist[i]->exist( minpair, &index, retpair );
+			//prt(("s12233 minpair rc=%d index=%d\n", rc, index ));
 			if ( startFlag && !rc ) ++index;
 			slimit = index;
 			if ( slimit < 0 ) slimit = 0;
 			rc = _darrlist[i]->exist( maxpair, &index, retpair );
+			//prt(("s12234 maxpair rc=%d index=%d\n", rc, index ));
 			if ( startFlag && !rc ) ++index;
-			rlimit = index;
-			rlimit = rlimit - slimit + 1;
+			rlimit = index - slimit + 1;
+			//prt(("s12235 index=%d slimit=%d rlimit=readlen=%d\n", index, slimit, rlimit ));
 			if ( rlimit > 0 ) {
 				tempRange.darr = _darrlist[i];
 				tempRange.startpos = slimit;
 				tempRange.readlen = rlimit;
 				tempRange.memmax = mmax;
+				/*** seems not ue full 3-21-2020
 				JAG_BLURT _darrlist[i]->_memLock->readLock( -1 ); JAG_OVER;
 				maxPossibleElem += _darrlist[i]->getRegionElements( slimit, rlimit/JAG_BLOCK_SIZE );
 				_darrlist[i]->_memLock->readUnlock( -1 );
+				***/
+				//prt(("s23203 i=%d slimit=%d  tempRange.readlen=%d index=%d rc=%d\n", i, slimit, tempRange.readlen, index, rc ));
 				fRange.append( tempRange );
 			}
 		}
 	} else {
-		for ( int i = epos; i >= spos; --i ) {
+		for ( int i = epos; i >= spos && darrsize > 0; --i ) {
 			tempRange.darr = _darrlist[i];
 			tempRange.startpos = -1;
 			tempRange.readlen = -1;
@@ -758,78 +795,82 @@ abaxint JagDiskArrayFamily::setFamilyReadPartial( JagMergeReader *&nts, const ch
 		nts = NULL;
 	}
 	
-	if ( fRange.size() > 0 ) {
-		nts = new JagMergeReader( fRange, fRange.size(), _darrlist[0]->KEYLEN, _darrlist[0]->VALLEN );
+	//if ( fRange.size() > 0 ) {
+	if ( fRange.size() >= 0 ) {
+		prt(("s209484  new JagMergeReader  this->_insertBufferMap=%0x fRange.size=%d\n",  this->_insertBufferMap, fRange.size() ));
+		nts = new JagMergeReader( this->_insertBufferMap, fRange, fRange.size(), 
+								  _KLEN, _VLEN, minbuf, maxbuf );
+		prt(("s209484  new JagMergeReader done nts=%0x  nts->_dbmap=%0x\n", nts, nts->_dbmap ));
 	} else {
 		nts = NULL;
 	}
 
-	if ( lminbuf ) {
-		free( lminbuf );
-		minbuf = NULL;
-	}
-	if ( lmaxbuf ) {
-		free( lmaxbuf );
-		maxbuf = NULL;
-	}
+	if ( lminbuf ) { free( lminbuf ); }
+	if ( lmaxbuf ) { free( lmaxbuf ); }
 	return maxPossibleElem;
 }
 
-abaxint JagDiskArrayFamily::setFamilyReadBackPartial( JagMergeBackReader *&nts, const char *minbuf, const char *maxbuf, 
-	abaxint spos, abaxint epos, abaxint mmax ) 
+jagint JagDiskArrayFamily::setFamilyReadBackPartial( JagMergeBackReader *&nts, const char *minbuf, const char *maxbuf, 
+												  	  jagint spos, jagint epos, jagint mmax ) 
 {
+	/***
 	if ( spos < 0 ) spos = 0;
-	if ( epos >= _darrlistlen ) epos = _darrlistlen-1;
+	if ( epos >= _darrlist.size() ) epos = _darrlist.size()-1;
 	if ( epos < 0 ) epos = 0;
+	***/
+	prt(("s883933 setFamilyReadBackPartial spos=%d epos=%d\n", spos, epos ));
+	int  darrsize = _darrlist.size();
+
 	if ( spos > epos ) spos = epos;
 	bool startFlag = false;
-    abaxint index = 0, rc, slimit, rlimit;
+    jagint index = 0, rc, slimit, rlimit;
     JagDBPair retpair;
 	JagFixString value;
 	char *lminbuf = NULL;
 	char *lmaxbuf = NULL;
-	abaxint maxPossibleElem = 0;
+	jagint maxPossibleElem = 0;
 	JagVector<OnefileRange> fRange(8);
 	OnefileRange tempRange;
 
 	if ( !minbuf || !maxbuf ) {
 		if ( maxbuf ) {
-			lminbuf = (char*)jagmalloc(_darrlist[0]->KEYLEN+1);
-			memset(lminbuf, 0, _darrlist[0]->KEYLEN+1);
+			lminbuf = (char*)jagmalloc(_KLEN+1);
+			memset(lminbuf, 0, _KLEN+1);
 			minbuf = lminbuf;
 		} else if ( minbuf ) {
-			lmaxbuf = (char*)jagmalloc(_darrlist[0]->KEYLEN+1);
-			memset(lmaxbuf, 255, _darrlist[0]->KEYLEN);
-			lmaxbuf[_darrlist[0]->KEYLEN] = '\0';
+			lmaxbuf = (char*)jagmalloc(_KLEN+1);
+			memset(lmaxbuf, 255, _KLEN);
+			lmaxbuf[_KLEN] = '\0';
 			maxbuf = lmaxbuf;
 		}
 	}
 			
 	if ( minbuf || maxbuf ) {
-		JagDBPair minpair( JagFixString( minbuf, _darrlist[0]->KEYLEN ), value );
-		JagDBPair maxpair( JagFixString( maxbuf, _darrlist[0]->KEYLEN ), value );
-		for ( int i = epos; i >= spos; --i ) {
+		JagDBPair minpair( JagFixString( minbuf, _KLEN, _KLEN ), value );
+		JagDBPair maxpair( JagFixString( maxbuf, _KLEN, _KLEN ), value );
+		for ( int i = epos; i >= spos && darrsize > 0; --i ) {
 			rc = _darrlist[i]->exist( minpair, &index, retpair );
 			if ( startFlag && !rc ) ++index;
 			slimit = index;
 			if ( slimit < 0 ) slimit = 0;
 			rc = _darrlist[i]->exist( maxpair, &index, retpair );
 			if ( startFlag && !rc ) ++index;
-			rlimit = index;
-			rlimit = rlimit - slimit + 1;
+			rlimit = index - slimit + 1;
 			if ( rlimit > 0 ) {
 				tempRange.darr = _darrlist[i];
 				tempRange.startpos = slimit+rlimit;
 				tempRange.readlen = rlimit;
 				tempRange.memmax = mmax;
+				/*** seems not useful 3-21-2020
 				JAG_BLURT _darrlist[i]->_memLock->readLock( -1 ); JAG_OVER;
 				maxPossibleElem += _darrlist[i]->getRegionElements( slimit, rlimit/JAG_BLOCK_SIZE );
 				_darrlist[i]->_memLock->readUnlock( -1 );
+				***/
 				fRange.append( tempRange );
 			}
 		}
 	} else {
-		for ( int i = epos; i >= spos; --i ) {
+		for ( int i = epos; i >= spos && darrsize > 0; --i ) {
 			tempRange.darr = _darrlist[i];
 			tempRange.startpos = -1;
 			tempRange.readlen = -1;
@@ -843,19 +884,95 @@ abaxint JagDiskArrayFamily::setFamilyReadBackPartial( JagMergeBackReader *&nts, 
 		nts = NULL;
 	}
 	
-	if ( fRange.size() > 0 ) {
-		nts = new JagMergeBackReader( fRange, fRange.size(), _darrlist[0]->KEYLEN, _darrlist[0]->VALLEN );
+	//if ( fRange.size() > 0 ) {
+	if ( fRange.size() >= 0 ) {
+		nts = new JagMergeBackReader( this->_insertBufferMap, fRange, fRange.size(), 
+									  _KLEN, _VLEN, minbuf, maxbuf );
 	} else {
 		nts = NULL;
 	}
 
-	if ( lminbuf ) {
-		free( lminbuf );
-		minbuf = NULL;
-	}
-	if ( lmaxbuf ) {
-		free( lmaxbuf );
-		maxbuf = NULL;
-	}
+	if ( lminbuf ) { free( lminbuf ); }
+	if ( lmaxbuf ) { free( lmaxbuf ); }
 	return maxPossibleElem;
 }
+
+// from waitAndFlushInsertBuffer() which locked _insertBufferMutex
+JagDiskArrayServer* JagDiskArrayFamily::flushBufferToNewFile( )
+{
+	if (  _insertBufferMap->elements() < 1 ) { 
+		prt(("s183330 flushBufferToNewFile no data in mem, return nullptr\n"));
+		return nullptr; 
+	}
+	prt(("s183332 flushBufferToNewFile dataitems=%d in mem \n", _insertBufferMap->elements() ));
+	_isFlushing = 1;
+	//jagint cnt = 0;
+	//int rc;
+	int darrlistlen = _darrlist.size();
+	prt(("s40726 JagDiskArrayFamily::flushBufferToNewFile darrlistlen=%d\n", darrlistlen ));
+	jagint len = _insertBufferMap->size();
+	// _pathname="/a/b/a/aaa"
+	// _pathname="/a/b/a/abc.2"
+	prt(("s220983 _pathname=[%s]\n", _pathname.s() ));
+	JagStrSplit sp(_pathname, '/');
+	int slen = sp.length();
+	Jstr fname= sp[slen-1];
+	Jstr filePathName;
+	if ( ! strchr(fname.c_str(), '.') ) {
+		filePathName = _pathname + "." + intToStr( darrlistlen );
+		prt(("s220183 filePathName=[%s]\n", filePathName.s() ));
+	} else {
+		const char *p = strrchr( _pathname.c_str(), '.' );
+		Jstr newpathname = Jstr( _pathname.c_str(),  p-_pathname.c_str() );
+		// take abc
+		filePathName = newpathname + "." + intToStr( darrlistlen );
+		prt(("s220184 filePathName=[%s]\n", filePathName.s() ));
+	}
+
+	//raydebug(stdout, JAG_LOG_LOW, "s56845 flushBufferToNewFile _pathname=[%s]\n", _pathname.c_str() );
+	//raydebug(stdout, JAG_LOG_LOW, "s56845 flushBufferToNewFile  filePathName=[%s]\n", filePathName.c_str() );
+	//JagSingleBuffWriter *sbw = NULL;
+	//jagint dblimit = 64; 
+
+	//char *kvbuf = (char*)jagmalloc( _KVLEN+1);
+	//memset(kvbuf, 0, _KVLEN+1);
+
+	JagDiskArrayServer *darr = new JagDiskArrayServer( _servobj, this, darrlistlen, filePathName, _schemaRecord, len, false );
+	//prt(("s12099 flushBufferToNewFile...\n"));
+	darr->flushBufferToNewFile( _insertBufferMap );
+	//prt(("s12099 flushBufferToNewFile done...\n"));
+
+	// remove batch insert wal file and re-open
+	//removeAndReopenWalLog();
+
+	return darr;
+}
+
+void JagDiskArrayFamily::removeAndReopenWalLog()
+{
+	Jstr dbtab = _dbname + "." + _taboridxname;
+    Jstr walfpath = _servobj->_cfg->getWalLogHOME() + "/" + dbtab + ".wallog";
+	prt(("s201226 reset wallog file %s ...\n", walfpath.c_str() ));
+	raydebug(stdout, JAG_LOG_LOW, "cleanup wagllog %s \n", walfpath.s() ); 
+
+    FILE *walFile = _servobj->_walLogMap.ensureFile( walfpath );
+	fclose( walFile );
+    _servobj->_walLogMap.removeKey( walfpath );
+	jagunlink( walfpath.c_str() );
+
+    _servobj->_walLogMap.ensureFile( walfpath );
+
+}
+
+jagint JagDiskArrayFamily::memoryBufferSize() 
+{
+    //jaguar_mutex_lock( &_insertBufferMutex );
+	if ( NULL == _insertBufferMap ) {
+    	//jaguar_mutex_unlock( &_insertBufferMutex );
+		return 0;
+	}
+	jagint cnt = _insertBufferMap->size();
+    //jaguar_mutex_unlock( &_insertBufferMutex );
+	return cnt;
+}
+

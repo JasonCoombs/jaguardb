@@ -23,7 +23,6 @@
 #include <abax.h>
 #include <JagDef.h>
 #include <JagNet.h>
-#include <JagThreadPool.h>
 #include <JaguarCPPClient.h>
 
 class JagReplicateConnAttr
@@ -52,7 +51,7 @@ class JagReplicateConnAttr
     JAGSOCK _sock;
 	int _port;
 	int _cliservSameProcess;
-	abaxint _len;
+	jagint _len;
 	Jstr _host;
 	Jstr _username;
 	Jstr _password;
@@ -60,7 +59,7 @@ class JagReplicateConnAttr
 	Jstr _unixSocket;
 	Jstr _session;
 	Jstr _querys;
-	uabaxint _clientFlag;
+	jaguint _clientFlag;
 	char _qbuf[2048];
 	char _hdr[JAG_SOCK_TOTAL_HDR_LEN+1];
 	char *_dbuf;
@@ -73,7 +72,7 @@ class JagReplicateBackup
 	~JagReplicateBackup();
 	
 	bool setConnAttributes( int replicateCopy, int deltaRecoverConnection,
-		unsigned int port, uabaxint clientFlag, bool fromServ,
+		unsigned int port, jaguint clientFlag, bool fromServ,
 		JagVector<Jstr> &hostlist, Jstr &username, Jstr &passwd,
 		Jstr &dbname, Jstr &unixSocket );
 
@@ -83,14 +82,17 @@ class JagReplicateBackup
 	int makeConnection( int i );
 
 	// query method
-	abaxint simpleQuery( int i, const char *querys, bool checkConnection );
-	abaxint sendQuery( const char *querys, abaxint len, bool hasReply, bool isWrite, bool bulkSend, bool forceConnection );
-	abaxint simpleSend( int i, const char *querys, abaxint len );
+	jagint simpleQuery( int i, const char *querys, bool checkConnection );
+	jagint sendQuery( const char *querys, jagint len, bool hasReply, bool isWrite, bool bulkSend, bool forceConnection );
+	jagint simpleSend( int i, const char *querys, jagint len );
 	static void *simpleSendStatic( void *conn );
 
-	abaxint sendDirectToSockAll( const char *mesg, abaxint len, bool nohdr=false );
-	abaxint recvDirectFromSockAll( char *&buf, char *hdr );
-	abaxint recvDirectFromSockAll( char *&buf, abaxint len );
+	jagint simpleSendRaw( int i, const char *querys, jagint len );
+	static void *simpleSendStaticRaw( void *conn );
+
+	jagint sendDirectToSockAll( const char *mesg, jagint len, bool nohdr=false );
+	jagint recvDirectFromSockAll( char *&buf, char *hdr );
+	jagint recvRawDirectFromSockAll( char *&buf, jagint len );
 	bool sendFilesToServer( const Jstr &inpath );
 	static void *sendFilesToServerStatic( void *conn );
 	bool recvFilesFromServer( const Jstr &outpath );
@@ -98,8 +100,8 @@ class JagReplicateBackup
 	// reply method
 	// simpleQuery --> simpleReply
 	// sendQuery --> recvReply
-	abaxint simpleReply( int i, char *hdr, char *&buf );
-	abaxint recvReply( char *hdr, char *&buf );
+	jagint simpleReply( int i, char *hdr, char *&buf );
+	jagint recvReply( char *hdr, char *&buf );
 
 	// special signal
 	int sendTwoBytes( const char *condition );
@@ -114,13 +116,12 @@ class JagReplicateBackup
 	int	_replypos; // only used by read commands
 	int _isWrite;
 	int _tcode;
-	// thpool_ *_sendPool;
 	JagReplicateConnAttr _conn[JAG_REPLICATE_MAX];
-	char _servsignal[4];
+	char _signal3[4];
 
 	int _dtimeout;
 	int _connRetryLimit;
-	std::atomic<abaxint>	_lastConnectionBrokenTime;
+	std::atomic<jagint>	_lastConnectionBrokenTime;
 	int  _connectTimeout;
 	int   _allSocketsBad;
 	int   _debug;

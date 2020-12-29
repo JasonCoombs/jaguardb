@@ -20,7 +20,7 @@
 
 #include<JagMemDiskSortArray.h>
 #include<JagDataAggregate.h>
-#include<JagDiskArrayClient.h>
+//#include<JagDiskArrayClient.h>
 #include<JagSchemaRecord.h>
 #include<JagBuffBackReader.h>
 #include<JagBuffReader.h>
@@ -30,7 +30,7 @@
 JagMemDiskSortArray::JagMemDiskSortArray()
 {
 	_memarr = NULL;
-	_diskarr = NULL;
+	//_diskarr = NULL;
 	_jda = NULL;
 	_srecord = NULL;
 	_ntr = NULL;
@@ -84,10 +84,12 @@ void JagMemDiskSortArray::clean()
 		_memarr = NULL;
 	}
 	
+	/**
 	if ( _diskarr ) {
 		delete _diskarr;
 		_diskarr = NULL;
 	}
+	**/
 	
 	if ( _srecord ) {
 		delete _srecord;
@@ -168,7 +170,8 @@ int JagMemDiskSortArray::endWrite()
 {
 	if ( 1 != _rwtype ) return 0;
 	if ( _usedisk ) {
-		_diskarr->flushInsertBufferSync();
+		// _diskarr->flushInsertBufferSync();
+		// _diskarr->flushInsertBuffer();
 	}
 	_rwtype = 2;
 	return 1;	
@@ -190,8 +193,10 @@ int JagMemDiskSortArray::beginRead( bool isback )
 			delete _bntr;
 			_bntr = NULL;
 		}		
+		/***
 		if ( !_isback ) _ntr = new JagBuffReader( _diskarr, _diskarr->_arrlen, _diskarr->KEYLEN, _diskarr->VALLEN, 0 );
 		else _bntr = new JagBuffBackReader( _diskarr, _diskarr->_arrlen, _diskarr->KEYLEN, _diskarr->VALLEN, _diskarr->_arrlen );
+		***/
 	}
 	_rwtype = 3;
 	return 1;	
@@ -209,11 +214,12 @@ int JagMemDiskSortArray::insert( JagDBPair &pair )
 	if ( 1 != _rwtype ) return 0; // not correct sequence calling for write
 	
 	if ( !_usedisk ) {
-		abaxint curbytes = _memarr->_arrlen*(_kvlen);
+		jagint curbytes = _memarr->_arrlen*(_kvlen);
 		if ( curbytes < _memlimit ) {
 			_memarr->insert( pair );
 		} else {
 			// memory is used up, transfer data to disk
+			/***
 			if ( _diskarr ) {
 				delete _diskarr;
 				_diskarr = NULL;
@@ -223,20 +229,24 @@ int JagMemDiskSortArray::insert( JagDBPair &pair )
 			
 			JagDBPair mpair;
 			// read all buffer and flush to disk
-			for ( abaxint i = 0; i < _memarr->_arrlen; ++i ) {
+			for ( jagint i = 0; i < _memarr->_arrlen; ++i ) {
 				if ( _memarr->isNull( i ) ) continue;
-				mpair = _memarr->exactAt( i );
-				_diskarr->insertSync( mpair );
+				mpair = _memarr->at( i );
+				//_diskarr->insertSync( mpair );
+				_diskarr->insert( mpair );
 			}
-			_diskarr->insertSync( pair );
+			//_diskarr->insertSync( pair );
+			_diskarr->insert( pair );
 			_usedisk = true;
 			if ( _memarr ) {
 				delete _memarr;
 				_memarr = NULL;
 			}
+			***/
 		}
 	} else {
-		_diskarr->insertSync( pair );
+		//_diskarr->insertSync( pair );
+		// _diskarr->insert( pair );
 	}
 	return 1;
 }
@@ -248,10 +258,10 @@ int JagMemDiskSortArray::groupByUpdate( const JagDBPair &pair )
 	if ( 1 != _rwtype ) return 0; // not correct sequence calling for write
 	
 	int rc;
-	abaxint index;
+	//jagint index;
 	JagDBPair oldpair;
 	if ( !_usedisk ) {
-		abaxint curbytes = _memarr->_arrlen*(_kvlen);
+		jagint curbytes = _memarr->_arrlen*(_kvlen);
 		if ( curbytes < _memlimit ) {
 			oldpair.key = pair.key;
 			rc = _memarr->get( oldpair );
@@ -272,7 +282,7 @@ void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBP
 	char save;
 	Jstr type;
 	int rc, keylen, offset, length, func;
-	abaxint cnt, cnt1, cnt2;
+	jagint cnt, cnt1, cnt2;
 	abaxdouble value1 = 0.0, value2 = 0.0, value3 = 0.0;
 	JagDBPair toldpair = oldpair;
 	char *value = (char*)oldpair.value.c_str();
@@ -300,7 +310,7 @@ void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBP
 			*(value+offset+length) = save;
 		} else if ( func == JAG_FUNC_MIN ) {
 			rc = checkColumnTypeMode( type );
-			if ( rc == 2 || rc == 3 || rc == 4 ) { // bool, int, abaxint
+			if ( rc == 2 || rc == 3 || rc == 4 ) { // bool, int, jagint
 				cnt1 = rayatol(value+offset, length);
 				cnt2 = rayatol(pair.value.c_str()+offset, length);
 				if ( cnt1 > cnt2 ) {
@@ -319,7 +329,7 @@ void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBP
 			}
 		} else if ( func == JAG_FUNC_MAX ) {
 			rc = checkColumnTypeMode( type );
-			if ( rc == 2 || rc == 3 || rc == 4 ) { // bool, int, abaxint
+			if ( rc == 2 || rc == 3 || rc == 4 ) { // bool, int, jagint
 				cnt1 = rayatol(value+offset, length);
 				cnt2 = rayatol(pair.value.c_str()+offset, length);
 				if ( cnt1 < cnt2 ) {
@@ -356,7 +366,7 @@ void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBP
 	}
 }
 
-int JagMemDiskSortArray::setDataLimit( abaxint num )
+int JagMemDiskSortArray::setDataLimit( jagint num )
 {
 	if ( 3 != _rwtype ) return 0; // not correct sequence calling for write
 	if ( num <= 0 ) num = 0;
@@ -367,11 +377,11 @@ int JagMemDiskSortArray::setDataLimit( abaxint num )
 	return 1;
 }
 
-int JagMemDiskSortArray::ignoreNumData( abaxint num )
+int JagMemDiskSortArray::ignoreNumData( jagint num )
 {
 	if ( 3 != _rwtype ) return 0; // not correct sequence calling for write
 	if ( num <= 0 ) return 1;
-	abaxint cnt = 0, rc;
+	jagint cnt = 0, rc;
 
 	// first check if has aggstr
 	if ( _aggstr.size() > 0 ) {
@@ -436,118 +446,6 @@ int JagMemDiskSortArray::ignoreNumData( abaxint num )
 	return rc;
 }
 
-/***
-// return 0: failure or no more data ( end of read )
-// return 1: continue get data
-// return 2: get select hdr string
-// return 3: get select count(*) string
-// return 4: get aggregate data string
-int JagMemDiskSortArray::get( JagFixString &str )
-{
-	if ( 3 != _rwtype || _rend ) return 0; // not correct sequence calling for write
-	str = "";
-	
-	int rc;
-	if ( _cntstr.size() > 0 ) {
-		str = _cntstr;
-		_cntstr = "";
-		_rend = 1;
-		return 3;
-	}
-	
-	if ( _selhdr.size() > 0 ) {
-		str = _selhdr;
-		_selhdr = "";
-		return 2;
-	}	
-	
-	if ( _aggstr.size() > 0 ) {
-		str = _aggstr;
-		_aggstr = "";
-		_rend = 1;
-		return 4;
-	}
-	
-	// if has jda
-	if ( _jda ) {
-		if ( !_isback ) rc = _jda->readit( str );
-		else rc = _jda->backreadit( str );
-		if ( rc ) {
-			++_cnt;
-			if ( _cnt > _cntlimit ) {
-				rc = 0;
-				_rend = 1;
-			}
-		} else {
-			_rend = 1;
-		}
-		return rc;
-	}
-	
-	// if not has sort array, return
-	if ( !_hassort ) {
-		_rend = 1;
-		return 0;
-	}
-	
-	char *buf = (char*)malloc(_kvlen+1);
-	memset( buf, 0, _kvlen+1 );
-	if ( !_usedisk ) {
-		if ( !_isback ) {
-			while ( _mempos < _memarr->_arrlen ) {
-				if ( _memarr->isNull(_mempos) ) {
-					++_mempos;
-					continue;
-				}
-				break;
-			}
-		} else {
-			while ( _mempos >= 0 ) {
-				if ( _memarr->isNull(_mempos) ) {
-					--_mempos;
-					continue;
-				}
-				break;
-			}
-		}
-		++_cnt;
-		if ( _mempos < 0 || _mempos >= _memarr->_arrlen || _cnt > _cntlimit ) {
-			if ( buf ) free ( buf );
-			_rend = 1;
-			return 0;
-		}
-		JagDBPair pair = _memarr->exactAt(_mempos);
-		memcpy(buf, pair.key.c_str(), _keylen);
-		memcpy(buf+_keylen, pair.value.c_str(), _vallen);
-		str = JagFixString( buf, _kvlen );
-		if ( !_isback ) ++_mempos;
-		else --_mempos;
-		if ( buf ) free ( buf );
-		return 1;
-	}
-	
-	if ( !_isback ) {
-		rc = _ntr->getNext( buf );
-	} else {
-		rc = _bntr->getNext( buf );
-	}
-	
-	if ( rc ) {
-		++_cnt;
-		if ( _cnt > _cntlimit ) {
-			rc = 0;
-			_rend = 1;
-		} else {
-			str = JagFixString( buf, _kvlen );
-		}	
-	} else {
-		_rend = 1;
-	}
-	if ( buf ) free ( buf );
-	return rc;
-}
-***/
-
 int JagMemDiskSortArray::get( char *buf )
 {
 	if ( 3 != _rwtype ) return 0; // not correct sequence calling for write
@@ -570,7 +468,7 @@ int JagMemDiskSortArray::get( char *buf )
 			}
 		}
 		if ( _mempos < 0 || _mempos >= _memarr->_arrlen ) return 0;
-		JagDBPair pair = _memarr->exactAt(_mempos);
+		JagDBPair pair = _memarr->at(_mempos);
 		memcpy(buf, pair.key.c_str(), _keylen);
 		memcpy(buf+_keylen, pair.value.c_str(), _vallen);
 		if ( !_isback ) ++_mempos;

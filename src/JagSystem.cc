@@ -27,14 +27,14 @@
 
 // 0: OK
 // -1: error
-int JagSystem::getStat6( abaxint &totalDiskGB, abaxint &usedDiskGB, abaxint &freeDiskGB, abaxint &nproc, float &loadvg, abaxint &tcp )
+int JagSystem::getStat6( jagint &totalDiskGB, jagint &usedDiskGB, jagint &freeDiskGB, jagint &nproc, float &loadvg, jagint &tcp )
 {
 	totalDiskGB = usedDiskGB = freeDiskGB = 1;
 	nproc = 1; loadvg = 0.1; tcp = 10;
 
 	// get rdbhome usage
 	Jstr jaghome= jaguarHome();
-	abaxint usedDisk, freeDisk;
+	jagint usedDisk, freeDisk;
 	JagFileMgr::getPathUsage( jaghome.c_str(), usedDisk, freeDisk );
 	// prt(("s2010 getStat6 jaghome=[%s] usedDisk=%lld freeDisk=%lld\n",  jaghome.c_str(), usedDisk, freeDisk ));
 	totalDiskGB = usedDisk + freeDisk;
@@ -53,7 +53,7 @@ void JagSystem::initLoad()
 {
 }
 
-int JagSystem::getCPUStat( abaxint &user, abaxint &sys, abaxint &idle )
+int JagSystem::getCPUStat( jagint &user, jagint &sys, jagint &idle )
 {
 	user = sys = 0;
 	idle = 1;
@@ -61,7 +61,7 @@ int JagSystem::getCPUStat( abaxint &user, abaxint &sys, abaxint &idle )
 	if ( ! fp ) return 0;
 	Jstr line;
 
-	abaxint tot = 0;
+	jagint tot = 0;
 	char buf[1024];
 	while ( NULL != ( fgets(buf, 1024, fp ) ) ) {
 		if ( strncmp(buf, "cpu", 3 ) == 0 ) {
@@ -114,7 +114,7 @@ int JagSystem::getNumCPUs()
 }
 
 // GB
-int  JagSystem::getMemInfo( abaxint &totm, abaxint &freem, abaxint &used )
+int  JagSystem::getMemInfo( jagint &totm, jagint &freem, jagint &used )
 {
 	totm = freem = used = 0;
 	FILE *fp = jagfopen("/proc/meminfo", "rb" );
@@ -159,7 +159,7 @@ void JagSystem::initLoad()
 }
 
 // user 0:100  sys: 0-100 idle: 0-100
-int JagSystem::getCPUStat( abaxint &ouser, abaxint &osys, abaxint &oidle )
+int JagSystem::getCPUStat( jagint &ouser, jagint &osys, jagint &oidle )
 {
 	ouser = osys = 0;
 	oidle = 1;
@@ -188,8 +188,8 @@ int JagSystem::getCPUStat( abaxint &ouser, abaxint &osys, abaxint &oidle )
     usercpu /= (now.QuadPart - lastCPU.QuadPart);
     usercpu /= numProcessors;
 
-	ouser = ( abaxint ) usercpu;
-    osys = ( abaxint ) syscpu;
+	ouser = ( jagint ) usercpu;
+    osys = ( jagint ) syscpu;
     oidle = 100 - ( user.QuadPart + sys.QuadPart );
 	return 1;
 }
@@ -197,7 +197,7 @@ int JagSystem::getCPUStat( abaxint &ouser, abaxint &osys, abaxint &oidle )
 float JagSystem::getLoadAvg()
 {
 	float loadvg = 0.0;
-	abaxint user, sys, idle;
+	jagint user, sys, idle;
 	getCPUStat( user, sys, idle );
 	loadvg = (float)( user + sys ) /2.0;
 	return loadvg;
@@ -227,7 +227,7 @@ int JagSystem::getNumProcs()
 	return cnt;
 }
 // GB
-int  JagSystem::getMemInfo( abaxint &totm, abaxint &freem, abaxint &used )
+int  JagSystem::getMemInfo( jagint &totm, jagint &freem, jagint &used )
 {
 
 	MEMORYSTATUSEX memInfo;

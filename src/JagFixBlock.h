@@ -26,7 +26,6 @@
 #include <abax.h>
 #include <JagDef.h>
 #include <JagFixGapVector.h>
-//#include <JagVector.h>
 #include <JagMutex.h>
 #include <JagUtil.h>
 #include <JagDBPair.h>
@@ -43,32 +42,32 @@ class JagFixBlock
 		~JagFixBlock();
 		void destroy();
 
-		void setNull( const JagDBPair &pair, abaxint loweri );
-		void cleanPartIndex( abaxint pos, bool dolock=true );
-		void deleteIndex( const JagDBPair &dpair, const JagDBPair &npair, abaxint pos, bool isClean, bool dolock=true );
-		bool updateIndex( const JagDBPair &pair, abaxint loweri, bool force=false, bool dolock=true );
-		void updateCounter( abaxint loweri, int val, bool isSet, bool dolock=true );
+		void setNull( const JagDBPair &pair, jagint loweri );
+		void cleanPartIndex( jagint pos, bool dolock=true );
+		void deleteIndex( const JagDBPair &dpair, const JagDBPair &npair, jagint pos, bool isClean, bool dolock=true );
+		bool updateIndex( const JagDBPair &pair, jagint loweri, bool force=false, bool dolock=true );
+		void updateCounter( jagint loweri, int val, bool isSet, bool dolock=true );
 		void updateMinKey( const JagDBPair &pair,  bool dolock=true );
 		void updateMaxKey( const JagDBPair &pair,  bool dolock=true );
-		abaxint findRealLast();
-		bool findFirstLast( const JagDBPair &newpair, abaxint *first, abaxint *last );
-		bool findLimitStart( abaxint &startlen, abaxint limitstart, abaxint &soffset ); 
-		abaxint getPartElements( abaxint pos ) { return _vec[0].getPartElements( pos ); }
+		jagint findRealLast();
+		bool findFirstLast( const JagDBPair &newpair, jagint *first, jagint *last );
+		bool findLimitStart( jagint &startlen, jagint limitstart, jagint &soffset ); 
+		jagint getPartElements( jagint pos ) { return _vec[0].getPartElements( pos ); }
 		JagFixString getMinKey();
 		JagFixString getMaxKey();
-		void  flushBottomLevel( const Jstr &outPath, abaxint elemts, abaxint arln, abaxint minindx, abaxint maxindx );
-		abaxint getBottomCapacity() const { return _vec[0].capacity(); }
+		void  flushBottomLevel( const Jstr &outPath, jagint elemts, jagint arln, jagint minindx, jagint maxindx );
+		jagint getBottomCapacity() const { return _vec[0].capacity(); }
 
 		// debug purpose
 		const JagFixGapVector  *getVec() const { return _vec; }
 		int   getTopLevel() const { return _topLevel; }
-		bool setNull();
-		void print();
+		bool  setNull();
+		void  print();
 
-		uabaxint ops;
+		jaguint ops;
 		static const bool  debug = 1;
 		static const int  BLOCK = JAG_BLOCK_SIZE;
-		JagReadWriteLock *_lock;
+		pthread_rwlock_t *_lock;
 		JagDBPair		_maxKey;
 		JagDBPair		_minKey;
 
@@ -76,11 +75,11 @@ class JagFixBlock
 
 		JagFixGapVector  *_vec;
 		int			_topLevel; // current top level
-		bool        isPrimary( int level, abaxint i, abaxint *primei );
+		bool        isPrimary( int level, jagint i, jagint *primei );
 		int         klen;
 		int         kvlen;
-		bool        binSearchPred( const JagDBPair &key, abaxint *index, const char *arr,
-		                       abaxint arrlen, abaxint first, abaxint last );
+		bool        binSearchPred( const JagDBPair &key, jagint *index, const char *arr,
+		                       jagint arrlen, jagint first, jagint last );
 
 
 };

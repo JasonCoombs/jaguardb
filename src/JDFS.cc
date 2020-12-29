@@ -26,10 +26,9 @@
 
 #include <JagDBServer.h>
 #include <JDFS.h>
-#include <JDFSMgr.h>
-#include <JaguarCPPClient.h>
+#include <JagFSMgr.h>
 #include <JagUtil.h>
-#include <JagDBConnector.h>
+#include <JagDiskArrayFamily.h>
 
 /***************************************************************************
 **
@@ -40,17 +39,23 @@
 // fpath is full path of a file, without stripe number
 // all JDFS methods process localfile only
 // ctor
-JDFS::JDFS( JagDBServer *servobj, const Jstr &fpath, int kvlen, abaxint stripeSize )
+//JDFS::JDFS( JagDBServer *servobj, JagDiskArrayFamily *fam, const Jstr &fpath, int klen, int vlen, jagint stripeSize )
+JDFS::JDFS( JagDBServer *servobj, JagDiskArrayFamily *fam, const Jstr &fpath, int klen, int vlen )
 {
-	_kvlen = kvlen;
+	prt(("s19384 JDFS ctor fpath=[%s] klen=%d vlen=%d\n", fpath.c_str(), klen, vlen ));
+	_klen = klen;
+	_vlen = vlen;
+	_kvlen = klen + vlen;
 	_fpath = fpath;
 	_servobj = servobj;
+	_family = fam;
 	if ( _servobj ) {
 		_jdfsMgr = _servobj->jdfsMgr;
 	} else {
-		_jdfsMgr = new JDFSMgr();
+		_jdfsMgr = new JagFSMgr();
 	}
-	_stripeSize = _jdfsMgr->getStripeSize( _fpath, _kvlen, stripeSize ); // # of kvlens, ie., arrlen
+	//_stripeSize = _jdfsMgr->getStripeSize( _fpath, _kvlen, stripeSize ); // # of kvlens, ie., arrlen
+	_stripeSize = _jdfsMgr->getStripeSize( _fpath, _kvlen ); // # of kvlens, ie., arrlen
 }
 
 // dtor
@@ -64,29 +69,31 @@ JDFS::~JDFS()
 }
 
 // get local host file descriptor
-int JDFS::getFD() 
+JagCompFile *JDFS::getCompf( ) 
 {
-	return _jdfsMgr->open( _fpath );
+	return _jdfsMgr->openf( _family, _fpath, _klen, _vlen );
 }
 
-abaxint JDFS::getFileSize() const
+/**
+jagint JDFS::getFileSize() const
 {
 	return _jdfsMgr->getFileSize( _fpath, _kvlen );
 }
+**/
 
 int JDFS::exist() const
 {
 	return _jdfsMgr->exist( _fpath );
 }
 
-int JDFS::open()
+JagCompFile* JDFS::open()
 {		
-	return _jdfsMgr->open( _fpath, true );
+	return _jdfsMgr->openf( _family, _fpath, _klen, _vlen, true );
 }
 
 int JDFS::close()
 {
-	return _jdfsMgr->close( _fpath );
+	return _jdfsMgr->closef( _fpath );
 }
 
 int JDFS::rename( const Jstr &newpath )
@@ -103,50 +110,84 @@ int JDFS::remove()
 	return _jdfsMgr->remove( _fpath );
 }
 
-int JDFS::fallocate( abaxint offset, abaxint len )
+int JDFS::fallocate( jagint offset, jagint len )
 {
-	int fd = _jdfsMgr->open( _fpath, true );
-	if ( fd < 0 ) return -1;
-	return jagftruncate( fd, offset+len );
+	int rc = 0;
+	JagCompFile *fd = _jdfsMgr->openf( _family, _fpath, _klen, _vlen, true );
+	if ( NULL == fd ) rc = -1;
+	//return jagftruncate( fd, offset+len );
+	//prt(("s28829 JDFS::fallocate _fpath=[%s] rc=%d\n", _fpath.c_str(), rc ));
+	return rc;
 }
 
-time_t JDFS::getfileUpdateTime() const
-{
-	time_t upt = 0;
-	if ( exist() ) {
-		int fd = -1, src;
-		struct stat statbuf;
-		fd = _jdfsMgr->open( _fpath );
-		if ( fd >= 0 ) {
-			src = fstat( fd, &statbuf );
-			if ( 0 == src ) upt = statbuf.st_mtime;
-		}
-	}
-	return upt;
-}
 
-abaxint JDFS::getArrayLength() const
+jagint JDFS::getArrayLength() const
 {
 	if ( !exist() ) return 0;
 	return _stripeSize;
 }
 
 // read data from local
-abaxint JDFS::pread( char *buf, size_t len, size_t offset ) const
+jagint JDFS::pread( char *buf, size_t len, size_t offset ) const
 {
 	if ( offset < 0 ) offset = 0;
-	int fd = _jdfsMgr->open( _fpath );
-	if ( fd < 0 ) return -1;
-	offset = _jdfsMgr->pread( fd, buf, len, offset );
+	JagCompFile *compf = _jdfsMgr->openf( _family, _fpath, _klen, _vlen );
+	if ( ! compf ) {
+		prt(("s20993 JDFS::pread compf=NULL, return -1\n" ));
+		return -1;
+	}
+	offset = _jdfsMgr->pread( compf, buf, len, offset );
 	return offset;
 }
 
 // write data to local
-abaxint JDFS::pwrite( const char *buf, size_t len, size_t offset )
+jagint JDFS::pwrite( const char *buf, size_t len, size_t offset )
 {
 	if ( offset < 0 ) offset = 0;
-	int fd = _jdfsMgr->open( _fpath );
-	if ( fd < 0 ) return -1;
-	offset = _jdfsMgr->pwrite( fd, buf, len, offset );
+	JagCompFile *compf = _jdfsMgr->openf( _family, _fpath, _klen, _vlen );
+	if ( ! compf ) {
+		prt(("s332939 JDFS::pwrite compf is NULL\n" ));
+		return -1;
+	}
+	offset = _jdfsMgr->pwrite( compf, buf, len, offset );
 	return offset;
 }
+
+// use jdfs to read data
+ssize_t jdfpread( const JDFS *jdfs, char *buf, jagint len, jagint startpos )
+{
+	ssize_t s;
+	prt(("s5524 jdfpread(len=%d startpos=%d)\n", len, startpos ));
+
+	#ifdef CHECK_LATENCY
+		JagClock clock;
+		clock.start();
+	#endif
+
+	s = jdfs->pread( buf, len, startpos );
+	#ifdef CHECK_LATENCY
+		clock.stop();
+		printf("s5524 jdfpread(len=%d startpos=%d) took %d microsecs\n", len, startpos, clock.elapsedusec() );
+	#endif
+
+	return s;
+}
+
+// use jdfs to write data
+ssize_t jdfpwrite( JDFS *jdfs, const char *buf, jagint len, jagint startpos )
+{
+	ssize_t s;
+
+	#ifdef CHECK_LATENCY
+		JagClock clock;
+		clock.start();
+	#endif
+
+	s = jdfs->pwrite( buf, len, startpos );
+	#ifdef CHECK_LATENCY
+		clock.stop();
+		printf("s5524 jdfpwrite(len=%d startpos=%d) took %d microsecs\n", len, startpos, clock.elapsedusec() );
+	#endif
+	return s;
+}
+

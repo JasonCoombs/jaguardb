@@ -34,8 +34,8 @@ class JagStack
 		void 	pop();
 		const   Pair &top() const;
 		const   Pair & operator[](int i) const;
-		inline  abaxint size() const { return _last+1; }
-		inline  abaxint capacity() const { return _arrlen; }
+		inline  jagint size() const { return _last+1; }
+		inline  jagint capacity() const { return _arrlen; }
 		void 	destroy();
 		void 	print();
 		void 	reAlloc();
@@ -45,8 +45,8 @@ class JagStack
 
 	protected:
 		Pair   		*_arr;
-		abaxint  	_arrlen;
-		abaxint  	_last;
+		jagint  	_arrlen;
+		jagint  	_last;
 		static const int _GEO  = 2;
 		bool        _isDestroyed;
 };
@@ -143,8 +143,8 @@ void JagStack<Pair>::clean( int initSize )
 template <class Pair> 
 void JagStack<Pair>::reAlloc()
 {
-	abaxint i;
-	abaxint newarrlen  = _GEO*_arrlen; 
+	jagint i;
+	jagint newarrlen  = _GEO*_arrlen; 
 	Pair *newarr;
 
 	// newarr = new Pair[newarrlen];
@@ -161,10 +161,10 @@ void JagStack<Pair>::reAlloc()
 template <class Pair> 
 void JagStack<Pair>::reAllocShrink()
 {
-	abaxint i;
+	jagint i;
 	Pair *newarr;
 
-	abaxint newarrlen  = _arrlen/_GEO; 
+	jagint newarrlen  = _arrlen/_GEO; 
 	newarr = (Pair*)calloc( newarrlen, sizeof( Pair ) ); 
 	for ( i = 0; i <= _last; ++i) {
 		newarr[i] = _arr[i];
@@ -213,7 +213,7 @@ void JagStack<Pair>::pop()
 	} 
 
 	if ( _arrlen >= 64 ) {
-    	abaxint loadfactor  = (100 * _last) / _arrlen;
+    	jagint loadfactor  = (100 * _last) / _arrlen;
     	if (  loadfactor < 20 ) {
     		reAllocShrink();
     	}
@@ -226,7 +226,7 @@ void JagStack<Pair>::pop()
 template <class Pair> 
 void JagStack<Pair>::print()
 {
-	abaxint i;
+	jagint i;
 	printf("c3012 JagStack this=%0x _arrlen=%d _last=%d \n", this, _arrlen, _last );
 	for ( i = 0; i  <= _last; ++i) {
 		printf("%09d  %0x\n", i, _arr[i] );

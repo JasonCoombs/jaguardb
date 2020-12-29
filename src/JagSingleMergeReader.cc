@@ -22,9 +22,7 @@
 #include <JagSingleBuffReader.h>
 #include <JagUtil.h>
 
-///////////////// implementation /////////////////////////////////
-
-JagSingleMergeReader::JagSingleMergeReader( JagVector<OnefileRangeFD> &fRange, int veclen, int keylen, int vallen )
+JagSingleMergeReader::JagSingleMergeReader( const JagVector<OnefileRangeFD> &fRange, int veclen, int keylen, int vallen )
 {
 	_endcnt = 0;
 	_veclen = veclen;
@@ -39,6 +37,7 @@ JagSingleMergeReader::JagSingleMergeReader( JagVector<OnefileRangeFD> &fRange, i
 	_vec = new JagSingleBuffReaderPtr[veclen];
 	
 	for ( int i = 0; i < veclen; ++i ) {
+		//_vec[i] = new JagSingleBuffReader( fRange[i].compf, fRange[i].readlen, KEYLEN, VALLEN, fRange[i].startpos, 0, fRange[i].memmax );
 		_vec[i] = new JagSingleBuffReader( fRange[i].fd, fRange[i].readlen, KEYLEN, VALLEN, fRange[i].startpos, 0, fRange[i].memmax );
 		_goNext[i] = 1;
 	}
@@ -173,11 +172,11 @@ int JagSingleMergeReader::getNext( JagVector<JagFixString> &vec )
 
 bool JagSingleMergeReader::getNext( char *buf )
 {
-    abaxint pos;
+    jagint pos;
     return getNext( buf, pos );
 }
 
-bool JagSingleMergeReader::getNext( char *buf, abaxint &pos )
+bool JagSingleMergeReader::getNext( char *buf, jagint &pos )
 {
     int beginpos = 0;
     int rc;

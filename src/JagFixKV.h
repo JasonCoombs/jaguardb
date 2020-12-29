@@ -28,7 +28,8 @@
 #ifndef _jag_fixkv_h_
 #define _jag_fixkv_h_
 
-#include <JagDiskArrayServer.h>
+// #include <JagDiskArrayServer.h>
+#include <JagLocalDiskHash.h>
 #include <JagRecord.h>
 #include <JagMutex.h>
 
@@ -48,17 +49,18 @@ class JagFixKV
 	AbaxString      getValue( const AbaxString &key, const AbaxString& name ) const;
 	bool  	        setValue( const AbaxString &key,  const AbaxString& name, const AbaxString& value );
 	bool 	        dropKey( const AbaxString &key, bool doLock=true ); 
-	Jstr  getListKeys();
+	Jstr  			getListKeys();
 
   protected:
 	JagHashMap<AbaxString, AbaxString> 	*_hashmap;
-    JagReadWriteLock  					*_lock;
+    pthread_rwlock_t  					*_lock;
 	JagDBServer       					*_servobj;
-	JagDiskArrayServer  				*_darr;
+	// JagDiskArrayServer  				*_darr;
+	JagLocalDiskHash  				    *_darr;
 	int									_replicateType;
-	abaxint								KLEN, VLEN, KVLEN;
-	Jstr  					_dbname;
-	Jstr  					_tabname;
+	jagint								KLEN, VLEN, KVLEN;
+	Jstr  								_dbname;
+	Jstr  								_tabname;
 	JagSchemaRecord   					_onerecord;
 };
 

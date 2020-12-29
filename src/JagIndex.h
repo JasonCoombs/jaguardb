@@ -28,9 +28,7 @@ class JagDataAggregate;
 
 class JagIndex
 {
-	
   public:
-
   	JagIndex( int replicateType, const JagDBServer *servobj, const Jstr &wholePathName, 
 				const JagSchemaRecord &tabrecord, const JagSchemaRecord &idxrecord, 
 				bool buildInitIndex=true );	
@@ -43,8 +41,7 @@ class JagIndex
 		if ( _indexmap->getValue(dbcolumn, getpos) ) return 1;
 		else return 0;
 	}
-	inline void debugObject( int flag, abaxint limit, abaxint hold, abaxint instart, abaxint inend ) { _darrFamily->debugJDBFile( flag, limit, hold, instart, inend ); }
-	void getlimitStart( abaxint &startlen, abaxint limitstart, abaxint& soffset, abaxint &foffset );
+	void getlimitStart( jagint &startlen, jagint limitstart, jagint& soffset, jagint &foffset );
 	inline Jstr getdbName() { return _dbname; }
 	inline Jstr getTableName() { return _tableName; }	
 	inline Jstr getIndexName() { return _indexName; }
@@ -59,52 +56,46 @@ class JagIndex
 	int updateFromTable( const char *tableoldbuf, const char *tablenewbuf );
 	int removeFromTable( const char *tablebuf );
 	int drop();	
-	abaxint select( JagDataAggregate *&jda, const char *cmd, const JagRequest& req, JagParseParam *parseParam, Jstr &errmsg, 
+	jagint select( JagDataAggregate *&jda, const char *cmd, const JagRequest& req, JagParseParam *parseParam, Jstr &errmsg, 
 				 bool nowherecnt=true, bool isInsertSelect=false );
-	abaxint count( const char *cmd, const JagRequest& req, JagParseParam *parseParam, Jstr &errmsg, abaxint &keyCheckerCnt );
+	jagint getCount( const char *cmd, const JagRequest& req, JagParseParam *parseParam, Jstr &errmsg );
 	
-	bool bufchange( char *indexbuf, char *tablebuf );
-	void refreshSchema();
-	void   flushBlockIndexToDisk();
-	void   copyAndInsertBufferAndClean();
-	void setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, char *buffers[] );
+	bool 	bufchange( char *indexbuf, char *tablebuf );
+	void 	refreshSchema();
+	void   	flushBlockIndexToDisk();
+	void   	copyAndInsertBufferAndClean();
+	void 	setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, char *buffers[] );
 
-	int formatIndexCmdFromTable( const char *tablebuf, int type );
+	int 	formatIndexCmdFromTable( const char *tablebuf, int type );
 
 	JagDiskArrayFamily *_darrFamily;
-	Jstr _dbobj;
-  	abaxint KEYLEN;
-	abaxint VALLEN;
-	abaxint KEYVALLEN;
-	abaxint TABKEYLEN;
-	abaxint TABVALLEN;
-	int _replicateType;
-
+	Jstr 			_dbobj;
+  	jagint 			KEYLEN;
+	jagint 			VALLEN;
+	jagint 			KEYVALLEN;
+	jagint 			TABKEYLEN;
+	jagint 			TABVALLEN;
+	int 			_replicateType;
 	JagSchemaRecord _tableRecord;
 	JagSchemaRecord _indexRecord;
-	//const JagSchemaRecord *_tableRecord;
-	//const JagSchemaRecord *_indexRecord;
-
-	int _numKeys;
-	int _numCols;
-	JagHashStrInt *_indexmap;
+	int 			_numKeys;
+	int 			_numCols;
+	JagHashStrInt 	*_indexmap;
 	JagSchemaAttribute *_schAttr;
 	const JagDBServer *_servobj;
-
 	JagTableSchema	*_tableschema;
 	JagIndexSchema	*_indexschema;
+	pthread_mutex_t _parseParamParentMutex;
 
   protected:
+	int 			*_indtotabOffset; // maybe removed
+	const JagCfg 	*_cfg;
+	Jstr 			_dbname;
+	Jstr 			_tableName;
+	Jstr 			_indexName;
 
-	int *_indtotabOffset; // maybe removed
-	const JagCfg *_cfg;
-	Jstr _dbname;
-	Jstr _tableName;
-	Jstr _indexName;
-	JagArray<JagDBPair> *_marr; // may be removed
-	
-	void init( bool buildInitIndex );
-	void destory();
+	void 			init( bool buildInitIndex );
+	//void 	destory();
 	
 };
 

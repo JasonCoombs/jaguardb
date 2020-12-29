@@ -31,6 +31,7 @@
 #include <vector>
 #include <unordered_map>
 #include <fcntl.h>
+#include <type_traits>
 
 #include <JagCGAL.h>
 
@@ -52,17 +53,15 @@
 #include <JagStrSplitWithQuote.h>
 #include <JagBlockLock.h>
 #include <JagStack.h>
-#include <JagThreadPool.h>
+//#include <JagThreadPool.h>
 #include <JagMutex.h>
 #include <JDFS.h>
-#include <JagBlock.h>
 #include <JagFixBlock.h>
 #include <JagFastCompress.h>
 #include <JagHashLock.h>
 #include <JagBoundFile.h>
 #include <JagLocalDiskHash.h>
 #include <JagSchemaRecord.h>
-#include <JagDiskArrayClient.h>
 #include <JagSimpleBoundedArray.h>
 #include <JagSQLMergeReader.h>
 #include <JagDBMap.h>
@@ -78,23 +77,54 @@
 #include <JagLineFile.h>
 #include <JagParser.h>
 #include <JagSortLinePoints.h>
+#include <JagHashStrStr.h>
+#include <spsc_queue.h>
 
-abaxint test_strchrnumskip( const char *str, char ch );
+#include <JagLockFreeDBMap.h>
+#include <functional>
+#include "safemap.h"
+#include "btree_map.h"
+
+typedef safe::map<std::string, std::string> SafeStrStrMap; 
+
+
+jagint test_strchrnumskip( const char *str, char ch );
 using namespace std;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
+void *thrdfunc1(void *ptr);
+void *thrdfunc2(void *ptr);
+
+void *cds_insert(void * ptr);
+void *cds_find(void * ptr);
+void *cds_update(void * ptr);
+void *cds_delete(void * ptr);
+
+void *safemap_insert(void * ptr);
+void *safemap_find(void * ptr);
+void *safemap_update(void * ptr);
+void *safemap_delete(void * ptr);
+
+void *deleteMap( void *ptr );
+void *insertMap( void *ptr );
+void *updateMap( void *ptr );
+void *readMap( void *ptr );
 
 struct TPass {
+	TPass() { anum1 = anum2 = anum3 = 0; fd=0; num=0; }
 	int fd;
 	int num;
 	void *ptr1;
 	void *ptr2;
 	void *ptr3;
+	std::atomic<int> anum1;
+	std::atomic<int> anum2;
+	std::atomic<int> anum3;
 };
 
 class Counter
 {
 		public:
-        std::atomic<abaxint> value;
+        std::atomic<jagint> value;
     
         void increment(){
 			if ( value.is_lock_free() ) {
@@ -112,9 +142,9 @@ class Counter
         }
 };
 Counter g_cnt;
-abaxint g_num;
+jagint g_num;
 
-void writefloat( const char *str, abaxint len, FILE *outf );
+void writefloat( const char *str, jagint len, FILE *outf );
 void initCheckLicense();
 void testjson();
 void testrayrecord();
@@ -129,6 +159,7 @@ void testStrSplitWQuote();
 void testAtomic( int N);
 int test_schema( const char *tabname );
 int test_obj( int N);
+int test_blocklock( int N);
 int test_fixstring( int N);
 int test_time();
 int test_misc();
@@ -141,10 +172,13 @@ void *regionLock( void *ptr );
 //void *condLock( void *ptr );
 int test_threads( int N );
 void test_stack();
+void test_cds( int N );
+void test_lockfreedbmap( int N );
+void test_safemap( int N );
 
 void *task1( void *p );
 void *task2( void *p );
-void test_threadpool();
+//void test_threadpool();
 void test_fdread();
 void test_jdfs();
 void test_attr();
@@ -152,6 +186,7 @@ void test_blockindex();
 void test_fixblockindex();
 void test_compress();
 void test_hashlock();
+void test_hashstr();
 void test_size();
 void test_parse();
 void test_boundfile();
@@ -172,6 +207,8 @@ void test_array ( int N );
 void test_lineseg ( int N );
 void test_stdhashmap ( int N );
 void test_stdmap ( int N );
+void test_stdmap_mutex ( int N );
+int test_stdmap_threads( int N );
 void test_jaghashmap ( int N );
 void test_jaghashmap_nofix ( int N );
 void test_jagunordmap ( int N );
@@ -193,6 +230,10 @@ void test_cgal();
 void test_new( long n);
 void test_equation();
 void test_intersection();
+void test_fflush( int n );
+void test_jstr( int n );
+void test_parseparam( int n );
+void test_spsc_queue( int n );
 
 int main(int argc, char *argv[] )
 {
@@ -210,11 +251,12 @@ int main(int argc, char *argv[] )
 	//testjaguarreader();
 	//testjaguarreader2();
 	// testUUID();
-	testStrSplitWQuote();
+	// testStrSplitWQuote();
 	// testAtomic( N );
 
 	// test_schema( argv[2] );
 	// test_obj( N );
+	//test_blocklock( N );
 	// test_fixstring( N );
 	// test_time( );
 	// test_vec( N );
@@ -235,7 +277,7 @@ int main(int argc, char *argv[] )
 	// test_localdiskhash( N );
 	// test_diskkeychecker( N );
 	// test_diskarrayclient( N );
-	// test_jagarray( N );
+	//test_jagarray( N );
 	// test_simpleboundedarray( N );
 	// test_malloc( N );
 	// test_filefamily();
@@ -261,8 +303,9 @@ int main(int argc, char *argv[] )
 	//test_str( N );
 	//test_geo( N );
 	//test_sqrt( N );
-	// test_split( N );
+	//test_split( N );
 	//test_stdmap( N );
+	//test_stdmap_mutex( N );
 	//test_btree( N );
 	//test_linefile( N );
 	//test_json( N );
@@ -271,6 +314,16 @@ int main(int argc, char *argv[] )
 	//test_new( N );
 	//test_equation();
 	//test_intersection();
+	// test_hashstr();
+
+	//test_fflush( N );
+	//test_jstr( N );
+	test_parseparam( N );
+    //test_spsc_queue(N );
+	//test_stdmap_threads( N );
+	//test_cds( N );
+	//test_lockfreedbmap( N );
+	//test_safemap(N);
 }
 
 
@@ -327,8 +380,6 @@ void testjson()
 
 void testrayrecord()
 {
-	int max = 200;
-
 	time_t t1 = time(NULL);
 	/***
 	for ( int i = 0; i < max ; ++i ) {
@@ -423,8 +474,7 @@ void testrayrecord()
 	Jstr n = "innerrings(polygon((0 0, 22 44, 98 12, 0 0), (9 3 , 9 0, 82 83, 9 3 ))) dkdjdjdd djdd jdkdjkdjkdjkd djkdjdk djdjd jdkdjdkj";
 	//Jstr n = "innerrings(polygon((0 0, 22 44,";
 	Jstr v = "CJAG=0=0=PL=d 9.0:0.0:82.0:83.0 9.0:3.0 9.0:0.0 82.0:83.0 9.0:3.0 03jejde9 jdkv njvneje fj vvj eij ehehfnffffffffffff jeihej ee ene eeneddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd==";
-	int nc = rec.addNameValue( n.c_str(), v.c_str() );
-	prt(("s1728 nc=%d\n",  nc ));
+	rec.addNameValue( n.c_str(), v.c_str() );
 	prt(("s1728 src=[%s]\n", rec.getSource() ));
 
 	p = root.getValue( n.c_str() );
@@ -514,7 +564,7 @@ time_t my_convert_utc_tm_to_time_t (struct tm *tm)
 	struct timeval tval;
 	struct timezone tzone;
 
-    int rc =  gettimeofday( &tval, &tzone );
+    gettimeofday( &tval, &tzone );
 	printf(" tz_minuteswest=%d tz_dsttime=%d \n", tzone.tz_minuteswest, tzone.tz_dsttime );
 
 	/********
@@ -555,7 +605,7 @@ void testjaguarreader()
 {
     Jstr getstr = "";
     int getint = 0;
-    abaxint getlong = 0;
+    jagint getlong = 0;
     float getfloat = 0.0;
     double getdouble = 0.0;
     int gettype = 0;
@@ -580,7 +630,7 @@ void testjaguarreader()
         getdouble = testjagreader2.getDouble( "unit" );
         getstr = testjagreader2.getTimeString( "daytime" );
         gettype = testjagreader2.getType( "amt" );
-        printf("jagreader 2 int [%d] [%d] abaxint [%lld] [%lld] float [%f] [%f] double [%f] [%f] timestring [%s] type [%d]\n", getint, getint*2, getlong, getlong*2, getfloat, getfloat*2, getdouble, getdouble*2, getstr.c_str(), gettype);
+        printf("jagreader 2 int [%d] [%d] jagint [%lld] [%lld] float [%f] [%f] double [%f] [%f] timestring [%s] type [%d]\n", getint, getint*2, getlong, getlong*2, getfloat, getfloat*2, getdouble, getdouble*2, getstr.c_str(), gettype);
     }
     printf("testjagreader 2 end\n");
 }
@@ -590,7 +640,7 @@ void testjaguarreader2()
 {
     Jstr getstr;
     int getint = 0;
-    abaxint getlong = 0;
+    jagint getlong = 0;
     float getfloat = 0.0;
     double getdouble = 0.0;
     int gettype = 0;
@@ -653,8 +703,8 @@ void testStrSplitWQuote()
 	saa.print();
 
 	JagStrSplitWithQuote q;
-	int nn = q.count(aa.s(), ',' );
-	prt(("aa count=%d\n", nn ));
+	q.count(aa.s(), ',' );
+	//prt(("aa count=%d\n", nn ));
 
 	q.init("aaaa, aaaa, , , ,,, 'fdfdfdfd'   'e    ff(())', dkdd ", ' ', true, true );
 	q.print();
@@ -669,10 +719,10 @@ void testStrSplitWQuote()
 
 }
 
-abaxint test_strchrnumskip( const char *str, char ch )
+jagint test_strchrnumskip( const char *str, char ch )
 {
     if ( ! str || *str == '\0' ) return 0;
-    abaxint cnt = 0;
+    jagint cnt = 0;
     while ( *str != '\0' ) {
         if ( *str == '\'' ) { while ( *str != '\'' && *str != '\0' ) ++str; ++str; }
         else if ( *str == '"' ) { while ( *str != '"' && *str != '\0' ) ++str; ++str; }
@@ -727,7 +777,7 @@ int test_obj( int N)
 
 	srand(10);
 	clock.start();
-	JagHashMap<AbaxString,abaxint> *map = new JagHashMap<AbaxString,abaxint>();
+	JagHashMap<AbaxString,jagint> *map = new JagHashMap<AbaxString,jagint>();
 	AbaxString rs;
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(16);
@@ -738,7 +788,7 @@ int test_obj( int N)
 
 	srand(10);
 	clock.start();
-	abaxint v;
+	jagint v;
 	for ( int i = 0; i < N; ++i ) {
 		rs = rs.randomValue(16);
 		map->getValue(rs, v );
@@ -799,23 +849,6 @@ int test_obj( int N)
 	clock.stop();
 	printf("%d  open/close=%d usec \n", N,  clock.elapsedusec() );
 
-	JagReadWriteLock    *_lock = new JagReadWriteLock();
-	clock.start();
-	for ( int i = 0; i < N; ++i ) {
-		JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	}
-	clock.stop();
-	printf("%d  JagReadWriteMutex::WRITE_LOCK=%d usec \n", N,  clock.elapsedusec() );
-
-
-	clock.start();
-	for ( int i = 0; i < N; ++i ) {
-		JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	}
-	clock.stop();
-	printf("%d  JagReadWriteMutex::READ_LOCK=%d usec \n", N,  clock.elapsedusec() );
-
-	ofd =  open("/tm/testobj.txt", O_CREAT|O_RDWR|JAG_NOATIME, S_IRWXU);
 	JagBlockLock                    *_blockLock;
 	_blockLock = new JagBlockLock();
 	clock.start();
@@ -851,8 +884,6 @@ int test_obj( int N)
 	clock.stop();
 	printf("%d  _blockLock->writeLock/unLock(0)=%d usec \n", N,  clock.elapsedusec() );
 
-	close( ofd );
-
 
 	fp = fopen( fpath, "w" );
 	clock.start();
@@ -881,25 +912,6 @@ int test_obj( int N)
 	clock.stop();
 	printf("%d  open-close=%d usec \n", N,  clock.elapsedusec() );
 
-	clock.start();
-	for ( int i = 0; i < N; ++i ) {
-		{
-			JagReadWriteMutex mutex( _lock,  JagReadWriteMutex::WRITE_LOCK );
-		}
-	}
-	clock.stop();
-	printf("%d  mutex-write-lock=%d usec \n", N,  clock.elapsedusec() );
-
-	clock.start();
-	for ( int i = 0; i < N; ++i ) {
-		{
-			JagReadWriteMutex mutex( _lock,  JagReadWriteMutex::READ_LOCK );
-		}
-	}
-	clock.stop();
-	printf("%d  mutex-read-lock=%d usec \n", N,  clock.elapsedusec() );
-	delete _lock;
-
 	/****
 	clock.start();
 	for ( i = 0; i < 300; ++i ) { buf[i] = 'a'; } buf[i] = '\0';
@@ -922,6 +934,108 @@ int test_obj( int N)
 	clock.stop();
 	printf("%d  mutext lock/unlock=%d usec \n", N,  clock.elapsedusec() );
 	pthread_mutex_destroy( &g_mutex );
+
+}
+
+int test_blocklock( int N)
+{
+	printf("test_blocklock ...\n");
+
+	JagClock clock;
+	//JagReadWriteLock    *_lock = new JagReadWriteLock();
+	pthread_rwlock_t    *_lock = newJagReadWriteLock();
+	clock.start();
+	int a = 0;
+	for ( int i = 0; i < N; ++i ) {
+		JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+		++a;
+	}
+	clock.stop();
+	printf("%d  JagReadWriteMutex::WRITE_LOCK=%d usec \n", N,  clock.elapsedusec() );
+
+
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
+		++a;
+	}
+	clock.stop();
+	printf("%d  JagReadWriteMutex::READ_LOCK=%d usec \n", N,  clock.elapsedusec() );
+
+	JagBlockLock                    *_blockLock;
+	_blockLock = new JagBlockLock();
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		_blockLock->writeLock( -1 );
+		++a;
+		_blockLock->writeUnlock( -1 );
+	}
+	clock.stop();
+	printf("%d  _blockLock->writeLock/unLock(-1)=%d usec \n", N,  clock.elapsedusec() );
+
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		_blockLock->readLock( -1 );
+		++a;
+		_blockLock->readUnlock( -1 );
+	}
+	clock.stop();
+	printf("%d  _blockLock->writeLock/unLock(-1)=%d usec \n", N,  clock.elapsedusec() );
+
+
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		_blockLock->writeLock( 0 );
+		++a;
+		_blockLock->writeUnlock( 0 );
+	}
+	clock.stop();
+	printf("%d  _blockLock->writeLock/unLock(0)=%d usec \n", N,  clock.elapsedusec() );
+
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		_blockLock->readLock( 0 );
+		++a;
+		_blockLock->readUnlock( 0 );
+	}
+	clock.stop();
+	printf("%d  _blockLock->writeLock/unLock(0)=%d usec \n", N,  clock.elapsedusec() );
+
+
+	delete _lock;
+	delete _blockLock;
+
+	pthread_mutex_init( &g_mutex, NULL );
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		pthread_mutex_lock ( &g_mutex );
+		++a;
+		pthread_mutex_unlock ( &g_mutex );
+	}
+	clock.stop();
+	printf("%d  mutext lock/unlock=%d usec \n", N,  clock.elapsedusec() );
+	pthread_mutex_destroy( &g_mutex );
+
+	pthread_rwlock_t rwlock;
+	pthread_rwlock_init(&rwlock, NULL);
+
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		pthread_rwlock_wrlock(&rwlock);
+		++a;
+		pthread_rwlock_unlock(&rwlock);
+	}
+	clock.stop();
+	printf("%d  pthread_rwlock_t wrlock/unlock=%d usec \n", N,  clock.elapsedusec() );
+
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		pthread_rwlock_rdlock(&rwlock);
+		++a;
+		pthread_rwlock_unlock(&rwlock);
+	}
+	clock.stop();
+	printf("%d  pthread_rwlock_t rdlock/unlock=%d usec \n", N,  clock.elapsedusec() );
 
 }
 
@@ -970,7 +1084,7 @@ int test_fixstring( int N)
 int test_time( )
 {
 	int tt = 100;
-	abaxint sec = JagTime::getTimeZoneDiff();
+	jagint sec = JagTime::getTimeZoneDiff();
 	printf("timezone diff %d\n", sec );
 
 	int aa = atoi("2013-23-23");
@@ -980,7 +1094,7 @@ int test_time( )
 	printf("aa=%d\n", aa );
 
 	sec = tt/1000000;
-	abaxint usec = tt % 1000000;
+	//jagint usec = tt % 1000000;
 	struct tm *tmptr = localtime( (time_t *)&sec );
 	char tmstr[48];
 	strftime( tmstr, sizeof(tmstr), "%Y-%m-%d %H:%M:%S", tmptr );
@@ -1024,7 +1138,7 @@ int test_vec( int max )
 int test_threads( int N )
 {
 	pthread_t  thread[200];
-	TPass pass[200];
+	//TPass pass[200];
 
 	g_num = 0;
 	JagClock  clock;
@@ -1151,8 +1265,8 @@ void *useNolock( void *ptr )
 void *lockFD( void *ptr )
 {
 	int rc;
-	TPass *p = (TPass*) ptr;
-	int fd1 = p->fd;  // same fd cannot cause multi-threads block on lock
+	//TPass *p = (TPass*) ptr;
+	//int fd1 = p->fd;  // same fd cannot cause multi-threads block on lock
 	struct flock fl;
 
 	// only when each thread opens the same file can each thread be blocked
@@ -1297,7 +1411,7 @@ int test_misc()
 	JagClock clock;
 	clock.start();
 	for ( int i = 0; i < 10000; ++i ) {
-		char *md5 = MDString("hellojdjdjd fjfjfjf9393irjfNfne jejejiejeje jckdjffeje jejre ejr ejeiiuer jfdkjfkdj jfd");
+		MDString("hellojdjdjd fjfjfjf9393irjfNfne jejejiejeje jckdjffeje jejre ejr ejeiiuer jfdkjfkdj jfd");
 	}
 	clock.stop();
 	printf("s1809 MDString %d times took %d ms\n", 10000, clock.elapsed() );
@@ -1354,6 +1468,7 @@ void *task2( void *p ){
 }
 
 
+/**
 void test_threadpool()
 {
 	puts("Making threadpool with 4 threads");
@@ -1372,6 +1487,7 @@ void test_threadpool()
 	
 	return;
 }
+**/
 
 void test_attr()
 {
@@ -1395,7 +1511,7 @@ void test_blockindex()
 
 	JagDBPair pair;
 	JagFixString k;
-	abaxint idx;
+	//jagint idx;
 	
 	k = "k5";
 	pair = k;
@@ -1438,7 +1554,7 @@ void test_fixblockindex()
 
 	JagDBPair pair;
 	JagFixString k;
-	abaxint idx;
+	//jagint idx;
 	
 	k = "k5";
 	pair = k;
@@ -1557,8 +1673,8 @@ void test_compress()
 
 void test_hashlock()
 {
-	abaxint ps = sysconf( _SC_PAGESIZE );
-	abaxint np = sysconf( _SC_AVPHYS_PAGES );
+	jagint ps = sysconf( _SC_PAGESIZE );
+	jagint np = sysconf( _SC_AVPHYS_PAGES );
 	printf("_SC_PAGESIZE=%lld  _SC_AVPHYS_PAGES=%lld\n", ps, np );
 
 	JagHashLock lock;
@@ -1699,7 +1815,7 @@ void test_localdiskhash( int N )
 		}
 	}
 	printf("inserted num=%d\n", num );
-	// dh.print();
+	//dh.print();
 
 	srand( 0 );
 	num = 0;
@@ -1737,7 +1853,7 @@ void test_localdiskhash( int N )
 		}
 	}
 	printf("update num=%d\n", num );
-	// dh.print();
+	//dh.print();
 
 	printf("Start remove ...****\n");
 	srand( 0 );
@@ -1758,6 +1874,7 @@ void test_localdiskhash( int N )
 		// dh.print();
 	}
 	printf("del num=%d \n", num );
+
 	dh.print();
 
 }
@@ -1792,8 +1909,8 @@ void test_diskarrayclient( int N )
 	prt(("Done insert %d rows\n", N ));
 
     JagSingleBuffReader navig( darr->getFD(), darr->_arrlen, KLEN, VLEN );
-	abaxint i;
-	abaxint cnt=0;
+	jagint i;
+	jagint cnt=0;
     while ( navig.getNext( buf, KLEN+VLEN, i ) ) {
 		++cnt;
 	}
@@ -1810,9 +1927,9 @@ void test_jagarray( int N )
 	printf("test_jagarray N=%d\n", N );
 	JagArray<AbaxPair<AbaxInt, AbaxInt> > jar;
 	AbaxInt k,v;
-	for ( int i = 0; i < N; ++i ) {
-		k = AbaxInt::randomValue();
-		// k = i;
+	for ( long i = 0; i < N; ++i ) {
+		//k = AbaxInt::randomValue();
+		k = (329187 * i) % 2739971;
 		v =  100;
 		AbaxPair<AbaxInt, AbaxInt> pair(k, v );
 		jar.insert( pair );
@@ -1820,8 +1937,8 @@ void test_jagarray( int N )
 	printf("JagArray has %d elements   %d cells\n", jar.elements(), jar.size() );
 
 	int cnt = 0;
-	for ( int i = 0; i < N; ++i ) {
-		k = i;
+	for ( long i = 0; i < N; ++i ) {
+		k = (329187 * i) % 2739971;
 		v = 100;
 		AbaxPair<AbaxInt, AbaxInt> pair(k, v );
 		if ( jar.exist( pair ) ) {
@@ -1854,7 +1971,7 @@ void test_simpleboundedarray( int N )
 void test_malloc( int N )
 {
 	prt(("t3829 test_malloc ...\n"));
-	abaxint len = 2000000000;
+	jagint len = 2000000000;
 	char *p = (char*)malloc( len );
 	memset( p, 0, len );
 	free( p );
@@ -2100,22 +2217,24 @@ void test_lineseg ( int N )
 	delete [] points;
 
 }
+
 void test_array ( int N )
 {
+	printf("\ntest_array ...\n");
 	//JagArray<JagDBPair> *arr = new JagArray<JagDBPair>(32, 1);
 	JagArray<JagDBPair> *arr = new JagArray<JagDBPair>(32, 0);
 	AbaxString k, v;
 	JagFixString fk, fv;
+	JagDBPair pair;
+	JagClock clock;
 
 	std::vector<AbaxString> *vec = new std::vector<AbaxString>(N);
-	JagClock clock;
 	int cnt = 0;
+
 	for  ( int i=0; i < N; ++i ) {
 		(*vec)[i] = AbaxString::randomValue(32);
 	}
-
 	clock.start();
-	JagDBPair pair;
 	for ( int i = 0; i < N; ++i ) {
 		fk = (*vec)[i].c_str(); 
 		fv = fk;
@@ -2124,7 +2243,7 @@ void test_array ( int N )
 		arr->insert(pair);
 	}
 	clock.stop();
-	printf("Insert array %d done in %d millissecs\n", N, clock.elapsed() );
+	printf("Array random insert %d items done in %d millisecs\n", N, clock.elapsed() );
 	//arr->print( false );
 
 	clock.start();
@@ -2137,7 +2256,7 @@ void test_array ( int N )
 		if ( arr->exist( pair ) ) ++cnt;
 	}
 	clock.stop();
-	printf("Seach array found=%d done in %d millissecs\n", cnt, clock.elapsed() );
+	printf("Seach array random exist=%d done in %d millisecs\n", cnt, clock.elapsed() );
 
 	clock.start();
 	cnt = 0;
@@ -2148,8 +2267,7 @@ void test_array ( int N )
 		if ( arr->get( pair ) ) ++cnt;
 	}
 	clock.stop();
-	printf("Get array found=%d done in %d millissecs\n", cnt, clock.elapsed() );
-
+	printf("Get array random get=%d done in %d millissecs\n", cnt, clock.elapsed() );
 
 	const JagDBPair *pp;
 	const JagDBPair *pp2;
@@ -2173,7 +2291,7 @@ void test_array ( int N )
 		}
 	}
 	clock.stop();
-	printf("Get array predfound=%d  pred->succ=self=%d  done in %d millissecs\n", cp, cnt, clock.elapsed() );
+	printf("Get array predfound=%d  pred->succ=self=%d  done in %d millisecs\n", cp, cnt, clock.elapsed() );
 
 	clock.start();
 	cnt = 0;
@@ -2196,7 +2314,7 @@ void test_array ( int N )
 		}
 	}
 	clock.stop();
-	printf("Get array succfound=%d  succ->pred=self=%d  done in %d millissecs\n", cp, cnt, clock.elapsed() );
+	printf("Get array succfound=%d  succ->pred=self=%d  done in %d millisecs\n", cp, cnt, clock.elapsed() );
 
 	clock.start();
 	cnt = 0;
@@ -2208,7 +2326,7 @@ void test_array ( int N )
 		if ( arr->exist( pair ) ) ++cnt;
 	}
 	clock.stop();
-	printf("Exist done remain=%d in %d millissecs\n", cnt, clock.elapsed() );
+	printf("Exist done remain=%d in %d millisecs\n", cnt, clock.elapsed() );
 
 	clock.start();
 	cnt = 0;
@@ -2220,7 +2338,7 @@ void test_array ( int N )
 		arr->remove( pair );
 	}
 	clock.stop();
-	printf("Remove done in %d millissecs\n", clock.elapsed() );
+	printf("Remove done in %d millisecs\n", clock.elapsed() );
 
 	clock.start();
 	cnt = 0;
@@ -2232,12 +2350,43 @@ void test_array ( int N )
 		if ( arr->exist( pair ) ) ++cnt;
 	}
 	clock.stop();
-	printf("Exist done remain=%d in %d millissecs\n", cnt, clock.elapsed() );
-
+	printf("Exist done remain=%d in %d millisecs\n", cnt, clock.elapsed() );
 	printf("\n");
 
 
+	// sequential insert
+	delete vec;
+	vec = new std::vector<AbaxString>(N);
+	for  ( int i=0; i < N; ++i ) {
+		(*vec)[i] = intToStr(i);
+	}
+
+	clock.start();
+	for ( int i = 0; i < N; ++i ) {
+		fk = (*vec)[i].c_str(); 
+		fv = fk;
+		pair.key = fk;
+		pair.value = fv;
+		arr->insert(pair);
+	}
+	clock.stop();
+	printf("Array sequential insert %d done in %d millisecs\n", N, clock.elapsed() );
+	//arr->print( false );
+
+	clock.start();
+	cnt = 0;
+	for ( int i = 0; i < N; ++i ) {
+		fk = (*vec)[i].c_str(); 
+		pair.key = fk;
+		pair.value = fv;
+		if ( arr->get( pair ) ) ++cnt;
+	}
+	clock.stop();
+	printf("Array sequential get %d done in %d millissecs\n", cnt, clock.elapsed() );
+
+	printf("\n");
 	delete arr;
+	delete vec;
 }
 
 void test_jaghashmap ( int N )
@@ -2352,19 +2501,20 @@ void test_stdhashmap ( int N )
 
 void test_stdmap ( int N )
 {
-	printf("\n");
+	printf("\ntest_stdmap ...");
 	JagClock clock;
 	std::map<std::string,std::string> *map = new std::map< std::string,std::string>();
 	std::string rs;
 	clock.start();
 	std::vector<std::string> *vec = new std::vector<std::string>(N);
 	for ( int i = 0; i < N; ++i ) {
-		(*vec)[i] = rs.c_str();
 		rs = AbaxString::randomValue(20).c_str();
+		//rs = std::to_string(i);
+		(*vec)[i] = rs.c_str();
 		map->insert( std::pair<std::string,std::string>( rs.c_str(), rs.c_str() ) );
 	}
 	clock.stop();
-	printf("%d  StdMap(insert)  %d usedmsec \n", N,  clock.elapsed() );
+	printf("%d  StdMap(insert) used %d milliseconds \n", N,  clock.elapsed() );
 
 
 	clock.start();
@@ -2373,12 +2523,61 @@ void test_stdmap ( int N )
 		if ( map->find( (*vec)[i] ) != map->end() ) ++cnt;
 	}
 	clock.stop();
-	printf("%d  StdMap(find) used msec %d \n", cnt,  clock.elapsed() );
+	printf("%d  StdMap(find) used %d millseconds\n", cnt,  clock.elapsed() );
+
+
+	std::map< std::string,std::string>::iterator it;
+	clock.start();
+	int tot = 0;
+	for ( int i=0; i < 100; ++i ) {
+		for ( it =  map->begin(); it != map->end(); ++it ) { ++tot; }
+	}
+	clock.stop();
+	printf("%d  StdMap iterator 100 times used %d millseconds\n", tot, clock.elapsed() );
 
 	delete map;
 	delete vec;
 	jagmalloc_trim( 0 );
 	printf("done delete\n");
+}
+
+void test_stdmap_mutex ( int N )
+{
+	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_init( &mutex, NULL );
+	printf("\ntest_stdmap_mutex ...");
+	JagClock clock;
+	std::map<std::string,std::string> *map = new std::map< std::string,std::string>();
+	std::string rs;
+	clock.start();
+	std::vector<std::string> *vec = new std::vector<std::string>(N);
+	for ( int i = 0; i < N; ++i ) {
+		rs = std::to_string(i);
+		(*vec)[i] = rs.c_str();
+		//rs = AbaxString::randomValue(20).c_str();
+		pthread_mutex_lock ( &mutex );
+		map->insert( std::pair<std::string,std::string>( rs.c_str(), rs.c_str() ) );
+		pthread_mutex_unlock ( &mutex );
+	}
+	clock.stop();
+	printf("%d  mutex StdMap(insert) used %d milliseconds \n", N,  clock.elapsed() );
+
+
+	clock.start();
+	int cnt = 0;
+	for ( int i = 0; i < N; ++i ) {
+		pthread_mutex_lock ( &mutex );
+		if ( map->find( (*vec)[i] ) != map->end() ) ++cnt;
+		pthread_mutex_unlock ( &mutex );
+	}
+	clock.stop();
+	printf("%d  mutex StdMap(find) used %d millseconds\n", cnt,  clock.elapsed() );
+
+	delete map;
+	delete vec;
+	jagmalloc_trim( 0 );
+	printf("done delete\n");
+	pthread_mutex_destroy( &mutex );
 }
 
 void test_jagfixhasharray ( int N )
@@ -2402,8 +2601,8 @@ void test_jagfixhasharray ( int N )
 	printf("%d  fixhasharray(insert)=%d msec \n", N,  clock.elapsed() );
 	sleep(10);
 
-	abaxint idx;
-	abaxint cnt = 0;
+	jagint idx;
+	jagint cnt = 0;
 	for ( int i = 0; i < N; ++i ) {
 		if ( map->exist( save[i].c_str(), &idx ) ) {
 			++cnt;
@@ -2787,18 +2986,24 @@ void test_str( int N )
 	prt(("a24=[%s]\n", a24.s() ));
 
     int naa = test_strchrnumskip( "1 2 3 'dddd' 'eeee'", ' ' );
-	prt(("naa=%d\n", naa ));
+	printf("naa=%d\n", naa );
+
+	AbaxString axs;
+	for ( int i=0; i < N; ++i ) {
+		axs += "fdkfkdfkdjfdkfdjfkdjkfjdkjfkdjfkdjkfjdkjfkdjkdjkdjfkdjfkdjkfdjkfjdkfjkdjfkdjkfdjkfjdkfjd";
+	}
+	printf("N=%d AbaxString += done\n", N );
 }
 
 #include <GeographicLib/Ellipsoid.hpp>
 void test_geo( int N )
 {
 	const Ellipsoid& wgs84 = Ellipsoid::WGS84();
-	prt(("s2929 MajorRadius()=%f minor=%f\n", wgs84.MajorRadius(), wgs84.MinorRadius() ));
+	printf("s2929 MajorRadius()=%f minor=%f\n", wgs84.MajorRadius(), wgs84.MinorRadius() );
 
 	double lonmaxmeter = JAG_PI * JAG_EARTH_MAJOR_RADIUS/180.0;
 	double latmeter = JAG_PI * JAG_EARTH_MINOR_RADIUS/180.0;
-	prt(("lonmaxmeter=%.10f latmeter=%.10f\n", lonmaxmeter, latmeter ));
+	printf("lonmaxmeter=%.10f latmeter=%.10f\n", lonmaxmeter, latmeter );
 
 	JagClock clock;
 
@@ -2848,7 +3053,7 @@ void test_geo( int N )
 		points[i].color = JAG_RED;
 	}
 
-	int nrc = sortLinePoints( points, N );
+	int nrc = inlineQuickSort( points, N );
 	clock.stop();
 	printf("test_geo %d computes sortIntersectLinePoints used %d millisecs nrc=%d\n", N, clock.elapsed(), nrc );
 	delete [] points;
@@ -2862,27 +3067,27 @@ void test_geo( int N )
 	int srid = 4326;
 
 	double d1 = JagGeo::distance( lon1, lat1, lon2, lat2, srid );
-	prt(("geographic dist d1=%f\n", d1 ));
+	printf("geographic dist d1=%f\n", d1);
 
 
 	double x1, y1, z1, x2, y2;
 	JagGeo::lonLatToXY( srid, lon1, lat1, x1, y1 ); 
 	JagGeo::lonLatToXY( srid, lon2, lat2, x2, y2 ); 
-	prt(("point1(%f  %f)    point2(%f %f)\n", x1, y1, x2, y2 ));
-	prt(("(x1-x2)^2=%f  (y1=y2)^2=%f\n", (x1-x2)*(x1-x2), (y1-y2)*(y1-y2) ));
+	printf("point1(%f  %f)    point2(%f %f)\n", x1, y1, x2, y2 );
+	printf("(x1-x2)^2=%f  (y1=y2)^2=%f\n", (x1-x2)*(x1-x2), (y1-y2)*(y1-y2) );
 	double d2 = JagGeo::distance( x1, y1, x2, y2, 0 );
-	prt(("jag dist d2=%f\n", d2 ));
+	printf("jag dist d2=%f\n", d2 );
 
 	double f1= 3.141592653589793/180.0;
-	prt(("JAG_RADIAN_PER_DEGREE=%.15f\n", f1 ));
+	printf("JAG_RADIAN_PER_DEGREE=%.15f\n", f1 );
 
 	double lon1b, lat1b, alt1b;
 	JagGeo::XYToLonLat( srid, x1, y1, lon1b, lat1b );
-	prt(("lon1=%f lat1=%f  lon1b=%f lat1b=%f\n", lon1, lat1, lon1b, lat1b ));
+	printf("lon1=%f lat1=%f  lon1b=%f lat1b=%f\n", lon1, lat1, lon1b, lat1b );
 
 	JagGeo::lonLatAltToXYZ( srid, lon1, lat1, alt1, x1, y1, z1 );
 	JagGeo::XYZToLonLatAlt( srid, x1,y1,z1, lon1b, lat1b, alt1b );
-	prt(("lon1=%f lat1=%f alt1=%f  lon1b=%f lat1b=%f alt1b=%f\n", lon1, lat1, alt1, lon1b, lat1b, alt1b ));
+	printf("lon1=%f lat1=%f alt1=%f  lon1b=%f lat1b=%f alt1b=%f\n", lon1, lat1, alt1, lon1b, lat1b, alt1b );
 
 	//const double lat0 = 48 + 50/60.0, lon0 = 2 + 20/60.0; // Paris
 	const double lat0 = 0.0, lon0 = 0.0; 
@@ -2933,8 +3138,8 @@ void test_sqrt( int N )
 {
 	JagClock clock;
 	clock.start();
-	bool rc;
-	int cnt = 0;
+	//bool rc;
+	//int cnt = 0;
 	double f;
 	for ( int i=0; i < N; ++i ) {
 		f = sqrt( (double)N*23.3 );
@@ -2943,7 +3148,7 @@ void test_sqrt( int N )
 	printf("test_sqrt %d used %d millisecs \n", N, clock.elapsed() );
 }
 
-void writefloat( const char *str, abaxint len, FILE *outf )
+void writefloat( const char *str, jagint len, FILE *outf )
 {
 	if ( NULL == str || '\0' == *str || len <1 ) return;
 
@@ -2988,9 +3193,9 @@ void test_split( int n )
 	prt(("get2double %d used %d millisecs\n", n, clock.elapsed() ));
 }
 
-#if 0
 void test_btree( int N )
 {
+	printf("\ntest_btree ...\n");
 	// google btree is slow in search
 	std::vector<AbaxString> *vec = new std::vector<AbaxString>(N);
 	typedef std::pair<AbaxString, AbaxString> Pair;
@@ -3002,12 +3207,12 @@ void test_btree( int N )
 	clock.start();
 	int cnt = 0;
 	for  ( int i=0; i < N; ++i ) {
-		//(*vec)[i] = AbaxString::randomValue(32);
-		(*vec)[i] = intToStr(i).c_str();
+		(*vec)[i] = AbaxString::randomValue(32);
+		//(*vec)[i] = intToStr(i).c_str();
 		btree.insert( Pair( (*vec)[i], (*vec)[i]) );
 	}
 	clock.stop();
-	prt(("btree insert %d took %d millisecs\n", N, clock.elapsed() ));
+	printf("btree insert %d took %d millisecs\n", N, clock.elapsed() );
 
 	clock.start();
 	cnt = 0;
@@ -3015,15 +3220,23 @@ void test_btree( int N )
 		if ( btree.find( (*vec)[i] ) != btree.end() ) ++cnt;
 	}
 	clock.stop();
-	prt(("btree exist found=%d took %d millisecs\n", cnt, clock.elapsed() ));
+	printf("btree find found=%d took %d millisecs\n", cnt, clock.elapsed() );
 
 
 	clock.start();
 	cnt = 0;
-	const AbaxString *p;
-	const AbaxString *pp;
 	int cp = 0;
 	btree::btree_map<AbaxString, AbaxString>::iterator it;
+
+	int tot = 0;
+	for ( int i=0; i < 100; ++i ) {
+		for ( it =  btree.begin(); it != btree.end(); ++it ) { ++tot; }
+	}
+	clock.stop();
+	printf("btree %d iterator 100 times took %d millisecs\n", tot, clock.elapsed() );
+
+	#if 0
+	clock.start();
 	btree::btree_map<AbaxString, AbaxString>::iterator itpred;
 	btree::btree_map<AbaxString, AbaxString>::iterator itsucc;
 
@@ -3035,13 +3248,13 @@ void test_btree( int N )
 		//prt(("i=%d key=[%s] *p=[%s]\n", i, (*vec)[i].c_str(), p->c_str() ));
 	}
 	clock.stop();
-	prt(("btree getValue pointerOK=%d valuefound=%d took %d millisecs\n", cp, cnt, clock.elapsed() ));
+	printf("btree getValue pointerOK=%d valuefound=%d took %d millisecs\n", cp, cnt, clock.elapsed() );
 
 	clock.start();
 	cnt = 0;
 	cp = 0;
 	AbaxString succ, pred;
-	int cnt1 = 0, cnt2 = 0;
+	int cnt1 = 0;
 	for  ( int i=0; i < N; ++i ) {
 		//if ( btree.exist( (*vec)[i] ) ) ++cnt;
 		it = btree.lower_bound( (*vec)[i] );
@@ -3090,10 +3303,10 @@ void test_btree( int N )
 		}
 
 		if ( pred == succ ) ++cnt;
-		// qwer
 	}
 	clock.stop();
 	prt(("btree getPredSucc pointerOK=%d cnt1=%d cnt2=%d took %d millisecs\n", cp, cnt1, cnt2, clock.elapsed() ));
+	#endif
 
 
 	clock.start();
@@ -3115,7 +3328,6 @@ void test_btree( int N )
 	prt(("btree exist remaining %d took %d millisecs\n", cnt, clock.elapsed() ));
 
 }
-#endif
 
 #if 0
 void test_btree( int N )
@@ -3286,13 +3498,13 @@ void test_json( int N )
 		prt(("parse error\n" ));
 		ParseErrorCode errcode = d1.GetParseError(); 
 		const char *err = GetParseError_En( errcode );
-		prt(("error=[%s]\n", err ));
+		printf("error=[%s]\n", err );
 	}
 
 
 
 	const Value& tp = d1["type"];
-	prt(("tp=[%s]\n", tp.GetString() ));
+	printf("tp=[%s]\n", tp.GetString() );
 
 	const Value& cd = d1["coordinates"];
 	prt(("cd=[%s]\n", cd.GetString() ));
@@ -3362,7 +3574,7 @@ void test_distance()
 	lonb1 = 5.39;
 
 	double dist = JagGeo::pointToLineGeoDistance( lata1, lona1, lata2, lona2, latb1, lonb1 );
-	prt(("dist=%.3f meters\n", dist ));
+	printf("dist=%.3f meters\n", dist );
 }
 
 const int DIM = 3;
@@ -3618,7 +3830,7 @@ void test_intersection()
 		{
     		double x = boost::geometry::get<0>(*it);
     		double y = boost::geometry::get<1>(*it);
-			prt(("s203 x=%0f  y=%f\n", x, y ));
+			printf("s203 x=%0f  y=%f\n", x, y );
 		}
     }
 
@@ -3636,7 +3848,7 @@ void test_intersection()
 		{
     		double x = boost::geometry::get<0>(*it);
     		double y = boost::geometry::get<1>(*it);
-			prt(("s203 x=%0f  y=%f\n", x, y ));
+			printf("s203 x=%0f  y=%f\n", x, y );
 		}
     }
 
@@ -3655,7 +3867,7 @@ class TestN
 void test_new( long n )
 {
 	TestN *t = newObject<TestN>( true );
-	prt(("t=%0x n=%d\n", t, n ));
+	printf("t=%0x n=%d\n", t, n );
 }
 
 void test_equation()
@@ -3677,3 +3889,670 @@ void test_equation()
 	prt(("ellipsoid max x=%f y=%f z=%f  dist=%f\n", x, y, z, dist ));
 
 }
+
+void test_hashstr()
+{
+	JagHashStrStr *hs = new JagHashStrStr();
+	hs->addKeyValue("k1", "v1" );
+	hs->addKeyValue("k2", "v2" );
+	hs->addKeyValue("k3", "v3" );
+
+	hs->reset();
+
+	char *p = hs->getValue("k1");
+	if ( p == NULL ) {
+		prt(("reset hash, k1 got NULL\n"));
+	} else {
+		prt(("reset hash, k1 got [%s]\n", p ));
+	}
+
+	hs->addKeyValue("k1", "v1" );
+	p = hs->getValue("k1");
+	if ( p == NULL ) {
+		prt(("reset hash, insert k1,  k1 got NULL\n"));
+	} else {
+		prt(("reset hash, insert k1, k1 got [%s]\n", p ));
+	}
+	
+}
+
+void test_fflush( int N )
+{
+	FILE *f = fopen("myappend.txt", "ab");
+
+	printf("test fflush %d times\n", N );
+	for ( int i = 0; i < N ; i ++ ) {
+		fprintf(f, "%d\n", i );
+		fflush( f );
+	}
+	fclose(f );
+
+}
+
+void test_jstr( int N )
+{
+	Jstr s1 = "aaaaaaaaaaaajkdjkfjdkf djkfdfdfdjkfdkjfkdjkfjdfd";
+	Jstr sb = "bbbbbbbbbbbbjkdjkfjdkf djkfdfdfdjkfdkjfkdjkfjdfd";
+	printf("%d ...\n", N );
+	for ( int i = 0; i < N ; i ++ ) {
+		Jstr s("aaaaaaaaaa");
+		Jstr s2;
+		s2 = s1; // mem leak
+		printf("s222293 s2=[%s] s1=[%s]\n", s2.s(), s1.s() );
+		//Jstr a = s1 + s2 + s1;
+
+		sb = s;
+		printf("s222294 sb=[%s] s=[%s]\n", s1.s(), s.s() );
+		//Jstr a = s1 + s2 + s1;
+
+		if ( 0 == ( i%100 ) ) {
+			malloc_trim( 0 );
+		}
+	}
+
+	printf("sleep 10\n");
+	sleep(10);
+}
+
+
+void test_parseparam( int N ) 
+{
+	printf("test_parseparam N=%d ...\n", N ); fflush(stdout );
+	Jstr cmd = "select a, b, g from t where a='1222' and b like 'sss%'";
+	Jstr errmsg;
+	JagParser parser( (void*)NULL );
+	JagParseParam parseParam(&parser);
+
+	JagParseAttribute jpa( NULL, 0, 0, "test", NULL );
+
+	int rc  = -1;
+	for ( int i = 0; i < N ; i ++ ) {
+		/***
+		JagParseParam parseParam(&parser);
+		rc = parser.parseCommand( jpa, cmd, &parseParam, errmsg );
+		***/
+
+		rc = parser.parseCommand( jpa, cmd, &parseParam, errmsg );
+		//parseParam.clean();
+	}
+	printf("test_parseparam N=%d done rc=%d\n", N, rc ); fflush(stdout );
+
+}
+
+spsc_queue<int> q;
+void test_spsc_queue( int N )
+{
+  pthread_t thread1;
+  pthread_t thread2;
+  jagpthread_create(&thread1, NULL, &thrdfunc1, (void *)NULL);
+  jagpthread_create(&thread2, NULL, &thrdfunc2, (void *)NULL);
+  while ( true );
+
+}
+
+void *thrdfunc1(void *ptr)
+{
+  //int v;
+  int N = 1000000000;
+  for ( int i = 0; i < N; i ++ ) {
+  	q.enqueue(i);
+  }
+  prt(("a939339 done enque N=%d \n", N ));
+
+}
+
+void *thrdfunc2(void *ptr)
+{
+  int v;
+  while ( 1 ) {
+  	int cnt = 0;
+  	while ( q.dequeue(v) ) {
+		++cnt;
+	}
+    prt(("batch a939349 done deque cnt=%d sleep 1 sec... \n", cnt));
+	sleep(1);
+  }
+
+}
+
+int test_stdmap_threads( int N )
+{
+	pthread_t  thread[32];
+	TPass tp;
+
+	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_init( &mutex, NULL );
+
+	std::map<std::string,std::string> *map = new std::map< std::string,std::string>();
+	tp.ptr1 = (void*)map;
+	tp.num = N;
+	tp.ptr2 = (void*)&mutex;
+	
+	/***
+	pthread_create( &thread[0], NULL, insertMap, (void*)&tp );
+	pthread_create( &thread[1], NULL, updateMap, (void*)&tp );
+	pthread_create( &thread[2], NULL, readMap, (void*)&tp );
+	pthread_create( &thread[3], NULL, deleteMap, (void*)&tp );
+	pthread_create( &thread[4], NULL, readMap, (void*)&tp );
+	pthread_create( &thread[5], NULL, insertMap, (void*)&tp );
+	pthread_create( &thread[6], NULL, readMap, (void*)&tp );
+
+   	pthread_join(thread[0], NULL );
+   	pthread_join(thread[2], NULL );
+   	pthread_join(thread[3], NULL );
+   	pthread_join(thread[1], NULL );
+   	pthread_join(thread[4], NULL );
+   	pthread_join(thread[5], NULL );
+   	pthread_join(thread[6], NULL );
+	**/
+
+	JagClock clock;
+	clock.start();
+	int thrnum = 16;
+	for ( int i =0 ; i < thrnum; ++i ) {
+		pthread_create( &thread[i], NULL, insertMap, (void*)&tp );
+	}
+
+	for ( int i =0 ; i < thrnum; ++i ) {
+		pthread_join( thread[i], NULL );
+	}
+	clock.stop();
+	printf("stdmapp threads with mutex N=%d threads=%d usedtim=%d milliseconds\n", N, thrnum, clock.elapsed() );
+
+	//sleep(10);
+	pthread_mutex_destroy( &mutex );
+	return 0;
+
+}
+
+void *insertMap( void *ptr )
+{
+	TPass *pt = (TPass*)ptr;
+	std::map<std::string,std::string> *map = (std::map<std::string,std::string>*)(pt->ptr1);
+	int N = pt->num;
+	pthread_mutex_t *pmutex = (pthread_mutex_t*)pt->ptr2;
+
+	std::string s;
+	AbaxString rs;
+
+	try {
+    	for ( int i =0; i < N; ++i ) {
+    		rs = rs.randomValue(16);
+			s = rs.c_str();
+    		//map->emplace(s, s);
+			pthread_mutex_lock( pmutex );
+    		map->insert(std::make_pair(s, s));
+    		map->find(s);
+
+    		s = intToStr(i).c_str();
+    		//map->emplace(s, s);
+    		map->insert(std::make_pair(s, s));
+    		map->find(s);
+			pthread_mutex_unlock( pmutex );
+    	}
+	} catch (std::exception &e ) {
+		printf("insertMap exception e caught\n");
+		fflush(stdout);
+	} catch ( ... ) {
+		printf("insertMap exception caught\n");
+		fflush(stdout);
+	}
+
+	//printf("insertMap done\n");
+	//fflush(stdout);
+}
+
+void *updateMap( void *ptr )
+{
+	TPass *pt = (TPass*)ptr;
+	std::map<std::string,std::string> *map = (std::map<std::string,std::string> *)(pt->ptr1);
+	int N = pt->num;
+
+	std::string s;
+	sleep(3);
+
+	try {
+		for ( int i=0; i < N; ++i ) {
+			s = intToStr(i).c_str();
+			(*map)[s] = "111";
+		}
+	} catch ( ... ) {
+		printf("udateMap exception caught\n");
+		fflush(stdout);
+	}
+
+	printf("updateMap done\n");
+	fflush(stdout);
+}
+
+void *readMap( void *ptr )
+{
+	TPass *pt = (TPass*)ptr;
+	std::map<std::string,std::string> *map = (std::map<std::string,std::string> *)pt->ptr1;
+
+	std::map<std::string,std::string>::iterator iter;
+
+	std::string k, v;
+	sleep(8);
+
+	try {
+		for ( iter = map->begin(); iter != map->end(); ++ iter ) {
+			k = iter->first;
+			v = iter->second;
+		}
+	} catch ( ... ) {
+		printf("readMap exception caught\n");
+		fflush(stdout);
+	}
+
+	printf("readMap done\n");
+	fflush(stdout);
+}
+
+void *deleteMap( void *ptr )
+{
+	TPass *pt = (TPass*)ptr;
+	std::map<std::string,std::string> *map = (std::map<std::string,std::string> *)pt->ptr1;
+	int N = pt->num;
+
+	std::string s;
+	sleep(4);
+
+	try {
+		for ( int i =N/3; i < N/2; ++i ) {
+			s = intToStr(i).c_str();
+			map->erase(s);
+		}
+	} catch ( ... ) {
+		printf("deleteMap exception caught\n");
+		fflush(stdout);
+	}
+
+	printf("deleteMap done\n");
+	fflush(stdout);
+}
+
+#if 0
+template <typename T>
+struct my_traits {
+  static const bool value = true;
+};
+
+//typedef cds::gc::HP  gc_type;
+typedef cds::container::SkipListMap< cds::gc::HP, std::string, std::string > SkipListStrStrMap;
+namespace cc = cds::container;
+
+// lock-free data structures: main thread
+void test_cds(int N )
+{
+    // Initialize libcds
+    cds::Initialize();
+    {
+        // Initialize Hazard Pointer singleton
+        //cds::gc::HP hpGC;
+		//cds::gc::hp::GarbageCollector::Construct( 66, 1, 16 );
+        cds::gc::HP hpGC(67);
+
+        // If main thread uses lock-free containers
+        // the main thread should be attached to libcds infrastructure
+		//cds::gc::hp::GarbageCollector::Construct( cds::gc::hp::c_nHazardPtrCount + 1, 1, 16 );
+        cds::threading::Manager::attachThread();
+		SkipListStrStrMap *skm = new SkipListStrStrMap;
+		TPass pass;
+		pass.num = N;
+		pass.ptr1 = skm;
+        // Now you can use HP-based containers in the main thread
+		//skm->c_nHazardPtrCount  = 66;
+
+        //...
+		JagClock clock;
+		pthread_t ins_thread[32];
+		pthread_t find_thread[32];
+		pthread_t upd_thread[32];
+		pthread_t del_thread[32];
+		int thrnum = 30;
+		bool dofind = false;
+		bool doupdate = false;
+		bool dodelete = false;
+		bool doiterate = true;
+
+		clock.start();
+		for ( int i=0; i < thrnum; ++i ) {
+			pthread_create( &ins_thread[i], NULL, cds_insert, (void*)&pass );
+		}
+
+		if ( dofind ) {
+			for ( int i=0; i < thrnum; ++i ) {
+				pthread_create( &find_thread[i], NULL, cds_find, (void*)&pass );
+			}
+		}
+
+		if ( doupdate ) {
+			for ( int i=0; i < thrnum; ++i ) {
+				pthread_create( &upd_thread[i], NULL, cds_update, (void*)&pass );
+			}
+		}
+
+		if ( dodelete ) {
+			for ( int i=0; i < thrnum; ++i ) {
+				pthread_create( &del_thread[i], NULL, cds_delete, (void*)&pass );
+			}
+		}
+
+		/***
+		Iterator ensures thread-safety even if you delete the item the iterator points to. 
+		However, in case of concurrent deleting operations there is no guarantee that you 
+		iterate all item in the list. Moreover, a crash is possible when you try to iterate 
+		the next element that has been deleted by concurrent thread.
+		delete_lock on erase and iterator of N items for copy
+
+		https://kukuruku.co/post/lock-free-data-structures-introduction/
+		https://kukuruku.co/post/lock-free-data-structures-basics-atomicity-and-atomic-primitives/
+		https://kukuruku.co/post/lock-free-data-structures-memory-model-part-3/
+		https://kukuruku.co/post/lock-free-data-structures-the-inside-memory-management-schemes/
+		https://kukuruku.co/post/lock-free-data-structures-the-inside-rcu/
+		**/
+		if ( doiterate ) {
+			JagClock clock2;
+			clock2.start();
+			SkipListStrStrMap::iterator iter;
+			int cnt = 0;
+			for ( iter = skm->begin(); iter != skm->end(); ++iter ) {
+				//printf("first=[%s] second=[%s]\n", iter->first.c_str(), iter->second.c_str() );
+				++cnt;
+			}
+			clock2.stop();
+			printf("iterator cnt=%d took %d millisecs\n", cnt, clock2.elapsed() );
+		}
+
+		for ( int i=0; i < thrnum; ++i ) {
+			pthread_join( ins_thread[i], NULL );
+			if ( dofind ) pthread_join( find_thread[i], NULL );
+			if ( doupdate ) pthread_join( upd_thread[i], NULL );
+			if ( dodelete ) pthread_join( del_thread[i], NULL );
+		}
+		clock.stop();
+		printf("skiplistmap N=%d datanum=%d thrnum=%d used %d milliseconds doinsert=true  dofind=%d doupdate=%d dodelete=%d doiterate=%d\n", 
+				N, int(pass.anum1), thrnum, clock.elapsed(), dofind, doupdate, dodelete, doiterate );
+    }
+
+    // Terminate libcds
+    cds::Terminate();
+}
+
+// lock-free data structures: insert thread
+void *cds_insert(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SkipListStrStrMap *skm = (SkipListStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+    // Attach the thread to libcds infrastructure
+    cds::threading::Manager::attachThread();
+    // Now you can use HP-based containers in the thread
+    //...
+	AbaxString rs;
+	bool rc;
+	//JagClock clock;
+	//clock.start();
+	for ( int i = 0; i < N; i ++ ) {
+		rs = rs.randomValue(16);
+		//rc = skm->find( std::string(rs.c_str()) );
+		rc = skm->insert( std::string(rs.c_str()), "randomva" );
+		rc = skm->insert( intToStr(i).c_str(), "sequence" );
+		++ pass->anum1 ;
+		++ pass->anum1 ;
+	}
+	//clock.stop();
+	//printf("skm N=%d contain cnt=%d items size=%d used %d milliseconds empty=%d\n", N, cnt, skm->size(), clock.elapsed(), skm->empty() );
+
+    // Detach thread when terminating
+    cds::threading::Manager::detachThread();
+}
+
+// lock-free data structures: find thread
+void *cds_find(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SkipListStrStrMap *skm = (SkipListStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+    // Attach the thread to libcds infrastructure
+    cds::threading::Manager::attachThread();
+    // Now you can use HP-based containers in the thread
+    //...
+	AbaxString rs;
+	bool rc;
+	//JagClock clock;
+	//clock.start();
+	for ( int i = 0; i < N; i ++ ) {
+		rs = rs.randomValue(16);
+		rc = skm->contains( std::string(rs.c_str()) );
+		rc = skm->contains( intToStr(i).c_str() );
+	}
+    // Detach thread when terminating
+    cds::threading::Manager::detachThread();
+}
+
+class my_functor {
+  public:
+    void operator()( bool bNew, SkipListStrStrMap::value_type &item ) 
+	{
+		item.second = value;
+	} 
+	std::string value;
+};
+
+// lock-free data structures: find thread
+void *cds_update(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SkipListStrStrMap *skm = (SkipListStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+    // Attach the thread to libcds infrastructure
+    cds::threading::Manager::attachThread();
+    // Now you can use HP-based containers in the thread
+    //...
+	my_functor myfunc;
+	//bool rc;
+	//JagClock clock;
+	//clock.start();
+	std::string k;
+	for ( int i = 0; i < N; i ++ ) {
+		k = intToStr(i).c_str();
+		myfunc.value = "newval";
+		std::pair<bool, bool> res = skm->update(k, myfunc, false );
+	}
+    // Detach thread when terminating
+    cds::threading::Manager::detachThread();
+}
+
+// lock-free data structures: find thread
+void *cds_delete(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SkipListStrStrMap *skm = (SkipListStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+    // Attach the thread to libcds infrastructure
+    cds::threading::Manager::attachThread();
+    // Now you can use HP-based containers in the thread
+    //...
+	bool rc;
+	//JagClock clock;
+	//clock.start();
+	std::string k;
+	for ( int i = 0; i < N; i ++ ) {
+		k = intToStr(i).c_str();
+		rc = skm->erase(k);
+	}
+    // Detach thread when terminating
+    cds::threading::Manager::detachThread();
+}
+
+void test_lockfreedbmap( int N )
+{
+	cds::Initialize();
+    cds::gc::HP hpGC(67);
+	cds::threading::Manager::attachThread();
+
+
+	printf("test_lockfreedbmap ...\n");
+	//JagLockFreeMap<std::string, std::string>  map(128);
+	JagLockFreeDBMap  map(128);
+	bool rc;
+	rc = map.insert("k1", "v1");
+	printf("insert k1 rc=%d\n", rc );
+
+	rc = map.update("k1", "v2");
+	printf("update k1 rc=%d\n", rc );
+
+	rc = map.update("k2", "v2");
+	printf("update k2 rc=%d\n", rc );
+
+	rc = map.exists("k1");
+	printf("exists k1 rc=%d\n", rc );
+
+	JagFixString v;
+	rc = map.get("k1", v);
+	printf("get k1 rc=%d v=[%s]\n", rc, v.c_str() );
+
+	v = "";
+	rc = map.get("k2", v);
+	printf("get k2 rc=%d v=[%s]\n", rc, v.c_str() );
+
+	rc = map.remove("k1");
+	printf("remove k1 rc=%d\n", rc );
+
+	cds::Terminate();
+}
+
+// lock-free data structures: insert thread
+void *safemap_insert(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SafeStrStrMap *skm = (SafeStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+	AbaxString rs;
+	for ( int i = 0; i < N; i ++ ) {
+		rs = rs.randomValue(16);
+		skm->insert( std::make_pair(std::string(rs.c_str()), "randomva" ));
+		skm->insert( std::make_pair(intToStr(i).c_str(), "sequence" ));
+		++ pass->anum1;
+		++ pass->anum1;
+	}
+}
+
+// lock-free data structures: find thread
+void *safemap_find(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SafeStrStrMap *skm = (SafeStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+	AbaxString rs;
+	for ( int i = 0; i < N; i ++ ) {
+		rs = rs.randomValue(16);
+		skm->find( std::string(rs.c_str()) );
+		skm->find( intToStr(i).c_str() );
+	}
+}
+
+// lock-free data structures: find thread
+void *safemap_update(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SafeStrStrMap *skm = (SafeStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+	std::string k;
+	for ( int i = 0; i < N; i ++ ) {
+		k = intToStr(i).c_str();
+		(*skm)[k] = "aaaaaaaaaaa";
+	}
+}
+
+// lock-free data structures: find thread
+void *safemap_delete(void * ptr)
+{
+	TPass *pass = (TPass*)ptr;
+	SafeStrStrMap *skm = (SafeStrStrMap*)pass->ptr1;
+	int N = pass->num; 
+	
+	std::string k;
+	for ( int i = 0; i < N; i ++ ) {
+		k = intToStr(i).c_str();
+		skm->erase(k);
+	}
+}
+
+void test_safemap(int N )
+{
+		SafeStrStrMap *skm = new SafeStrStrMap;
+		TPass pass;
+		pass.num = N;
+		pass.ptr1 = skm;
+        // Now you can use HP-based containers in the main thread
+		//skm->c_nHazardPtrCount  = 66;
+
+        //...
+		JagClock clock;
+		pthread_t ins_thread[32];
+		pthread_t find_thread[32];
+		pthread_t upd_thread[32];
+		pthread_t del_thread[32];
+		int thrnum = 30;
+		bool dofind = false;
+		bool doupdate = false;
+		bool dodelete = false;
+		bool doiterate = true;
+		clock.start();
+		for ( int i=0; i < thrnum; ++i ) {
+			pthread_create( &ins_thread[i], NULL, safemap_insert, (void*)&pass );
+		}
+
+		if ( dofind ) {
+			for ( int i=0; i < thrnum; ++i ) {
+				pthread_create( &find_thread[i], NULL, safemap_find, (void*)&pass );
+			}
+		}
+
+		if ( doupdate ) {
+			for ( int i=0; i < thrnum; ++i ) {
+				pthread_create( &upd_thread[i], NULL, safemap_update, (void*)&pass );
+			}
+		}
+
+		if ( dodelete ) {
+			for ( int i=0; i < thrnum; ++i ) {
+				pthread_create( &del_thread[i], NULL, safemap_delete, (void*)&pass );
+			}
+		}
+
+		if ( doiterate ) {
+			JagClock clock2;
+			clock2.start();
+			int cnt  = 0;
+			for ( auto iter = skm->begin(); iter != skm->end(); ++iter ) {
+				//printf("fwd first=[%s] second=[%s]\n", iter->first.c_str(), iter->second.c_str() );
+				++cnt;
+			}
+			clock2.stop();
+			printf("iterator cnt=%d took %d millisecs\n", cnt, clock2.elapsed() );
+		}
+
+		for ( int i=0; i < thrnum; ++i ) {
+			pthread_join( ins_thread[i], NULL );
+			if ( dofind ) pthread_join( find_thread[i], NULL );
+			if ( doupdate ) pthread_join( upd_thread[i], NULL );
+			if ( dodelete ) pthread_join( del_thread[i], NULL );
+		}
+		clock.stop();
+		printf("safemap N=%d datanum=%d thrnum=%d used %d milliseconds doinsert=true dofind=%d doupdate=%d dodelete=%d doiterate=%d\n", 
+				N, int(pass.anum1), thrnum, clock.elapsed(), dofind, doupdate, dodelete, doiterate );
+
+}
+#endif
+

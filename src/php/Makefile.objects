@@ -1,0 +1,10 @@
+jaguarphp.lo: /home/dev2/src/php/jaguarphp.cc
+	$(LIBTOOL) --mode=compile $(CXX)  -I. -I/home/dev2/src/php $(COMMON_FLAGS) $(CXXFLAGS_CLEAN) $(EXTRA_CXXFLAGS)  -c /home/dev2/src/php/jaguarphp.cc -o jaguarphp.lo 
+Jaguar.lo: /home/dev2/src/php/Jaguar.cc
+	$(LIBTOOL) --mode=compile $(CXX)  -I. -I/home/dev2/src/php $(COMMON_FLAGS) $(CXXFLAGS_CLEAN) $(EXTRA_CXXFLAGS)  -c /home/dev2/src/php/Jaguar.cc -o Jaguar.lo 
+$(phplibdir)/jaguarphp.la: ./jaguarphp.la
+	$(LIBTOOL) --mode=install cp ./jaguarphp.la $(phplibdir)
+
+./jaguarphp.la: $(shared_objects_jaguarphp) $(JAGUARPHP_SHARED_DEPENDENCIES)
+	$(LIBTOOL) --mode=link $(CXX) $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) $(LDFLAGS) -o $@ -export-dynamic -avoid-version -prefer-pic -module -rpath $(phplibdir) $(EXTRA_LDFLAGS) $(shared_objects_jaguarphp) $(JAGUARPHP_SHARED_LIBADD)
+

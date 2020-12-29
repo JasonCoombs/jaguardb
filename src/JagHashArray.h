@@ -34,48 +34,50 @@ class JagHashArray
 
 		JagHashArray( int size=256 );
 		~JagHashArray();
+		JagHashArray( const JagHashArray &arr );
 
-		inline bool insert( const Pair &newpair ) { abaxint idx; return insert(newpair, &idx); }
-		bool insert( const Pair &newpair, abaxint *index );
-		inline const Pair & operator[] ( abaxint i ) const { return _arr[i]; }
+		bool insert( const Pair &newpair ) { jagint idx; return insert(newpair, &idx); }
+		bool insert( const Pair &newpair, jagint *index );
+		// const Pair & operator[] ( jagint i ) const { return _arr[i]; }
+		Pair & operator[] ( jagint i ) const { return _arr[i]; }
 
 
-		inline bool exist( const Pair &pair ) { abaxint idx; return exist(pair, &idx); }
-		bool exist( const Pair &pair, abaxint *index );
+		bool exist( const Pair &pair ) const { jagint idx; return exist(pair, &idx); }
+		bool exist( const Pair &pair, jagint *index ) const;
 
 		bool remove( const Pair &pair, AbaxDestroyAction action=ABAX_NOOP ); 
-		bool get( Pair &pair ); 
-		Pair& get( const Pair &pair, bool &exist ); 
+		bool get( Pair &pair ) const; 
+		Pair& get( const Pair &pair, bool &exist ) const; 
 		bool set( const Pair &pair ); 
-		inline Pair& at( abaxint i ) const { 
+		/***
+		Pair& at( jagint i ) const { 
 			i = nextNonNull(i); return _arr[i]; 
 		}
+		***/
 		void destroy();
-		inline  abaxint size() const { return _arrlen; }
-		inline  const Pair* array() const { return (const Pair*)_arr; }
-		//inline const Pair&  min() const { return _min; }
-		//inline const Pair&  max() const { return _max; }
-		inline abaxint nextNonNull( abaxint start) const { 
+		jagint size() const { return _arrlen; }
+		const Pair* array() const { return (const Pair*)_arr; }
+		jagint nextNonNull( jagint start) const { 
 			if ( start < 0 ) start = 0;
 			while ( start <= _arrlen-1 && _arr[start] == Pair::NULLVALUE ) ++start;
 			return start; 
 		}
-		inline abaxint prevNonNull( abaxint start) const { 
+		jagint prevNonNull( jagint start) const { 
 			if ( start > _arrlen-1 ) start = _arrlen-1;
 			while ( start >=0 && _arr[start] == Pair::NULLVALUE ) --start;
 			return start; 
 		}
-		inline bool isNull( abaxint i ) const { 
+		bool isNull( jagint i ) const { 
 			if ( i < 0 || i >= _arrlen ) { return true; } return ( _arr[i] == Pair::NULLVALUE ); 
 		}
-		abaxint elements() { return _elements; }
+		jagint elements() const { return _elements; }
 
-		void printKeyStringOnly();
-		void printKeyIntegerOnly();
-		void printKeyStringValueString();
-		void printKeyIntegerValueString();
-		void printKeyStringValueInteger();
-		void printKeyIntegerValueInteger();
+		void printKeyStringOnly() const;
+		void printKeyIntegerOnly() const;
+		void printKeyStringValueString() const;
+		void printKeyIntegerValueString() const;
+		void printKeyStringValueInteger() const;
+		void printKeyIntegerValueInteger() const;
 
 	protected:
 
@@ -87,36 +89,34 @@ class JagHashArray
 		void 	reAllocDistributeShrink();
 		void 	reDistributeShrink();
 
-		// inline int 	getStep( abaxint i );
-		inline abaxint 	hashKey( const Pair &key, abaxint arrlen ) { 
+		jagint 	hashKey( const Pair &key, jagint arrlen ) const { 
 			return key.hashCode() % arrlen; 
 		}
 
-    	inline abaxint 	probeLocation( abaxint hc, const Pair *arr, abaxint arrlen );
-    	inline abaxint 	findProbedLocation( const Pair &search, abaxint hc ) ;
-    	inline void 	findCluster( abaxint hc, abaxint *start, abaxint *end );
-    	inline abaxint 	prevHC ( abaxint hc, abaxint arrlen );
-    	inline abaxint 	nextHC( abaxint hc, abaxint arrlen );
-		inline abaxint  hashLocation( const Pair &pair, const Pair *arr, abaxint arrlen );
-		inline void 	rehashCluster( abaxint hc );
-		inline bool 	aboveq( abaxint start, abaxint end, abaxint birthhc, abaxint nullbox );
-
+    	jagint 	probeLocation( jagint hc, const Pair *arr, jagint arrlen ) const;
+    	jagint 	findProbedLocation( const Pair &search, jagint hc ) const ;
+    	void 	findCluster( jagint hc, jagint *start, jagint *end ) const;
+    	jagint 	prevHC ( jagint hc, jagint arrlen ) const;
+    	jagint 	nextHC( jagint hc, jagint arrlen ) const;
+		jagint 	hashLocation( const Pair &pair, const Pair *arr, jagint arrlen ) const;
+		void 	rehashCluster( jagint hc );
+		bool 	aboveq( jagint start, jagint end, jagint birthhc, jagint nullbox ) const;
 
 		Pair   		*_arr;
-		abaxint  	_arrlen;
+		jagint 		_arrlen;
 
 		Pair   		*_newarr;
-		abaxint  	_newarrlen;
+		jagint  	_newarrlen;
 
-		abaxint  	_elements;
-		abaxint		*_hashcol;
-		abaxint		*_newhashcol;
+		jagint  	_elements;
+		jagint		*_hashcol;
+		jagint		*_newhashcol;
 		Pair 		_min;
 		Pair 		_max;
 		Pair 		_dummy;
 
-		static const int LOAD_F1  = 1;	
-		static const int LOAD_F2  = 2;	
+		//static const int LOAD_F1  = 1;	
+		//static const int LOAD_F2  = 2;	
 		// so load factor = F1/F2
 
 		static const int _GEO  = 2;	 // fixed
@@ -131,11 +131,29 @@ JagHashArray<Pair>::JagHashArray( int size )
 	// _arr = new Pair[_defaultBase];
 	_arr = new Pair[size];
 	_arrlen = size;
-	for ( abaxint i =0; i <_arrlen; ++i) {
+	for ( jagint i =0; i <_arrlen; ++i) {
 		_arr[i] = Pair::NULLVALUE;
 	}
 
 	_elements = 0;
+}
+
+// copy ctor
+template <class Pair> 
+JagHashArray<Pair>::JagHashArray( const JagHashArray<Pair> &arr2 )
+{
+	jagint size = arr2.size();
+	_arr = new Pair[size];
+	_arrlen = size;
+	_elements = 0;
+	for ( jagint i =0; i <_arrlen; ++i) {
+		if ( ! arr2.isNull(i) ) {
+			_arr[i] = arr2[i];
+			++ _elements;
+		} else {
+			_arr[i] = Pair::NULLVALUE;
+		}
+	}
 }
 
 // dtor
@@ -182,7 +200,7 @@ void JagHashArray<Pair>::reAllocDistributeShrink()
 template <class Pair> 
 void JagHashArray<Pair>::reAlloc()
 {
-	abaxint i;
+	jagint i;
 	_newarrlen = _GEO*_arrlen; 
 	_newarr = new Pair[_newarrlen];
 
@@ -194,7 +212,7 @@ void JagHashArray<Pair>::reAlloc()
 template <class Pair> 
 void JagHashArray<Pair>::reAllocShrink()
 {
-	abaxint i;
+	jagint i;
 	_newarrlen  = _arrlen/_GEO; 
 	_newarr = new Pair[_newarrlen];
 
@@ -207,9 +225,9 @@ void JagHashArray<Pair>::reAllocShrink()
 template <class Pair> 
 void JagHashArray<Pair>::reDistribute()
 {
-	abaxint pos; 
+	jagint pos; 
 
-	for ( abaxint i = _arrlen-1; i>=0; --i) {
+	for ( jagint i = _arrlen-1; i>=0; --i) {
 		if ( _arr[i] == Pair::NULLVALUE ) { continue; } 
 		pos = hashLocation( _arr[i], _newarr, _newarrlen );
 		_newarr[pos] = _arr[i];  // not null
@@ -229,9 +247,9 @@ void JagHashArray<Pair>::reDistribute()
 template <class Pair> 
 void JagHashArray<Pair>::reDistributeShrink()
 {
-	abaxint pos; 
+	jagint pos; 
 
-	for ( abaxint i = _arrlen-1; i>=0; --i) {
+	for ( jagint i = _arrlen-1; i>=0; --i) {
 		if ( _arr[i] == Pair::NULLVALUE ) { continue; } 
 		pos = hashLocation( _arr[i], _newarr, _newarrlen );
 		_newarr[pos] = _arr[i];
@@ -247,10 +265,10 @@ void JagHashArray<Pair>::reDistributeShrink()
 
 
 template <class Pair> 
-bool JagHashArray<Pair>::insert( const Pair &newpair, abaxint *retindex )
+bool JagHashArray<Pair>::insert( const Pair &newpair, jagint *retindex )
 {
 	bool rc;
-	abaxint index;
+	jagint index;
 
 	// abaxcout << "Insert " << newpair << abaxendl;
 	// printf("items=%lld  _arrlen=%lld index=%lld\n", _elements, _arrlen, index );
@@ -285,7 +303,7 @@ bool JagHashArray<Pair>::insert( const Pair &newpair, abaxint *retindex )
 template <class Pair> 
 bool JagHashArray<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 {
-	abaxint index;
+	jagint index;
 	bool rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
@@ -308,9 +326,9 @@ bool JagHashArray<Pair>::remove( const Pair &pair, AbaxDestroyAction action )
 }
 
 template <class Pair> 
-bool JagHashArray<Pair>::exist( const Pair &search, abaxint *index )
+bool JagHashArray<Pair>::exist( const Pair &search, jagint *index ) const
 {
-    abaxint idx = hashKey( search, _arrlen );
+    jagint idx = hashKey( search, _arrlen );
 	//prt(("s2280 idx=hashcode=%ld\n", idx ));
 	*index = idx;
     
@@ -335,9 +353,9 @@ bool JagHashArray<Pair>::exist( const Pair &search, abaxint *index )
 }
 
 template <class Pair> 
-bool JagHashArray<Pair>::get( Pair &pair )
+bool JagHashArray<Pair>::get( Pair &pair ) const
 {
-	abaxint index;
+	jagint index;
 	bool rc;
 
 	rc = exist( pair, &index );
@@ -348,23 +366,23 @@ bool JagHashArray<Pair>::get( Pair &pair )
 }
 
 template <class Pair> 
-Pair& JagHashArray<Pair>::get( const Pair &inpair, bool &exists )
+Pair& JagHashArray<Pair>::get( const Pair &inpair, bool &exists ) const
 {
-	abaxint index;
+	jagint index;
 	exists = exist( inpair, &index );
 	//prt(("s7209 this=%0x Pair& get exists=%d key=[%s]\n", this, exists, inpair.key.c_str() ));
 	if ( exists ) {
 		return _arr[index];
 	} else {
-		// return _arr[0];
-		return _dummy;
+		return _arr[0];
+		// return _dummy;
 	}
 }
 
 template <class Pair> 
-inline bool JagHashArray<Pair>::set( const Pair &pair )
+bool JagHashArray<Pair>::set( const Pair &pair )
 {
-	abaxint index;
+	jagint index;
 	bool rc;
 
 	rc = exist( pair, &index );
@@ -377,9 +395,9 @@ inline bool JagHashArray<Pair>::set( const Pair &pair )
 
 
 template <class Pair> 
-abaxint JagHashArray<Pair>::hashLocation( const Pair &pair, const Pair *arr, abaxint arrlen )
+jagint JagHashArray<Pair>::hashLocation( const Pair &pair, const Pair *arr, jagint arrlen ) const
 {
-	abaxint index = hashKey( pair, arrlen ); 
+	jagint index = hashKey( pair, arrlen ); 
 	if ( arr[index] != Pair::NULLVALUE ) {
 		index = probeLocation( index, arr, arrlen );
 	}
@@ -388,7 +406,7 @@ abaxint JagHashArray<Pair>::hashLocation( const Pair &pair, const Pair *arr, aba
 
 
 template <class Pair> 
-abaxint JagHashArray<Pair>::probeLocation( abaxint hc, const Pair *arr, abaxint arrlen )
+jagint JagHashArray<Pair>::probeLocation( jagint hc, const Pair *arr, jagint arrlen ) const
 {
     while ( 1 ) {
     	hc = nextHC( hc, arrlen );
@@ -399,7 +417,7 @@ abaxint JagHashArray<Pair>::probeLocation( abaxint hc, const Pair *arr, abaxint 
     
 // retrieve the previously assigned probed location
 template <class Pair> 
-abaxint JagHashArray<Pair>::findProbedLocation( const Pair &search, abaxint idx ) 
+jagint JagHashArray<Pair>::findProbedLocation( const Pair &search, jagint idx ) const
 {
    	while ( 1 ) {
    		idx = nextHC( idx, _arrlen );
@@ -419,9 +437,9 @@ abaxint JagHashArray<Pair>::findProbedLocation( const Pair &search, abaxint idx 
 // find [start, end] of island that contains hc  
 // [3, 9]   [12, 3]
 template <class Pair> 
-inline void JagHashArray<Pair>::findCluster( abaxint hc, abaxint *start, abaxint *end )
+void JagHashArray<Pair>::findCluster( jagint hc, jagint *start, jagint *end ) const
 {
-	abaxint i;
+	jagint i;
 	i = hc;
   	// find start
    	while (1 ) {
@@ -446,7 +464,7 @@ inline void JagHashArray<Pair>::findCluster( abaxint hc, abaxint *start, abaxint
 
     
 template <class Pair> 
-inline abaxint JagHashArray<Pair>::prevHC ( abaxint hc, abaxint arrlen )
+jagint JagHashArray<Pair>::prevHC ( jagint hc, jagint arrlen ) const
 {
    	--hc; 
    	if ( hc < 0 ) hc = arrlen-1;
@@ -454,7 +472,7 @@ inline abaxint JagHashArray<Pair>::prevHC ( abaxint hc, abaxint arrlen )
 }
     
 template <class Pair> 
-inline abaxint JagHashArray<Pair>::nextHC( abaxint hc, abaxint arrlen )
+jagint JagHashArray<Pair>::nextHC( jagint hc, jagint arrlen ) const
 {
  	++ hc;
    	if ( hc == arrlen ) hc = 0;
@@ -463,7 +481,7 @@ inline abaxint JagHashArray<Pair>::nextHC( abaxint hc, abaxint arrlen )
 
 
 template <class Pair> 
-inline bool JagHashArray<Pair>::aboveq( abaxint start, abaxint end, abaxint birthhc, abaxint nullbox )
+bool JagHashArray<Pair>::aboveq( jagint start, jagint end, jagint birthhc, jagint nullbox ) const
 {
 		if ( start < end ) {
 			return ( birthhc <= nullbox ) ? true : false;
@@ -481,14 +499,14 @@ inline bool JagHashArray<Pair>::aboveq( abaxint start, abaxint end, abaxint birt
 }
 
 template <class Pair> 
-inline void JagHashArray<Pair>::rehashCluster( abaxint hc )
+void JagHashArray<Pair>::rehashCluster( jagint hc )
 {
-	register abaxint start, end;
-	register abaxint nullbox = hc;
+	register jagint start, end;
+	register jagint nullbox = hc;
 
 	findCluster( hc, &start, &end );
 
-	abaxint  birthhc;
+	jagint  birthhc;
 	bool b;
 
 	while ( 1 )
@@ -513,12 +531,12 @@ inline void JagHashArray<Pair>::rehashCluster( abaxint hc )
 }
 
 template <class Pair> 
-void JagHashArray<Pair>::printKeyStringOnly()
+void JagHashArray<Pair>::printKeyStringOnly() const
 {
 	char buf[16];
 
 	printf("JagHashArray: _arrlen=%lld _elements=%lld\n", _arrlen, _elements );
-	for ( abaxint i=0; i < _arrlen; ++i )
+	for ( jagint i=0; i < _arrlen; ++i )
 	{
 		sprintf( buf, "%08d", i );
 		if ( _arr[i] != Pair::NULLVALUE ) {
@@ -531,12 +549,12 @@ void JagHashArray<Pair>::printKeyStringOnly()
 }
 
 template <class Pair> 
-void JagHashArray<Pair>::printKeyIntegerOnly()
+void JagHashArray<Pair>::printKeyIntegerOnly() const
 {
 	char buf[16];
 
 	printf("JagHashArray: _arrlen=%lld _elements=%lld\n", _arrlen, _elements );
-	for ( abaxint i=0; i < _arrlen; ++i )
+	for ( jagint i=0; i < _arrlen; ++i )
 	{
 		sprintf( buf, "%08d", i );
 		if ( _arr[i] != Pair::NULLVALUE ) {
@@ -547,12 +565,12 @@ void JagHashArray<Pair>::printKeyIntegerOnly()
 }
 
 template <class Pair> 
-void JagHashArray<Pair>::printKeyStringValueString()
+void JagHashArray<Pair>::printKeyStringValueString() const
 {
 	char buf[16];
 
 	printf("JagHashArray: _arrlen=%lld _elements=%lld\n", _arrlen, _elements );
-	for ( abaxint i=0; i < _arrlen; ++i)
+	for ( jagint i=0; i < _arrlen; ++i)
 	{
 		sprintf( buf, "%08d", i );
 		if ( _arr[i] != Pair::NULLVALUE ) {
@@ -564,12 +582,12 @@ void JagHashArray<Pair>::printKeyStringValueString()
 
 
 template <class Pair> 
-void JagHashArray<Pair>::printKeyIntegerValueString()
+void JagHashArray<Pair>::printKeyIntegerValueString() const
 {
 	char buf[16];
 
 	printf("JagHashArray: _arrlen=%lld _elements=%lld\n", _arrlen, _elements );
-	for ( abaxint i=0; i < _arrlen; ++i)
+	for ( jagint i=0; i < _arrlen; ++i)
 	{
 		sprintf( buf, "%08d", i );
 		if ( _arr[i] != Pair::NULLVALUE ) {
@@ -581,12 +599,12 @@ void JagHashArray<Pair>::printKeyIntegerValueString()
 
 
 template <class Pair> 
-void JagHashArray<Pair>::printKeyStringValueInteger()
+void JagHashArray<Pair>::printKeyStringValueInteger() const
 {
 	char buf[16];
 
 	printf("JagHashArray: _arrlen=%lld _elements=%lld\n", _arrlen, _elements );
-	for ( abaxint i=0; i < _arrlen; ++i)
+	for ( jagint i=0; i < _arrlen; ++i)
 	{
 		sprintf( buf, "%08d", i );
 		if ( _arr[i] != Pair::NULLVALUE ) {
@@ -597,12 +615,12 @@ void JagHashArray<Pair>::printKeyStringValueInteger()
 }
 
 template <class Pair> 
-void JagHashArray<Pair>::printKeyIntegerValueInteger()
+void JagHashArray<Pair>::printKeyIntegerValueInteger() const
 {
 	char buf[16];
 
 	printf("JagHashArray: _arrlen=%lld _elements=%lld\n", _arrlen, _elements );
-	for ( abaxint i=0; i < _arrlen; ++i)
+	for ( jagint i=0; i < _arrlen; ++i)
 	{
 		sprintf( buf, "%08d", i );
 		if ( _arr[i] != Pair::NULLVALUE ) {

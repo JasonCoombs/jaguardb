@@ -1,0 +1,9 @@
+#! /bin/sh
+#
+# Created by configure
+
+CXXFLAGS='-O3' \
+LDFLAGS='-O3' \
+'./configure' \
+'--enable-jaguarphp' \
+"$@"

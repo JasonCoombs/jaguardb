@@ -284,7 +284,7 @@ size_t JagRecord::getLength()
 		return 0;
 	}
 
-	size_t  len = 0;
+	//size_t  len = 0;
 	// CZnnnnnnnn666666#666666,
 	/*********
 	int hdrsize, valsize;
@@ -682,7 +682,7 @@ int JagRecord::addNameValueLength ( const char *name, int n1, const char *value,
 	int   rc;
 	int   hdrsize, valsize;
 	int   new_hdrsize, new_valsize;
-	char  *p;
+	//char  *p;
 	int   comma;
 	int   pound;
 	//char  buf256[256];

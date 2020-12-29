@@ -36,8 +36,8 @@ class JagSQLFileBuffReader
 
     static const int NB = 100000;
 	Jstr _cmd[NB];
-	abaxint    _cmdlen;
-	abaxint    _cursor;
+	jagint    _cmdlen;
+	jagint    _cursor;
 	FILE  *_fp;
 };
 

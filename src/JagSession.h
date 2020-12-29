@@ -30,13 +30,13 @@ class JagDBServer;
 class JagSession 
 {
    public:
-    JagSession( int timeout=2 );
+    JagSession();
 	~JagSession();
 	void createTimer();
 	static void *sessionTimer( void *ptr );
 
    	JAGSOCK sock;
-	int active;
+	std::atomic<int8_t> active;
 	int done;
    	int timediff;  // client's timezone diff in minutes from UTC (+ or -)
 	int fromShell;
@@ -47,7 +47,7 @@ class JagSession
 	int samePID;
 	int dcfrom;
 	int dcto;
-	abaxint connectionTime;
+	jagint connectionTime;
 	bool spCommandReject;
 	bool datacenter;
 	JagDBServer *servobj;
@@ -61,12 +61,10 @@ class JagSession
 
 	// data member for separate thread timer
 	pthread_t threadTimer;
-	pthread_mutex_t timerMutex;
-	pthread_mutex_t dataMutex;
 	bool hasTimer;
 	std::atomic<int8_t> sessionBroken;
 
-	int dtimeout;
+	//int dtimeout;
 };
 
 #endif

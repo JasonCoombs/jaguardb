@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-//#include <limits.h>
 #include "jaghashset.h"
 
 #define HASH_SET_LIMIT 0.5
@@ -135,7 +134,7 @@ bool jag_hash_set_lookup(const jag_hash_set_t *htabptr, const char *key )
  */
 int jag_hash_set_insert(jag_hash_set_t *htabptr, const char *key ) 
 {
-  int tmp;
+  //int tmp;
   HashSetNodeT *node;
   int h;
 

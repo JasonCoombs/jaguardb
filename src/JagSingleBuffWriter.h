@@ -22,26 +22,32 @@
 #include <abax.h>
 #include <JagCfg.h>
 
+class JagCompFile;
+
 class JagSingleBuffWriter
 {
 	public:
 
-		JagSingleBuffWriter( int fd, int keyvallen, abaxint bufferSize=-1 ); 
+		JagSingleBuffWriter( JagCompFile *compf, int keyvallen, jagint bufferSize=-1 ); 
+		JagSingleBuffWriter( int fd, int keyvallen, jagint bufferSize=-1 );
+
 		~JagSingleBuffWriter();
 		
 		// void resetKVLEN( int newkvlen );
-		void writeit( abaxint pos, const char *keyvalbuf, abaxint KEYVALLEN );
+		void writeit( jagint pos, const char *keyvalbuf, jagint KEYVALLEN );
 		void flushBuffer();
 
 	protected:
+		void init( int keyvallen, jagint bufferSize );
 
 		int  _fd;
+		JagCompFile *_compf;
 		char *_superbuf; 
-		abaxint  KVLEN;
-		abaxint _lastSuperBlock;
-		abaxint _relpos;
-		abaxint SUPERBLOCKLEN;
-		abaxint SUPERBLOCK;
+		jagint  KVLEN;
+		jagint _lastSuperBlock;
+		jagint _relpos;
+		jagint SUPERBLOCKLEN;
+		jagint SUPERBLOCK;
 };
 
 

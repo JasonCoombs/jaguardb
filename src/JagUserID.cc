@@ -51,12 +51,12 @@ bool JagUserID::addUser( const AbaxString &userid, const AbaxString& passwd,
     // char kv[ KVLEN + 1];
     char *kv = (char*)jagmalloc(KVLEN+1);
     memset(kv, 0, KVLEN + 1 );
-    JagDBPair pair, retpair;
+    JagDBPair pair;
     pair.point( kv, KLEN, kv+KLEN, VLEN );
 	strcpy( kv, userid.c_str() );
     strcpy( kv+KLEN, record.getSource() );
-	int insertCode;
-    int rc = _darr->insert( pair, insertCode, false, true, retpair );
+    // int rc = _darr->insert( pair, insertCode, false, true, retpair );
+    _darr->insert( pair );
 	// printf("s4821 addUser _darr->insert rc=%d\n", rc );
 	free( kv );
 	return 1;

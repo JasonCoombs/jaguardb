@@ -29,7 +29,7 @@ class JagLineFile
 	JagLineFile( int bufline = 10000 );
 	~JagLineFile();
 	void append( const Jstr &line );
-	abaxint size() const;
+	jagint size() const;
 	JagLineFile& operator+= ( JagLineFile &f2 );
 
 	void startRead();
@@ -39,13 +39,13 @@ class JagLineFile
 	bool print() const;
 
   protected:
-    Jstr *_buf;
-	FILE *_fp;
-	int  _bufLen;
-	int  _bufMax;
-	abaxint _fileLen;
-	Jstr _fname;
-	abaxint  _i;
+    Jstr 		*_buf;
+	FILE 		*_fp;
+	int  		_bufLen;
+	int  		_bufMax;
+	jagint 		_fileLen;
+	Jstr 		_fname;
+	jagint  	_i;
 	JagHashStrStr _hash;
 
 	//pthread_mutex_t _mutex; 

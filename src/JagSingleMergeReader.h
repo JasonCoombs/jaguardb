@@ -23,23 +23,24 @@
 #include <JagVector.h>
 #include <JagTableUtil.h>
 
+// merge multiple simple files
 class JagSingleMergeReader
 {
   public:
-	JagSingleMergeReader( JagVector<OnefileRangeFD> &fRange, int veclen, int keylen, int vallen );
+	JagSingleMergeReader( const JagVector<OnefileRangeFD> &fRange, int veclen, int keylen, int vallen );
   	~JagSingleMergeReader(); 	
-  	int getNext ( JagVector<JagFixString> &vec );
-	bool getNext( char *buf );
-	bool getNext( char *buf, abaxint &pos );
+  	int 	getNext ( JagVector<JagFixString> &vec );
+	bool 	getNext( char *buf );
+	bool 	getNext( char *buf, jagint &pos );
 
   protected:
-	int _veclen;
-	int _endcnt;
-	abaxint KEYLEN;
-	abaxint VALLEN;
-	abaxint KEYVALLEN;
-	int *_goNext;
-	char *_buf;
+	int 	_veclen;
+	int 	_endcnt;
+	jagint 	KEYLEN;
+	jagint 	VALLEN;
+	jagint 	KEYVALLEN;
+	int 	*_goNext;
+	char 	*_buf;
 	JagSingleBuffReaderPtr *_vec;
 };
 

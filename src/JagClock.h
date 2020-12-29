@@ -48,11 +48,11 @@ class JagClock
     }
 
     // return elapsed time in milliseconds
-    abaxint elapsed() const
+    jagint elapsed() const
     {
         return ( 1000*(endsec - beginsec) + ( endmsec - beginmsec ) );
     }
-    abaxint elapsedusec() const
+    jagint elapsedusec() const
     {
         return ( 1000000*(endsec-beginsec) + ( endusec - beginusec ) );
     }
@@ -68,8 +68,8 @@ class JagClock
 	}
 
     private:
-       	abaxint  beginsec, beginmsec, beginusec;
-        abaxint  endsec, endmsec, endusec;
+       	jagint  beginsec, beginmsec, beginusec;
+        jagint  endsec, endmsec, endusec;
 
 };
 

@@ -42,7 +42,7 @@ JagFixKeyChecker::JagFixKeyChecker( const Jstr &pathName, int klen, int vlen )
 
 void JagFixKeyChecker::destroy()
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	if ( _keyCheckArr ) {
 		delete _keyCheckArr;
 		_keyCheckArr = NULL;
@@ -52,15 +52,19 @@ void JagFixKeyChecker::destroy()
 
 bool JagFixKeyChecker::addKeyValue( const char *kv )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	return addKeyValueNoLock( kv );
 }
 
+// kv:  [kkkkk\0\0\0][vv]
+//       _KLEN        2
 bool JagFixKeyChecker::addKeyValueNoLock( const char *kv )
 {
-	char ukey[_UKLEN+1];
+	char ukey[_UKLEN+1];  // 13 or 22(max)
 	char uv[_UKLEN+JAG_KEYCHECKER_VLEN];
+
 	getUniqueKey( kv, ukey );  //md5 and hash of kv
+
 	memcpy( uv, ukey, _UKLEN );
 	memcpy( uv+_UKLEN, kv+_KLEN, JAG_KEYCHECKER_VLEN );
 	bool rc =  _keyCheckArr->insert( uv );
@@ -69,13 +73,13 @@ bool JagFixKeyChecker::addKeyValueNoLock( const char *kv )
 
 bool JagFixKeyChecker::addKeyValueInit( const char *kv )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	return _keyCheckArr->insert( kv );
 }
 
 bool JagFixKeyChecker::getValue( const char *key, char *value )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey );
 	bool rc =  _keyCheckArr->get( ukey, value );
@@ -86,7 +90,7 @@ bool JagFixKeyChecker::getValue( const char *key, char *value )
 
 bool JagFixKeyChecker::removeKey( const char *key )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	char ukey[_UKLEN+1];
 	getUniqueKey( key, ukey );
 	return _keyCheckArr->remove( ukey );
@@ -94,8 +98,8 @@ bool JagFixKeyChecker::removeKey( const char *key )
 
 bool JagFixKeyChecker::exist( const char *key )
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	char ukey[_UKLEN+1]; abaxint idx;
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
+	char ukey[_UKLEN+1]; jagint idx;
 	getUniqueKey( key, ukey );
 	bool rc = _keyCheckArr->exist( ukey, &idx );
 	// prt(("s7236 JagFixKeyChecker::exist key=[%s] rc=%d\n", key, rc ));
@@ -104,7 +108,7 @@ bool JagFixKeyChecker::exist( const char *key )
 
 void JagFixKeyChecker::removeAllKey()
 {
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
+	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	_keyCheckArr->removeAll();
 }
 
@@ -118,19 +122,27 @@ int JagFixKeyChecker::buildInitKeyCheckerFromSigFile()
 	char buf[klen+vlen+1];
 	memset( buf, 0, klen+vlen+1 );
 
-	Jstr sigfpath = _pathName + ".sig";
+	//Jstr sigfpath = _pathName + ".sig";
 	Jstr hdbfpath = _pathName + ".hdb";
-	abaxint hdbsize = JagFileMgr::fileSize( hdbfpath );
-	if ( hdbsize > 0 && JagFileMgr::fileSize( sigfpath ) < 1 ) {
+	Jstr keyCheckerPath = _pathName + ".sig";
+
+	prt(("s142238 _pathName=[%s]\n", _pathName.c_str() ));
+	prt(("s142238 hdbfpath=[%s]\n", hdbfpath.c_str() ));
+	prt(("s142238 keyCheckerPath=[%s]\n", keyCheckerPath.c_str() ));
+
+	jagint hdbsize = JagFileMgr::fileSize( hdbfpath );
+	if ( hdbsize > 0 && JagFileMgr::fileSize( keyCheckerPath ) < 1 ) {
 		// read from hdb 
+		prt(("s222293 \n"));
 		int fd = jagopen ( hdbfpath.c_str(), O_RDONLY|JAG_NOATIME );
 		if ( fd < 0 ) {
 			prt(("s1537 open %s error\n", hdbfpath.c_str() ));
 			return 0;
 		}
-		abaxint rlimit = getBuffReaderWriterMemorySize( (hdbsize-1)/1024/1024 );
+
+		jagint rlimit = getBuffReaderWriterMemorySize( (hdbsize-1)/1024/1024 );
 		JagSingleBuffReader nav( fd, hdbsize/(klen+vlen), klen, vlen, 0, 0, rlimit );
-		abaxint cnt = 0;
+		jagint cnt = 0;
 		bool rc;
 		while( nav.getNext( buf ) ) {
 			rc = addKeyValueInit( buf );
@@ -144,10 +156,9 @@ int JagFixKeyChecker::buildInitKeyCheckerFromSigFile()
 		return 1;
 	}
 
-	Jstr keyCheckerPath = _pathName + ".sig";
 	int fd = jagopen((char *)keyCheckerPath.c_str(), O_RDONLY|JAG_NOATIME );
 	if ( fd < 0 ) {
-		// prt(("s2283 keyCheckerPath=[%s] not found\n", keyCheckerPath.c_str() ));
+		prt(("s2283 keyCheckerPath=[%s] not found\n", keyCheckerPath.c_str() ));
 		return 0;
 	}
 
@@ -167,12 +178,13 @@ int JagFixKeyChecker::buildInitKeyCheckerFromSigFile()
 		jagunlink( keyCheckerPath.c_str() );
 		return 0;
 	}
-	abaxint rlimit = getBuffReaderWriterMemorySize( (sbuf.st_size-1)/1024/1024 );
-	JagSingleBuffReader br( fd, (sbuf.st_size-1)/(klen+vlen), klen, vlen, 0, 1, rlimit );
-	abaxint cnt = 0, callCounts = -1, lastBytes = 0;
 
-	abaxint mem1 = availableMemory( callCounts, lastBytes );
-	prt(("s1421 availmem=%lld MB begin keycheck\n", mem1/ONE_MEGA_BYTES ));
+	jagint rlimit = getBuffReaderWriterMemorySize( (sbuf.st_size-1)/1024/1024 );
+	JagSingleBuffReader br( fd, (sbuf.st_size-1)/(klen+vlen), klen, vlen, 0, 1, rlimit );
+	jagint cnt = 0; // , callCounts = -1, lastBytes = 0;
+
+	//jagint mem1 = availableMemory( callCounts, lastBytes );
+	//prt(("s1421 availmem=%lld MB begin keycheck\n", mem1/ONE_MEGA_BYTES ));
 	raydebug( stdout, JAG_LOG_LOW, "begin reading sig file ...\n" );
 	JagFixString vstr;
 	memset( buf, 0, klen+vlen+1 );
@@ -187,8 +199,5 @@ int JagFixKeyChecker::buildInitKeyCheckerFromSigFile()
 	jagclose( fd );
 	jagunlink( keyCheckerPath.c_str() );
 	jagmalloc_trim(0);
-	abaxint mem2 = availableMemory( callCounts, lastBytes );
-	prt(("s1421 availmem=%lld MB end keycheck usedmem=%lld MB\n", mem2/ONE_MEGA_BYTES, (mem1-mem2)/ONE_MEGA_BYTES ));
-	// prt(("s4984 _keyChecker size=%lld arrlen=%lld klen=%d\n", size(),  arrayLength(), klen ));
 	return 1;
 }
