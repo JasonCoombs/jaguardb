@@ -8,3 +8,10 @@ Vector spatial shapes include line, square, rectangle, circle, ellipse, triangle
 cylinder, box, 3D line, 3D square, 3D rectangle, 3D circle, 3D ellipse, and 3D triangle.
 Raster spatial shapes include point, multipoint, linestring, multilinestring, polygon, multipolgon, 
 and their 3D counterparts. 
+
+Source code:
+This github account contains the source code for jaguardb server programs.
+
+Precompiled binary package for Linux:
+Go to this web page to download the compiled package:  http://www.jaguardb.com/download.php
+
