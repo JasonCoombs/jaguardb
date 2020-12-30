@@ -9,7 +9,7 @@ location data and time series data, unifying events data consisting of space and
 **Instant Scaling**
 
 In traditional way of horizontal scaling of distributed database systems, data migration is required and may
-take a `LONG time`, referred as scaling nightmware. JaguarDB does not require any data migration and 
+take a `LONG time`, referred as scaling nightmare. JaguarDB does not require any data migration and 
 scaling to hundreds or thousands nodes
 can be achieved `INSTANTLY` which may take only a few seconds.
 
