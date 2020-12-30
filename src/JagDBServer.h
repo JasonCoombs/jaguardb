@@ -20,7 +20,6 @@
 #define _raydb_server_h_
 
 #include <atomic>
-//#include <mutex>
 #include <abax.h>
 #include <JagHashMap.h>
 #include <JagArray.h>
@@ -186,10 +185,9 @@ class JagDBServer
 	JagServerObjectLock *_objectLock;
 	JagSystem       _jagSystem;
    	static pthread_mutex_t  g_dbschemamutex;
-	//std::mutex     g_dbschemamutex;
 
    	static pthread_mutex_t  g_flagmutex;
-   	static pthread_mutex_t  g_logmutex;
+   	static pthread_mutex_t  g_wallogmutex;
    	static pthread_mutex_t  g_dlogmutex;
    	static pthread_mutex_t  g_dinsertmutex;
    	static pthread_mutex_t  g_datacentermutex;

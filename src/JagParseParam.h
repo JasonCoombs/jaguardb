@@ -40,7 +40,7 @@ class ObjectNameAttribute
 
 	ObjectNameAttribute()
 	{
-		init();
+		// init();
 	}
 
 	ObjectNameAttribute( const ObjectNameAttribute& other )

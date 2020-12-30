@@ -1,5 +1,5 @@
-jaguarprog: prog createKeyPair lib jql glibcversion
-all: clean prog
+all: lib prog createKeyPair glibcversion
+progonly: prog
 test: testjdbserv 
 
 BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include -IWeb/libcds/include \

@@ -48,7 +48,7 @@ get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 
 # Create imported target CGAL::CGAL_ImageIO
-add_library(CGAL::CGAL_ImageIO SHARED IMPORTED)
+add_library(CGAL::CGAL_ImageIO STATIC IMPORTED)
 
 set_target_properties(CGAL::CGAL_ImageIO PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "CGAL_USE_ZLIB=1"

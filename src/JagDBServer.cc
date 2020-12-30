@@ -85,7 +85,7 @@ jagint JagDBServer::g_lastHostTime = 0;
 
 pthread_mutex_t JagDBServer::g_dbschemamutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_flagmutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t JagDBServer::g_logmutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t JagDBServer::g_wallogmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_dlogmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_dinsertmutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t JagDBServer::g_datacentermutex = PTHREAD_MUTEX_INITIALIZER;
@@ -422,7 +422,7 @@ void JagDBServer::destroy()
 	//pthread_mutex_destroy( &_walMutexMapMutex );
 	pthread_mutex_destroy( &g_dbschemamutex );
 	pthread_mutex_destroy( &g_flagmutex );
-	pthread_mutex_destroy( &g_logmutex );
+	pthread_mutex_destroy( &g_wallogmutex );
 	pthread_mutex_destroy( &g_dlogmutex );
 	pthread_mutex_destroy( &g_dinsertmutex );
 	pthread_mutex_destroy( &g_datacentermutex );
@@ -453,7 +453,7 @@ int JagDBServer::main(int argc, char*argv[])
 
 	pthread_mutex_init( &g_dbschemamutex, NULL );
 	pthread_mutex_init( &g_flagmutex, NULL );
-	pthread_mutex_init( &g_logmutex, NULL );
+	pthread_mutex_init( &g_wallogmutex, NULL );
 	pthread_mutex_init( &g_dlogmutex, NULL );
 	pthread_mutex_init( &g_dinsertmutex, NULL );
 	pthread_mutex_init( &g_datacentermutex, NULL );
@@ -578,11 +578,9 @@ int JagDBServer::processMultiSingleCmd( JagRequest &req, const char *mesg, jagin
 		JagStrSplitWithQuote split( mesg, ';' );
 		int msgnum = split.length();
 		if ( ! servobj->_isGate ) {
-			JagParser parser((void*)NULL);
-			//JagParser parser((void*)servobj);
-			JagParseParam pparam( &parser ); // todo
+			JagParser parser((void*)servobj);
+			JagParseParam pparam( &parser ); 
     		for ( int i = 0; i < msgnum; ++i ) {
-				// JagParseParam pparam( &parser ); // slower
 				bool brc = parser.parseCommand( jpa, split[i], &pparam, reterr );
     			if ( brc ) {
 					// before do insert, need to check permission of this user for insert
@@ -610,12 +608,10 @@ int JagDBServer::processMultiSingleCmd( JagRequest &req, const char *mesg, jagin
 		//raydebug( stdout, JAG_LOG_LOW, "s22389 done %d batch insert\n", msgnum );
 		// sync command to other data-centers
 		if ( req.dorep ) {
-			JagParser parser((void*)NULL);
-			// JagParser parser((void*)servobj);
+			JagParser parser((void*)servobj);
 			JagParseParam pparam( &parser );
 			JAG_BLURT jaguar_mutex_lock ( &g_datacentermutex ); JAG_OVER;
 			for ( int i = 0; i < msgnum; ++i ) {
-				// JagParseParam pparam( &parser );
 				if ( ! parser.parseCommand( jpa, split[i], &pparam, reterr ) ) {
 					continue; 
 				}
@@ -3733,7 +3729,7 @@ int JagDBServer::mainClose()
 {
 	pthread_mutex_destroy( &g_dbschemamutex );
 	pthread_mutex_destroy( &g_flagmutex );
-	pthread_mutex_destroy( &g_logmutex );
+	pthread_mutex_destroy( &g_wallogmutex );
 	pthread_mutex_destroy( &g_dlogmutex );
 	pthread_mutex_destroy( &g_dinsertmutex );
 	pthread_mutex_destroy( &g_datacentermutex );
@@ -4841,16 +4837,20 @@ void JagDBServer::logCommand( const JagParseParam *pparam, JagSession *session, 
 	Jstr tab = pparam->objectVec[0].tableName;
 	if ( db.size() < 1 || tab.size() <1 ) { return; }
 
+	JAG_BLURT jaguar_mutex_lock ( &g_wallogmutex ); JAG_OVER;
+
 	Jstr fpath = _cfg->getWalLogHOME() + "/" + db + "." + tab + ".wallog";
 
 	FILE *walFile = _walLogMap.ensureFile( fpath );
 	if ( NULL == walFile ) {
 		raydebug( stdout, JAG_LOG_LOW, "error open wallog %s\n", fpath.c_str() );
 	} else {
-		// JAG_REDO_MSGLEN is 10, %010ld--> prepend 0, max 10 long digits 
+		int isInsert;
+		if ( 2==spMode ) isInsert = 1; else isInsert = 0;
 		fprintf( walFile, "%d;%d;%d;%010ld%s",
-		         session->replicateType, session->timediff, 2==spMode, msglen, mesg );
+		         session->replicateType, session->timediff, isInsert, msglen, mesg );
 	}
+	JAG_BLURT jaguar_mutex_unlock ( &g_wallogmutex ); 
 }
 
 // log command to the recovery log file
@@ -5592,7 +5592,7 @@ jagint JagDBServer::redoDinsertLog( const Jstr &fpath )
 	_dbConnector->_parentCliNonRecover->_servCurrentCluster = _dbConnector->_nodeMgr->_curClusterNumber;
 	JagHashMap<AbaxString, AbaxPair<AbaxString,AbaxBuffer>> qmap;
 
-	JagParser parser( (void*)this, false );
+	JagParser parser( (void*)this );
 	JagParseAttribute jpa;
 	jpa.dfdbname = _dbConnector->_parentCliNonRecover->_dbname;
 	jpa.servobj = this;
@@ -5669,7 +5669,7 @@ void JagDBServer::recoverWalLog( )
 }
 
 // execute commands in fpath one by one
-// replicateType;client_timediff;isBatch;ddddddddddddddddqstrreplicateType;client_timediff;isBatch;ddddddddddddddddqstr
+// replicateType;client_timediff;isInsert;ddddddddddddddddqstzreplicateType;client_timediff;isBatch;ddddddddddddddddqstr
 jagint JagDBServer::redoLog( const Jstr &fpath )
 {
 	if ( JagFileMgr::fileSize( fpath ) <= 0 ) {
@@ -5721,6 +5721,10 @@ jagint JagDBServer::redoLog( const Jstr &fpath )
 			break;
 		}
 		session.replicateType = atoi( buf16 );
+		if ( buf16[0] != '0' && buf16[0] != '1' && buf16[0] != '2' ) {
+			raydebug( stdout, JAG_LOG_LOW, "Error in wal file [%s]. Please fix it and then restart jaguardb. cnt=%lld\n", fpath.c_str(), cnt );
+			break;
+		}
 
 		// get time zone diff
 		i = 0;
@@ -9276,7 +9280,6 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 		raydebug( stdout, JAG_LOG_LOW, "Shutdown waits other tasks to finish ...\n");
 	}
 
-	JAG_BLURT jaguar_mutex_lock ( &g_logmutex ); JAG_OVER;
 	JAG_BLURT jaguar_mutex_lock ( &g_dlogmutex ); JAG_OVER;
 	
 	if ( _delPrevOriCommandFile ) jagfsync( fileno( _delPrevOriCommandFile ) );
@@ -9288,7 +9291,6 @@ void JagDBServer::shutDown( const char *mesg, const JagRequest &req )
 	if ( _recoveryRegCommandFile ) jagfsync( fileno( _recoveryRegCommandFile ) );
 	if ( _recoverySpCommandFile ) jagfsync( fileno( _recoverySpCommandFile ) );
 
-	jaguar_mutex_unlock ( &g_logmutex );
 	jaguar_mutex_unlock ( &g_dlogmutex );
 
 	raydebug( stdout, JAG_LOG_LOW, "Shutdown: Flushing block index to disk ...\n");
@@ -13340,7 +13342,7 @@ void JagDBServer::importTableDirect( const char *mesg, const JagRequest &req )
 	if ( this->_listenIP.size() > 0 ) { host = this->_listenIP; }
 	Jstr unixSocket = Jstr("/TOKEN=") + this->_servToken;
 	JaguarCPPClient pcli;
-	pcli.setDebug( true ); // todo
+	// pcli.setDebug( true ); 
 	while ( !pcli.connect( host.c_str(), this->_port, "admin", "dummy", "test", unixSocket.c_str(), 0 ) ) {
 		raydebug( stdout, JAG_LOG_LOW, "s4022 Connect (%s:%s) (%s:%d) error [%s], retry ...\n", 
 				  "admin", "dummy", host.c_str(), this->_port, pcli.error() );

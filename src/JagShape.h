@@ -663,7 +663,6 @@ class JagLineString
 		JagVector<JagPoint> point;
 };
 
-
 class JagPolygon
 {
 	public:

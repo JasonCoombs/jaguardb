@@ -1,5 +1,5 @@
+all: clean javahdr javalib
 jaguarprog: progdyn
-all: clean progdyn  
 
 BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include \
 		  -IWeb/Tencent/rapidjson/include -IWeb/TomCrypt/include \
@@ -67,9 +67,6 @@ javahdr:
 javalib: Jaguar.o  $(ALLCLIENTOBJS) 
 	$(CPP) $(CCFLAGS) -shared -Wl,-soname,libJaguarClient.so -o libJaguarClient.so \
 	Jaguar.o $(ALLCLIENTOBJS) Web/TomCrypt/lib/*.o Web/Snappy/*.o 
-
-glibcversion: glibcversion.o
-	$(CPP) -o glibcversion glibcversion.o
 
 progdyn:  $(SERVEROBJS) jql.o JagParseExprClient.o JagParseExprServer.o jagserv.o javahdr javalib
 	$(CPP) -o jql.bin jql.o -L. -lJaguarClient -lpthread

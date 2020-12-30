@@ -28,7 +28,7 @@ set(CGAL_BUILD_VERSION    "900" )
 set(CGAL_SCM_BRANCH_NAME  "n/a")
 set(CGAL_GIT_SHA1         "")
 
-set(CGAL_BUILD_SHARED_LIBS        "ON" )
+set(CGAL_BUILD_SHARED_LIBS        "FALSE" )
 set(CGAL_Boost_USE_STATIC_LIBS    "OFF" )
 
 set(CGAL_CXX_FLAGS_INIT                   "" )

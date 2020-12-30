@@ -48,7 +48,7 @@ get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 
 # Create imported target CGAL::CGAL
-add_library(CGAL::CGAL SHARED IMPORTED)
+add_library(CGAL::CGAL STATIC IMPORTED)
 
 set_target_properties(CGAL::CGAL PROPERTIES
   INTERFACE_COMPILE_OPTIONS "\$<\$<COMPILE_LANGUAGE:CXX>:-frounding-math>"
