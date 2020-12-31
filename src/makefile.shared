@@ -44,8 +44,8 @@ CPP=$(GPP)  -O3 -g
 include makefile.obj
 
 EXTOBJS=Web/TomCrypt/lib/*.o Web/Snappy/*.o
-ALLCLIENTOBJS=$(CLIENTOBJS) JaguarCPPClient_shared.o
-ALLEXTOBJS=$(EXTOBJS) JaguarCPPClient_shared.o
+ALLCLIENTOBJS=$(CLIENTOBJS) JaguarCPPClient_shared.obj
+ALLEXTOBJS=$(EXTOBJS) JaguarCPPClient_shared.obj
 
 JagParseExpr.o: JagExprStack.h
 
