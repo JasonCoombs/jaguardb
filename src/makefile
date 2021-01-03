@@ -32,8 +32,8 @@ CPP=$(GPP)  -pg
 CPP=$(GPP)  -g
 CPP=$(GPP)  -O3
 CPP=$(GPP) 
-CPP=$(GPP)  -O3 -g
 CPP=$(GPP)  -g
+CPP=$(GPP)  -O3 -g
 
 #### makefile.obj has $(OBJS)
 include makefile.obj
