@@ -20,7 +20,7 @@
 #define _jag_def_h_
 
 #define JAG_BRAND  "jaguar"
-#define JAG_VERSION			"3.1.1"
+#define JAG_VERSION			"3.1.2"
 // File Defs
 #define JAG_ARRLEN_INIT			32
 #define JAG_BLOCK_SIZE			32
