@@ -34,9 +34,10 @@ space and time. Back-filling time series data is also fast (inserting large volu
 This github account contains the source code for jaguardb server programs. To clone it:
 
 ```
-    git clone --depth=1 https://github.com/datajaguar/jaguardb.git
+  git clone --depth=1 https://github.com/datajaguar/jaguardb.git
 
-	DO NOT do: git clone https://github.com/datajaguar/jaguardb.git  which gets all history and will be VERY slow.
+  DO NOT do: 
+  git clone https://github.com/datajaguar/jaguardb.git  which gets all history and is VERY slow.
 ```
 
 
