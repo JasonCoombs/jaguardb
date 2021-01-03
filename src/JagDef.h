@@ -373,7 +373,8 @@
 #define JAG_NUM_POW			'^'
 #define JAG_STR_ADD			'.'
 
-// SQL functions -- be careful, do not use code 40 ( reserved for '(' character )
+// SQL functions -- be careful, do not use code 40 -- reserved for '(' character
+#define JAG_LEFT_BRA			40 // '(' letter
 #define JAG_FUNC_NOOP			0 // global no operation
 
 // one-line data, cannot combine with multi-line data ( aggregate functions )

@@ -1429,7 +1429,7 @@ int JagTable::insertPair( JagDBPair &pair, int &insertCode, bool direct, int mod
 	/**
 	prt(("s5130 insertPair pair.key=[%s]\n", pair.key.c_str() ));
 	prt(("s5130 insertPair pair.value: " ));
-	pair.value.dump();
+	pair.value.print();
 	prt(("\n"));
 	**/
 
@@ -2027,13 +2027,16 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 		//prt(("s0573 nowherecnt newhdr=[%s]\n",  newhdr.c_str() ));
 	}
 	
-	prt(("s9283 parseParam->hasWhere=%d\n", parseParam->hasWhere ));
+	prt(("s92830 parseParam->hasWhere=%d\n", parseParam->hasWhere ));
 	if ( parseParam->hasWhere ) {
 		root = parseParam->whereVec[0].tree->getRoot();
+		prt(("s334087 root->setWhereRange() ...\n"));
 		rc = root->setWhereRange( maps, attrs, keylen, numKeys, 1, uniqueAndHasValueCol, minmax, 
 								  treestr, typeMode, tabnum );
-		prt(("s8374 tab select setWhereRange done rc=%d\n", rc ));
+		prt(("s83734 tab select setWhereRange done rc=%d\n", rc ));
 		if ( 0 == rc ) {
+			// not able to determine min max
+			prt(("s20097 not able to determine min max\n"));
 			memset( minmax[0].minbuf, 0, keylen[0]+1 );
 			memset( minmax[0].maxbuf, 255, keylen[0] );
 			(minmax[0].maxbuf)[keylen[0]] = '\0';
@@ -2044,9 +2047,9 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 		}
 
 		#if 0
-		prt(("s7430 dumpmem: minbuf \n" ));
+		prints(("s7430 dumpmem: minbuf \n" )); 
 		dumpmem( minmax[0].minbuf, keylen[0] );
-		prt(("s7431 dumpmem: maxbuf \n" ));
+		prints(("s7431 dumpmem: maxbuf \n" ));
 		dumpmem( minmax[0].maxbuf, keylen[0] );
 		#endif
 	}
@@ -2591,7 +2594,11 @@ void *JagTable::parallelSelectStatic( void * ptr )
 				dbNaturalFormatExchange( buf, numKeys[0], attrs[0],0,0, " " ); // db format -> natural format
 				if ( pass->parseParam->hasWhere ) {
 					root = pass->parseParam->whereVec[0].tree->getRoot();
+					/***
 					prt(("s302933 after tree->getRoot root=%0x\n", root ));
+					root->print();
+					prt(("\n"));
+					***/
 					rc = root->checkFuncValid( ntr, maps, attrs, buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 );
 					prt(("s2021 checkFuncValid rc=%d root=%0x strres=[%s]\n", rc, root, strres.c_str() ));
 

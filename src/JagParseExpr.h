@@ -76,7 +76,7 @@ class ExprElementNode
 	virtual int getName( const char *&p ) = 0;
 	virtual bool getValue( const char *&p ) = 0;
 	virtual void clear() = 0;
-	virtual void print( int mode ) = 0;
+	virtual void print( int mode=0 ) = 0;
 	
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -117,7 +117,7 @@ class StringElementNode: public ExprElementNode
 	virtual int getName( const char *&p ) { if ( _name.length() > 0 ) { p = _name.c_str(); return _tabnum; } return -1; }
 	virtual bool getValue( const char *&p ) { if ( _value.length() > 0 ) { p = _value.c_str(); return 1; } return 0; }
 	virtual void clear();
-	virtual void print( int mode );
+	virtual void print( int mode=0 );
 	
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -177,7 +177,7 @@ class BinaryOpNode: public ExprElementNode
 	virtual int getName( const char *&p ) { return -1; }
 	virtual bool getValue( const char *&p ) { return 0; }
 	virtual void clear();
-	virtual void print( int mode );
+	virtual void print( int mode=0 );
 
 	// for select/where/on tree use
 	virtual int setWhereRange( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
@@ -218,6 +218,8 @@ class BinaryOpNode: public ExprElementNode
 	void findOrBuffer( JagMinMax *minmaxbuf, JagMinMax *leftbuf, JagMinMax *rightbuf, 
 						const int keylen[], const int numTabs );
 	void findAndBuffer( JagMinMax *minmaxbuf, JagMinMax *leftbuf, JagMinMax *rightbuf, 
+						const JagSchemaAttribute *attrs[], const int numTabs, const int numKeys[] );
+	void findLeftBuffer( JagMinMax *minmaxbuf, JagMinMax *leftbuf, JagMinMax *rightbuf, 
 						const JagSchemaAttribute *attrs[], const int numTabs, const int numKeys[] );
 	bool formatColumnData( JagMinMax *minmaxbuf, JagMinMax *iminmaxbuf, const JagFixString &value, int tabnum, int minOrMax );
 	bool checkAggregateValid( int lcmode, int rcmode, bool laggr, bool raggr );

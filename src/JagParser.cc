@@ -274,7 +274,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 			} else if ( strcasecmp(_gettok, "index") == 0 ) {
 				_ptrParam->opcode = JAG_CREATEINDEX_OP;
 				_ptrParam->optype = 'C';
-				// qwer
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 				if ( ! _gettok ) rc = -140;
 				else {
@@ -285,7 +284,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 							_ptrParam->tabidxpos = _saveptr; // command position before table/index name
 							rc = setCreateVector( 1 );
 						} else {
-							// qwer
 							rc = -141;
 						}
 					} else {
@@ -1425,6 +1423,7 @@ int JagParser::getAllClauses( short setType )
 		}
 
 		if ( pwhere ) _ptrParam->selectWhereClause = trimChar( _ptrParam->selectWhereClause, ' ' );
+		prt(("s333448 ptrParam->selectWhereClause=[%s]\n", _ptrParam->selectWhereClause.s() ));
 		if ( pgroup ) _ptrParam->selectGroupClause = trimChar( _ptrParam->selectGroupClause, ' ' );
 		if ( phaving ) _ptrParam->selectHavingClause = trimChar( _ptrParam->selectHavingClause, ' ' );
 		if ( porder ) _ptrParam->selectOrderClause = trimChar( _ptrParam->selectOrderClause, ' ' );

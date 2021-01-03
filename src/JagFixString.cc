@@ -402,9 +402,9 @@ JagFixString JagFixString::concat( const JagFixString& s2 )
 }
 
 
-void JagFixString::dump() const
+void JagFixString::print() const
 {
-	printf("fixstr: ");
+	printf("Fixstr print():\n");
 	for ( int i=0; i < _length; ++i ) {
 		if ( _buf[i] ) {
 			printf("%c", _buf[i] );

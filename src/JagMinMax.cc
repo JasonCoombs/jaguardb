@@ -92,3 +92,33 @@ int JagMinMax::setbuflen ( const int klen )
 	pointTo = false;
 	return 1;
 }
+
+void JagMinMax::printc()
+{
+	prints(("s202228 JagMinMax::printc() this=%0x buflen=%d\n", this, buflen ));
+	prints(("minbuf: "));
+	for (int i = 0; i < buflen; ++i ) {
+		prints(("%c ", minbuf[i] ));
+	}
+	prints(("\n"));
+	prints(("maxbuf: "));
+	for (int i = 0; i < buflen; ++i ) {
+		prints(("%c ", maxbuf[i] ));
+	}
+	prints(("\n"));
+}
+
+void JagMinMax::printd()
+{
+	prints(("s202228 JagMinMax::printd() this=%0x buflen=%d\n", this, buflen ));
+	prints(("minbuf: "));
+	for (int i = 0; i < buflen; ++i ) {
+		prints(("%d ", minbuf[i] ));
+	}
+	prints(("\n"));
+	prints(("maxbuf: "));
+	for (int i = 0; i < buflen; ++i ) {
+		prints(("%d ", maxbuf[i] ));
+	}
+	prints(("\n"));
+}

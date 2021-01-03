@@ -8,7 +8,7 @@ BASICFLAGS=-I. -IWeb/GeographicLib-1.49/include -IWeb/libcds/include \
 		  -IWeb/Google/Btree/include \
 		  -IWeb/CGAL/CGAL-4.13/include -IWeb/ConcaveHull \
 	      -D_REENTRANT -std=c++11 -Wno-register -Wunused-variable \
-		  -DCHECK_LATENCY1 -DDEVDEBUG1 -DTFM_DESC $(USER_DEFINE)
+		  -DCHECK_LATENCY1 -DDEVDEBUG1 -DTFM_DESC -DDEBUG_STACK1 $(USER_DEFINE)
 
 CCFLAGS_STATIC=$(BASICFLAGS)  -static-libgcc -static-libstdc++ -static  
 CCFLAGS=$(CCFLAGS_STATIC)
@@ -32,8 +32,8 @@ CPP=$(GPP)  -pg
 CPP=$(GPP)  -g
 CPP=$(GPP)  -O3
 CPP=$(GPP) 
-CPP=$(GPP)  -g
 CPP=$(GPP)  -O3 -g
+CPP=$(GPP)  -g
 
 #### makefile.obj has $(OBJS)
 include makefile.obj

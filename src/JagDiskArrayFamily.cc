@@ -205,7 +205,7 @@ jagint JagDiskArrayFamily::addKeyCheckerFromInsertBuffer( int darrNum )
 
 		//prt(("\n"));
 		if ( _keyChecker->addKeyValueNoLock( kvbuf ) ) {
-			//prt(("s222006  qwer _keyChecker->addKeyValueNoLock( [%s][%d]\n", kvbuf, darrNum ));
+			//prt(("s222006  _keyChecker->addKeyValueNoLock( [%s][%d]\n", kvbuf, darrNum ));
 			++cntDone;
 		}
 		++ iter;
@@ -480,7 +480,7 @@ bool JagDiskArrayFamily::get( JagDBPair &pair )
 	memcpy( kbuf, pair.key.c_str(), _KLEN );
 	/**
 	prt(("s33338 pair.key.dump:\n"));
-	pair.key.dump();
+	pair.key.print();
 	**/
 
 	//if ( _keyChecker->getValue( pair.key.c_str(), v ) ) 

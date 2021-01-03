@@ -8542,7 +8542,6 @@ void JagDBServer::addClusterMigrateContinue( const char *mesg, const JagRequest 
 			db = sp[0];
 			tab = sp[1];
 
-			// qwer
 			for ( int r = 0; r < _faultToleranceCopy; ++r ) {
 				sql= Jstr("_ex_truncatetable|") + intToStr(r) + "|" + db + "|" + tab;
 				prt(("s2233082 _dbConnector->broadcastSignal( sql=%s ) ...\n", sql.s() ));

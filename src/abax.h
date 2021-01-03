@@ -307,7 +307,7 @@ class JagFixString
 		void trim();
 		void substr( jagint start, jagint length = -1 );
 		JagFixString concat( const JagFixString& secondStr );
-		void  dump() const;
+		void  print() const;
 		void replace( char oldc, char newc );
 		Jstr firstToken(char sep) const;
 		char       dtype[4];

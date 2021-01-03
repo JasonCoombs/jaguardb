@@ -188,6 +188,7 @@ int JagParseParam::setSelectWhere( )
 	int last = this->whereVec.length()-1;
 	this->whereVec[last].tree->init( this->jpa, this );
 	this->setupCheckMap(); // uses objectVec
+	prt(("s083772 JagParseParam::setSelectWhere() last=%d parse ... pwhere=[%s]\n", last, pwhere ));
 	this->whereVec[last].tree->parse( _jagParser, pwhere, 1, *treeCheckMap, joinColMap, 
 								       this->whereVec[last].colList );
 	this->hasWhere = 1;
