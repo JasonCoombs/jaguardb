@@ -38,7 +38,6 @@ JagIndex::JagIndex( int replicateType, const JagDBServer *servobj, const Jstr &w
 	_tableName = oneSplit[1];
 	_indexName = oneSplit[2];
 	_dbobj = _dbname + "." + _indexName;
-	//_marr = NULL;
 	_darrFamily = NULL;
 	_indexmap = NULL;
 	_indtotabOffset = NULL;
@@ -236,10 +235,10 @@ bool JagIndex::bufchange( char *indexbuf, char *tablebuf )
 	return 1;
 }
 
+// Method to insert, update, or delete from index based on table process
 // type = 0: insert into ...; 
 // type = 1: upsert into ...; 
 // type = 2; remove from ...;
-// method to insert, update, or delete from index based on table process
 int JagIndex::formatIndexCmdFromTable( const char *tablebuf, int type )
 {
 	char *indexbuf = (char*)jagmalloc(KEYVALLEN+1);
@@ -260,33 +259,29 @@ int JagIndex::formatIndexCmdFromTable( const char *tablebuf, int type )
 
 	dbNaturalFormatExchange( indexbuf, _numKeys, _schAttr,0,0, " " ); // natural format -> db format
 
-	/***
-	prt(("s7618 after fmtex indexbuf:\n" ));
-	dumpmem( indexbuf, KEYVALLEN ); 
-	***/
-
 	JagDBPair pair( indexbuf, KEYLEN, indexbuf+KEYLEN, VALLEN );
-	int insertCode;
 	if ( 0 == type ) {
-		//pair.upsertFlag = 0;
-		rc = insertPair( pair, insertCode, false );
+		rc = insertPair( pair );
 	} else if ( 1 == type ) {
-		//pair.upsertFlag = 1;
-		rc = insertPair( pair, insertCode, false );
+		rc = insertPair( pair );
 	} else if ( 2 == type ) {
 		rc = removePair( pair );
 	}
+
 	if ( indexbuf ) free( indexbuf );
 	// prt(("s5083 JagIndex::formatIndexCmdFromTable rc=%d\n", rc ));
 	return rc;
 }
 
 // direct: if true, push to buffer
-int JagIndex::insertPair( JagDBPair &pair, int &insertCode, bool direct )
+// int JagIndex::insertPair( JagDBPair &pair, int &insertCode, bool direct )
+int JagIndex::insertPair( JagDBPair &pair )
 {
-	insertCode = 0;
 	JagDBPair retpair;
-	int rc = _darrFamily->insert( pair, insertCode, true, direct, retpair );
+	// int rc = _darrFamily->insert( pair, insertCode, true, direct, retpair );
+	prt(("s40931 JagIndex::insertPair...\n"));
+	int rc = _darrFamily->insert( pair, true, retpair );
+	prt(("s40931 JagIndex::insertPair rc=%d\n"));
 	return rc;
 }
 
@@ -306,6 +301,15 @@ int JagIndex::removeFromTable( const char *tablebuf )
 {
 	formatIndexCmdFromTable( tablebuf, 2 );
 	return 1;
+}
+
+
+bool JagIndex::needUpdate( const Jstr &colName ) const
+{
+    Jstr dbcolumn = _dbname + "." + _indexName + "." + colName;
+    int getpos;
+    if ( _indexmap->getValue(dbcolumn, getpos) ) return true;
+    else return false;
 }
 
 jagint JagIndex::getCount( const char *cmd, const JagRequest& req, JagParseParam *parseParam, Jstr &errmsg )
@@ -449,25 +453,23 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 
 			if ( !uniqueAndHasValueCol ) {
 				// key only
-				dbNaturalFormatExchange( (char**)buffers, 1, numKeys, attrs ); // db format -> natural format
+				MultiDbNaturalFormatExchange( (char**)buffers, 1, numKeys, attrs ); // db format -> natural format
 
 				if ( parseParam->opcode == JAG_GETFILE_OP ) { setGetFileAttributes( hdir, parseParam, (char**)buffers ); }
-				JagTable::nonAggregateFinalbuf(NULL, maps, attrs, req, buffers, parseParam, finalbuf, finalsendlen, 
+				JagTable::nonAggregateFinalbuf(NULL, maps, attrs, &req, buffers, parseParam, finalbuf, finalsendlen, 
 												jda, _dbobj, cnt, nowherecnt, NULL, true );
 				if ( parseParam->opcode == JAG_GETFILE_OP && parseParam->getfileActualData ) {
 					Jstr ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
-					//jaguar_mutex_lock ( &req.session->dataMutex );
-					sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
 					for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 						ddcol = _dbobj + "." + parseParam->selColVec[i].getfileCol.c_str();
 						if ( _indexmap->getValue(ddcol, getpos) ) {
 							memcpy( fname, buffers[0]+_schAttr[getpos].offset, _schAttr[getpos].length );
 							inpath = _darrFamily->_sfilepath + "/" + hdir + "/" + fname;
+							req.session->active = false;
 							oneFileSender( req.session->sock, inpath );
+							req.session->active = true;
 						}
 					}
-					sendDirectToSock( req.session->sock, "_ENDFILEUPLOAD_", 15 );
-					//jaguar_mutex_unlock ( &req.session->dataMutex );
 				} else {
 					if ( JAG_INSERTSELECT_OP == parseParam->opcode ) {
 						if ( formatInsertSelectCmdHeader( parseParam, iscmd ) ) {
@@ -478,25 +480,23 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				}
 			} else if ( root ) {
 				// has value column; change to natural data before apply checkFuncValid 
-				dbNaturalFormatExchange( (char**)buffers, 1, numKeys, attrs ); // db format -> natural format
+				MultiDbNaturalFormatExchange( (char**)buffers, 1, numKeys, attrs ); // db format -> natural format
 				if ( root->checkFuncValid( NULL, maps, attrs, buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 ) > 0 ) {
 					if ( parseParam->opcode == JAG_GETFILE_OP ) { setGetFileAttributes( hdir, parseParam, (char**)buffers ); }
-					JagTable::nonAggregateFinalbuf( NULL, maps, attrs, req, buffers, parseParam, finalbuf, finalsendlen, jda, 
+					JagTable::nonAggregateFinalbuf( NULL, maps, attrs, &req, buffers, parseParam, finalbuf, finalsendlen, jda, 
 												    _dbobj, cnt, nowherecnt, NULL, true );
 					if ( parseParam->opcode == JAG_GETFILE_OP && parseParam->getfileActualData ) {
-						//jaguar_mutex_lock ( &req.session->dataMutex );
-						sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
 						Jstr ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
 						for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 							ddcol = _dbobj + "." + parseParam->selColVec[i].getfileCol.c_str();
 							if ( _indexmap->getValue(ddcol, getpos) ) {
 								memcpy( fname, buffers[0]+_schAttr[getpos].offset, _schAttr[getpos].length );
 								inpath = _darrFamily->_sfilepath + "/" + hdir + "/" + fname;
+								req.session->active = false;
 								oneFileSender( req.session->sock, inpath );
+								req.session->active = true;
 							}
 						}
-						sendDirectToSock( req.session->sock, "_ENDFILEUPLOAD_", 15 );
-						//jaguar_mutex_unlock ( &req.session->dataMutex );
 					} else {
 						if ( JAG_INSERTSELECT_OP == parseParam->opcode ) {
 							if ( formatInsertSelectCmdHeader( parseParam, iscmd ) ) {
@@ -548,6 +548,7 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			JagParser parser((void*)_servobj);
 			for ( jagint i = 0; i < numthrds; ++i ) {
 				pparam[i] = new JagParseParam( &parser );
+				prt(("s52958 parser.parseCommand\n"));
 				parser.parseCommand( jpa, cmd, pparam[i], errmsg );
 
 				lgmdarr[i] = newObject<JagMemDiskSortArray>();
@@ -570,7 +571,7 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				psp[i].sendlen = gbvsendlen;
 				psp[i].parseParam = pparam[i];
 				psp[i].gmdarr = lgmdarr[i];
-				psp[i].req = req;
+				psp[i].req = (JagRequest*) &req;
 				psp[i].jda = jda;
 				psp[i].writeName = _dbobj;
 				psp[i].recordcnt = &cnt;
@@ -622,8 +623,8 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				delete pparam[i];
 			}
 			
-			JagTable::groupByFinalCalculation( gbvbuf, nowherecnt, finalsendlen, cnt, nm, req, 
-				_dbobj, parseParam, jda, gmdarr, &nrec );
+			JagTable::groupByFinalCalculation( gbvbuf, nowherecnt, finalsendlen, cnt, nm, 
+										       _dbobj, parseParam, jda, gmdarr, &nrec );
 		} else {
 			// check if has aggregate
 			bool hAggregate = false;
@@ -649,6 +650,7 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			JagParser parser((void*)_servobj);
 			for ( jagint i = 0; i < numthrds; ++i ) {
 				pparam[i] = new JagParseParam( &parser );
+				prt(("s52938 parser.parseCommand\n"));
 				parser.parseCommand( jpa, cmd, pparam[i], errmsg );
 			}
 
@@ -669,7 +671,7 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				psp[i].sendlen = finalsendlen;
 				psp[i].parseParam = pparam[i];
 				psp[i].gmdarr = NULL;
-				psp[i].req = req;
+				psp[i].req = (JagRequest*)&req;
 				psp[i].jda = jda;
 				psp[i].writeName = _dbobj;
 				psp[i].recordcnt = &cnt;
@@ -713,7 +715,7 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			}
 
 			if ( hAggregate ) {
-				JagTable::aggregateFinalbuf( req, newhdr, numthrds, pparam, finalbuf, finalsendlen, jda, 
+				JagTable::aggregateFinalbuf( &req, newhdr, numthrds, pparam, finalbuf, finalsendlen, jda, 
 											_dbobj, cnt, nowherecnt, &nrec );
 			}
 		
@@ -759,13 +761,6 @@ void JagIndex::flushBlockIndexToDisk()
 	if ( _darrFamily ) { _darrFamily->flushBlockIndexToDisk(); } 
 }
 
-/**
-void JagIndex::copyAndInsertBufferAndClean() 
-{ 
-	if ( _darrFamily ) { _darrFamily->copyAndInsertBufferAndClean(); } 
-}
-**/
-
 void JagIndex::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, char *buffers[] )
 {
 	// if getfile, arrange point query to be size of file/modify time of file/md5sum of file/file path ( for actural data )
@@ -803,3 +798,4 @@ void JagIndex::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam
 		}
 	}
 }
+

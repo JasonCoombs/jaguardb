@@ -25,13 +25,13 @@
 #include <JagUtil.h>
 
 // ctor
-JagFixKV::JagFixKV( JagDBServer *servobj, const Jstr &dbname, const Jstr & tabname, int replicateType )
+JagFixKV::JagFixKV( const Jstr &dbname, const Jstr & tabname, int replicateType )
 {
 	_darr = NULL;
 	_hashmap = NULL;
 	_dbname = dbname;
 	_tabname = tabname;
-	_servobj = servobj;
+	//_servobj = servobj;
 	_replicateType = replicateType;
 
     KLEN = _onerecord.keyLength = 256;
@@ -51,10 +51,9 @@ JagFixKV::~JagFixKV()
 void JagFixKV::init( )
 {
     Jstr fpath;
-    Jstr jagdatahome = _servobj->_cfg->getJDBDataHOME( _replicateType );
+    Jstr jagdatahome = JagCfg::getJDBDataHOME( _replicateType );
     fpath = jagdatahome + "/" + _dbname + "/" + _tabname;
 
-    //_darr = new JagDiskArrayServer ( _servobj, NULL, -1, fpath, &_onerecord, 0, true, false );
     _darr = new JagLocalDiskHash( fpath, KLEN, VLEN );
 	int fd = _darr->getFD();
 

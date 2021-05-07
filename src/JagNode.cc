@@ -22,8 +22,7 @@
 #include <JagNode.h>
 
 // ctor
-JagNode::JagNode( JagDBServer *servobj )
-	: JagFixKV( servobj, "system", "NodeStat", 0 )
+JagNode::JagNode() : JagFixKV( "system", "NodeStat", 0 )
 {
 }
 

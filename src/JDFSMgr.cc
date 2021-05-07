@@ -54,7 +54,7 @@ bool JDFSMgr::exist( const AbaxString &fpath )
 //jagint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen, size_t stripeSize )
 jagint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen )
 {
-	// prt(("s2839 getStripeSize fpath=[%s] kvlen=%d stripeSize=%lld\n", fpath.c_str(), kvlen, stripeSize ));
+	// prt(("s28139 getStripeSize fpath=[%s] kvlen=%d stripeSize=%lld\n", fpath.c_str(), kvlen, stripeSize ));
 	
 	struct stat sbuf;
 	if ( 0 == stat(fpath.c_str(), &sbuf) ) {

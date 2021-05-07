@@ -236,7 +236,6 @@ template <class K, class V>
 JagHashMap<K,V>& JagHashMap<K,V>:: operator=( const JagHashMap<K,V> &map )
 {
 	prt(("s22233038 JagHashMap  operator=   this=%0x _doLock=%d _lock=%0x\n", this, _doLock, _lock ));
-	// qwer
 	/**
 	if ( _doLock ) {
 		deleteJagReadWriteLock( _lock );

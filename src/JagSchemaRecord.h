@@ -25,6 +25,16 @@
 #include <JagVector.h>
 #include <JagHashStrInt.h>
 
+// Timeseries: <n>s   n: 1,2,3,4,5,10,15,20,30,60
+// Timeseries: <n>m   n: 1,2,3,4,5,10,15,20,30,60
+// Timeseries: <n>h   n: any number
+// Timeseries: <n>d   n: any number
+// Timeseries: <n>w   n: any number
+// Timeseries: <n>M   n: 1,2,3,4,6
+// Timeseries: <n>q   n: any number
+// Timeseries: <n>y   n: any number
+// Timeseries: <n>D   n: any number
+
 class JagParseParam;
 
 class JagSchemaRecord
@@ -35,7 +45,6 @@ class JagSchemaRecord
 		void destroy(  AbaxDestroyAction act=ABAX_NOOP);
 		JagSchemaRecord( const JagSchemaRecord& other );
 		JagSchemaRecord& operator=( const JagSchemaRecord& other );
-		bool print();
 		bool renameColumn( const AbaxString &oldColName, const AbaxString & newColName );
 		bool setColumn( const AbaxString &oldColName, const AbaxString &attr, const AbaxString & value );
 		bool addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 
@@ -52,7 +61,23 @@ class JagSchemaRecord
 		bool hasPoly(int &dim ) const;
 		void setLastKeyColumn();
 		void getJoinSchema( long skeylen, long svallen, const JagParseParam &parseParam, const jagint lengths[], Jstr &hstr );
+		static Jstr translateTimeSeries( const Jstr &inputTimeSeries );
+		static Jstr translateTimeSeriesBack( const Jstr &inputTimeSeries );
+		static Jstr translateTimeSeriesToStrs( const Jstr &inputTimeSeries );
+		static bool hasTimeSeries( const Jstr &tabProp, Jstr &series );
+		static time_t getRetentionSeconds( const Jstr &retention );
+		static bool validRetention( char u );
+		static Jstr makeTickPair( const Jstr &ser );
+		bool hasTimeSeries( Jstr &series ) const;
+		bool setTimeSeries( const Jstr &normSeries );
+		bool setRetention( const Jstr &retention );
+		bool hasRollupColumn( ) const;
+		Jstr timeSeriesRentention() const;
+		static int normalizeTimeSeries( const Jstr &series, Jstr &normalizedSeries );
+		bool isFirstColumnDateTime( Jstr &colType ) const;
+		int  getFirstDateTimeKeyCol() const;
 
+		bool print();
 
 		char        type[2];
 		int 		keyLength;
@@ -69,6 +94,8 @@ class JagSchemaRecord
 		JagHashStrInt _nameMap;
 		void copyData( const JagSchemaRecord& other ); 
 		void init( bool newVec );
+
+		bool        _hasRollupColumn;
 };
 
 

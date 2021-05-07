@@ -84,7 +84,7 @@ int JagIndexSchema::getIndexNamesFromMem( const Jstr &dbname, const Jstr &tabnam
 }
 
 // check if the table exists already from index schema file
-bool JagIndexSchema::tableExist( const Jstr &dbname, JagParseParam *parseParam )
+bool JagIndexSchema::tableExist( const Jstr &dbname, const JagParseParam *parseParam )
 {
 	Jstr tab = parseParam->objectVec[0].tableName;
 	return tableExist( dbname, tab );
@@ -132,7 +132,7 @@ bool JagIndexSchema::tableExist( const Jstr &dbname, const Jstr &tab )
 }
 
 // check if the index exists already from index schema file
-bool JagIndexSchema::indexExist( const Jstr &dbname, JagParseParam *parseParam )
+bool JagIndexSchema::indexExist( const Jstr &dbname, const JagParseParam *parseParam )
 {
 	Jstr idx  = parseParam->objectVec[0].indexName;
 	return indexExist( dbname, idx );

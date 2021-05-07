@@ -35,21 +35,23 @@ class JagColumn
 		JagColumn& operator=( const JagColumn& other );
 
 		AbaxString 	   name;
-		Jstr type;
+		Jstr 		   type;
 		unsigned int   offset;
 		unsigned int   length;
 		unsigned int   sig;
 		char		   spare[JAG_SCHEMA_SPARE_LEN+1];
-		char           iskey;
-		char           issubcol;
+		bool           iskey;
+		bool           issubcol;
+		bool	       isrollup;
 		int			   func;
 
-		int			   srid;
+		int			    srid;
 		int				begincol;
 		int				endcol;
 		int				metrics;
 		//int				dummy1; replaced by metrics
-		int				dummy2;
+		//int				dummy2;
+		Jstr			rollupWhere;
 		int				dummy3;
 		int				dummy4;
 		int				dummy5;
@@ -58,7 +60,6 @@ class JagColumn
 		int				dummy8;
 		int				dummy9;
 		int				dummy10;
-		//const JagSchemaRecord *record;
 
 		static JagColumn NULLVALUE;
 		void copyData(const JagColumn & other);

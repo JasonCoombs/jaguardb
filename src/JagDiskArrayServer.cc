@@ -172,6 +172,7 @@ bool JagDiskArrayServer::exist( const JagDBPair &pair, jagint *index, JagDBPair 
 	return true;
 }
 
+// return true for yes; false for not exist
 bool JagDiskArrayServer::exist( const JagDBPair &pair, JagDBPair &retpair )
 {
 	JagCompFile *compf = _jdfs->getCompf();
@@ -185,6 +186,7 @@ bool JagDiskArrayServer::exist( const JagDBPair &pair, JagDBPair &retpair )
 }
 
 // get a pair
+// return true for OK; false for error
 bool JagDiskArrayServer::get( JagDBPair &pair, jagint &index )
 {
 	JAG_OVER;
@@ -195,6 +197,7 @@ bool JagDiskArrayServer::get( JagDBPair &pair, jagint &index )
 }
 
 // set a pair
+// return true for OK; false for error
 bool JagDiskArrayServer::set( const JagDBPair &pair, jagint &index )
 {
 	//prt(("s432276 JagDiskArrayServer::set() pair=[%s][%s] ...\n", pair.key.c_str(), pair.value.s() ));
@@ -279,7 +282,7 @@ bool JagDiskArrayServer::checkFileOrder( const JagRequest &req )
 		} else {
 			rc = memcmp( keyvalbuf, keybuf, _KLEN );
 			if ( rc <= 0 ) {
-				free( keybuf );
+				//free( keybuf );
 				free( keyvalbuf );
 				return 0;
 			} else {

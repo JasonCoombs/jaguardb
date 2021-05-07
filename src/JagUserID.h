@@ -39,7 +39,7 @@ class JagUserID : public JagFixKV
 {
   public:
 
-    JagUserID( JagDBServer *servobj=NULL, int replicateType=0 );
+    JagUserID( int replicateType=0 );
 	virtual ~JagUserID();
 	bool 	addUser( const AbaxString &userid, const AbaxString& passwd, 
 				const AbaxString &role, const AbaxString& permission );
@@ -47,7 +47,7 @@ class JagUserID : public JagFixKV
 					const Jstr &tabname, const Jstr &uid );
 	bool 	dropUser( const AbaxString &userid ); 
 	bool 	exist( const AbaxString &userid ); 
-	Jstr  getListUsers();
+	Jstr  	getListUsers();
 
 };
 

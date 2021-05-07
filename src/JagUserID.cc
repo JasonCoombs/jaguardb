@@ -23,8 +23,7 @@
 #include <JagDBServer.h>
 
 // ctor
-JagUserID::JagUserID( JagDBServer *servobj, int replicateType )
-	:JagFixKV( servobj, "system", "UserID", replicateType )
+JagUserID::JagUserID( int replicateType ) :JagFixKV( "system", "UserID", replicateType )
 {
 }
 

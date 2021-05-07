@@ -24,7 +24,8 @@
 class JagRequest
 {
    public:
-	JagRequest() { hasReply = true; batchReply = false; doCompress = false; opcode = 0; session = NULL; dorep=true; syncDataCenter = false; }
+	JagRequest() { hasReply = true; batchReply = false; doCompress = false; 
+				   opcode = 0; session = NULL; dorep=true; syncDataCenter = false; }
 	~JagRequest() {}
 	inline JagRequest& operator=( const JagRequest& req ) 
 	{	

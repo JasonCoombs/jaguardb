@@ -168,13 +168,13 @@ float JagCfg::getFloatValue( const AbaxString &name, float defaultValue ) const
 	}
 }
 
-Jstr JagCfg::getConfHOME() const
+Jstr JagCfg::getConfHOME() 
 {
 	Jstr value = jaguarHome() +  "/conf";
 	return value;
 }
 
-Jstr JagCfg::getJDBDataHOME( int objType ) const
+Jstr JagCfg::getJDBDataHOME( int objType ) 
 {
 	Jstr  value;
 	if ( 0 == objType ) {
@@ -187,7 +187,7 @@ Jstr JagCfg::getJDBDataHOME( int objType ) const
 	return value;
 }
 
-Jstr JagCfg::getTEMPDataHOME( int objType ) const
+Jstr JagCfg::getTEMPDataHOME( int objType ) 
 {
 	Jstr  value;
 	if ( 0 == objType ) {
@@ -200,13 +200,13 @@ Jstr JagCfg::getTEMPDataHOME( int objType ) const
 	return value;
 }
 
-Jstr JagCfg::getTEMPJoinHOME() const
+Jstr JagCfg::getTEMPJoinHOME() 
 {
 	Jstr value = jaguarHome() + "/tmp/join";
 	return value;
 }
 
-Jstr JagCfg::getWalLogHOME() const
+Jstr JagCfg::getWalLogHOME() 
 {
 	Jstr value = jaguarHome() + "/log/cmd";
 	return value;

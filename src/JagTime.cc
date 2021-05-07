@@ -30,7 +30,6 @@ int JagTime::getTimeZoneDiff()
     memset( buf, 0, 8 );
     time_t now = time(NULL);
     struct tm result;
-    // ptm = localtime( &now );
 	jag_localtime_r ( &now, &result );
 
     strftime( buf, 8,  "%z", &result );  // -0500
@@ -79,7 +78,6 @@ Jstr JagTime::makeRandDateTimeString( int N )
 
   	time (&rawtime);
 	rawtime -=  rnd;
-  	// timeinfo = localtime (&rawtime);
 	timeinfo = jag_localtime_r ( &rawtime, &result );
   	strftime (buffer,80,"%Y-%m-%d %H:%M:%S", timeinfo);
 	return buffer;
@@ -106,7 +104,6 @@ Jstr JagTime::YYYYMMDDHHMM()
 	char  buffer[64];
 
   	time (&rawtime);
-  	// timeinfo = localtime (&rawtime);
 	timeinfo = jag_localtime_r ( &rawtime, &result );
   	strftime( buffer, 64, "%Y-%m-%d-%H-%M", timeinfo);
 	return buffer;
@@ -119,7 +116,6 @@ Jstr JagTime::YYYYMMDD()
   	struct tm result;
 	char  buffer[64];
   	time (&rawtime);
-  	// timeinfo = localtime (&rawtime);
 	timeinfo = jag_localtime_r ( &rawtime, &result );
   	strftime( buffer, 64, "%Y%m%d", timeinfo);
 	return buffer;
@@ -132,7 +128,6 @@ Jstr JagTime::makeNowTimeStringSeconds()
   	struct tm result;
 	char  buffer[80];
   	time (&rawtime);
-  	// timeinfo = localtime (&rawtime);
 	timeinfo = jag_localtime_r ( &rawtime, &result );
   	strftime (buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
 	return buffer;
@@ -149,7 +144,6 @@ Jstr JagTime::makeNowTimeStringMilliSeconds()
   	struct tm * timeinfo;
   	struct tm result;
   	time (&rawtime);
-  	// timeinfo = localtime (&rawtime);
 	timeinfo = jag_localtime_r ( &rawtime, &result );
   	strftime (buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
 	sprintf( endbuf, ".%d", usec/1000 );
@@ -168,7 +162,6 @@ Jstr JagTime::makeNowTimeStringMicroSeconds()
   	struct tm * timeinfo;
   	struct tm result;
   	time (&rawtime);
-  	// timeinfo = localtime (&rawtime);
 	timeinfo = jag_localtime_r ( &rawtime, &result );
   	strftime (buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
 	sprintf( endbuf, ".%d", usec );
@@ -176,44 +169,23 @@ Jstr JagTime::makeNowTimeStringMicroSeconds()
 	return buffer;
 }
 
-jagint JagTime::nowMilliSeconds()
-{
-    struct timeval now;
-    gettimeofday( &now, NULL );
-	return (jagint)now.tv_usec * 1000 + now.tv_sec/1000;
-}
-
-Jstr JagTime::nowYear()
-{
-	time_t rawtime;
-  	struct tm * timeinfo;
-  	struct tm result;
-	char  buffer[8];
-  	time (&rawtime);
-  	// timeinfo = localtime (&rawtime);
-	timeinfo = jag_localtime_r ( &rawtime, &result );
-  	strftime (buffer, 8, "%Y", timeinfo);
-	return buffer;
-}
-
-// str: "2016-02-13 12:32:22"   "12:23:00" "yyyy-mm-dd" "152939440000"
+// input str: "2016-02-13 12:32:22"   "12:23:00" "yyyy-mm-dd" "152939440000"
+// isTime: 1: datetime (microseconds)   2: datetimenano (nanoseconds)  3:  datetimeSec (seconds)  4: milliseconds
 void JagTime::setTimeInfo( const JagParseAttribute &jpa , const char *str, struct tm &timeinfo, int isTime ) 
 {
 	// printf("s2838 setTimeInfo str=[%s]  isTime=%d\n", str, isTime );
 	const char *ttime1, *tdate2;
-	jagint microsec = -1;
+	jagint timeval = -1;
 	
 	ttime1 = strchr(str, ':'); 
 	tdate2 = strchr(str, '-');
 
 	if ( ttime1 && tdate2 ) {
 		// "2016-02-13 12:32:22"
-		if ( 1 == isTime ) microsec = getDateTimeFromStr( jpa, str );
-		else microsec = getDateTimeFromStr( jpa, str, true );
+		timeval = getDateTimeFromStr( jpa, str, isTime );
 	} else if ( ttime1 ) {
 		// "12:23:00"
-		if ( 1 == isTime ) microsec = getTimeFromStr( str );
-		else microsec = getTimeFromStr( str, true );
+		timeval = getTimeFromStr( str, isTime );
 	} else if ( tdate2 ) {
 		// "yyyy-mm-dd" only
 		timeinfo.tm_year = rayatoi(str, 4) - 1900;
@@ -224,8 +196,8 @@ void JagTime::setTimeInfo( const JagParseAttribute &jpa , const char *str, struc
 		timeinfo.tm_sec = 0;
 	} else {
 		if ( isTime ) {
-			// "19293944"
-			microsec = jagatoll( str );
+			// "19293944"  microsec, nanosec, or secs, or milliseconds
+			timeval = jagatoll( str );
 		} else {
 			// "20130212"
 			timeinfo.tm_year = rayatoi(str, 4) - 1900;
@@ -237,10 +209,12 @@ void JagTime::setTimeInfo( const JagParseAttribute &jpa , const char *str, struc
 		}
 	}
 
-	if ( microsec >= 0 ) {
-		time_t secs;
-		if ( 1 == isTime ) secs = microsec / 1000000;
-		else secs = microsec / 1000000000;
+	if ( timeval >= 0 ) {
+		time_t secs = timeval;
+		if ( 1 == isTime ) secs = timeval / 1000000;
+		else if ( 3 == isTime ) secs = timeval;
+		else if ( 2 == isTime ) secs = timeval / 1000000000;
+		else if ( 4 == isTime ) secs = timeval / 1000;
 
 		// gmtime_r( &secs, &timeinfo );
 		jagint  defTZDiffMin = jpa.timediff;
@@ -249,47 +223,31 @@ void JagTime::setTimeInfo( const JagParseAttribute &jpa , const char *str, struc
 		// prt(("s2394 secs=%lld\n", secs ));
 
 		secs -=  minSrvCli * 60;
-
-		/***
-		#ifndef _WINDOWS64_
-		localtime_r( &secs, &timeinfo );
-		#else
-		struct tm *result = localtime( &secs );
-		timeinfo = *result;
-		#endif
-		***/
 		jag_localtime_r( &secs, &timeinfo );
 
 	}
 }
 
-
 JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, const JagFixString &str, 
 									const JagFixString &str2, int op, const Jstr& ddiff ) 
 {
-	// prt(("s2839 getValueFromTimeOrDate str=[%s] str2=[%s] op=%d ddiff=%d\n", str.c_str(), str2.c_str(), op, ddiff ));
+	prt(("s28336 getValueFromTimeOrDate str=[%s] str2=[%s] op=%d ddiff=%d\n", str.c_str(), str2.c_str(), op, ddiff ));
+	prt(("s28336 getValueFromTimeOrDate str.len=[%d]\n", str.length() ));
 	char *p;
 	char savebyte;
 	int timelen, isTime;
-	struct tm timeinfo, timeinfo2;
-	time_t rawtime;
-
-	time( &rawtime );
+	struct tm timeinfo;
 	timelen = JAG_DATETIMENANO_FIELD_LEN-6;
 	char buf[timelen+1];
 	memset(buf, 0, timelen+1);
 	
-	// first timeinfo
-	/**
-	timeinfo.tm_isdst = -1;
-	gmtime_r( &rawtime, &timeinfo );
-	**/
 	isTime = 0;
-
 	if ( str.length() == JAG_DATETIME_FIELD_LEN || str.length() == JAG_TIME_FIELD_LEN 
-		 || str.length() == JAG_TIMESTAMP_FIELD_LEN ) isTime = 1;
+		 || str.length() == JAG_TIMESTAMP_FIELD_LEN ) isTime = 1; // microseconds
 	else if ( str.length() == JAG_DATETIMENANO_FIELD_LEN 
-		 || str.length() == JAG_TIMENANO_FIELD_LEN ) isTime = 2;
+		 || str.length() == JAG_TIMENANO_FIELD_LEN ) isTime = 2; // nanosecs
+	else if ( str.length() == JAG_DATETIMESEC_FIELD_LEN ) isTime = 3; // seconds
+	else if ( str.length() == JAG_DATETIMEMILL_FIELD_LEN ) isTime = 4; // milliseconds
 
 	p = (char*)str.c_str();
 	savebyte = *(p+str.length());
@@ -298,20 +256,28 @@ JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, cons
 	setTimeInfo( jpa, p, timeinfo, isTime );
 	*(p+str.length()) = savebyte;	
 
-	// printf("s3994 op=[%d] str=[%s]  str2=[%s]  ddif=[%d]\n", op, str.c_str(), str2.c_str(), ddiff );
+	prt(("s39194 op=[%d] str=[%s]  str2=[%s]  ddif=[%d] isTime=%d\n", op, str.c_str(), str2.c_str(), ddiff, isTime ));
 	
 	if ( op == JAG_FUNC_SECOND ) {
 		sprintf(buf, "%d", timeinfo.tm_sec);
+    	//snprintf(buf, length+1, "%0*lld", length, timeinfo.tm_sec);
 	} else if ( op == JAG_FUNC_MINUTE ) {
 		sprintf(buf, "%d", timeinfo.tm_min);
+    	//snprintf(buf, length+1, "%0*lld", length, timeinfo.tm_min);
 	} else if ( op == JAG_FUNC_HOUR ) {
 		sprintf(buf, "%d", timeinfo.tm_hour);
-	} else if ( op == JAG_FUNC_DATE ) {
+    	//snprintf(buf, length+1, "%0*lld", length, timeinfo.tm_hour);
+	} else if ( op == JAG_FUNC_DAY ) {
 		sprintf(buf, "%d", timeinfo.tm_mday);
+    	//snprintf(buf, length+1, "%0*lld", length, timeinfo.tm_mday);
 	} else if ( op == JAG_FUNC_MONTH ) {
 		sprintf(buf, "%d", timeinfo.tm_mon + 1);
+    	//snprintf(buf, length+1, "%0*lld", length, timeinfo.tm_mon+1);
 	} else if ( op == JAG_FUNC_YEAR ) {
 		sprintf(buf, "%d", timeinfo.tm_year + 1900);
+    	//snprintf(buf, length+1, "%0*lld", length, timeinfo.tm_year+1900);
+	} else if ( op == JAG_FUNC_DATE ) {
+		sprintf(buf, "%d-%02d-%02d", timeinfo.tm_year + 1900, timeinfo.tm_mon+1, timeinfo.tm_mday );
 	} else if ( op == JAG_FUNC_DAYOFMONTH ) {
 		if ( timeinfo.tm_mday <= 1 || timeinfo.tm_mday > 31 ) {
 			buf[0] = '0';
@@ -323,13 +289,15 @@ JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, cons
 	} else if ( op == JAG_FUNC_DAYOFYEAR ) {
 		sprintf(buf, "%d", timeinfo.tm_yday + 1);
 	} else if ( op == JAG_FUNC_DATEDIFF ) {
-
 		// second timeinfo
 		// gmtime_r( &rawtime, &timeinfo2 );
+		struct tm timeinfo2;
 		isTime = 0;
 		if ( str2.length() == JAG_DATETIME_FIELD_LEN || str2.length() == JAG_TIME_FIELD_LEN 
 			 || str2.length() == JAG_TIMESTAMP_FIELD_LEN ) isTime = 1;
 		else if ( str2.length() == JAG_DATETIMENANO_FIELD_LEN || str2.length() == JAG_TIMENANO_FIELD_LEN ) isTime = 2;
+		else if ( str2.length() == JAG_DATETIMESEC_FIELD_LEN ) isTime = 3;
+		else if ( str2.length() == JAG_DATETIMEMILL_FIELD_LEN ) isTime = 4;
 
 		p = (char*)str2.c_str();
 		savebyte = *(p+str2.length());
@@ -357,6 +325,8 @@ JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, cons
 
 		snprintf(buf, timelen+1, "%lld", diff);
 	}
+
+	prt(("s400124 buf=[%s] timelen=%d\n", buf, timelen ));
 	
 	JagFixString res(buf, timelen, timelen);
 	return res;	
@@ -366,7 +336,8 @@ JagFixString JagTime::getValueFromTimeOrDate( const JagParseAttribute &jpa, cons
  // tzdiff in minutes
 // convert GMT time microsecs or nanosecs to caller Local time (usually client)
 // void convertDateTimeToLocalStr( int tzdiff, const Jstr& instr, Jstr& outstr, bool isnano )
-void JagTime::convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool isnano )
+// isnano 1:miscrosec   2:nanosec   3: seconds
+void JagTime::convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, int isnano )
 {
 	char tmstr[48];
 	char utime[12];
@@ -378,24 +349,46 @@ void JagTime::convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool i
 
 	//prt(("c4828 convertDateTimeToLocalStr instr=[%s]\n", instr.c_str() ));
 	timestamp = jagatoll( instr.c_str() );
-	if ( !isnano ) {
+	if ( 0 == isnano || 1 == isnano ) {
 		sec = timestamp/1000000; 
 		usec = timestamp%1000000;
-	} else {
+	} else if ( 2 == isnano ) {
 		sec = timestamp/1000000000; 
 		usec = timestamp%1000000000;
+	} else if ( 3 == isnano ) {
+		sec = timestamp;
+		usec = 0;
+	} else if ( 4 == isnano ) {
+		sec = timestamp/1000; 
+		usec = timestamp%1000;
 	}
 
 	//prt(("j22228188 sec=%lld  usec=%lld\n", sec, usec ));
 	time_t tsec = sec;
 	tmptr = jag_localtime_r( &tsec, &result );  // client calls this
 	strftime( tmstr, sizeof(tmstr), "%Y-%m-%d %H:%M:%S", tmptr ); 
-	if ( !isnano ) sprintf( utime, ".%06d", usec );
-	else sprintf( utime, ".%09d", usec );
 
+	if ( 0 == isnano || 1 == isnano ) {
+		sprintf( utime, ".%06d", usec );
+		strcat( tmstr, utime );
+		outstr = tmstr;
+	} else if ( 2 == isnano ) {
+		sprintf( utime, ".%09d", usec );
+		strcat( tmstr, utime );
+		outstr = tmstr;
+	} else if ( 4 == isnano ) {
+		sprintf( utime, ".%03d", usec );
+		strcat( tmstr, utime );
+		outstr = tmstr;
+	} else if ( 3 == isnano ) {
+		outstr = tmstr;
+	}
+
+	/***
 	//prt(("j8283718 tmstr=[%s] utime=[%s]\n", tmstr, utime ));
 	strcat( tmstr, utime );
 	outstr = tmstr;
+	***/
 	//prt(("c1183 convertDateTimeToLocalStr ins=[%s] outs=[%s] isnano=%d\n", instr.c_str(), outstr.c_str(), isnano ));
 }
 
@@ -404,6 +397,7 @@ void JagTime::convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool i
 // tmtype=0: no micro/o/nano sub-seconds
 // tmtype=1: micro subseconds
 // tmtype=2: nano subseconds
+// tmtype=3: seconds
 void JagTime::convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype )
 {
 	// print keys
@@ -414,7 +408,6 @@ void JagTime::convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype )
 	jagint  usec;
 	struct tm *tmptr;
 
-
 	timestamp = jagatoll( instr.c_str() );
 	if ( 1 == tmtype ) {
 		sec = timestamp/1000000; 
@@ -422,6 +415,12 @@ void JagTime::convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype )
 	} else if ( 2 == tmtype ) {
 		sec = timestamp/1000000000; 
 		usec = timestamp%1000000000;
+	} else if ( 3 == tmtype ) {
+		sec = timestamp;
+		usec = 0;
+	} else if ( 4 == tmtype ) {
+		sec = timestamp/1000; 
+		usec = timestamp%1000;
 	} else { 
 		sec = timestamp/1000000; 
 		usec = timestamp%1000000;
@@ -431,21 +430,20 @@ void JagTime::convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype )
 	tmptr = gmtime_r( &sec, &result );
 	strftime( tmstr, sizeof(tmstr), "%H:%M:%S", tmptr ); 
 
-	/**
-	if ( !isnano ) sprintf( utime, ".%06d", usec );
-	else sprintf( utime, ".%09d", usec );
-	**/
 	if ( 1 == tmtype ) {
 	    sprintf( utime, ".%06d", usec );
 		strcat( tmstr, utime );
 	} else if ( 2 == tmtype ) {
 		sprintf( utime, ".%09d", usec );
 		strcat( tmstr, utime );
+	} else if ( 4 == tmtype ) {
+		sprintf( utime, ".%03d", usec );
+		strcat( tmstr, utime );
+	} else if ( 3 == tmtype ) {
 	} 
 
 	outstr = tmstr;
 	//prt(("tm8208 convertTimeToStr instr=[%s] tmtype=%d outstr=[%s]\n", instr.c_str(), tmtype, outstr.c_str() ));
-
 	//prt(("s3881 convertTimeToStr instr=[%s] outstr=[%s]\n", instr.c_str(), outstr.c_str() ));
 }
 
@@ -469,49 +467,83 @@ void JagTime::convertDateToStr( const Jstr& instr, Jstr& outstr )
 }
 
 // tzdiff: client tz difff in min
+// length indicate seconds, microseconds, nanoseconds
+// isnano=0: seconds
+// isnano=1: micro subseconds
+// isnano=2: nano subseconds
+// isnano=3: seconds
+// isnano=4: milliseconds
+// returns 0 OK; < 0 error
 int JagTime::convertDateTimeFormat( const JagParseAttribute &jpa, char *outbuf, const char *inbuf, 
-							const int offset, const int length, bool isnano )
+								    int offset, int length, int isnano )
 {
-	// prt(("s3661 convertDateTimeFormat inbuf=[%s] isnano=%d\n", inbuf, isnano ));
+	prt(("s31661 convertDateTimeFormat inbuf=[%s] isnano=%d\n", inbuf, isnano ));
     jagint lonnum = 0;
 
 	// allow "microseconds" or "nanoseconds" since epoch digits input UTC time
 	// timestamp is microseconds since epoch, same as datetime
-	if ( ( NULL == strchr((char*)inbuf, '-') && NULL == strchr((char*)inbuf, ':') ) ) {
-		if ( isnano ) {
-			lonnum = jagatoll( inbuf ) * 1000;
-		} else {
+	if ( ( NULL == strchr(inbuf, '-') && NULL == strchr(inbuf, ':') ) ) {
+		// inbuf:  "16263838380"
+		if ( 2 == isnano ) {
+			// lonnum = jagatoll( inbuf ) * 1000;
+			// to nanoseconds
+			lonnum = jagatoll( inbuf ); 
+			prt(("s400123 2 == isnano lonnum=%lld\n", lonnum ));
+		} else if ( 3 == isnano ) {
+			// to seconds
+			// 1613343540
+			// from micrsec to seconds
+			// from nanosec to seconds
+			// lonnum = jagatoll( inbuf ) / 1000000;
 			lonnum = jagatoll( inbuf );
+			if ( lonnum > jagint(1000000000) * JAG_BILLION ) {
+			   lonnum = lonnum/JAG_BILLION;
+			} else if ( lonnum > jagint(1000000000) * JAG_MILLION ) {
+			   lonnum = lonnum/JAG_MILLION;
+			}
+
+			prt(("s401123 3 == isnano lonnum=%lld\n", lonnum ));
+
+		} else if ( 4 == isnano ) {
+			// to milliseconds
+			lonnum = jagatoll( inbuf );
+			if ( lonnum > jagint(1000000000) * JAG_BILLION ) {
+			   lonnum = lonnum/JAG_MILLION;
+			} else if ( lonnum > jagint(1000000000) * JAG_MILLION ) {
+			   lonnum = lonnum/1000;
+			}
+
+			prt(("s401124 4 == isnano lonnum=%lld\n", lonnum ));
+		} else {
+			// to microsecs
+			lonnum = jagatoll( inbuf );
+			if ( lonnum > jagint(1000000000) * JAG_BILLION ) {
+			   lonnum = lonnum/1000;
+			}
+			prt(("s401125 microsecs 1 == isnano lonnum=%lld\n", lonnum ));
 		}
 		// prt(("s2883 pure num in datestr inbuf lonnum=%lld\n", lonnum  ));
 	} else {
-		// lonnum = getDateTimeFromStr( tzdiff, inbuf, isnano);
+		// inbuf:  "2020-21-21 12:13:21.000000" or datetimesec or datatimenano format
 		lonnum = getDateTimeFromStr( jpa, inbuf, isnano);
 		if ( lonnum == -1 ) {
-			return 1;
+			return 1; // error
 		}
 	}
 
     if ( snprintf(outbuf+offset, length+1, "%0*lld", length, lonnum) > length ) {
-		// prt(("s1884 convertDateTimeFormat return 2\n" ));
-		return 2;
+		prt(("s1884 convertDateTimeFormat return 2\n" ));
+		return 2; // error
 	}
 
-	// prt(("s1885 convertDateTimeFormat return 0  lonnum=%lld  outbuf+offset=[%s]\n", lonnum, outbuf+offset ));
-	return 0;
+	prt(("s18785 convertDateTimeFormat return 0  lonnum=%lld  outbuf+offset=[%s]\n", lonnum, outbuf+offset ));
+	return 0; // OK
 }
 
-int JagTime::convertTimeFormat( char *outbuf, const char *inbuf, const int offset, const int length, bool isnano )
+int JagTime::convertTimeFormat( char *outbuf, const char *inbuf, const int offset, const int length, int isnano )
 {
 	//prt(("s4774 convertTimeFormat inbuf=[%s] offset=%d length=%d isnano=%d\n", inbuf, offset, length, isnano ));
     jagint lonnum = 0;
-
-	/***
-	if ( ( NULL == strchr((char*)inbuf, ':') ) || (lonnum = getTimeFromStr(inbuf, isnano)) == -1 )  {
-		prt(("s5980 return 1 lonnum=%d\n", lonnum ));
-		return 1;
-	}
-	***/
 	if ( strchr((char*)inbuf, ':') ) {
 		lonnum = getTimeFromStr(inbuf, isnano);
 		if ( -1 == lonnum ) return 1;
@@ -528,7 +560,7 @@ int JagTime::convertTimeFormat( char *outbuf, const char *inbuf, const int offse
 }
 
 
-int JagTime::convertDateFormat( char *outbuf, const char *inbuf, const int offset, const int length )
+int JagTime::convertDateFormat( char *outbuf, const char *inbuf, int offset, int length )
 {
 	char buf[JAG_DATE_FIELD_LEN+1];
 	const char *ubuf;
@@ -549,20 +581,23 @@ int JagTime::convertDateFormat( char *outbuf, const char *inbuf, const int offse
 }
 
 
-// get GMT time in microseconds, or nanoseconds (if isnano is true)
+// get GMT time in microseconds, or nanoseconds, or seconds 
 // str:   yyyy-mm-dd hh:mm:ss[.ffffff]
 // str:   yyyy-mm-dd hh:mm:ss[.ffffff] +HH:MM  (timezone offset)
 // str:   yyyy-mm-dd hh:mm:ss[.ffffff] -HH:MM  (timezone offset)
 // defTZDiffMin: client's default timezone diff in minutes (-8 or +10)
-// if isnano, str has [.fffffffff] 
+// if isnano=1, str has [.ffffff]    microseconds
+// if isnano=2, str has [.fffffffff] nanoseconds
+// if isnano=3, str has [ddddddddd]  seconds
+// if isnano=4, str has [.fff]       milliseconds
 // 0: error
-jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, bool isnano )
+jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, int isnano )
 {
 	jagint  defTZDiffMin = jpa.timediff;
-	jagint servTZDiffMin = jpa.servtimediff;
-	jagint minSrvCli = servTZDiffMin - defTZDiffMin;
+	jagint  servTZDiffMin = jpa.servtimediff;
+	jagint  minSrvCli = servTZDiffMin - defTZDiffMin;
 
-	// prt(("s1828 getDateTimeFromStr str=[%s] defTZDfMin=%d srvTZMin=%d minSrvCli=%d\n", str, defTZDiffMin, servTZDiffMin, minSrvCli ));
+	// prt(("s1828 str=[%s] defTZDfMin=%d srvTZMin=%d minSrvCli=%d\n", str, defTZDiffMin, servTZDiffMin, minSrvCli ));
 
 	int c;
 	char buf10[10];
@@ -648,8 +683,21 @@ jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
    	// adjust server
    	res += minSrvCli * 60;
 
+	/**
    	if ( isnano ) res *= (jaguint)1000000000;
    	else res *= (jaguint)1000000;
+	**/
+	if ( 2 == isnano ) {
+		res *= (jaguint)1000000000;
+	} else if ( 1 == isnano ) {
+		res *= (jaguint)1000000;
+	} else if ( 3 == isnano ) {
+		// seconds
+	} else if ( 4 == isnano ) {
+		res *= (jaguint)1000;
+	} else {
+		res *= (jaguint)1000000;
+	}
 
    	jagint zsecdiff;
 	jagint tzhour;
@@ -657,25 +705,38 @@ jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
 	while ( 1 ) {
     	if ( *p == '\0' ) { break; }
     
-    	// saw .ffffff or .fffffffff
+    	// saw .fff or .ffffff or .fffffffff
     	if ( *p == '.' ) {
-    		if ( isnano ) {
+    		if ( 2 == isnano ) {
         		memset(buf10, '0', 9);
-    		} else {
+			} else if ( 1 == isnano ) {
     			memset(buf10, '0', 6);
+			} else if ( 3 == isnano ) {
+    			memset(buf10, 0, 10);  // seconds
+			} else if ( 4 == isnano ) {
+    			memset(buf10, '0', 3);
+    		} else {
+    			memset(buf10, 0, 10);
     		}
+
         	++p;
         	s = p;
         	c = 0;
     		while ( *p != '\0' && *p != '+' && *p != '-' && *p != ' ' ) {
-    			if ( !isnano && c < 6 ) {
-    				buf10[c++] = *p;
-    			} else if ( isnano && c < 9 ) {
-    				buf10[c++] = *p;
+    			if ( (1 == isnano) && c < 6 ) {
+    				buf10[c] = *p;
+					++c;
+    			} else if ( ( 2 == isnano ) && c < 9 ) {
+    				buf10[c] = *p;
+					++c;
+    			} else if ( ( 4 == isnano ) && c < 3 ) {
+    				buf10[c] = *p;
+					++c;
     			} else {
     				while ( *p != '\0' && *p != ' ' ) ++p;
     				break;
     			}
+
     			++p;
     		}
     
@@ -716,12 +777,44 @@ jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
 		// prt(("s6612 before hour adjust tzhour=%d res=%lld\n", tzhour, res ));
     	if ( c > 0 ) {
     		zsecdiff =  tzhour *3600 - defTZDiffMin*60;  // adjust to original clien time zone
+			/**
     		if ( !isnano ) res -=  zsecdiff * (jaguint)1000000;
     		else res -=  zsecdiff * (jaguint)1000000000;
+			**/
+			if ( 1 == isnano ) {
+				// micro
+				res -=  zsecdiff * (jaguint)1000000;
+			} else if ( 2 == isnano ) {
+				// nano
+				res -=  zsecdiff * (jaguint)1000000000;
+			} else if ( 4 == isnano ) {
+				// milli
+				res -=  zsecdiff * (jaguint)1000;
+			} else if ( 3 == isnano ) {
+				res -=  zsecdiff;
+			} else {
+			}
+
     	} else {
     		zsecdiff =  defTZDiffMin*60 + tzhour*3600;
+			/**
     		if ( !isnano ) res +=  zsecdiff * (jaguint)1000000;
     		else res +=  zsecdiff * (jaguint)1000000000;
+			**/
+
+			if ( 1 == isnano ) {
+				// micro
+				res +=  zsecdiff * (jaguint)1000000;
+			} else if ( 2 == isnano ) {
+				// nano
+				res +=  zsecdiff * (jaguint)1000000000;
+			} else if ( 4 == isnano ) {
+				// milli
+				res +=  zsecdiff * (jaguint)1000;
+			} else if ( 3 == isnano ) {
+				res +=  zsecdiff;
+			} else {
+			}
     	}
 
     	*p = v;
@@ -733,11 +826,43 @@ jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
     	s = p;
 		// prt(("s8309 s=[%s] res=%lld\n", s, res ));
     	if ( c > 0 ) {
+			/**
     		if ( !isnano ) res = res - jagatoll(s) * 60 * (jaguint)1000000;  // res is GMT time
     		else res = res - jagatoll(s) * 60 * (jaguint)1000000000;  // res is GMT time
+			**/
+			if ( 1 == isnano ) {
+				// micro
+				res = res - jagatoll(s) * 60 * (jaguint)1000000;  // res is GMT time
+			} else if ( 2 == isnano ) {
+				// nano
+				res = res - jagatoll(s) * 60 * (jaguint)1000000000;  // res is GMT time
+			} else if ( 4 == isnano ) {
+				// milli
+				res = res - jagatoll(s) * 60 * (jaguint)1000;  // res is GMT time
+			} else if ( 3 == isnano ) {
+				// secs
+				res = res - jagatoll(s) * 60;
+			} else {
+			}
     	} else {
+			/***
     		if ( !isnano ) res = res + jagatoll(s) * 60 * (jagint)1000000;
     		else res = res + jagatoll(s) * 60 * (jaguint)1000000000;
+			**/
+			if ( 1 == isnano ) {
+				// micro
+				res = res + jagatoll(s) * 60 * (jaguint)1000000;  // res is GMT time
+			} else if ( 2 == isnano ) {
+				// nano
+				res = res + jagatoll(s) * 60 * (jaguint)1000000000;  // res is GMT time
+			} else if ( 4 == isnano ) {
+				// milli
+				res = res + jagatoll(s) * 60 * (jaguint)1000;  // res is GMT time
+			} else if ( 3 == isnano ) {
+				// secs
+				res = res + jagatoll(s) * 60;
+			} else {
+			}
     	}
 
 		break;  // must be here to exit the loop
@@ -751,7 +876,7 @@ jaguint JagTime::getDateTimeFromStr( const JagParseAttribute &jpa, const char *s
 // return time in microseconds
 // str:   hh:mm:ss[.ffffff]
 // -1: error
-jagint JagTime::getTimeFromStr( const char *str, bool isnano )
+jagint JagTime::getTimeFromStr( const char *str, int isnano )
 {
 	//prt(("s2039 getTimeFromStr str=[%s] isnano=%d\n", str, isnano ));
 	int c;
@@ -802,8 +927,21 @@ jagint JagTime::getTimeFromStr( const char *str, bool isnano )
 	// res = 1000000* mktime( &ttime );
 	// res = 1000000* timegm( &ttime );
 	res = 3600*ttime.tm_hour + 60*ttime.tm_min + ttime.tm_sec;
+
+	/**
 	if ( !isnano ) res *= (jagint)1000000;
 	else res *= (jagint)1000000000;
+	**/
+	if ( 1 == isnano ) {
+		res *= (jagint)1000000;
+	} else if ( 2 == isnano ) {
+		res *= (jagint)1000000000;
+	} else if ( 4 == isnano ) {
+		res *= (jagint)1000;
+	} else if ( 3 == isnano ) {
+	} else {
+	}
+
 	// prt(("s8907 time str=[%s] ===> res=[%lld]\n", str, res));
 	if ( *p == '\0' ) {
 		// printf("c111\n");
@@ -812,16 +950,31 @@ jagint JagTime::getTimeFromStr( const char *str, bool isnano )
 
 	// saw .fffffff or .fffffffff
 	if ( *p == '.' ) {
+		/***
 		if ( !isnano ) {
 			memset(buf10, '0', 6);
 		} else {
     		memset(buf10, '0', 9);
 		}
+		***/
+    	if ( 2 == isnano ) {
+       		memset(buf10, '0', 9);
+		} else if ( 1 == isnano ) {
+    		memset(buf10, '0', 6);
+		} else if ( 4 == isnano ) {
+    		memset(buf10, '0', 3);
+		} else if ( 3 == isnano ) {
+    		memset(buf10, 0, 10);
+    	} else {
+    		memset(buf10, 0, 10);
+    	}
+
     	++p;
     	s = p;
     	c = 0;
     	while ( *p != '\0' && *p != ' ' ) {
     		// printf("c=%d  p=[%s]\n", c, p );
+			/***
 			if ( !isnano && c < 6 ) {
 				buf10[c++] = *p;
 			} else if ( isnano && c < 9 ) {
@@ -830,6 +983,20 @@ jagint JagTime::getTimeFromStr( const char *str, bool isnano )
 				while ( *p != '\0' && *p != ' ' ) ++p;
 				break;
 			}
+			***/
+    		if ( (1 == isnano) && c < 6 ) {
+    			buf10[c] = *p;
+				++c;
+    		} else if ( ( 2 == isnano ) && c < 9 ) {
+    			buf10[c] = *p;
+				++c;
+    		} else if ( ( 4 == isnano ) && c < 3 ) {
+    			buf10[c] = *p;
+				++c;
+    		} else {
+    			while ( *p != '\0' && *p != ' ' ) ++p;
+    			break;
+    		}
     
     		++p;
     	}
@@ -878,3 +1045,218 @@ bool JagTime::getDateFromStr( const char *instr, char *outstr )
 	res = true;
 	return res;
 }
+
+// cycle: 1,2,3,4,6,8,12
+jagint JagTime::getStartTimeSecOfSecond( time_t tsec, int cycle )
+{
+	struct tm result;
+	gmtime_r( &tsec, &result );
+	int startsec = (result.tm_sec/cycle) * cycle;
+
+	prt(("s22220 getStartTimeSecOfSecond tm_isdst=%d cycle=%d startsec=%d\n", result.tm_isdst, cycle, startsec ));
+
+	result.tm_sec = startsec;
+	time_t  t = mktime( &result );
+	return t;
+}
+
+// cycle: 1,2,3,4,6,8,12
+jagint JagTime::getStartTimeSecOfMinute( time_t tsec, int cycle )
+{
+	struct tm result;
+	
+	gmtime_r( &tsec, &result );
+	//print( result );
+	int startmin = (result.tm_min/cycle) * cycle; 
+	prt(("s22220 tm_isdst=%d\n", result.tm_isdst ));
+
+	result.tm_sec = 0;
+	result.tm_min = startmin;
+
+	time_t  t = mktime( &result );
+	return t;
+}
+
+// cycle: 1,2,3,4,6,8,12
+jagint JagTime::getStartTimeSecOfHour( time_t tsec, int cycle )
+{
+	struct tm result;
+	
+	gmtime_r( &tsec, &result );
+	int starthour = (result.tm_hour/cycle) * cycle;  // 0 --30
+	prt(("s22220 tm_isdst=%d\n", result.tm_isdst ));
+
+	result.tm_sec = 0;
+	result.tm_min = 0;
+	result.tm_hour = starthour;
+
+	time_t  t = mktime( &result );
+	return t;
+}
+
+// cycle: 1,2,3,...15
+jagint JagTime::getStartTimeSecOfDay( time_t tsec, int cycle )
+{
+	struct tm result;
+	gmtime_r( &tsec, &result );
+	//print( result );
+
+	int startday = ((result.tm_mday-1)/cycle) * cycle;  // 0 --30
+
+	result.tm_sec = 0;
+	result.tm_min = 0;
+	result.tm_hour = 0;
+	result.tm_mday = startday + 1;  // 1--31
+
+	time_t  t = mktime( &result );
+	return t;
+}
+
+// cycle: 1 only
+jagint JagTime::getStartTimeSecOfWeek( time_t tsec )
+{
+	struct tm result;
+	
+	gmtime_r( &tsec, &result );
+	tsec = tsec - jagint(result.tm_wday) * 86400;  // back to sunday
+
+	gmtime_r( &tsec, &result );
+	result.tm_sec = 0;
+	result.tm_min = 0;
+	result.tm_hour = 0;
+
+	time_t  t = mktime( &result );
+	return t;
+}
+
+// cycle: 1,2,3,4,6
+jagint JagTime::getStartTimeSecOfMonth( time_t tsec, int cycle )
+{
+	struct tm result;
+	
+	gmtime_r( &tsec, &result );
+	result.tm_sec = 0;
+	result.tm_min = 0;
+	result.tm_hour = 0;
+	result.tm_mday = 1;
+	// result.tm_mon  0 --11
+	result.tm_mon = (result.tm_mon/cycle) * cycle; 
+
+	time_t  t = mktime( &result ); // ignores tm_wday and tm_yday
+	return t;
+}
+
+
+// cycle: 1, 2
+jagint JagTime::getStartTimeSecOfQuarter( time_t tsec, int cycle )
+{
+	struct tm result;
+	gmtime_r( &tsec, &result );
+	result.tm_sec = 0;
+	result.tm_min = 0;
+	result.tm_hour = 0;
+	result.tm_mday = 1;
+	// result.tm_mon  0-11
+	result.tm_mon = (result.tm_mon/(3*cycle)) * 3*cycle;
+	time_t  t = mktime( &result );
+	return t;
+}
+
+// cycle: any
+jagint JagTime::getStartTimeSecOfYear( time_t tsec, int cycle )
+{
+	struct tm result;
+	
+	gmtime_r( &tsec, &result );
+	result.tm_sec = 0;
+	result.tm_min = 0;
+	result.tm_hour = 0;
+	result.tm_mday = 1;
+	result.tm_mon = 0;
+	result.tm_year = (result.tm_year/cycle) * cycle;
+	time_t  t = mktime( &result );
+	return t;
+}
+
+// cycle: any
+jagint JagTime::getStartTimeSecOfDecade( time_t tsec, int cycle )
+{
+	struct tm result;
+	gmtime_r( &tsec, &result );
+	result.tm_sec = 0;
+	result.tm_min = 0;
+	result.tm_hour = 0;
+	result.tm_mday = 1;
+	result.tm_mon = 0;
+	result.tm_year = (result.tm_year/(cycle*10)) * cycle*10;
+	time_t  t = mktime( &result );
+	return t;
+}
+
+void JagTime::print( struct tm &t )
+{
+	printf("JagTime::print:\n");
+	printf(" tm.tm_year=%d\n", t.tm_year );
+	printf(" tm.tm_mon=%d\n", t.tm_mon );
+	printf(" tm.tm_mday=%d\n", t.tm_mday );
+	printf(" tm.tm_hour=%d\n", t.tm_hour );
+	printf(" tm.tm_min=%d\n", t.tm_min );
+	printf(" tm.tm_sec=%d\n", t.tm_sec );
+	printf(" tm.tm_wday=%d\n", t.tm_wday );
+	printf(" tm.tm_yday=%d\n", t.tm_yday );
+	printf(" tm.tm_isdst=%d\n", t.tm_isdst );
+}
+
+// return buf
+// return 1: for success;   0 for error
+int JagTime::fillTimeBuffer ( time_t tsec, const Jstr &colType, char *buf )
+{
+	if ( colType == JAG_C_COL_TYPE_DATETIMENANO || colType == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
+		sprintf( buf, "%lld", tsec * 1000000000 );
+	} else if ( colType == JAG_C_COL_TYPE_DATETIME || colType == JAG_C_COL_TYPE_TIMESTAMP ) {
+		sprintf( buf, "%lld", tsec * 1000000 );
+	} else if ( colType == JAG_C_COL_TYPE_DATETIMEMILL || colType == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+		sprintf( buf, "%lld", tsec * 1000 );
+	} else if ( colType == JAG_C_COL_TYPE_DATETIMESEC || colType == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+		sprintf( buf, "%lld", tsec );
+	} else {
+		return 0;
+	}
+
+	return 1;
+}
+
+// returns seconds, microseconds, or nanoseconds
+// return 0 for error
+time_t JagTime::getTypeTime( time_t tsec, const Jstr &colType )
+{
+	if ( colType == JAG_C_COL_TYPE_DATETIMENANO || colType == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
+		return (tsec * 1000000000 );
+	} else if ( colType == JAG_C_COL_TYPE_DATETIME || colType == JAG_C_COL_TYPE_TIMESTAMP ) {
+		return (tsec * 1000000 );
+	} else if ( colType == JAG_C_COL_TYPE_DATETIMEMILL || colType == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+		return (tsec * 1000 );
+	} else if ( colType == JAG_C_COL_TYPE_DATETIMESEC || colType == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+		return tsec;
+	} else {
+		return 0;
+	}
+}
+
+
+Jstr JagTime::getLocalTime( time_t  tsec )
+{
+	struct tm result;
+	char tmstr[48];
+	jag_localtime_r( &tsec, &result );  // client calls this
+	strftime( tmstr, sizeof(tmstr), "%Y-%m-%d %H:%M:%S", &result ); 
+	return tmstr;
+}
+
+jagint JagTime::nowMilliSeconds()
+{
+    struct timeval now;
+    gettimeofday( &now, NULL );
+    return (jagint)now.tv_usec / 1000 + now.tv_sec*1000;
+}
+

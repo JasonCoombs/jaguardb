@@ -216,18 +216,18 @@ class BinaryOpNode: public ExprElementNode
   protected:
 	// current class object use only
 	void findOrBuffer( JagMinMax *minmaxbuf, JagMinMax *leftbuf, JagMinMax *rightbuf, 
-						const int keylen[], const int numTabs );
+						const int keylen[], int numTabs );
 	void findAndBuffer( JagMinMax *minmaxbuf, JagMinMax *leftbuf, JagMinMax *rightbuf, 
-						const JagSchemaAttribute *attrs[], const int numTabs, const int numKeys[] );
+						const JagSchemaAttribute *attrs[], int numTabs, const int numKeys[] );
 	void findLeftBuffer( JagMinMax *minmaxbuf, JagMinMax *leftbuf, JagMinMax *rightbuf, 
-						const JagSchemaAttribute *attrs[], const int numTabs, const int numKeys[] );
-	bool formatColumnData( JagMinMax *minmaxbuf, JagMinMax *iminmaxbuf, const JagFixString &value, int tabnum, int minOrMax );
+						const JagSchemaAttribute *attrs[], int numTabs, const int numKeys[] );
+	bool formatColumnData( JagMinMax *minmaxbuf, const JagMinMax *iminmaxbuf, const JagFixString &value, int tabnum, int minOrMax );
 	bool checkAggregateValid( int lcmode, int rcmode, bool laggr, bool raggr );
 	int formatAggregateParts( Jstr &parts, Jstr &lparts, Jstr &rparts );
 	int _doWhereCalc( const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
 						const int keylen[], const int numKeys[], int numTabs, int ltmode, int rtmode, int ltabnum, int rtabnum,
 						JagMinMax *minmaxbuf, JagMinMax *lminmaxbuf, JagMinMax *rminmaxbuf, 
-						JagFixString &str, JagFixString &lstr, JagFixString &rstr );
+						JagFixString &str, const JagFixString &lstr, const JagFixString &rstr );
 	int _doCalculation( JagFixString &lstr, JagFixString &rstr, 
 						int &ltmode, int &rtmode, const Jstr& ltype,  const Jstr& rtype, 
 						int llength, int rlength, bool &first );	

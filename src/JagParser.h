@@ -132,7 +132,9 @@ class JagParser
 	int convertJsonToPolygon( const rapidjson::Document &dom, OtherAttribute &other );
 	int convertJsonToMultiPolygon( const rapidjson::Document &dom, OtherAttribute &other );
 	int getEachRangeFieldLength( int srid ) const;
-	static bool getMetrics( const JagStrSplitWithQuote &sp, int start, JagVector<Jstr> &metrics );
+	static bool getMetrics( const JagStrSplitWithQuote &sp, JagVector<Jstr> &metrics );
+	const char * parseRollup( const char *ptok, CreateAttribute &cattr );
+
 
 	// data members
 	char *_gettok, *_saveptr;

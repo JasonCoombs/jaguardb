@@ -35,7 +35,7 @@ void JagParseParam::initCtor()
 	_lineFile = NULL;
 	_colHash = NULL;
 
-	parseOK = impComplete = opcode = 0;
+	impComplete = opcode = 0;
 	hasExist = hasColumn = hasWhere = hasGroup = hasHaving = hasOrder = 0;
     hasLimit = hasTimeout = hasPivot = hasExport = hasForce = 0;
 	limitStart = limit = timeout = keyLength = valueLength = ovalueLength = 0;
@@ -106,7 +106,7 @@ void JagParseParam::clean()
 	selAllColVec.clean(); 
 	joinOnVec.clean(); 
 	whereVec.clean(); 
-	offsetVec.clean(); 
+	//offsetVec.clean(); 
 	jpa.clean();
 
 	// havingVec.clean(); 
@@ -380,11 +380,11 @@ Jstr JagParseParam::formSelectSQL()
 
 void JagParseParam::print()
 {
-	prt(("\n\n\n\n\ns3481 --------------------print parse param----------------------------\n"));
+	prt(("\n\n\n\n\ns34818 --------------------print parse param----------------------------\n"));
 	prt(("jpa.timediff=[%d] jpa.servtimediff=[%d] jpa.dfdbname=[%s]\n", 
 			this->jpa.timediff, this->jpa.servtimediff, this->jpa.dfdbname.c_str()));
-	prt(("parseOK=[%d] impComplete=[%d] opcode=[%d] optype=[%c]\n", 
-			this->parseOK, this->impComplete, this->opcode, this->optype));
+	prt(("impComplete=[%d] opcode=[%d] optype=[%c]\n", 
+			this->impComplete, this->opcode, this->optype));
 	prt(("hasExist=[%d] hasColumn=[%d] hasWhere=[%d] hasForce=[%d]\n", 
 			this->hasExist, this->hasColumn, this->hasWhere, this->hasForce ));
 	prt(("hasGroup=[%d] hasHaving=[%d] hasOrder=[%d]\n", this->hasGroup, this->hasHaving, this->hasOrder));
@@ -537,12 +537,14 @@ void JagParseParam::print()
 	}
 	***/
 
+	/***
 	if ( this->offsetVec.size() > 0 ) {
 		prt(("-----------------offset vector------------------\n"));
 		for ( int i = 0; i < this->offsetVec.size(); ++i ) {
 			prt(("offset=[%d]\n", this->offsetVec[i]));
 		}
 	}
+	***/
 
 	/***
 	if ( this->insColMap.size() > 0 ) {
@@ -573,7 +575,7 @@ void JagParseParam::addMetrics( const CreateAttribute &pointcattr, int offset, i
 		CreateAttribute cattr;
 		cattr.objName.colName = pointcattr.objName.colName + ":m" + intToStr(i+1);  // col:m1, col:m2, ...
 		//fillStringSubData( cattr, offset, int isKey, int len, int isMute, int isSub )
-		fillStringSubData( cattr, offset, isKey, JAG_METRIC_LEN, 0, true );
+		fillStringSubData( cattr, offset, isKey, JAG_METRIC_LEN, 0, true, false );
 	}
 }
 
@@ -591,10 +593,10 @@ int JagParseParam::addPointColumns( const CreateAttribute &pointcattr )
 	int offset = pointcattr.offset;
 	CreateAttribute cattr;
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
  	addMetrics( pointcattr, offset, iskey );
 	return 2 + pointcattr.metrics;
@@ -612,13 +614,13 @@ int JagParseParam::addPoint3DColumns( const CreateAttribute &pointcattr )
 	int offset = pointcattr.offset;
 	CreateAttribute cattr;
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":z";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
  	addMetrics( pointcattr, offset, iskey );
 
@@ -637,13 +639,13 @@ int JagParseParam::addCircleColumns( const CreateAttribute &pointcattr )
 	int offset = pointcattr.offset;
 	CreateAttribute cattr;
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":a";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
  	addMetrics( pointcattr, offset, iskey );
 
@@ -661,15 +663,15 @@ int JagParseParam::addSquareColumns( const CreateAttribute &pointcattr )
 	int offset = pointcattr.offset;
 	CreateAttribute cattr;
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":a";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	cattr.objName.colName = pointcattr.objName.colName + ":nx";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
  	addMetrics( pointcattr, offset, iskey );
 
@@ -691,42 +693,42 @@ int JagParseParam::addColumns( const CreateAttribute &pointcattr,
 	CreateAttribute cattr;
 	if ( hasX ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":x";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
     
 	if ( hasY ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":y";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
     
 	if ( hasZ ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":z";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
 	if ( hasWidth ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":a";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
     
 	if ( hasDepth ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":b";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
 	if ( hasHeight ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":c";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
     
 	if ( hasNX ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":nx";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
     
 	if ( hasNY ) {
     	cattr.objName.colName = pointcattr.objName.colName + ":ny";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
  	addMetrics( pointcattr, offset, iskey );
@@ -747,28 +749,28 @@ int JagParseParam::addBoxColumns( const CreateAttribute &pointcattr )
 	int offset = pointcattr.offset;
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":z";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":a";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":b";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":c";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":nx";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":ny";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
  	addMetrics( pointcattr, offset, iskey );
 
@@ -787,29 +789,29 @@ int JagParseParam::addCylinderColumns( const CreateAttribute &pointcattr )
 	int offset = pointcattr.offset;
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	// y col
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	// z col
 	cattr.objName.colName = pointcattr.objName.colName + ":z";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	// r col
 	cattr.objName.colName = pointcattr.objName.colName + ":a";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	// height col
 	cattr.objName.colName = pointcattr.objName.colName + ":c";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":nx";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":ny";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
  	addMetrics( pointcattr, offset, iskey );
 	return 5;
@@ -837,7 +839,7 @@ short JagParseParam::checkCmdMode()
 	return 0;
 }
 
-void JagParseParam::fillDoubleSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub )
+void JagParseParam::fillDoubleSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, bool isSub, bool isRollup )
 {
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
@@ -847,7 +849,6 @@ void JagParseParam::fillDoubleSubData( CreateAttribute &cattr, int &offset, int 
 	cattr.sig = JAG_GEOM_PRECISION;
 	if ( iskey ) {
 		*(cattr.spare) = JAG_C_COL_KEY;
-		//this->keyLength += 1+cattr.length;
 		this->keyLength += cattr.length;
 	} else {
 		*(cattr.spare) = JAG_C_COL_VALUE;
@@ -855,53 +856,24 @@ void JagParseParam::fillDoubleSubData( CreateAttribute &cattr, int &offset, int 
 		this->valueLength += cattr.length;
 	}
 	*(cattr.spare+2) = JAG_ASC;
-	if ( isSub ) {
-		*(cattr.spare+6) = JAG_SUB_COL;
-	}
 
 	if ( isMute ) {
 		*(cattr.spare+5) = JAG_KEY_MUTE;
 	}
+
+	if ( isSub ) {
+		*(cattr.spare+6) = JAG_SUB_COL;
+	}
+
+	if ( isRollup ) { *(cattr.spare+7) = JAG_ROLL_UP; }
 
 	this->createAttrVec.append( cattr );
 	cattr.init();
 	offset += JAG_GEOM_TOTLEN;
 }
 
-// modiies cattr,  this->createAttrVec this->keyLength this->valueLength
-void JagParseParam::fillBigintSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub )
-{
-	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
-	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
-	cattr.type = JAG_C_COL_TYPE_DBIGINT;
-	cattr.offset = offset;
-	cattr.length = JAG_DBIGINT_FIELD_LEN;		
-	cattr.sig = 0;
-	if ( iskey ) {
-		*(cattr.spare) = JAG_C_COL_KEY;
-		//this->keyLength += 1+cattr.length;
-		this->keyLength += cattr.length;
-	} else {
-		*(cattr.spare) = JAG_C_COL_VALUE;
-		//this->valueLength += 1+cattr.length;
-		this->valueLength += cattr.length;
-	}
-
-	if ( iskey && isMute ) {
-		*(cattr.spare+5) = JAG_KEY_MUTE;
-	}
-
-	*(cattr.spare+2) = JAG_ASC;
-	if ( isSub ) {
-		*(cattr.spare+6) = JAG_SUB_COL;
-	}
-	this->createAttrVec.append( cattr );
-	cattr.init();
-	offset += JAG_DBIGINT_FIELD_LEN;
-}
-
 // modifies cattr,  this->createAttrVec this->keyLength this->valueLength
-void JagParseParam::fillIntSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub )
+void JagParseParam::fillIntSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub, bool isRollup )
 {
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
@@ -911,29 +883,30 @@ void JagParseParam::fillIntSubData( CreateAttribute &cattr, int &offset, int isk
 	cattr.sig = 0;
 	if ( iskey ) {
 		*(cattr.spare) = JAG_C_COL_KEY;
-		//this->keyLength += 1+cattr.length;
 		this->keyLength += cattr.length;
 	} else {
 		*(cattr.spare) = JAG_C_COL_VALUE;
-		//this->valueLength += 1+cattr.length;
 		this->valueLength += cattr.length;
 	}
 
+	*(cattr.spare+2) = JAG_ASC;
 	if ( iskey && isMute ) {
 		*(cattr.spare+5) = JAG_KEY_MUTE;
 	}
 
-	*(cattr.spare+2) = JAG_ASC;
 	if ( isSub ) {
 		*(cattr.spare+6) = JAG_SUB_COL;
 	}
+
+	if ( isRollup ) { *(cattr.spare+7) = JAG_ROLL_UP; }
+
 	this->createAttrVec.append( cattr );
 	cattr.init();
 	offset += JAG_DINT_FIELD_LEN;
 }
 
 // modifies cattr,  this->createAttrVec this->keyLength this->valueLength
-void JagParseParam::fillSmallIntSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub )
+void JagParseParam::fillSmallIntSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub, bool isRollup )
 {
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
@@ -951,21 +924,25 @@ void JagParseParam::fillSmallIntSubData( CreateAttribute &cattr, int &offset, in
 		this->valueLength += cattr.length;
 	}
 
+	*(cattr.spare+2) = JAG_ASC;
+
 	if ( iskey && isMute ) {
 		*(cattr.spare+5) = JAG_KEY_MUTE;
 	}
 
-	*(cattr.spare+2) = JAG_ASC;
 	if ( isSub ) {
 		*(cattr.spare+6) = JAG_SUB_COL;
 	}
+
+	if ( isRollup ) { *(cattr.spare+7) = JAG_ROLL_UP; }
+
 	this->createAttrVec.append( cattr );
 	cattr.init();
 	offset += JAG_DSMALLINT_FIELD_LEN;
 }
 
 
-void JagParseParam::fillStringSubData( CreateAttribute &cattr, int &offset, int isKey, int len, int isMute, int isSub )
+void JagParseParam::fillStringSubData( CreateAttribute &cattr, int &offset, int isKey, int len, int isMute, int isSub, bool isRollup )
 {
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
@@ -975,29 +952,30 @@ void JagParseParam::fillStringSubData( CreateAttribute &cattr, int &offset, int 
 	cattr.sig = 0;
 	if ( isKey ) {
 		*(cattr.spare) = JAG_C_COL_KEY;
-		//this->keyLength += 1+cattr.length;
 		this->keyLength += cattr.length;
 	} else {
 		*(cattr.spare) = JAG_C_COL_VALUE;
-		//this->valueLength += 1+cattr.length;
 		this->valueLength += cattr.length;
 	}
 
 	*(cattr.spare+2) = JAG_RAND;
-	if ( isSub ) {
-		*(cattr.spare+6) = JAG_SUB_COL;
-	}
 
 	if ( isMute ) {
 		*(cattr.spare+5) = JAG_KEY_MUTE;
 	}
+
+	if ( isSub ) {
+		*(cattr.spare+6) = JAG_SUB_COL;
+	}
+
+	if ( isRollup ) { *(cattr.spare+7) = JAG_ROLL_UP; }
 
 	this->createAttrVec.append( cattr );
 	cattr.init();
 	offset += len;
 }
 
-void JagParseParam::fillRangeSubData( int colLen, CreateAttribute &cattr, int &offset, int iskey, int isSub )
+void JagParseParam::fillRangeSubData( int colLen, CreateAttribute &cattr, int &offset, int iskey, int isSub, bool isRollup )
 {
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
@@ -1024,10 +1002,15 @@ void JagParseParam::fillRangeSubData( int colLen, CreateAttribute &cattr, int &o
 		*(cattr.spare) = JAG_C_COL_VALUE;
 		this->valueLength += cattr.length;
 	}
+
 	*(cattr.spare+2) = JAG_ASC;
+
 	if ( isSub ) {
 		*(cattr.spare+6) = JAG_SUB_COL;
 	}
+
+	if ( isRollup ) { *(cattr.spare+7) = JAG_ROLL_UP; }
+
 	this->createAttrVec.append( cattr );
 	cattr.init();
 	offset += colLen;
@@ -1045,27 +1028,25 @@ int JagParseParam::addLineColumns( const CreateAttribute &pointcattr, bool is3D 
 	int offset = pointcattr.offset;
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x1";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y1";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	if ( is3D ) {
 		cattr.objName.colName = pointcattr.objName.colName + ":z1";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
-	/////////////////////////////////////////
-
 	cattr.objName.colName = pointcattr.objName.colName + ":x2";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y2";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	if ( is3D ) {
 		cattr.objName.colName = pointcattr.objName.colName + ":z2";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
  	addMetrics( pointcattr, offset, iskey );
@@ -1085,14 +1066,14 @@ int JagParseParam::addLineStringColumns( const CreateAttribute &pointcattr, bool
 	int offset = pointcattr.offset;
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	if ( is3D ) {
 		cattr.objName.colName = pointcattr.objName.colName + ":z";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
  	addMetrics( pointcattr, offset, iskey );
@@ -1112,14 +1093,14 @@ int JagParseParam::addPolygonColumns( const CreateAttribute &pointcattr, bool is
 	int offset = pointcattr.offset;
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	if ( is3D ) {
 		cattr.objName.colName = pointcattr.objName.colName + ":z";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
  	addMetrics( pointcattr, offset, iskey );
@@ -1140,36 +1121,36 @@ int JagParseParam::addTriangleColumns( const CreateAttribute &pointcattr, bool i
 	int offset = pointcattr.offset;
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x1";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y1";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	if ( is3D ) {
 		cattr.objName.colName = pointcattr.objName.colName + ":z1";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x2";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y2";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	if ( is3D ) {
 		cattr.objName.colName = pointcattr.objName.colName + ":z2";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
 
 	cattr.objName.colName = pointcattr.objName.colName + ":x3";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	cattr.objName.colName = pointcattr.objName.colName + ":y3";
-	fillDoubleSubData( cattr, offset, iskey, 0 );
+	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
 	if ( is3D ) {
 		cattr.objName.colName = pointcattr.objName.colName + ":z3";
-		fillDoubleSubData( cattr, offset, iskey, 0 );
+		fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 	}
  	addMetrics( pointcattr, offset, iskey );
 
@@ -1191,11 +1172,11 @@ int JagParseParam::addRangeColumns( int colLen, const CreateAttribute &pointcatt
 	//prt(("s3832 addRangeColumns srid=%d\n", cattr.srid ));
 
 	cattr.objName.colName = pointcattr.objName.colName + ":begin";
-	fillRangeSubData( colLen, cattr, offset, iskey );
+	fillRangeSubData( colLen, cattr, offset, iskey, true, false );
 
 	cattr.srid = pointcattr.srid;
 	cattr.objName.colName = pointcattr.objName.colName + ":end";
-	fillRangeSubData( colLen, cattr, offset, iskey );
+	fillRangeSubData( colLen, cattr, offset, iskey, true, false );
 
 	return 2;
 }
@@ -1266,5 +1247,45 @@ void JagParseParam::initJoinColMap()
 	if ( joinColMap == NULL ) {
 		joinColMap = new JagHashStrInt();
 	}
+}
+
+// window: "window(5m, col)"
+bool JagParseParam::isWindowValid( const Jstr &window )
+{
+	prt(("p12232 window=[%s]\n", window.s() ));
+	Jstr params = window.substrc('(', ')');
+	prt(("p12238 params=[%s]\n", params.s() ));
+	if ( params.size() < 1 ) return false;
+
+	
+	if ( ! params.containsChar(',') ) return false;
+	params.replace(',', ' ' );
+	JagStrSplit sp(params, ' ', true);
+
+	Jstr w = sp[0];
+	Jstr col = sp[1];
+
+	char lastc = w.lastChar();
+	if ( lastc == 's' || lastc == 'm' || lastc == 'h' || lastc == 'd'
+	     || lastc == 'w' || lastc == 'M' || lastc == 'q' || lastc == 'y' || lastc == 'D' ) {
+	} else {
+		prt(("p21109 wrong period\n"));
+		return false;
+	}
+
+	prt(("p2330 col=[%s]\n", col.s() ));
+	return isValidCol( col.s() );
+}
+
+bool JagParseParam::getWindowPeriod( const Jstr &window, Jstr &period, Jstr &colName )
+{
+	Jstr params = window.substrc('(', ')');
+	if ( params.size() < 1 ) return false;
+	if ( ! params.containsChar(',') ) return false;
+	params.replace(',', ' ' );
+	JagStrSplit sp(params, ' ', true);
+	period = sp[0];
+	colName = sp[1];
+	return true;
 }
 

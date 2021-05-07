@@ -252,6 +252,7 @@ jagint JagDiskArrayBase::flushBufferToNewFile( const JagDBMap *pairmap )
 }
 
 
+// check conditon
 bool JagDiskArrayBase::checkSetPairCondition( const JagDBServer *servobj, const JagRequest &req, const JagDBPair &pair, char *buffers[], 
 												bool uniqueAndHasValueCol, 
 												ExprElementNode *root, const JagParseParam *parseParam, int numKeys, 
@@ -267,9 +268,9 @@ bool JagDiskArrayBase::checkSetPairCondition( const JagDBServer *servobj, const 
 	Jstr 			treetype = " ";
 	const JagSchemaAttribute* attrs[1];
 
-	jagint _KVLEN = KLEN + VLEN;
-	char 		*tbuf = (char*)jagmalloc(_KVLEN+1);
-	memset( tbuf, 0, _KVLEN+1 );
+	jagint KVLEN = KLEN + VLEN;
+	char 		*tbuf = (char*)jagmalloc(KVLEN+1);
+	memset( tbuf, 0, KVLEN+1 );
 	attrs[0] = schAttr;
 	
 	memcpy(buffers[0], pair.key.c_str(), KLEN);
@@ -288,8 +289,8 @@ bool JagDiskArrayBase::checkSetPairCondition( const JagDBServer *servobj, const 
 										  treetype, treelength, needInit, 0, 0 ) == 1 ) {
 				memset(tbuf+schAttr[setposlist[i]].offset, 0, schAttr[setposlist[i]].length);	
 				rc = formatOneCol( req.session->timediff, servobj->servtimediff, tbuf, strres.c_str(), errmsg, 
-					parseParam->updSetVec[i].colName, schAttr[setposlist[i]].offset, 
-					schAttr[setposlist[i]].length, schAttr[setposlist[i]].sig, schAttr[setposlist[i]].type );
+								   parseParam->updSetVec[i].colName, schAttr[setposlist[i]].offset, 
+								   schAttr[setposlist[i]].length, schAttr[setposlist[i]].sig, schAttr[setposlist[i]].type );
 				if ( !rc ) {
 					free( tbuf );
 					return false;

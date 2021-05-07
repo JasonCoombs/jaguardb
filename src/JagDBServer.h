@@ -40,7 +40,6 @@ class JagIndexSchema;
 class JagCfg;
 class JagUserID;
 class JagUserRole;
-//class JagReadWriteLock;
 class JagBlockLock;
 class JagHashLock;
 class JagServerObjectLock;
@@ -56,6 +55,8 @@ class JagStrSplitWithQuote;
 class JagIPACL;
 class JagDBLogger;
 class JagMergeReader;
+class JagFamilyKeyChecker;
+class JagDBMap;
 
 template <class Pair> class JagVector;
 
@@ -108,6 +109,7 @@ class JagDBServer
 	void processLocalBackup( const char *pmesg, const JagRequest &req );
 	void processRemoteBackup( const char *pmesg, const JagRequest &req );
 	void processRestoreRemote( const char *pmesg, const JagRequest &req );
+	void trimTimeSeries();
 	void repairCheck( const char *pmesg, const JagRequest &req );
 	void addCluster( const char *pmesg, const JagRequest &req );
 	void addClusterMigrate( const char *pmesg, const JagRequest &req );
@@ -165,9 +167,8 @@ class JagDBServer
 	int			_faultToleranceCopy;
 	int			_isSSD;
 	int			_memoryMode;
-	int			servtimediff;
+	int			servtimediff; // minutes
 	jagint		_connections;
-	//jagint		_sea_records_limit;
 	jagint		_jdbMonitorTimedoutPeriod;
 	jagint		_hashRebalanceLen;
 	jaguint		_xferInsert;
@@ -205,35 +206,29 @@ class JagDBServer
 
   protected:
 	static int isValidInternalCommand( const char *mesg );
-	static void processInternalCommands( int op, const JagRequest &req, JagDBServer *servobj, const char *pmesg ); 
+	void processInternalCommands( int op, const JagRequest &req, const char *pmesg ); 
 	static int isSimpleCommand( const char *mesg );
-	static int createTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
-							Jstr &reterr, jagint threadQueryTime );
-    static int createMemTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
-								Jstr &reterr, jagint threadQueryTime );
-	static int createIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, JagParseParam *parseParam, 
-							JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, jagint threadQueryTime );
-    static int createIndexSchema( const JagRequest &req, JagDBServer *servobj, JagTable* ptab, const Jstr &dbname, 
-							JagParseParam *parseParam, Jstr &reterr );
-	static int dropTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-							JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime );
-	static int dropIndex( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-						  JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime );
-	static int truncateTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-							  JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime );
-    static int renameColumn( JagRequest &req, JagDBServer *servobj, const Jstr &dbname, 
-							  const JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime, jagint &thrdSchemaTime );
-	static int importTable( JagRequest &req, JagDBServer *servobj, const Jstr &dbname,
-							JagParseParam *parseParam, Jstr &reterr );
-	static int doInsert( JagDBServer *servobj, JagRequest &req, JagParseParam &parseParam, Jstr &reterr, const Jstr &oricmd );
-	static int processMultiSingleCmd( JagRequest &req, const char *mesg, jagint msglen, 
-									  JagDBServer *servobj, jagint &threadSchemaTime, jagint &threadHostTime, 
-									  jagint threadQueryTime, bool redoOnly, int isReadOrWriteCommand );
-	static int joinObjects( const JagRequest &req, JagDBServer *servobj, JagParseParam *parseParam, Jstr &reterr );
-	static jagint processCmd( JagRequest &req, JagDBServer *servobj, const char *cmd, 
-							  JagParseParam &parseParam, Jstr &rr, jagint threadQueryTime, jagint &threadSchemaTime );
-	static bool doAuth( JagRequest &req, JagDBServer *servobj, char *pmesg );
-	static bool useDB( JagRequest &req, JagDBServer *servobj, char *pmesg );
+	int createTable( JagRequest &req, const Jstr &dbname, JagParseParam *parseParam, 
+					Jstr &reterr, jagint threadQueryTime );
+	int createSimpleTable( const JagRequest &req, const Jstr &dbname, const JagParseParam *parseParam );
+	int dropSimpleTable( const JagRequest &req, const JagParseParam *parseParam, Jstr &err, bool lockSchema );
+    int createMemTable( JagRequest &req, const Jstr &dbname, JagParseParam *parseParam, 
+						Jstr &reterr, jagint threadQueryTime );
+	int createIndex( JagRequest &req, const Jstr &dbname, JagParseParam *parseParam, 
+					JagTable *&ptab, JagIndex *&pindex, Jstr &reterr, jagint threadQueryTime );
+    int createIndexSchema( const JagRequest &req, const Jstr &dbname, JagParseParam *parseParam, Jstr &reterr, bool lockSch );
+	int dropTable( JagRequest &req, JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime, Jstr &timeSeries);
+	int dropIndex( JagRequest &req, const Jstr &dbname, 
+				   JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime, Jstr &tser );
+	int truncateTable( JagRequest &req, JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime );
+    int alterTable( const JagParseAttribute &jpa, JagRequest &req, const Jstr &dbname, 
+				    const JagParseParam *parseParam, Jstr &reterr, jagint threadQueryTime, jagint &thrdSchemaTime );
+	int importTable( JagRequest &req, const Jstr &dbname, JagParseParam *parseParam, Jstr &reterr );
+	int joinObjects( const JagRequest &req, JagParseParam *parseParam, Jstr &reterr );
+	jagint processCmd( const JagParseAttribute &jpa, JagRequest &req,  const char *cmd, JagParseParam &parseParam, 
+					  Jstr &rr, jagint threadQueryTime, jagint &threadSchemaTime );
+	bool doAuth( JagRequest &req, char *pmesg );
+	bool useDB( JagRequest &req, char *pmesg );
     static void helpPrintTopic( const JagRequest &req );
     static void helpTopic( const JagRequest &req, const char *topic );
     static void showDatabases(JagCfg *cfg, const JagRequest &req );
@@ -248,49 +243,44 @@ class JagDBServer
     static void showAllIndexes( const JagRequest &req, const JagParseParam &pparm, const JagIndexSchema *indexschema, 
 								const Jstr &dbname );
     static void _showIndexes( const JagRequest &req, const JagIndexSchema *indexschema, const Jstr &dbtable );
-    static int  describeTable( int obType, const JagRequest &req, const JagDBServer *servobj, JagTable *ptab, 
-								const JagTableSchema *tableschema, 
-		const Jstr &dbtable, const JagParseParam &parseParam, bool showCreate=false );
-    static void _describeTable( const JagRequest &req, JagTable *ptab, const JagDBServer *servobj, 
-								const Jstr &dbtable, int keyOnly );
+    Jstr  describeTable( int obType, const JagRequest &req, const JagTableSchema *tableschema, 
+					     const Jstr &dbtable, bool showDetail, bool showCreate, bool forRollup, const Jstr &retainTser );
+    void _describeTable( const JagRequest &req, const Jstr &dbtable, int keyOnly );
     static void sendNameValueData( const JagRequest &req, const Jstr &name, const Jstr &value );
     static void sendValueData( const JagParseParam &parseParam, const JagRequest &req );
-    static void describeIndex( const JagParseParam &parseParam, const JagRequest &req, const JagDBServer *servobj, 
-								const JagIndexSchema *indexschema, 
-								const Jstr &dbname, const Jstr &indexName, Jstr &reterr );
-	//static void refreshSchemaInfo( const JagRequest &req, JagDBServer *servobj, jagint &schtime );
-	static void refreshSchemaInfo( int replicateType, JagDBServer *servobj, jagint &schtime );
-	static void sendUpDown( const JagRequest &req, JagDBServer* servobj, const Jstr &dbtab );
-	static void dropAllTablesAndIndexUnderDatabase( const JagRequest &req, JagDBServer* servobj,
-												    JagTableSchema *schema, const Jstr &dbname );
-	static void dropAllTablesAndIndex( const JagRequest &req, JagDBServer* servobj,
-										JagTableSchema *schema );
+    Jstr describeIndex( bool showDetail, const JagRequest &req, const JagIndexSchema *indexschema, 
+						 const Jstr &dbname, const Jstr &indexName, Jstr &reterr, bool showCreate, bool forRollup, const Jstr &retainTser );
+	void refreshSchemaInfo( int replicateType, jagint &schtime );
+	void sendUpDown( const JagRequest &req, const Jstr &dbtab );
+	void dropAllTablesAndIndexUnderDatabase( const JagRequest &req, JagTableSchema *schema, const Jstr &dbname );
+	void dropAllTablesAndIndex( const JagRequest &req, JagTableSchema *schema );
 	static void addTask(  jaguint taskID, JagSession *session, const char *mesg );
-	static void removeTask( JagDBServer *servobj );
-	static void completeTask( JagDBServer *servobj );
-	static void showTask( const JagRequest &req, JagDBServer *servobj );
+	void removeTask( );
+	void completeTask( );
+	void showTask( const JagRequest &req );
 	static void noLinger( const JagRequest &req );
-	static void showClusterStatus( const JagRequest &req, JagDBServer *servobj);
-	static void showDatacenter( const JagRequest &req, JagDBServer *servobj);
-	static void showTools( const JagRequest &req, JagDBServer *servobj);
+	void showClusterStatus( const JagRequest &req );
+	void showDatacenter( const JagRequest &req );
+	void showTools( const JagRequest &req );
 	void logCommand( const JagParseParam *ppram, JagSession *session, const char *mesg, jagint len, int spMode );
 	static void dinsertlogCommand( JagSession *session, const char *mesg, jagint len );
 	void deltalogCommand( int mode, JagSession *session, const char *mesg, bool isBatch );
 	static void regSplogCommand( JagSession *session, const char *mesg, jagint len, int spMode );
-	static void doCreateIndex( JagTable *ptab, JagIndex *pindex, JagDBServer *servobj );	
-	static void changeDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
-	static void createDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
-	static void dropDB( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
-	static void createUser( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
-	static void dropUser( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
-	static void changePass( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam, jagint threadQueryTime );
-	static void showUsers( const JagRequest &req, JagDBServer *servobj );
+	void doCreateIndex( JagTable *ptab, JagIndex *pindex );	
+	void changeDB( JagRequest &req, JagParseParam &parseParam, jagint threadQueryTime );
+	void createDB( JagRequest &req, JagParseParam &parseParam, jagint threadQueryTime );
+	void dropDB( JagRequest &req, JagParseParam &parseParam, jagint threadQueryTime );
+	void createUser( JagRequest &req, JagParseParam &parseParam, jagint threadQueryTime );
+	void dropUser( JagRequest &req, JagParseParam &parseParam, jagint threadQueryTime );
+	void changePass( JagRequest &req, JagParseParam &parseParam, jagint threadQueryTime );
+	void showUsers( const JagRequest &req );
 	static void	*oneThreadGroupTask( void *servptr );
    	static void	*oneClientThreadTask( void *passptr );
-   	static void	*makeTableObjects( void *servptr, bool restoreInsertBuffer = false );
+   	void	makeTableObjects( bool restoreInsertBuffer = false );
    	static void	*monitorCommandsMem( void *sessionptr );
    	static void	*monitorLog( void *sessionptr );
    	static void	*monitorRemoteBackup( void *sessionptr );
+   	static void	*monitorTimeSeries( void *sessionptr );
    	static void	*threadRemoteBackup( void *sessionptr );
    	static void	*threadRestoreRemote( void *sessionptr );
 	static void *joinRequestStatic( void * ptr );
@@ -300,20 +290,19 @@ class JagDBServer
 	static void hashJoinStaticGetMap( ParallelJoinPass *pass );
 	static void mergeJoinGetData( ParallelJoinPass *pass );
 	static void *copyDataToNewDCStatic( void * ptr );
-	static Jstr getLocalHostIP( JagDBServer *servobj, const Jstr &allhosts );
-	static Jstr getClusterOpInfo( const JagRequest &req, JagDBServer *servobj);
+	Jstr getLocalHostIP( const Jstr &allhosts );
+	Jstr getClusterOpInfo( const JagRequest &req );
 	static Jstr srcDestType( int isGate, const Jstr &destType );
-	void   getDestHostPortType( const Jstr &inLine, Jstr& host, Jstr& port, 
-								Jstr& destType );
+	void   getDestHostPortType( const Jstr &inLine, Jstr& host, Jstr& port, Jstr& destType );
 	void printResources();
-	static void grantPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, jagint threadQueryTime );
-	static void revokePerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parsParam, jagint thrdQueryTime );
-	static void showPerm( JagRequest &req, JagDBServer *servobj, const JagParseParam &parseParam, jagint thrdQueryTime );
-	static bool checkUserCommandPermission( JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
+	void grantPerm( JagRequest &req, const JagParseParam &parseParam, jagint threadQueryTime );
+	void revokePerm( JagRequest &req, const JagParseParam &parsParam, jagint thrdQueryTime );
+	void showPerm( JagRequest &req, const JagParseParam &parseParam, jagint thrdQueryTime );
+	bool checkUserCommandPermission( const JagSchemaRecord *srec, const JagRequest &req, 
 											const JagParseParam &parseParam, int i, Jstr &rowFilter, 
 											Jstr &reterr );
-	static void noGood( JagRequest &req, JagDBServer *servobj, JagParseParam &parseParam );
-	static int processSimpleCommand( int simplerc, JagRequest &req, char *pmesg, JagDBServer *servobj, int &authed );
+	void noGood( JagRequest &req, JagParseParam &parseParam );
+	int processSimpleCommand( int simplerc, JagRequest &req, char *pmesg, int &authed );
 	static int advanceLeftTable( JagMergeReader *jntr, const JagHashStrInt **maps, char *jbuf[], int numKeys[], jagint sklen[],
 								 const JagSchemaAttribute *attrs[], JagParseParam *pram, const char *buffers[] );
 	static int advanceRightTable( JagMergeReader *jntr, const JagHashStrInt **maps, char *jbuf[], int numKeys[], jagint sklen[],
@@ -322,7 +311,6 @@ class JagDBServer
 	static void rePositionMessage( JagRequest &req, char *&pmesg, jagint &len );
 
 
-	// object methods
 	int mainInit();
 	int mainClose();
 	int initObjects();
@@ -364,8 +352,8 @@ class JagDBServer
 													JagTable *iptab, JagIndex *ipindex );
 	void flushAllTableAndRelatedIndexsInsertBuffer();
 	jagint redoDinsertLog( const Jstr &fpath );
-	jagint redoLog( const Jstr &fpath );
-	jagint redoLog( FILE *fp, bool isTopLevel );
+	jagint redoWalLog( const Jstr &fpath );
+	jagint redoWalLog( FILE *fp, bool isTopLevel );
 	Jstr 	getTaskIDsByThreadID( jagint threadID );
 	JagTableSchema *getTableSchema( int replicateType ) const;
 	void 	getTableIndexSchema( int replicateType, JagTableSchema *& tableschema, JagIndexSchema *&indexschema );
@@ -379,7 +367,7 @@ class JagDBServer
 	long 	getDataCenterQueryCount( const Jstr &ip, bool doLock );
 	void 	refreshUserDB( jagint seq );
 	void 	refreshUserRole( jagint seq );
-	Jstr  	fillDescBuf( const JagSchema *schema, const JagColumn &column, const Jstr &dbobj ) const;
+	Jstr  	fillDescBuf( const JagSchema *schema, const JagColumn &column, const Jstr &dbobj, bool doCvt, bool &doneCvt ) const;
 	int 	processSelectConstData( const JagRequest &req, const JagParseParam *parseParam );
 	Jstr 	columnProperty(const char *ctype, int srid, int metrics ) const;
 	void 	logBatchInsertCommand( const JagRequest &req, const JagParseParam* pparam, const Jstr &insertMsg );
@@ -388,6 +376,34 @@ class JagDBServer
 
 	int     broadcastSchemaToClients();
 	int     broadcastHostsToClients();
+
+	int processMultiSingleCmd( JagRequest &req, const char *mesg, jagint msglen, 
+							  jagint &threadSchemaTime, jagint &threadHostTime, 
+							  jagint threadQueryTime, bool redoOnly, int isReadOrWriteCommand );
+	int  doInsert( JagRequest &req, JagParseParam &parseParam, Jstr &reterr, const Jstr &oricmd );
+	void insertToTimeSeries( const JagSchemaRecord &schrec, const JagRequest &req, JagParseParam &pParam, const Jstr &tser, 
+							 const Jstr &dbName, const Jstr &tableName,
+	                         const JagTableSchema *tableschema, int replicateType, const Jstr &oricmd );
+	int createTimeSeriesTables( const JagRequest &req, const Jstr &timeSeries, const Jstr &dbname, const Jstr &dbtable,
+	                             const JagParseAttribute &jpa, Jstr &reterr );
+	void dropTimeSeriesTables( const JagRequest &req, const Jstr &timeSeries, const Jstr &dbname, const Jstr &dbtable,
+	                             const JagParseAttribute &jpa, Jstr &reterr );
+
+	void createTimeSeriesIndexes( const JagParseAttribute &jpa, const JagRequest &req,
+	                              const JagParseParam &parseParam, const Jstr &timeSeries, Jstr &reterr );
+
+	int createSimpleIndex( const JagRequest &req, JagParseParam *parseParam,
+	                       JagTable *&ptab, JagIndex *&pindex, Jstr &reterr );
+
+	int dropSimpleIndex( const JagRequest &req, const JagParseParam *parseParam, Jstr &reterr, bool lockSchema );
+	void dropTimeSeriesIndexes( const JagRequest &req, const JagParseAttribute &jpa,
+	                            const Jstr &parentTabName, const Jstr &parentIndexName, const Jstr &timeSeries );
+
+	jagint trimWalLogFile( const JagTable *ptab, const Jstr &db, const Jstr &tab,
+	                       const JagDBMap *insertBufferMap, const JagFamilyKeyChecker *keyChecker );
+    jagint doTrimWalLogFile( const JagTable *ptab, const Jstr &fpath, const Jstr &dbname, const JagDBMap *insertBufferMap, 
+							 const JagFamilyKeyChecker *keyChecker );
+
 
 	// data members
 	int		_threadGroups;

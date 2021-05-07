@@ -158,6 +158,7 @@ bool JagGeo::doPointWithin( const JagStrSplit &sp1, const Jstr &mk2, const Jstr 
 		double lon = meterToLon( srid2, r, x, y);
 		double lat = meterToLat( srid2, r, x, y);
 		// return pointWithinCircle( px0, py0, x, y, r, strict );
+		prt(("s222203 x=%f y=%f  r=%f srid2=%d lon=%f  lat=%f\n", x, y, r, srid2, lon, lat ));
 		return pointWithinEllipse( px0, py0, x, y, lon, lat, 0.0, strict );
 	} else if ( colType2 == JAG_C_COL_TYPE_ELLIPSE ) {
 		double x0 = jagatof( sp2[JAG_SP_START+0] ); 
@@ -1926,11 +1927,14 @@ bool JagGeo::pointWithinCircle( double px, double py, double x0, double y0, doub
 bool JagGeo::pointWithinEllipse( double px0, double py0, double x0, double y0, 
 									double w, double h, double nx, bool strict )
 {
+	prt(("s2330 pointWithinEllipse px0=%f py0=%f   x0=%f  y0=%f  w=%f  h=%f  nx=%f strict=%d\n", px0, py0, x0, y0, w,h, nx, strict )); 
 	if ( jagIsZero(w) || jagIsZero(h) ) {
+		prt(("s22202 w or h is zero\n"));
 		return false;
 	}
 
 	if (  bound2DDisjoint( px0, py0, 0.0,0.0, x0, y0, w,h ) ) { 
+		prt(("s24202 bound2disjoin \n"));
 		return false; 
 	}
 
@@ -1938,6 +1942,7 @@ bool JagGeo::pointWithinEllipse( double px0, double py0, double x0, double y0,
 	transform2DCoordGlobal2Local( x0, y0, px0, py0, nx, px, py );
 
 	if ( px < -w || px > w || py < -h || py > h ) {
+		prt(("s220299 3 false\n"));
 		return false;
 	}
 	double f = px*px/(w*w) + py*py/(h*h);
@@ -1947,6 +1952,7 @@ bool JagGeo::pointWithinEllipse( double px0, double py0, double x0, double y0,
 		if ( jagLE(f, 1.0) ) return true; 
 	}
 
+	prt(("s30339 false\n"));
 	return false;
 }
 
@@ -3794,7 +3800,7 @@ bool JagGeo::polygonIntersectLineString( const Jstr &mk1, const JagStrSplit &sp1
 		seg.key.x2 =  points[i].x2; seg.key.y2 =  points[i].y2;
 		seg.color = points[i].color;
 		/**
-		prt(("s0088 seg print:\n" )); seg.println();
+		//prt(("s0088 seg print:\n" )); seg.println();
 		**/
 
 		if ( JAG_LEFT == points[i].end ) {
@@ -11672,8 +11678,10 @@ double JagGeo::distance( double fx, double fy, double gx, double gy, int srid )
 		const Geodesic& geod = Geodesic::WGS84();
 		// (fx fy) = ( lon, lat)
 		geod.Inverse(fy, fx, gy, gx, res ); 
+		prt(("s41108 wgs84 JagGeo::distance fx=%.3f fy=%.3f gx=%.3f gy=%.3f res=%.4f\n", fx, fy, gx, gy, res ));
 	} else {
 		res = sqrt( (fx-gx)*(fx-gx) + (fy-gy )*(fy-gy) );
+		prt(("s41109 plain JagGeo::distance fx=%.3f fy=%.3f gx=%.3f gy=%.3f res=%.4f\n", fx, fy, gx, gy, res ));
 	}
 
 	return res;
@@ -14667,9 +14675,12 @@ bool JagGeo::distance( const JagFixString &inlstr, const JagFixString &inrstr, c
 
 	JagStrSplit co1( sp1[0], '=' );
 	if ( co1.length() < 4 ) return 0;
-	//JagStrSplit co2( sp2[JAG_SP_START+0], '=' );
+
 	JagStrSplit co2( sp2[0], '=' );
 	if ( co2.length() < 4 ) return 0;
+
+	prt(("s44942 co1.print  co2.print\n"));
+
 	Jstr mark1 = co1[0]; // CJAG or OJAG
 	Jstr mark2 = co2[0];
 
@@ -14682,7 +14693,8 @@ bool JagGeo::distance( const JagFixString &inlstr, const JagFixString &inrstr, c
 
 	int srid1 = jagatoi( co1[1].c_str() );
 	int srid2 = jagatoi( co2[1].c_str() );
-	int srid;
+	prt(("s444401 srid1=%d srid2=%d\n", srid1, srid2 ));
+	int srid = srid1;
 	if ( 0 == srid1 ) {
 		srid = srid2;
 	} else if ( 0 == srid2 ) {
@@ -14695,6 +14707,7 @@ bool JagGeo::distance( const JagFixString &inlstr, const JagFixString &inrstr, c
 	//sp2.shift();
 	prt(("s4872 colType1=[%s]\n", colType1.c_str() ));
 	prt(("s4872 colType2=[%s]\n", colType2.c_str() ));
+	prt(("s4872 srid=[%d]\n", srid ));
 
 	if ( colType1 == JAG_C_COL_TYPE_POINT ) {
 		return doPointDistance( mark1, sp1, mark2, colType2, sp2, srid, arg, dist );
@@ -14822,6 +14835,9 @@ bool JagGeo::distance( const JagFixString &inlstr, const JagFixString &inrstr, c
 bool JagGeo::doPointDistance(const Jstr& mk1, const JagStrSplit& sp1, const Jstr& mk2, const Jstr& colType2,
 										 const JagStrSplit& sp2, int srid, const Jstr& arg, double &dist)
 {
+	prt(("s33303 JagGeo::doPointDistance \n"));
+	prt(("s33349 arg=[%s] srid=%d\n", arg.s(), srid ));
+
 	double px0 = jagatof( sp1[JAG_SP_START+0].c_str() ); 
 	double py0 = jagatof( sp1[JAG_SP_START+1].c_str() ); 
 	if ( colType2 == JAG_C_COL_TYPE_POINT ) {

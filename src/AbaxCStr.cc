@@ -108,10 +108,12 @@ AbaxCStr::AbaxCStr(const char* str, size_t slen, size_t capacity )
 // copy constructor
 AbaxCStr::AbaxCStr(const AbaxCStr& str)
 {
+	/**
 	if ( str._readOnly ) {
 		printf(("s2222827 error AbaxCStr::AbaxCStr called on readOnly string\n"));
 		exit(44);
 	}
+	**/
 
 	_readOnly = false;
 	initmem( str.length_ );
@@ -141,10 +143,13 @@ AbaxCStr::~AbaxCStr()
 // const AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s) 
 AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s) 
 {
+	/***
 	if ( s._readOnly ) {
 		printf(("s223827 error AbaxCStr::= called on readOnly string\n"));
+		abort();
 		exit(48);
 	}
+	***/
 
 	if ( this == &s ) {
 		return *this;
@@ -166,7 +171,7 @@ AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s)
 
 AbaxCStr& AbaxCStr::operator+= ( const AbaxCStr &str )
 {
-	if ( str._readOnly ) {
+	if ( _readOnly ) {
 		printf(("s223820 error AbaxCStr::+= called on readOnly string\n"));
 		exit(49);
 	}
@@ -587,41 +592,6 @@ void AbaxCStr::allocMoreMemory( int len2 )
 		nseg_ = newSegs;
 		//printf("s222093 buf_ realloc %d bytes\n", newSegs * ASTRSIZ );
 	}
-
-
-	/**
-	if (  newLen > nseg_ * ASTRSIZ )
-	{
-		int  newSegs = int( newLen/ASTRSIZ ) +1;
-		buf_ = (char*)realloc( buf_, newSegs * ASTRSIZ );
-		memset(buf_+length_, 0, len2 );
-		nseg_ = newSegs;
-	}
-	**/
-}
-
-// private
-void AbaxCStr::replaceself( char *databuf, int datalen ) 
-{
-	//int i=0;
-	if (  datalen  > nseg_ * ASTRSIZ )
-	{
-		int  newSegs = int( datalen/ASTRSIZ ) +1;
-		//char *pnew = new char[ newSegs * ASTRSIZ ];
-		char *pnew = (char*)malloc( newSegs * ASTRSIZ );
-		memcpy(pnew, databuf, datalen );
-		if ( buf_ ) free(buf_);
-		buf_ = pnew;
-		nseg_ = newSegs;
-		length_ = datalen;
-		buf_[length_] = '\0';
-	}
-	else
-	{
-		memcpy(buf_, databuf, datalen );
-		length_ = datalen;
-		buf_[length_] = '\0';
-	}
 }
 
 // how many times c occur in the string
@@ -638,7 +608,6 @@ AbaxCStr AbaxCStr::substr(int start, int len ) const
 {
 	return AbaxCStr(buf_+start, len );
 }
-
 
 // 0 1 2 3 4 5
 AbaxCStr AbaxCStr::substr(int start ) const
@@ -872,7 +841,7 @@ const char * AbaxCStr::secondTokenStart( char sep )
 
 // buf_ "anan(kddddd)llsk"
 // startc='('  endc=')'
-AbaxCStr AbaxCStr::substr( char startc, char endc )
+AbaxCStr AbaxCStr::substrc( char startc, char endc ) const
 {
 	const char *p = buf_;
 	while ( *p != startc && *p != '\0' ) ++p;
@@ -900,10 +869,28 @@ bool  AbaxCStr::isNotNull() const
 	return false;
 }
 
-bool AbaxCStr::containsChar( char c )
+bool AbaxCStr::containsChar( char c ) const
 {
 	if ( buf_[0] == '\0' ) return false;
 	if ( strchr( buf_, c ) ) return true;
+	return false;
+}
+
+bool AbaxCStr::containsStr( const char *substr ) const
+{
+	if ( buf_[0] == '\0' ) return false;
+	if ( strstr( buf_, substr) ) return true;
+	return false;
+}
+
+bool AbaxCStr::containsStrCase( const char *substr, AbaxCStr &ret ) const
+{
+	if ( buf_[0] == '\0' ) return false;
+	char *p = strcasestr( buf_, substr);
+	if ( p ) {
+		ret = AbaxCStr(p, strlen(substr) );
+		return true;
+	}
 	return false;
 }
 
@@ -947,4 +934,24 @@ void AbaxCStr::setDtype( const char *typ )
 	if ( len > 3 ) { len = 3; }
 	memcpy( dtype, typ, len );
 }
+
+char  AbaxCStr::firstChar() const
+{
+	return buf_[0];
+}
+
+char  AbaxCStr::lastChar() const
+{
+	return buf_[length_-1];
+}
+
+AbaxCStr  AbaxCStr::lastCharStr() const
+{
+	char buf[2];
+	buf[0] =  buf_[length_-1];
+	buf[1] = '\0';
+	return AbaxCStr( buf );
+}
+
+
 

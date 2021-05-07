@@ -93,7 +93,7 @@ bool JagDiskKeyChecker::removeKey( const char *key )
 	return _keyCheckArr->remove( pair );
 }
 
-bool JagDiskKeyChecker::exist( const char *key )
+bool JagDiskKeyChecker::exist( const char *key ) const
 {
 	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	char ukey[_UKLEN+1];

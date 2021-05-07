@@ -55,6 +55,8 @@ class JagServerObjectLock
 	JagTable *writeLockTable( jagint opcode, const Jstr &db, const Jstr &table, const JagTableSchema *tschema, int repType, bool lockSelfLevel=0 );
 	int writeUnlockTable( jagint opcode, const Jstr &db, const Jstr &table, int repType, bool lockSelfLevel=0 );
 
+	JagTable *getTable( jagint opcode, const Jstr &db, const Jstr &table, const JagTableSchema *tschema, int repType );
+
 	JagTable *writeTruncateTable( jagint opcode, const Jstr &dbName, const Jstr &tableName, 
 		const JagTableSchema *tschema, int replicateType, bool lockSelfLevel=0 );
 
@@ -65,6 +67,7 @@ class JagServerObjectLock
 							  const JagTableSchema *tschema, const JagIndexSchema *ischema, int replicateType, bool lockSelfLevel=0 );
 	int writeUnlockIndex( jagint opcode, const Jstr &dbName, const Jstr &tableName, const Jstr &indexName,
 						  int replicateType, bool lockSelfLevel=0 );
+    JagIndex *getIndex( const Jstr &dbName, const Jstr &indexName, int replicateType );
 		
 	Jstr getAllTableNames( int replicateType );
 

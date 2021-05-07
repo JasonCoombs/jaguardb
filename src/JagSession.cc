@@ -54,9 +54,8 @@ JagSession::~JagSession()
 void JagSession::createTimer()
 {
 	if ( samePID ) return;
-	// hasTimer = 1;
-	// todo disable
-	// jagpthread_create( &threadTimer, NULL, sessionTimer, (void*)this );
+	hasTimer = 1;
+	jagpthread_create( &threadTimer, NULL, sessionTimer, (void*)this );
 }
 
 // separate thread to set timer and send HB
@@ -64,7 +63,7 @@ void *JagSession::sessionTimer( void *ptr )
 {
 	JagSession *sess = (JagSession*)ptr;
 	while ( !sess->sessionBroken ) {
-		jagsleep(15, JAG_SEC); 
+		jagsleep(10, JAG_SEC); 
 		if ( sess->active ) {
 			sendMessageLength2( sess, "Y", 1, "HB" );
 		}

@@ -96,7 +96,7 @@ bool JagFixKeyChecker::removeKey( const char *key )
 	return _keyCheckArr->remove( ukey );
 }
 
-bool JagFixKeyChecker::exist( const char *key )
+bool JagFixKeyChecker::exist( const char *key ) const
 {
 	//JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	char ukey[_UKLEN+1]; jagint idx;

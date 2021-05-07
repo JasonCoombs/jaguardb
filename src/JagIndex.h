@@ -35,12 +35,7 @@ class JagIndex
   	~JagIndex();
 	inline int getnumCols() { return _numCols; }
 	inline int getnumKeys() { return _numKeys; }
-	inline bool needUpdate( const Jstr &colName ) {
-		Jstr dbcolumn = _dbname + "." + _indexName + "." + colName;
-		int getpos;
-		if ( _indexmap->getValue(dbcolumn, getpos) ) return 1;
-		else return 0;
-	}
+	bool needUpdate( const Jstr &colName ) const;
 	void getlimitStart( jagint &startlen, jagint limitstart, jagint& soffset, jagint &foffset );
 	inline Jstr getdbName() { return _dbname; }
 	inline Jstr getTableName() { return _tableName; }	
@@ -51,7 +46,7 @@ class JagIndex
 	inline const JagSchemaRecord* getIndexRecord() { return &_indexRecord; }
 
 	bool getPair( JagDBPair &pair );
-	int insertPair( JagDBPair &pair, int &insertCode, bool direct=false );
+	int insertPair( JagDBPair &pair );
 	int removePair( const JagDBPair &pair );
 	int updateFromTable( const char *tableoldbuf, const char *tablenewbuf );
 	int removeFromTable( const char *tablebuf );
@@ -67,6 +62,7 @@ class JagIndex
 	void 	setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, char *buffers[] );
 
 	int 	formatIndexCmdFromTable( const char *tablebuf, int type );
+
 
 	JagDiskArrayFamily *_darrFamily;
 	Jstr 			_dbobj;
@@ -95,7 +91,6 @@ class JagIndex
 	Jstr 			_indexName;
 
 	void 			init( bool buildInitIndex );
-	//void 	destory();
 	
 };
 

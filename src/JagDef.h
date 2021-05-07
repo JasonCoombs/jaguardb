@@ -19,44 +19,23 @@
 #ifndef _jag_def_h_
 #define _jag_def_h_
 
-#define JAG_BRAND  "jaguar"
-#define JAG_VERSION			"3.1.2"
-// File Defs
-#define JAG_ARRLEN_INIT			32
+#define JAG_VERSION			"3.2.0"
 #define JAG_BLOCK_SIZE			32
 #define JAG_ARJAG_FILE_HEAD  		0
-#define JAG_FORCE_RESIZE_EXPAND		20
-#define JAG_FILE_RAND_EXPAND		66  // maximum is 66. Do not exceed 66, optimized, do not change
-#define JAG_FILE_OTHER_EXPAND		40  // must be the multiple of tens, can not exceed 90
-#define JAG_FILE_OTHER_EXPAND_MAX	95
-#define JAG_FILE_SHRINK			0
-#define JAG_PARTIAL_RESIZE_HALF		3   // optimized, do not change
-
-#define JAG_INSERTMERGE_BLOCK_RATIO 20  // optimized, do not change
 #define JAG_BID_FILE_HEADER_BYTES	64
-
 #define JAG_REPLICATE_MAX			3
 #define JAG_KEYCHECKER_KLEN		    22
 #define JAG_KEYCHECKER_VLEN		    2
 #define JAG_BYTE_MAX				255
-#define JAG_TWOBYTES_MAX			65535
 
-#define JAG_INSERTMERGE_GAP			3   // optimized, do not change
 #define JAG_HOTSPOT_MINLIMIT        0.3
 #define JAG_HOTSPOT_LIMIT           0.7
 #define JAG_UPDOWN_LIMIT            100
-#define JAG_RANDOM_RESIZE_PERCENT   0.9 // must be greater than 0.33
-#define JAG_CYCLERIGNT_SMALL_PERC   0.7 // must be greater than 0.33
-#define JAG_CYCLERIGNT_LARGE_PERC   0.55 // must be greater than 0.33
-#define JAG_STRICT_ASC_RESIZE_GAP   4 // must be greater than or equal to 1
-#define JAG_STRICT_CYCLERIGHT_RESIZE_GAP 2
-#define JAG_CYCLE_RIGHT_RESIZE_GAP  1 // must be greater than or equal to 1
 
 #define JAG_RANDOM_FILE_LIMIT		1000000
 
 #define JAG_STRICT_ASCENDING        1
 #define JAG_STRICT_RANDOM           2
-#define JAG_CYCLE_LEFT              3
 #define JAG_CYCLE_RIGHT_SMALL       4
 #define JAG_CYCLE_RIGHT_LARGE       5
 #define JAG_STRICT_ASCENDING_LEFT   6
@@ -78,9 +57,6 @@
 #define JAG_LOG_MED			5
 #define JAG_LOG_MEDHIGH		7
 #define JAG_LOG_HIGH		9
-
-#define JAG_LOAD_PREV_RANDOM 1000
-#define JAG_LOADFILE_SPLIT_NUM	100
 
 #define JAG_GETFILE_SIZE 	1
 #define JAG_GETFILE_TIME 	2
@@ -164,13 +140,6 @@
 #define JAG_EXEC_KILL_OP		540
 #define JAG_EXEC_CHECK_OP		550
 #define JAG_EXEC_CHECKALL_OP	560
-#define JAG_EXEC_RMONE_OP		570
-#define JAG_EXEC_UPLOAD_OP		572
-#define JAG_EXEC_GETELEM_OP		574
-#define JAG_EXEC_RESIZE_OP		576
-#define JAG_EXEC_RESIZEF_OP		578
-#define JAG_EXEC_RESIZEFB_OP	580
-#define JAG_EXEC_FINDOF_OP		582
 #define JAG_EXEC_PKEY_OP		584
 #define JAG_EXEC_PUBKEY_OP		586
 
@@ -224,29 +193,35 @@
 
 // schema and actual data Defs
 // cannot be changed
+#define JAG_C_COL_TYPE_DATE			"r"
+#define JAG_C_COL_TYPE_TIME			"h"
+#define JAG_C_COL_TYPE_TIMENANO		"H"
+#define JAG_C_COL_TYPE_TIMESTAMPSEC	"C"  // seconds
+#define JAG_C_COL_TYPE_DATETIMESEC	"c"  // seconds
+#define JAG_C_COL_TYPE_TIMESTAMPMILL "L"  // milliseconds
+#define JAG_C_COL_TYPE_DATETIMEMILL	"l"  // milliseconds
+#define JAG_C_COL_TYPE_DATETIME		"T"  // microseconds
+#define JAG_C_COL_TYPE_TIMESTAMP	"t"  // microseconds
+#define JAG_C_COL_TYPE_TIMESTAMPNANO "N" // nanoseconds
+#define JAG_C_COL_TYPE_DATETIMENANO	"n"  // nanoseconds
+
 #define JAG_C_COL_TYPE_STR			"s"
 #define JAG_C_COL_TYPE_FLOAT		"f"
 #define JAG_C_COL_TYPE_DOUBLE		"d"
-#define JAG_C_COL_TYPE_DATETIME		"t"
-#define JAG_C_COL_TYPE_TIMESTAMP	"m"
-#define JAG_C_COL_TYPE_TIMESTAMPNANO "g"
-#define JAG_C_COL_TYPE_TIME			"h"
-#define JAG_C_COL_TYPE_DATETIMENANO	"N"
-#define JAG_C_COL_TYPE_TIMENANO		"n"
-#define JAG_C_COL_TYPE_DATE			"r"
+#define JAG_C_COL_TYPE_LONGDOUBLE	"D"
 #define JAG_C_COL_TYPE_UUID			"u"
 #define JAG_C_COL_TYPE_FILE			"F"
 #define JAG_C_COL_TYPE_ENUM			"e"
-#define JAG_C_COL_TYPE_DBOOLEAN		"R"
-#define JAG_C_COL_TYPE_DBIT			"A"
-#define JAG_C_COL_TYPE_DINT			"I"
-#define JAG_C_COL_TYPE_DTINYINT		"T"
-#define JAG_C_COL_TYPE_DSMALLINT	"S"
-#define JAG_C_COL_TYPE_DMEDINT		"M"
+#define JAG_C_COL_TYPE_DBOOLEAN		"E"
+#define JAG_C_COL_TYPE_DBIT			"b"
 #define JAG_C_COL_TYPE_DBIGINT		"B"
+#define JAG_C_COL_TYPE_DINT			"I"
+#define JAG_C_COL_TYPE_DSMALLINT	"i"
+#define JAG_C_COL_TYPE_DTINYINT		"j"
+#define JAG_C_COL_TYPE_DMEDINT		"m"
 
 // geometry types
-// saved in schema 
+// saved in schema  -- immutable
 #define JAG_DEFAULT_SRID            0
 #define JAG_C_COL_TYPE_POINT		"PT"
 #define JAG_C_COL_TYPE_POINT3D		"PT3"
@@ -294,9 +269,13 @@
 #define JAG_C_NEG_SIGN		'-'
 #define JAG_C_POS_SIGN		'0'
 
+// do not change
+#define JAG_TIME_FIELD_LEN			12
+#define JAG_DATETIMESEC_FIELD_LEN	11
 #define JAG_DATETIME_FIELD_LEN		17
 #define JAG_TIMESTAMP_FIELD_LEN		17
-#define JAG_TIME_FIELD_LEN			12
+#define JAG_TIMESTAMPMILL_FIELD_LEN	14
+#define JAG_DATETIMEMILL_FIELD_LEN	14
 #define JAG_DATETIMENANO_FIELD_LEN	20
 #define JAG_TIMESTAMPNANO_FIELD_LEN	20
 #define JAG_TIMENANO_FIELD_LEN		15
@@ -320,10 +299,12 @@
 #define JAG_DSMALLINT_FIELD_LEN		6
 #define JAG_DMEDINT_FIELD_LEN		8
 #define JAG_DBIGINT_FIELD_LEN		20
-#define JAG_DOUBLE_FIELD_LEN		40
-#define JAG_FLOAT_FIELD_LEN		    36
-#define JAG_DOUBLE_SIG_LEN		    10
+#define JAG_DOUBLE_FIELD_LEN		22
+#define JAG_DOUBLE_SIG_LEN		    7
+#define JAG_FLOAT_FIELD_LEN		    10
 #define JAG_FLOAT_SIG_LEN		    6
+#define JAG_LONGDOUBLE_FIELD_LEN	24
+#define JAG_LONGDOUBLE_SIG_LEN		8
 
 // Key mode
 #define JAG_ASC				'a'
@@ -331,25 +312,41 @@
 #define JAG_RAND			'r'
 
 #define JAG_CREATE_DEFINSERTVALUE	'I'
-#define JAG_CREATE_DEFUPDATETIME	'U'
-#define JAG_CREATE_DEFUPDATETIMENANO	'N'
-#define JAG_CREATE_DEFUPDATE		'u'
-#define JAG_CREATE_DEFENUMVALUE		'E'
+#define JAG_CREATE_DEFDATE			'D'
+#define JAG_CREATE_DEFDATETIMESEC	'S'
 #define JAG_CREATE_DEFDATETIME		'T'
 #define JAG_CREATE_DEFDATETIMENANO	't'
-#define JAG_CREATE_DEFDATE			'D'
-#define JAG_CREATE_UPDATETIME		'P'
-#define JAG_CREATE_UPDATETIMENANO	'G'
-#define JAG_CREATE_UPDDATE			'F'
+#define JAG_CREATE_DEFDATETIMEMILL	'm'
+
+#define JAG_CREATE_UPDATE_DATE		'F'  
+#define JAG_CREATE_UPDATE_DATETIMESEC	's' 
+#define JAG_CREATE_UPDATE_DATETIME		'P' 
+#define JAG_CREATE_UPDATE_DATETIMEMILL	'L' 
+#define JAG_CREATE_UPDATE_DATETIMENANO	'G' 
+
+#define JAG_CREATE_DEFUPDATE_DATE	'u' 
+#define JAG_CREATE_DEFUPDATE_DATETIMESEC	'n' 
+#define JAG_CREATE_DEFUPDATE_DATETIME	'U'   
+#define JAG_CREATE_DEFUPDATE_DATETIMEMILL	'm' 
+#define JAG_CREATE_DEFUPDATE_DATETIMENANO	'N' 
 
 #define JAG_FLOATDEF				10
 #define JAG_FLOATDEFSIG				2
 #define JAG_DOUBLEDEF				16
 #define JAG_DOUBLEDEFSIG			4
+#define JAG_LONGDOUBLEDEF			20
+#define JAG_LONGDOUBLEDEFSIG		5
 
 #define JAG_KEY_HASH			    ' '
 #define JAG_KEY_MUTE			    'M'
 #define JAG_SUB_COL			        's'
+#define JAG_ROLL_UP			        'r'
+
+#define JAG_ROLLUP_AVG		        'a'
+#define JAG_ROLLUP_SUM		        's'
+#define JAG_ROLLUP_MIN		        'm'
+#define JAG_ROLLUP_MAX		        'M'
+#define JAG_ROLLUP_COUNT 	        'c'
 
 // Operation Defs
 // table function default defs
@@ -357,6 +354,7 @@
 #define JAG_FUNC_CURDATE_LEN		10
 #define JAG_FUNC_CURTIME_LEN		8
 #define JAG_FUNC_NOW_LEN			19
+#define JAG_FUNC_NOW_LEN_MILL		23
 #define JAG_FUNC_NOW_LEN_MICRO		26
 #define JAG_FUNC_NOW_LEN_NANO		29
 
@@ -365,6 +363,7 @@
 #define JAG_LOGIC_OR			'O'
 
 // calculation operators
+// can be changed
 #define JAG_NUM_ADD			'+'
 #define JAG_NUM_SUB			'-'
 #define JAG_NUM_MULT		'*'
@@ -377,6 +376,7 @@
 #define JAG_LEFT_BRA			40 // '(' letter
 #define JAG_FUNC_NOOP			0 // global no operation
 
+// JAG_FUNC_* can be changed
 // one-line data, cannot combine with multi-line data ( aggregate functions )
 #define JAG_FUNC_MIN			10 // special type, can hold both string and numeric
 #define JAG_FUNC_MAX			20 // special type, can hold both string and numeric
@@ -516,6 +516,7 @@
 
 
 // string functions 
+// mutable
 #define JAG_FUNC_SUBSTR			390  // substr(str, offset, len)  substr(str, offset )
 #define JAG_FUNC_UPPER			391
 #define JAG_FUNC_LOWER			392
@@ -526,12 +527,14 @@
 #define JAG_FUNC_LINELENGTH		397
 
 // date and time
+// mutable
 #define JAG_FUNC_SECOND			400 // 0-59
 #define JAG_FUNC_MINUTE			402 // 0-59
 #define JAG_FUNC_HOUR			404 // 0-23
-#define JAG_FUNC_DATE			406 // 1-31
+#define JAG_FUNC_DAY			406 // 1-31
 #define JAG_FUNC_MONTH			408 // 1-12
 #define JAG_FUNC_YEAR			410 // yyyy
+#define JAG_FUNC_DATE			412 // "yyyy-mm-dd"
 #define JAG_FUNC_DATEDIFF		422 // expr1-expr2 number of days diff
 #define JAG_FUNC_DAYOFMONTH		424 // 1-31; 0 for empty
 #define JAG_FUNC_DAYOFWEEK		426 // 0: sunday  6: saturday
@@ -544,18 +547,22 @@
 #define JAG_FUNC_TOMICROSECOND	440 
 
 #define JAG_FUNC_MILETOMETER	442 
-#define JAG_FUNC_PI				444 
+#define JAG_FUNC_METERTOMILE	446 
+#define JAG_FUNC_KILOMETERTOMILE	448 
+#define JAG_FUNC_MILETOKILOMETER	450 
 
+
+#define JAG_FUNC_PI				800 
 
 // = != < <= > >= like calculation
-#define JAG_FUNC_EQUAL			500 // =
-#define JAG_FUNC_NOTEQUAL		502 // != <> ><
-#define JAG_FUNC_LESSTHAN		504 // <
-#define JAG_FUNC_LESSEQUAL		506 // <=
-#define JAG_FUNC_GREATERTHAN	508 // >
-#define JAG_FUNC_GREATEREQUAL	510 // >=
-#define JAG_FUNC_LIKE			512 // like %
-#define JAG_FUNC_MATCH			514 // like %
+#define JAG_FUNC_EQUAL			900 // =
+#define JAG_FUNC_NOTEQUAL		902 // != <> ><
+#define JAG_FUNC_LESSTHAN		904 // <
+#define JAG_FUNC_LESSEQUAL		906 // <=
+#define JAG_FUNC_GREATERTHAN	908 // >
+#define JAG_FUNC_GREATEREQUAL	910 // >=
+#define JAG_FUNC_LIKE			912 // like %
+#define JAG_FUNC_MATCH			914 // like %
 
 // client side connect options
 #define JAG_CLI_CHILD			1
@@ -567,12 +574,14 @@
 
 // limit defs
 // max number of columns a table can have
+// mutable
 #define JAG_COL_MAX			4096
 
 #define JAG_ONEFILESIGNAL	7
 #define JAG_MEGABYTEUNIT	1048576
 
 // max length of each column name in bytes
+// mutable
 #define JAG_COLNAME_LENGTH_MAX 32
 
 #define JAG_SESSIONID_MAX		32
@@ -581,6 +590,7 @@
 #define JAG_ERR_MSG_LEN			256
 
 // client other defs
+// mutable
 #define JAG_ORDERBY_READFROM_JDA	   1
 #define JAG_ORDERBY_READFROM_MEMARR    2
 #define JAG_ORDERBY_READFROM_DISKARR   3
@@ -593,24 +603,16 @@
 // threadid
 #define THREADID			pthread_self()
 
-// resize pattern
-#define JAG_EEEV			25
-#define JAG_EEV				33
-#define JAG_EV				50
-#define JAG_EVV				66
-#define JAG_EVVV			75
-#define JAG_EVVVV			80
-#define JAG_EVVVVV			90
-
 // conf file type
 #define JAG_SERVER			10
 #define JAG_CLIENT			20
 
 
 // schema kvlen
+// not mutable
 #define JAG_SCHEMA_KEYLEN    		128
 #define JAG_SCHEMA_VALLEN    		10240
-#define JAG_SCHEMA_SPARE_LEN 	    16
+#define JAG_SCHEMA_SPARE_LEN 	    32
 
 #define JAG_MAX_DBNAME          64
 
@@ -622,13 +624,8 @@
 #define JAG_END_RECVONE_THEN_DONE_ERR  3
 
 #define JAG_END_NOQUERY_BUT_REPLY      4
-
-// #define JAG_END_GOT_DBPAIR          3
 #define JAG_END_GOT_DBPAIR             8
-
-// #define JAG_END_GOT_DBPAIR_AND_ORDERBY 4
 #define JAG_END_GOT_DBPAIR_AND_ORDERBY    7
-
 #define JAG_END_SENDQUERY_LOADLOCK        9
 
 // export types
@@ -659,7 +656,7 @@
 #define JAG_USEC	2
 
 // client send batch records
-//#define CLIENT_SEND_BATCH_RECORDS  50000
+// mutable
 #define CLIENT_SEND_BATCH_RECORDS  10000
 
 // MEMORY_MODE values
@@ -680,6 +677,7 @@
 
 
 // user permissons
+// not mutable
 #define JAG_ROLE_SELECT  "S"
 #define JAG_ROLE_INSERT  "I"
 #define JAG_ROLE_UPDATE  "U"
@@ -691,11 +689,11 @@
 #define JAG_ROLE_ALL     "*"
 
 // point max len buffer size
-#define JAG_POINT_LEN  40
+#define JAG_POINT_LEN  20
 
 // geometry point in decimal 
-#define JAG_GEOM_TOTLEN     40
-#define JAG_GEOM_PRECISION  10
+#define JAG_GEOM_TOTLEN     20
+#define JAG_GEOM_PRECISION  6
 
 // geo type srid
 #define JAG_GEO_WGS84     4326
@@ -755,13 +753,17 @@
 // cannot be changed
 #define JAG_C_COL_TYPE_RANGE    "RG"
 #define JAG_RANGE_DATE          1
-#define JAG_RANGE_TIME          2
-#define JAG_RANGE_DATETIME      4
-#define JAG_RANGE_BIGINT        9
-#define JAG_RANGE_INT           10 
-#define JAG_RANGE_SMALLINT      12 
-#define JAG_RANGE_DOUBLE        14 
-#define JAG_RANGE_FLOAT         16 
+#define JAG_RANGE_TIME          3
+#define JAG_RANGE_DATETIME      6
+#define JAG_RANGE_DATETIMESEC   9
+#define JAG_RANGE_DATETIMEMILL  12 
+#define JAG_RANGE_DATETIMENANO  15 
+#define JAG_RANGE_BIGINT        18 
+#define JAG_RANGE_INT           21 
+#define JAG_RANGE_SMALLINT      24 
+#define JAG_RANGE_DOUBLE        27 
+#define JAG_RANGE_LONGDOUBLE    28 
+#define JAG_RANGE_FLOAT         30 
 
 #define JAG_RANGE_DIM	2   // begin end
 
@@ -784,9 +786,12 @@
 #define  JAG_2D        2
 
 // alter table commands
-#define JAG_SCHEMA_ADD 		10
-#define JAG_SCHEMA_RENAME 	20
-#define JAG_SCHEMA_SET 		30
+#define JAG_SCHEMA_ADD_COLUMN 		10
+#define JAG_SCHEMA_RENAME_COLUMN 	20
+#define JAG_SCHEMA_SET 				30
+#define JAG_SCHEMA_ADD_TICK 		40
+#define JAG_SCHEMA_DROP_TICK 		50
+#define JAG_SCHEMA_CHANGE_RETENTION	60
 
 #define JAG_ZERO  0.00000001
 
@@ -810,9 +815,10 @@
 #define JAG_SOCK_MSG_HDR_LEN       12  // 8 + 4
 #define JAG_SOCK_TOTAL_HDR_LEN     (JAG_SOCK_SQL_HDR_LEN+JAG_SOCK_MSG_HDR_LEN)
 
-// Buffer queue size
-#define JAG_SIMPFILE_LIMIT_KB     (128*1024) 
-#define JAG_SIMPFILE_LIMIT_BYTES  (JAG_SIMPFILE_LIMIT_KB*1024)
+// Buffer queue size == single simpfile size
+#define JAG_SIMPFILE_LIMIT_BYTES  (128*1024*1024)
+
+#define JAG_WALLOG_TRIM_RATIO 0.2
 
 #define JAG_MEET_TIME     1
 #define JAG_OVER_TIME     8
@@ -842,5 +848,12 @@
 #define JAG_MAKE_OBJECTS_CONNECTIONS   0
 #define JAG_MAKE_OBJECTS_ONLY          1
 #define JAG_MAKE_CONNECTIONS_ONLY      2
+
+#define JAG_NUM_TS        9
+#define JAG_STAR          "*"
+#define JAG_STARC         '*'
+
+#define JAG_MILLION       1000000
+#define JAG_BILLION       1000000000
 
 #endif

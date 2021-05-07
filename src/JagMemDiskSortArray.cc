@@ -20,7 +20,6 @@
 
 #include<JagMemDiskSortArray.h>
 #include<JagDataAggregate.h>
-//#include<JagDiskArrayClient.h>
 #include<JagSchemaRecord.h>
 #include<JagBuffBackReader.h>
 #include<JagBuffReader.h>
@@ -164,6 +163,9 @@ int JagMemDiskSortArray::beginWrite()
 	_keylen = _srecord->keyLength;
 	_vallen = _srecord->valueLength;
 	_kvlen = _keylen + _vallen;
+	prt(("s40018 JagMemDiskSortArray::beginWrite parseRecord\n"));
+	prt(("_diskhdr=[%s]\n", _diskhdr.c_str() ));
+
 	return 1;
 }
 int JagMemDiskSortArray::endWrite()
@@ -256,19 +258,25 @@ int JagMemDiskSortArray::insert( JagDBPair &pair )
 int JagMemDiskSortArray::groupByUpdate( const JagDBPair &pair )
 {
 	if ( 1 != _rwtype ) return 0; // not correct sequence calling for write
+
+	prt(("s23301 pair:\n"));
 	
 	int rc;
-	//jagint index;
 	JagDBPair oldpair;
+	prt(("s50031 groupByUpdate _usedisk=%d\n", _usedisk ));
+
 	if ( !_usedisk ) {
-		jagint curbytes = _memarr->_arrlen*(_kvlen);
+		jagint curbytes = _memarr->_arrlen * _kvlen;
 		if ( curbytes < _memlimit ) {
 			oldpair.key = pair.key;
-			rc = _memarr->get( oldpair );
+			rc = _memarr->get( oldpair ); // existing value
+			prt(("s43103 get oldpair rc=%d\n", rc ));
 			if ( !rc ) {
+				prt(("s44022  _memarr->insert\n"));
 				_memarr->insert( pair );
 			} else {
 				groupByValueCalculation( pair, oldpair );
+				prt(("s44023  _memarr->set\n"));
 				_memarr->set( oldpair );
 			}
 			return 1;
@@ -287,13 +295,20 @@ void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBP
 	JagDBPair toldpair = oldpair;
 	char *value = (char*)oldpair.value.c_str();
 	keylen = _srecord->keyLength;
+
+	prt(("s34013 groupByValueCalculation keylen=%d  _srecord->numKeys=%d\n", keylen,  _srecord->numKeys ));
+	prt(("s32031 pair oldpair:\n"));
+
 	for ( int i = _srecord->numKeys; i < _srecord->columnVector->size(); ++i ) {
 		type = (*(_srecord->columnVector))[i].type;
 		func = (*(_srecord->columnVector))[i].func;
-		offset = (*(_srecord->columnVector))[i].offset;
+		offset = (*(_srecord->columnVector))[i].offset - keylen;
 		length = (*(_srecord->columnVector))[i].length;
-		offset -= keylen;
+
+		prt(("s53102 i=%d func=%d offset=%d length=%d func=%d\n", i, func, offset, length, func ));
+
 		if ( func == JAG_FUNC_COUNT ) {
+			prt(("s20031 JAG_FUNC_COUNT\n"));
 			cnt1 = rayatol(value+offset, length);
 			cnt2 = rayatol(pair.value.c_str()+offset, length);
 			cnt = cnt1 + cnt2;
@@ -301,13 +316,17 @@ void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBP
 			save = *(value+offset+length);
 			jagsprintfLongDouble( 1, 1, value+offset, value1, length );
 			*(value+offset+length) = save;
+			prt(("s32103 count final value=[%s] value+offset=[%s]\n", value, value+offset ));
 		} else if ( func == JAG_FUNC_SUM ) {
+			prt(("s20032 JAG_FUNC_SUM\n"));
 			value1 = raystrtold(value+offset, length);
 			value2 = raystrtold(pair.value.c_str()+offset, length);
+			prt(("s32012 value1=%.3f value2=%.3f\n", value1, value2 ));
 			value1 += value2;
 			save = *(value+offset+length);
 			jagsprintfLongDouble( 1, 1, value+offset, value1, length );
 			*(value+offset+length) = save;
+			prt(("s32203 sum final value=[%s] value+offset=[%s]\n", value, value+offset ));
 		} else if ( func == JAG_FUNC_MIN ) {
 			rc = checkColumnTypeMode( type );
 			if ( rc == 2 || rc == 3 || rc == 4 ) { // bool, int, jagint
@@ -352,18 +371,25 @@ void JagMemDiskSortArray::groupByValueCalculation( const JagDBPair &pair, JagDBP
 		} else if ( func == JAG_FUNC_AVG ) {
 			value1 = raystrtold(value+offset, length);
 			value2 = raystrtold(pair.value.c_str()+offset, length);
-			cnt1 = rayatol(toldpair.value.c_str()+(*(_srecord->columnVector))[_srecord->numKeys].offset,
-				(*(_srecord->columnVector))[_srecord->numKeys].length );
-			cnt2 = rayatol(pair.value.c_str()+(*(_srecord->columnVector))[_srecord->numKeys].offset,
-				(*(_srecord->columnVector))[_srecord->numKeys].length );
+
+			int soffset = (*(_srecord->columnVector))[_srecord->numKeys].offset;
+			int slen = (*(_srecord->columnVector))[_srecord->numKeys].length;
+
+			cnt1 = rayatol(toldpair.value.c_str()+soffset, slen ); 
+			cnt2 = rayatol(pair.value.c_str()+soffset, slen );
+
 			value3 = ( value1*cnt1 + value2*cnt2 ) / ( cnt1 + cnt2 );
 			save = *(value+offset+length);
 			jagsprintfLongDouble( 1, 1, value+offset, value3, length );
 			*(value+offset+length) = save;
+			prt(("s31203 avg final value=[%s] value+offset=[%s]\n", value, value+offset ));
 		} else {
 			// nothing to do for other others including stddev
+			prt(("s50031 no func=%d match\n", func ));
 		}
 	}
+
+	prt(("s32035 pair oldpair:\n"));
 }
 
 int JagMemDiskSortArray::setDataLimit( jagint num )

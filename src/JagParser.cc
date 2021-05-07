@@ -36,10 +36,9 @@ JagParser::JagParser( void *obj, bool isCli )
 
 
 // return 0: for error, 1: OK
-bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, 
-							  Jstr &errmsg ) 
+bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, Jstr &errmsg ) 
 {
-	//prt(("\n**************** parseCommand *****************\n"));
+	prt(("\n**************** parseCommand cmd=[%s] *****************\n", cmd.s() ));
 	int cmdcheck;
 	Jstr em;
 	// char *pcmd = strdup(cmd.c_str());
@@ -49,17 +48,17 @@ bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, Jag
 
 	char *origpcmd = pcmd;
 
-	// prt(("s0823 parseSQL(%s) ...\n", pcmd ));
+	prt(("s10823 parseSQL(%s) ...\n", pcmd ));
 	try {
 		cmdcheck = parseSQL( jpa, parseParam, pcmd, cmd.size() );
 	} catch ( int a ) {
 		em = Jstr("Parser exception ") + intToStr( a ) ;
         cmdcheck = 0;
-		parseParam->parseError = a;
+		//parseParam->parseError = a;
 	} catch ( ... ) {
 		em = Jstr("Parser unknown exception");
 		cmdcheck = 0;
-		parseParam->parseError = -1000;
+		//parseParam->parseError = -1000;
 	}
 
 	//prt(("u8820 cmd=[%s] cmdcheck=%d err=[%s] parseSQL done\n", cmd.c_str(), cmdcheck, errmsg.c_str() ));
@@ -69,13 +68,18 @@ bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, Jag
 	free( origpcmd );
 
 	if ( cmdcheck <= 0 ) {
-		errmsg = Jstr("E2028 Error command [") + cmd + "] " + em + " " + intToStr(cmdcheck);
-		parseParam->parseError = cmdcheck;
-		return 0;
+		errmsg = Jstr("E12328 Error [") + cmd + "] " + em + " " + intToStr(cmdcheck) 
+		          + ": " + jagerr(cmdcheck);
+		//parseParam->parseError = cmdcheck;
+		//parseParam->parseOK = 0;
+		return false;
 	}
-	parseParam->parseOK = 1;
-	parseParam->parseError = 0;
-	return 1;
+
+	//parseParam->parseOK = 1;
+	//parseParam->parseError = 0;
+	prt(("s333028 end of parseCommand [%s] \n", cmd.s() ));
+	// parseParam->print();
+	return true;
 }
 
 
@@ -111,7 +115,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 	_gettok = jag_strtok_r(pcmd, " \t\r\n", &_saveptr);
 	if ( !_gettok ) {
 		// empty pcmd
-		rc = -10;
+		rc = -11010;
 	} else if ( strncasecmp(_gettok, "insertsyncdconly|", 17) == 0 ) {
 		_ptrParam->insertDCSyncHost = _gettok;
 		// prt(("s8830 _gettok=[%s]\n", _gettok ));
@@ -120,7 +124,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 
 	if ( !_gettok ) {
 		// empty cmd
-		rc = -10;
+		rc = -11010;
 	} else if ( strcasecmp(_gettok, "select") == 0 ) {
 		_ptrParam->opcode = JAG_SELECT_OP;
 		_ptrParam->optype = 'R';
@@ -255,91 +259,103 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		} else rc = -130;
 	} else if ( strcasecmp(_gettok, "create") == 0 ) {
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-		if ( _gettok ) {	
-			if ( strcasecmp(_gettok, "table") == 0 ) {
-				_ptrParam->opcode = JAG_CREATETABLE_OP;
-				_ptrParam->optype = 'C';
-				_ptrParam->tabidxpos = _saveptr; // command position before table/index name
-				rc = setCreateVector( 0 );
-			} else if ( strcasecmp(_gettok, "memtable") == 0 ) {
-				_ptrParam->opcode = JAG_CREATEMEMTABLE_OP;
-				_ptrParam->optype = 'C';
-				_ptrParam->tabidxpos = _saveptr; // command position before table/index name
-				rc = setCreateVector( 0 );
-			} else if ( strcasecmp(_gettok, "chain") == 0 ) {
-				_ptrParam->opcode = JAG_CREATECHAIN_OP;
-				_ptrParam->optype = 'C';
-				_ptrParam->tabidxpos = _saveptr; // command position before table/index name
-				rc = setCreateVector( 0 );
-			} else if ( strcasecmp(_gettok, "index") == 0 ) {
-				_ptrParam->opcode = JAG_CREATEINDEX_OP;
-				_ptrParam->optype = 'C';
+		if ( ! _gettok ) return -12330;
+		if ( strcasecmp(_gettok, "table") == 0 ) {
+			_ptrParam->opcode = JAG_CREATETABLE_OP;
+			_ptrParam->optype = 'C';
+			_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+			rc = setCreateVector( 0 );
+		} else if ( strcasecmp(_gettok, "memtable") == 0 ) {
+			_ptrParam->opcode = JAG_CREATEMEMTABLE_OP;
+			_ptrParam->optype = 'C';
+			_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+			rc = setCreateVector( 0 );
+		} else if ( strcasecmp(_gettok, "chain") == 0 ) {
+			_ptrParam->opcode = JAG_CREATECHAIN_OP;
+			_ptrParam->optype = 'C';
+			_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+			rc = setCreateVector( 0 );
+		} else if ( strcasecmp(_gettok, "index") == 0 ) {
+			_ptrParam->opcode = JAG_CREATEINDEX_OP;
+			_ptrParam->optype = 'C';
+			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+			if ( ! _gettok ) return -14080;
+
+			if ( 0 == strcasecmp(_gettok, "if") ) {
+				// has "if not exists"
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-				if ( ! _gettok ) rc = -140;
-				else {
-					if ( 0 != strcasecmp(_gettok, "if") ) {
-						_ptrParam->batchFileName = _gettok; // name of index: myindex123
+				if ( _gettok && 0==strcasecmp(_gettok, "not") ) {
+					_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+					if ( _gettok && 0==strncasecmp(_gettok, "exist", 5) ) {
 						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-						if ( _gettok && strcasecmp(_gettok, "on") == 0 ) {
+						if ( ! _gettok ) return -11401;
+						_ptrParam->batchFileName = _gettok;
+						_ptrParam->hasExist = true;
+
+						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+						if  ( ! _gettok ) return -14411;
+
+						if ( 0 == strcasecmp(_gettok, "ticks" ) ) {
+							_ptrParam->value ="ticks";
+							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+							if ( ! _gettok ) return -14423;
+						}
+
+						if ( strcasecmp(_gettok, "on") == 0 ) {
 							_ptrParam->tabidxpos = _saveptr; // command position before table/index name
 							rc = setCreateVector( 1 );
-						} else {
-							rc = -141;
-						}
-					} else {
-						// has "if not exists"
-						////////////////////////////////////
-						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-						if ( _gettok && 0==strcasecmp(_gettok, "not") ) {
-							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-							if ( _gettok && 0==strncasecmp(_gettok, "exist", 5) ) {
-								_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-								if ( _gettok ) {
-									_ptrParam->batchFileName = _gettok;
-									_ptrParam->hasExist = true;
-									_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-									if (  _gettok && strcasecmp(_gettok, "on") == 0 ) {
-										_ptrParam->tabidxpos = _saveptr; // command position before table/index name
-										rc = setCreateVector( 1 );
-									} else rc = -140;
-								} else rc = -1401;
-							} else rc = -1400;
-						} else rc = -1408;
-						////////////////////////////////////
-					}
+						} else rc = -15340;
+					} else rc = -12400;
+				} else rc = -12418;
+			} else {
+				// regular create index command
+				_ptrParam->batchFileName = _gettok; // name of index: myindex123
+				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+				if  ( ! _gettok ) return -14511;
+
+				if ( 0 == strcasecmp(_gettok, "ticks" ) ) {
+					_ptrParam->value ="ticks";
+					_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+					if ( ! _gettok ) return -14423;
 				}
-			} else if ( 0==strncasecmp( _gettok, "database", 8 ) ) {
-				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr); // dbname
-				if ( _gettok ) {
-					_ptrParam->opcode = JAG_CREATEDB_OP;
-					_ptrParam->optype = 'C';
-					_ptrParam->dbName = makeLowerString(_gettok);
-					_ptrParam->dbNameCmd = Jstr("createdb ") + _ptrParam->dbName;
+
+				if ( strcasecmp(_gettok, "on") == 0 ) {
+					_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+					prt(("s50126 setCreateVector index=1\n"));
+					rc = setCreateVector( 1 );
+				} else {
+					rc = -141;
+				}
+			}
+		} else if ( 0==strncasecmp( _gettok, "database", 8 ) ) {
+			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr); // dbname
+			if ( ! _gettok ) return -7097;
+			_ptrParam->opcode = JAG_CREATEDB_OP;
+			_ptrParam->optype = 'C';
+			_ptrParam->dbName = makeLowerString(_gettok);
+			_ptrParam->dbNameCmd = Jstr("createdb ") + _ptrParam->dbName;
+			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+			if ( ! _gettok ) rc = 1;
+			else rc = -7090;
+		} else if ( 0==strncasecmp( _gettok, "user", 4 ) ) {
+			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr); // username:password
+			if ( ! _gettok ) return -7097;
+			_ptrParam->opcode = JAG_CREATEUSER_OP;
+			_ptrParam->optype = 'C';
+			Jstr uidpass(_gettok);
+			JagStrSplit sp( uidpass, ':');
+			if ( sp.size() == 2 &&_ptrParam->uid.size() <= JAG_USERID_LEN ) {
+				_ptrParam->uid = sp[0];
+				_ptrParam->passwd = sp[1];
+				if (  _ptrParam->passwd.size() <= JAG_PASSWD_LEN ) {
+					// _ptrParam->dbName = makeLowerString(_gettok);
+					_ptrParam->dbNameCmd = Jstr("createuser ") + uidpass;
 					_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 					if ( ! _gettok ) rc = 1;
-					else rc = -7090;
-				} else rc = -7097;
-			} else if ( 0==strncasecmp( _gettok, "user", 4 ) ) {
-				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr); // username:password
-				if ( _gettok ) {
-					_ptrParam->opcode = JAG_CREATEUSER_OP;
-					_ptrParam->optype = 'C';
-					Jstr uidpass(_gettok);
-					JagStrSplit sp( uidpass, ':');
-					if ( sp.size() == 2 &&_ptrParam->uid.size() <= JAG_USERID_LEN ) {
-						_ptrParam->uid = sp[0];
-						_ptrParam->passwd = sp[1];
-						if (  _ptrParam->passwd.size() <= JAG_PASSWD_LEN ) {
-							// _ptrParam->dbName = makeLowerString(_gettok);
-							_ptrParam->dbNameCmd = Jstr("createuser ") + uidpass;
-							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-							if ( ! _gettok ) rc = 1;
-							else rc = -7080;
-						} else rc = -7082;
-					} else rc = -7081;
-				} else rc = -7097;
-			} else rc = -200;
-		} else rc = -230;
+					else rc = -7080;
+				} else rc = -7082;
+			} else rc = -7081;
+		} else rc = -200;
 	} else if ( strcasecmp(_gettok, "drop") == 0 ) {
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 		if ( _gettok ) {
@@ -454,7 +470,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				tabname = _gettok;
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 				if ( _gettok && strcasecmp(_gettok, "rename") == 0 ) {
-					_ptrParam->cmd = JAG_SCHEMA_RENAME;
+					_ptrParam->cmd = JAG_SCHEMA_RENAME_COLUMN;
 					_gettok = (char*)tabname.c_str();
 					rc = setTableIndexList( 0 );
 					if ( rc > 0 ) {
@@ -477,7 +493,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						}
 					}
 				} else if ( _gettok && strcasecmp(_gettok, "add") == 0 ) {
-					_ptrParam->cmd = JAG_SCHEMA_ADD;
+					//_ptrParam->cmd = JAG_SCHEMA_ADD_COLUMN;
 					_gettok = (char*)tabname.c_str();
 					rc = setTableIndexList( 0 );
 					if ( rc > 0 ) {
@@ -485,10 +501,56 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						cattr.objName.dbName = _ptrParam->objectVec[0].dbName;
 						cattr.objName.tableName = _ptrParam->objectVec[0].tableName;
 						_gettok = jag_strtok_r(NULL, " (:,)\t\r\n", &_saveptr);
-						if ( !_gettok ) return -410;
-						rc = setOneCreateColumnAttribute( cattr );
-						if ( rc <= 0 ) return rc;
-						_ptrParam->createAttrVec.append( cattr );
+						if ( !_gettok ) return -10410;
+
+						if ( strcasecmp(_gettok, "tick") == 0  ) {
+							_ptrParam->cmd = JAG_SCHEMA_ADD_TICK;
+							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+							if ( ! _gettok ) return -10412;
+							_ptrParam->value = _gettok;
+							_ptrParam->value.remove("()");
+							prt(("p11220 _ptrParam->value=[%s]\n", _ptrParam->value.s() ));
+							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+							if ( !_gettok ) rc = 1; // ended properly
+							else rc = -10413;
+						} else {
+							_ptrParam->cmd = JAG_SCHEMA_ADD_COLUMN;
+							rc = setOneCreateColumnAttribute( cattr );
+							if ( rc <= 0 ) return rc;
+							_ptrParam->createAttrVec.append( cattr );
+						}
+					}
+				} else if ( _gettok && strcasecmp(_gettok, "drop") == 0 ) {
+					_gettok = (char*)tabname.c_str();
+					rc = setTableIndexList( 0 );
+					if ( rc > 0 ) {
+						_gettok = jag_strtok_r(NULL, " (:,)\t\r\n", &_saveptr);
+						if ( !_gettok ) return -10420;
+
+						if ( strcasecmp(_gettok, "tick") == 0  ) {
+							_ptrParam->cmd = JAG_SCHEMA_DROP_TICK;
+							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+							if ( ! _gettok ) return -10422;
+							_ptrParam->value = _gettok;
+							_ptrParam->value.remove("()");
+							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+							if ( !_gettok ) rc = 1; // ended properly
+							else rc = -10423;
+						} else { rc = -10424; }
+					}
+				} else if ( _gettok && strcasecmp(_gettok, "retention") == 0 ) {
+					_gettok = (char*)tabname.c_str();
+					rc = setTableIndexList( 0 );
+					if ( rc > 0 ) {
+						_gettok = jag_strtok_r(NULL, " (:,)\t\r\n", &_saveptr);
+						if ( !_gettok ) return -10420;
+						_ptrParam->value = _gettok;
+						_ptrParam->value.remove("()");
+						_ptrParam->cmd = JAG_SCHEMA_CHANGE_RETENTION;
+
+						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
+						if ( !_gettok ) rc = 1; // ended properly
+						else rc = -10433;
 					}
 				} else if ( _gettok && strcasecmp(_gettok, "set") == 0 ) {
 					_ptrParam->cmd = JAG_SCHEMA_SET;
@@ -563,7 +625,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				_ptrParam->hasForce = true;
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 				if ( ! _gettok ) {
-					return -511;
+					return -10511;
 				}
 				_ptrParam->dbNameCmd += "force ";
 			}
@@ -667,31 +729,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 
 			}
 		} else rc = -650;
-		/***
-	} else if ( strncasecmp(_gettok, "_pkey", 5) == 0 ) {  // not used
-		_ptrParam->opcode = JAG_EXEC_PKEY_OP;
-		_ptrParam->optype = 'D';
-		_ptrParam->tabidxpos = _saveptr; // command position before table/index name
-		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-		if ( _gettok ) {
-			_ptrParam->endtabidxpos = _saveptr; // command position after table/index name
-			rc = setTableIndexList( 0 );
-			if ( rc > 0 ) {
-				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-				if ( !_gettok ) rc = 1;
-				else rc = -641;
-			}
-		} else rc = -651;
-		***/
-		/***
-	// } else if ( strncasecmp(_gettok, "getpubkey", 8) == 0 ) {
-		_ptrParam->opcode = JAG_EXEC_PUBKEY_OP;
-		_ptrParam->optype = 'D';
-		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-		if ( ! _gettok ) {
-			rc = 1;
-		} else rc = -652;
-		***/
 	} else if ( strncasecmp(_gettok, "show", 4) == 0 || strncasecmp(_gettok, "_show", 5) == 0 ) {
 		_ptrParam->optype = 'D';
 		if ( strcasecmp(_gettok, "showusers") == 0 ) {
@@ -717,9 +754,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 								_ptrParam->like.remove( '\'');
 							}
 							rc = 1;
-						} else {
-							rc = -670;
-						}
+						} else { rc = -670; }
 					} else rc = -671;
 				} else if (  strncasecmp( _gettok, "chains", 5 ) == 0 ) {
 					_ptrParam->opcode = JAG_SHOWCHAIN_OP;
@@ -751,9 +786,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 								_ptrParam->like.remove( '\'');
 							}
 							rc = 1;
-						} else {
-							rc = -672;
-						}
+						} else { rc = -672; }
 					} else rc = -700;
 				} else if ( 0==strncasecmp( _gettok, "databases", 8 ) ) {
 					if ( *p == '_' ) _ptrParam->opcode = JAG_EXEC_SHOWDB_OP;
@@ -876,11 +909,9 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 			_ptrParam->opcode = JAG_REVOKE_OP;
 		}
 
-		// _gettok = jag_strtotk_r(NULL, " \t\r\n", &_saveptr);
 		_gettok = strcasestr(_saveptr, "on" );
 		if ( !_gettok ) { rc = -900; }
 		else {
-			// _ptrParam->grantPerm = _gettok;
 			_ptrParam->grantPerm = Jstr( _saveptr, _gettok-_saveptr-1);
 			// prt(("s2139 grantPerm=[%s]\n", _ptrParam->grantPerm.c_str() ));
 			if ( ! isValidGrantPerm( _ptrParam->grantPerm ) ) {
@@ -889,27 +920,23 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				_saveptr = _gettok + 2;
 				// prt(("s3002 _saveptr=[%s]\n", _saveptr ));
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-				if ( ! _gettok ) {
-					rc = -904;
+				if ( ! _gettok ) { rc = -904;
 				} else {
-					if ( ! _gettok ) {
-						rc = -906;
+					if ( ! _gettok ) { rc = -906;
 					} else {
 						_ptrParam->grantObj = makeLowerString(_gettok);
 						if ( ! isValidGrantObj( _ptrParam->grantObj ) ) {
 							rc = -908;
 						} else {
 							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-							if ( ! _gettok ) {
-								rc = -910;
+							if ( ! _gettok ) { rc = -910;
 							} else {
 								// may be to or from
 								if ( 0 == strcasecmp( _gettok, "to" )  ||  0 == strcasecmp( _gettok, "from" ) ) {
 									_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 								}
 
-								if ( ! _gettok ) {
-									rc = -912;
+								if ( ! _gettok ) { rc = -912;
 								} else {
 									_ptrParam->grantUser = _gettok;
 									if ( _ptrParam->grantPerm == JAG_ROLE_SELECT ) {
@@ -935,9 +962,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 														rc = -915;
 													}
 												}
-											} else {
-												rc = -916;
-											}
+											} else { rc = -916; }
 										}
 									} else {
 										_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
@@ -956,7 +981,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 					}
 				}
 			}
-		} 
+		}
 	} else if ( strncmp(_gettok, "_mon_", 5 ) == 0 ) {
 		rc = 1;
 	} else {
@@ -985,7 +1010,7 @@ int JagParser::init( const JagParseAttribute &jpa, JagParseParam *parseParam )
 // return value <= 0 error; 1 OK
 int JagParser::setTableIndexList( short setType )
 {
-	//prt(("s0283 enter JagParser::setTableIndexList() _gettok=[%s] setType=%d ...\n", _gettok, setType ));
+	prt(("s0283 enter JagParser::setTableIndexList() _gettok=[%s] setType=%d ...\n", _gettok, setType ));
 	const char *p, *q;
 	ObjectNameAttribute oname;
 	if ( 0 == setType ) {
@@ -1034,17 +1059,32 @@ int JagParser::setTableIndexList( short setType )
 
 		// table name cannot be "TableSchema" or "IndexSchema"
 		if ( oname.tableName == "TableSchema" || oname.tableName ==  "IndexSchema" ) return -2020;
-		oname.toLower();
+		//oname.toLower();
 		_ptrParam->objectVec.append(oname);
 	} else if ( 1 == setType ) {
+		// create index
+		prt(("s303038 create index 1 == setType  _ptrParam->objectVec.length()=%d\n",  _ptrParam->objectVec.length() ));
+		prt(("s2029 _gettok=[%s]\n", _gettok ));
 		_split.init( _gettok, '.' );
 		if ( _split.length() == 1 && _ptrParam->objectVec.length() == 1 ) {
 			oname.dbName = _ptrParam->objectVec[0].dbName;
 			oname.tableName = _ptrParam->objectVec[0].tableName;
 			oname.indexName = _split[0];
-		} else return -2040;
+		} else if ( _split.length() == 2 && _ptrParam->objectVec.length() == 1 ) {
+			oname.dbName = _ptrParam->objectVec[0].dbName;
+			oname.tableName = _ptrParam->objectVec[0].tableName;
+			oname.indexName = _split[1];
+		} else if ( _split.length() == 3 && _ptrParam->objectVec.length() == 1 ) {
+			oname.dbName = _ptrParam->objectVec[0].dbName;
+			oname.tableName = _ptrParam->objectVec[0].tableName;
+			oname.indexName = _split[2];
+		} else {
+			prt(("s20208 return error -2040\n"));
+			return -2040;
+		}
+
 		if ( oname.indexName == "TableSchema" || oname.indexName ==  "IndexSchema" ) return -2050;
-		oname.toLower();
+		//oname.toLower();
 		_ptrParam->objectVec.append(oname);
 	} else {
 		// check if select from multiple tables/indexs or if cmd is join related
@@ -1067,7 +1107,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _ptrParam->jpa.dfdbname;
 				oname.tableName = _split[0];
 				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				// rebuild query with dbname 
 				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
@@ -1077,7 +1117,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				// rebuild query with dbname 
 				if ( 1 || oname.dbName == oname.colName ) {				
@@ -1093,7 +1133,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.indexName = _split[2];
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				// rebuild query with dbname 
 				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
@@ -1124,14 +1164,14 @@ int JagParser::setTableIndexList( short setType )
 					oname.dbName = _ptrParam->jpa.dfdbname;
 					oname.tableName = _split[0];
 					oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-					oname.toLower();
+					//oname.toLower();
 					_ptrParam->objectVec.append(oname);
 					ttlist += oname.dbName + "." + oname.tableName;
 				} else if ( _split.length() == 2 ) {
 					oname.dbName = _split[0];
 					oname.tableName = _split[1];
 					oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-					oname.toLower();
+					//oname.toLower();
 					_ptrParam->objectVec.append(oname);
 					if ( 1 || oname.dbName == oname.colName ) {
 						ttlist += oname.dbName + "." + oname.tableName;
@@ -1142,7 +1182,7 @@ int JagParser::setTableIndexList( short setType )
 					oname.dbName = _split[0];
 					oname.tableName = _split[1];
 					oname.indexName = _split[2];
-					oname.toLower();
+					//oname.toLower();
 					_ptrParam->objectVec.append(oname);
 					ttlist += oname.dbName + "." + oname.tableName + "." + oname.indexName;
 				} else return -2100;
@@ -1167,7 +1207,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _ptrParam->jpa.dfdbname;
 				oname.tableName = _split[0];
 				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName;
 			} else if ( _split.length() == 2 ) {
@@ -1184,7 +1224,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.indexName = _split[2];
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName + "." + oname.indexName;
 			} else {
@@ -1250,14 +1290,14 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _ptrParam->jpa.dfdbname;
 				oname.tableName = _split[0];
 				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName;
 			} else if ( _split.length() == 2 ) {
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				if ( 1 || oname.dbName == oname.colName ) {
 					ttlist += oname.dbName + "." + oname.tableName;
@@ -1268,7 +1308,7 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.indexName = _split[2];
-				oname.toLower();
+				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName + "." + oname.indexName;
 			} else return -2170;
@@ -1308,7 +1348,7 @@ int JagParser::setTableIndexList( short setType )
 // return value <= 0 error; 1 OK
 int JagParser::getAllClauses( short setType )
 {	
-	//prt(("s6320 getAllClauses setType=%d\n", setType ));
+	prt(("s6320 getAllClauses setType=%d _saveptr=[%s]\n", setType, _saveptr ));
 
 	if ( !_saveptr ) return -2200;
 	while ( isspace(*_saveptr) ) ++_saveptr;
@@ -1320,6 +1360,7 @@ int JagParser::getAllClauses( short setType )
 		char *pcol, *plist, *pwhere, *pgroup, *phaving, *porder, *plimit, *ptimeout, *pexport;
 		// get all column start position
 		pcol = _saveptr;
+		while ( isspace(*pcol) ) ++pcol; // new
 		plist = (char*)strcasestrskipquote( _saveptr, " from " );
 		pwhere = (char*)strcasestrskipquote( _saveptr, " where " );
 		pgroup = (char*)strcasestrskipquote( _saveptr, " group " );
@@ -1408,7 +1449,11 @@ int JagParser::getAllClauses( short setType )
 		if ( pexport ) _ptrParam->selectExportClause = pexport;
 		
 		// trim space at the beginning and end of string
-		if ( pcol ) _ptrParam->selectColumnClause = trimChar( _ptrParam->selectColumnClause, ' ' );
+		prt(("s44130 pcol=[%s]\n", pcol ));
+		if ( pcol && strchr(pcol, ' ') ) {
+			_ptrParam->selectColumnClause = trimChar( _ptrParam->selectColumnClause, ' ' );
+		}
+		prt(("s44130 pcol=[%s]\n", _ptrParam->selectColumnClause.s() ));
 
 		if ( plist ) {
 			_ptrParam->selectTablistClause = trimChar( _ptrParam->selectTablistClause, ' ' );
@@ -1451,6 +1496,7 @@ int JagParser::getAllClauses( short setType )
 			pwhere += 6;
 			while ( isspace(*pwhere) ) ++pwhere;
 		} else return -2250;
+
 		if ( pgroup ) return -2260;		
 		if ( phaving ) return -2270;
 		if ( porder ) return -2280;
@@ -1750,36 +1796,70 @@ int JagParser::setAllClauses( short setType )
 int JagParser::setSelectColumn()
 {
 	//prt(("s48712 setSelectColumn _ptrParam->dbName=[%s]\n",  _ptrParam->dbName.c_str() ));
+	if ( _ptrParam->selectColumnClause.length() < 1 ) return -22440;
 
-	if ( _ptrParam->selectColumnClause.length() < 1 ) return -2440;
+	const char *scc = _ptrParam->selectColumnClause.c_str();
+	// If "select .... window(5m,ccc) ,  from...."  strip "window(5m,ccc) or window(5m,ccc) ,"
+	const char *pwindow = strcasestr( scc, "window(" );
+	if ( pwindow ) {
+		Jstr s1( scc, pwindow-scc);
+		const char *pbra = strchr(pwindow, ')');
+		if ( ! pbra ) return -12347;
+		++pbra;
+		_ptrParam->window = Jstr( pwindow, pbra-pwindow);
+		prt(("s333098 _ptrParam->window=[%s]\n", _ptrParam->window.s() ));
+		if ( ! _ptrParam->isWindowValid(  _ptrParam->window ) ) {
+			prt(("s44401 ! isWindowValid[%s]\n", _ptrParam->window.s() ));
+			return -12350;
+		}
+
+		prt(("s55319 window=[%s] pbra=[%s]\n", _ptrParam->window.s(), pbra ));
+		while ( isspace(*pbra) ) ++pbra;
+		prt(("s200611 pbra=[%s]\n", pbra ));
+		if ( *pbra == ',' ) ++pbra;
+		Jstr rest(pbra);
+		_ptrParam->selectColumnClause = s1 + " " + rest;
+		scc = _ptrParam->selectColumnClause.c_str();
+		prt(("s4420 new scc=[%s]\n", scc ));
+	}
+
+
+	if ( _ptrParam->selectColumnClause.length() < 1 ) return -12440;
 	// select count(*) or select *, no column need to be set
-	if ( strncasecmp(_ptrParam->selectColumnClause.c_str(), "count(*)", 8) == 0 ||
-	     strncasecmp(_ptrParam->selectColumnClause.c_str(), "count()", 7) == 0
+	if ( strncasecmp(scc, "count(*)", 8) == 0 ||
+	     strncasecmp(scc, "count()", 7) == 0
 	   ) {
 	     _ptrParam->hasCountAll = true;
 		if ( JAG_SELECT_OP == _ptrParam->opcode && _ptrParam->selectWhereClause.length() < 1 ) {
 			_ptrParam->opcode = JAG_COUNT_OP;
 			return 1;
 		} else {
-			char *changep = (char*)_ptrParam->selectColumnClause.c_str()+6;
+			char *changep = (char*)scc+6;
 			*changep = '1';
 		}
-	} else if ( *(_ptrParam->selectColumnClause.c_str()) == '*' ) {
+	} else if ( *scc == '*' ) {
 		_ptrParam->_selectStar = true;
 		return 1;
 	}
 
 	char *p, *q, *r;
-	_splitwq.init(_ptrParam->selectColumnClause.c_str(), ',');
-	//int colcnt = 0;
+
+	_splitwq.init(scc, ',');
+
 	for ( int i = 0; i < _splitwq.length(); ++i ) {
-		// SelColAttribute selColTemp;
+		r = (char*)_splitwq[i].c_str();
+		prt(("s5012 r=[%s]\n", r ));
+		if ( 0==strncasecmp(r, "window(", 7) ) {
+			prt(("s3389449 got window( skip  windows=[%s]\n", r ));
+			_ptrParam->window = r;
+			continue;
+		}
+
 		SelColAttribute selColTemp(_ptrParam);
 		selColTemp.init( _ptrParam->jpa );
 		_ptrParam->selColVec.append(selColTemp);
 		_ptrParam->selColVec[i].tree->init( _ptrParam->jpa, _ptrParam );
-		r = (char*)_splitwq[i].c_str();
-		// prt(("s5012 r=[%s]\n", r ));
+
 		if ( (p = (char*)strcasestrskipquote(r, " as ")) ) {
 			// remove unnecessary spaces at the end of select tree
 			q = p;
@@ -1804,10 +1884,9 @@ int JagParser::setSelectColumn()
 			}
 		}
 		
-		//prt(("s5013 p=[%s] r=[%s]\n", p, r ));
+		prt(("s5013 p=[%s] r=[%s]\n", p, r ));
 		if ( p - r != 0 ) { // has separate as name
-			_ptrParam->selColVec[i].name =  makeLowerString(r);
-			// *(p-1) = '\0';
+			_ptrParam->selColVec[i].name = r;
 			// remove unnecessary spaces at the end of select tree
 			q = p;
 			--p; while ( isspace(*p) ) --p; ++p; *p = '\0';
@@ -1824,16 +1903,18 @@ int JagParser::setSelectColumn()
 				_ptrParam->selColVec[i].givenAsName = 1;
 			}
 			while ( isspace(*q) ) ++q;
+			prt(("s22013 asName=[%s]\n", _ptrParam->selColVec[i].asName.s() ));
 			if ( *q != '\0' ) return -2480;	
 		} else { // as name as whole
-			_ptrParam->selColVec[i].asName = makeLowerString(r);
-			_ptrParam->selColVec[i].name = _ptrParam->selColVec[i].asName;
+			_ptrParam->selColVec[i].asName = r;
+			// _ptrParam->selColVec[i].name = _ptrParam->selColVec[i].asName;
+			_ptrParam->selColVec[i].name = r;
+			prt(("s33337 r=[%s]\n", r ));
 		}
 
 		if ( 0==strncasecmp(_ptrParam->selColVec[i].name.c_str(), "all(", 4) ) {
 			Jstr nm = _ptrParam->objectVec[0].dbName + "." + _ptrParam->objectVec[0].tableName 
-			                    + "." + trimChar(_ptrParam->selColVec[i].name.substr( '(', ')' ), ' ');
-			// _ptrParam->parent->selAllColVec.append( nm );
+	                    + "." + trimChar(_ptrParam->selColVec[i].name.substr( '(', ')' ), ' ');
 			_ptrParam->selAllColVec.append( nm );
 		} else {
 			//++ colcnt;
@@ -1866,13 +1947,15 @@ int JagParser::setGetfileColumn()
 	char *p, *q, *r;
 	int getAttributeOrData = 0;
 	_splitwq.init(_ptrParam->selectColumnClause.c_str(), ',');
+	prt(("s33307 selectColumnClause=[%s]\n", _ptrParam->selectColumnClause.c_str() ));
+
 	for ( int i = 0; i < _splitwq.length(); ++i ) {
 		SelColAttribute selColTemp(_ptrParam);
 		selColTemp.init( _ptrParam->jpa );
 		_ptrParam->selColVec.append(selColTemp);
 		_ptrParam->selColVec[i].tree->init( _ptrParam->jpa, _ptrParam );
 		r = (char*)_splitwq[i].c_str();
-		// prt(("s5012 r=[%s]\n", r ));
+		prt(("s5012 r=[%s]\n", r ));
 		if ( (p = (char*)strcasestrskipquote(r, " size")) || (p = (char*)strcasestrskipquote(r, " time")) ||
 			(p = (char*)strcasestrskipquote(r, " md5")) ) {
 			if ( 2 == getAttributeOrData ) {
@@ -1887,27 +1970,35 @@ int JagParser::setGetfileColumn()
 				getAttributeOrData = 2;
 			}
 		} else {
-			return -5484;
+			return -15484;
 		}
+
 		// store colname name
 		q = p;
 		while ( isspace(*r) ) ++r;
 		while ( isspace(*q) && q-r > 0 ) --q; ++q;
 		_ptrParam->selColVec[i].getfileCol = Jstr(r, q-r);
+		prt(("s30028 getfileCol=[%s]\n", _ptrParam->selColVec[i].getfileCol.s() ));
 		if ( strchr(_ptrParam->selColVec[i].getfileCol.c_str(), '.') ) return -2483;
 		// store attributes or outpath
 		if ( 1 == getAttributeOrData ) {
 			if ( strncasecmp( p, " size", 5 ) == 0 ) {
 				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_SIZE;
+				_ptrParam->selColVec[i].asName = "size";
+				_ptrParam->selColVec[i].givenAsName = 1;
 				q = p+5;
 			}  else if ( strncasecmp( p, " time", 5 ) == 0 ) {
 				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_TIME;
+				_ptrParam->selColVec[i].asName = "time";
+				_ptrParam->selColVec[i].givenAsName = 1;
 				q = p+5;
 			} else if ( strncasecmp( p, " md5", 4 ) == 0 ) {
 				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_MD5SUM;
+				_ptrParam->selColVec[i].asName = "md5";
+				_ptrParam->selColVec[i].givenAsName = 1;
 				// q = p+7;
 				q = p+4;
-			} else return -5484;
+			} else return -25484;
 		} else {
 			// store outpath
 			_ptrParam->selColVec[i].getfileType = JAG_GETFILE_ACTDATA;
@@ -2203,12 +2294,12 @@ int JagParser::setInsertVector()
 	} else return -2750;
 
 	if ( 1 == _split.length() || 2 == _split.length() ) {
-		oname.toLower();
+		//oname.toLower();
 		_ptrParam->objectVec.append(oname);
 		other.objName.dbName = _ptrParam->objectVec[0].dbName;
 		other.objName.tableName = _ptrParam->objectVec[0].tableName;
 	} else if ( 3 == _split.length() ) {
-		oname.toLower();
+		//oname.toLower();
 		_ptrParam->objectVec.append(oname);
 		other.objName.dbName = _ptrParam->objectVec[0].dbName;
 		other.objName.tableName = _ptrParam->objectVec[0].tableName;
@@ -2256,7 +2347,8 @@ int JagParser::setInsertVector()
 			//prt(("s3341 p=[%s] q=[%s]\n", p, q ));
 
 			// if ( strchr(p, '.') ) return -2790;
-			other.objName.colName = makeLowerString(p);
+			//other.objName.colName = makeLowerString(p);
+			other.objName.colName = p;
 			//prt(("s3763 other.objName.colName=[%s]\n", p ));
 			_ptrParam->otherVec.append(other);
 			//prt(("s7032 otherVec.append() other.colNm=[%s] other.valueD=[%s]\n", p, other.valueData.c_str() ));
@@ -2264,19 +2356,19 @@ int JagParser::setInsertVector()
 			c2 = _ptrParam->insColMap->addKeyValue( p, c1 );
 			//prt(("s2208 insColMap.addKeyValue(p=%s c1=%d) c2=%d\n", p, c1, c2 ));
 			++c1;
-			if ( c2 == 0 ) return -2800;
+			if ( c2 == 0 ) return -12800;
 			if ( endSignal ) break;
 
 			//prt(("s3935 print:\n" ));
-			//_ptrParam->otherVec.print();
 			//_ptrParam->insColMap.print();
+			//_ptrParam->otherVec.print();
 		}
 		++q; // pass the )
 	} // end if having first ()
 	
 	//prt(("s3013 q=[%s]\n", q ));
 	while ( isspace(*q) ) ++q;
-	if ( *q == '\0' ) return -2810;
+	if ( *q == '\0' ) return -12810;
 	int check1 = 0, check2 = 0, check3 = 0;
 	check1 = strncasecmp(q, "values ", 7);
 	check2 = strncasecmp(q, "values(", 7);
@@ -2396,10 +2488,12 @@ int JagParser::setInsertVector()
 				if ( sp.length() < 2 ) { return -2865; }
 				if ( sp[0].size() >= JAG_POINT_LEN || sp[1].size() >= JAG_POINT_LEN ) { return -2868; }
 				other.type =  JAG_C_COL_TYPE_POINT;
-				strcpy(other.point.x, sp[0].c_str() );
-				strcpy(other.point.y, sp[1].c_str() );
+				strcpy(other.point.x, sp[0].s() );
+				strcpy(other.point.y, sp[1].s() );
 				strcpy(other.point.z, "0");
-				if ( ! getMetrics( sp, 2, other.point.metrics ) ) return -2870;
+				prt(("s2352028 point sp.print():\n"));
+				//sp.print(); 
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -2870;
 				q = _saveptr;
 			} else if (  strncasecmp( p, "point3d(", 8 ) == 0 ) {
 				// This is in insert
@@ -2414,7 +2508,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.x, sp[0].c_str() );
 				strcpy(other.point.y, sp[1].c_str() );
 				strcpy(other.point.z, sp[2].c_str() );
-				if ( ! getMetrics( sp, 3, other.point.metrics ) ) return -2871;
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -2871;
 				q = _saveptr;
 			} else if ( strncasecmp( p, "circle(", 7 ) == 0 || strncasecmp( p, "square(", 7 )==0 ) {
 				// circle( x y radius)
@@ -2439,10 +2533,14 @@ int JagParser::setInsertVector()
 				strcpy(other.point.z, "0");
 				strcpy(other.point.a, sp[2].c_str() );
 				strcpy(other.point.nx, "0.0" );
-				if ( sp.length() >= 4 ) { 
-					strcpy(other.point.nx, sp[3].c_str() ); 
+				if ( other.type == JAG_C_COL_TYPE_CIRCLE ) {
+					if ( ! getMetrics( sp, other.point.metrics ) ) return -2852;
+				} else {
+					if ( sp.length() >= 4 ) { 
+						strcpy(other.point.nx, sp[3].c_str() ); 
+					}
+					if ( ! getMetrics( sp, other.point.metrics ) ) return -2872;
 				}
-				if ( ! getMetrics( sp, 4, other.point.metrics ) ) return -2872;
 				q = _saveptr;
 			} else if (  strncasecmp( p, "cube(", 5 )==0 || strncasecmp( p, "sphere(", 7 )==0 ) {
 				// cube( x y z radius )   inner circle radius
@@ -2471,7 +2569,7 @@ int JagParser::setInsertVector()
 					if ( sp.length() >= 5 ) { strcpy(other.point.nx, sp[4].c_str() ); }
 					if ( sp.length() >= 6 ) { strcpy(other.point.ny, sp[5].c_str() ); }
 				}
-				if ( ! getMetrics( sp, 6, other.point.metrics ) ) return -2872;
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -2872;
 				q = _saveptr;
 			} else if ( strncasecmp( p, "circle3d(", 9 )==0
 						|| strncasecmp( p, "square3d(", 9 )==0 ) {
@@ -2500,7 +2598,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=5 ) { strcpy(other.point.nx, sp[4].c_str() ); }
 				if ( sp.length() >=6 ) { strcpy(other.point.ny, sp[5].c_str() ); }
-				if ( ! getMetrics( sp, 6, other.point.metrics ) ) return -2874;
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -2874;
 				q = _saveptr;
 			} else if (  strncasecmp( p, "rectangle(", 10 )==0 || strncasecmp( p, "ellipse(", 8 )==0 ) {
 				// rectangle( x y width height nx ny) 
@@ -2532,7 +2630,7 @@ int JagParser::setInsertVector()
 				if ( sp.length() >= 5 ) {
 					strcpy(other.point.nx, sp[4].c_str() );
 				}
-				if ( ! getMetrics( sp, 5, other.point.metrics ) ) return -2874;
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -2874;
 				q = _saveptr;
 			} else if ( strncasecmp( p, "rectangle3d(", 12 )==0 || strncasecmp( p, "ellipse3d(", 10 )==0 ) {
 				// rectangle( x y z width height nx ny ) 
@@ -2561,7 +2659,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=6 ) { strcpy(other.point.nx, sp[5].c_str() ); }
 				if ( sp.length() >=7 ) { strcpy(other.point.ny, sp[6].c_str() ); }
-				if ( ! getMetrics( sp, 7, other.point.metrics ) ) return -2878;
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -2878;
 				q = _saveptr;
 				//prt(("s1051 other.point.x=[%s] other.point.y=[%s]\n", other.point.x, other.point.y ));
 				//prt(("s1051 other.point.z=[%s] other.point.z=[%s]\n", other.point.z, other.point.a ));
@@ -2595,7 +2693,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=7 ) { strcpy(other.point.nx, sp[6].c_str() ); }
 				if ( sp.length() >=8 ) { strcpy(other.point.ny, sp[7].c_str() ); }
-				if ( ! getMetrics( sp, 8, other.point.metrics ) ) return -2879;
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -2879;
 				q = _saveptr;
 			} else if ( strncasecmp( p, "cylinder(", 9 )==0 || strncasecmp( p, "cone(", 5 )==0 ) {
 				// cylinder( x y z r height  nx ny 
@@ -2627,7 +2725,7 @@ int JagParser::setInsertVector()
 				strcpy(other.point.ny, "0.0" );
 				if ( sp.length() >=6 ) { strcpy(other.point.nx, sp[5].c_str() ); }
 				if ( sp.length() >=7 ) { strcpy(other.point.ny, sp[6].c_str() ); }
-				if ( ! getMetrics( sp, 7, other.point.metrics ) ) return -3890;
+				if ( ! getMetrics( sp, other.point.metrics ) ) return -3890;
 				q = _saveptr;
 			} else if ( strncasecmp( p, "line(", 5 )==0 ) {
 				// line( x1 y1 x2 y2)
@@ -2654,7 +2752,7 @@ int JagParser::setInsertVector()
 					//int start = dim +  p1.metrics.size();
 					int start = dim;
 					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str() );
-					if ( ! getMetrics( sp, start+2, p1.metrics ) ) return -2891;
+					if ( ! getMetrics( sp, p1.metrics ) ) return -2891;
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
 				}
@@ -2688,7 +2786,7 @@ int JagParser::setInsertVector()
 					//int start = dim +  p1.metrics.size();
 					int start = dim;
 					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
-					if ( ! getMetrics( sp, start+dim, p1.metrics ) ) return -5810;
+					if ( ! getMetrics( sp, p1.metrics ) ) return -5810;
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
 				}
@@ -2845,7 +2943,7 @@ int JagParser::setInsertVector()
 					//start += dim + p2.metrics.size();
 					start += dim;
 					JagPoint p3( sp[start+0].c_str(), sp[start+1].c_str() );
-					if ( ! getMetrics( sp, start+dim, p1.metrics ) ) return -6003;
+					if ( ! getMetrics( sp, p1.metrics ) ) return -6003;
 
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
@@ -2886,7 +2984,7 @@ int JagParser::setInsertVector()
 
 					start += dim;
 					JagPoint p3( sp[start+0].c_str(), sp[start+1].c_str(), sp[start+2].c_str() );
-					if ( ! getMetrics( sp, start+dim, p1.metrics ) ) return -6006;
+					if ( ! getMetrics( sp, p1.metrics ) ) return -6006;
 
 					other.linestr.point.append(p1);
 					other.linestr.point.append(p2);
@@ -2954,8 +3052,8 @@ int JagParser::setInsertVector()
 			#endif
 
 			//prt(("s3936 print:\n" ));
-			//_ptrParam->otherVec.print();
 			//_ptrParam->insColMap.print();
+			//_ptrParam->otherVec.print();
 
 			other.init();
 			c2++;
@@ -3058,7 +3156,8 @@ int JagParser::setUpdateVector()
 		*q = '\0';
 		++q;
 		if ( strchr(p, '.') ) return -2910;
-		_ptrParam->updSetVec[i].colName = makeLowerString(p);
+		// _ptrParam->updSetVec[i].colName = makeLowerString(p);
+		_ptrParam->updSetVec[i].colName = p;
 		
 		while ( isspace(*q) ) ++q;
 		if ( *q == '=' && !reachEqual ) ++q;
@@ -3084,42 +3183,112 @@ int JagParser::setUpdateVector()
 // return value <= 0 error; 1 OK
 int JagParser::setCreateVector( short setType )
 {
-	//prt(("s3803 setCreateVector _saveptr=[%s] this=%0x _prtParam=%0x\n", _saveptr, this, _ptrParam ));
-	//prt(("s3281 dbNameCmd=[%s]\n", _ptrParam->dbNameCmd.c_str() ));
+	prt(("s13803 setCreateVector _saveptr=[%s] this=%0x _prtParam=%0x\n", _saveptr, this, _ptrParam ));
+	prt(("s13281 dbNameCmd=[%s]\n", _ptrParam->dbNameCmd.c_str() ));
+	// _saveptr=[timeseries(2d,3d) t1 ( key: a int )] t
+	if ( ! endWithSQLRightBra( _saveptr ) ) {
+		prt(("s44112 setCreateVector endWithSQLRightBra false error\n"));
+		return -10327;
+	}
 
 	if ( !_saveptr || *_saveptr == '\0' ) { return -2930; }
 	int rc;
-	//int ncol;
 
-	char *q = (char*)strchr( _saveptr, '(' );
-	if ( !q ) return -2931;
+	char *q;
+	if ( strncasecmp( _saveptr, "timeseries(", 11 ) == 0 ) {
+		// timeseries(5m:100,1h:100,1d:30)
+		// timeseries(10s:100,15m:100,1d:30|100d)
+		char *LB = (char*)strchr( _saveptr, '(');
+		LB ++;
+		char *RB = (char*)strchr( _saveptr, ')');
+		if ( NULL == RB ) return -13820;
+		if ( RB == LB + 1 ) return -13821;
+		Jstr retainTimeser(LB, RB-LB);
+		prt(("s22224 retaintimeser=[%s]\n", retainTimeser.s() ));
+		Jstr timeser;
+		if ( retainTimeser.containsChar('|') ) {
+			JagStrSplit sp( retainTimeser, '|' );
+			if ( sp.size() != 2 ) {
+				return -12823;
+			} else {
+				// timeseries(1d,3m|retain)
+				timeser = sp[0];
+				_ptrParam->retain = sp[1];
+				char lastChar = _ptrParam->retain.lastChar();
+				if ( lastChar != '0' && ! JagSchemaRecord::validRetention( lastChar ) ) {
+					 return -13822;
+				}
+			}
+		} else {
+			// timeseries(1d,3m)
+			timeser = retainTimeser;
+			_ptrParam->retain = "0";
+		}
+
+		if ( _ptrParam->retain.containsChar(':') || _ptrParam->retain.containsChar(',') ) {
+			// make sure ...|retain retain is not timeseries format
+			return  -12824;
+		}
+
+		_ptrParam->timeSeries = JagSchemaRecord::translateTimeSeries( timeser );
+		timeser =  _ptrParam->timeSeries;
+
+		prt(("s22229 translated timeser=[%s]\n", timeser.s() ));
+		prt(("s22229 translated retain=[%s]\n", _ptrParam->retain.s() ));
+
+		/**
+		int ords[JAG_NUM_TS]; 
+		int retains[JAG_NUM_TS];
+		**/
+
+		Jstr normalizedSeries;
+		//int rc = JagSchemaRecord::normalizeTimeSeries( timeser, normalizedSeries, ords, retains );
+		int rc = JagSchemaRecord::normalizeTimeSeries( timeser, normalizedSeries );
+		if ( 0 == rc ) {
+			// OK 
+			_ptrParam->timeSeries = normalizedSeries;
+			prt(("s33334772 normalizedSeries=[%s]\n", normalizedSeries.s() ));
+		} else {
+			prt(("s2222038 normalizeTimeSeries got error rc=%d timeser=[%s]\n", rc, timeser.s() ));
+			return -13828;
+		}
+
+		_saveptr = RB + 1;
+		while ( *_saveptr == ' ' || *_saveptr == '\t' ) ++_saveptr;
+		if ( *_saveptr == '\0' ) return -13824;
+		_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+		prt(("s333390 _saveptr=[%s]\n", _saveptr ));
+	}
+
+	q = (char*)strchr( _saveptr, '(' );
+	if ( !q ) return -12931;
 	_ptrParam->endtabidxpos = q; // command position after table/index name
 	*q = '\0';
 	Jstr tabstr = _saveptr, defValue;
 	*q = '(';
 	_saveptr = q;
-	//prt(("s2038 tabstr=[%s]\n", tabstr.c_str() ));
+	prt(("s2038 tabstr=[%s]\n", tabstr.c_str() ));
 	// if ( strchr(tabstr.c_str(), ' ') ) tabstr.remove(' ');
 	if ( strchr(tabstr.c_str(), '\n') ) tabstr.remove('\n');
-	//prt(("s2038 tabstr=[%s]\n", tabstr.c_str() ));
+	prt(("s2038 tabstr=[%s]\n", tabstr.c_str() ));
 	_split.init( tabstr.c_str(), ' ', true );
-	//prt(("s2238 _split.length=%d\n", _split.length() ));
-	// prt(("s203939 tabstr=[%s] \n", tabstr.c_str() ));
+	prt(("s2238 _split.length=%d\n", _split.length() ));
+	prt(("s203939 tabstr=[%s] \n", tabstr.c_str() ));
 	if ( _split.length() != 1 && _split.length() != 4 ) {
-		// prt(("s203939 tabstr=[%s] -2932\n", tabstr.c_str() ));
-		return -2932;
+		prt(("s203939 tabstr=[%s] -2932\n", tabstr.c_str() ));
+		return -12932;
 	}
 	if ( _split.length() == 4 ) {
 		// "if not exists db.tab"
 		if ( _ptrParam->opcode != JAG_CREATETABLE_OP ) return -2933;
 		if ( strcasecmp(_split[0].c_str(), "if") == 0 && strcasecmp(_split[1].c_str(), "not") == 0 &&
-			strncasecmp(_split[2].c_str(), "exists", 5 ) == 0 ) {
+			 strncasecmp(_split[2].c_str(), "exists", 5 ) == 0 ) {
 			_ptrParam->hasExist = 1;
 			// move tabidxpos over to tablename
 			_ptrParam->tabidxpos = strcasestr( _ptrParam->tabidxpos, "exists" );
 			if ( ! _ptrParam->tabidxpos ) { return -5933; }
 			_ptrParam->tabidxpos += 6;
-		} else return -2934;
+		} else return -12934;
 		tabstr = _split[3];
 	} else {
 		tabstr = _split[0];
@@ -3128,11 +3297,12 @@ int JagParser::setCreateVector( short setType )
 	
 	// get table name and check its validation
 	q = (char*)tabstr.c_str();
-	//prt(("s2037 q=[%s]\n", q ));
+	prt(("s209937 tabstr q=[%s]\n", q ));
 	_gettok = (char*)tabstr.c_str();
-	//prt(("s2039 before setTableIndexList _gettok=[%s]\n", _gettok ));
+	prt(("s2039 before setTableIndexList _gettok=[%s]\n", _gettok ));
 	rc = setTableIndexList( 0 );
 	if ( rc <= 0 ) return rc;
+
 	if ( _ptrParam->opcode == JAG_CREATEINDEX_OP ) {
 		_gettok = (char*)_ptrParam->batchFileName.c_str();
 		rc = setTableIndexList( 1 );
@@ -3153,11 +3323,11 @@ int JagParser::setCreateVector( short setType )
 
 		// get keymode
 		char *p = _saveptr;
-		while ( isspace(*p) ) ++p;
+		while( isspace(*p) ) ++p;
 		if ( *p == '(' ) ++p;
 		while ( isspace(*p) ) ++p;
     	keymode = JAG_ASC;  // default is ascending mode
-		if ( strncasecmp(p, "key ", 4) != 0 && strncasecmp(p, "key:", 4) != 0 ) {
+		if ( strncasecmp(p, "key:", 4) != 0 ) {
 			missingKey = 1;
 			prt(("s50883 missingKey =1 \n"));
 		} else {
@@ -3166,7 +3336,7 @@ int JagParser::setCreateVector( short setType )
     		if ( *p != ':' ) {
     			while ( *p != ' ' && *p != ':' ) ++p;
     			while ( isspace(*p) ) ++p;
-    			if ( *p != ':' ) return -2960;
+    			if ( *p != ':' ) return -12960;
     		}
     		_saveptr = p+1;
 		}
@@ -3199,8 +3369,9 @@ int JagParser::setCreateVector( short setType )
 		int keyCols = 0;
 		int valCols = 0;
 		int geoCols = 0;
+		int timeStampCols = 0;
 		while ( 1 ) {
-			_gettok = jag_strtok_r(NULL, " :\t\r\n", &_saveptr);
+			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 			if ( ! _gettok ) break;
 			//prt(("\ns1354 _gettok=[%s] _saveptr=[%s]\n", _gettok, _saveptr ));
 			stripEndSpace(_gettok, ',' );
@@ -3211,7 +3382,7 @@ int JagParser::setCreateVector( short setType )
 			if ( *_saveptr == ',' ) { ++_saveptr; }
 			//prt(("s1395 _gettok=[%s] _ptrParam->keyLength=%d _saveptr=[%s]\n", _gettok, _ptrParam->keyLength, _saveptr ));
 
-			if ( strcasecmp(_gettok, "value") == 0 ) { 
+			if ( strcasecmp(_gettok, "value:") == 0 ) { 
 				if (  missingKey || ! isValue ) { 
 					isValue = 1; 
 					if ( hasPoly && ! doneAddBBox ) {
@@ -3224,10 +3395,8 @@ int JagParser::setCreateVector( short setType )
 							addBBoxGeomKeyColumns( cattr, polyDim, false, offset ); // update cattr.length
 						}
 						//prt(("s8340 after addBBoxGeomKeyColumns _ptrParam->keyLength=%d\n",  _ptrParam->keyLength ));
-						#if 0
 						prt(("s0341 done addBBoxGeomKeyColumns coloffset=%d cattr.length=%d polyDim=%d\n", 
 							 coloffset, cattr.length, polyDim ));
-					    #endif
 						coloffset =  offset;
 						_ptrParam->hasPoly = 1;
 						_ptrParam->polyDim = polyDim;
@@ -3243,16 +3412,25 @@ int JagParser::setCreateVector( short setType )
 			} else if ( !strcasecmp( _gettok, "NULL" ) || !strcasecmp( _gettok, "UNIQUE" ) ) {
 				continue;
 			}
-			
+
 			prt(("s0281 before setOneCreateColumnAttribute\n" ));
 			rc = setOneCreateColumnAttribute( cattr );
 			prt(("s8342 after setOneCreateColumnAttribute _ptrParam->keyLength=%d\n",  _ptrParam->keyLength ));
 
 			if ( rc <= 0 ) { prt(("s2883 rc <= 0 return rc=%d\n", rc )); return rc; }
-			//prt(("s5040 isValue=%d\n", isValue ));
+			prt(("s5040 isValue=%d\n", isValue ));
 			if ( !isValue ) {
 				*(cattr.spare) = JAG_C_COL_KEY;
 				++keyCols;
+
+				if ( *(cattr.spare+7) == JAG_ROLL_UP ) {
+					// key column cannot be rolled up
+					prt(("s222288 it is JAG_ROLL_UP  key col, error\n"));
+					return  -30144;
+				} else {
+					prt(("s222288 it is not JAG_ROLL_UP  key col\n"));
+				}
+
 			} else {
 				*(cattr.spare) = JAG_C_COL_VALUE;
 				++valCols;
@@ -3267,7 +3445,7 @@ int JagParser::setCreateVector( short setType )
 			// check if spare_ column exist
 			if ( _cfg && cattr.objName.colName == "spare_" ) {
 				cattr.defValues = "";
-				if ( cattr.type != JAG_C_COL_TYPE_STR || hasSpare ) return -3045;
+				if ( cattr.type != JAG_C_COL_TYPE_STR || hasSpare ) return -30145;
 				hasSpare = 1;
 			}
 
@@ -3298,6 +3476,7 @@ int JagParser::setCreateVector( short setType )
 					cattr.offset = coloffset;
 					++geoCols;
 				}
+
 			}
 
 			//add one column
@@ -3308,6 +3487,12 @@ int JagParser::setCreateVector( short setType )
 			cattr.defValues = "";
 			//prt(("s2328 after addCreateAttrAndColumn  _ptrParam->keyLength=%d\n",  _ptrParam->keyLength ));
 
+		
+			Jstr ct = cattr.type;
+			if ( isDateAndTime(ct) ) {
+				 ++ timeStampCols;
+			}
+
 		} // while(1) loop
 
 		//prt(("s2528 after loop  _ptrParam->keyLength=%d\n",  _ptrParam->keyLength ));
@@ -3315,7 +3500,12 @@ int JagParser::setCreateVector( short setType )
 		//prt(("s2837 hasPoly=%d valCols=%d doneAddBBox=%d\n", hasPoly, valCols, doneAddBBox ));
 		if ( hasPoly && valCols < 1 && ! doneAddBBox ) {
 			//prt(("E5081 error no value column is provied\n" ));
-			return -5315;
+			return -15315;
+		}
+
+		// if timeseries, timeStampCols must be >= 1
+		if ( _ptrParam->timeSeries.size() > 0 && timeStampCols < 1 ) {
+			return -13052;
 		}
 
 		// check duplicate column name
@@ -3325,7 +3515,7 @@ int JagParser::setCreateVector( short setType )
 				if (  _ptrParam->createAttrVec[i].objName.colName == _ptrParam->createAttrVec[j].objName.colName ) {
 					//prt(("s2039 i=%d  objName.colName=[%s] equal to below:\n", i, _ptrParam->createAttrVec[i].objName.colName.c_str() ));
 					//prt(("s2049 j=%d  objName.colName=[%s]\n",  j, _ptrParam->createAttrVec[j].objName.colName.c_str() ));
-					return -3050;
+					return -13050;
 				}
 			}
 		}
@@ -3345,53 +3535,54 @@ int JagParser::setCreateVector( short setType )
 			_ptrParam->valueLength += cattr.length;
 			_ptrParam->createAttrVec.append( cattr );
 		}
+
 	} else if ( 1 == setType ) {
 		// 1==setType: create index createindex
-		//prt(("s3803 createindex ...\n" ));
+		prt(("s38143 createindex ...\n" ));
 		int numCols = 0;
 		_ptrParam->fieldSep = JAG_RAND;
 		OtherAttribute other;
 		while ( 1 ) {
-			// _gettok = jag_strtok_r(NULL, " :(,)\t\r\n", &_saveptr);
 			_gettok = jag_strtok_r(NULL, " (,)\t\r\n", &_saveptr);
-			//prt(("s2031 _gettok=[%s] _saveptr=[%s] numCols=%d\n", _gettok, _saveptr, numCols ));
+			prt(("s2031 _gettok=[%s] _saveptr=[%s] numCols=%d\n", _gettok, _saveptr, numCols ));
 			if ( !_gettok ) {
-				if ( !numCols ) return -3060;
+				if ( !numCols ) return -13060;
 				break;
 			} 
 			
-			if ( strcasecmp(_gettok, "key") == 0 ) {
-				_gettok = jag_strtok_r(NULL, " :\t\r\n", &_saveptr);
-				//prt(("s2051 _gettok=[%s] _saveptr=[%s] numCols=%d\n", _gettok, _saveptr, numCols ));
-				if ( !_gettok ) return -3070;
+			if ( strcasecmp(_gettok, "key:") == 0 ) {
+				//_gettok = jag_strtok_r(NULL, " :\t\r\n", &_saveptr);
+				_gettok = jag_strtok_r(NULL, " ,\t\r\n", &_saveptr);
+				prt(("s2051 _gettok=[%s] _saveptr=[%s] numCols=%d\n", _gettok, _saveptr, numCols ));
+				if ( !_gettok ) return -13070;
 
 				if ( strcasecmp(_gettok, "asc") == 0 || strcasecmp(_gettok, "ascend") == 0 ) {
 					_ptrParam->fieldSep = JAG_ASC;
 				} else {
-					if ( strchr( _gettok, '.' ) ) return -3080;
+					if ( strchr( _gettok, '.' ) ) return -13080;
 					other.objName.colName = makeLowerString(_gettok);
-					//prt(("s1098 key other.objName.colName=[%s] otherVec.append(other)\n", other.objName.colName.c_str() ));
+					prt(("s1098 key other.objName.colName=[%s] otherVec.append(other)\n", other.objName.colName.c_str() ));
 					_ptrParam->otherVec.append(other);
 					++numCols;
 				}
 				continue;
-			} else if ( strcasecmp(_gettok, "value") == 0 ) {
-				if ( !numCols ) return -3090;
+			} else if ( strcasecmp(_gettok, "value:") == 0 ) {
+				if ( !numCols ) return -13090;
 				_ptrParam->limit = numCols;
 				continue;
 			}
 
-			if ( !_gettok && !numCols ) return -3100;
+			if ( !_gettok && !numCols ) return -13100;
 			else if ( !_gettok ) break;
-			else if ( strchr( _gettok, '.' ) ) return -3110;
+			else if ( strchr( _gettok, '.' ) ) return -13110;
 
 			other.objName.colName = makeLowerString(_gettok);
 			_ptrParam->otherVec.append(other);
 			++numCols;
-			//prt(("s2039 other.objName.colName=[%s] numCols=%d append(other)\n", other.objName.colName.c_str(), numCols ));
+			prt(("s12039 other.objName.colName=[%s] numCols=%d append(other)\n", other.objName.colName.c_str(), numCols ));
 			const JagColumn *pcol = getColumn( _ptrParam, other.objName.colName );
 			if ( pcol ) {
-				//prt(("s3043 addExtraOtherCols ...\n" ));
+				prt(("s3043 addExtraOtherCols ...\n" ));
 				addExtraOtherCols( pcol, other, numCols );
 			} else {
 				/***
@@ -3404,7 +3595,7 @@ int JagParser::setCreateVector( short setType )
 		}  // end while(1) loop
 		if ( ! _ptrParam->limit ) _ptrParam->limit = numCols;
 	} else {
-		return -3120;
+		return -13120;
 	}
 	
 	return 1;
@@ -3414,13 +3605,14 @@ int JagParser::setCreateVector( short setType )
 // method to set one column attribute during create table. input _gettok should be at possible column name position
 int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 {
-	// prt(("\ns10282 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
-	//prt(("s1082 setOneCreateColumnAttribute\n"));
-	int rc, collen, metrics; char *p; Jstr defValue;
-	Jstr s, rcs, colType, typeArg;
+	//prt(("\ns10282 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
+	int rc, collen, metrics; 
+	char *p; 
+	Jstr defValue, s, rcs, colType, typeArg;
 	int srid = JAG_DEFAULT_SRID;
 	int  argcollen=0, argsig = 0;
 	bool isEnum = false;
+
 	metrics = 0;
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset( cattr.spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
@@ -3428,33 +3620,53 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 	
 	// save colName
 	// if name is too long(over 32 bytes), error
-	if ( strlen(_gettok) >= JAG_COLNAME_LENGTH_MAX || strchr(_gettok, '.') ) return -9000;
-	if ( strchr( _gettok, ':' ) ) return -9002;
+	if ( strlen(_gettok) >= JAG_COLNAME_LENGTH_MAX ) return -19000;
+	if ( strchr(_gettok, '.') ) return -19001;
+	//if ( strchr( _gettok, ':' ) ) return -19002;
+	if ( ! isValidCol( _gettok ) ) { 
+		prt(("s51187 _gettok=[%s] ! isValidCol\n", _gettok ));
+	    return -19003; 
+	}
 
 	cattr.objName.colName = makeLowerString(_gettok);
+	/***
 	//prt(("s2833 cattr.objName.colName=[%s]\n", _gettok ));
 	if ( cattr.objName.colName.containsChar('(') ) {
+		prt(("s51203 !!!!!!!!!!!!!!!! colName.contains (\n"));
 		cattr.objName.colName.remove('(');
+		exit(1);
 	}
+	***/
 	
 	// get column type
 	//prt(("s5212 colName=[%s], get coltype ...\n", _gettok ));
 	_gettok = jag_strtok_r_bracket(NULL, ",", &_saveptr);
+	if ( ! _gettok ) return -19004; 
 	while ( isspace(*_gettok) ) ++_gettok;
-	//prt(("s2434 _gettok=[%s]\n", _gettok ));
-	if ( ! _gettok ) return -9012; 
+	prt(("s2434 _gettok=[%s]\n", _gettok ));
 	while ( *_saveptr == ')' ) ++_saveptr;
-	//prt(("s2033 _gettok=[%s] saveptr=[%s]\n", _gettok, _saveptr ));
+	prt(("s2033 _gettok=[%s] saveptr=[%s]\n", _gettok, _saveptr ));
 	stripEndSpace(_gettok, ',' );
-	//prt(("s2034 _gettok=[%s] saveptr=[%s]\n", _gettok, _saveptr ));
+	prt(("s2034 _gettok=[%s] saveptr=[%s]\n", _gettok, _saveptr ));
 	if ( 0 == strncasecmp( _gettok, "mute ", 5 ) ) {
 		*(cattr.spare+5) = JAG_KEY_MUTE;
 		_gettok += 5;
+		// colname1 mute TYPE  
+	} else if ( 0 == strncasecmp( _gettok, "rollup", 6 )  ) {
+		//if ( *(cattr.spare) == JAG_C_COL_KEY ) { return -9006; }
+		prt(("s23339 cattr.spare=[%c]\n", *(cattr.spare) ));
+		// _gettok = (char *)parseRollup( _gettok, cattr );
+		*(cattr.spare+7) = JAG_ROLL_UP;
+		_gettok += 6;
+		if ( NULL == _gettok ) { return -19013; }
+		while (isspace(*_gettok) ) ++_gettok;
+		prt(("s222208 _gettok = [%s]\n", _gettok ));
+		prt(("s222208 _saveptr = [%s]\n", _saveptr ));
 	}
 
 	// _gettok: "char(30) default ......."  no colname here
 	// _gettok: "enum('a','b', 'c', 'd') default 'b' )
-	//prt(("s29034 _gettok=[%s] saveptr=[%s]\n", _gettok, _saveptr ));
+	prt(("s29034 _gettok=[%s] saveptr=[%s]\n", _gettok, _saveptr ));
 	JagStrSplitWithQuote args(_gettok, ' ');
 	//prt(("s11282 _gettok =[%s] _saveptr=[%s] args=\n", _gettok, _saveptr ));
 	//args.print();
@@ -3468,7 +3680,7 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 	srid = argcollen;
 	cattr.metrics = metrics;
 
-	//prt(("s1121 _gettok=[%s] colType=[%s] srid=%d metrics=%d\n", _gettok, colType.c_str(), srid, metrics ));
+	prt(("s1121 _gettok=[%s] colType=[%s] srid=%d metrics=%d\n", _gettok, colType.c_str(), srid, metrics ));
 	if ( strchr(colType.c_str(), ' ') ) colType.remove(' ');
 	if ( strchr(colType.c_str(), '\n') ) colType.remove('\n');
 	if ( ! strchr( colType.c_str(), '(') && strchr(colType.c_str(), ')') ) {
@@ -3479,7 +3691,7 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 	rcs = fillDataType( colType.c_str() );
 	prt(("s19123 rcs=[%s]\n", rcs.c_str() ));
 	if ( rcs.size() < 1  ) {
-		prt(("s10285 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
+		prt(("s10286 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
 		return -90030;
 	}
 	setToRealType( rcs, cattr );
@@ -3495,17 +3707,16 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 		collen = 0;
 		cattr.type = JAG_C_COL_TYPE_STR;
 		*(cattr.spare+1) = JAG_C_COL_TYPE_ENUM[0];
-		// p = _saveptr;
 		p = (char*)typeArg.c_str();
 		// jump possible ' \t\r\n' and '(' is exists, find valid beginning spot
 		while ( isspace(*p) ) ++p;
-		if ( *p == '\0' ) return -8000;
+		if ( *p == '\0' ) return -18000;
 		else if ( *p == '(' ) ++p;
 		while ( isspace(*p) ) ++p;
-		if ( *p == '\0' ) return -8010;
+		if ( *p == '\0' ) return -18010;
 		JagStrSplit sp( p, ',', true );
 		for ( int i=0; i < sp.length(); ++i ) {
-			if ( ! strchr( sp[i].c_str(), '\'' ) ) return -8030;
+			if ( ! strchr( sp[i].c_str(), '\'' ) ) return -18030;
 			s = trimChar( sp[i], ' ');
 			s = trimChar( s, '\'');
 			defValue = Jstr("'") + s + "'";
@@ -3526,7 +3737,6 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 		// rcs != JAG_C_COL_TYPE_ENUM  
 		/// prt(("s5502 _gettok=[%s] saveptr=[%s] ...\n", _gettok, _saveptr ));
 		//prt(("s0230 rcs is not JAG_C_COL_TYPE_ENUM\n" ));
-		// get column length
 		//prt(("s2029 getColumnLength(%s) collen=%d _saveptr=[%s]\n",  rcs.c_str(), collen, _saveptr ));
 		collen = getColumnLength( rcs );
 		if ( collen < 0 ) {
@@ -3537,7 +3747,7 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 		if ( isgeo ) {
 			cattr.length = 0;
 			cattr.srid = srid;
-			if ( srid > 2000000000 ) { return -9042; }
+			if ( srid > 2000000000 ) { return -19042; }
 		} else if ( rcs == JAG_C_COL_TYPE_RANGE ) {
 			cattr.length = 0;
 			if ( srid < 1 ) {
@@ -3558,8 +3768,16 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 			}
 			cattr.length += 2; // . and sign
 			if ( cattr.sig > cattr.length ) cattr.sig = cattr.length-6;
+		} else if ( rcs == JAG_C_COL_TYPE_LONGDOUBLE ) {
+			if ( typeArg.size() > 0 ) {
+				cattr.sig = argsig;
+			} else {
+				cattr.length = JAG_LONGDOUBLE_FIELD_LEN;
+				cattr.sig = JAG_LONGDOUBLE_SIG_LEN;
+			}
+			cattr.length += 2; // . and sign
+			if ( cattr.sig > cattr.length ) cattr.sig = cattr.length-10;
 		} else if ( rcs == JAG_C_COL_TYPE_DOUBLE ) {
-			//prt(("s03839 JAG_C_COL_TYPE_DOUBLE  typeArg=[%s]\n",  typeArg.c_str() ));
 			if ( typeArg.size() > 0 ) {
 				cattr.sig = argsig;
 			} else {
@@ -3567,7 +3785,7 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 				cattr.sig = JAG_DOUBLE_SIG_LEN;
 			}
 			cattr.length += 2; // . and sign
-			if ( cattr.sig > cattr.length ) cattr.sig = cattr.length-6;
+			if ( cattr.sig > cattr.length ) cattr.sig = cattr.length-8;
 		} else if ( rcs == JAG_C_COL_TEMPTYPE_REAL  ) {
 			cattr.sig = 8;
 		} else {
@@ -3575,50 +3793,52 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 		}
 	}
 
-	//prt(("s0982 args.length()=%d\n", args.length() ));
+	prt(("s0982 args.length()=%d\n", args.length() ));
 	if ( args.length()>= 1 ) {
 		if ( args.length()>=2 && strcasecmp(args[1].c_str(), "default"  ) == 0 ) {
 			if ( cattr.type == JAG_C_COL_TYPE_STR && 
 				(JAG_C_COL_TYPE_UUID[0] == *(cattr.spare+1) || JAG_C_COL_TYPE_FILE[0] == *(cattr.spare+1)) ) {
 				// column of UUID/FILE type does not accept default value
-				return -9060;
+				return -19060;
 			}
 
 			if ( args.length()>= 3 ) {
-				// currently, only accept no more than one byte for default value
-				if ( cattr.type == JAG_C_COL_TYPE_TIMESTAMP || cattr.type == JAG_C_COL_TYPE_DATETIME || 
-					 cattr.type == JAG_C_COL_TYPE_DATE ) {
+					if ( isDateAndTime(cattr.type) || cattr.type == JAG_C_COL_TYPE_DATE ) {
 					if ( strcasecmp( args[2].c_str(), "current_timestamp") == 0 ) {
 						if ( args.length()>= 4 && strcasecmp( args[3].c_str(), "on") == 0 ) {
 							if ( args.length()>=5 && strcasecmp(args[4].c_str(), "update") == 0 ) {	
 								if ( args.length()>=6 && strcasecmp(args[5].c_str(), "current_timestamp") == 0 ) {
 									if ( cattr.type == JAG_C_COL_TYPE_DATE ) { 
-										*(cattr.spare+4) = JAG_CREATE_DEFUPDATE;
+										*(cattr.spare+4) = JAG_CREATE_DEFUPDATE_DATE;
+									} else if ( cattr.type == JAG_C_COL_TYPE_DATETIMESEC || cattr.type == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+										*(cattr.spare+4) = JAG_CREATE_DEFUPDATE_DATETIMESEC;
+									} else if ( cattr.type == JAG_C_COL_TYPE_DATETIMEMILL || cattr.type == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+										*(cattr.spare+4) = JAG_CREATE_DEFUPDATE_DATETIMEMILL;
+									} else if ( cattr.type == JAG_C_COL_TYPE_DATETIME || cattr.type == JAG_C_COL_TYPE_TIMESTAMP ) {
+										*(cattr.spare+4) = JAG_CREATE_DEFUPDATE_DATETIME;
+									} else if ( cattr.type == JAG_C_COL_TYPE_TIMESTAMPNANO || cattr.type == JAG_C_COL_TYPE_DATETIMENANO ) {
+										*(cattr.spare+4) = JAG_CREATE_DEFUPDATE_DATETIMENANO;
 									} else {
-										*(cattr.spare+4) = JAG_CREATE_DEFUPDATETIME;
+										return -19071;
 									}
-								} else { return -9070; }
-							} else { return -9080; }
+								} else { return -19070; }
+							} else { return -19080; }
 						} else {
 							if ( cattr.type == JAG_C_COL_TYPE_DATE ) {
 								*(cattr.spare+4) = JAG_CREATE_DEFDATE;
-							} else {
+							} else if ( cattr.type == JAG_C_COL_TYPE_DATETIMESEC || cattr.type == JAG_C_COL_TYPE_TIMESTAMPSEC  ) {
+								*(cattr.spare+4) = JAG_CREATE_DEFDATETIMESEC;
+							} else if ( cattr.type == JAG_C_COL_TYPE_DATETIMEMILL || cattr.type == JAG_C_COL_TYPE_TIMESTAMPMILL  ) {
+								*(cattr.spare+4) = JAG_CREATE_DEFDATETIMEMILL;
+							} else if ( cattr.type == JAG_C_COL_TYPE_DATETIME || cattr.type == JAG_C_COL_TYPE_TIMESTAMP ) {
 								*(cattr.spare+4) = JAG_CREATE_DEFDATETIME;
+							} else if ( cattr.type == JAG_C_COL_TYPE_TIMESTAMPNANO || cattr.type == JAG_C_COL_TYPE_DATETIMENANO ) {
+								*(cattr.spare+4) = JAG_CREATE_DEFDATETIMENANO;
+							} else {
+								return -19081;
 							}
 						}
-					} else { return -9090; }
-				} else if ( cattr.type == JAG_C_COL_TYPE_TIMESTAMPNANO || cattr.type == JAG_C_COL_TYPE_DATETIMENANO ) { 
-					if ( strcasecmp( args[2].c_str(), "current_timestampnano") == 0 ) {
-						if ( args.length()>= 4 && strcasecmp( args[3].c_str(), "on") == 0 ) {
-							if ( args.length()>=5 && strcasecmp(args[4].c_str(), "update") == 0 ) {	
-								if ( args.length()>=6 && strcasecmp(args[5].c_str(), "current_timestampnano") == 0 ) {
-									*(cattr.spare+4) = JAG_CREATE_DEFUPDATETIMENANO;
-								} else { return -9174; }
-							} else { return -9184; }
-						} else {
-							*(cattr.spare+4) = JAG_CREATE_DEFDATETIMENANO;
-						}
-					} else { return -9194; }
+					} else { return -19090; }
 				} else if ( cattr.type == JAG_C_COL_TYPE_DBIT ) {
 					if ( strchr( args[2].c_str(), '1' ) ) {
 						defValue = "'1'";
@@ -3635,8 +3855,8 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 				} else {
 					if ( strchr( args[2].c_str(), '\'' ) || strchr( args[2].c_str(), '"' ) ) {
 						defValue = args[2];
-						//prt(("s3041 defValue=[%s]\n", defValue.c_str() ));
-						if ( defValue.size() > 32 ) { return -9153; }
+						prt(("s3041 defValue=[%s]\n", defValue.c_str() ));
+						if ( defValue.size() > 32 ) { return -19153; } // max of 32 bytes in default value !!!!!
 						if ( JAG_C_COL_TYPE_ENUM[0] == *(cattr.spare+1) && cattr.length < defValue.size() ) {
 							cattr.length = defValue.size();
 						}
@@ -3644,14 +3864,15 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 						if ( isEnum ) {
 							// cattr.defValues
 							JagStrSplit sp(cattr.defValues, '|', true );
-							if ( sp.length()<1) return -9147;
+							if ( sp.length()<1) return -19147;
 							bool ok = false;
 							for ( int i=0; i < sp.length(); ++i ) {
 								if ( defValue == sp[i] ) { ok = true; break; }
 							}
-							if ( ! ok ) return -9148;
+							if ( ! ok ) return -19148;
 							cattr.defValues += Jstr("|") + defValue;
 							// previous ones are choices; last one is default value;
+							// *(cattr.spare+1) ===> indicates enum type
 						} else {
 							cattr.defValues = defValue;
 						}
@@ -3660,29 +3881,29 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 						prt(("s3042 cattr.colName=[%s] cattr.defValues=[%s]\n", 
 							  cattr.objName.colName.c_str(), cattr.defValues.c_str() ));
 					    #endif
-					} else { return -9150; }
+					} else { return -19150; }
 				}
-			} else { return -9160; }
-
-			/***
-			if ( *(cattr.spare+4) != JAG_CREATE_DEFDATETIME && *(cattr.spare+4) != JAG_CREATE_DEFDATE ) {
-				//_gettok = jag_strtok_r(NULL, " (:,)\t\r\n", &_saveptr);
-		    	//prt(("s0816 _gettok=[%s] _saveptr=[%s]\n", _gettok, _saveptr ));
-			}
-			***/
+			} else { return -19160; }
 		} else if ( args.length()>=2 && strcasecmp( args[1].c_str(), "on" ) == 0 ) {
-			if ( cattr.type == JAG_C_COL_TYPE_TIMESTAMP || cattr.type == JAG_C_COL_TYPE_DATETIME || 
-				 cattr.type == JAG_C_COL_TYPE_DATE ) {
+			if ( isDateAndTime(cattr.type) || cattr.type == JAG_C_COL_TYPE_DATE ) {
 				if ( args.length()>=3 && strcasecmp(args[2].c_str(), "update") == 0 ) {	
 					if ( args.length()>=4 && strcasecmp(args[3].c_str(), "current_timestamp") == 0 ) {
 						if ( cattr.type == JAG_C_COL_TYPE_DATE ) {
-							*(cattr.spare+4) = JAG_CREATE_UPDDATE;
+							*(cattr.spare+4) = JAG_CREATE_UPDATE_DATE;
+						} else if ( cattr.type == JAG_C_COL_TYPE_DATETIMESEC || cattr.type == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+							*(cattr.spare+4) = JAG_CREATE_UPDATE_DATETIMESEC;
+						} else if ( cattr.type == JAG_C_COL_TYPE_DATETIMENANO || cattr.type == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
+							*(cattr.spare+4) = JAG_CREATE_UPDATE_DATETIMENANO;
+						} else if ( cattr.type == JAG_C_COL_TYPE_DATETIMEMILL || cattr.type == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+							*(cattr.spare+4) = JAG_CREATE_UPDATE_DATETIMEMILL;
+						} else if ( cattr.type == JAG_C_COL_TYPE_DATETIME || cattr.type == JAG_C_COL_TYPE_TIMESTAMP ) {
+							*(cattr.spare+4) = JAG_CREATE_UPDATE_DATETIME;
 						} else {
-							*(cattr.spare+4) = JAG_CREATE_UPDATETIME;
+							return -19163;
 						}
-					} else { return -9170; }
-				} else { return -9170; }
-			} else { return -9180; }
+					} else { return -19170; }
+				} else { return -19170; }
+			} else { return -19180; }
 		} 
 	} 
 
@@ -3731,6 +3952,8 @@ Jstr JagParser::fillDataType( const char* gettok )
 		rc = JAG_C_COL_TYPE_DINT;
 	} else if (strcasecmp(gettok, "float") == 0) {
 		rc = JAG_C_COL_TYPE_FLOAT;
+	} else if (strcasecmp(gettok, "longdouble") == 0) {
+		rc = JAG_C_COL_TYPE_LONGDOUBLE;
 	} else if ( strcasecmp(gettok, "double") == 0 || strcasecmp(gettok, "numeric") == 0 || 
 				strcasecmp(gettok, "decimal") == 0) {
 		rc = JAG_C_COL_TYPE_DOUBLE;
@@ -3738,10 +3961,18 @@ Jstr JagParser::fillDataType( const char* gettok )
 		rc = JAG_C_COL_TEMPTYPE_REAL;
 	} else if (strcasecmp(gettok, "datetimenano") == 0) {
 		rc = JAG_C_COL_TYPE_DATETIMENANO;
+	} else if (strcasecmp(gettok, "datetimesec") == 0) {
+		rc = JAG_C_COL_TYPE_DATETIMESEC;
+	} else if (strcasecmp(gettok, "datetimemill") == 0) {
+		rc = JAG_C_COL_TYPE_DATETIMEMILL;
 	} else if (strcasecmp(gettok, "datetime") == 0) {
 		rc = JAG_C_COL_TYPE_DATETIME;
 	} else if (strcasecmp(gettok, "timestampnano") == 0) {
 		rc = JAG_C_COL_TYPE_TIMESTAMPNANO;
+	} else if (strcasecmp(gettok, "timestampmill") == 0) {
+		rc = JAG_C_COL_TYPE_TIMESTAMPMILL;
+	} else if (strcasecmp(gettok, "timestampsec") == 0) {
+		rc = JAG_C_COL_TYPE_TIMESTAMPSEC;
 	} else if (strcasecmp(gettok, "timestamp") == 0) {
 		rc = JAG_C_COL_TYPE_TIMESTAMP;
 	} else if (strcasecmp(gettok, "timenano") == 0) {
@@ -3831,12 +4062,14 @@ Jstr JagParser::fillDataType( const char* gettok )
 int JagParser::getColumnLength( const Jstr &colType )
 {
 	int onelen;
-	if ( colType == JAG_C_COL_TYPE_DATETIME ) {
+	if ( colType == JAG_C_COL_TYPE_DATETIME ||  colType == JAG_C_COL_TYPE_TIMESTAMP ) {
 		onelen = JAG_DATETIME_FIELD_LEN;
-	} else if ( colType == JAG_C_COL_TYPE_TIMESTAMP ) {
-		onelen = JAG_TIMESTAMP_FIELD_LEN;
+	} else if ( colType == JAG_C_COL_TYPE_DATETIMESEC || colType == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+		onelen = JAG_DATETIMESEC_FIELD_LEN;
 	} else if ( colType == JAG_C_COL_TYPE_DATETIMENANO || colType == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
 		onelen = JAG_DATETIMENANO_FIELD_LEN;
+	} else if ( colType == JAG_C_COL_TYPE_DATETIMEMILL || colType == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+		onelen = JAG_DATETIMEMILL_FIELD_LEN;
 	} else if ( colType == JAG_C_COL_TYPE_TIME ) {
 		onelen = JAG_TIME_FIELD_LEN;
 	} else if ( colType == JAG_C_COL_TYPE_TIMENANO ) {
@@ -4318,7 +4551,7 @@ void JagParser::addCreateAttrAndColumn(bool isValue, CreateAttribute &cattr, int
 		// prt(("s7273  _ptrParam=%0x createAttrVec=%0x\n", _ptrParam, _ptrParam->createAttrVec ));
 		//prt(("s7273  _ptrParam=%0x \n", _ptrParam ));
 		//prt(("s7273 isValue=%d cattr.length=%d\n", isValue, cattr.length ));
-		//prt(("s7273 colName=[%s] cattr.defValues=[%s]\n", cattr.objName.colName.c_str(), cattr.defValues.c_str() ));
+		prt(("s7273 colName=[%s] cattr.defValues=[%s]\n", cattr.objName.colName.c_str(), cattr.defValues.c_str() ));
 		if ( !isValue ) {
 			_ptrParam->keyLength += cattr.length;
 		} else {
@@ -4682,7 +4915,7 @@ void JagParser::setToRealType( const Jstr &rcs, CreateAttribute &cattr )
 // gettok: "enum('a','b', 'c', 'd') default 'b'"
 int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &metrics )
 {
-	//prt(("s5503 getTypeNameArg gettok=[%s]\n", gettok ));
+	prt(("s5503 getTypeNameArg gettok=[%s]\n", gettok ));
 	metrics = 0;
 	char save;
 	targ = "";
@@ -4707,6 +4940,7 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 	tname = gettok;
 	//*p1 = '(';
 	*p1 = save;
+	prt(("s54031 tname=[%s]\n", tname.s() ));
 
 	++p1;
 	p2 = strchr( p1, ')' );
@@ -4714,7 +4948,7 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 		p2 = p1; while (*p2) ++p2;
 	} 
 	targ = Jstr( p1, p2-p1, p2-p1);
-	//prt(("s10938 targ=[%s]\n", targ.s() ));
+	prt(("s10938 targ=[%s]\n", targ.s() ));
 	if ( strchr(targ.c_str(), ',' ) && ! strstr(targ.c_str(), "srid") && ! strstr(targ.c_str(), "metrics") ) {
 		// "srid:4326, metrics:5"
 		// 13,4
@@ -4742,6 +4976,12 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 			collen = JAG_RANGE_TIME;
 		} else if ( 0==strcasecmp(targ.c_str(), "date" ) ) {
 			collen = JAG_RANGE_DATE;
+		} else if ( 0==strcasecmp(targ.c_str(), "datetimesec" ) ) {
+			collen = JAG_RANGE_DATETIMESEC;
+		} else if ( 0==strcasecmp(targ.c_str(), "datetimenano" ) ) {
+			collen = JAG_RANGE_DATETIMENANO;
+		} else if ( 0==strcasecmp(targ.c_str(), "datetimemill" ) ) {
+			collen = JAG_RANGE_DATETIMEMILL;
 		} else if ( 0==strcasecmp(targ.c_str(), "datetime" ) ) {
 			collen = JAG_RANGE_DATETIME;
 		} else if ( 0==strcasecmp(targ.c_str(), "bigint" ) ) {
@@ -4750,12 +4990,15 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 			collen = JAG_RANGE_INT;
 		} else if ( 0==strcasecmp(targ.c_str(), "smallint" ) ) {
 			collen = JAG_RANGE_SMALLINT;
+		} else if ( 0==strcasecmp(targ.c_str(), "longdouble" ) ) {
+			collen = JAG_RANGE_LONGDOUBLE;
 		} else if ( 0==strcasecmp(targ.c_str(), "double" ) ) {
 			collen = JAG_RANGE_DOUBLE;
 		} else if ( 0==strcasecmp(targ.c_str(), "float" ) ) {
 			collen = JAG_RANGE_FLOAT;
 		} else {
 			if ( 0==strncasecmp(targ.c_str(), "srid:", 5 ) ) {
+				prt(("s53310 see srid:\n"));
 				JagStrSplit sp(targ, ':');
 				if ( 0==strcasecmp(sp[1].c_str(), "wgs84" ) ) {
 					collen = JAG_GEO_WGS84;
@@ -4849,44 +5092,44 @@ void JagParser::addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool
 	offset = _ptrParam->keyLength;
 
 	cattr.objName.colName = "geo:xmin";
-	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0 );
+	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0, 0 );
 	// cattr was initialized, but offset is increated
 
 	cattr.objName.colName = "geo:ymin";
-	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0 );
+	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0, 0 );
 
 	// set boundbox all to xmin:ymin:zmin:xmax:ymax:zmax 
 	// in 2D zmin=zmax=0
 	if ( 1 || polyDim >=3 ) {
 		cattr.objName.colName = "geo:zmin";
-		_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0 );
+		_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0, 0 );
 	}
 
 	cattr.objName.colName = "geo:xmax";
-	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0 );
+	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0, 0 );
 
 	cattr.objName.colName = "geo:ymax";
-	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0 );
+	_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0, 0 );
 
 	if ( 1 || polyDim >=3 ) {
 		cattr.objName.colName = "geo:zmax";
-		_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0 );
+		_ptrParam->fillDoubleSubData( cattr, offset, 1, isMute, 0, 0 );
 	}
 
 	cattr.objName.colName = "geo:id";
-	_ptrParam->fillStringSubData( cattr, offset, 1, JAG_UUID_FIELD_LEN, 1, 0 );
+	_ptrParam->fillStringSubData( cattr, offset, 1, JAG_UUID_FIELD_LEN, 1, 0, 0 );
 
 	cattr.objName.colName = "geo:col";
-	_ptrParam->fillSmallIntSubData( cattr, offset, 1, 1, 0 );  // must be part of key and mute
+	_ptrParam->fillSmallIntSubData( cattr, offset, 1, 1, 0, 0 );  // must be part of key and mute
 
 	cattr.objName.colName = "geo:m";  // m-th polygon in multipolygon  starts from 1
-	_ptrParam->fillIntSubData( cattr, offset, 1, 1, 0 );  // must be part of key and mute
+	_ptrParam->fillIntSubData( cattr, offset, 1, 1, 0, 0 );  // must be part of key and mute
 
 	cattr.objName.colName = "geo:n";  // n-th ring in a polygon or n-th linestring in multilinestring
-	_ptrParam->fillIntSubData( cattr, offset, 1, 1, 0 );  // must be part of key and mute
+	_ptrParam->fillIntSubData( cattr, offset, 1, 1, 0, 0 );  // must be part of key and mute
 
 	cattr.objName.colName = "geo:i";  // i-th point in a linestring
-	_ptrParam->fillIntSubData( cattr, offset, 1, 1, 0 );  // must be part of key and mute
+	_ptrParam->fillIntSubData( cattr, offset, 1, 1, 0, 0 );  // must be part of key and mute
 
 	//prt(("s5034 end of addbboundbox cols _ptrParam->keyLength=%d cattr.offset=%d offset=%d\n", _ptrParam->keyLength, cattr.offset, offset ));
 }
@@ -5034,7 +5277,7 @@ int JagParser::addLineStringData( JagLineString &linestr, const char *p )
 		if ( ss[0].length() >= JAG_POINT_LEN ) { return -4416; }
 		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4417; }
 		JagPoint2D p( ss[0].c_str(), ss[1].c_str() );
-		if ( ! getMetrics( ss, 2, p.metrics ) ) return -4939;
+		if ( ! getMetrics( ss, p.metrics ) ) return -4939;
 		linestr3d.add(p);
 	}
 	linestr = linestr3d;
@@ -5121,7 +5364,7 @@ int JagParser::addLineString3DData( JagLineString &linestr, const char *p )
 		if ( ss[1].length() >= JAG_POINT_LEN ) { return -4437; }
 		if ( ss[2].length() >= JAG_POINT_LEN ) { return -4438; }
 		JagPoint3D p( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
-		if ( ! getMetrics( ss, 3, p.metrics ) ) return -5010;
+		if ( ! getMetrics( ss, p.metrics ) ) return -5010;
 		linestr3d.add(p);
 	}
 	linestr = linestr3d;
@@ -5610,7 +5853,7 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 			if ( ss[0].length() >= JAG_POINT_LEN ) { return -4526; }
 			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4527; }
 			JagPoint2D p2d( ss[0].c_str(), ss[1].c_str() );
-			if ( ! getMetrics( ss, 2, p2d.metrics ) ) return -4620;
+			if ( ! getMetrics( ss, p2d.metrics ) ) return -4620;
 			linestr3d.add(p2d);
 			if ( mustClose ) {
     			if ( 0==i) {
@@ -5898,7 +6141,7 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 			if ( ss[1].length() >= JAG_POINT_LEN ) { return -4537; }
 			if ( ss[2].length() >= JAG_POINT_LEN ) { return -4538; }
 			JagPoint3D p3d( ss[0].c_str(), ss[1].c_str(), ss[2].c_str() );
-			if ( ! getMetrics( ss, 3, p3d.metrics ) ) return -4801;
+			if ( ! getMetrics( ss, p3d.metrics ) ) return -4801;
 			linestr3d.add(p3d);
 			if ( mustClose ) {
     			if ( 0==i) {
@@ -6574,12 +6817,20 @@ int JagParser::getEachRangeFieldLength( int srid ) const
 		len = JAG_TIME_FIELD_LEN;
 	} else if ( JAG_RANGE_DATETIME == srid ) {
 		len = JAG_DATETIME_FIELD_LEN;
+	} else if ( JAG_RANGE_DATETIMESEC == srid ) {
+		len = JAG_DATETIMESEC_FIELD_LEN;
+	} else if ( JAG_RANGE_DATETIMENANO == srid ) {
+		len = JAG_DATETIMENANO_FIELD_LEN;
+	} else if ( JAG_RANGE_DATETIMEMILL == srid ) {
+		len = JAG_DATETIMEMILL_FIELD_LEN;
 	} else if ( JAG_RANGE_BIGINT == srid ) {
 		len = JAG_DBIGINT_FIELD_LEN;
 	} else if ( JAG_RANGE_INT == srid ) {
 		len = JAG_DINT_FIELD_LEN;
 	} else if ( JAG_RANGE_SMALLINT == srid ) {
 		len = JAG_DSMALLINT_FIELD_LEN;
+	} else if ( JAG_RANGE_LONGDOUBLE == srid ) {
+		len = JAG_LONGDOUBLE_FIELD_LEN;
 	} else if ( JAG_RANGE_DOUBLE == srid ) {
 		len = JAG_DOUBLE_FIELD_LEN;
 	} else if ( JAG_RANGE_FLOAT == srid ) {
@@ -6598,12 +6849,20 @@ Jstr JagParser::getFieldType( int srid )
 		ctype = JAG_C_COL_TYPE_TIME;
 	} else if ( JAG_RANGE_DATETIME == srid ) {
 		ctype = JAG_C_COL_TYPE_DATETIME;
+	} else if ( JAG_RANGE_DATETIMESEC == srid ) {
+		ctype = JAG_C_COL_TYPE_DATETIMESEC;
+	} else if ( JAG_RANGE_DATETIMENANO == srid ) {
+		ctype = JAG_C_COL_TYPE_DATETIMENANO;
+	} else if ( JAG_RANGE_DATETIMEMILL == srid ) {
+		ctype = JAG_C_COL_TYPE_DATETIMEMILL;
 	} else if ( JAG_RANGE_BIGINT == srid ) {
 		ctype = JAG_C_COL_TYPE_DBIGINT;
 	} else if ( JAG_RANGE_INT == srid ) {
 		ctype = JAG_C_COL_TYPE_DINT;
 	} else if ( JAG_RANGE_SMALLINT == srid ) {
 		ctype = JAG_C_COL_TYPE_DSMALLINT;
+	} else if ( JAG_RANGE_LONGDOUBLE == srid ) {
+		ctype = JAG_C_COL_TYPE_LONGDOUBLE;
 	} else if ( JAG_RANGE_DOUBLE == srid ) {
 		ctype = JAG_C_COL_TYPE_DOUBLE;
 	} else if ( JAG_RANGE_FLOAT == srid ) {
@@ -6622,12 +6881,20 @@ Jstr JagParser::getFieldTypeString( int srid )
 		ctype = "time";
 	} else if ( JAG_RANGE_DATETIME == srid ) {
 		ctype = "datetime";
+	} else if ( JAG_RANGE_DATETIMESEC == srid ) {
+		ctype = "datetimesec";
+	} else if ( JAG_RANGE_DATETIMENANO == srid ) {
+		ctype = "datetimenano";
+	} else if ( JAG_RANGE_DATETIMEMILL == srid ) {
+		ctype = "datetimemill";
 	} else if ( JAG_RANGE_BIGINT == srid ) {
 		ctype = "bigint";
 	} else if ( JAG_RANGE_INT == srid ) {
 		ctype = "int";
 	} else if ( JAG_RANGE_SMALLINT == srid ) {
 		ctype = "smallint";
+	} else if ( JAG_RANGE_LONGDOUBLE == srid ) {
+		ctype = "longdouble";
 	} else if ( JAG_RANGE_DOUBLE == srid ) {
 		ctype = "double";
 	} else if ( JAG_RANGE_FLOAT == srid ) {
@@ -6637,19 +6904,28 @@ Jstr JagParser::getFieldTypeString( int srid )
 	return ctype;
 }
 
-bool JagParser::getMetrics( const JagStrSplitWithQuote &sp, int start, JagVector<Jstr> &metrics )
+// metrics are required to be: 'a' 'b' 'c'  or "a"  "b"  "c"
+bool JagParser::getMetrics( const JagStrSplitWithQuote &sp, JagVector<Jstr> &metrics )
 {
+	prt(("s422398 getMetrics \n"));
 	Jstr t;
-	for ( int i = start; i < sp.size(); ++i ) {
+	int cnt = 0;
+	for ( int i = 0; i < sp.size(); ++i ) {
 		t = sp[i];
 		if ( '\'' == *(t.c_str()) ) {
 			t.trimChar( '\'');
+			metrics.append( t );
+			++ cnt;
 		} else if ( '"' == *(t.c_str()) ) {
 			t.trimChar( '"');
+			metrics.append( t );
+			++ cnt;
 		}
 		if ( strchr(t.s(), '#') ) return false;
-		metrics.append( t );
 	}
+
+	//metrics.print(); 
+
 	return true;
 }
 
@@ -7004,3 +7280,97 @@ int JagParser::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr 
 
 	return cnt;
 }
+
+#if 0
+// input ptok:  "rollup( avg where (a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
+// input:  "rollup (avg where (a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
+// input:  "rollup (avg | (a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
+// input:  "rollup(avg |(a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
+// input:  "rollup(avg ) int"
+// returns: pointer right after the most-right ')' of rollup statememt
+// returns: NULL if errors happened
+const char * JagParser::parseRollup( const char *ptok, CreateAttribute &cattr )
+{
+	prt(("s122080 ******************** parseRollup ptok=[%s]\n", ptok ));
+	*(cattr.spare+7) = JAG_ROLL_UP;
+	prt(("s122081 ptok=[%s]\n", ptok ));
+	ptok += 6; 
+	prt(("s122081 ptok=[%s]\n", ptok ));
+	while ( isspace( *ptok ) ) ++ptok;
+	if ( *ptok == NBT ) { prt(("s102\n")); return NULL; }
+	if ( *ptok != '(' ) { prt(("s103\n")); return NULL; }
+	// ptok points to '(';
+	++ptok;
+	prt(("s123081 ptok=[%s]\n", ptok ));
+	while ( isspace( *ptok ) ) ++ptok;
+	if ( *ptok == NBT ) { prt(("s104\n")); return NULL; }
+	// ptok points to 'avg where ...';
+	prt(("s123083 ptok=[%s]\n", ptok ));
+	Jstr rtype = firstToken( ptok, '|');
+	if ( rtype.containsChar(')') ) { rtype.remove(')'); }
+	prt(("s3330341 rtype=[%s]\n", rtype.s() ));
+	rtype.toUpper();
+	prt(("s3330381 rtype=[%s]\n", rtype.s() ));
+	if ( rtype == "AVG" ) {
+		*(cattr.spare+8) = JAG_ROLLUP_AVG;
+	} else if ( rtype == "SUM"  ) {
+		*(cattr.spare+8) = JAG_ROLLUP_SUM;
+	} else if ( rtype == "MIN" ) {
+		*(cattr.spare+8) = JAG_ROLLUP_MIN;
+	} else if ( rtype == "MAX" ) {
+		*(cattr.spare+8) = JAG_ROLLUP_MAX;
+	} else if ( rtype == "COUNT" ) {
+		*(cattr.spare+8) = JAG_ROLLUP_COUNT;
+	} else {
+		prt(("s105\n"));
+		return NULL;
+	}
+
+	ptok += rtype.size(); // right after avg
+	prt(("s123583 ptok=[%s]\n", ptok ));
+	while ( isspace( *ptok ) ) ++ptok;
+	if ( *ptok == NBT ) return NULL;
+	prt(("s124083 ptok=[%s]\n", ptok ));
+	// ptok now at ')' or '|...' or 'where ..."
+	if ( *ptok == ')' ) {
+		ptok ++;
+		return ptok;
+	}
+
+	if ( *ptok == '|' ) {
+		ptok ++; // " a < 100 or (b > 10) ) int"
+	} else if ( 0==strncasecmp( ptok, "where", 5) ) {
+		ptok += 5;
+	} else {
+		prt(("s222210 | or where not found\n"));
+		return NULL;
+	}
+
+	while ( isspace( *ptok ) ) ++ptok;
+	if ( *ptok == NBT ) { prt(("s107\n")); return NULL; }
+	// ptok: "a < 100 or (b > 10) ) int"
+
+	// goto the first right unbalanced ')'
+	int matchedBrackets = 0;
+	const char  *p = ptok;
+	while ( *p != NBT ) {
+		if ( *p == '(' ) {
+			++ matchedBrackets;
+		} else if ( *p == ')' ) {
+			-- matchedBrackets;
+			if ( matchedBrackets == -1 ) {
+				// first extra ')' on right
+				cattr.rollupWhere = Jstr( ptok, p-ptok ).trimSpaces();
+				prt(("s223309 cattr.rollupWhere=[%s]\n", cattr.rollupWhere.s() ));
+				return p+1;
+			}
+		}
+
+		++p;
+	}
+
+	prt(("s222038 not found extra ')' after where\n"));
+	return NULL;
+}
+#endif
+

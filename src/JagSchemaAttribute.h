@@ -35,6 +35,7 @@ class JagSchemaAttribute
 	unsigned int endcol;
 	unsigned int srid;
 	unsigned int metrics;
+	//Jstr     rollupWhere;
 	bool isUUID;
 	bool isFILE;
 	bool isKey;

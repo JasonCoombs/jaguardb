@@ -108,6 +108,7 @@ void *deleteMap( void *ptr );
 void *insertMap( void *ptr );
 void *updateMap( void *ptr );
 void *readMap( void *ptr );
+void *sleep_func( void *p );
 
 struct TPass {
 	TPass() { anum1 = anum2 = anum3 = 0; fd=0; num=0; }
@@ -234,6 +235,7 @@ void test_fflush( int n );
 void test_jstr( int n );
 void test_parseparam( int n );
 void test_spsc_queue( int n );
+void test_numinstr();
 
 int main(int argc, char *argv[] )
 {
@@ -242,7 +244,7 @@ int main(int argc, char *argv[] )
 		N = atoi( argv[1] );
 	} 
 
-	// test_misc();
+	//test_misc();
 	//testjson();
 	//testrayrecord();
 	//testwheretree();
@@ -300,7 +302,7 @@ int main(int argc, char *argv[] )
 	// test_sys_getline();
 	// test_jag_getline();
 	// test_reply( argv[1] );
-	//test_str( N );
+	test_str( N );
 	//test_geo( N );
 	//test_sqrt( N );
 	//test_split( N );
@@ -318,12 +320,14 @@ int main(int argc, char *argv[] )
 
 	//test_fflush( N );
 	//test_jstr( N );
-	test_parseparam( N );
+	// test_parseparam( N );
     //test_spsc_queue(N );
 	//test_stdmap_threads( N );
 	//test_cds( N );
 	//test_lockfreedbmap( N );
 	//test_safemap(N);
+
+	test_numinstr();
 }
 
 
@@ -1408,6 +1412,25 @@ int test_misc()
 		printf("i=%d  strplit=[%s]\n", i, split[i].c_str() );
 	}
 
+	str = "12w|";
+	JagStrSplit sp2( str, '|' );
+	printf("sp2.size=%d\n", sp2.size() );
+	for ( int i=0; i < sp2.size(); ++i ) {
+		printf("i=%d [%s]\n", i, sp2[i].s() );
+	}
+	JagStrSplit sp3( str, '|', true );
+	printf("sp3.size=%d\n", sp3.size() );
+	for ( int i=0; i < sp3.size(); ++i ) {
+		printf("i=%d [%s]\n", i, sp3[i].s() );
+	}
+
+	JagStrSplit sp4( "12w", '|', true );
+	printf("sp4.size=%d\n", sp4.size() );
+	for ( int i=0; i < sp4.size(); ++i ) {
+		printf("i=%d [%s]\n", i, sp4[i].s() );
+	}
+
+
 	JagClock clock;
 	clock.start();
 	for ( int i = 0; i < 10000; ++i ) {
@@ -1433,6 +1456,19 @@ int test_misc()
 	JagFileMgr::makedirPath ( fdir );
 	printf("mkdir %s \n", fdir.c_str() );
 
+	pthread_t trd;
+	pthread_create( &trd, NULL, &sleep_func, (void*)NULL);
+
+	while ( 1 ) {
+		jagsleep( 30, JAG_SEC );
+	}
+}
+
+void *sleep_func( void *p)
+{
+	while ( 1 ) {
+		jagsleep( 60, JAG_SEC );
+	}
 }
 
 void test_stack()
@@ -2775,6 +2811,10 @@ void test_reply ( const char *inputFile )
 
 void test_str( int N ) 
 {
+	const char *ss1 = "timeseries(30m)   test.ptr (    key:    pickup  datetimesec,    t char(1),    value:    a int ";
+	bool ba1 = endWithSQLRightBra( ss1 );
+	printf("endWithSQLRightBra ss1=[%s] a1=[%d]\n", ss1, ba1 );
+
 	unsigned char s[4]; s[0] = 23; s[1] = 12; s[2] = 32; s[3] = 99;
 	std::string s1 = "0123456";
 	size_t f1 = s1.find(s[3]);
@@ -2870,37 +2910,37 @@ void test_str( int N )
 	prt(("after trimend0 a1=[%s] a1len=%d a2=[%s] a3=[%s]\n", c1.c_str(), c1.size(), a2.c_str(), a3.c_str() ));
 
 	Jstr q1 = "all(ls )";
-	Jstr nm = q1.substr('(', ')');
+	Jstr nm = q1.substrc('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
 	q1 = "all(ls";
-	nm = q1.substr('(', ')');
+	nm = q1.substrc('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
 	q1 = "all( ls)";
-	nm = q1.substr('(', ')');
+	nm = q1.substrc('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
 	q1 = " ls)";
-	nm = q1.substr('(', ')');
+	nm = q1.substrc('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
 	q1 = "(";
-	nm = q1.substr('(', ')');
+	nm = q1.substrc('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
 	q1 = ")";
-	nm = q1.substr('(', ')');
+	nm = q1.substrc('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
 	q1 = "()";
-	nm = q1.substr('(', ')');
+	nm = q1.substrc('(', ')');
 	nm = trimChar( nm, ' ' );
 	prt(("q1=[%s]  (*)=[%s]\n", q1.c_str(), nm.c_str() ));
 
@@ -3950,8 +3990,13 @@ void test_jstr( int N )
 		}
 	}
 
-	printf("sleep 10\n");
-	sleep(10);
+	Jstr a = "hello world hihihi world end";
+	printf("a=[%s]\n", a.s() );
+	a.replace("world", "usa" );
+	printf("a=[%s]\n", a.s() );
+	a.replace("hello", 'h');
+	printf("a=[%s]\n", a.s() );
+
 }
 
 
@@ -4555,4 +4600,29 @@ void test_safemap(int N )
 
 }
 #endif
+
+void test_numinstr()
+{
+	int a = -20213391;
+	char *p = (char*)malloc(1024);
+	memset(p, 0, 1024 );
+
+	long long bignum = 12303019993990;
+
+	memcpy(p, "haha", 4 );
+	memcpy(p+4, &a, 4 );
+	memcpy(p+8, "12345", 5 );
+
+	printf("p=[%s]\n", p );
+	int  b = get4ByteInt( p+4 );
+	printf("a=%d   --> b=%d\n", a, b );
+
+	memcpy(p+24, &bignum, 8 );
+	long long bignum2 = get8ByteLongLong( p+24 );
+	printf("bigum=%lld   --> bignum2=%lld\n", bignum, bignum2 );
+
+	time_t t1 = 30393939339;
+	printf("sizeof time_t=%d\n", sizeof(time_t) );
+	printf("sizeof time_t=%d\n", sizeof(t1) );
+}
 

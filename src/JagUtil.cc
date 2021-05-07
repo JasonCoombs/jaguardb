@@ -29,9 +29,6 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <ctype.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <dirent.h>
 #include <math.h>
 #include <malloc.h>
 #include <libgen.h>
@@ -46,7 +43,6 @@
 
 #include <abax.h>
 #include <JagLogLevel.h>
-//#include <JDFS.h>
 #include <JagStrSplit.h>
 #include <JagParser.h>
 #include <JagParseParam.h>
@@ -341,6 +337,7 @@ char *jumptoEndQuote(const char *p)
 // returned *q must be the same as *p ( true ) or '\0' ( false ) 
 // p = (adofia)
 // if not found end ), return *q='\0'
+/***
 char *jumptoEndBracket(const char *p) 
 {
 	char *q = (char*)p + 1;
@@ -350,6 +347,7 @@ char *jumptoEndBracket(const char *p)
 	}
 	return q;
 }
+***/
 
 // method to remove quote from given string; e.g. 'apple' -> apple ; "apple" -> apple ;
 // instr beginning with quote which you want to remove; e.g. ' or "
@@ -390,10 +388,8 @@ void raydebug( FILE *outf, int level, const char *fmt, ... )
 	time_t  now = time(NULL);
 	struct tm  *tmp;
 	struct tm  result;
-	// tmp = localtime( &now );
 	tmp = jag_localtime_r( &now, &result );
 	strftime( tstr, 22, "%Y-%m-%d %H:%M:%S", tmp );
-	//fprintf( outf, "%s %lld ", tstr, pthread_self() ); 
 	pthread_t tid = pthread_self();
 	fprintf( outf, "%s 0x%0x ", tstr, tid ); 
     
@@ -587,12 +583,13 @@ abaxdouble raystrtold( const char *buf, int length )
 }
 
 
-//errcode:  0 success; 1 input format invalid; 2 input exceed length; 
+// input: inbuf can be string "234.5"  "2938381" "2020-12-25 10:33:11"  "some string" 
+//errcode:  1 success; 0: error
 bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf, 
 				   Jstr &errmsg, const Jstr &name, 
-				   const int offset, const int length, const int sig, const Jstr &type )
-{	
-	// prt(("s3660 formatOneCol name=[%s] offset=%d length=%d type=[%s] inbuf=[%s]\n", name.c_str(), offset, length, type.c_str(), inbuf ));
+				   int offset, int length, int sig, const Jstr &type )
+{
+	prt(("s36602 formatOneCol name=[%s] offset=%d length=%d type=[%s] inbuf=[%s]\n", name.c_str(), offset, length, type.c_str(), inbuf ));
 	if ( length < 1 ) {
 		// including type == "PT", type == "LN", etc
 		return 1;
@@ -604,19 +601,24 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 	jagint actwlen = 0;
 	int writelen = 0;
 
-	JagParseAttribute jpa( NULL, tzdiff, servtzdiff );
-	//prt(("s8282 formatOneCol type=[%s]  inbuf=[%s] offset=%d length=%d\n", type.c_str(), inbuf, offset, length ));
-
-	if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP ) { // for datetime
-		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length );
+	if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP ) { // for datetime microsecs
+		JagParseAttribute jpa( NULL, tzdiff, servtzdiff );
+		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length, 1 );
 	} else if ( type == JAG_C_COL_TYPE_DATETIMENANO || type == JAG_C_COL_TYPE_TIMESTAMPNANO ) { // for datetime in nano sec 
-		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length, true );
+		JagParseAttribute jpa( NULL, tzdiff, servtzdiff );
+		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length, 2 );
+	} else if ( type == JAG_C_COL_TYPE_DATETIMESEC || type == JAG_C_COL_TYPE_TIMESTAMPSEC ) { // for datetime in sec 
+		JagParseAttribute jpa( NULL, tzdiff, servtzdiff );
+		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length, 3 );
+	} else if ( type == JAG_C_COL_TYPE_DATETIMEMILL || type == JAG_C_COL_TYPE_TIMESTAMPMILL ) { // for datetime in millisec 
+		JagParseAttribute jpa( NULL, tzdiff, servtzdiff );
+		errcode = JagTime::convertDateTimeFormat( jpa, outbuf, inbuf, offset, length, 4 );
 	} else if ( type == JAG_C_COL_TYPE_DATE ) { // for date
 		errcode = JagTime::convertDateFormat( outbuf, inbuf, offset, length );
 	} else if ( type == JAG_C_COL_TYPE_TIME ) { // for time
-		errcode = JagTime::convertTimeFormat( outbuf, inbuf, offset, length );
+		errcode = JagTime::convertTimeFormat( outbuf, inbuf, offset, length, 1 );
 	} else if ( type == JAG_C_COL_TYPE_TIMENANO ) { // for time in nano sec
-		errcode = JagTime::convertTimeFormat( outbuf, inbuf, offset, length, true );
+		errcode = JagTime::convertTimeFormat( outbuf, inbuf, offset, length, 2 );
 	} else if ( type == JAG_C_COL_TYPE_DBOOLEAN || type == JAG_C_COL_TYPE_DBIT ) { // for boolean
 		if ( atoi(inbuf) == 0 ) { outbuf[offset] = '0'; } else { outbuf[offset] = '1'; }
 	} else if ( type == JAG_C_COL_TYPE_STR ) { // for string
@@ -627,6 +629,13 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 		}
 		***/
 	} else { // for int/jagint, float/double
+		if ( inbuf[0] == '*' ) {
+			prt(("u20287 int/float see *\n"));
+			memset( outbuf+offset, 0, length );
+			*(outbuf+offset) = '*';
+			return 1;
+		}
+
 		jagint lonnum = 0;
 		bool dofl = false;
 		char *trackpos;
@@ -641,7 +650,7 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 		// before get lonnum, change scientific notation ( if has ) to regular data string
 		// using atof and/or strtold to achieve
 		Jstr actdata = trackpos;
-		if ( type == JAG_C_COL_TYPE_DOUBLE || type == JAG_C_COL_TYPE_FLOAT  ) {
+		if ( type == JAG_C_COL_TYPE_DOUBLE || type == JAG_C_COL_TYPE_FLOAT || type == JAG_C_COL_TYPE_LONGDOUBLE  ) {
 			writelen = isValidSciNotation(inbuf); // borrow writelen
 			//prt(("u2001 inbuf=[%s] writelen=%d\n", inbuf, writelen ));
 			if ( 2 == writelen ) {
@@ -650,16 +659,16 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 			} else if ( 0 == writelen ) {
 				actdata = trackpos = (char*)"0";
 			}
-			//prt(("u2230 actdata=[%s]\n", actdata.c_str() ));
+			prt(("u2230 actdata=[%s]\n", actdata.c_str() ));
 		}
 
 		lonnum = jagatoll(trackpos);  // the digits before . decimal point
-		//prt(("u2210 trackpos=[%s] lonnum=%d\n", trackpos, lonnum ));
+		prt(("u2210 trackpos=[%s] lonnum=%d\n", trackpos, lonnum ));
 
 		if ( isInteger( type ) ) { // for int
 			writelen = length; 
 			if ( strlen(trackpos) > JAG_DBIGINT_FIELD_LEN ) errcode = 2;
-		} else if ( type == JAG_C_COL_TYPE_DOUBLE || type == JAG_C_COL_TYPE_FLOAT ) { 
+		} else if ( type == JAG_C_COL_TYPE_DOUBLE || type == JAG_C_COL_TYPE_FLOAT || type == JAG_C_COL_TYPE_LONGDOUBLE ) { 
 			// for double and float whole part
 			writelen = length-sig-1;		
 			dofl = true;
@@ -667,7 +676,7 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 		}
 
 		if ( !errcode && ( actwlen = snprintf(outbuf+offset+1, writelen, "%0*lld", writelen-1, lonnum) ) > writelen-1 ) {
-			//prt(("u2039 errcode=%d actwlen=%d writelen=%d lonnum=%d\n", errcode, actwlen, writelen, lonnum ));
+			prt(("u2039 errcode=%d actwlen=%d writelen=%d lonnum=%d\n", errcode, actwlen, writelen, lonnum ));
 			errcode = 2;
 		}
 		//prt(("u3001 actwlen=%d writelen-1=%d lonnum=%d\n", actwlen, writelen-1, lonnum ));
@@ -685,6 +694,7 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 		}
 	}
 	
+	// OK
 	if ( errcode == 0 ) {
 		*(outbuf+offset+length) = savebyte;
 		return 1;
@@ -692,71 +702,98 @@ bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf,
 	
 	if ( errcode == 1 ) {
 		if ( type == JAG_C_COL_TYPE_DATE ) {
-			errmsg = "E6200 Error date format. Please check your input.";
+			errmsg = "E6200 Error date format. Please correct your input.";
 		} else if ( type == JAG_C_COL_TYPE_DATETIME ) {
-			errmsg = "E6202 Error datetime format. Please check your input.";
+			errmsg = "E6202 Error datetime format. Please correct your input.";
+		} else if ( type == JAG_C_COL_TYPE_DATETIMESEC ) {
+			errmsg = "E6203 Error datetimesec format. Please correct your input.";
 		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO ) {
-			errmsg = "E6204 Error datetimenano format. Please check your input.";
+			errmsg = "E6204 Error datetimenano format. Please correct your input.";
+		} else if ( type == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+			errmsg = "E6208 Error timestampsec format. Please correct your input.";
 		} else if ( type == JAG_C_COL_TYPE_TIMESTAMP ) {
-			errmsg = "E6206 Error timestamp format. Please check your input.";
+			errmsg = "E6210 Error timestamp format. Please correct your input.";
+		} else if ( type == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+			errmsg = "E6212 Error timestampsec format. Please correct your input.";
+		} else if ( type == JAG_C_COL_TYPE_DATETIMESEC ) {
+			errmsg = "E6212 Error datetimesec format. Please correct your input.";
 		} else if ( type == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
-			errmsg = "E6208 Error timestampnano format. Please check your input.";
+			errmsg = "E6214 Error timestampnano format. Please correct your input.";
+		} else if ( type == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+			errmsg = "E6218 Error timestampmill format. Please correct your input.";
+		} else if ( type == JAG_C_COL_TYPE_DATETIMEMILL ) {
+			errmsg = "E6220 Error datetimemill format. Please correct your input.";
 		} else if ( type == JAG_C_COL_TYPE_TIME ) {
-			errmsg = "E6210 Error time format. Please check your input.";
+			errmsg = "E6223 Error time format. Please correct your input.";
 		} else if ( type == JAG_C_COL_TYPE_STR ) {
-			errmsg = "E6212 Length of string " + longToStr(actwlen) + " exceeded limit " + 
-					intToStr(length) + " for column " + name + ". Please check your input.";
+			errmsg = "E6227 Length of string " + longToStr(actwlen) + " exceeded limit " + 
+					intToStr(length) + " for column " + name + ". Please correct your input.";
 		} else {
-			errmsg = "E6220 Error input. Please check your input.";
+			errmsg = "E6232 Error input. Please correct your input.";
 		}
 	} else if ( errcode == 2 ) {
-		errmsg = "E6208 Length of input " + longToStr(actwlen) + " exceeded limit " + 
-				intToStr(writelen-1) + " for column " + name + ". Please check your input.";
+		errmsg = "E16208 Length of input " + longToStr(actwlen) + " exceeded limit " + 
+				intToStr(writelen-1) + " for column " + name + ". Please correct your input.";
 	} else {
-		errmsg = "E6210 Error error code";
+		errmsg = "E16210 Error error code";
 	}
 	
-	return 0;
+	return 0; // error
 }
 
-
-// dbformat <-> natural true format
-void dbNaturalFormatExchange( char *buffer, int numKeys, const JagSchemaAttribute *attrs, int offset, int length, 
-							  const Jstr &type )
-{
-	rwnegConvertion( buffer, numKeys, attrs, offset, length, type );
-}
-
-void dbNaturalFormatExchange( char *buffers[], int num, int numKeys[], const JagSchemaAttribute *attrs[] )
+void MultiDbNaturalFormatExchange( char *buffers[], int num, int numKeys[], const JagSchemaAttribute *attrs[] )
 {
 	for ( int i = 0; i < num; ++i ) {
-		rwnegConvertion( buffers[i], numKeys[i], attrs[i], 0, 0, " " );
+		rwnegConvertionCols( buffers[i], numKeys[i], attrs[i] );
 	}
 }
 
-void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schAttr, int offset, int length, 
-					  const Jstr &type )
-{	
-	if ( checkNum == 0 ) {
-        if ( ( isInteger(type) || type == JAG_C_COL_TYPE_FLOAT
-            || type == JAG_C_COL_TYPE_DOUBLE) && *(outbuf+offset) == JAG_C_NEG_SIGN ) {
-            for ( int j = offset+1; j < offset+length; ++j ) {
-                if ( *(outbuf+j) != '.' ) {
-					*(outbuf+j) = '9' - *(outbuf+j) + '0';
-				}
-            }
-        }
+// convert negative numbers for multi columns
+// For negative number comparison    "-000248" ---> "-999752"
+// It called again: "-999752" -->  "-000248"
+void dbNaturalFormatExchange( char *buffer, int numKeys, const JagSchemaAttribute *schAttr, int offset, int length, const Jstr &type )
+{
+	if ( numKeys == 0 ) {
+		rwnegConvertionBuf( buffer, offset, length, type );
+	} else {
+		rwnegConvertionCols( buffer, numKeys, schAttr );
 	}
-	for ( int i = 0; i < checkNum; ++i ) {
-		if ( ( isInteger(schAttr[i].type) || schAttr[i].type == JAG_C_COL_TYPE_FLOAT 
-			|| schAttr[i].type == JAG_C_COL_TYPE_DOUBLE) && *(outbuf+schAttr[i].offset) == JAG_C_NEG_SIGN ) {
+}
+
+// convert negative numbers for multi columns
+// For negative number comparison    "-000248" ---> "-999752"
+// It called again: "-999752" -->  "-000248"
+// convert negative numbers for a column
+void rwnegConvertionBuf( char *buffer, int offset, int length, const Jstr &type )
+{	
+    if ( *(buffer+offset) == JAG_C_NEG_SIGN && ( isInteger(type) || isFloat(type) ) ) {
+        for ( int j = offset+1; j < offset+length; ++j ) {
+            if ( *(buffer+j) != '.' ) {
+				*(buffer+j) = '9' - *(buffer+j) + '0';
+			}
+        }
+   }
+}
+
+// convert negative numbers for multi columns
+// For negative number comparison    "-000248" ---> "-999752"
+// It called again: "-999752" -->  "-000248"
+void rwnegConvertionCols( char *buffer, int numKeys, const JagSchemaAttribute *schAttr )
+{	
+	for ( int i = 0; i < numKeys; ++i ) {
+		if ( *(buffer+schAttr[i].offset) == JAG_C_NEG_SIGN 
+			 && ( isInteger(schAttr[i].type) || isFloat( schAttr[i].type ) ) ) {
+
 			for ( int j = schAttr[i].offset+1; j < schAttr[i].offset+schAttr[i].length; ++j ) {
-				if ( *(outbuf+j) != '.' ) *(outbuf+j) = '9' - *(outbuf+j) + '0';
+				if ( *(buffer+j) != '.' ) {
+					*(buffer+j) = '9' - *(buffer+j) + '0';
+				}
 			}
 		}
 	}
 }
 
+/***
 #ifndef _WINDOWS64_
  Jstr filePathFromFD( int fd )
  {
@@ -768,8 +805,10 @@ void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schA
 	return file;
 }
 #endif
+***/
 
 
+/***
 Jstr removeCharFromString( const Jstr &str, char dropc )
 {
 	if ( str.length()<1) return "";
@@ -786,8 +825,7 @@ Jstr removeCharFromString( const Jstr &str, char dropc )
 	if ( p ) free( p );
 	return res;
 }
-
-
+**/
 
 Jstr makeUpperString( const Jstr &str )
 {
@@ -893,6 +931,7 @@ Jstr trimTailLF( const Jstr &str )
 	return newstr;
 }
 
+/***
 bool beginWith( const Jstr &str, char c )
 {
 	char *p = (char*)str.c_str();
@@ -906,6 +945,7 @@ bool beginWith( const AbaxString &str, char c )
 	if ( *p == c ) return true;
 	return false;
 }
+***/
 
 bool endWith( const Jstr &str, char c )
 {
@@ -1096,15 +1136,39 @@ bool isInteger( const Jstr &dtype )
 	 return false;
 }
 
+bool isFloat( const Jstr &colType )
+{
+	 if ( colType == JAG_C_COL_TYPE_DOUBLE || colType == JAG_C_COL_TYPE_FLOAT || colType == JAG_C_COL_TYPE_LONGDOUBLE ) {
+	 	return true;
+	 }
+
+	 return false;
+}
+
+
 bool isDateTime( const Jstr &dtype ) 
+{
+	if ( isDateAndTime( dtype ) ) return true;
+
+	if ( dtype == JAG_C_COL_TYPE_TIMENANO ||
+		dtype == JAG_C_COL_TYPE_DATE  ||
+		dtype == JAG_C_COL_TYPE_TIME ) 
+	{
+		return true;
+	}
+	return false;
+}
+
+bool isDateAndTime( const Jstr &dtype ) 
 {
 	if ( dtype == JAG_C_COL_TYPE_DATETIME  ||
 		 dtype == JAG_C_COL_TYPE_TIMESTAMP  ||
-		dtype == JAG_C_COL_TYPE_DATETIMENANO  ||
-		dtype == JAG_C_COL_TYPE_TIMESTAMPNANO  ||
-		dtype == JAG_C_COL_TYPE_DATE  ||
-		dtype == JAG_C_COL_TYPE_TIME  ||
-		dtype == JAG_C_COL_TYPE_TIMENANO )
+		 dtype == JAG_C_COL_TYPE_TIMESTAMPSEC  ||
+		 dtype == JAG_C_COL_TYPE_DATETIMESEC  ||
+		 dtype == JAG_C_COL_TYPE_DATETIMEMILL  ||
+		 dtype == JAG_C_COL_TYPE_TIMESTAMPMILL  ||
+		 dtype == JAG_C_COL_TYPE_DATETIMENANO  ||
+		 dtype == JAG_C_COL_TYPE_TIMESTAMPNANO )
 	{
 		return true;
 	}
@@ -1140,13 +1204,31 @@ int stripStrEnd( char *msg, int len )
     return t;
 }
 
+// replace ending \n and \r  --> ' '
+void replaceStrEnd( char *msg, int len )
+{
+    int i;
+    for ( i=len-1; i>=0; --i ) {
+        if ( msg[i] == '\n' ) {  msg[i] = ' '; }
+        else if ( msg[i] == '\r' ) { msg[i] = ' '; }
+    }
+
+	// leave only one end ' '
+    for ( i=len-1; i>=1; --i ) {
+		if ( msg[i-1] == ' ' && msg[i] == ' ' ) {
+			 msg[i] = '\0';
+		} else {
+			break;
+		}
+	}
+}
+
 // if c==';'
-// "sssss;    "  : return 1  --- saw last line wth ;
-// "sssss;hhh    "  :0       --- not the end line with ;
+// "sssss;    "   return 1  --- saw last line wth ;
+// "sssss;hhh    "  return 0   --- not the end line with ;
 int trimEndWithChar ( char *msg, int len, char c )
 {
 	if ( ! msg ) return 0;
-
 	char *p = msg + len-1;
 	while ( p != msg ) {
 		if ( isspace(*p) ) { *p = '\0'; --p; }
@@ -1230,13 +1312,12 @@ jagint strchrnum( const char *str, char ch )
     if ( ! str || *str == '\0' ) return 0;
 
     jagint cnt = 0;
-    const char *p = str;
     const char *q;
     while ( 1 ) {
-        q=strchr(p, ch);
+        q=strchr(str, ch);
         if ( ! q ) break;
         ++cnt;
-        p = q+1;
+        str = q+1;
     }
 
     return cnt;
@@ -1329,6 +1410,7 @@ void splitFilePath( const char *fpath, Jstr &first, Jstr &last )
 	*p = '.';
 }
 
+/***
 // input fpath:  /tmp/abc/fff.jdb  newLast: "bid"
 // output: first=/tmp/abc/fff.bid
 Jstr renameFilePath( const Jstr& fpath, const Jstr &newLast )
@@ -1356,6 +1438,7 @@ void stripeFilePath( const Jstr &fpath, jagint stripe, Jstr &stripePath )
 
 	stripePath = first + "." + longToStr(stripe) + "." + last;
 }
+***/
 
 Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbname, const Jstr &objname )
 {
@@ -1589,10 +1672,8 @@ int checkColumnTypeMode( const Jstr &type )
 	else if ( type == JAG_C_COL_TYPE_DINT  || type == JAG_C_COL_TYPE_DTINYINT  || 
 				type == JAG_C_COL_TYPE_DSMALLINT  || type == JAG_C_COL_TYPE_DMEDINT  ) return 3;
 	else if ( type == JAG_C_COL_TYPE_DBIGINT  ) return 4;
-	else if ( type == JAG_C_COL_TYPE_FLOAT  || type == JAG_C_COL_TYPE_DOUBLE  ) return 5;
-	else if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP  || type == JAG_C_COL_TYPE_TIME  || 
-				type==JAG_C_COL_TYPE_DATETIMENANO || type == JAG_C_COL_TYPE_TIMESTAMPNANO || 
-				type==JAG_C_COL_TYPE_TIMENANO || type==JAG_C_COL_TYPE_DATE  ) return 6;
+	else if ( type == JAG_C_COL_TYPE_FLOAT  || type == JAG_C_COL_TYPE_DOUBLE || type == JAG_C_COL_TYPE_LONGDOUBLE  ) return 5;
+	else if ( isDateTime(type) ) return 6;
 	return 0;
 }
 
@@ -1603,10 +1684,16 @@ Jstr formOneColumnNaturalData( const char *buf, jagint offset, jagint length, co
 	if ( 6 == rc ) {
 		if ( type == JAG_C_COL_TYPE_DATETIME || type == JAG_C_COL_TYPE_TIMESTAMP ) {
 			instr = Jstr( buf+offset, length, length );
-			JagTime::convertDateTimeToLocalStr( instr, outstr );
+			JagTime::convertDateTimeToLocalStr( instr, outstr, 1 );
 		} else if ( type == JAG_C_COL_TYPE_DATETIMENANO || type == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
 			instr = Jstr( buf+offset, length, length );
-			JagTime::convertDateTimeToLocalStr( instr, outstr, true );
+			JagTime::convertDateTimeToLocalStr( instr, outstr, 2 );
+		} else if ( type == JAG_C_COL_TYPE_DATETIMESEC || type == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+			instr = Jstr( buf+offset, length, length );
+			JagTime::convertDateTimeToLocalStr( instr, outstr, 3 );
+		} else if ( type == JAG_C_COL_TYPE_DATETIMEMILL || type == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+			instr = Jstr( buf+offset, length, length );
+			JagTime::convertDateTimeToLocalStr( instr, outstr, 4 );
 		} else if ( type == JAG_C_COL_TYPE_TIME ) {
 			instr = Jstr( buf+offset, length, length );
 			JagTime::convertTimeToStr( instr, outstr );
@@ -1678,11 +1765,11 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 				siglen = 0;
 				tname = parseParam->selColVec[i].getfileCol;
 				if ( JAG_GETFILE_SIZE == parseParam->selColVec[i].getfileType ) {
-					tname += ".size";
+					tname += "_size";
 				} else if ( JAG_GETFILE_TIME == parseParam->selColVec[i].getfileType ) {
-					tname += ".time";
+					tname += "_time";
 				} else if ( JAG_GETFILE_MD5SUM == parseParam->selColVec[i].getfileType ) {
-					tname += ".md5";
+					tname += "_md5";
 				}
 
 				newhdr += record.formatColumnRecord( tname.c_str(), type.c_str(), offset, collen, siglen );
@@ -1765,6 +1852,7 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 
 	offset = 0;
 	gbvhdr = records[0]->formatHeadRecord( );
+	prt(("u12340 gbvhdr=[%s] ...\n", gbvhdr.s() ));
 
 	for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 		isAggregate = false;
@@ -1782,10 +1870,14 @@ int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute
 													  type.c_str(), offset, collen, siglen, false );
 		}
 		offset += collen;
+
+		prt(("u12342 gbvhdr=[%s] ...\n", gbvhdr.s() ));
 	}
 
 	gbvhdr += records[0]->formatTailRecord( );
 	gbvsendlen = offset;
+
+	prt(("u12342 gbvhdr=[%s] ... gbvsendlen=%d\n", gbvhdr.s(), gbvsendlen ));
 	
 	return 2;
 }
@@ -1908,6 +2000,7 @@ int jaguar_cond_broadcast( pthread_cond_t *cond)
 	return rc;
 }
 
+/***
 int jaguar_cond_signal( pthread_cond_t *cond)
 {
 	int rc = pthread_cond_signal( cond );
@@ -1916,22 +2009,13 @@ int jaguar_cond_signal( pthread_cond_t *cond)
 	}
 	return rc;
 }
+***/
 
 int jaguar_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
 	int rc = pthread_cond_wait(cond, mutex);
 	if ( 0 != rc ) {
 		prt(("s6807 error pthread_cond_wait(%0x %0x) [%s]\n", cond, mutex, strerror( rc ) ));
-	}
-	return rc;
-}
-
-int jaguar_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
-{
-	int rc = pthread_cond_timedwait(cond, mutex, abstime);
-	if ( ETIMEDOUT == rc ) {
-	} else if ( 0 != rc ) {
-		prt(("s6808 error pthread_cond_timedwait(%0x %0x : %ld-%ld)  [%s]\n", cond, mutex, abstime->tv_sec, abstime->tv_nsec, strerror( rc ) ));
 	}
 	return rc;
 }
@@ -2208,8 +2292,10 @@ jagint recvMessage( JAGSOCK sock, char *hdr, char *&buf )
 	}
 	len = getXmitMsgLen( hdr );
 	if ( len <= 0 ) { 
+		prt(("u82038 getXmitMsgLen hdr=[%s] slen=%d len=%d return 0\n", hdr, slen, len ));
 		return 0; 
 	} 
+	prt(("u82038 getXmitMsgLen hdr=[%s] slen=%d len=%d\n", hdr, slen, len ));
 
 	if ( buf ) { free( buf ); }
 	buf = (char*)jagmalloc( len+1 );
@@ -2221,7 +2307,7 @@ jagint recvMessage( JAGSOCK sock, char *hdr, char *&buf )
 		return -1; 
 	}
 
-	//prt(("c387440 recvMessage got hdr=[%s] buf=[%s]\n", hdr, buf ));
+	//prt(("c387440 recvMessage got hdr=[%s] buf=[%s] slen=%d\n", hdr, buf, slen ));
 	return slen;
 }
 
@@ -2237,7 +2323,7 @@ jagint recvMessageInBuf( JAGSOCK sock, char *hdr, char *&buf, char *sbuf, int sb
 
 	slen = _rayrecv( sock, hdr, JAG_SOCK_TOTAL_HDR_LEN); 
 	if ( slen < JAG_SOCK_TOTAL_HDR_LEN) { 
-		//prt(("u332092 slen=%d < JAG_SOCK_TOTAL_HDR_LEN got hdr=[%s] return -1\n", slen, hdr ));
+		prt(("u332092 slen=%d < JAG_SOCK_TOTAL_HDR_LEN got hdr=[%s] return -1\n", slen, hdr ));
 		return -1; 
 	}
 
@@ -2255,7 +2341,8 @@ jagint recvMessageInBuf( JAGSOCK sock, char *hdr, char *&buf, char *sbuf, int sb
 			prt(("s0292811 _rayrecv len=%d  got slen=%d recved sbuf=[%s]\n", len, slen, sbuf ));
 			return -1;
 		}
-		sbuf[ len ] = '\0' ;
+		//sbuf[ len ] = '\0' ;
+		sbuf[ slen ] = '\0' ;
 	} else {
     	if ( buf ) { free( buf ); }
     	buf = (char*)jagmalloc( len+1 );
@@ -2266,8 +2353,10 @@ jagint recvMessageInBuf( JAGSOCK sock, char *hdr, char *&buf, char *sbuf, int sb
     		free( buf ); buf = NULL; 
     		return -1; 
     	}
-		buf[ len ] = '\0' ;
+		//buf[ len ] = '\0' ;
+		buf[ slen ] = '\0' ;
 		sbuf[0] = '\0';
+		//memset( sbuf, 0, sbuflen+1);
 	}
 
 	return slen;
@@ -2832,6 +2921,7 @@ jagint jagsendfile( JAGSOCK sock, int fd, jagint size )
 #include <sys/sendfile.h>
 jagint jagsendfile( JAGSOCK sock, int fd, jagint size )
 {
+	/***
 	jagint sz = ::sendfile( sock, fd, NULL, size );
 	if ( sz < 0 ) {
 		if ( errno == ENETRESET || errno == ECONNRESET ) {
@@ -2855,9 +2945,51 @@ jagint jagsendfile( JAGSOCK sock, int fd, jagint size )
 		}
 	}
 	return sz;
+	***/
+
+    jagint BATCHSIZE = 2000000000;
+    jagint batches = size/BATCHSIZE;
+    jagint remain = size % BATCHSIZE;
+    jagint tot, rc;
+    tot = 0;
+    for ( int i = 0; i < batches; ++i ) {
+        rc = sendOneBatch( sock, fd, BATCHSIZE );
+        if ( rc < 0 ) {
+            break;
+        }
+        tot += rc;
+    }
+
+    if ( remain > 0 ) {
+        rc = sendOneBatch( sock, fd, remain );
+    }
+    if ( rc > 0 ) {
+        tot += rc;
+    }
+
+    return tot;
+
 }
 #endif
 
+// -1: error
+jagint sendOneBatch( int sock, int fd, jagint size )
+{
+	jagint remain = size;
+	jagint onesendbytes;
+	while ( remain > 0 ) {
+		prt(("u022294 try sendfile remain=%lld ...\n", remain ));
+		onesendbytes = ::sendfile( sock, fd, NULL, remain );
+		if ( onesendbytes < 0 ) {
+			prt(("u022294 sendfile got %d return -1\n", onesendbytes ));
+			return -1;
+		}
+		prt(("u022295 sendfile onesendbytes=%lld\n", onesendbytes ));
+		remain = remain - onesendbytes;
+	}
+	prt(("u022298 remain=%lld done\n", remain ));
+	return size;
+}
 
 Jstr psystem( const char *command )
 {
@@ -3012,8 +3144,19 @@ int formatInsertSelectCmdHeader( const JagParseParam *parseParam, Jstr &str )
 bool isValidVar( const char *name )
 {
 	while ( *name ) {
-		//if ( ! isalnum( *name ) ) {
 		if ( ! isValidNameChar( *name ) ) {
+			return false;
+		}
+		++name;
+	}
+	return true;
+}
+
+// true: name is "wjdjdAJ71828_jdjd"
+bool isValidCol( const char *name )
+{
+	while ( *name ) {
+		if ( ! isValidColChar( *name ) ) {
 			return false;
 		}
 		++name;
@@ -3154,7 +3297,7 @@ int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 		filename = p+1;
 	}
 
-	//prt(("s0384 filename=[%s] inpath=[%s]\n", filename.c_str(), inpath.c_str() ));
+	prt(("s0384 filename=[%s] inpath=[%s]\n", filename.c_str(), inpath.c_str() ));
 	rlen = 0;
 	if ( inpath == "." || inpath.size() < 1 || filename.size() < 1 ) {
 		rlen = -1;
@@ -3193,11 +3336,11 @@ int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 	}
 
 	if ( ! sendFakeData ) {
-		//prt(("s2293 jagsendfile ...\n" ));
+		prt(("s2293 jagsendfile fd=%d sbuf.st_size=%lld ...\n", fd, sbuf.st_size ));
 		beginBulkSend( sock );
 		rlen = jagsendfile( sock, fd, sbuf.st_size );
 		endBulkSend( sock );
-		prt(("s2293 jagsendfile done rlen=%d\n", rlen ));
+		prt(("s2293 jagsendfile done rlen=%lld\n", rlen ));
 	}
 
 	if ( fd >= 0 ) jagclose( fd );
@@ -3205,13 +3348,16 @@ int oneFileSender( JAGSOCK sock, const Jstr &inpath )
 	return 1;
 }
 
-
 // return 1: OK
 //   -1: error not _onefile command
 //   -2: error invalid _onefile command
 //   -3: fake data  -4: file open error
 int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 {	
+	if ( 0 == sock ) {
+		return 0;
+	}
+
 	// prt(("c0293 oneFileReceiver outpath=[%s]\n", outpath.c_str() ));
 	int fd = -1; 
 	jagint fsize = 0, totlen = 0, recvlen = 0, memsize = 128*JAG_MEGABYTEUNIT;
@@ -3224,6 +3370,9 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
     	rlen = recvMessage( sock, hdr, newbuf ); // "_onefile|...."
 		if ( 0 == rlen ) {
 			continue;
+		}
+		if ( rlen < 0 ) {
+			return 0;
 		}
 
 		if ( hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B' ) {
@@ -3283,7 +3432,7 @@ int oneFileReceiver( JAGSOCK sock, const Jstr &outpath, bool isDirPath )
 
 	jagfdatasync( fd ); jagclose( fd );
 
-	prt(("s1239 end recv file %s totlen=%d\n", recvpath.s(), totlen ));
+	prt(("s1239 end recv file %s totlen=%lld\n", recvpath.s(), totlen ));
 	/**
 	prt(("s2736 send _filedone to client ...\n" ));
 	sendDirectToSock(sock, "_filedone", 0);
@@ -3316,9 +3465,10 @@ jagint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr )
 {
 	jagint rlen = 0;
 	while ( 1 ) {
-		prt(("u208737 recvMesage ...\n"));
+		prt(("u208737 util recvMesage ...\n"));
+		// if ( buf ) { buf[0] = '\0'; }
 		rlen = recvMessage( sock, hdr, buf );
-		prt(("c201139 got hdr=[%s] buf=[%s]\n", hdr, buf ));
+		//prt(("c201139 got hdr=[%s] buf=[%s] rlen=%lld\n", hdr, buf, rlen ));
 		if ( rlen > 0 && (hdr[JAG_SOCK_TOTAL_HDR_LEN-3] == 'H' && hdr[JAG_SOCK_TOTAL_HDR_LEN-2] == 'B') ) { 
 		    // heartbit alive, ignore
 			prt(("c201134 HB \n" ));
@@ -3326,6 +3476,7 @@ jagint recvDirectFromSock( JAGSOCK sock, char *&buf, char *hdr )
 		}
 		break;
 	}
+	prt(("u208737 util recvMesage done rlen=%lld\n", rlen));
 	return rlen;
 }
 
@@ -3450,8 +3601,20 @@ bool isValidNameChar( char c )
     if ( c == ';' ) return false;
     if ( c == ',' ) return false;
     if ( c == ':' ) return false;
+    if ( c == '<' ) return false;
+    if ( c == '>' ) return false;
+    if ( c == '`' ) return false;
+    if ( c == '~' ) return false;
+    if ( c == '&' ) return false;
 
+	// supports UTF chars
     return true;
+}
+
+bool isValidColChar( char c )
+{
+    if ( c == ':' ) return true;
+	return isValidNameChar( c );
 }
 
 long jagatol(const char *nptr)
@@ -3506,6 +3669,7 @@ int jagatoi(char *nptr, int len)
 	return n;
 }
 
+#if 0
 // trim tailing zeroes but leave first zero untouched
 void stripTailZeros( char *buf, int len )
 {
@@ -3529,6 +3693,38 @@ void stripTailZeros( char *buf, int len )
 
 	if ( buf[0] == '.' && buf[1] == '\0' ) buf[0] = '0';
 }
+#endif
+
+
+// trim tailing zeroes "33.000" --> "33"   "222.020000" --> "222.02"
+// "-2233.001000" --> "-2233.001"
+void stripTailZeros( char *buf, int len )
+{
+    if ( NULL == buf || *buf == '\0' ) return;
+    if ( len < 2 ) return;
+
+    char *p = buf+len-1;
+    while ( p >= buf+1 ) {
+        if ( *p == '0' || *p == '.' ) {
+            *p = '\0';
+            --p;
+            continue;
+        } else {
+            break;
+        }
+    }
+
+    if ( buf[1] == '\0' ) {
+        if ( buf[0] == '.' || buf[0] == '+' || buf[0] == '-' ) {
+            buf[0] = '0';
+        }
+    } else {
+        if ( *p == '.' ) {
+            *p = '\0';
+        }
+	}
+}
+
 
 bool jagisspace( char c)
 {
@@ -4118,13 +4314,13 @@ void getXmitCode( char *buf, char *code )
 	memcpy( code, buf+JAG_SOCK_TOTAL_HDR_LEN-4, 4 );
 }
 
-long getXmitMsgLen( char *buf )
+long long getXmitMsgLen( char *buf )
 {
 	char c = buf[JAG_SOCK_TOTAL_HDR_LEN-4];
 	buf[JAG_SOCK_TOTAL_HDR_LEN-4]='\0';
-	long n = atoll( buf+JAG_SOCK_SQL_HDR_LEN );
-	//prt(("s2088893 getXmitMsgLen() dumpmem : n=%d\n", n ));
-	//dumpmem( buf+JAG_SOCK_SQL_HDR_LEN, JAG_SOCK_MSG_HDR_LEN );
+	long long n = atoll( buf+JAG_SOCK_SQL_HDR_LEN );
+	//prt(("s2088893 getXmitMsgLen() dumpmem : n=%lld\n", n ));
+	//dumpmem( buf+JAG_SOCK_SQL_HDR_LEN, JAG_SOCK_MSG_HDR_LEN ); // todel
 	buf[JAG_SOCK_TOTAL_HDR_LEN-4]=c;
 	return n;
 }
@@ -4974,6 +5170,26 @@ Jstr getTypeStr( const Jstr& colType )
 		t = "Ellipse3D";
 	} else if ( colType == JAG_C_COL_TYPE_ELLIPSOID ) {
 		t = "Ellipsoid";
+	} else if ( colType == JAG_C_COL_TYPE_DBIGINT ) {
+		t = "bigint";
+	} else if ( colType == JAG_C_COL_TYPE_DINT ) {
+		t = "int";
+	} else if ( colType == JAG_C_COL_TYPE_DSMALLINT ) {
+		t = "smallint";
+	} else if ( colType == JAG_C_COL_TYPE_DMEDINT ) {
+		t = "mediumint";
+	} else if ( colType == JAG_C_COL_TYPE_FLOAT ) {
+		t = "float";
+	} else if ( colType == JAG_C_COL_TYPE_LONGDOUBLE ) {
+		t = "longdouble";
+	} else if ( colType == JAG_C_COL_TYPE_DOUBLE ) {
+		t = "double";
+	} else if ( colType == JAG_C_COL_TYPE_UUID ) {
+		t = "uuid";
+	} else if ( colType == JAG_C_COL_TYPE_FILE ) {
+		t = "file";
+	} else if ( colType == JAG_C_COL_TYPE_ENUM ) {
+		t = "enum";
 	} else {
 		t = "Unknown";
 	}
@@ -5189,4 +5405,146 @@ Jstr convertType2Short( const Jstr &geotypeLong )
 		return "UNKNOWN";
 	}
 }
+
+// input str:  "aaaaa is not bbb"
+// returns aaaaa if isSpace is true
+// input str:  "aaaaa b|is not bbb"
+// returns "aaaaa b" if isSpace is false, and sep='|'
+Jstr firstToken( const char *str, char sep )
+{
+    if ( NULL == str || *str == NBT ) {
+		prt(("u127608 firstToken str NULL or NBT\n" ));
+		return "";
+	}
+	char *p = (char*)str;
+	if ( sep != NBT ) {
+    	while ( ! isspace(*p) && *p != sep && *p != '\0' ) ++p;
+		// str points to first non-space char
+	} else {
+    	while ( *p != sep && *p != '\0' ) ++p;
+		// p points to sep or end NBT
+	}
+	prt(("s230837 firstToken str=[%s] p=[%s] p-str=%d\n", str, p,  p-str ));
+	return Jstr(str, p-str);
+}
+
+Jstr jagerr( int errcode )
+{
+	Jstr err;
+	if ( -30144 == errcode ) {
+		err = "Key column must not be a roll-up column";
+	} else if ( -30145 == errcode )  {
+		err = "Spare column must be a char column";
+	} else if ( -10511 == errcode )  {
+		err = "dropdb force must have a database name";
+	} else if ( -12823 == errcode )  {
+		err = "timeseries(TIMESERIES|RETAINPERIOD) is required";
+	} else if ( -12820 == errcode || -12821 == errcode )  {
+		err = "timeseries syntax is incorrect";
+	} else if ( -15315 == errcode )  {
+		err = "A value column must be given";
+	} else if ( -13052 == errcode )  {
+		err = "A timeseries table must have a timestamp(nano) or datetime(nano) KEY column";
+	} else if ( -13050 == errcode )  {
+		err = "A table cannot have duplicated columns";
+	} else if ( -19000 == errcode )  {
+		err = "Column name too long";
+	} else if ( -19001 == errcode )  {
+		err = "Column name cannot have . character";
+	} else if ( -19013 == errcode )  {
+		err = "Syntax error near rollup";
+	} else if ( -90030 == errcode )  {
+		err = "Column type error";
+	} else if ( -18000 == errcode || -18010 == errcode || -18030 == errcode )  {
+		err = "enum syntax is incorrect";
+	} else if ( -19042 == errcode )  {
+		err = "srid is too large ( must be <= 2000000000 )";
+	} else if ( -19060 == errcode )  {
+		err = "Syntax error near default";
+	} else if ( -19150 == errcode )  {
+		err = "Default value not enclosed with single-quotes or double-quotes";
+	} else if ( -12800 == errcode )  {
+		err = "Inserting duplicate columns";
+	} else if ( -11010 == errcode )  {
+		err = "Empty command";
+	} else if ( -13822 == errcode )  {
+		err = "Wrong rention unit";
+	} else if ( -19004 == errcode )  {
+		err = "Column type is missing";
+	} else if ( -19003 == errcode )  {
+		err = "Column name is invalid";
+	} else if ( -13821 == errcode )  {
+		err = "TimeSeries clause is invalid";
+	}
+
+	return err;
+}
+
+bool hasDefaultValue( char spare4 )
+{
+    if ( spare4 == JAG_CREATE_DEFINSERTVALUE ) return true;
+    return hasDefaultDateTimeValue( spare4 );
+}
+
+bool hasDefaultDateTimeValue( char spare4 )
+{
+    if ( spare4 == JAG_CREATE_DEFDATE || spare4 == JAG_CREATE_DEFUPDATE_DATE ) return true;
+    if ( spare4 == JAG_CREATE_DEFDATETIMESEC || spare4 == JAG_CREATE_DEFUPDATE_DATETIMESEC ) return true;
+    if ( spare4 == JAG_CREATE_DEFDATETIME || spare4 == JAG_CREATE_DEFUPDATE_DATETIME ) return true;
+    if ( spare4 == JAG_CREATE_DEFDATETIMENANO || spare4 == JAG_CREATE_DEFUPDATE_DATETIMENANO ) return true;
+    if ( spare4 == JAG_CREATE_DEFDATETIMEMILL || spare4 == JAG_CREATE_DEFUPDATE_DATETIMEMILL ) return true;
+    return false;
+}
+
+bool hasDefaultUpdateDateTime( char spare4 )
+{
+    if ( spare4 == JAG_CREATE_UPDATE_DATE || spare4 == JAG_CREATE_DEFUPDATE_DATE ) return true;
+    if ( spare4 == JAG_CREATE_UPDATE_DATETIMESEC || spare4 == JAG_CREATE_DEFUPDATE_DATETIMESEC ) return true;
+    if ( spare4 == JAG_CREATE_UPDATE_DATETIME || spare4 == JAG_CREATE_DEFUPDATE_DATETIME ) return true;
+    if ( spare4 == JAG_CREATE_UPDATE_DATETIMENANO || spare4 == JAG_CREATE_DEFUPDATE_DATETIMENANO ) return true;
+    if ( spare4 == JAG_CREATE_UPDATE_DATETIMEMILL || spare4 == JAG_CREATE_DEFUPDATE_DATETIMEMILL ) return true;
+    return false;
+}
+
+Jstr charToStr(char c)
+{
+	char p[2];
+	p[0] = c;
+	p[1] = '\0';
+	return p;
+}
+
+// "ldkfkfdfd)  ; "  true
+// "ldkfkfdfd)  ;"  true
+// "ldkfkfdfd); "  true
+// "ldkfkfdfd) ; "  true
+// "ldkfkfdfd)  "  true
+// "ldkfkfdfd)"  true
+// "ldkfkfdfd)\t ;"  true
+bool endWithSQLRightBra( const char *sql )
+{
+	if ( !sql ) return false;
+	if ( *sql == '\0' ) return false;
+	int len  = strlen(sql);
+	const char *r = sql + len-1;
+	bool seebra = false;
+	while ( r != sql ) {
+		if ( isspace(*r ) || *r == ';' ) {
+			--r;
+		} else {
+			if ( *r == ')' ) {
+				seebra = true;
+			}
+			break;
+		}
+	}
+
+	if ( seebra ) {
+		return true;
+	} else {
+		return false;
+	}
+
+}
+
 

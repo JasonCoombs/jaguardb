@@ -183,10 +183,7 @@ jagint JagDiskArrayFamily::addKeyCheckerFromInsertBuffer( int darrNum )
 	char vbuf[3]; vbuf[2] = '\0';
 	int div, rem;
 
- 	//char *kvbuf = (char*)jagmalloc( _KVLEN+1 + JAG_KEYCHECKER_VLEN);
-	//memset( kvbuf, 0,  _KVLEN + 1 + JAG_KEYCHECKER_VLEN );
  	char *kvbuf = (char*)jagmalloc( _KLEN+1 + JAG_KEYCHECKER_VLEN);
-	//memset( kvbuf, 0,  _KLEN + 1 + JAG_KEYCHECKER_VLEN );
 				
 	div = darrNum / (JAG_BYTE_MAX+1);
 	rem = darrNum % (JAG_BYTE_MAX+1);
@@ -262,9 +259,9 @@ jagint JagDiskArrayFamily::processFlushInsertBuffer()
 			if (  mtype == JAG_MEET_TIME ) {  
 				// flush time is small
 				//raydebug(stdout, JAG_LOG_LOW, "s2644 min-cost file found, MEET_TIME which=%d ...\n", which );
-				//prt(("s4402851 fam mergeBufferToFile which=%d ...\n", which ));
+				//prt(("s4401851 fam mergeBufferToFile which=%d ...\n", which ));
 				cnt = _darrlist[which]->mergeBufferToFile( _insertBufferMap, vec );	
-				//prt(("s4402852 fam mergeBufferToFile done elements cnt=%ld\n", cnt ));
+				//prt(("s4502852 fam mergeBufferToFile done elements cnt=%ld\n", cnt ));
 				doneFlush = true;
 				//jagint addKC = addKeyCheckerFromInsertBuffer( which );
 				addKeyCheckerFromInsertBuffer( which );
@@ -346,7 +343,7 @@ int JagDiskArrayFamily::findMinCostFile( JagVector<JagMergeSeg> &vec, bool force
 
 // return 0: if exists
 // return 1: if not exist
-int JagDiskArrayFamily::insert( const JagDBPair &pair, int &insertCode, bool doFirstRedist, bool direct, 
+int JagDiskArrayFamily::insert( const JagDBPair &pair, bool doFirstRedist, 
 							    JagDBPair &retpair, bool noDupPrint )
 {
 	char kbuf[_KLEN+1];
@@ -369,6 +366,8 @@ int JagDiskArrayFamily::insert( const JagDBPair &pair, int &insertCode, bool doF
 
     rc = _insertBufferMap->insert( pair );
     if ( !rc ) ++_dupwrites;
+	prt(("s22029 _insertBufferMap->insert rc=%d elem=%d\n", rc, _insertBufferMap->elements() ));
+
 	jagint  currentCnt = _insertBufferMap->elements();
 	jagint  currentMem = currentCnt *_KVLEN;
 	if ( currentMem < JAG_SIMPFILE_LIMIT_BYTES ) {
@@ -479,8 +478,8 @@ bool JagDiskArrayFamily::get( JagDBPair &pair )
 	memset( kbuf, 0, _KLEN+1);
 	memcpy( kbuf, pair.key.c_str(), _KLEN );
 	/**
-	prt(("s33338 pair.key.dump:\n"));
-	pair.key.print();
+	//prt(("s33338 pair.key.dump:\n"));
+	//pair.key.print();
 	**/
 
 	//if ( _keyChecker->getValue( pair.key.c_str(), v ) ) 
@@ -488,7 +487,9 @@ bool JagDiskArrayFamily::get( JagDBPair &pair )
 		div = (jagbyte)v[0];
 		rem = (jagbyte)v[1];
 		pos = div*(JAG_BYTE_MAX+1)+rem;
+
 		rc = _darrlist[pos]->get( pair );
+
 		//prt(("s222023 darr filenum=%d got pair=[%s][%s]\n", pos, pair.key.c_str(), pair.value.c_str() ));
 		return rc;
 	} else {
@@ -497,6 +498,8 @@ bool JagDiskArrayFamily::get( JagDBPair &pair )
 	}
 }
 
+// Directly update pair in buffer (if key exists) or diskarr (if key exists)
+// return true for OK; false error
 bool JagDiskArrayFamily::set( const JagDBPair &pair )
 {
 	//prt(("s242023 JagDiskArrayFamily::set pair=[%s][%s]\n", pair.key.c_str(), pair.value.c_str() ));
@@ -526,24 +529,24 @@ bool JagDiskArrayFamily::set( const JagDBPair &pair )
 	}
 }
 
+// Update a record with condition
 bool JagDiskArrayFamily::setWithRange( const JagRequest &req, JagDBPair &pair, const char *buffers[], bool uniqueAndHasValueCol, 
 										ExprElementNode *root, const JagParseParam *pParam, int numKeys, const JagSchemaAttribute *schAttr, 
 										jagint setposlist[], JagDBPair &retpair )
 {
-	bool rc1 = get(pair); 
-	if ( ! rc1 ) {
+	bool rc = get(pair); 
+	if ( ! rc ) {
 		//prt(("s939393 JagDiskArrayFamily::setWithRange get false return false\n"));
 		return false;
 	}
 	//prt(("s22233 JagDiskArrayFamily::setWithRange got pair=[%s][%s]\n", pair.key.c_str(), pair.value.c_str() ));
 
 	// get retpair from here
-    rc1 = JagDiskArrayBase::checkSetPairCondition( _servobj, req, pair, (char**)buffers, uniqueAndHasValueCol, root, pParam,
-                                numKeys, schAttr, _KLEN, _VLEN, setposlist, retpair );
-    if ( ! rc1 ) return false;
+    rc = JagDiskArrayBase::checkSetPairCondition( _servobj, req, pair, (char**)buffers, uniqueAndHasValueCol, root, pParam,
+                                				   numKeys, schAttr, _KLEN, _VLEN, setposlist, retpair );
+    if ( ! rc ) return false;
 
 	//prt(("s22233 JagDiskArrayFamily::setWithRange retpair=[%s][%s]\n", retpair.key.c_str(), retpair.value.c_str() ));
-	bool rc;
 	if ( _insertBufferMap && _insertBufferMap->set( retpair ) ) {
 		//prt(("s222029 _insertBufferMap->set OK return true\n"));
 		return true;
@@ -557,12 +560,14 @@ bool JagDiskArrayFamily::setWithRange( const JagRequest &req, JagDBPair &pair, c
 	memset( kbuf, 0, _KLEN+1);
 	memcpy( kbuf, pair.key.c_str(), _KLEN );
 
-	//if ( _keyChecker->getValue( pair.key.c_str(), v ) ) 
 	if ( _keyChecker->getValue( kbuf, v ) ) {
 		div = (jagbyte)v[0];
 		rem = (jagbyte)v[1];
 		pos = div*(JAG_BYTE_MAX+1)+rem;
+
+		// modify data record
 		rc = _darrlist[pos]->set (retpair ); 
+
 		//prt(("s2220 filenum=pos=%d rc=%d\n", pos, rc ));
 		return rc;
 	} else {
@@ -668,7 +673,7 @@ jagint JagDiskArrayFamily::setFamilyRead( JagMergeReader *&nts, const char *minb
 	}
 			
 	if ( minbuf || maxbuf ) {
-		//prt(("s4440283 minbuf || maxbuf _darrlist.size()=%d\n", _darrlist.size() ));
+		//prt(("s4480283 minbuf || maxbuf _darrlist.size()=%d\n", _darrlist.size() ));
 		JagDBPair minpair( JagFixString( minbuf, _KLEN, _KLEN ), value );
 		JagDBPair maxpair( JagFixString( maxbuf, _KLEN, _KLEN ), value );
 		for ( int i = _darrlist.size()-1; i >= 0; --i ) {
@@ -688,7 +693,7 @@ jagint JagDiskArrayFamily::setFamilyRead( JagMergeReader *&nts, const char *minb
 			}
 		}
 	} else {
-		//prt(("s4440283 no minbuf no maxbuf _darrlist.size()=%d\n", _darrlist.size() ));
+		//prt(("s4140283 no minbuf no maxbuf _darrlist.size()=%d\n", _darrlist.size() ));
 		for ( int i = _darrlist.size()-1; i >= 0; --i ) {
 			tempRange.darr = _darrlist[i];
 			tempRange.startpos = -1;
@@ -934,9 +939,6 @@ JagDiskArrayServer* JagDiskArrayFamily::flushBufferToNewFile( )
 	//JagSingleBuffWriter *sbw = NULL;
 	//jagint dblimit = 64; 
 
-	//char *kvbuf = (char*)jagmalloc( _KVLEN+1);
-	//memset(kvbuf, 0, _KVLEN+1);
-
 	JagDiskArrayServer *darr = new JagDiskArrayServer( _servobj, this, darrlistlen, filePathName, _schemaRecord, len, false );
 	//prt(("s12099 flushBufferToNewFile...\n"));
 	darr->flushBufferToNewFile( _insertBufferMap );
@@ -975,4 +977,38 @@ jagint JagDiskArrayFamily::memoryBufferSize()
     //jaguar_mutex_unlock( &_insertBufferMutex );
 	return cnt;
 }
+
+#if 0
+// ttime can be microseconds,nanoseconds, seconds
+jagint JagDiskArrayFamily::cleanupOldRecordsByOrder( time_t ttime )
+{
+	if ( _insertBufferMap ) { 
+		// find end positon
+		JagFixMapIterator prevIter = _insertBufferMap->getPred();
+		JagFixMapIterator iter = _insertBufferMap->_map->begin();
+		// time_t tv;
+		while ( iter != prevIter ) {
+			// C++11 allows delete while iterating
+			// _insertBufferMap->cleanupOldRecords( secs );
+			//iter.first is key  .second is value
+			//tv = rayatol(iter.first.s()+offset, length)
+			_keyChecker->removeKey( iter.first.s() );
+			iter = _insertBufferMap->_map->erase( iter );
+		}
+	}
+
+	/*** C++ delete items while iterating
+	std::map<K, V>::iterator itr = myMap.begin();
+	while (itr != myMap.end()) {
+    	if (ShouldDelete(*itr)) {
+       		itr = myMap.erase(itr);
+    	} else {
+       		++itr;
+    	}
+	}
+	***/
+}
+#endif
+
+
 

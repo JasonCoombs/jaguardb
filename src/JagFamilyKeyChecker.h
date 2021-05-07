@@ -33,7 +33,7 @@ class JagFamilyKeyChecker
         virtual bool addKeyValueInit( const char *kv ) = 0;
         virtual bool getValue( const char *key, char *val ) = 0;
         virtual bool removeKey( const char *key ) = 0;
-        virtual bool exist( const char *key ) = 0;
+        virtual bool exist( const char *key ) const = 0;
 		virtual void removeAllKey( ) = 0;
         virtual jagint size() const = 0;
         virtual jagint arrayLength() const = 0;
@@ -43,7 +43,7 @@ class JagFamilyKeyChecker
 
     protected:
 		// void  destroy();
-		void  getUniqueKey( const char *key, char *ukey );
+		void  getUniqueKey( const char *key, char *ukey ) const;
 		int   _KLEN;
 		int   _VLEN;
 		int	  _UKLEN;

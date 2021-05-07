@@ -139,7 +139,8 @@ class ParallelCmdPass
 	jagint sendlen;
 	JagParseParam *parseParam;
 	JagMemDiskSortArray *gmdarr;
-	JagRequest req;
+	//JagRequest req;
+	JagRequest *req;
 	JagDataAggregate *jda;
 	JagSchemaRecord *nrec;
 	JaguarCPPClient *cli;
@@ -162,7 +163,7 @@ class ParallelCmdPass
 		pindex = NULL;
 		parseParam = NULL;
 		gmdarr = NULL;
-		req.session = NULL;
+		//req->session = NULL;
 		jda = NULL;
 		nrec = NULL;
 		recordcnt = NULL;

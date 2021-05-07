@@ -21,9 +21,38 @@
 #include <abax.h>
 #include <JagUtil.h>
 #include <JagStrSplit.h>
-
 #include <JagSchemaRecord.h>
 #include <JagParseParam.h>
+#include <vector>
+#include <unordered_set>
+
+
+bool sortByTick(const std::string &lhs, const std::string &rhs)
+{
+    std::string tick1 = lhs;
+    std::string tick2 = rhs;
+    const char *p1_ = strchr(lhs.c_str(), '_' );
+    const char *p2_ = strchr(rhs.c_str(), '_' );
+    if ( p1_ ) {
+        tick1 = std::string( lhs.c_str(), p1_ - lhs.c_str() );
+    }
+    if ( p2_ ) {
+        tick2 = std::string( rhs.c_str(), p2_ - rhs.c_str() );
+    }
+    int d1 = atoi( tick1.c_str() );
+    int d2 = atoi( tick2.c_str() );
+    return d1 < d2;
+}
+
+
+// valid time series periods:  \d+>C   (example  15s, 15m, 1d, 10d, 3w, 1m, 1q, 1y, 1D
+// C==> s: second, m: minute, h: hour, d: day, w: week, M: month, q: quarter, y: year, D: decade
+
+// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|COLUMN2|}"
+// spare+7 isrollup column
+// spare+8 rollup type
+// dummy1: metrics
+// dummy2: rollup where condition
 
 JagSchemaRecord::JagSchemaRecord( bool newVec )
 {
@@ -38,8 +67,6 @@ void JagSchemaRecord::init( bool newVec )
 	keyLength = 16;
 	valueLength = 16;
 	ovalueLength = 0;
-	// columnVector = new JagVector<AbaxPair<AbaxString, JagColumn> >();
-	// columnVector = new JagVector<JagColumn>();
 	if ( newVec ) {
 		columnVector = new JagVector<JagColumn>();
 	} else {
@@ -50,8 +77,9 @@ void JagSchemaRecord::init( bool newVec )
 	hasMute = false;
 	// dbobj = ".";
 	lastKeyColumn = -1;
-	tableProperty = "0";
+	tableProperty = "0!0!0!0";
 	//polyDim = 0;
+	_hasRollupColumn = false;
 }
 
 JagSchemaRecord::~JagSchemaRecord()
@@ -74,7 +102,7 @@ JagSchemaRecord::JagSchemaRecord( const JagSchemaRecord& other )
 	columnVector = NULL;
 
 	if ( other.columnVector ) {
-    	jagint  size =  other.columnVector->size();
+    	jagint  size = other.columnVector->size();
     	columnVector = new JagVector<JagColumn>( size+8 );
     	for ( int i = 0; i < size; ++i ) {
     		columnVector->append( (*other.columnVector)[i] );
@@ -126,6 +154,7 @@ void JagSchemaRecord::copyData( const JagSchemaRecord& other )
 }
 
 
+// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|COLUMN2|}"
 bool JagSchemaRecord::print()
 {
 	if ( ! columnVector ) return false;
@@ -137,27 +166,40 @@ bool JagSchemaRecord::print()
 	 unsigned int   offset;
 	 unsigned int   length;
 	 unsigned int   sig;
-	 char           spare[4];
+	 char           spare[16];
 	**/
 	int len = columnVector->size();
 	for ( int i = 0; i < len; ++i ) {
-		printf("!%s!%s!%d!%d!%d!%c%c%c%c%c%c%c%c!",
+		printf("!%s!%s!%d!%d!%d(func=%d)!",
 				(*columnVector)[i].name.c_str(),
 				(*columnVector)[i].type.c_str(),
 				(*columnVector)[i].offset,
 				(*columnVector)[i].length,
 				(*columnVector)[i].sig,
-				(*columnVector)[i].spare[0],
-				(*columnVector)[i].spare[1],
-				(*columnVector)[i].spare[2],
-				(*columnVector)[i].spare[3],
-				(*columnVector)[i].spare[4],
-				(*columnVector)[i].spare[5],
-				(*columnVector)[i].spare[6],
-				(*columnVector)[i].spare[7]
-				);
+				(*columnVector)[i].func );
 
-			printf("|");
+		for ( int j = 0; j < JAG_SCHEMA_SPARE_LEN; ++j ) {
+			printf("%c", (*columnVector)[i].spare[j] );
+		}
+		printf("!");
+		printf("%d!", (*columnVector)[i].srid );
+		printf("%d!", (*columnVector)[i].begincol );
+		printf("%d!", (*columnVector)[i].endcol );
+
+		printf("%d!", (*columnVector)[i].metrics );
+		//printf("%d!", (*columnVector)[i].dummy2 );
+		printf("%s!", (*columnVector)[i].rollupWhere.s() );
+		printf("%d!", (*columnVector)[i].dummy3 );
+		printf("%d!", (*columnVector)[i].dummy4 );
+		printf("%d!", (*columnVector)[i].dummy5 );
+		printf("%d!", (*columnVector)[i].dummy6 );
+		printf("%d!", (*columnVector)[i].dummy7 );
+		printf("%d!", (*columnVector)[i].dummy8 );
+		printf("%d!", (*columnVector)[i].dummy9 );
+		printf("%d!", (*columnVector)[i].dummy10 );
+
+		printf("|");
+		// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|COLUMN2|}"
 	}
 
 	printf("}\n");
@@ -191,9 +233,6 @@ bool JagSchemaRecord::setColumn( const AbaxString &colName, const AbaxString &at
 	for ( int i = 0; i < len; ++i ) {
 		name = (*columnVector)[i].name;
 		if ( name == colName ) {
-			//(*columnVector)[i].name = newName;
-			//_nameMap.removeKey( oldName.c_str() );
-			//_nameMap.addKeyValue( newName.c_str(), i );
 			if ( attr == "srid" ) {
 				(*columnVector)[i].srid = jagatoi(value.s());
 			}
@@ -237,7 +276,6 @@ bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const 
 	(*columnVector)[len-1].type = type;
 	(*columnVector)[len-1].length = length;
 	(*columnVector)[len-1].sig = sig;
-	// (*columnVector)[len-1].record = this;
 	
 	AbaxString dum;
 	JagColumn onecolrec;
@@ -246,7 +284,6 @@ bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const 
 	onecolrec.offset = aoffset+length;
 	onecolrec.length = alength-length;
 	onecolrec.sig = asig;
-	// onecolrec.record = this;
 
 	for ( int i = 0; i < JAG_SCHEMA_SPARE_LEN; ++i ) {
 		*(onecolrec.spare+i) = aspare[i];
@@ -254,7 +291,6 @@ bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const 
 
 	onecolrec.iskey = aiskey;
 	onecolrec.func = afunc;
-	// columnVector->append( AbaxPair<AbaxString,JagColumn>(dum, onecolrec));
 	columnVector->append( onecolrec );
 	_nameMap.addKeyValue( colName.c_str(), len-1 );
 }
@@ -295,7 +331,8 @@ Jstr JagSchemaRecord::getString() const
 		sprintf( buf, "%d!", (*columnVector)[i].endcol ); strcat( mem, buf );
 		//sprintf( buf, "%d!", (*columnVector)[i].dummy1 ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].metrics ); strcat( mem, buf );
-		sprintf( buf, "%d!", (*columnVector)[i].dummy2 ); strcat( mem, buf );
+		// sprintf( buf, "%d!", (*columnVector)[i].dummy2 ); strcat( mem, buf );
+		sprintf( buf, "%s!", (*columnVector)[i].rollupWhere.s() ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].dummy3 ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].dummy4 ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].dummy5 ); strcat( mem, buf );
@@ -315,7 +352,6 @@ Jstr JagSchemaRecord::getString() const
 
 Jstr JagSchemaRecord::formatHeadRecord() const
 { 
-	// return "NN|0|0|0|{"; 
 	return Jstr("NN|0|0|") + tableProperty + "|{"; 
 }
 
@@ -336,7 +372,8 @@ Jstr JagSchemaRecord::formatColumnRecord( const char *name, const char *type, in
 	for ( int i = 0;  i < JAG_SCHEMA_SPARE_LEN-4; ++i ) {
 		res += " ";
 	}
-	res += "!|";
+	// res += "!|";
+	res += "!0!0!0!0!0!0!0!0!0!0!0!0!0!|";
 	return res;
 }
 
@@ -347,17 +384,21 @@ Jstr JagSchemaRecord::formatTailRecord() const
 }
 
 // parse schema record
-// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!dummy1!dummy2!...!dummy10!|...}"
+// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!rollupwhere!dummy3!...!dummy10!|...|}"
 //                                                                                       4:start-col!8:end-col
-//  tableProperty: "polyDim(0/2/3)!...!...!"
-//  tableProperty: "1!2!...!...!"
+//  tableProperty: "polyDim(0/2/3)!timeseries!retention!"
+//  tableProperty: "1!timeseries!retention!...!"
+// timeseries: 0 if no timeseries
+// timeseries: nm_r:nh:nd_r:nw:nM:ny   n: 1-infinity   next/prev is integer, example: 15m:1h:1d:1w:1M:1y
+//    _r: r is retaining periods
+// tabl@1m tab1@1h ... will be created automatically
 int JagSchemaRecord::parseRecord( const char *str ) 
 {
 	if ( ! columnVector ) {
 		columnVector = new JagVector<JagColumn>();
 	}
 
-	//prt(("s3980 parseRecord str=[%s]\n", str ));
+	prt(("s3980 parseRecord str=[%s]\n", str ));
 	jagint actkeylen = 0, actvallen = 0, rc = 0;
 	JagColumn onecolrec;
 	const char *p, *q;
@@ -406,12 +447,12 @@ int JagSchemaRecord::parseRecord( const char *str )
 	++q; p = q;
 	while ( *q != '|' && *q != '{' ) ++q;
 	if ( *q == '\0' ) return -42;
-	tableProperty = Jstr(p, q-p);
+	tableProperty = Jstr(p, q-p);  // polydim!timeseries!...!...!...!   any number of fields by !
 	//prt(("s5034 tableProperty=[%s] this=%0x\n", tableProperty.c_str(), this ));
 	if ( *q == '|' && *(q+1) == '{' ) {
 		q += 2;
 	} else if ( *q == '{' ) {
-		++q;
+		q += 1;
 	} else {
 		return -43;
 	}
@@ -436,6 +477,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 				} else break;
 			}
 			onecolrec.name = Jstr(p, q-p);
+			prt(("s556013 #name=[%s]#\n", onecolrec.name.s() ));
 			++q;
 		} else {
 			while ( 1 ) {
@@ -448,11 +490,33 @@ int JagSchemaRecord::parseRecord( const char *str )
 				} else break;
 			}
 			onecolrec.name = Jstr(p, q-p);
+			//prt(("s556014 name=[%s]\n", onecolrec.name.s() ));
 		}
+
 		// get func(col) and assign onecolrec.func and change  onecolrec.type
-		// onecolrec.func = getFuncType( onecolrec.name, newDataType );
-		//prt(("s5130 onecolrec.name=[%s]\n", onecolrec.name.c_str() ));
-		
+		//onecolrec.func = getFuncType( onecolrec.name, newDataType );
+		if ( strcasestr(onecolrec.name.s(), "avg(" ) ) {
+			onecolrec.func = JAG_FUNC_AVG;
+		} else if ( strcasestr(onecolrec.name.s(), "sum(" ) ) {
+			onecolrec.func = JAG_FUNC_SUM;
+			prt(("s028381 parseRecord got sum() JAG_FUNC_SUM \n"));
+		} else if ( strcasestr(onecolrec.name.s(), "min(" ) ) {
+			onecolrec.func = JAG_FUNC_MIN;
+		} else if ( strcasestr(onecolrec.name.s(), "max(" ) ) {
+			onecolrec.func = JAG_FUNC_MAX;
+		} else if ( strcasestr(onecolrec.name.s(), "stddev(" ) ) {
+			onecolrec.func = JAG_FUNC_STDDEV;
+		} else if ( strcasestr(onecolrec.name.s(), "count(" ) ) {
+			onecolrec.func = JAG_FUNC_COUNT;
+		} else if ( strcasestr(onecolrec.name.s(), "first(" ) ) {
+			onecolrec.func = JAG_FUNC_FIRST;
+		} else if ( strcasestr(onecolrec.name.s(), "last(" ) ) {
+			onecolrec.func = JAG_FUNC_LAST;
+		} else {
+			onecolrec.func = 0;
+		}
+
+		//prt(("s51130 onecolrec.name=[%s] func=%d\n", onecolrec.name.c_str(), onecolrec.func ));
 		// get type
 		// prt(("s1282 q=[%s]\n", q ));
 		++q; p = q; 
@@ -462,6 +526,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 			return -100;
 		}
 		onecolrec.type = Jstr(p, q-p);
+
 		// prt(("s2031 onecolrec.type=[%s]\n", onecolrec.type.c_str() ));
 		// get offset
 		++q; p = q;
@@ -485,9 +550,14 @@ int JagSchemaRecord::parseRecord( const char *str )
 		++q; p = q; q += JAG_SCHEMA_SPARE_LEN;
 		if ( *q != '!' ) return -140;
 		memcpy( onecolrec.spare, p, JAG_SCHEMA_SPARE_LEN );
+
 		if ( onecolrec.spare[5] == JAG_KEY_MUTE ) {
 			hasMute = true;
 			// prt(("s2230 col=[%s] hasMute=true\n", onecolrec.name.c_str() ));
+		}
+
+		if ( onecolrec.spare[7] == JAG_ROLL_UP ) {
+			_hasRollupColumn = true;
 		}
 		
 		if ( *(onecolrec.spare) == JAG_C_COL_KEY ) {
@@ -499,7 +569,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 			++ numValues;
 		}
 
-		// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!|...}"
+		// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!0!....0!|...|}"
 		// q is at !
 		// prt(("s4128 q=[%s]\n", q ));
 		if ( *(q+1) != '|' ) {
@@ -533,9 +603,12 @@ int JagSchemaRecord::parseRecord( const char *str )
 
 			// get composite-col dummy2
 			++q; p = q;
-			while ( isdigit(*q) ) ++q;
+			//while ( isdigit(*q) ) ++q;
+			//if ( *q != '!' ) return -190;
+			//onecolrec.dummy2 = rayatoi(p, q-p);	
+			while ( *q != '!' && *q != NBT ) ++q;
 			if ( *q != '!' ) return -190;
-			onecolrec.dummy2 = rayatoi(p, q-p);	
+			onecolrec.rollupWhere = Jstr(p, q-p);	
 
 			// get composite-col dummy3
 			++q; p = q;
@@ -620,6 +693,8 @@ int JagSchemaRecord::parseRecord( const char *str )
 	// prt(("s0931 parseRecord hasMute=%d\n", hasMute ));
 	setLastKeyColumn();
 
+	//print(); 
+
 	return 1;
 }
 
@@ -677,15 +752,506 @@ bool JagSchemaRecord::hasPoly(int &dim ) const
 	//prt(("s4045 this=%0x hasPoly keyLength=%d valueLength=%d polyDim=%d\n", this, keyLength, valueLength, polyDim ));
 	//prt(("s3027 tableProperty=[%s]\n", tableProperty.c_str() ));
 	dim = 0;
-	JagStrSplit sp(tableProperty, '!', true );
+	JagStrSplit sp(tableProperty, '!' );
 	// prt(("s3027 tableProperty=[%s] sp.length=%d\n", tableProperty.c_str(), sp.length() ));
 	if ( sp.length() < 1 ) return false;
-	dim = jagatoi( sp[0].c_str() );
+	dim = jagatoi( sp[0].c_str() );  // first field is polydim
 	if ( dim < 1 ) return false;
 	return true;
 }
 
-// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!dummy1!dummy2!...!dummy10!|...}"
+// Does this table has time series
+bool JagSchemaRecord::hasTimeSeries( Jstr &series )  const
+{
+	return hasTimeSeries( tableProperty, series );
+}
+
+// Does this table has time series
+bool JagSchemaRecord::hasTimeSeries( const Jstr &tabProperty, Jstr &series ) 
+{
+	prt(("s44403 JagSchemaRecord::hasTimeSeries tabProperty=[%s]\n", tabProperty.s() ));
+	JagStrSplit sp(tabProperty, '!' );
+	if ( sp.length() < 2 ) return false;
+	series = sp[1];  // second field is timeseries
+	prt(("s33470 series=[%s]\n", series.s() ));
+	if ( series.size() < 1 || series == "0" ) return false;
+	return true;
+}
+
+// series is normalized "1d_20d:1M_30M"
+bool JagSchemaRecord::setTimeSeries( const Jstr &normSeries ) 
+{
+	// tableProperty is data member
+	JagStrSplit sp( tableProperty, '!' );
+	if ( sp.length() < 2 ) return false;
+	Jstr newTabProperty;
+	Jstr prop;
+	for ( int i=0; i < sp.size(); ++i ) {
+		if ( i == 1 ) {
+			prop = normSeries;
+		} else {
+			prop = sp[i];
+		}
+
+		if ( newTabProperty.size() < 1 ) {
+			newTabProperty = prop;
+		} else {
+			newTabProperty += Jstr("!") +  prop;
+		}
+	}
+	prt(("s32334 replace tabProperty=[%s]   by new [%s]\n", tableProperty.s(), newTabProperty.s() ));
+	tableProperty = newTabProperty;
+	return true;
+}
+
+// retention is "30M"
+bool JagSchemaRecord::setRetention( const Jstr &retention ) 
+{
+	// tableProperty is data member
+	JagStrSplit sp( tableProperty, '!' );
+	if ( sp.length() < 2 ) return false;
+	Jstr newTabProperty;
+	Jstr prop;
+	for ( int i=0; i < sp.size(); ++i ) {
+		if ( i == 2 ) {
+			if ( retention.firstChar() == '0' ) {
+				prop = "0";
+			} else {
+				prop = retention;
+			}
+		} else {
+			prop = sp[i];
+		}
+
+		if ( newTabProperty.size() < 1 ) {
+			newTabProperty = prop;
+		} else {
+			newTabProperty += Jstr("!") +  prop;
+		}
+	}
+	prt(("s32234 replace tabProperty=[%s]   by new [%s]\n", tableProperty.s(), newTabProperty.s() ));
+	tableProperty = newTabProperty;
+	return true;
+}
+
+bool JagSchemaRecord::hasRollupColumn() const 
+{
+	return _hasRollupColumn;
+}
+
+bool JagSchemaRecord::isFirstColumnDateTime( Jstr &colType ) const 
+{
+    colType = (*columnVector)[0].type;
+	return isDateAndTime( colType );
+}
+
+Jstr JagSchemaRecord::timeSeriesRentention() const
+{
+	Jstr retain;
+	JagStrSplit sp(tableProperty, '!' );
+	if ( sp.length() < 3 ) return "";
+	retain = sp[2];  // second field is timeseries, third is retention
+	if ( retain.size() < 1 ) return "0";
+	return retain;
+}
+
+
+// Translate user input timeseries string:  "ns:r, nm:r, nd, ny:r"
+// Translate user input timeseries string:  "1d:3d, 4m:30, nd, ny:r"
+// Translate user input timeseries string:  "1day:3day, 4minute:30, nd, nyear:r"
+// to "ns_r:nm_r:nd:ny_r"
+Jstr JagSchemaRecord::translateTimeSeries( const Jstr &inputTimeSeries )
+{
+	Jstr out;
+	for ( int i=0; i < inputTimeSeries.size(); ++i ) {
+		if ( inputTimeSeries[i] == ' ' || inputTimeSeries[i] == '\t' ) continue;
+		if ( inputTimeSeries[i] == ':' ) {
+			out += '_';
+		} else if ( inputTimeSeries[i] == ',' ) {
+			out += ':';
+		} else {
+			out += inputTimeSeries[i];
+		}
+	}
+
+	Jstr out2;
+	JagStrSplit sp( out, ':' );
+	Jstr tok;
+	Jstr rets;
+	Jstr tick;
+	char period;
+	bool has_;
+	for ( int i = 0 ; i < sp.size(); ++i ) {
+		tok = sp[i];
+
+		if ( tok.containsStrCase( "second", rets ) ) {
+			tok.replace( rets.s(), "s" );
+		} else if ( tok.containsStrCase( "minute", rets ) ) {
+			tok.replace( rets.s(), "m" );
+		} else if ( tok.containsStrCase( "hour", rets ) ) {
+			tok.replace( rets.s(), "h" );
+		} else if ( tok.containsStrCase( "day", rets ) ) {
+			tok.replace( rets.s(), "d" );
+		} else if ( tok.containsStrCase( "week", rets ) ) {
+			tok.replace( rets.s(), "w" );
+		} else if ( tok.containsStrCase( "month", rets ) ) {
+			tok.replace( rets.s(), "M" );
+		} else if ( tok.containsStrCase( "quarter", rets ) ) {
+			tok.replace( rets.s(), "q" );
+		} else if ( tok.containsStrCase( "year", rets ) ) {
+			tok.replace( rets.s(), "y" );
+		} else if ( tok.containsStrCase( "decade", rets ) ) {
+			tok.replace( rets.s(), "D" );
+		}
+
+		if ( tok.containsChar('_') ) {
+			JagStrSplit sp( tok, '_' );
+			tick = sp[0]; // 2d
+			has_ = true;
+		} else {
+			tick = tok; // 3M
+			has_ = false;
+		}
+		period = tick.lastChar();
+
+		if ( !has_ ) {
+			tok = tok + "_0" + charToStr(period);
+		}
+
+		if ( out2.size() < 1 ) {
+			out2 = tok;
+		} else {
+			out2 += Jstr(":") + tok;
+		}
+	}
+
+	return out2;
+}
+
+// Translate system timeseries string:  "ns_r:nm_r:nd_r:ny_r"
+// to user input timeseries string:  "ns:r,nm:r,nd,ny:r"
+Jstr JagSchemaRecord::translateTimeSeriesBack( const Jstr &sysTimeSeries )
+{
+	Jstr out;
+	Jstr t;
+	bool first = true;
+	JagStrSplit sp( sysTimeSeries, ':' );
+	char firstc;
+	for ( int i =0; i < sp.length(); ++i ) {
+		JagStrSplit sp2( sp[i], '_' );
+		if ( sp2.length() == 2 ) {
+			firstc = sp2[1].firstChar();
+
+			if ( firstc != '0' ) {
+				t = sp2[0] + ":" + sp2[1];
+			} else {
+				t = sp2[0];
+			}
+
+			if ( first ) {
+				out = t;
+				first = false;
+			} else {
+				out += Jstr(",") + t;
+			}
+		} else {
+			continue;
+		}
+	}
+
+	return out;
+}
+
+// Translate system timeseries string:  "ns_r:nm_r:nd_r:ny_r"
+// to user input timeseries string:  "ns,nm,nd,ny"
+Jstr JagSchemaRecord::translateTimeSeriesToStrs( const Jstr &sysTimeSeries )
+{
+	Jstr out;
+	Jstr t;
+	bool first = true;
+	JagStrSplit sp( sysTimeSeries, ':' );
+	for ( int i =0; i < sp.length(); ++i ) {
+		JagStrSplit sp2( sp[i], '_' );
+		t = sp2[0];
+		if ( first ) {
+			out = t;
+			first = false;
+		} else {
+			out += Jstr(",") + t;
+		}
+	}
+
+	return out;
+}
+
+// Expect series="ns_r:nm_r:nh_r:nd_r:nw-r:nM:nq:ny:nD"
+// s: second, m: minute, h: hour, d: day, w: week, M: month, q: quarter, y: year, D: decade
+// nM: months, e.g. 2M
+// nD: decades, e.g. 2D
+// nd_r  r is number of periods data to retain, e.g. 1d_90 (90 days to retain), 3d_20 (60 days retain)
+//       if no _r, then retain all data
+// returns 0: for OK; < 0 for error
+int JagSchemaRecord::normalizeTimeSeries( const Jstr &series, Jstr &normalizedSeries ) 
+{
+	prt(("s222012 normalizeTimeSeries input series=[%s]\n", series.s() ));
+	if ( series == "0" ) {
+		normalizedSeries = "0";
+		return 0;
+	}
+
+	normalizedSeries="";
+
+	std::vector<std::string> vecs;
+	std::unordered_set<std::string> sets;
+
+	std::vector<std::string> vecm;
+	std::unordered_set<std::string> setm;
+
+	std::vector<std::string> vech;
+	std::unordered_set<std::string> seth;
+
+	std::vector<std::string> vecd;
+	std::unordered_set<std::string> setd;
+
+	std::vector<std::string> vecw;
+	std::unordered_set<std::string> setw;
+
+	std::vector<std::string> vecM;
+	std::unordered_set<std::string> setM;
+
+	std::vector<std::string> vecq;
+	std::unordered_set<std::string> setq;
+
+	std::vector<std::string> vecy;
+	std::unordered_set<std::string> sety;
+
+	std::vector<std::string> vecD;
+	std::unordered_set<std::string> setD;
+
+	std::string bucket;
+	Jstr jbucket;
+	char period[2];
+	int nums;
+	std::string tickret;
+
+	JagStrSplit sp(series, ':', true );
+	for ( int i = 0; i < sp.length(); ++i ) {
+		JagStrSplit tr( sp[i], '_');
+		prt(("s45016 sp[i]=[%s] len=%d\n", sp[i].s(),  tr.length() ));
+		if ( tr.length() == 1 ) {
+			bucket = tr[0].c_str(); //  2M, 1H, etc
+		} else if (  tr.length() == 2 ) {
+			bucket = tr[0].c_str(); //  2h, 1M, etc
+		} else if ( tr.length() == 0 ) {
+			bucket = sp[i].c_str(); //  2h, 1M, etc
+		} else {
+			prt(("s52029 skip\n"));
+			continue;
+		}
+
+		tickret = sp[i].s();
+
+		//nums = bucket.toInt(); // 3M --> 3
+		jbucket = bucket.c_str();
+		nums = jbucket.toInt(); // 3M --> 3
+		period[0] = jbucket.lastChar();  // 3M --> M
+
+		if ( period[0] == 's' ) {
+			if ( sets.find(bucket) == sets.end() ) {
+				vecs.push_back( tickret );
+				sets.emplace( bucket );
+				if ( (60 % nums) != 0 ) { return -111; }
+			}
+		} else if ( period[0] == 'm' ) {
+			if ( setm.find(bucket) == setm.end() ) {
+				vecm.push_back( tickret );
+				setm.emplace( bucket );
+				if ( (60 % nums) != 0 ) { return -114; }
+			}
+		} else if ( period[0] == 'h' ) {
+			if ( seth.find(bucket) == seth.end() ) {
+				vech.push_back( tickret );
+				seth.emplace( bucket );
+				if ( (24 % nums) != 0 ) { return -116; }
+			}
+		} else if ( period[0] == 'd' ) {
+			if ( setd.find(bucket) == setd.end() ) {
+				vecd.push_back( tickret );
+				setd.emplace( bucket );
+			}
+		} else if ( period[0] == 'w' ) {
+			if ( setw.find(bucket) == setw.end() ) {
+				vecw.push_back( tickret );
+				setw.emplace( bucket );
+			}
+		} else if ( period[0] == 'M' ) {
+			if ( setM.find(bucket) == setM.end() ) {
+				vecM.push_back( tickret );
+				setM.emplace( bucket );
+			}
+		} else if ( period[0] == 'q' ) {
+			if ( setq.find(bucket) == setq.end() ) {
+				vecq.push_back( tickret );
+				setq.emplace( bucket );
+			}
+		} else if ( period[0] == 'y' ) {
+			if ( sety.find(bucket) == sety.end() ) {
+				vecy.push_back( tickret );
+				sety.emplace( bucket );
+			}
+		} else if ( period[0] == 'D' ) {
+			if ( setD.find(bucket) == setD.end() ) {
+				vecD.push_back( tickret );
+				setD.emplace( bucket );
+			}
+		} else {
+			continue;
+		}
+	}
+
+	if ( vecs.size() > 0 ) {
+		std::sort( vecs.begin(), vecs.end(), sortByTick );
+	}
+	if ( vecm.size() > 0 ) {
+		std::sort( vecm.begin(), vecm.end(), sortByTick );
+	}
+	if ( vech.size() > 0 ) {
+		std::sort( vech.begin(), vech.end(), sortByTick );
+	}
+	if ( vecd.size() > 0 ) {
+		std::sort( vecd.begin(), vecd.end(), sortByTick );
+	}
+	if ( vecw.size() > 0 ) {
+		std::sort( vecw.begin(), vecw.end(), sortByTick );
+	}
+	if ( vecM.size() > 0 ) {
+		std::sort( vecM.begin(), vecM.end(), sortByTick );
+	}
+	if ( vecq.size() > 0 ) {
+		std::sort( vecq.begin(), vecq.end(), sortByTick );
+	}
+	if ( vecy.size() > 0 ) {
+		std::sort( vecy.begin(), vecy.end(), sortByTick );
+	}
+	if ( vecD.size() > 0 ) {
+		std::sort( vecD.begin(), vecD.end(), sortByTick );
+	}
+
+	Jstr ts;
+	if ( vecs.size() > 0 ) {
+		for ( int i = 0; i < vecs.size(); ++i ) {
+			ts = vecs[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0s"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vecm.size() > 0 ) {
+		for ( int i = 0; i < vecm.size(); ++i ) {
+			ts = vecm[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0m"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vech.size() > 0 ) {
+		for ( int i = 0; i < vech.size(); ++i ) {
+			ts = vech[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0h"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vecd.size() > 0 ) {
+		for ( int i = 0; i < vecd.size(); ++i ) {
+			ts = vecd[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0d"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vecw.size() > 0 ) {
+		for ( int i = 0; i < vecw.size(); ++i ) {
+			ts = vecw[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0w"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vecM.size() > 0 ) {
+		for ( int i = 0; i < vecM.size(); ++i ) {
+			ts = vecM[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0M"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vecq.size() > 0 ) {
+		for ( int i = 0; i < vecq.size(); ++i ) {
+			ts = vecq[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0q"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vecy.size() > 0 ) {
+		for ( int i = 0; i < vecy.size(); ++i ) {
+			ts = vecy[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0y"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	if ( vecD.size() > 0 ) {
+		for ( int i = 0; i < vecD.size(); ++i ) {
+			ts = vecD[i].c_str();
+			if ( ! ts.containsChar('_') ) { ts += Jstr("_0D"); }
+    		if ( normalizedSeries.size() < 1 ) {
+    			normalizedSeries = ts;
+    		} else {
+    			normalizedSeries += Jstr(":") + ts;
+    		}
+		}
+	}
+
+	prt(("s44013 normalizedSeries=[%s]\n", normalizedSeries.s() ));
+	return 0;
+}
+
+
+// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|...}"
 void JagSchemaRecord::getJoinSchema( long skeylen, long svallen, const JagParseParam &parseParam, const jagint lengths[], Jstr &hstr )
 {
 		//const const JagSchemaRecord &rec = *this;
@@ -696,7 +1262,7 @@ void JagSchemaRecord::getJoinSchema( long skeylen, long svallen, const JagParseP
         hbuf[JAG_SCHEMA_SPARE_LEN] = '\0';
         hbuf[0] = JAG_C_COL_KEY;
         hbuf[2] = JAG_RAND;
-        hstr = Jstr("NN|") + longToStr(skeylen) + "|" + longToStr(svallen) + "|0|{";
+        hstr = Jstr("NN|") + longToStr(skeylen) + "|" + longToStr(svallen) + "|0!0!0!0|{";
         for ( int i = 0; i < parseParam.orderVec.size(); ++i ) {
             hstr += Jstr("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(offset) + "!" +
                     longToStr(lengths[i]) + "!0!" + hbuf + "|";
@@ -718,4 +1284,82 @@ void JagSchemaRecord::getJoinSchema( long skeylen, long svallen, const JagParseP
         }
         hstr += "}";
 }
+
+// Input: retention 5M  3d  4q  6y 20m 120s etc
+// returns seconds, -1 if error
+time_t JagSchemaRecord::getRetentionSeconds( const Jstr &retention )
+{
+	jagint nums = retention.toInt();   // 120   3  5
+	char period = retention.lastChar(); // M  m s  q  y
+	time_t  secs;
+
+	if ( period == 's' ) {
+		secs = nums;
+	} else if ( period == 'm' ) {
+		secs = nums * 60;
+	} else if ( period == 'h' ) {
+		secs = nums * 3600;
+	} else if ( period == 'd' ) {
+		secs = nums * 86400;
+	} else if ( period == 'w' ) {
+		secs = nums * 86400 * 7;
+	} else if ( period == 'M' ) {
+		secs = nums * 86400 * 31;
+	} else if ( period == 'q' ) {
+		secs = nums * 86400 * 31 * 3;
+	} else if ( period == 'y' ) {
+		secs = nums * 86400 * 365;
+	} else if ( period == 'D' ) {
+		secs = nums * 86400 * 365 * 10;
+	} else {
+		secs = -1;
+	}
+
+	return secs;
+}
+
+// returns idx of first datetime key col in table
+int  JagSchemaRecord::getFirstDateTimeKeyCol() const
+{
+	int idx = -1;
+	for ( int i=0; i < (*columnVector).length(); ++ i ) {
+		if ( (*columnVector)[i].iskey ) {
+			if ( isDateAndTime( (*columnVector)[i].type ) ) {
+				idx = i;
+				break;
+			}
+		} else {
+			break;
+		}
+	}
+
+	return idx;
+}
+
+
+bool JagSchemaRecord::validRetention( char u )
+{
+	// const char *pstr[] = { "s", "m", "h", "d", "w", "M", "q", "y", "D" }; 
+    if ( u != 's' && u != 'm' && u != 'h' && u != 'd'
+       && u != 'w' && u != 'M' && u != 'q' && u != 'y' && u != 'D' ) {
+       return false;
+    }
+
+	return true;
+}
+
+// Input:  "3m_2M" --> output:  no change "3m_2M"
+// Input:  "3m" --> output:  hange "3m_0m"
+Jstr JagSchemaRecord::makeTickPair( const Jstr &tok )
+{
+	if ( tok.containsChar('_') ) {
+		return tok;
+	} 
+
+	Jstr out;
+	char period = tok.lastChar();
+	out = tok + "_0" + charToStr(period);
+	return out;
+}
+
 

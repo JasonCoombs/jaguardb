@@ -27,7 +27,6 @@
 #include <JagVector.h>
 #include <JagBlock.h>
 #include <JagArray.h>
-//#include <JagDiskArrayServer.h>
 #include <JagLocalDiskHash.h>
 #include <JagHashMap.h>
 #include <JagBuffReader.h>
@@ -70,7 +69,11 @@ class JagSchema
 	
 	int insert( const JagParseParam *parseParam, bool isTable=true );
 	bool remove( const Jstr &dbtable );
-	bool renameColumn( const Jstr &dbtable, const JagParseParam *parseParam );
+	bool addOrRenameColumn( const Jstr &dbtable, const JagParseParam *parseParam );
+	bool addTick( const Jstr &dbtable, const Jstr &tick );
+	bool dropTick( const Jstr &dbtable, const Jstr &tick );
+	bool changeRetention( const Jstr &dbtable, const Jstr &retention );
+	bool changeTickRetention( const Jstr &dbtable, const Jstr &tick, const Jstr &retention );
 	bool setColumn( const Jstr &dbtable, const JagParseParam *parseParam );
 	bool checkSpareRemains( const Jstr &dbtable, const JagParseParam *parseParam );
 	bool dbTableExist( const Jstr &dbname, const Jstr &tabname );
@@ -79,17 +82,11 @@ class JagSchema
 	int  isChainTable( const Jstr &dbtable ) const;
 	int  objectType( const Jstr &dbtable ) const;
 	const JagSchemaRecord*  getAttr( const Jstr & pathName ) const;
-	// bool getAttr( const Jstr & pathName, JagSchemaRecord & onerecord ) const;
 	bool getAttr( const Jstr & pathName, AbaxString & keyInfo ) const;
 	bool getAttrDefVal( const Jstr & pathName, Jstr & keyInfo ) const;
 	Jstr getAllDefVals() const;
 	bool existAttr( const Jstr & pathName ) const;
-	/***
-	bool getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, 
-						  Jstr &tabPathName, JagSchemaRecord &onerecord ) const;
-						  ***/
-	const JagSchemaRecord *getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, 
-						  Jstr &tabPathName ) const;
+	const JagSchemaRecord *getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, Jstr &tabPathName ) const;
 
 	JagVector<AbaxString> *getAllTablesOrIndexesLabel( int objType, const Jstr &dbtable, const Jstr &like ) const;
 	JagVector<AbaxString> *getAllTablesOrIndexes( const Jstr &dbtable, const Jstr &like ) const;
@@ -103,13 +100,13 @@ class JagSchema
 	void   	removeSchemaFile( const Jstr &key );
 	const JagColumn *getColumn( const Jstr &dbname, const Jstr &objname, const Jstr &colname ); 
 
-	static Jstr getDatabases( JagCfg *cfg = NULL, int replicateType=0 );
+	static Jstr getDatabases( const JagCfg *cfg = NULL, int replicateType=0 );
 	static const jagint KEYLEN = JAG_SCHEMA_KEYLEN;
 	static const jagint VALLEN = JAG_SCHEMA_VALLEN;
 	static const jagint KVLEN = KEYLEN + VALLEN;
 
   protected:	
-	JagHashMap<AbaxString,JagSchemaRecord> 	*_schemaMap;
+	JagHashMap<AbaxString,JagSchemaRecord> 	*_schemaRecMap;
 
 	JagHashMap<AbaxString,AbaxString> 		*_recordMap;
 
@@ -124,15 +121,16 @@ class JagSchema
 	JagCfg					*_cfg;
 	JagDBServer    			*_servobj;
 	JagSchemaRecord 		*_schmRecord;
-	//JagDiskArrayServer  	*_schema;
 	JagLocalDiskHash  	    *_schema;
 	Jstr 			        _stype;
 	int						_replicateType;
 	JagColumn               _dummyColumn;
 
-	int  _objectTypeNoLock( const Jstr &dbtable ) const;
-	int 	addToColumnMap( const Jstr& dbobj, const JagSchemaRecord &record );
-	int removeFromColumnMap( const Jstr& dbtabobj, const Jstr& dbobj );
+	int   _objectTypeNoLock( const Jstr &dbtable ) const;
+	int	  addToColumnMap( const Jstr& dbobj, const JagSchemaRecord &record );
+	int   removeFromColumnMap( const Jstr& dbtabobj, const Jstr& dbobj );
+	Jstr  getHeader( const Jstr &sstr );
+	Jstr  getBody( const Jstr &sstr );
 
 
 };

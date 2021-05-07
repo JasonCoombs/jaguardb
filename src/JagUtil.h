@@ -44,6 +44,10 @@
 #endif
 
 #define prints(x) printf x; fflush(stdout)
+#define prt(x) 1
+#define prt(x) 1
+#define prt(x) 1
+#define prt(x) 1
 
 #ifdef _WINDOWS64_
 typedef double abaxdouble;
@@ -107,27 +111,32 @@ jagint getNearestBlockMultiple( jagint value );
 jagint getBuffReaderWriterMemorySize( jagint value ); // max as 1024 ( MB ), value and return in MB
 
 bool formatOneCol( int tzdiff, int servtzdiff, char *outbuf, const char *inbuf, Jstr &errmsg, const Jstr &name, 
-	const int offset, const int length, const int sig, const Jstr &type );
+					int offset, int length, int sig, const Jstr &type );
+
+// void dbNaturalFormatExchange( char *buffers[], int num, int numKeys[], const JagSchemaAttribute *attrs[] );
+void MultiDbNaturalFormatExchange( char *buffers[], int num, int numKeys[], const JagSchemaAttribute *attrs[] );
 
 void dbNaturalFormatExchange( char *buffer, int numKeys, const JagSchemaAttribute *attrs=NULL, 
-	int offset=0, int length=0, const Jstr &type=" " );
+							  int offset=0, int length=0, const Jstr &type=" " );
 
-void dbNaturalFormatExchange( char *buffers[], int num, int numKeys[], const JagSchemaAttribute *attrs[] );
+/**
 void rwnegConvertion( char *outbuf, int checkNum, const JagSchemaAttribute *schAttr, 
-	int offset, int length, const Jstr &type );
+					  int offset, int length, const Jstr &type );
+					  ***/
 
-Jstr filePathFromFD( int fd );
+void rwnegConvertionBuf( char *outbuf, int offset, int length, const Jstr &type );
+void rwnegConvertionCols( char *outbuf, int numCols, const JagSchemaAttribute *schAttr );
+
+//Jstr filePathFromFD( int fd );
 Jstr makeUpperString( const Jstr &str );
 Jstr makeLowerString( const Jstr &str );
-Jstr removeCharFromString( const Jstr &str, char dropc );
+//Jstr removeCharFromString( const Jstr &str, char dropc );
 JagFixString makeUpperOrLowerFixString( const JagFixString &str, bool isUpper );
 Jstr trimChar( const Jstr &str, char c );
 Jstr trimHeadChar( const Jstr &str, char c );
 Jstr trimTailChar( const Jstr &str, char c='\n' );
 Jstr trimTailLF( const Jstr &str ); 
 Jstr strRemoveQuote( const char *p );
-bool beginWith( const Jstr &str, char c );
-bool beginWith( const AbaxString &str, char c );
 bool endWith( const Jstr &str, char c );
 bool endWithStr( const Jstr &str, const Jstr &end );
 bool endWhiteWith( const Jstr &str, char c );
@@ -135,13 +144,10 @@ bool endWith( const AbaxString &str, char c );
 bool endWhiteWith( const AbaxString &str, char c );
 bool startWith(  const Jstr &str, char a );
 char *jumptoEndQuote(const char *p);
-char *jumptoEndBracket(const char *p);
 int stripStrEnd( char *msg, int len );
+void replaceStrEnd( char *msg, int len );
 void randDataStringSort( Jstr *vec, int maxlen );
 bool isNumeric( const char *str );
-
-void fsetXattr( int fd, const char* path, const char *name, jagint value );
-jagint fgetXattr( int fd, const char *path, const char *name );
 
 FILE *loopOpen( const char *path, const char *mode );
 FILE *jagfopen( const char *path, const char *mode );
@@ -161,7 +167,9 @@ int jagftruncate( int fd, off_t length );
 void jagsleep( useconds_t time, int mode );
 bool lastStrEqual( const char *bigstr, const char *smallstr, int lenbig, int lensmall );
 bool isInteger( const Jstr &dtype );
+bool isFloat( const Jstr &dtype );
 bool isDateTime( const Jstr &dtype );
+bool isDateAndTime( const Jstr &dtype );
 Jstr intToString( int i ) ;
 Jstr longToString( jagint i ) ;
 Jstr ulongToString( jaguint i ) ;
@@ -170,11 +178,9 @@ jagint  strchrnumskip( const char *str, char ch );
 char *strnchr(const char *s, int c, int n);
 int  strInStr( const char *str, int len, const char *str2 );
 void splitFilePath( const char *fpath, Jstr &first, Jstr &last );
-void stripeFilePath( const Jstr &fpath, jagint stripe, Jstr &stripePath );
 Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbname, const Jstr &objname );
 Jstr makeDBObjName( JAGSOCK sock, const Jstr &dbdotname );
 Jstr jaguarHome();
-Jstr renameFilePath( const Jstr& fpath, const Jstr &newLast );
 int selectServer( const JagFixString &min, const JagFixString &max, const JagFixString &inkey );
 int trimEndWithChar ( char *msg, int len, char c );
 int trimEndToChar ( char *msg, int len, char stopc );
@@ -183,12 +189,11 @@ jagint availableMemory( jagint &callCount, jagint lastBytes );
 int checkReadOrWriteCommand( const char *pmesg );
 int checkReadOrWriteCommand( int qmode );
 int checkColumnTypeMode( const Jstr &type );
-//Jstr formOneColumnNaturalData( const Jstr &data, jagint offset, jagint length, const Jstr &type );
 Jstr formOneColumnNaturalData( const char *data, jagint offset, jagint length, const Jstr &type );
 void printParseParam( JagParseParam *parseParam );
 int rearrangeHdr( int num, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], JagParseParam *parseParam,
-	const JagVector<SetHdrAttr> &spa, Jstr &newhdr, Jstr &gbvhdr,
-	jagint &finalsendlen, jagint &gbvsendlen, bool needGbvs=true );
+				  const JagVector<SetHdrAttr> &spa, Jstr &newhdr, Jstr &gbvhdr,
+				  jagint &finalsendlen, jagint &gbvsendlen, bool needGbvs=true );
 int checkGroupByValidation( const JagParseParam *parseParam );
 int checkAndReplaceGroupByAlias( JagParseParam *parseParam );
 void convertToHashMap( const Jstr &kvstr, char sep, JagHashMap<AbaxString, AbaxString> &hashmap );
@@ -196,9 +201,9 @@ void changeHome( Jstr &fpath );
 int jaguar_mutex_lock(pthread_mutex_t *mutex);
 int jaguar_mutex_unlock(pthread_mutex_t *mutex);
 int jaguar_cond_broadcast( pthread_cond_t *cond);
-int jaguar_cond_signal( pthread_cond_t *cond);
+//int jaguar_cond_signal( pthread_cond_t *cond);
 int jaguar_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
-int jaguar_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
+//int jaguar_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
 int getPassword( Jstr &outPassword );
 void getWinPass( char *pass );
 const char *strcasestrskipquote( const char *str, const char *token );
@@ -216,20 +221,12 @@ jagint recvMessageInBuf( JAGSOCK sock, char *hdr, char *&buf, char *sbuf, int sb
 jagint recvRawData( JAGSOCK sock, char *buf, jagint len );
 jagint _raysend( JAGSOCK sock, const char *hdr, jagint N );
 jagint _rayrecv( JAGSOCK sock, char *hdr, jagint N );
-
-/**
-#ifdef DEVDEBUG
-#define dbg(x) printf x; fflush(stdout)
-#else
-#define dbg(x) ;
-#endif
-**/
-
 int jagmkdir(const char *path, mode_t mode);
 int jagfdatasync( int fd ); 
 int jagsync( ); 
 int jagfsync( int fd ); 
 jagint jagsendfile( JAGSOCK sock, int fd, jagint size );
+Jstr jagerr( int errcode );
 
 #ifdef DEVDEBUG
 #define JAG_BLURT \
@@ -262,6 +259,8 @@ char *jag_ctime_r(const time_t *timep, char *result);
 int formatInsertSelectCmdHeader( const JagParseParam *parseParam, Jstr &str );
 bool isValidVar( const char *name );
 bool isValidNameChar( char c );
+bool isValidCol( const char *name );
+bool isValidColChar( char c );
 void stripEndSpace( char *qstr, char endc );
 jagint _getFieldInt( const char * rowstr, char fieldToken );
 void makeMapFromOpt( const char *options, JagHashMap<AbaxString, AbaxString> &omap );
@@ -291,7 +290,6 @@ double jagatof(const char *nptr );
 double jagatof(const Jstr &str );
 int jagatoi(const char *nptr );
 int jagatoi(char *nptr, int len );
-//void appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true);
 void stripTailZeros( char *buf, int len );
 bool jagisspace( char c);
 Jstr trimEndZeros( const Jstr& str );
@@ -356,7 +354,7 @@ void putXmitHdr( char *buf, const char *sqlhdr, int msglen, const char *code );
 void putXmitHdrAndData( char *buf, const char *sqlhdr, const char *msg, int msglen, const char *code );
 void getXmitSQLHdr( char *buf, char *sqlhdr );
 void getXmitCode( char *buf, char *code );
-long getXmitMsgLen( char *buf );
+long long getXmitMsgLen( char *buf );
 void makeSQLHeader( char *sqlhdr );
 void makeTotalHeader( char *tothdr, jagint payloadLen, const char *code );
 
@@ -376,6 +374,16 @@ jagint sendMessageLength2( JagSession *session, const char *mesg, jagint len, co
 Jstr convertToStr( const Jstr  &pm );
 Jstr convertManyToStr( const Jstr &pms );
 Jstr convertType2Short( const Jstr &geotypeLong );
+Jstr firstToken( const char *str, char sep );
+bool hasDefaultValue( char spare4 );
+bool hasDefaultDateTimeValue( char spare4 );
+bool hasDefaultUpdateDateTime( char spare4 );
+Jstr charToStr(char c);
+bool endWithSQLRightBra( const char *sql );
+long long get8ByteLongLong( char *str );
+int  get4ByteInt( char *str );
+jagint sendOneBatch( int sock, int fd, jagint size );
+
 
 template <class T> T* newObject( bool doPrint = true )
 {

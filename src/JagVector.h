@@ -72,6 +72,14 @@ class JagVector
 			}	
 		}
 
+		void printInt() const {
+			printf("j11023 printInt: ");
+			for ( jagint i = 0; i < _elements; ++i ) {
+				printf("[%d][%d] ", i, _arr[i] );
+			}
+			printf("\n");
+		}
+
 		Jstr asString() const {
 			Jstr str;
 			for ( jagint i = 0; i < _elements; ++i ) {

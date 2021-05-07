@@ -556,7 +556,7 @@ void JagSimpFile::flushBlockIndexToDisk()
 {
     //Jstr idxPath = renameFilePath( _fpath, "bid");
     Jstr idxPath = _fpath + ".bid";
-    prt(("s3803 JagSimpFile::flushBlockIndexToDisk() _fpath=%s idxPath=%s \n", _fpath.c_str(), idxPath.c_str() ));
+    prt(("s238103 JagSimpFile::flushBlockIndexToDisk() _fpath=%s idxPath=%s \n", _fpath.c_str(), idxPath.c_str() ));
     if ( _blockIndex ) {
 		raydebug( stdout, JAG_LOG_LOW, "s308123 flushBottomLevel idxPath=%s _elements=%d ...\n", idxPath.s(), _elements );
         _blockIndex->flushBottomLevel( idxPath, _elements, _length/_KVLEN, _minindex, _maxindex );

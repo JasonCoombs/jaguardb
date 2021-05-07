@@ -28,7 +28,6 @@
 #ifndef _jag_fixkv_h_
 #define _jag_fixkv_h_
 
-// #include <JagDiskArrayServer.h>
 #include <JagLocalDiskHash.h>
 #include <JagRecord.h>
 #include <JagMutex.h>
@@ -40,7 +39,7 @@ class JagDBServer;
 class JagFixKV
 {
   public:
-    JagFixKV( JagDBServer *servobj, const Jstr &dbname, const Jstr & tabname, int replicateType );
+    JagFixKV( const Jstr &dbname, const Jstr & tabname, int replicateType );
 	virtual ~JagFixKV();
 	virtual void destroy( bool removelock=true );
 	virtual void init( );
@@ -54,7 +53,7 @@ class JagFixKV
   protected:
 	JagHashMap<AbaxString, AbaxString> 	*_hashmap;
     pthread_rwlock_t  					*_lock;
-	JagDBServer       					*_servobj;
+	// JagDBServer       					*_servobj;
 	// JagDiskArrayServer  				*_darr;
 	JagLocalDiskHash  				    *_darr;
 	int									_replicateType;

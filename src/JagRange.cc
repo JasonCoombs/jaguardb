@@ -111,8 +111,23 @@ bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const Jstr &subty
 		end1t = jagatoll( end1 ); 
 
 		jaguint begin2t, end2t;
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), false );
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), false );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 1 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 1 );
+		if ( strict ) {
+			if ( begin2t < begin1t && end1t < end2t ) { return true; }
+		} else {
+			if ( begin2t <= begin1t && end1t <= end2t ) { return true; }
+		}
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMESEC || subtype == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint begin1t, end1t;
+		begin1t = jagatoll( begin1 );  // seconds 
+		end1t = jagatoll( end1 ); 
+
+		jaguint begin2t, end2t;
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 3 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 3 );
 		if ( strict ) {
 			if ( begin2t < begin1t && end1t < end2t ) { return true; }
 		} else {
@@ -126,8 +141,23 @@ bool JagRange::rangeWithinRange( const JagParseAttribute &jpa, const Jstr &subty
 		end1t = jagatoll( end1 ); 
 
 		jaguint begin2t, end2t;
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), true );
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), true );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 2 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 2 );
+		if ( strict ) {
+			if ( begin2t < begin1t && end1t < end2t ) { return true; }
+		} else {
+			if ( begin2t <= begin1t && end1t <= end2t ) { return true; }
+		}
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMEMILL || subtype == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint begin1t, end1t;
+		begin1t = jagatoll( begin1 );  // nanoseconds 
+		end1t = jagatoll( end1 ); 
+
+		jaguint begin2t, end2t;
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 4 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 4 );
 		if ( strict ) {
 			if ( begin2t < begin1t && end1t < end2t ) { return true; }
 		} else {
@@ -195,8 +225,20 @@ bool JagRange::pointWithinRange( const JagParseAttribute &jpa, const Jstr &subty
 		if ( ! strchr( end2.c_str(), ':' ) ) return false;
 		jaguint datat = jagatoll( data.c_str() );
 		jaguint begin2t, end2t;
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), false );
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), false );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 1 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 1 );
+		if ( strict ) {
+			if ( begin2t < datat && datat < end2t ) { return true; }
+		} else {
+			if ( begin2t <= datat && datat <= end2t ) { return true; }
+		}
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMESEC || subtype == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint datat = jagatoll( data.c_str() );
+		jaguint begin2t, end2t;
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 3 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 3 );
 		if ( strict ) {
 			if ( begin2t < datat && datat < end2t ) { return true; }
 		} else {
@@ -207,8 +249,20 @@ bool JagRange::pointWithinRange( const JagParseAttribute &jpa, const Jstr &subty
 		if ( ! strchr( end2.c_str(), ':' ) ) return false;
 		jaguint datat = jagatoll( data.c_str() );
 		jaguint begin2t, end2t;
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), true );
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), true );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 2 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 2 );
+		if ( strict ) {
+			if ( begin2t < datat && datat < end2t ) { return true; }
+		} else {
+			if ( begin2t <= datat && datat <= end2t ) { return true; }
+		}
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMEMILL || subtype == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint datat = jagatoll( data.c_str() );
+		jaguint begin2t, end2t;
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 4 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 4 );
 		if ( strict ) {
 			if ( begin2t < datat && datat < end2t ) { return true; }
 		} else {
@@ -308,8 +362,18 @@ bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const Jstr &su
 		jaguint begin1t, end1t, begin2t, end2t;
 		begin1t = jagatoll( begin1.c_str() );
 		end1t = jagatoll( end1.c_str() );
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), false );
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), false );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 1 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 1 );
+		if ( begin2t <= begin1t && begin1t <= end2t ) { return true; }
+		if ( begin2t <= end1t && end1t <= end2t ) { return true; }
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMESEC || subtype == JAG_C_COL_TYPE_TIMESTAMPSEC  ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint begin1t, end1t, begin2t, end2t;
+		begin1t = jagatoll( begin1.c_str() );
+		end1t = jagatoll( end1.c_str() );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 3 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 3 );
 		if ( begin2t <= begin1t && begin1t <= end2t ) { return true; }
 		if ( begin2t <= end1t && end1t <= end2t ) { return true; }
 	} else if ( subtype == JAG_C_COL_TYPE_DATETIMENANO || subtype == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
@@ -318,8 +382,18 @@ bool JagRange::rangeIntersectRange( const JagParseAttribute &jpa, const Jstr &su
 		jaguint begin1t, end1t, begin2t, end2t;
 		begin1t = jagatoll( begin1.c_str() );
 		end1t = jagatoll( end1.c_str() );
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), true );
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), true );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 2 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 2 );
+		if ( begin2t <= begin1t && begin1t <= end2t ) { return true; }
+		if ( begin2t <= end1t && end1t <= end2t ) { return true; }
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMEMILL || subtype == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint begin1t, end1t, begin2t, end2t;
+		begin1t = jagatoll( begin1.c_str() );
+		end1t = jagatoll( end1.c_str() );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 4 );
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 4 );
 		if ( begin2t <= begin1t && begin1t <= end2t ) { return true; }
 		if ( begin2t <= end1t && end1t <= end2t ) { return true; }
 	} else {
@@ -394,8 +468,17 @@ bool JagRange::rangeSameRange( const JagParseAttribute &jpa, const Jstr &subtype
 		jaguint begin1t, end1t, begin2t, end2t;
 		begin1t = jagatoll( begin1.c_str() );
 		end1t = jagatoll( end1.c_str() );
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), false ); // microsecs
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), false );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 1 ); // microsecs
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 1 );
+		if ( begin2t == begin1t && end1t == end2t ) return true;
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMESEC || subtype == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint begin1t, end1t, begin2t, end2t;
+		begin1t = jagatoll( begin1.c_str() );
+		end1t = jagatoll( end1.c_str() );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 3 ); // secs
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 3 );
 		if ( begin2t == begin1t && end1t == end2t ) return true;
 	} else if ( subtype == JAG_C_COL_TYPE_DATETIMENANO || subtype == JAG_C_COL_TYPE_TIMESTAMPNANO ) {
 		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
@@ -403,8 +486,17 @@ bool JagRange::rangeSameRange( const JagParseAttribute &jpa, const Jstr &subtype
 		jaguint begin1t, end1t, begin2t, end2t;
 		begin1t = jagatoll( begin1.c_str() );
 		end1t = jagatoll( end1.c_str() );
-		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), true ); // nanosecs
-		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), true );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 2 ); // nanosecs
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 2 );
+		if ( begin2t == begin1t && end1t == end2t ) return true;
+	} else if ( subtype == JAG_C_COL_TYPE_DATETIMEMILL || subtype == JAG_C_COL_TYPE_TIMESTAMPMILL ) {
+		if ( ! strchr( begin2.c_str(), ':' ) ) return false;
+		if ( ! strchr( end2.c_str(), ':' ) ) return false;
+		jaguint begin1t, end1t, begin2t, end2t;
+		begin1t = jagatoll( begin1.c_str() );
+		end1t = jagatoll( end1.c_str() );
+		begin2t = JagTime::getDateTimeFromStr( jpa, begin2.c_str(), 4 ); // nanosecs
+		end2t = JagTime::getDateTimeFromStr( jpa, end2.c_str(), 4 );
 		if ( begin2t == begin1t && end1t == end2t ) return true;
 	} else {
 		double begin1n = jagatof( begin1.c_str() );

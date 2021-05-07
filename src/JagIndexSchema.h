@@ -34,9 +34,9 @@ class JagIndexSchema : public JagSchema
 	virtual ~JagIndexSchema();
 	int getIndexNames( const Jstr &dbname, const Jstr &tablename, JagVector<Jstr> &vec );
 	int getIndexNamesFromMem( const Jstr &dbname, const Jstr &tabname, JagVector<Jstr> &vec );
-	bool tableExist( const Jstr &dbname, JagParseParam *parseParam ); 
+	bool tableExist( const Jstr &dbname, const JagParseParam *parseParam ); 
 	bool tableExist( const Jstr &dbname, const Jstr &tabname );
-	bool indexExist( const Jstr &dbname, JagParseParam *parseParam ); 
+	bool indexExist( const Jstr &dbname, const JagParseParam *parseParam ); 
 	bool indexExist( const Jstr &dbname, const Jstr &tabname );
 };
 

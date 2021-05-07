@@ -30,12 +30,12 @@
 #include <JagUtil.h>
 #include <JagFileMgr.h>
 
-// _schemaMap: tableschame key-> db.tab  value->SchemaRecord
-// _schemaMap: indexschema key-> db.tab.idx  value->SchemaRecord
-// _recordmap: tableschame key-> db.tab  value->SchemaText
+// _schemaRecMap: tableschame key-> db.tab      value->SchemaRecord
+// _schemaRecMap: indexschema key-> db.tab.idx  value->SchemaRecord
+// _recordmap: tableschame key-> db.tab      value->SchemaText
 // _recordMap: indexschema key-> db.tab.idx  value->SchemaText
-// _columnMap-> (key-> db.obj.col val->JagColumn )
-// _tableIndexMap-> (key->db.idx   val->tabName );
+// _columnMap-> (key-> db.obj.col   val->JagColumn )
+// _tableIndexMap-> (key->db.idx    val->tabName );
 
 JagSchema::JagSchema()
 {
@@ -74,7 +74,7 @@ void JagSchema::init( JagDBServer *serv, const Jstr &stype, int replicateType )
 		exit(12);
 	}
 
-	_schemaMap = new JagHashMap<AbaxString, JagSchemaRecord>;
+	_schemaRecMap = new JagHashMap<AbaxString, JagSchemaRecord>;
 	_recordMap = new JagHashMap<AbaxString, AbaxString>;
 	_defvalMap = new JagHashStrStr;
 	_tableIndexMap = new JagHashMap<AbaxString, AbaxString>;
@@ -99,8 +99,8 @@ void JagSchema::init( JagDBServer *serv, const Jstr &stype, int replicateType )
 		// prt(("s2338 done record.parseRecord prc=%d\n", prc ));
 		AbaxString sk( keystr );	
 		// sk: test.t1  or test.t1.t1idx1
-		_schemaMap->addKeyValue( sk, record );	
-		//prt(("s0271 _schemaMap->addKeyValue( sk=[%s] , record )\n", sk.c_str() ));
+		_schemaRecMap->addKeyValue( sk, record );	
+		//prt(("s0271 _schemaRecMap->addKeyValue( sk=[%s] , record )\n", sk.c_str() ));
 
 		JagStrSplit sp(keystr, '.');
 		if ( sp.length() == 3 ) { // index
@@ -127,9 +127,9 @@ void JagSchema::destroy( bool removelock )
 		_schema = NULL;
 	}
 
-	if ( _schemaMap ) {
-		delete _schemaMap;
-		_schemaMap = NULL;
+	if ( _schemaRecMap ) {
+		delete _schemaRecMap;
+		_schemaRecMap = NULL;
 	}
 
 	if ( _recordMap ) {
@@ -170,7 +170,7 @@ void JagSchema::printinfo()
 
 void JagSchema::print() 
 { 
-	_schemaMap->printKeyStringOnly(); 
+	_schemaRecMap->printKeyStringOnly(); 
 }
 
 // dbobj: dbtab or dbtabidx; 
@@ -220,7 +220,7 @@ void JagSchema::setupDefvalMap( const Jstr &dbobj, const char *buf, bool isClean
 		}
 	} else {
 		key = dbobj;
-		const JagSchemaRecord *record = _schemaMap->getValue( key );
+		const JagSchemaRecord *record = _schemaRecMap->getValue( key );
 		if (  record ) {
 			for ( int i = 0; i < record->columnVector->size(); ++i ) {
 				key = dbobj + "." + (*(record->columnVector))[i].name.c_str();
@@ -232,6 +232,7 @@ void JagSchema::setupDefvalMap( const Jstr &dbobj, const char *buf, bool isClean
 
 // table: pathName = dbname + "." + tabname;
 // index: pathName = dbname + "." + tabname + "." + idxname;
+// return 0: error   1: 
 int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 {
 	JagSchemaRecord record(true);
@@ -240,14 +241,14 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	int length = 0;
 	AbaxString dum;
 	Jstr  schemaText;
-	int buflen=4096;
+	int buflen=8092;
 	char buf[buflen];
 	char ddd[32];
 	char buf2[2];
 	buf2[1] = '\0';
 
 	if ( parseParam->keyLength < 1 ) {
-		// prt(("E0501 parseParam->keyLength=%d  < 1 error\n", parseParam->keyLength ));
+		prt(("E0501 parseParam->keyLength=%d  < 1 error\n", parseParam->keyLength ));
 		return 0;
 	}
 
@@ -270,15 +271,20 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 	}
 
 	memset(buf, 0, buflen );
-	Jstr tableProperty = intToStr( parseParam->polyDim );
-	//prt(("s5134 schema this=%0x parseParam->polyDim=%d tableProperty=[%s]\n", parseParam->polyDim, tableProperty.c_str() ));
+	Jstr ts = parseParam->timeSeries;
+	prt(("s55107 parseParam->timeSeries=[%s]\n", ts.s() ));
+	if ( ts.size() < 1 ) ts = "0";
+	Jstr tableProperty = intToStr( parseParam->polyDim ) + "!" + ts + "!" + parseParam->retain + "!0!";
+	// retain is "100d" or "12m" or "24h" etc
+	// 1!timeseries!retain!...!      timeseries: nm_r:nh:nd_r:nw:nM:ny
+	prt(("s52134 schema polyDim=%d tableProperty=[%s]\n", parseParam->polyDim, tableProperty.c_str() ));
 	if ( parseParam->isMemTable ) {
 		// NM means memtable
-		sprintf(buf, "NM|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.c_str() );
+		sprintf(buf, "NM|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
 	} else if ( parseParam->isChainTable ) { 
-		sprintf(buf, "NC|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.c_str() );
+		sprintf(buf, "NC|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
 	} else {
-		sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.c_str() );
+		sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
 	}
 	schemaText += buf;
 	record.keyLength = parseParam->keyLength;
@@ -302,7 +308,8 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		onecolrec.endcol = parseParam->createAttrVec[i].endcol;
 		//onecolrec.dummy1 = parseParam->createAttrVec[i].dummy1;
 		onecolrec.metrics = parseParam->createAttrVec[i].metrics;
-		onecolrec.dummy2 = parseParam->createAttrVec[i].dummy2;
+		// onecolrec.dummy2 = parseParam->createAttrVec[i].dummy2;
+		onecolrec.rollupWhere = parseParam->createAttrVec[i].rollupWhere;
 		onecolrec.dummy3 = parseParam->createAttrVec[i].dummy3;
 		onecolrec.dummy4 = parseParam->createAttrVec[i].dummy4;
 		onecolrec.dummy5 = parseParam->createAttrVec[i].dummy5;
@@ -335,7 +342,8 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		sprintf( ddd, "%d!", onecolrec.endcol ); strcat(  buf, ddd );
 		//sprintf( ddd, "%d!", onecolrec.dummy1 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.metrics ); strcat(  buf, ddd );
-		sprintf( ddd, "%d!", onecolrec.dummy2 ); strcat(  buf, ddd );
+		//sprintf( ddd, "%d!", onecolrec.dummy2 ); strcat(  buf, ddd );
+		sprintf( ddd, "%s!", onecolrec.rollupWhere.s() ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy3 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy4 ); strcat(  buf, ddd );
 		sprintf( ddd, "%d!", onecolrec.dummy5 ); strcat(  buf, ddd );
@@ -397,9 +405,9 @@ int JagSchema::insert( const JagParseParam *parseParam, bool isTable )
 		prt(("WARN0201 _recordMap->addKeyValue pathName=[%s]\n", pathName.c_str() ));
 	}
 
-	rc = _schemaMap->addKeyValue( AbaxString(pathName), record );
+	rc = _schemaRecMap->addKeyValue( AbaxString(pathName), record );
 	if ( ! rc ) {
-		prt(("WARN0202 _schemaMap->addKeyValue pathName=[%s]\n", pathName.c_str() ));
+		prt(("WARN0202 _schemaRecMap->addKeyValue pathName=[%s]\n", pathName.c_str() ));
 	}
 
 	Jstr dbobj;
@@ -453,20 +461,265 @@ bool JagSchema::remove( const Jstr &dbtable )
 	// prt(("s0283 remove from _tableIndexMap dbtable=[%s]\n", dbtable.c_str() ));
 	removeFromColumnMap( dbtable, dbobj.c_str() );
 
-	_schemaMap->removeKey( AbaxString(dbtable) );
+	_schemaRecMap->removeKey( AbaxString(dbtable) );
 	free( keybuf );
 	return true;
 }
 
-bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parseParam )
+Jstr JagSchema::getHeader( const Jstr &sstr )
 {
-	//prt(("s5590 JagSchema::renameColumn dbtable=[%s] ...\n", dbtable.s() ));
+	//"NN|keyLen|valueLen|tableProperty|{ body ...}
+	// returns "NN|keyLen|valueLen|tableProperty|"
+	const char *start = sstr.s();
+	const char *end = strchr( sstr.s(), '{' );
+	return Jstr(start, end - start );
+}
+
+Jstr JagSchema::getBody( const Jstr &sstr )
+{
+	//sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
+	//"NN|keyLen|valueLen|tableProperty|{ body ...}
+	// returns "{ body ..... }"
+	const char *start = strchr( sstr.s(), '{' );
+	// prt(("s41227 getBody input sstr=[%s] bodystart=[%s]\n", sstr.s(), start ));
+	return start;
+}
+
+// tick: "1M_3M"
+bool JagSchema::addTick( const Jstr &dbtable, const Jstr &tick )
+{
+	prt(("s203171 addTick dbtable=%s tick=[%s]\n", dbtable.s(), tick.s() ));
+	//sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
+
+	JagSchemaRecord record(true);
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK ); JAG_OVER;
+	bool rc = _schemaRecMap->getValue( AbaxString(dbtable), record );
+	if ( ! rc ) {
+		return false;
+	}
+
+	Jstr sstr = record.getString();
+	Jstr hdr = getHeader( sstr );
+	Jstr body = getBody( sstr );
+
+	JagStrSplit sp(hdr, '|');
+	Jstr tableProperty = sp[3];
+	//tableProperty = "polyDim!timeSeries!retain!0!"
+	JagStrSplit tp( tableProperty, '!');
+	Jstr dbtser = tp[1];
+
+	Jstr allTser = dbtser + ":" + tick;
+	Jstr norm;
+	int nrc = JagSchemaRecord::normalizeTimeSeries( allTser, norm );
+	if ( 0 == nrc ) {
+		// need change if tableProperty is augmented to more fields
+		// OK
+		Jstr newTser = norm;
+		Jstr newTabProperty = tp[0] + "!" + newTser + "!" + tp[2] + "!" + tp[3];
+		Jstr newHeader = sp[0] + "|" + sp[1] + "|" + sp[2] + "|" + newTabProperty + "|"; 
+		Jstr allStr = newHeader + body;
+		_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
+		writeSchemaText( dbtable, allStr );
+
+		// record update time series
+		record.setTimeSeries( allTser );
+		_schemaRecMap->setValue( dbtable, record );
+		prt(("s23371 _schemaRecMap->set dbtable=%s to new schemarecord\n", dbtable.s() ));
+		return true;
+	}
+
+	return false;
+}
+
+// tick: "1M"
+bool JagSchema::dropTick( const Jstr &dbtable, const Jstr &tick )
+{
+	JagStrSplit s1(tick, '_');
+	Jstr tickTable = s1[0];
+	prt(("s203172 dropTick dbtable=%s tick=[%s]\n", dbtable.s(), tick.s() ));
+	//sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
+
+	JagSchemaRecord record(true);
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK ); JAG_OVER;
+	bool rc = _schemaRecMap->getValue( AbaxString(dbtable), record );
+	if ( ! rc ) {
+		return false;
+	}
+
+	Jstr sstr = record.getString();
+	Jstr hdr = getHeader( sstr );
+	Jstr body = getBody( sstr );
+
+	JagStrSplit sp(hdr, '|');
+	Jstr tableProperty = sp[3];
+	//tableProperty = "polyDim!timeSeries!retain!0!"
+	JagStrSplit tp( tableProperty, '!');
+	Jstr dbtser = tp[1];
+
+	// remove tick from dbtser: "15m_120m:3M_12M:1y_5y"
+	JagStrSplit tsp( dbtser, ':');
+	Jstr newTser;
+	for ( int i = 0; i < tsp.size(); ++i ) {
+		JagStrSplit rec( tsp[i], '_' );
+		if ( rec[0] == tickTable ) {
+			continue;
+		}
+
+		if ( newTser.size() < 1 ) {
+			newTser = tsp[i];
+		} else {
+			newTser += Jstr(":") + tsp[i];
+		}
+	}
+
+	// need change if tableProperty is augmented to more fields
+	// OK
+	Jstr newTabProperty = tp[0] + "!" + newTser + "!" + tp[2] + "!" + tp[3];
+	Jstr newHeader = sp[0] + "|" + sp[1] + "|" + sp[2] + "|" + newTabProperty + "|"; 
+	Jstr allStr = newHeader + body;
+	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
+	writeSchemaText( dbtable, allStr );
+
+	// record update time series
+	record.setTimeSeries( newTser );
+	_schemaRecMap->setValue( dbtable, record );
+	prt(("s23371 _schemaRecMap->set dbtable=%s to new schemarecord\n", dbtable.s() ));
+	return true;
+}
+
+// rentention: "1M" "0h"  "0"
+bool JagSchema::changeRetention( const Jstr &dbtable, const Jstr &retention )
+{
+	if ( strchr( retention.s(), '_') ) {
+		prt(("s223303 changeRetention retention=[%s] is not valid. found _\n", retention.s() ));
+		return false;
+	}
+
+	jagint num = jagatoll( retention );
+	if ( num < 0 ) {
+		prt(("s225303 changeRetention retention=[%s] is not valid. negative\n", retention.s() ));
+		return false;
+	}
+
+	char fc = retention.firstChar();
+	if ( fc < '0' || fc > '9' ) {
+		// retention does not start with digits
+		prt(("s22550 changeRetention retention=[%s] is not valid. no leading digit\n", retention.s() ));
+		return false;
+	} 
+
+	if ( retention != "0" ) {
+		char lastc = retention.lastChar();
+		if ( ! JagSchemaRecord::validRetention( lastc ) ) {
+			prt(("s223308 changeRetention lastc=[%c] is not valid retenetion period\n", lastc ));
+			return false;
+		}
+	}
+
+	prt(("s203172 changeRetention dbtable=%s rentention=[%s]\n", dbtable.s(), retention.s() ));
+	//sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
+
+	JagSchemaRecord record(true);
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK ); JAG_OVER;
+	bool rc = _schemaRecMap->getValue( AbaxString(dbtable), record );
+	if ( ! rc ) {
+		return false;
+	}
+
+	Jstr sstr = record.getString();
+	Jstr hdr = getHeader( sstr );
+	Jstr body = getBody( sstr );
+
+	JagStrSplit sp(hdr, '|');
+	Jstr tableProperty = sp[3];
+	//tableProperty = "polyDim!timeSeries!retain!0!"
+	JagStrSplit tp( tableProperty, '!');
+	// Jstr dbRetention = tp[2];
+
+	// need change if tableProperty is augmented to more fields
+	// OK
+	Jstr newTabProperty = tp[0] + "!" + tp[1] + "!" + retention + "!" + tp[3];
+	Jstr newHeader = sp[0] + "|" + sp[1] + "|" + sp[2] + "|" + newTabProperty + "|"; 
+	Jstr allStr = newHeader + body;
+	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
+	writeSchemaText( dbtable, allStr );
+
+	// record update retention
+	record.setRetention( retention );
+	_schemaRecMap->setValue( dbtable, record );
+	prt(("s23374 _schemaRecMap->set dbtable=%s to new schemarecord\n", dbtable.s() ));
+	return true;
+}
+
+// change parent table retention for the tick
+bool JagSchema::changeTickRetention( const Jstr &dbtable, const Jstr &tick, const Jstr &retention )
+{
+	prt(("s203372 changeTickRetention dbtable=%s tick=[%s] retention=[%s]\n", dbtable.s(), tick.s(), retention.s() ));
+	//sprintf( buf, "NN|%d|%d|%s|{", parseParam->keyLength, parseParam->valueLength, tableProperty.s() );
+
+	JagSchemaRecord record(true);
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK ); JAG_OVER;
+	bool rc = _schemaRecMap->getValue( AbaxString(dbtable), record );
+	if ( ! rc ) {
+		return false;
+	}
+
+	Jstr sstr = record.getString();
+	Jstr hdr = getHeader( sstr );
+	Jstr body = getBody( sstr );
+
+	JagStrSplit sp(hdr, '|');
+	Jstr tableProperty = sp[3];
+	//tableProperty = "polyDim!timeSeries!retain!0!"
+	JagStrSplit tp( tableProperty, '!');
+	Jstr dbtser = tp[1];
+
+	// remove tick from dbtser: "15m_120m:3M_12M:1y_5y"
+	JagStrSplit tsp( dbtser, ':');
+	Jstr newTser;
+	Jstr tickRetention;
+	for ( int i = 0; i < tsp.size(); ++i ) {
+		JagStrSplit rec( tsp[i], '_' );
+		if ( rec[0] == tick ) {
+			//continue;
+			tickRetention = tick + "_" + retention; // modify
+		} else {
+			tickRetention = tsp[i]; // keep old one
+		}
+
+		if ( newTser.size() < 1 ) {
+			newTser = tickRetention;
+		} else {
+			newTser += Jstr(":") + tickRetention;
+		}
+	}
+
+	// need change if tableProperty is augmented to more fields
+	// OK
+	Jstr newTabProperty = tp[0] + "!" + newTser + "!" + tp[2] + "!" + tp[3];
+	Jstr newHeader = sp[0] + "|" + sp[1] + "|" + sp[2] + "|" + newTabProperty + "|"; 
+	Jstr allStr = newHeader + body;
+	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
+	writeSchemaText( dbtable, allStr );
+
+	// record update time series
+	record.setTimeSeries( newTser );
+	_schemaRecMap->setValue( dbtable, record );
+	prt(("s23371 _schemaRecMap->set dbtable=%s to new schemarecord\n", dbtable.s() ));
+	return true;
+}
+
+
+// return true for OK; false for error
+bool JagSchema::addOrRenameColumn( const Jstr &dbtable, const JagParseParam *parseParam )
+{
+	//prt(("s5590 JagSchema::addOrRenameColumn dbtable=[%s] ...\n", dbtable.s() ));
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
 	Jstr oldName, newName;
 
 	JagSchemaRecord record(true);
-	_schemaMap->getValue( AbaxString(dbtable), record );
+	_schemaRecMap->getValue( AbaxString(dbtable), record );
 	if ( parseParam->createAttrVec.size() < 1 ) {
 		oldName = parseParam->objectVec[0].colName;
 		newName = parseParam->objectVec[1].colName;
@@ -477,7 +730,7 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 	}
 	// first, remove old column names from defvalMap before setValue of schemaMap and recordMap
 	setupDefvalMap( dbtable, NULL, 1 );
-	_schemaMap->setValue( AbaxString(dbtable), record );
+	_schemaRecMap->setValue( AbaxString(dbtable), record );
 	Jstr sstr = record.getString(); // new modified string
 	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
 
@@ -503,7 +756,7 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 				if ( offset+newName.size()-oldName.size()+pair.value.size() > VALLEN ) {
 					free( keybuf );
 					free( valbuf );
-					return 0;
+					return false;
 				}
 				// copy items before cstr
 				memcpy( valbuf+offset, pair.value.c_str(), p-pair.value.c_str() );
@@ -527,7 +780,7 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 						parseParam->createAttrVec[0].defValues.size() > VALLEN ) {
 					free( keybuf );
 					free( valbuf );
-					return 0;
+					return false;
 				}
 				offset += pair.value.size();
 				valbuf[offset] = ':';
@@ -554,10 +807,11 @@ bool JagSchema::renameColumn( const Jstr &dbtable, const JagParseParam *parsePar
 	writeSchemaText( keybuf, sstr );
 	free( keybuf );
 	free( valbuf );
-	return 1;
+	return true;
 }
 
 // set properties of column
+// return true OK; false for error
 bool JagSchema::setColumn( const Jstr &dbtable, const JagParseParam *parseParam )
 {
 	//prt(("s5591 JagSchema::setColumn dbtable=[%s] ...\n", dbtable.s() ));
@@ -573,19 +827,19 @@ bool JagSchema::setColumn( const Jstr &dbtable, const JagParseParam *parseParam 
 
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK ); JAG_OVER;
 
-	rc = _schemaMap->getValue( AbaxString(dbtable), record );
+	rc = _schemaRecMap->getValue( AbaxString(dbtable), record );
 	//prt(("s1338 setColumn colName=[%s] attr=[%s] newValue=[%s] rc=%d\n", colName.c_str(), attr.s(), newValue.s(), rc ));
 	if ( ! rc ) {
-		return 0;
+		return false;
 	}
 
 	record.setColumn( AbaxString(colName), AbaxString(attr), AbaxString(newValue) );
-	_schemaMap->setValue( AbaxString(dbtable), record );
+	_schemaRecMap->setValue( AbaxString(dbtable), record );
 	Jstr sstr = record.getString();
 	_recordMap->setValue( AbaxString(dbtable), AbaxString( sstr ) );
 	//prt(("s5203 sstr=[%s]\n",sstr.s() ));
 	writeSchemaText( dbtable, sstr );
-	return 1;
+	return true;
 }
 
 bool JagSchema::checkSpareRemains( const Jstr &dbtable, const JagParseParam *parseParam )
@@ -593,7 +847,7 @@ bool JagSchema::checkSpareRemains( const Jstr &dbtable, const JagParseParam *par
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
 	JAG_OVER;
 	JagSchemaRecord record(true);
-	_schemaMap->getValue( AbaxString(dbtable), record );
+	_schemaRecMap->getValue( AbaxString(dbtable), record );
 	if ( parseParam->createAttrVec[0].length > (*record.columnVector)[record.columnVector->size()-1].length ) {
 		return 0;
 	}
@@ -632,7 +886,6 @@ int JagSchema::_objectTypeNoLock( const Jstr &dbtable ) const
 	}
 }
 
-
 int JagSchema::isMemTable( const Jstr &dbtable ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
@@ -659,47 +912,42 @@ int JagSchema::isChainTable( const Jstr &dbtable ) const
 	}
 }
 
-const JagSchemaRecord* JagSchema::getAttr( const Jstr & pathName ) const
+const JagSchemaRecord* JagSchema::getAttr( const Jstr & dbtable ) const
 {
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK ); JAG_OVER;
-	return _schemaMap->getValue( pathName );
+	return _schemaRecMap->getValue( dbtable );
 }
 
-bool JagSchema::getAttr( const Jstr & pathName, AbaxString & keyInfo ) const 
+bool JagSchema::getAttr( const Jstr & dbtable, AbaxString & keyInfo ) const 
 { 
-	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	JAG_OVER;
-	return _recordMap->getValue( AbaxString(pathName), keyInfo ); 
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK ); JAG_OVER;
+	return _recordMap->getValue( AbaxString(dbtable), keyInfo ); 
 }
 
-bool JagSchema::getAttrDefVal( const Jstr & pathName, Jstr & keyInfo ) const 
+bool JagSchema::getAttrDefVal( const Jstr & dbtable, Jstr & keyInfo ) const 
 { 
-	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	JAG_OVER;
-	return _defvalMap->getValue( pathName, keyInfo ); 
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK ); JAG_OVER;
+	return _defvalMap->getValue( dbtable, keyInfo ); 
 }
 
 // return "key1=val1|key2=val2|..."
 Jstr JagSchema::getAllDefVals() const
 {
-	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	JAG_OVER;
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK ); JAG_OVER;
 	return _defvalMap->getKVStrings();
 }
 
 bool JagSchema::existAttr( const Jstr & pathName ) const 
 { 
-	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	JAG_OVER;
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK ); JAG_OVER;
 	return _recordMap->keyExist( AbaxString(pathName) ); 
 }
 
-const JagSchemaRecord *JagSchema::getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, 
-			Jstr &tabPathName ) const
+const JagSchemaRecord *JagSchema
+::getOneIndexAttr( const Jstr &dbName, const Jstr &indexName, Jstr &tabPathName ) const
 {
-	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
-	JAG_OVER;
-	const JagSchemaRecord *rec;
+	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK ); JAG_OVER;
+	const JagSchemaRecord *rec = NULL;
 
 	// use memory to read instead of disk
     jagint len = _recordMap->arrayLength();
@@ -709,9 +957,9 @@ const JagSchemaRecord *JagSchema::getOneIndexAttr( const Jstr &dbName, const Jst
 		
 		JagStrSplit oneSplit( arr[i].key.c_str(), '.' );
 		if ( oneSplit.length()>=3 && dbName == oneSplit[0] && indexName == oneSplit[2] ) {
-			rec = _schemaMap->getValue( arr[i].key );
+			rec = _schemaRecMap->getValue( arr[i].key );
 			tabPathName = oneSplit[0] + "." + oneSplit[1];
-			// printf("s3013 tabPathName=[%s] _schemaMap->getValue() rc=%d\n", tabPathName.c_str(), rc );
+			// printf("s3013 tabPathName=[%s] _schemaRecMap->getValue() rc=%d\n", tabPathName.c_str(), rc );
 			break;
 		}
     }
@@ -721,7 +969,8 @@ const JagSchemaRecord *JagSchema::getOneIndexAttr( const Jstr &dbName, const Jst
 // dbtable can be dbname  -- all table/index for this db
 // dbtable can db.tab  -- all indexes for db.tab
 // dbtable can be NULL -- all table/index for all dbs
-JagVector<AbaxString>* JagSchema::getAllTablesOrIndexesLabel( int inObjType, const Jstr &dbtable, const Jstr &like ) const
+JagVector<AbaxString>* JagSchema
+::getAllTablesOrIndexesLabel( int inObjType, const Jstr &dbtable, const Jstr &like ) const
 {
 	// JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::READ_LOCK );
 	JAG_BLURT JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
@@ -932,7 +1181,7 @@ Jstr JagSchema::readSchemaText( const Jstr &key ) const
 
 void JagSchema::writeSchemaText( const Jstr &key, const Jstr &text )
 {
-	prt(("s8273 writeSchemaText key=[%s] text=[%s]\n", key.s(), text.s() ));
+	//prt(("s87273 writeSchemaText key=[%s] text=[%s]\n", key.s(), text.s() ));
 	Jstr fpath = _cfg->getJDBDataHOME( _replicateType ) + "/system/schema/" + key;
 	JagFileMgr::writeTextFile( fpath, text );
 	// prt(("s8831 writeSchemaText fpath=[%s] text=[%s]\n", fpath.c_str(), text.c_str() ));
@@ -946,7 +1195,7 @@ void JagSchema::removeSchemaFile( const Jstr &key )
 }
 
 // static 
-Jstr JagSchema::getDatabases( JagCfg *cfg, int replicateType )
+Jstr JagSchema::getDatabases( const JagCfg *cfg, int replicateType )
 {
 	Jstr res, sdir, fpath;
 	DIR             *dp;
@@ -1012,12 +1261,12 @@ int JagSchema::removeFromColumnMap( const Jstr& dbtabobj, const Jstr& dbobj )
 {
 	// get each column and add db.tab.column  -> JagColumn
 	// get each column and add db.idx.column  -> JagColumn
-	const JagSchemaRecord *record = _schemaMap->getValue( dbtabobj );
+	const JagSchemaRecord *record = _schemaRecMap->getValue( dbtabobj );
 	if ( ! record ) {
-		// prt(("s3003 JagSchema::removeFromColumnMap error get _schemaMap->getValue( %s )\n", dbtabobj.c_str() ));
+		// prt(("s3003 JagSchema::removeFromColumnMap error get _schemaRecMap->getValue( %s )\n", dbtabobj.c_str() ));
 		return 0;
 	} else {
-		// prt(("s1120 _schemaMap->getValue(%s) OK\n",  dbtabobj.c_str() ));
+		// prt(("s1120 _schemaRecMap->getValue(%s) OK\n",  dbtabobj.c_str() ));
 	}
 
 	Jstr key;
@@ -1041,37 +1290,3 @@ bool JagSchema::isIndexCol( const Jstr &dbname, const Jstr &colName )
 	return false;
 }
 
-
-#if 0
-// // format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!dummy1!dummy2!...!dummy10!|...}"
-void JagSchema::getJoinSchema( long skeylen, long svallen, const JagParam &parseParam, const JagSchemaRecord &rec, Jstr &hstr )
-{
-        char hbuf[JAG_SCHEMA_SPARE_LEN+1];
-		jagint offset = 0;
-        memset(hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
-        hbuf[JAG_SCHEMA_SPARE_LEN] = '\0';
-        hbuf[0] = JAG_C_COL_KEY;
-        hbuf[2] = JAG_RAND;
-        Jstr hstr = Jstr("NN|") + longToStr(skeylen) + "|" + longToStr(svallen) + "|0|{";
-        for ( int i = 0; i < parseParam.orderVec.size(); ++i ) {
-            hstr += Jstr("!") + "key_" + parseParam.orderVec[i].name + "!s!" + longToStr(offset) + "!" +
-                    longToStr(lengths[i]) + "!0!" + hbuf + "|";
-            offset += lengths[i];
-        }
-
-        hbuf[1] = JAG_C_COL_TYPE_UUID[0];
-        hstr += Jstr("!") + "key_" + longToStr( THREADID ) + "_uuid" + "!s!" + longToStr(offset) + "!" +
-            	longToStr(JAG_UUID_FIELD_LEN) + "!0!" + hbuf + "!0! ! !|";
-        offset += JAG_UUID_FIELD_LEN;
-
-        memset( hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
-        hbuf[0] = JAG_C_COL_VALUE;
-        hbuf[2] = JAG_RAND;
-        for ( int i = 0; i < rec.columnVector->size(); ++i ) {
-            hstr += Jstr("!") + (*(rec.columnVector))[i].name.c_str() + "!s!" + longToStr(offset) + "!" +
-                    longToStr((*(rec.columnVector))[i].length) + "!0!" + hbuf + "!0! ! !|";
-            offset += (*(rec.columnVector))[i].length;
-        }
-        hstr += "}";
-}
-#endif

@@ -142,11 +142,11 @@ void JagMergeReader::initHeap()
     _pqueue = new JagPriorityQueue<int,JagDBPair>(256, JAG_MINQUEUE );
 
 	// memory buffer
-	//prt(("s300848 initHeap this=%0x _dbmap=%0x\n", this, this->_dbmap ));
+	prt(("s300848 initHeap this=%0x _dbmap=%0x\n", this, this->_dbmap ));
 	if ( this->_dbmap && this->_dbmap->size() > 0 ) {
 
 		if ( beginPair <= endPair ) {
-    		//prt(("s300848 initHeap _dbmap=%0x _dbmap->size()=%d\n", this->_dbmap, this->_dbmap->size() ));
+    		prt(("s300848 initHeap _dbmap=%0x _dbmap->size()=%d\n", this->_dbmap, this->_dbmap->size() ));
     		_pqueue->push( -1, beginPair );
     		// -1 mean memory
     		//prt(("%0x s830188 initHeap push -1 [%s][%s]\n", this, beginPair.key.c_str(),  beginPair.value.c_str() ));
@@ -154,10 +154,11 @@ void JagMergeReader::initHeap()
     		if ( currentPos == endPos ) {
     			memReadDone = true;
     		}
-			//prevPos = currentPos;  jyue
+			//prevPos = currentPos;  
 			//print("prevPos: ", prevPos);
-    		//++ currentPos;   jyue
+    		//++ currentPos;   
 		} else {
+			prt(("s33302 beginPair <= endPair false, memReadDone\n" ));
     		memReadDone = true;
 		}
 	}
@@ -204,9 +205,9 @@ bool JagMergeReader::getNext( char *buf )
 	jagint pos;
 	int rc;
 
-	//prt(("%0x s29300 getNext pop... \n", this ));
+	prt(("%0x s29300 getNext pop... \n", this ));
 	if ( ! _pqueue->pop( filenum, pair ) ) {
-		//prt(("s29300 getNext pop got false return false\n"));
+		prt(("s29300 getNext pop got false return false\n"));
 		return false;
 		// break;
 	}
@@ -278,7 +279,7 @@ void JagMergeReader::initHeap()
     		if ( currentPos == endPos ) {
     			memReadDone = true;
     		}
-    		//++ currentPos;  jyue
+    		//++ currentPos;
     		prt(("s830188 initHeap push -1 [%s]\n", beginPair.key.c_str() ));
 		} else {
     		memReadDone = true;

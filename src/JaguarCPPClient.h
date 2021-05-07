@@ -353,11 +353,11 @@ class JaguarCPPClient
 									   bool hasNX, bool hasNY, bool hasNZ );
 	Jstr convertToJson(const char *buf);
 	void  getNowTimeBuf( char spare4, char *timebuf );
+	void getLocalNowBuf( const Jstr &colType, char *timebuf );
 	void addQueryToCmdhosts( const JagParseParam &parseParam, const JagFixString &hostkstr,
 	                         const JagTableOrIndexAttrs *objAttr,
 		                     JagVector<Jstr> &hosts, JagVector<JagDBPair> &cmdhosts, 
 							 Jstr &newquery );
-	bool hasDefaultValue( char spare4 );
 
 	// protected data members
 	JagCfg *_cfg;
@@ -369,10 +369,7 @@ class JaguarCPPClient
 	JagVector<jagint> *_selectCountBuffer;
 	std::atomic<int>   _spCommandErrorCnt;
 	std::atomic<jagint>	_lastConnectionBrokenTime;
-	std::atomic<jagint>	_multiThreadMidPointStart;
-	std::atomic<jagint>	_multiThreadMidPointStop;
 	int _end;
-	int _serverReplicateMode;
 	jagint _qMutexThreadID;
 	std::atomic<bool> _threadend;
 	std::atomic<bool> _hasReply;
@@ -441,7 +438,6 @@ class JaguarCPPClient
 	
 	int _port;
 	JAGSOCK _sock;
-	int _usedSockNum;
 	int _qtype;
 	int _numCPU;
 	int _faultToleranceCopy;
@@ -474,7 +470,6 @@ class JaguarCPPClient
 	CliPass *_passmo;
 	CliPass *_passflush;
 	int   _debug;
-	int  _compressFlag[4];
 	std::atomic<bool>   _monitorDone;
 
 };

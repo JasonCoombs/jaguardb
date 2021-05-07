@@ -92,82 +92,82 @@ JagFixString::JagFixString( const char *str, unsigned int slen, unsigned int cap
 
 JagFixString::JagFixString( const JagFixString &str ) 
 { 
-		_readOnly = false;
-		int len = str._length;
-		_buf = (char*)jagmalloc(len+1);
-		memcpy( _buf, str._buf, len );
-		_buf[len] = '\0';
-		_length = len;
+	_readOnly = false;
+	int len = str._length;
+	_buf = (char*)jagmalloc(len+1);
+	memcpy( _buf, str._buf, len );
+	_buf[len] = '\0';
+	_length = len;
 
-		memcpy( dtype, str.dtype, 3 );
+	memcpy( dtype, str.dtype, 3 );
 }
 	
 JagFixString::JagFixString( const Jstr &str ) 
 { 
-		_readOnly = false;
-		int len = str.size();
-		_buf = (char*)jagmalloc(len+1);
-		memcpy( _buf, str.c_str(), len );
-		_buf[len] = '\0';
-		_length = len;
-		// printf("s3929 JagFixString(int) called\n"); fflush( stdout );
-		memcpy( dtype, str.dtype, 3 );
+	_readOnly = false;
+	int len = str.size();
+	_buf = (char*)jagmalloc(len+1);
+	memcpy( _buf, str.c_str(), len );
+	_buf[len] = '\0';
+	_length = len;
+	// printf("s3929 JagFixString(int) called\n"); fflush( stdout );
+	memcpy( dtype, str.dtype, 3 );
 }
 
 JagFixString& JagFixString::operator=( const char *str ) 
 { 
-		if ( _buf == str ) {
-			return *this;
-		}
-
-		if ( _buf && ! _readOnly ) {
-			free ( _buf );
-		}
-
-		int len = strlen(str);
-		_buf = (char*)jagmalloc(len+1);
-		memcpy( _buf, str, len );
-		_length = len;
-		_buf[len] = '\0';
-		_readOnly = false;
-		memset( dtype, 0, 4 );
+	if ( _buf == str ) {
 		return *this;
+	}
+
+	if ( _buf && ! _readOnly ) {
+		free ( _buf );
+	}
+
+	int len = strlen(str);
+	_buf = (char*)jagmalloc(len+1);
+	memcpy( _buf, str, len );
+	_length = len;
+	_buf[len] = '\0';
+	_readOnly = false;
+	memset( dtype, 0, 4 );
+	return *this;
 }
 
 JagFixString& JagFixString::operator=( const JagFixString &str ) 
 { 
-		if ( _buf == str._buf ) {
-			return *this;
-		}
-
-		if ( _buf && ! _readOnly ) {
-			free ( _buf );
-		}
-
-		int len = str._length;
-		_buf = (char*)jagmalloc(len+1);
-		memcpy( _buf, str._buf, len );
-		_length = len;
-		_buf[len] = '\0';
-		_readOnly = false;
-		memcpy( dtype, str.dtype, 3 );
+	if ( _buf == str._buf ) {
 		return *this;
+	}
+
+	if ( _buf && ! _readOnly ) {
+		free ( _buf );
+	}
+
+	int len = str._length;
+	_buf = (char*)jagmalloc(len+1);
+	memcpy( _buf, str._buf, len );
+	_length = len;
+	_buf[len] = '\0';
+	_readOnly = false;
+	memcpy( dtype, str.dtype, 3 );
+	return *this;
 }
  		
 JagFixString& JagFixString:: operator=( const Jstr &str ) 
 { 
-		if ( _buf && ! _readOnly ) {
-			free ( _buf );
-		}
+	if ( _buf && ! _readOnly ) {
+		free ( _buf );
+	}
 
-		int len = str.size();
-		_buf = (char*)jagmalloc(len+1);
-		memcpy( _buf, str.c_str(), len );
-		_buf[len] = '\0';
-		_length = len;
-		_readOnly = false;
-		memcpy( dtype, str.dtype, 3 );
-		return *this;
+	int len = str.size();
+	_buf = (char*)jagmalloc(len+1);
+	memcpy( _buf, str.c_str(), len );
+	_buf[len] = '\0';
+	_length = len;
+	_readOnly = false;
+	memcpy( dtype, str.dtype, 3 );
+	return *this;
 }
 
 int JagFixString::operator== ( const JagFixString &s2 )  const 
@@ -178,51 +178,51 @@ int JagFixString::operator== ( const JagFixString &s2 )  const
 
 int JagFixString::operator< ( const JagFixString &s2 ) const 
 {
-		if ( ! _buf && ! s2._buf ) return 0;
-		if ( ! _buf ) return 1;
-		if ( ! s2._buf ) return 0;
+	if ( ! _buf && ! s2._buf ) return 0;
+	if ( ! _buf ) return 1;
+	if ( ! s2._buf ) return 0;
     return (memcmp(_buf, s2._buf, _length ) < 0);
 }
 
 int JagFixString::operator<= ( const JagFixString &s2 ) const 
 {
-		if ( ! _buf && ! s2._buf ) return 1;
-		if ( ! _buf ) return 1;
-		if ( ! s2._buf ) return 0;
+	if ( ! _buf && ! s2._buf ) return 1;
+	if ( ! _buf ) return 1;
+	if ( ! s2._buf ) return 0;
     return (memcmp(_buf, s2._buf, _length ) <= 0);
 }
 
 int JagFixString::operator> ( const JagFixString &s2 ) const 
 {
-		if ( ! _buf && ! s2._buf ) return 0;
-		if ( ! _buf ) return 0;
-		if ( ! s2._buf ) return 1;
+	if ( ! _buf && ! s2._buf ) return 0;
+	if ( ! _buf ) return 0;
+	if ( ! s2._buf ) return 1;
    	return (memcmp(_buf, s2._buf, _length ) > 0);
 }
 
 int JagFixString::operator>= ( const JagFixString &s2 ) const 
 {
-		if ( ! _buf && ! s2._buf ) return 1;
-		if ( ! _buf ) return 0;
-		if ( ! s2._buf ) return 1;
+	if ( ! _buf && ! s2._buf ) return 1;
+	if ( ! _buf ) return 0;
+	if ( ! s2._buf ) return 1;
    	return (memcmp(_buf, s2._buf, _length ) >= 0);
 }
 
 JagFixString& JagFixString::operator+= (const JagFixString &s ) 
 {
-		_buf = (char*)realloc( (void*)_buf, _length+s._length+1 );
-		memcpy( _buf+_length, s._buf, s._length );
-		_buf[_length+s._length] = '\0';
-		_length += s._length;
-		_readOnly = false;
-		return *this;
+	_buf = (char*)realloc( (void*)_buf, _length+s._length+1 );
+	memcpy( _buf+_length, s._buf, s._length );
+	_buf[_length+s._length] = '\0';
+	_length += s._length;
+	_readOnly = false;
+	return *this;
 }
 
 JagFixString JagFixString::operator+ (const JagFixString &s ) const 
 {
-		JagFixString res = *this;
-		res += s;
-		return res;
+	JagFixString res = *this;
+	res += s;
+	return res;
 }
 
 void JagFixString::point( const JagFixString &fs )
@@ -232,13 +232,13 @@ void JagFixString::point( const JagFixString &fs )
 
 void JagFixString::point(const char *str, unsigned int len )
 {
-		if ( _buf && ! _readOnly ) {
-			free( _buf );
-		}
+	if ( _buf && ! _readOnly ) {
+		free( _buf );
+	}
 
-		_buf = (char*)str;
-		_length = len;
-		_readOnly = true;
+	_buf = (char*)str;
+	_length = len;
+	_readOnly = true;
 }
 
 /**
@@ -269,20 +269,6 @@ JagFixString::~JagFixString()
 	_buf = NULL;
 }
 
-/********
-// inline jagint hashCode64() const 
-jagint JagFixString::hashCode() const 
-{
-    unsigned int hash[4];                
-    unsigned int seed = 42;             
-    register void *str = (void *)_buf;
-    int len = _length;
-    MurmurHash3_x64_128( str, len, seed, hash);
-    uint64_t res2 = ((uint64_t*)hash)[0]; 
-    jagint res = res2 % LLONG_MAX;
-    return res;
-}
-*******/
 // inline jagint hashCode64() const 
 jagint JagFixString::hashCode() const 
 {

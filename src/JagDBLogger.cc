@@ -51,18 +51,18 @@ JagDBLogger::~JagDBLogger()
 	delete _timemap;
 }
 
-void JagDBLogger::logmsg( const JagRequest &req, const Jstr &msg, const Jstr &cmd )
+void JagDBLogger::logmsg( const JagRequest &req, const Jstr &hdr, const Jstr &cmd )
 {
 	if ( ! _dologmsg ) return;
 	Jstr fpath = _logDir + req.session->dbname + ".log";
-	logit( req, fpath, msg, cmd );
+	logit( req, fpath, hdr, cmd );
 }
 
-void JagDBLogger::logerr( const JagRequest &req, const Jstr &errmsg, const Jstr &cmd )
+void JagDBLogger::logerr( const JagRequest &req, const Jstr &hdr, const Jstr &cmd )
 {
 	if ( ! _dologerr ) return;
 	Jstr fpath = _logDir + req.session->dbname + ".err";
-	logit( req, fpath, errmsg, cmd );
+	logit( req, fpath, hdr, cmd );
 }
 
 void JagDBLogger::logit( const JagRequest &req, const Jstr &fpath, 

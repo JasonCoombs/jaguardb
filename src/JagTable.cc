@@ -39,10 +39,12 @@
 #include <JagPriorityQueue.h>
 
 JagTable::JagTable( int replicateType, const JagDBServer *servobj, const Jstr &dbname, const Jstr &tableName, 
-					  const JagSchemaRecord &record, bool buildInitIndex ) : _tableRecord(record), _servobj( servobj )
+					  const JagSchemaRecord &record, bool buildInitIndex ) 
+		: _tableRecord(record), _servobj( servobj )
 {
 	prt(("s111022 JagTable ctor ...\n"));
 	_cfg = _servobj->_cfg;
+	_objectLock = servobj->_objectLock;
 	_dbname = dbname;
 	_tableName = tableName;
 	_dbtable = dbname + "." + tableName;
@@ -106,16 +108,16 @@ void JagTable::init( bool buildInitIndex )
 	Jstr oldpathname = oldpath + ".jdb";
 	Jstr newfpathname = fpath + ".jdb";
 	if ( JagFileMgr::exist( oldpathname ) ) {
-		jagrename( oldpathname.c_str(), newfpathname.c_str() );
-		// prt(("s1028 rename( %s ==> %s )\n", oldpathname.c_str(), newfpathname.c_str() ));
+		jagrename( oldpathname.s(), newfpathname.s() );
+		// prt(("s1028 rename( %s ==> %s )\n", oldpathname.s(), newfpathname.s() ));
 
 		oldpathname = oldpath + ".bid";
 		newfpathname = fpath + ".bid";
 		if ( JagFileMgr::exist( oldpathname ) ) {
-			jagrename( oldpathname.c_str(), newfpathname.c_str() );
-			// prt(("s1029 rename( %s ==> %s )\n", oldpathname.c_str(), newfpathname.c_str() ));
+			jagrename( oldpathname.s(), newfpathname.s() );
+			// prt(("s1029 rename( %s ==> %s )\n", oldpathname.s(), newfpathname.s() ));
 		} else {
-			// prt(("s1936 bid oldpathname=[%s] not found\n", oldpathname.c_str() ));
+			// prt(("s1936 bid oldpathname=[%s] not found\n", oldpathname.s() ));
 		}
 	}
 
@@ -147,6 +149,21 @@ void JagTable::init( bool buildInitIndex )
 
 	pthread_mutex_init( &_parseParamParentMutex, NULL );
 
+	// get counter field in schema. FOr rollup child tables only
+	_counterOffset = -1;
+	_counterLength = 0;
+	bool iskey;
+	int totCols = _tableRecord.columnVector->size();
+	for ( int i = 0; i < totCols; i ++ ) {
+		iskey = (*(_tableRecord.columnVector))[i].iskey;
+		if ( iskey ) continue;  // "counter" field is not in keys
+		if ( 0 == strcmp( (*(_tableRecord.columnVector))[i].name.s(), "counter" ) ) {
+			_counterOffset = (*(_tableRecord.columnVector))[i].offset;
+			_counterLength = (*(_tableRecord.columnVector))[i].length;
+			break;
+		}
+	}
+
 }
 
 // build indexlist
@@ -165,12 +182,12 @@ void JagTable::buildInitIndexlist()
 		AbaxPair<AbaxString, AbaxBuffer> pair( AbaxString(dbindex), bfr );
 		irecord = _indexschema->getAttr( dbtabindex );
 		if ( irecord ) {
-			if ( _servobj->_objectLock->writeLockIndex( JAG_CREATEINDEX_OP, _dbname, _tableName, vec[i],
-					_tableschema, _indexschema, _replicateType, 1 ) ) {
-				_servobj->_objectLock->writeUnlockIndex( JAG_CREATEINDEX_OP, _dbname, _tableName, vec[i], _replicateType, 1 );
+			if ( _objectLock->writeLockIndex( JAG_CREATEINDEX_OP, _dbname, _tableName, vec[i],
+										      _tableschema, _indexschema, _replicateType, 1 ) ) {
+				_objectLock->writeUnlockIndex( JAG_CREATEINDEX_OP, _dbname, _tableName, vec[i], _replicateType, 1 );
 			}		
 			_indexlist.append( vec[i] );
-			// prt(("s3830 _indexlist.append(%s)\n", vec[i].c_str() ));
+			// prt(("s3830 _indexlist.append(%s)\n", vec[i].s() ));
 		} 
     }
 }
@@ -181,9 +198,9 @@ bool JagTable::getPair( JagDBPair &pair )
 	else return false;
 }
 
-// 0: fail to insert
-// 1: success to insert
-int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &retpair, Jstr &errmsg )
+// 0: fail to parse
+// 1: success to parse
+int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &retpair, Jstr &errmsg ) const
 {
 	int getpos = 0;
 	int metrics;
@@ -191,7 +208,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	
 	Jstr dbcolumn, dbtab = parseParam->objectVec[0].dbName + "." + parseParam->objectVec[0].tableName;
 	if ( _numCols < parseParam->otherVec.size() ) {
-		prt(("s4893 Error JagTable::parsePair _numCols=%d parseParam->otherVec.size()=%d\n", _numCols, parseParam->otherVec.size() ));
+		prt(("s4893 Error parsePair _numCols=%d parseParam->otherVec.size()=%d\n", _numCols, parseParam->otherVec.size() ));
 		errmsg = "E3143  _numCols-1 != parseParam->otherVec.size";
 		return 0;
 	}
@@ -201,7 +218,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	prt(("\ns2090 _tableRecord.columnVector:\n" ));
 	for ( int i = 0; i < (*_tableRecord.columnVector).size(); ++i ) {
 		prt(("s1014 colvec i=%d name=[%s] type=[%s] issubcol=%d\n", 
-			  i, (*_tableRecord.columnVector)[i].name.c_str(), (*_tableRecord.columnVector)[i].type.c_str(),
+			  i, (*_tableRecord.columnVector)[i].name.s(), (*_tableRecord.columnVector)[i].type.s(),
 			  (*_tableRecord.columnVector)[i].issubcol ));
 	}
 	prt(("\n" ));
@@ -209,10 +226,10 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	prt(("s2091 initial parseParam->otherVec:\n" ));
 	for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 		prt(("s1015  i=%d othervec name=[%s] value=[%s] type=[%s] point.x=[%s] point.y=[%s] line.point[0].x=[%s] line.point[0].y=[%s]\n", 
-			i, parseParam->otherVec[i].objName.colName.c_str(), parseParam->otherVec[i].valueData.c_str(), 
-			parseParam->otherVec[i].type.c_str(), parseParam->otherVec[i].point.x, parseParam->otherVec[i].point.y,
+			i, parseParam->otherVec[i].objName.colName.s(), parseParam->otherVec[i].valueData.s(), 
+			parseParam->otherVec[i].type.s(), parseParam->otherVec[i].point.x, parseParam->otherVec[i].point.y,
 			parseParam->otherVec[i].linestr.point[0].x, parseParam->otherVec[i].linestr.point[0].y ));
-			// i, parseParam->otherVec[i].objName.colName.c_str(), parseParam->otherVec[i].valueData.c_str(), _schAttr[i].type.c_str() ));
+			// i, parseParam->otherVec[i].objName.colName.s(), parseParam->otherVec[i].valueData.s(), _schAttr[i].type.s() ));
 	}
 	prt(("\n" ));
 	#endif
@@ -223,7 +240,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	prt(("s8614 otherVec: print\n" ));
 	for ( int k = 0; k < parseParam->otherVec.size(); ++k ) {
 		prt(("s8614 k=%d other valuedata=[%s] issubcol=%d linestr.size=%d \n",
-			k, parseParam->otherVec[k].valueData.c_str(), parseParam->otherVec[k].issubcol, parseParam->otherVec[k].linestr.size()));
+			k, parseParam->otherVec[k].valueData.s(), parseParam->otherVec[k].issubcol, parseParam->otherVec[k].linestr.size()));
 	}
 	#endif
 
@@ -234,49 +251,54 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	double dblmin = LONG_MIN;
 	double xmin=dblmax, ymin=dblmax, zmin=dblmax, xmax=dblmin, ymax=dblmin, zmax=dblmin;
 	Jstr otype;
+
 	for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 		rc = 0;
 		//prt(("s4928 parseParam->otherVec[%d].type=[%s]\n", i, parseParam->otherVec[i].type.s() ));
 		otype = parseParam->otherVec[i].type;
 
 		if ( otype.size() > 0 ) {
-    		if ( otype  == JAG_C_COL_TYPE_LINESTRING 
-    		     || otype == JAG_C_COL_TYPE_MULTIPOINT  ) {
-    			rc = JagParser::getLineStringMinMax( ',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
+    		if ( otype  == JAG_C_COL_TYPE_LINESTRING || otype == JAG_C_COL_TYPE_MULTIPOINT  ) {
+    			rc = JagParser::getLineStringMinMax( ',', parseParam->otherVec[i].valueData.s(), xmin, ymin, xmax, ymax );
     		} else if ( otype == JAG_C_COL_TYPE_LINESTRING3D || otype == JAG_C_COL_TYPE_MULTIPOINT3D ) {
-    			rc = JagParser::getLineString3DMinMax(',', parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+    			rc = JagParser::getLineString3DMinMax(',', parseParam->otherVec[i].valueData.s(), xmin, ymin, zmin, xmax, ymax, zmax );
     		} else if ( otype == JAG_C_COL_TYPE_POLYGON || otype == JAG_C_COL_TYPE_MULTILINESTRING ) {
-    			rc = JagParser::getPolygonMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
+    			rc = JagParser::getPolygonMinMax(  parseParam->otherVec[i].valueData.s(), xmin, ymin, xmax, ymax );
     		} else if ( otype == JAG_C_COL_TYPE_POLYGON3D || otype == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-    			rc = JagParser::getPolygon3DMinMax( parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+    			rc = JagParser::getPolygon3DMinMax( parseParam->otherVec[i].valueData.s(), xmin, ymin, zmin, xmax, ymax, zmax );
     		} else if ( otype == JAG_C_COL_TYPE_MULTIPOLYGON ) {
-    			rc = JagParser::getMultiPolygonMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, xmax, ymax );
+    			rc = JagParser::getMultiPolygonMinMax(  parseParam->otherVec[i].valueData.s(), xmin, ymin, xmax, ymax );
     		} else if ( otype == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-    			rc = JagParser::getMultiPolygon3DMinMax(  parseParam->otherVec[i].valueData.c_str(), xmin, ymin, zmin, xmax, ymax, zmax );
+    			rc = JagParser::getMultiPolygon3DMinMax(  parseParam->otherVec[i].valueData.s(), xmin, ymin, zmin, xmax, ymax, zmax );
     		}
 		}
 
 		if ( rc < 0 ) {
 			char ebuf[256];
-			sprintf( ebuf, "E3145 error in input data type=%s column i=%d\n", parseParam->otherVec[i].type.c_str(), i );
+			sprintf( ebuf, "E3145 error in input data type=%s column i=%d\n", parseParam->otherVec[i].type.s(), i );
 			errmsg = ebuf;
 			return 0;
 		}
 	}
+
 	//prt(("s8021 xmin=%0.3f ymin=%.3f zmin=%.3f\n", xmin, ymin, zmin ));
 	//prt(("s8022 xmax=%0.3f ymax=%.3f zmax=%.3f\n", xmax, ymax, zmax ));
 
-	// just need to make up mathcing number of columns, data is not important
+	// just need to make up matching number of columns, data is not important
 	if ( (*_tableRecord.columnVector).size() > parseParam->otherVec.size() ) {
 		JagVector<OtherAttribute> otherVec;
 
 		int j = -1;
 		Jstr colType;
+		int numMetrics;
+
 		for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 			#ifdef DEVDEBUG
 			prt(("s6675 parseParam->hasPoly=%d _tableRecord.lastKeyColumn=%d parseParam->polyDim=%d\n",
 				  parseParam->hasPoly, _tableRecord.lastKeyColumn, parseParam->polyDim ));
 			#endif
+
+			numMetrics = parseParam->otherVec[i].point.metrics.size();
 
 			if ( parseParam->hasPoly && j == _tableRecord.lastKeyColumn ) {
 				if ( 2 == parseParam->polyDim ) {
@@ -291,9 +313,9 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			}
 
 			colType = parseParam->otherVec[i].type;
-			//prt(("s1110202 i=%d colType=[%s]\n", i, colType.c_str() ));
+			//prt(("s1110202 i=%d colType=[%s]\n", i, colType.s() ));
 			if ( colType.size() > 0 ) {
-				// prt(("s6761 i=%d colType=[%s]\n", i, colType.c_str() ));
+				// prt(("s6761 i=%d colType=[%s]\n", i, colType.s() ));
     			if ( colType == JAG_C_COL_TYPE_POINT  ) {
     				otherVec.append(  parseParam->otherVec[i] );
     				appendOther(  otherVec, JAG_POINT_DIM );  // x y
@@ -401,6 +423,9 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				otherVec.append(  parseParam->otherVec[i] );
     				// otherVec.append(  parseParam->otherVec[j] );
     			}
+
+    			appendOther(  otherVec, numMetrics );  
+    			j += numMetrics; 
 			} else {
 				//prt(("s20293 otherVec.append( i=%d )\n", i ));
     			otherVec.append(  parseParam->otherVec[i] );
@@ -418,8 +443,8 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	prt(("\ns2093 final parseParam->otherVec:\n" ));
 	for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 		prt(("s1015  i=%d final othervec name=[%s] value=[%s] type=[%s] point.x=[%s] point.y=[%s]\n", 
-			i, parseParam->otherVec[i].objName.colName.c_str(), parseParam->otherVec[i].valueData.c_str(), 
-			parseParam->otherVec[i].type.c_str(), parseParam->otherVec[i].point.x, parseParam->otherVec[i].point.y ));
+			i, parseParam->otherVec[i].objName.colName.s(), parseParam->otherVec[i].valueData.s(), 
+			parseParam->otherVec[i].type.s(), parseParam->otherVec[i].point.x, parseParam->otherVec[i].point.y ));
 
 		prt(("s1015  i=%d line.point[0].x=[%s] line.point[0].y=[%s]\n", 
 			  i, parseParam->otherVec[i].linestr.point[0].x, parseParam->otherVec[i].linestr.point[0].y ));
@@ -432,7 +457,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	prt(("s8624 otherVec: print\n" ));
 	for ( int k = 0; k < parseParam->otherVec.size(); ++k ) {
 		prt(("s8624 k=%d other valuedata=[%s] issubcol=%d linestr.size=%d\n",
-			k, parseParam->otherVec[k].valueData.c_str(), parseParam->otherVec[k].issubcol, parseParam->otherVec[k].linestr.size() ));
+			k, parseParam->otherVec[k].valueData.s(), parseParam->otherVec[k].issubcol, parseParam->otherVec[k].linestr.size() ));
 	}
 	#endif
 
@@ -451,82 +476,95 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 	int srvtmdiff  = _servobj->servtimediff;
 
-	//prt(("s2503 otherVec.size()=%d\n", parseParam->otherVec.size() ));
+	prt(("s2503 otherVec.size()=%d\n", parseParam->otherVec.size() ));
 	//prt(("s2504 _tableRecord:\n" ));
 
 	Jstr lsuuid = _servobj->_jagUUID->getString();
+
 	for ( int i = 0; i < parseParam->otherVec.size(); ++i ) {
 		if ( parseParam->otherVec[i].issubcol ) { 
-			//prt(("s21003 i=%d parseParam->otherVec[i].issubcol is true name=[%s] value=[%s] skip\n", 
-			// i, parseParam->otherVec[i].objName.colName.c_str(), parseParam->otherVec[i].valueData.c_str() ));
+			prt(("s21003 i=%d parseParam->otherVec[i].issubcol is true name=[%s] value=[%s] skip\n", 
+			i, parseParam->otherVec[i].objName.colName.s(), parseParam->otherVec[i].valueData.s() ));
 			continue; 
 		}
 
 		hasDoneAppend = false;
-		colname = (*_tableRecord.columnVector)[i].name.c_str();
+		colname = (*_tableRecord.columnVector)[i].name.s();
 		dbcolumn = dbtab + "." + colname;
 		rc = _tablemap->getValue(dbcolumn, getpos);
 		//prt(("s2239 _tablemap->getValue dbcolumn=[%s] rc=%d\n", dbcolumn.s(), rc ));
 		if ( ! rc ) {
 			free( tablekvbuf );
-			errmsg = Jstr("E5003  _tablemap->getValue(") + dbcolumn + ") error i=" + intToStr(i);
+			errmsg = Jstr("E15003  _tablemap->getValue(") + dbcolumn + ") error i=" + intToStr(i);
 			//prt(("s233032 return 0\n"));
+			prt(("s20281 i=%d  dbtab=[%s] colname=[%s] issubcol=false\n", i, dbtab.s(), colname.s() ));  
 			return 0;
 		}
 
-		//prt(("s5031 i=%d dbcolumn=[%s] getpos=%d\n", i, dbcolumn.c_str(), getpos ));
+		prt(("s5031 i=%d dbcolumn=[%s] getpos=%d\n", i, dbcolumn.s(), getpos ));
 
 		OtherAttribute &otherAttr = parseParam->otherVec[i];
 		#ifdef DEVDEBUG
 		prt(("s7801 otherAttr=%0x  i=%d otherAttr col=[%s]  valueData=[%s] linestr.size=%d \n", 
-				&otherAttr, i, otherAttr.objName.colName.c_str(), otherAttr.valueData.c_str(), otherAttr.linestr.size() ));
+				&otherAttr, i, otherAttr.objName.colName.s(), otherAttr.valueData.s(), otherAttr.linestr.size() ));
 		#endif
 
-		if ( *((*(_tableRecord.columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM[0] &&
-				otherAttr.valueData.size() > 0 ) {
-			rc2 = false;
-			//prt(("i=%d is enum getpos=%d valueData=[%s] enumList.len=%d\n", i, getpos, otherAttr.valueData.s(), _schAttr[getpos].enumList.length() ));
-			for ( int j = 0; j < _schAttr[getpos].enumList.length(); ++j ) {
-				//prt(("s331109 oompare  enum=[%s]  valueData=[%s]\n", _schAttr[getpos].enumList[j].c_str(), otherAttr.valueData.c_str() ));
-				if ( strcmp( _schAttr[getpos].enumList[j].c_str(), otherAttr.valueData.c_str() ) == 0 ) {
-					rc2 = true;
-					break;
-				}
+		if ( *((*(_tableRecord.columnVector))[i].spare+1) == JAG_C_COL_TYPE_ENUM[0] ) {
+			if ( otherAttr.valueData.size() > 0 ) {
+    			rc2 = false;
+    			prt(("i=%d is enum getpos=%d vData=[%s] listlen=%d\n", i, getpos, otherAttr.valueData.s(), _schAttr[getpos].enumList.length() ));
+    			for ( int j = 0; j < _schAttr[getpos].enumList.length(); ++j ) {
+    				//prt(("s331109 oompare  enum=[%s]  valueData=[%s]\n", _schAttr[getpos].enumList[j].s(), otherAttr.valueData.s() ));
+    				if ( strcmp( _schAttr[getpos].enumList[j].s(), otherAttr.valueData.s() ) == 0 ) {
+    					rc2 = true;
+    					break;
+    				}
+    			}
+    			//prt(("s22229 rc2=%d\n", rc2 ));
+    			if ( !rc2 ) {
+    				free( tablekvbuf );
+    				errmsg = Jstr("E12036 Error: invalid ENUM value [") + otherAttr.valueData + "]";
+    				return 0;
+    			}
+			} else {
+				/**
+    			free( tablekvbuf );
+    			errmsg = "E12037 Error: empty enum column value";
+    			return 0;
+				**/
 			}
-			//prt(("s22229 rc2=%d\n", rc2 ));
-			if ( !rc2 ) {
-				free( tablekvbuf );
-				errmsg = "E2038 Enum data error";
-				return 0;
-			}			
 		}
 
-		//prt(("s4220228 i=%d spare+4=[%c]  otherAttr.valueData.size=%d \n", i, *((*(_tableRecord.columnVector))[i].spare+4),  otherAttr.valueData.size() ));
+		prt(("s4220228 i=%d spare+4=[%c]  othAt.vD.size=%d \n", i, *((*(_tableRecord.columnVector))[i].spare+4),  otherAttr.valueData.size() ));
 		if ( *((*(_tableRecord.columnVector))[i].spare+4) == JAG_CREATE_DEFINSERTVALUE 
 			 && otherAttr.valueData.size() < 1 ) {
-			//prt(("s33022 JAG_CREATE_DEFINSERTVALUE\n"));
+			prt(("s33022 JAG_CREATE_DEFINSERTVALUE i=%d\n", i));
 			otherAttr.valueData = _schAttr[getpos].defValue;
-		} 
+			prt(("s33022 JAG_CREATE_DEFINSERTVALUE otherAttr.valueData=[%s]\n", otherAttr.valueData.s() ));
+		} else {
+		}
 
 		colType = (*_tableRecord.columnVector)[i].type;
 		metrics = (*_tableRecord.columnVector)[i].metrics;
-		//prt(("s521051 other i=%d dbcolumn=[%s] colType=[%s]\n", i, dbcolumn.c_str(), colType.c_str() ));
+		//prt(("s521051 other i=%d dbcolumn=[%s] colType=[%s]\n", i, dbcolumn.s(), colType.s() ));
 
 		if ( colType.size() > 0 ) {
     		if ( colType == JAG_C_COL_TYPE_POINT ) {
     			pointx = colname + ":x"; pointy = colname + ":y";
     			dbcolumn = dbtab + "." + pointx;
     			rc = _tablemap->getValue(dbcolumn, getpos);
+				prt(("s50025 JAG_C_COL_TYPE_POINT dbcolumn=% getpos=%d rc=%d\n", dbcolumn.s(), getpos, rc ));
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    			 						pointx.s(), _schAttr[getpos].offset, _schAttr[getpos].length, 
     									_schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
+					prt(("s50026 JAG_C_COL_TYPE_POINT dbcolumn=% getpos=%d rc=%d\n", dbcolumn.s(), getpos, rc ));
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -535,9 +573,9 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     		} else if ( colType == JAG_C_COL_TYPE_RANGE ) {
     			pointx = colname + ":begin"; pointy = colname + ":end";
     			dbcolumn = dbtab + "." + pointx;
-    			//prt(("s9383 otherAttr.valueData=[%s]\n", otherAttr.valueData.c_str() ));
+    			//prt(("s9383 otherAttr.valueData=[%s]\n", otherAttr.valueData.s() ));
     			char sep;
-    			if ( strchr( otherAttr.valueData.c_str(), ',') ) {
+    			if ( strchr( otherAttr.valueData.s(), ',') ) {
     				sep = ',';
     			} else {
     				sep = ' ';
@@ -546,15 +584,15 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
-    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[0].c_str(), errmsg, 
-    			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[0].s(), errmsg, 
+    			 						pointx.s(), _schAttr[getpos].offset, _schAttr[getpos].length, 
     									_schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
-    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[1].c_str(), errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, sp[1].s(), errmsg, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     			}
@@ -565,14 +603,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    			 		pointx.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -580,7 +618,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    			 			pointz.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -594,20 +632,20 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 						pointx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    			 						pointx.s(), _schAttr[getpos].offset, _schAttr[getpos].length, 
     									_schAttr[getpos].sig, _schAttr[getpos].type );
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				} 
     				dbcolumn = dbtab + "." + pointr;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-    			 						   pointr.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+    			 						   pointr.s(), _schAttr[getpos].offset, _schAttr[getpos].length, 
     									   _schAttr[getpos].sig, _schAttr[getpos].type );
     				} 
     
@@ -616,7 +654,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
         					rc = _tablemap->getValue(dbcolumn, getpos);
         					if ( rc ) {
         						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-        				 					   pointnx.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+        				 					   pointnx.s(), _schAttr[getpos].offset, _schAttr[getpos].length, 
         									   _schAttr[getpos].sig, _schAttr[getpos].type );
         					} 
     				}
@@ -632,14 +670,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    			 		pointx.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -647,7 +685,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    			 			pointz.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -655,7 +693,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-    			 			pointr.c_str(), _schAttr[getpos].offset, 
+    			 			pointr.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -664,7 +702,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     					rc = _tablemap->getValue(dbcolumn, getpos);
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-    			 				pointnx.c_str(), _schAttr[getpos].offset, 
+    			 				pointnx.s(), _schAttr[getpos].offset, 
     							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     					}
     
@@ -672,7 +710,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     					rc = _tablemap->getValue(dbcolumn, getpos);
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-    			 				pointny.c_str(), _schAttr[getpos].offset, 
+    			 				pointny.s(), _schAttr[getpos].offset, 
     							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     					}
     				}
@@ -689,14 +727,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    			 		pointx.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -704,7 +742,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    			 			pointz.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -712,7 +750,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-    			 			pointr.c_str(), _schAttr[getpos].offset, 
+    			 			pointr.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -720,7 +758,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    			 			pointnx.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -728,7 +766,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    			 			pointny.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -743,14 +781,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    			 		pointx.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -758,7 +796,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-    			 			pointw.c_str(), _schAttr[getpos].offset, 
+    			 			pointw.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -766,7 +804,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
-    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    			 			pointh.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -774,7 +812,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    			 			pointnx.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
@@ -790,7 +828,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			//prt(("s1028 otherAttr.point.x=[%s] otherAttr.point.y=[%s]\n", otherAttr.point.x, otherAttr.point.y ));
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    			 		pointx.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
@@ -798,7 +836,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				//prt(("s2830 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -807,7 +845,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				//prt(("s2831 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    			 			pointz.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -817,7 +855,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				//prt(("s2832 _tablemap->getValue %s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-    			 			pointw.c_str(), _schAttr[getpos].offset, 
+    			 			pointw.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -825,7 +863,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
-    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    			 			pointh.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -833,7 +871,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    			 			pointnx.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -841,7 +879,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    			 			pointny.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -857,14 +895,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    			 		pointx.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -872,7 +910,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    			 			pointz.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -880,7 +918,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-    			 			pointw.c_str(), _schAttr[getpos].offset, 
+    			 			pointw.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -888,7 +926,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.b, errmsg, 
-    			 			pointd.c_str(), _schAttr[getpos].offset, 
+    			 			pointd.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -896,7 +934,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.c, errmsg, 
-    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    			 			pointh.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -904,7 +942,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    			 			pointnx.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -912,7 +950,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    			 			pointny.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -928,14 +966,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.x, errmsg, 
-    			 		pointx.c_str(), _schAttr[getpos].offset, 
+    			 		pointx.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.y, errmsg, 
-    			 			pointy.c_str(), _schAttr[getpos].offset, 
+    			 			pointy.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -943,7 +981,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.z, errmsg, 
-    			 			pointz.c_str(), _schAttr[getpos].offset, 
+    			 			pointz.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -951,7 +989,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.a, errmsg, 
-    			 			pointr.c_str(), _schAttr[getpos].offset, 
+    			 			pointr.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -959,7 +997,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.c, errmsg, 
-    			 			pointh.c_str(), _schAttr[getpos].offset, 
+    			 			pointh.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -967,14 +1005,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.nx, errmsg, 
-    			 			pointnx.c_str(), _schAttr[getpos].offset, 
+    			 			pointnx.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     				dbcolumn = dbtab + "." + pointny;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.point.ny, errmsg, 
-    			 			pointny.c_str(), _schAttr[getpos].offset, 
+    			 			pointny.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     				formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.point.metrics, tablekvbuf );
@@ -989,14 +1027,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			rc = _tablemap->getValue(dbcolumn, getpos);
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].x, errmsg, 
-    			 		pointx1.c_str(), _schAttr[getpos].offset, 
+    			 		pointx1.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy1;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].y, errmsg, 
-    			 			pointy1.c_str(), _schAttr[getpos].offset, 
+    			 			pointy1.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -1005,7 +1043,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     					rc = _tablemap->getValue(dbcolumn, getpos);
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].z, errmsg, 
-    			 				pointz1.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
+    			 				pointz1.s(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
     							_schAttr[getpos].type );
     					}
     				}
@@ -1014,16 +1052,16 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].x, errmsg, 
-    			 			pointx2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    			 			pointx2.s(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
     				dbcolumn = dbtab + "." + pointy2;
     				rc = _tablemap->getValue(dbcolumn, getpos);
-    				//prt(("s2828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
-    				//prt(("2381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
+    				//prt(("s2828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+    				//prt(("2381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.s(), otherAttr.linestr.point[1].y ));
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].y, errmsg, 
-    			 			pointy2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    			 			pointy2.s(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
     				if ( is3D ) {
@@ -1031,7 +1069,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     					rc = _tablemap->getValue(dbcolumn, getpos);
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].z, errmsg, 
-    			 				pointz2.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
+    			 				pointz2.s(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
     							_schAttr[getpos].type );
     					}
     				}
@@ -1042,7 +1080,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     		} else if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_LINESTRING3D
     					 || colType == JAG_C_COL_TYPE_MULTIPOINT || colType == JAG_C_COL_TYPE_MULTIPOINT3D
     			       ) {
-    			//prt(("s7650 i=%d colType=[%s] colname=[%s] \n", i, colType.c_str(), colname.c_str() ));
+    			//prt(("s7650 i=%d colType=[%s] colname=[%s] \n", i, colType.s(), colname.s() ));
     			//pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
     			prt(("s2181 colType=[%s] colname=[%s]\n", colType.s(), colname.s() ));
     			is3D = false;
@@ -1054,11 +1092,11 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			if ( getxmin >= 0 ) {
     				JagLineString line;
     				if ( colType == JAG_C_COL_TYPE_LINESTRING || colType == JAG_C_COL_TYPE_MULTIPOINT ) {
-    					JagParser::addLineStringData(line, otherAttr.valueData.c_str() );
+    					JagParser::addLineStringData(line, otherAttr.valueData.s() );
     					prt(("s8032 addLineStringData xmin=%0.3f ymin=%.3f zmin=%.3f\n", xmin, ymin, zmin ));
     				} else {
-    					JagParser::addLineString3DData(line, otherAttr.valueData.c_str() );
-    					prt(("s8033 addLineString3DData xmin=%0.3f ymin=%.3f zmin=%.3f valueData=[%s]\n", xmin, ymin, zmin, otherAttr.valueData.c_str() ));
+    					JagParser::addLineString3DData(line, otherAttr.valueData.s() );
+    					prt(("s8033 addLineString3DData xmin=%0.3f ymin=%.3f zmin=%.3f vData=[%s]\n", xmin, ymin, zmin, otherAttr.valueData.s() ));
     				}
     				JagPolyPass ppass;
     				ppass.is3D = is3D;
@@ -1085,7 +1123,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			}
     		} else if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_POLYGON3D
     		            || colType == JAG_C_COL_TYPE_MULTILINESTRING || colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) {
-    			//prt(("s7651 i=%d colType=[%s]\n", i, colType.c_str() ));
+    			//prt(("s7651 i=%d colType=[%s]\n", i, colType.s() ));
     			// pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
     			is3D = false;
     			if ( colType == JAG_C_COL_TYPE_POLYGON3D || colType == JAG_C_COL_TYPE_MULTILINESTRING3D ) { is3D = true; }
@@ -1097,16 +1135,16 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				JagPolygon pgon;
     				if ( colType == JAG_C_COL_TYPE_POLYGON || colType == JAG_C_COL_TYPE_MULTILINESTRING ) {
     					if ( colType == JAG_C_COL_TYPE_POLYGON ) {
-    						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.c_str(), false, true );
+    						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.s(), false, true );
     					} else {
-    						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.c_str(), false, false );
+    						rc = JagParser::addPolygonData( pgon, otherAttr.valueData.s(), false, false );
     					}
     					//prt(("s8041 addPolygonData xmin=%0.3f ymin=%.3f zmin=%.3f \n", xmin, ymin, zmin ));
     				} else {
     					if ( colType == JAG_C_COL_TYPE_POLYGON3D ) {
-    						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.c_str(), false, true );
+    						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.s(), false, true );
     					} else {
-    						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.c_str(), false, false );
+    						rc = JagParser::addPolygon3DData( pgon, otherAttr.valueData.s(), false, false );
     					}
     					//prt(("s8042 addPolygonData3D xmin=%0.3f ymin=%.3f zmin=%.3f\n", xmin, ymin, zmin ));
     				}
@@ -1155,7 +1193,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				prt(("s2773 error polygon\n" ));
     			}
     		} else if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON || colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) {
-    			//prt(("s7651 i=%d colType=[%s]\n", i, colType.c_str() ));
+    			//prt(("s7651 i=%d colType=[%s]\n", i, colType.s() ));
     			// pointx = colname + ":x"; pointy = colname + ":y"; pointz = colname + ":z";
     			is3D = false;
     			if ( colType == JAG_C_COL_TYPE_MULTIPOLYGON3D ) { is3D = true; }
@@ -1167,10 +1205,10 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				JagVector<JagPolygon> pgvec;
     				if ( is3D ) {
     					//prt(("s8260 addMultiPolygonData 3d\n" ));
-    					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.c_str(), false, false, true );
+    					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.s(), false, false, true );
     				} else {
     					//prt(("s8260 addMultiPolygonData 2d\n" ));
-    					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.c_str(), false, false, false );
+    					rc = JagParser::addMultiPolygonData( pgvec, otherAttr.valueData.s(), false, false, false );
     				}
     
     				if ( 0 == rc ) continue;
@@ -1229,19 +1267,19 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     			dbcolumn = dbtab + "." + pointx1;
     			rc = _tablemap->getValue(dbcolumn, getpos);
     
-    			//prt(("s5828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
-    			//prt(("s5381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
+    			//prt(("s5828 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+    			//prt(("s5381 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.s(), otherAttr.linestr.point[1].y ));
     
     			if ( rc ) {
     				rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].x, errmsg, 
-    			 		pointx1.c_str(), _schAttr[getpos].offset, 
+    			 		pointx1.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     
     				dbcolumn = dbtab + "." + pointy1;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].y, errmsg, 
-    			 			pointy1.c_str(), _schAttr[getpos].offset, 
+    			 			pointy1.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -1250,7 +1288,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     					rc = _tablemap->getValue(dbcolumn, getpos);
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[0].z, errmsg, 
-    			 				pointz1.c_str(), _schAttr[getpos].offset, 
+    			 				pointz1.s(), _schAttr[getpos].offset, 
     							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     					}
     				}
@@ -1259,17 +1297,17 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].x, errmsg, 
-    			 			pointx2.c_str(), _schAttr[getpos].offset, 
+    			 			pointx2.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
     				dbcolumn = dbtab + "." + pointy2;
     				rc = _tablemap->getValue(dbcolumn, getpos);
-    				//prt(("s5428 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.c_str(), rc, getpos ));
-    				//prt(("s5581 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.c_str(), otherAttr.linestr.point[1].y ));
+    				//prt(("s5428 dbcolumn=%s rc=%d getpos=%d\n", dbcolumn.s(), rc, getpos ));
+    				//prt(("s5581 pointy2=[%s] otherAttr.linestr.point[1].y=[%s]\n", pointy2.s(), otherAttr.linestr.point[1].y ));
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].y, errmsg, 
-    			 			pointy2.c_str(), _schAttr[getpos].offset, 
+    			 			pointy2.s(), _schAttr[getpos].offset, 
     						_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
@@ -1278,7 +1316,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     					rc = _tablemap->getValue(dbcolumn, getpos);
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[1].z, errmsg, 
-    			 				pointz2.c_str(), _schAttr[getpos].offset, 
+    			 				pointz2.s(), _schAttr[getpos].offset, 
     							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     					}
     				}
@@ -1287,14 +1325,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].x, errmsg, 
-    			 			pointx3.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    			 			pointx3.s(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
     				dbcolumn = dbtab + "." + pointy3;
     				rc = _tablemap->getValue(dbcolumn, getpos);
     				if ( rc ) {
     					rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].y, errmsg, 
-    			 			pointy3.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+    			 			pointy3.s(), _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     				}
     
     				if ( is3D ) {
@@ -1303,7 +1341,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     					// prt(("s5201 is3D getValue pointz3 rc=%d\n", rc ));
     					if ( rc ) {
     						rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.linestr.point[2].z, errmsg, 
-    			 				pointz3.c_str(), _schAttr[getpos].offset, 
+    			 				pointz3.s(), _schAttr[getpos].offset, 
     							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     						// prt(("s5203 formatOneCol rc=%d\n", rc ));
     					}
@@ -1314,22 +1352,32 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
     				//formatMetricCols( tzdiff, srvtmdiff, dbtab, colname, metrics, otherAttr.linestr.point[2].metrics, tablekvbuf );
     			} 
     		} else {
-    			//prt(("s5128 i=%d name=[%s] otherAttr.valueData=[%s]\n", i, (*_tableRecord.columnVector)[i].name.c_str(), otherAttr.valueData.c_str() ));
+    			//prt(("s5128 i=%d name=[%s] other.valData=[%s]\n", i, (*tableRecord.columnVector)[i].name.s(), otherAttr.valueData.s() ));
+				prt(("s30358 colType is not empty colType=[%s]\n", colType.s() ));
     			if ( otherAttr.valueData.size() < 1 ) {
     				rc = 1;
+					prt(("s49448 otherAttr.valueData.size is 0\n" ));
     			} else {
-    			    rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.valueData.c_str(), errmsg, 
-    				 	(*_tableRecord.columnVector)[i].name.c_str(), _schAttr[getpos].offset, 
+					prt(("s52014 formatOneCol col=%s getpos=%d offset=%d length=%d sig=%d\n", 
+						 (*_tableRecord.columnVector)[i].name.s(), getpos, _schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig ));
+
+    			    rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.valueData.s(), errmsg, 
+    				 	(*_tableRecord.columnVector)[i].name.s(), _schAttr[getpos].offset, 
     					_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
+					prt(("s42448 formatOneCol %s rc=%d\n", (*_tableRecord.columnVector)[i].name.s(), rc ));
     			}
     		}
 		} else {
+			// colType is empty
 			//prt(("s22020 \n"));
     		if ( otherAttr.valueData.size() < 1 ) {
     			rc = 1;
+				prt(("s464408 otherAttr.valueData.size is 0\n" ));
     		} else {
-    		    rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.valueData.c_str(), errmsg, 
-    			 	(*_tableRecord.columnVector)[i].name.c_str(), _schAttr[getpos].offset, 
+				prt(("s52016 formatOneCol col=%s getpos=%d offset=%d length=%d sig=%d\n", 
+					(*_tableRecord.columnVector)[i].name.s(), getpos, _schAttr[getpos].offset, _schAttr[getpos].length,  _schAttr[getpos].sig ));
+    		    rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, otherAttr.valueData.s(), errmsg, 
+    			 	(*_tableRecord.columnVector)[i].name.s(), _schAttr[getpos].offset, 
     				_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
     		}
 		}
@@ -1337,14 +1385,14 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 
 		if ( !rc ) {
 			free( tablekvbuf );
-			//prt(("s2903 return 0 here\n" ));
+			prt(("s29023 return 0 here\n" ));
 			return 0;
 		}
 
 		// debug only
 		/***
 		prt(("\n"));
-		prt(("s2033 i=%d getpos dbcolumn=[%s] tablekvbuf: \n", i, dbcolumn.c_str() ));
+		prt(("s2033 i=%d getpos dbcolumn=[%s] tablekvbuf: \n", i, dbcolumn.s() ));
 		jagfwrite( tablekvbuf,  KEYVALLEN, stdout );
 		prt(("\n"));
 		***/
@@ -1358,16 +1406,18 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 	}
 
 	// setup default value if exists
-	//prt(("s444448 _defvallist.size=%d\n",  _defvallist.size() ));
+	/***
+	prt(("s444448 _defvallist.size=%d\n",  _defvallist.size() ));
 	for ( int i = 0; i < _defvallist.size(); ++i ) {
 		if ( _defvallist[i] < parseParam->otherVec.size() ) {
-			//prt(("s4555508 i=%d defvaliit < othervec continue\n"));
+			prt(("s4555508 i=%d defvaliit=%d < othervec=%d continue\n", i, _defvallist[i], parseParam->otherVec.size() ));
 			continue;
 		}
+		prt(("s3028371 i=%d _defvallist[i]]=[%d]\n", i, _defvallist[i] ));
 
-		rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, _schAttr[_defvallist[i]].defValue.c_str(), errmsg, 
-			 (*_tableRecord.columnVector)[_defvallist[i]].name.c_str(), _schAttr[_defvallist[i]].offset, 
-			_schAttr[_defvallist[i]].length, _schAttr[_defvallist[i]].sig, _schAttr[_defvallist[i]].type );
+		rc = formatOneCol( tzdiff, srvtmdiff, tablekvbuf, schAttr[_defvallist[i]].defValue.s(), errmsg, 
+			 (*tableRecord.columnVector)[_defvallist[i]].name.s(), schAttr[_defvallist[i]].offset, 
+			schAttr[_defvallist[i]].length, schAttr[_defvallist[i]].sig, schAttr[_defvallist[i]].type );
 
 		if ( !rc ) {
 			free( tablekvbuf );
@@ -1375,6 +1425,7 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 			return 0;
 		}			
 	}
+	***/
 
 	// debug only
 	/**
@@ -1390,33 +1441,41 @@ int JagTable::parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBP
 		prt(("s4106 no hasDoneAppend  tablekvbuf:\n" ));
 		dumpmem( tablekvbuf, KEYLEN+VALLEN);
 		**/
+		//prt(("s30066 parsed pair:\n")); // 
+		//retpair[retpair.size() - 1].print();
+		//retpair[retpair.size() - 1].printkv();
 	}
+
 	free( tablekvbuf );
+	prt(("s42831 parsePair return 1\n"));
 	return 1;
 }
 
-
 // insert one record 
-int JagTable::insert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+// int JagTable::insert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+// return 1: OK   0: error
+int JagTable::insert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg )
 {
-	JagVector<JagDBPair> pair;
-	int rc = parsePair( req.session->timediff, parseParam, pair, errmsg );
-	#ifdef DEVDEBUG
-	// prt(("s4920 rc=%d pair.key=[%s] pair.value=[%s]\n", rc, pair.key.c_str(), pair.c_str()));
-	#endif
+	JagVector<JagDBPair> pairVec;
+	int rc = parsePair( req.session->timediff, parseParam, pairVec, errmsg );
+	prt(("s14920 rc=%d\n", rc ));
+	// pair.print();
 	if ( rc ) {
-		for ( int i=0; i < pair.length(); ++i ) {
-			//pair[i].upsertFlag = 0;
-			rc = insertPair( pair[i], insertCode, direct, 0 );
+		for ( int i=0; i < pairVec.length(); ++i ) {
+			//rc = insertPair( pair[i], 0, true );
+			rc = insertPair( pairVec[i], 0, false );
 			prt(("s3481 insertPair rc=%d\n", rc ));
 			if ( !rc ) {
-				errmsg = Jstr("E2108 Insert error key: ") + pair[i].key.c_str();
+				errmsg = Jstr("E2108 InsertPair error key: ") + pairVec[i].key.s();
+			} else {
+				prt(("s33308 insertPair OK rc=%d\n", rc ));
 			}
 		}
 	} else {
-		errmsg += Jstr(" E5208 Error insert pair");
+		// errmsg is from parsePair 
+		prt(("s222201 parsePair error [%s] rc=%d\n", errmsg.s(), rc ));
 	}
-	
+
 	return rc;
 }
 
@@ -1424,71 +1483,69 @@ int JagTable::insert( const JagRequest &req, JagParseParam *parseParam, Jstr &er
 // mode 1: cinsert( check insert ); 
 // mode 2: dinsert ( delete insert );
 // return: 0 for error
-int JagTable::insertPair( JagDBPair &pair, int &insertCode, bool direct, int mode ) 
+int JagTable::insertPair( JagDBPair &pair, int mode, bool doIndexLock ) 
 {
-	/**
-	prt(("s5130 insertPair pair.key=[%s]\n", pair.key.c_str() ));
+	prt(("s5130 insertPair pair.key=[%s]\n", pair.key.s() ));
 	prt(("s5130 insertPair pair.value: " ));
-	pair.value.print();
+	//pair.value.print();  // 
 	prt(("\n"));
-	**/
 
 	int rc;
-	insertCode = 0;
 	JagDBPair retpair;
 	if ( 0 == mode ) {
-		prt(("s333038 JagTable::insertPair mode=%d _replicateType=%d pair=%s\n", mode, _replicateType, pair.key.s() ));
-		rc = _darrFamily->insert( pair, insertCode, true, direct, retpair );
+		prt(("s333058 JagTable::insertPair mode=%d _replicateType=%d pair=[%s][%s]\n", mode, _replicateType, pair.key.s(), pair.value.s() ));
+		rc = _darrFamily->insert( pair, true, retpair );
 		// check if table has indexs, if yes, insert to self server index
-		if ( rc ) formatIndexCmd( pair, mode );
+		prt(("s53974 _darrFamily->insert rc=%d\n", rc ));
+		if ( rc ) {
+			formatIndexCmd( pair, mode, doIndexLock );
+		}
+		prt(("s53974 formatIndexCmd done\n" ));
 	} else if ( 1 == mode ) {
 		rc = _darrFamily->exist( pair );
 	} else if ( 2 == mode ) {
 		rc = _darrFamily->remove( pair );
 		// if actually removed, also remove index data if needed
 		if ( rc ) {
-			formatIndexCmd( pair, mode );
+			formatIndexCmd( pair, mode, doIndexLock );
 			char *buf = (char*)jagmalloc(KEYVALLEN+1);
-			memcpy( buf, pair.key.c_str(), KEYLEN );
-			memcpy( buf+KEYLEN, pair.value.c_str(), VALLEN );
+			memcpy( buf, pair.key.s(), KEYLEN );
+			memcpy( buf+KEYLEN, pair.value.s(), VALLEN );
 			removeColFiles( buf );
 			free( buf );
 		}
 	}
 
+	prt(("s30992 insertPair done rc=%d\n", rc ));
 	return rc;
 }
 
 // single insert, used by inserted data with file transfer
-int JagTable::finsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+// int JagTable::finsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+int JagTable::finsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg )
 {
+	prt(("s602221 finsert ...\n"));
 	JagVector<JagDBPair> pair;
 	int rc = parsePair( req.session->timediff, parseParam, pair, errmsg );
 	if ( rc ) {
 		for ( int k=0; k < pair.size(); ++k ) {
-    		rc = insertPair( pair[k], insertCode, 1, 0 );
+    		rc = insertPair( pair[k], 0, true );
     		if ( !rc ) {
-    			errmsg = Jstr("E4003 Insert error key: ") + pair[k].key.c_str();
+    			errmsg = Jstr("E4003 Insert error key: ") + pair[k].key.s();
     		} else {
     			rc = 0;
     			Jstr hdir = fileHashDir( pair[k].key );
-    			// receive _BEGINFILEUPLOAD_ to begin file transfer
-    			char *newbuf = NULL; char hdr[JAG_SOCK_TOTAL_HDR_LEN+1]; ssize_t rlen = 0;
-    			memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
-    			rlen = recvMessage( req.session->sock, hdr, newbuf );
-    			if ( rlen > 0 && 0 == strncmp( newbuf, "_BEGINFILEUPLOAD_", 17 ) ) {
+
+				if ( req.session->sock > 0 ) {
     				for ( int i = 0; i < _numCols; ++i ) {
     					if ( _schAttr[i].isFILE ) {
-    						JagFileMgr::makedirPath( _darrFamily->_sfilepath + "/" + hdir );
-    						rc = oneFileReceiver( req.session->sock, _darrFamily->_sfilepath + "/" + hdir );
+							Jstr fpath = _darrFamily->_sfilepath + "/" + hdir;
+    						JagFileMgr::makedirPath( fpath );
+							prt(("s52004 oneFileReceiver [%s]\n", fpath.s() ));
+    						rc = oneFileReceiver( req.session->sock, fpath );
     					}
     				}
-    				memset( hdr, 0, JAG_SOCK_TOTAL_HDR_LEN+1);
-    				rlen = recvMessage( req.session->sock, hdr, newbuf ); // recev _ENDFILEUPLOAD_
-    				if ( rlen > 0 && 0 == strncmp( newbuf, "_ENDFILEUPLOAD_", 15 ) ) { rc = 1; }
-    			} else {
-    				prt(("s3728 error hdr=[%s] newbuf=[%s]\n", hdr, newbuf ));
-    			}
+				}
     		}
 		}
 	} else {
@@ -1499,13 +1556,14 @@ int JagTable::finsert( const JagRequest &req, JagParseParam *parseParam, Jstr &e
 }
 
 // cinsert : check if this pair is exist or not
-int JagTable::cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+// int JagTable::cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+int JagTable::cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg )
 {
 	JagVector<JagDBPair> pair;
 	int rc = parsePair( req.session->timediff, parseParam, pair, errmsg );
 	if ( rc ) {
 		for ( int i=0; i < pair.size(); ++i ) {
-			rc = insertPair( pair[i], insertCode, direct, 1 );
+			rc = insertPair( pair[i], 1, true );
 		}
 	} else {
 		errmsg += Jstr(" E3043 Error cinsert pair");
@@ -1515,14 +1573,15 @@ int JagTable::cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &e
 }
 
 // dinsert: delete if this pair is exist
-int JagTable::dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+// int JagTable::dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct )
+int JagTable::dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg )
 {
 	JagVector<JagDBPair> pair;
 	int rc = parsePair( parseParam->timediff, parseParam, pair, errmsg );
-	// prt(("pair.key=[%s] pair.value=[%s]\n", pair.key.c_str(), pair.c_str()));
+	// prt(("pair.key=[%s] pair.value=[%s]\n", pair.key.s(), pair.s()));
 	if ( rc ) {
 		for ( int i=0; i < pair.size(); ++i ) {
-			rc = insertPair( pair[i], insertCode, direct, 2 );
+			rc = insertPair( pair[i], 2, true );
 		}
 	} else {
 		errmsg += Jstr("E0221 Error dinsert pair");
@@ -1532,34 +1591,47 @@ int JagTable::dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &e
 }
 
 // method to form insert/upsert into index cmd for each table insert/upsert cmd
-int JagTable::formatIndexCmd( JagDBPair &pair, int mode )
+int JagTable::formatIndexCmd( JagDBPair &pair, int mode, bool doIndexLock  )
 {
 	if ( _indexlist.size() < 1 ) return 0;
+	prt(("s500132 formatIndexCmd ...\n"));
 
 	char *tablebuf = (char*)jagmalloc(KEYVALLEN+1);
-	memcpy( tablebuf, pair.key.c_str(), KEYLEN );
-	memcpy( tablebuf+KEYLEN, pair.value.c_str(), VALLEN );
+	memcpy( tablebuf, pair.key.s(), KEYLEN );
+	memcpy( tablebuf+KEYLEN, pair.value.s(), VALLEN );
 	tablebuf[KEYVALLEN] = '\0';
 	dbNaturalFormatExchange( tablebuf, _numKeys, _schAttr, 0, 0, " " ); // db format -> natural format
 	
-	//bool rc;
 	jagint cnt = 0;
 	AbaxBuffer bfr;
 	JagIndex *pindex = NULL;
-	//const char *p;
 	for ( int i = 0; i < _indexlist.size(); ++i ) {
-		pindex = _servobj->_objectLock->readLockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+		//prt(("s40124 writeLockIndex [%s] ... \n", _indexlist[i].s() ));
+		if ( doIndexLock ) {
+			pindex = _objectLock->writeLockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i],
+										      _tableschema, _indexschema, _replicateType, 1 );
+		} else {
+			pindex = _objectLock->getIndex(  _dbname, _indexlist[i], _replicateType );
+		}
+
 		if ( pindex ) {
+
 			pindex->formatIndexCmdFromTable( tablebuf, mode );
+
 			++ cnt;
-			_servobj->_objectLock->readUnlockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+			if ( doIndexLock ) {
+				_objectLock->writeUnlockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+			}
+			//prt(("s40124 writeLockIndex [%s] done\n", _indexlist[i].s() ));
 		}
 	}
 	free( tablebuf );
+	prt(("s500132 formatIndexCmd done\n"));
 	return cnt;
 }
 
 // method to do create index concurrently
+// pindex was writelock protected
 int JagTable::formatCreateIndex( JagIndex *pindex ) 
 {
 	ParallelCmdPass *psp = newObject<ParallelCmdPass>();
@@ -1599,31 +1671,35 @@ void *JagTable::parallelCreateIndexStatic( void * ptr )
 
 
 // return 0 for error; > 0 OK
-jagint JagTable::update( const JagRequest &req, const JagParseParam *parseParam, Jstr &errmsg )
+jagint JagTable::update( const JagRequest &req, const JagParseParam *parseParam, bool upsert, Jstr &errmsg )
 {
 	// chain not able to update
 	if ( JAG_CHAINTABLE_TYPE == _objectType ) {
-		errmsg = "Chain cannot be updated";
+		errmsg = "E23072 Chain cannot be updated";
 		return 0;
 	}
 
-	int 	setnum = parseParam->updSetVec.size();
+	prt(("s344082 JagTable::update parseParam->updSetVec.print():\n" ));
+	//parseParam->updSetVec.print();
+
+	prt(("s344083 JagTable::update parseParam->otherVec.print():\n" ));
+	//parseParam->otherVec.print();
+
+
+	int 	numUpdateCols = parseParam->updSetVec.size();
 	int 	rc, collen, siglen, setindexnum = _indexlist.size(); 
 	int 	constMode = 0, typeMode = 0, tabnum = 0, treelength = 0;
 	Jstr 	treetype;
 	bool 	uniqueAndHasValueCol = 0, setKey;
-	jagint 	cnt = 0;
+	jagint 	cnt = 0, scanned = 0;
 	const char *buffers[1];
-	jagint 	setposlist[setnum];
+	jagint 	setposlist[numUpdateCols];
 	int 	getpos = 0;
-	JagIndex *lpindex[_indexlist.size()];
+	int     numIndexes = _indexlist.size();
+	JagIndex *lpindex[ numIndexes ];
 	AbaxBuffer bfr;
 	Jstr 	dbcolumn;
-	char 	*tableoldbuf = (char*)jagmalloc(KEYVALLEN+1);
-	char 	*tablenewbuf = (char*)jagmalloc(KEYVALLEN+1);
-	memset( tableoldbuf, 0, KEYVALLEN+1 );
-	memset( tablenewbuf, 0, KEYVALLEN+1 );
-	
+
 	ExprElementNode *updroot;
 	const JagHashStrInt *maps[1];
 	const JagSchemaAttribute *attrs[1];	
@@ -1632,60 +1708,103 @@ jagint JagTable::update( const JagRequest &req, const JagParseParam *parseParam,
 	
 	JagFixString strres, treestr;
 	bool needInit = true;
+	bool singleInsert = false;
 	
 	// check updSetVec validation
 	setKey = 0;
-	for ( int i = 0; i < setnum; ++i ) {
+	for ( int i = 0; i < numUpdateCols; ++i ) {
 		dbcolumn = _dbtable + "." + parseParam->updSetVec[i].colName;
 		if ( isFileColumn( parseParam->updSetVec[i].colName ) ) {
-			if ( tableoldbuf ) free ( tableoldbuf );
-			if ( tablenewbuf ) free ( tablenewbuf );
-			errmsg = Jstr("E0283 column ") + parseParam->updSetVec[i].colName + " is file type";
+			errmsg = Jstr("E10283 column ") + parseParam->updSetVec[i].colName + " is file type";
 			return -1;
 		}
 
 		if ( _tablemap->getValue(dbcolumn, getpos) ) {
 			setposlist[i] = getpos;
-			if ( getpos < _numKeys ) setKey = 1;
+			if ( getpos < _numKeys ) { 
+				setKey = 1;
+				errmsg = Jstr("E03875 Key column cannot be updated");
+				return -1;
+			}
+
 			bool isAggregate = false;
 			updroot = parseParam->updSetVec[i].tree->getRoot();
 			rc = updroot->setFuncAttribute( maps, attrs, constMode, typeMode, isAggregate, treetype, collen, siglen );
 			if ( 0 == rc || isAggregate ) {
-				if ( tableoldbuf ) free ( tableoldbuf );
-				if ( tablenewbuf ) free ( tablenewbuf );
 				errmsg = Jstr("E0383 wrong update type. Char column must use single quotes.");
 				return -1;
 			}
 		} else {
-			if ( tableoldbuf ) free ( tableoldbuf );
-			if ( tablenewbuf ) free ( tablenewbuf );
 			errmsg = Jstr("E0384 column ") + dbcolumn + " not found";
 			return -1;
 		}
 	}
 	
 	// build init index list
+	/**
 	if ( setKey ) {
 		for ( int i = 0; i < _indexlist.size(); ++i ) {
-			lpindex[i] = _servobj->_objectLock->readLockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+			lpindex[i] = _objectLock->readLockIndex( JAG_UPDATE_OP, _dbname, _tableName, 
+															   _indexlist[i], _replicateType, 1 );
 		}
 	} else {
 		setindexnum = 0;
 		for ( int i = 0; i < _indexlist.size(); ++i ) {
 			lpindex[i] = NULL;
-			lpindex[setindexnum] = _servobj->_objectLock->readLockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
-			for ( int i = 0; i < setnum; ++i ) {
+			lpindex[setindexnum] = _objectLock->readLockIndex( JAG_UPDATE_OP, _dbname, _tableName, 
+																	     _indexlist[i], _replicateType, 1 );
+			for ( int i = 0; i < numUpdateCols; ++i ) {
 				if ( lpindex[setindexnum] ) {
 					if ( lpindex[setindexnum]->needUpdate( parseParam->updSetVec[i].colName ) ) {
 						++setindexnum; break;
 					} else {
-						_servobj->_objectLock->readUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, 
+						_objectLock->readUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, 
 																lpindex[setindexnum]->getIndexName(), _replicateType, 1 );
 					}
 				}
 			}
 		}
 	}
+	**/
+
+	/***
+	setindexnum = 0;
+	for ( int i = 0; i < _indexlist.size(); ++i ) {
+		lpindex[i] = NULL;
+		lpindex[setindexnum] = _objectLock->readLockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+		for ( int i = 0; i < numUpdateCols; ++i ) {
+			if ( lpindex[setindexnum] ) {
+				if ( lpindex[setindexnum]->needUpdate( parseParam->updSetVec[i].colName ) ) {
+					++setindexnum; 
+					break;
+				} else {
+					_objectLock->readUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, lpindex[setindexnum]->getIndexName(), _replicateType, 1 );
+				}
+			}
+		}
+	}
+	***/
+
+	setindexnum = 0;
+	for ( int i = 0; i < numIndexes; ++i ) {
+		lpindex[i] = _objectLock->writeLockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _tableschema, _indexschema, _replicateType, 1 );
+		if ( lpindex[i] ) {
+			bool needUpdate = false;
+			for ( int j = 0; j < numUpdateCols; ++j ) {
+				if ( lpindex[i]->needUpdate( parseParam->updSetVec[j].colName ) ) {
+					needUpdate = true;
+				}
+			}
+			if ( ! needUpdate ) {
+				_objectLock->writeUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+				lpindex[i] = NULL;
+			} else {
+				++ setindexnum;
+			}
+		} 
+	}
+
+	// if setindexnum == 0: then all index locks are freeed, and lpindex[i] set to NULL
 
 	// parse tree		
 	int keylen[1];
@@ -1694,136 +1813,161 @@ jagint JagTable::update( const JagRequest &req, const JagParseParam *parseParam,
 	keylen[0] = KEYLEN;
 	numKeys[0] = _numKeys;
 	minmax[0].setbuflen( keylen[0] );
+
+	/***
+	char 	*tableoldbuf = (char*)jagmalloc(KEYVALLEN+1);
+	char 	*tablenewbuf = (char*)jagmalloc(KEYVALLEN+1);
+	memset( tableoldbuf, 0, KEYVALLEN+1 );
+	memset( tablenewbuf, 0, KEYVALLEN+1 );
 	buffers[0] = tableoldbuf;
+	***/
 
 	ExprElementNode *root = parseParam->whereVec[0].tree->getRoot();
 	rc = root->setWhereRange( maps, attrs, keylen, numKeys, 1, uniqueAndHasValueCol, minmax, treestr, typeMode, tabnum );
+	if ( rc < 0 ) {
+		//if ( tableoldbuf ) free ( tableoldbuf );
+		//if ( tablenewbuf ) free ( tablenewbuf );
+		for ( int i = 0; i < numIndexes; ++i ) {
+			if ( ! lpindex[i] ) continue;
+			_objectLock->writeUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+		}
+		errmsg = Jstr("E10385 Invalid where range found");
+		return -1;
+	}
+
 	if ( 0 == rc ) {
 		memset( minmax[0].minbuf, 0, keylen[0]+1 );
 		memset( minmax[0].maxbuf, 255, keylen[0] );
 		(minmax[0].maxbuf)[keylen[0]] = '\0';
-	} else if ( rc < 0 ) {
-		if ( tableoldbuf ) free ( tableoldbuf );
-		if ( tablenewbuf ) free ( tablenewbuf );
-		for ( int i = 0; i < _indexlist.size(); ++i ) {
-			if ( lpindex[i] ) {
-				_servobj->_objectLock->readUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, lpindex[i]->getIndexName(),
-					_replicateType, 1 );
-			}
-		}
-		errmsg = Jstr("E0385 invalid where range found ");
-		return -1;
-	}
+	} 
+
+	char 	*tableoldbuf = (char*)jagmalloc(KEYVALLEN+1);
+	char 	*tablenewbuf = (char*)jagmalloc(KEYVALLEN+1);
+	memset( tableoldbuf, 0, KEYVALLEN+1 );
+	memset( tablenewbuf, 0, KEYVALLEN+1 );
+	buffers[0] = tableoldbuf;
 
 	if ( memcmp(minmax[0].minbuf, minmax[0].maxbuf, KEYLEN) == 0 ) {
+		// single record update
+		singleInsert = true;
+		prt(("s244377 single record update\n"));
 		JagFixString getkey ( minmax[0].minbuf, KEYLEN, KEYLEN );
 		JagDBPair getpair( getkey );
 		JagDBPair setpair;
-		if ( setKey ) {  // set key to new key, may need to disable later
-			errmsg = Jstr("E03875 Key column cannot be changed");
-			return -1;
-		} else {
-			if ( _darrFamily->setWithRange( req, getpair, buffers, uniqueAndHasValueCol, root, parseParam, 
-									 _numKeys, _schAttr, setposlist, setpair ) ) {
-				// out pair is db format
-				memcpy(tableoldbuf, getpair.key.c_str(), KEYLEN);
-				memcpy(tableoldbuf+KEYLEN, getpair.value.c_str(), VALLEN);
 
-				memcpy(tablenewbuf, setpair.key.c_str(), KEYLEN);
-				memcpy(tablenewbuf+KEYLEN, setpair.value.c_str(), VALLEN);
-				++cnt;
-			}
+		prt(("s441011 single update _darrFamily->setWithRange() \n"));
+		//setpair.printkv();
+
+		// update data record
+		if ( _darrFamily->setWithRange( req, getpair, buffers, uniqueAndHasValueCol, root, parseParam, 
+								 		_numKeys, _schAttr, setposlist, setpair ) ) {
+			// out pair is db format
+			prt(("s333400 single setWithRange true\n"));
+			/**
+			memcpy(tableoldbuf, getpair.key.s(), KEYLEN);
+			memcpy(tableoldbuf+KEYLEN, getpair.value.s(), VALLEN);
+
+			memcpy(tablenewbuf, setpair.key.s(), KEYLEN);
+			memcpy(tablenewbuf+KEYLEN, setpair.value.s(), VALLEN);
+			**/
+			++cnt;
+		} else {
+			prt(("s333401 setWithRange false\n"));
 		}
 		
-		if ( cnt && _indexlist.size() > 0 && setindexnum ) {
+		if ( cnt && numIndexes > 0 && setindexnum ) {
+
+			memcpy(tableoldbuf, getpair.key.s(), KEYLEN);
+			memcpy(tableoldbuf+KEYLEN, getpair.value.s(), VALLEN);
+			memcpy(tablenewbuf, setpair.key.s(), KEYLEN);
+			memcpy(tablenewbuf+KEYLEN, setpair.value.s(), VALLEN);
+
 			dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
 			dbNaturalFormatExchange( tablenewbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
-			for ( int i = 0; i < setindexnum; ++i ) {
-				if ( lpindex[i] ) {
-					lpindex[i]->updateFromTable( tableoldbuf, tablenewbuf );
-				}
+			for ( int i = 0; i < numIndexes; ++i ) {
+				if ( ! lpindex[i] ) { continue; }
+				lpindex[i]->updateFromTable( tableoldbuf, tablenewbuf );
 			}
 		}
+
+		// if ( cnt < 1 && upsert ) { }
+
 	} else {
-		if ( setKey ) {
-			if ( tableoldbuf ) free ( tableoldbuf );
-			if ( tablenewbuf ) free ( tablenewbuf );
-			for ( int i = 0; i < _indexlist.size(); ++i ) {
-				if ( lpindex[i] ) {
-					_servobj->_objectLock->readUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, lpindex[i]->getIndexName(),
-						_replicateType, 1 );
-				}
-			}
-			errmsg = "E0392 Range key update unsupported";
-			return -1;			
-		} else {
-			JagMergeReader *ntu = NULL;
-			_darrFamily->setFamilyRead( ntu, minmax[0].minbuf, minmax[0].maxbuf );
+		// range update
+		prt(("s244378 multiple record update\n"));
 
-			if ( ntu ) {				
-				while ( true ) {
-					rc = ntu->getNext( tableoldbuf );
-					if ( !rc ) { break; }
-					
-					dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
-					rc = root->checkFuncValid( ntu, maps, attrs, buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 );
-					if ( rc == 1 ) {
-						memcpy(tablenewbuf, tableoldbuf, KEYVALLEN);
-						JagDBPair getpair( tableoldbuf, KEYLEN, tableoldbuf+KEYLEN, VALLEN );
-						for ( int i = 0; i < setnum; ++i ) {
-							updroot = parseParam->updSetVec[i].tree->getRoot();
-							needInit = true;
-							if ( updroot->checkFuncValid( ntu, maps, attrs, buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 ) == 1 ) {
-								memset(tablenewbuf+_schAttr[setposlist[i]].offset, 0, _schAttr[setposlist[i]].length);
-								rc = formatOneCol( req.session->timediff, _servobj->servtimediff, tablenewbuf, strres.c_str(), errmsg, 
-									parseParam->updSetVec[i].colName, _schAttr[setposlist[i]].offset, 
-									_schAttr[setposlist[i]].length, _schAttr[setposlist[i]].sig, _schAttr[setposlist[i]].type );
-								if ( !rc ) {
-									continue;						
-								}								
-							} else {
-								continue;
-							}
+		JagMergeReader *ntu = NULL;
+		_darrFamily->setFamilyRead( ntu, minmax[0].minbuf, minmax[0].maxbuf );
+
+		if ( ntu ) {				
+			while ( true ) {
+				rc = ntu->getNext( tableoldbuf );
+				if ( !rc ) { break; }
+				++scanned;
+				
+				dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
+				rc = root->checkFuncValid( ntu, maps, attrs, buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 );
+				if ( rc == 1 ) {
+					memcpy(tablenewbuf, tableoldbuf, KEYVALLEN);
+					// JagDBPair getpair( tableoldbuf, KEYLEN, tableoldbuf+KEYLEN, VALLEN );
+					for ( int i = 0; i < numUpdateCols; ++i ) {
+						updroot = parseParam->updSetVec[i].tree->getRoot();
+						needInit = true;
+						if ( updroot->checkFuncValid( ntu, maps, attrs, buffers, strres, 
+													  typeMode, treetype, treelength, needInit, 0, 0 ) == 1 ) {
+							memset(tablenewbuf+_schAttr[setposlist[i]].offset, 0, _schAttr[setposlist[i]].length);
+							rc = formatOneCol( req.session->timediff, _servobj->servtimediff, tablenewbuf, 
+												strres.s(), errmsg, 
+												parseParam->updSetVec[i].colName, _schAttr[setposlist[i]].offset, 
+												_schAttr[setposlist[i]].length, _schAttr[setposlist[i]].sig, 
+												_schAttr[setposlist[i]].type );
+							if ( !rc ) {
+								continue;						
+							}								
+						} else {
+							continue;
 						}
+					}
 
-						dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // natural format -> db format
-						dbNaturalFormatExchange( tablenewbuf, _numKeys, _schAttr, 0,0, " " ); // natural format -> db format
-						JagDBPair setpair( tablenewbuf, KEYLEN,  tablenewbuf+KEYLEN, VALLEN, true );
+					dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // natural format -> db format
+					dbNaturalFormatExchange( tablenewbuf, _numKeys, _schAttr, 0,0, " " ); // natural format -> db format
+					JagDBPair setpair( tablenewbuf, KEYLEN,  tablenewbuf+KEYLEN, VALLEN, true );
 
-						if ( _darrFamily->set( setpair ) ) {
-							++cnt;							
-							if ( _indexlist.size() > 0 ) {
-								dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
-								dbNaturalFormatExchange( tablenewbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
-								for ( int i = 0; i < setindexnum; ++i ) {
-									if ( lpindex[i] ) {
-										lpindex[i]->updateFromTable( tableoldbuf, tablenewbuf );
-									}
-								}
+					prt(("s303390 range _darrFamily->set( setpair )  ...\n"));
+					// setpair.printkv();
+
+					if ( _darrFamily->set( setpair ) ) {
+						++cnt;							
+						if ( numIndexes  > 0 ) {
+							dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
+							dbNaturalFormatExchange( tablenewbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
+							for ( int i = 0; i < numIndexes; ++i ) {
+								if ( ! lpindex[i] ) continue;
+								lpindex[i]->updateFromTable( tableoldbuf, tablenewbuf );
 							}
 						}
 					}
 				}
-				delete ntu;
 			}
+			delete ntu;
 		}
 	}
 
 	if ( tableoldbuf ) free ( tableoldbuf );
 	if ( tablenewbuf ) free ( tablenewbuf );
-	for ( int i = 0; i < _indexlist.size(); ++i ) {
-		if ( lpindex[i] ) {
-			_servobj->_objectLock->readUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, lpindex[i]->getIndexName(),
-				_replicateType, 1 );
-		}
+
+	for ( int i = 0; i < numIndexes; ++i ) {
+		if ( ! lpindex[i] ) continue;
+		_objectLock->writeUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
 	}
 	
+	prt(("s50284 updated=%lld/scanned=%lld records\n", cnt, scanned ));
 	return cnt;
 }
 
 // return 0 error; > 0 OK
 jagint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg )	
-{	
+{
 	// chain not able to remove
 	if ( JAG_CHAINTABLE_TYPE == _objectType ) {
 		errmsg = "Chain cannot be deleted";
@@ -1870,8 +2014,8 @@ jagint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Jstr 
 		JagDBPair pair( minmax[0].minbuf, KEYLEN );
 		rc = _darrFamily->get( pair );
 		if ( rc ) {
-			memcpy(buf, pair.key.c_str(), KEYLEN);
-			memcpy(buf+KEYLEN, pair.value.c_str(), VALLEN);
+			memcpy(buf, pair.key.s(), KEYLEN);
+			memcpy(buf+KEYLEN, pair.value.s(), VALLEN);
 			dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
 			if ( !uniqueAndHasValueCol ) rc = 1;
 			else {
@@ -1894,17 +2038,15 @@ jagint JagTable::remove( const JagRequest &req, JagParseParam *parseParam, Jstr 
 		if ( ntr ) {
 			while ( true ) {
 				rc = ntr->getNext(buf);
-				if ( !rc ) {
-					break;
-				}
+				if ( !rc ) { break; }
 				
 				dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
 				rc = root->checkFuncValid( ntr, maps, attrs, buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 );
 				if ( rc == 1 ) {
 					dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // natural format -> db format
 					JagDBPair pair( buf, KEYLEN );
-					retval = _darrFamily->remove( pair );
-					if ( retval == 1 ) {
+					rc = _darrFamily->remove( pair );
+					if ( rc ) {
 						++cnt;
 						dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
 						_removeIndexRecords( buf );
@@ -1953,7 +2095,8 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 						  Jstr &errmsg, bool nowherecnt, bool isInsertSelect )
 {
 	// set up timeout for select starting timestamp
-	//prt(("s8773 JagTable::select cmd=[%s]\n", cmd ));
+	prt(("s8773 select cmd=[%s]\n", cmd ));
+
 	struct timeval now;
 	gettimeofday( &now, NULL ); 
 	jagint bsec = now.tv_sec;
@@ -2014,7 +2157,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 		SetHdrAttr honespa;
 		AbaxString getstr;
 		_tableschema->getAttr( _dbtable, getstr );
-		honespa.setattr( _numKeys, false, _dbtable, &_tableRecord, getstr.c_str() );
+		honespa.setattr( _numKeys, false, _dbtable, &_tableRecord, getstr.s() );
 		hspa.append( honespa );
 		prt(("s5640 nowherecnt rearrangeHdr ...\n" ));
 		rc = rearrangeHdr( 1, maps, attrs, parseParam, hspa, newhdr, gbvheader, finalsendlen, gbvsendlen );
@@ -2023,8 +2166,9 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			if ( parseParam->exportType == JAG_EXPORT && _isExporting ) _isExporting = 0;
 			return -1;			
 		}
-		nrec.parseRecord( newhdr.c_str() );
-		//prt(("s0573 nowherecnt newhdr=[%s]\n",  newhdr.c_str() ));
+		nrec.parseRecord( newhdr.s() );
+		prt(("s0573 nowherecnt newhdr=[%s]\n",  newhdr.s() ));
+		//nrec.print(); 
 	}
 	
 	prt(("s92830 parseParam->hasWhere=%d\n", parseParam->hasWhere ));
@@ -2058,14 +2202,17 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 	// gbvbuf, if has group by
 	char *finalbuf = (char*)jagmalloc(finalsendlen+1);
 	memset(finalbuf, 0, finalsendlen+1);
-	char *gbvbuf = (char*)jagmalloc(gbvsendlen+1);
-	memset(gbvbuf, 0, gbvsendlen+1);
-	//prt(("s1028 finalsendlen=%d gbvsendlen=%d\n", finalsendlen, gbvsendlen ));
+
+	//char *gbvbuf = (char*)jagmalloc(gbvsendlen+1);
+	//memset(gbvbuf, 0, gbvsendlen+1);
+	char *gbvbuf = NULL;
+
+	prt(("s1028 finalsendlen=%d gbvsendlen=%d\n", finalsendlen, gbvsendlen ));
 	JagMemDiskSortArray *gmdarr = NULL;
 	if ( gbvsendlen > 0 ) {
 		gmdarr = newObject<JagMemDiskSortArray>();
-		int sortmb = atoi((_cfg->getValue("GROUPBY_SORT_SIZE_MB", "1024")).c_str()); 
-		gmdarr->init( sortmb, gbvheader.c_str(), "GroupByValue" );
+		int sortmb = atoi((_cfg->getValue("GROUPBY_SORT_SIZE_MB", "1024")).s()); 
+		gmdarr->init( sortmb, gbvheader.s(), "GroupByValue" );
 		gmdarr->beginWrite();
 	}
 	
@@ -2075,9 +2222,9 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 		pcli = newObject<JaguarCPPClient>();
 		Jstr host = "localhost", unixSocket = Jstr("/TOKEN=") + _servobj->_servToken;
 		if ( _servobj->_listenIP.size() > 0 ) { host = _servobj->_listenIP; }
-		if ( !pcli->connect( host.c_str(), _servobj->_port, "admin", "dummy", "test", unixSocket.c_str(), 0 ) ) {
+		if ( !pcli->connect( host.s(), _servobj->_port, "admin", "dummy", "test", unixSocket.s(), 0 ) ) {
 			raydebug( stdout, JAG_LOG_LOW, "s4055 Connect (%s:%s) (%s:%d) error [%s], retry ...\n",
-					  "admin", "jaguar", host.c_str(), _servobj->_port, pcli->error() );
+					  "admin", "jaguar", host.s(), _servobj->_port, pcli->error() );
 			pcli->close();
 			if ( pcli ) delete pcli;
 			if ( gmdarr ) delete gmdarr;
@@ -2096,8 +2243,8 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			const char *buffers[1];
 			char *buf = (char*)jagmalloc(KEYVALLEN+1);
 			memset( buf, 0, KEYVALLEN+1 );	
-			memcpy(buf, pair.key.c_str(), KEYLEN);
-			memcpy(buf+KEYLEN, pair.value.c_str(), VALLEN);
+			memcpy(buf, pair.key.s(), KEYLEN);
+			memcpy(buf+KEYLEN, pair.value.s(), VALLEN);
 			buffers[0] = buf;
 			Jstr hdir = fileHashDir( pair.key );
 			dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
@@ -2107,27 +2254,22 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				if ( parseParam->opcode == JAG_GETFILE_OP ) { 
 					setGetFileAttributes( hdir, parseParam, buffers ); 
 				}
-				nonAggregateFinalbuf( NULL, maps, attrs, req, buffers, parseParam, finalbuf, finalsendlen, jda, 
+				nonAggregateFinalbuf( NULL, maps, attrs, &req, buffers, parseParam, finalbuf, finalsendlen, jda, 
 									  _dbtable, recordcnt, nowherecnt, NULL, true );
 				if ( parseParam->opcode == JAG_GETFILE_OP && parseParam->getfileActualData ) {
 					Jstr hdir = fileHashDir( pair.key );
-					//jaguar_mutex_lock ( &req.session->dataMutex );
-					//prt(("s4320 tab sendDirectToSock _BEGINFILEUPLOAD_ ...\n" ));
-					sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
-					//prt(("s4320 tab sendDirectToSock _BEGINFILEUPLOAD_ done ...\n" ));
 					Jstr ddcol, inpath; int getpos; char fname[JAG_FILE_FIELD_LEN+1];
 					for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
-						ddcol = _dbtable + "." + parseParam->selColVec[i].getfileCol.c_str();
+						ddcol = _dbtable + "." + parseParam->selColVec[i].getfileCol.s();
 						if ( _tablemap->getValue(ddcol, getpos) ) {
 							memcpy( fname, buffers[0]+_schAttr[getpos].offset, _schAttr[getpos].length );
 							inpath = _darrFamily->_sfilepath + "/" + hdir + "/" + fname;
+							prt(("s52118 oneFileSender %s ...\n", inpath.s() ));
+							req.session->active = false;
 							oneFileSender( req.session->sock, inpath );
+							req.session->active = true;
 						}
 					}
-					//prt(("s4323 tab sendDirectToSock _ENDFILEUPLOAD_ ...\n" ));
-					sendDirectToSock( req.session->sock, "_ENDFILEUPLOAD_", 15 );
-					//prt(("s4323 tab sendDirectToSock _ENDFILEUPLOAD_ done to cli ...\n" ));
-					//jaguar_mutex_unlock ( &req.session->dataMutex );
 				} else {
 					if ( JAG_INSERTSELECT_OP == parseParam->opcode ) {
 						Jstr iscmd;
@@ -2143,17 +2285,13 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			} else {
 				// raydebug( stdout, JAG_LOG_HIGH, "s0341 uniqueAndHasValueCol=%d\n", uniqueAndHasValueCol  );
 				if ( parseParam->getfileActualData ) {
-					sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
-					sendDirectToSock( req.session->sock, "_ENDFILEUPLOAD_", 15 );
 				}
 			}
 
 			free( buf );
 		} else {
-			// prt(("s4501 getpair error pair.key=[%s]\n", pair.key.c_str() ));
+			// prt(("s4501 getpair error pair.key=[%s]\n", pair.key.s() ));
 			if ( parseParam->getfileActualData ) {
-				sendDirectToSock( req.session->sock, "_BEGINFILEUPLOAD_", 17 );
-				sendDirectToSock( req.session->sock, "_ENDFILEUPLOAD_", 15 );
 			}
 		}
 	} else { // range query
@@ -2199,6 +2337,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			JagParser parser((void*)NULL);
 			for ( jagint i = 0; i < numBatches; ++i ) {
 				pparam[i] = new JagParseParam(&parser);
+				prt(("s200384 parser.parseCommand...\n"));
 				parser.parseCommand( jpa, cmd, pparam[i], errmsg);
 			    pparam[i]->_parent = parseParam;
 			}
@@ -2207,7 +2346,6 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			if ( memlim <= 0 ) memlim = 1;
 
 			ParallelCmdPass psp[numBatches];
-			// JagMemDiskSortArray *lgmdarr[1];
 			for ( jagint i = 0; i < numBatches; ++i ) {
 				psp[i].cli = pcli;
 
@@ -2218,7 +2356,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				psp[i].sendlen = finalsendlen;
 				psp[i].parseParam = pparam[i];
 				psp[i].gmdarr = NULL;
-				psp[i].req = req;
+				psp[i].req = (JagRequest*)&req;
 				psp[i].jda = jda;
 				psp[i].writeName = _dbtable;
 				psp[i].recordcnt = &recordcnt;
@@ -2264,7 +2402,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 					pparam[i]->timeout = -1;
 				}
 
-				parallelSelectStatic( (void*)&psp[i] );
+				parallelSelectStatic( (void*)&psp[i] );  // no group by
 
 			} // end of for i in numBatches
 
@@ -2273,7 +2411,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			}
 
 			if ( hAggregate ) {
-				aggregateFinalbuf( req, newhdr, numBatches, pparam, finalbuf, finalsendlen, jda, _dbtable, 
+				aggregateFinalbuf( &req, newhdr, numBatches, pparam, finalbuf, finalsendlen, jda, _dbtable, 
 								   recordcnt, nowherecnt, &nrec );
 			}
 		
@@ -2283,15 +2421,17 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 
 		} else {
 			// has "group by", no insert into ... select ... syntax allowed
+			prt(("s20393 has groupby numBatches=%d ...\n", numBatches ));
 			JagMemDiskSortArray *lgmdarr[numBatches];
 			JagParser parser((void*)NULL);
 			for ( jagint i = 0; i < numBatches; ++i ) {
 				pparam[i] = new JagParseParam(&parser);
+				prt(("s40038 parser.parseCommand\n"));
 				parser.parseCommand( jpa, cmd, pparam[i], errmsg );
 			    pparam[i]->_parent = parseParam;
 
 				lgmdarr[i] = newObject<JagMemDiskSortArray>();
-				lgmdarr[i]->init( 40, gbvheader.c_str(), "GroupByValue" );
+				lgmdarr[i]->init( 40, gbvheader.s(), "GroupByValue" );
 				lgmdarr[i]->beginWrite();
 			}
 
@@ -2307,7 +2447,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				psp[i].sendlen = gbvsendlen;
 				psp[i].parseParam = pparam[i];
 				psp[i].gmdarr = lgmdarr[i];
-				psp[i].req = req;
+				psp[i].req = (JagRequest*)&req;
 				psp[i].jda = jda;
 				psp[i].writeName = _dbtable;
 				psp[i].recordcnt = &recordcnt;
@@ -2346,8 +2486,11 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 					pparam[i]->timeout = -1;
 				}
 
-				 parallelSelectStatic( (void*)&psp[i] );
+				 parallelSelectStatic( (void*)&psp[i] );  // has group by
 			}
+
+			gbvbuf = (char*)jagmalloc(gbvsendlen+1);
+			memset(gbvbuf, 0, gbvsendlen+1);
 
 			for ( jagint i = 0; i < numBatches; ++i ) {
 				if ( psp[i].timeoutFlag ) timeoutFlag = 1;
@@ -2364,7 +2507,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				delete pparam[i];
 			}
 
-			groupByFinalCalculation( gbvbuf, nowherecnt, finalsendlen, recordcnt, nm, req, _dbtable, 
+			groupByFinalCalculation( gbvbuf, nowherecnt, finalsendlen, recordcnt, nm, _dbtable, 
 									 parseParam, jda, gmdarr, &nrec );
 		} 
 		
@@ -2379,7 +2522,7 @@ jagint JagTable::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 
 	if ( timeoutFlag ) {
 		Jstr timeoutStr = "E0283 Table select has timed out. Results have been truncated;";
-		sendMessage( req, timeoutStr.c_str(), "ER" );
+		sendMessage( req, timeoutStr.s(), "ER" );
 	}
 	
 	if ( parseParam->exportType == JAG_EXPORT ) recordcnt = 0;
@@ -2451,7 +2594,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 
 			#ifdef DEVDEBUG
 			prt(("s2235 parseParam->selColVec i=%d name=[%s] asName=[%s]\n", 
-				 i, pass->parseParam->selColVec[i].name.c_str(), pass->parseParam->selColVec[i].asName.c_str() ));
+				 i, pass->parseParam->selColVec[i].name.s(), pass->parseParam->selColVec[i].asName.s() ));
 		    #endif
 		}
 	}
@@ -2479,13 +2622,15 @@ void *JagTable::parallelSelectStatic( void * ptr )
 	memset(sendbuf, 0, pass->sendlen+1);
 	//prt(("s8333092 kvlen=%d sendlen=%d\n",  pass->kvlen, pass->sendlen ));
 
-	const char *buffers[1]; buffers[0] = buf;
+	const char *buffers[1]; 
+	buffers[0] = buf;
+
 	JagDiskArrayFamily *darrfam = NULL;
 	if ( pass->ptab ) darrfam = pass->ptab->_darrFamily;
 	else darrfam = pass->pindex->_darrFamily;
 	
 	if ( pass->parseParam->hasOrder && !pass->parseParam->orderVec[0].isAsc ) {
-		// order by col1 desc
+		// order by col1 desc  descending
 		JagMergeBackReader *ntr = NULL;
 		//prt(("s22039 setFamilyReadBackPartial\n"));
 		darrfam->setFamilyReadBackPartial( ntr, pass->minbuf, pass->maxbuf, pass->spos, pass->epos, pass->memlimit );
@@ -2501,7 +2646,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 
 				rc = ntr->getNext( buf );  ////// read a new row
 
-				if ( pass->req.session->sessionBroken ) rc = false;
+				if ( pass->req->session->sessionBroken ) rc = false;
 				if ( !rc ) { break; }
 				dbNaturalFormatExchange( buf, numKeys[0], attrs[0], 0,0, " " ); // db format -> natural format
 				if ( pass->parseParam->hasWhere ) {
@@ -2512,9 +2657,19 @@ void *JagTable::parallelSelectStatic( void * ptr )
 				}
 
 				if ( rc == 1 ) {
+					// buf: if pass->parseParam.window.size() > 0 : converToWindow()
+					if ( pass->parseParam->window.size() > 0 ) {
+						Jstr period, pcolName;
+						bool prc =  pass->parseParam->getWindowPeriod( pass->parseParam->window, period, pcolName );
+						if ( prc ) {
+							prt(("s552238 convertTimeToWindow period=[%s] pcolName=[%s]\n", period.s(), pcolName.s() ));
+							pass->ptab->convertTimeToWindow( pass->req->session->timediff, period, buf, pcolName );
+						}
+					}
+
 					if ( pass->gmdarr ) { // has group by
-						rc = JagTable::buildDiskArrayForGroupBy( ntr, maps, attrs, pass->req, buffers, pass->parseParam, 
-																 pass->gmdarr, sendbuf );
+						rc = JagTable::buildDiskArrayForGroupBy( ntr, maps, attrs, pass->req, buffers, 
+																 pass->parseParam, pass->gmdarr, sendbuf );
 						if ( 0 == rc ) break;
 					} else { // no group by
 						if ( hasAggregate ) { // has aggregate functions
@@ -2559,11 +2714,11 @@ void *JagTable::parallelSelectStatic( void * ptr )
 					break;
 				}
 
-				prt(("s8307 before getNext() \n"));
+				prt(("s81307 before getNext() \n"));
 				rc = ntr->getNext( buf );  // read a new row
-				prt(("s3366 ntr->getNext( buf ) buf=[%s] rc=%d\n", buf, rc ));
+				prt(("s31366 ntr->getNext( buf ) buf=[%s] rc=%d\n", buf, rc ));
 
-				if ( pass->req.session->sessionBroken ) rc = false;
+				if ( pass->req->session->sessionBroken ) rc = false;
 				if ( !rc ) {
 					if ( pass->parseParam->hasWhere ) {
 						root = pass->parseParam->whereVec[0].tree->getRoot();
@@ -2578,7 +2733,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
     						if ( ! pass->parseParam->_parent->_lineFile ) {
     							pass->parseParam->_parent->_lineFile = new JagLineFile();
     						} 
-    						//prt(("s2138 _lineFile->append(%s) _lineFile=%x\n", str.c_str(), pass->parseParam->parent->_lineFile ));
+    						//prt(("s2138 _lineFile->append(%s) _lineFile=%x\n", str.s(), pass->parseParam->parent->_lineFile ));
     						pass->parseParam->_parent->_lineFile->append( str );
 							if ( pass->ptab ) {
 								JAG_BLURT jaguar_mutex_unlock ( &pass->ptab->_parseParamParentMutex ); JAG_OVER;
@@ -2600,7 +2755,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 					prt(("\n"));
 					***/
 					rc = root->checkFuncValid( ntr, maps, attrs, buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 );
-					prt(("s2021 checkFuncValid rc=%d root=%0x strres=[%s]\n", rc, root, strres.c_str() ));
+					prt(("s2021 checkFuncValid rc=%d root=%0x strres=[%s]\n", rc, root, strres.s() ));
 
 					if ( root->_builder->_pparam->_rowHash ) {
 						prt(("s2022 root->_builder->_pparam->_rowHash=%0x\n", root->_builder->_pparam->_rowHash ));
@@ -2614,7 +2769,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 							if ( ! pass->parseParam->_parent->_lineFile ) {
 								pass->parseParam->_parent->_lineFile = newObject<JagLineFile>();
 							} 
-							//prt(("s2038 _lineFile->append(%s) _lineFile=%x\n", str.c_str(), pass->parseParam->parent->_lineFile ));
+							//prt(("s2038 _lineFile->append(%s) _lineFile=%x\n", str.s(), pass->parseParam->parent->_lineFile ));
 							pass->parseParam->_parent->_lineFile->append( str );
 							if ( pass->ptab ) {
 								JAG_BLURT jaguar_mutex_unlock ( &pass->ptab->_parseParamParentMutex ); JAG_OVER;
@@ -2631,6 +2786,16 @@ void *JagTable::parallelSelectStatic( void * ptr )
 				}
 
 				if ( rc == 1 ) {
+					// buf: if pass->parseParam.window.size() > 0 : converToWindow()
+					if ( pass->parseParam->window.size() > 0 ) {
+						Jstr period, pcolName;
+						bool prc =  pass->parseParam->getWindowPeriod( pass->parseParam->window, period, pcolName );
+						if ( prc ) {
+							prt(("s552238 convertTimeToWindow period=[%s] pcolName=[%s]\n", period.s(), pcolName.s() ));
+							pass->ptab->convertTimeToWindow( pass->req->session->timediff, period, buf, pcolName );
+						}
+					}
+
 					if ( pass->gmdarr ) { // has group by
 						prt(("s2112034 gmdarr not null, has group by\n" ));
 						rc = JagTable::buildDiskArrayForGroupBy( ntr, maps, attrs, pass->req, buffers, 
@@ -2647,8 +2812,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 							if ( JAG_INSERTSELECT_OP == pass->parseParam->opcode ) {			
 								//prt(("s20229 formatInsertFromSelect ...\n"));
 								JagTable::formatInsertFromSelect( pass->parseParam, attrs[0], sendbuf, buffers[0], 
-																pass->sendlen, numCols[0], 
-																  pass->cli, iscmd );
+																  pass->sendlen, numCols[0], pass->cli, iscmd );
 							}
 
 							if ( pass->parseParam->hasLimit && *(pass->recordcnt) >= pass->actlimit ) {
@@ -2678,7 +2842,7 @@ void *JagTable::parallelSelectStatic( void * ptr )
 // multiple threads calling
 // input buffers are natural data
 int JagTable::buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-										const JagRequest &req, const char *buffers[], JagParseParam *parseParam, 
+										const JagRequest *req, const char *buffers[], JagParseParam *parseParam, 
 										JagMemDiskSortArray *gmdarr, char *gbvbuf )
 {
 	Jstr treetype;
@@ -2687,6 +2851,7 @@ int JagTable::buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashSt
 	Jstr errmsg;
 	bool init = 1;
 	int rc = 0, treelength = 0, typeMode = 0, treesig;
+	prt(("s40013 buildDiskArrayForGroupBy selColVec.size=%d  ...\n", parseParam->selColVec.size() ));
 
 	for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 		init = 1;
@@ -2699,19 +2864,21 @@ int JagTable::buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashSt
 		treelength = parseParam->selColVec[i].length;
 		treesig = parseParam->selColVec[i].sig;
 		treetype = parseParam->selColVec[i].type;
-		formatOneCol( req.session->timediff, req.session->servobj->servtimediff, gbvbuf, 
-			parseParam->selColVec[i].strResult.c_str(), errmsg, "GARBAGE", 
-			totoff, treelength, treesig, treetype );
+		formatOneCol( req->session->timediff, req->session->servobj->servtimediff, gbvbuf, 
+					  parseParam->selColVec[i].strResult.s(), errmsg, "GAR", 
+					  totoff, treelength, treesig, treetype );
 		totoff += treelength;
-		// prt(("i=%d gbvbuf=[%s] len=%d sig=%d typ=%c\n", i, gbvbuf, treelength, treesig, treetype));
+		prt(("i=%d gbvbuf=[%s] len=%d sig=%d typ=%s\n", i, gbvbuf, treelength, treesig, treetype.s() ));
 	}
 
 	// then, insert data to groupby value diskarray
 	if ( gbvbuf[0] != '\0' ) {	
+		prt(("s22018 pair ... groupByUpdat.. keylen=%d vallen=%d\n", gmdarr->_keylen, gmdarr->_vallen ));
 		JagDBPair pair(gbvbuf, gmdarr->_keylen, gbvbuf+gmdarr->_keylen, gmdarr->_vallen, true );
 		rc = gmdarr->groupByUpdate( pair );
 		rc = 1;
 	} else {
+		prt(("s22201 gbvbuf[0] is empty\n"));
 		rc = 1;
 	}
 	return rc;
@@ -2720,7 +2887,7 @@ int JagTable::buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashSt
 // main thread calling
 // input buffers are natural data
 void JagTable::groupByFinalCalculation( char *gbvbuf, bool nowherecnt, jagint finalsendlen, std::atomic<jagint> &cnt, jagint actlimit,
-										const JagRequest &req, const Jstr &writeName, JagParseParam *parseParam, 
+										const Jstr &writeName, JagParseParam *parseParam, 
 										JagDataAggregate *jda, JagMemDiskSortArray *gmdarr, const JagSchemaRecord *nrec )
 {
 	//prt(("s9282 groupByFinalCalculation ...\n" ));
@@ -2731,7 +2898,7 @@ void JagTable::groupByFinalCalculation( char *gbvbuf, bool nowherecnt, jagint fi
 		if ( !nowherecnt ) ++cnt;
 		else {
 			if ( *gbvbuf != '\0' ) {
-				if ( jda ) doWriteIt( jda, parseParam, req, writeName, gbvbuf, finalsendlen, nrec ); 
+				if ( jda ) doWriteIt( jda, parseParam, writeName, gbvbuf, finalsendlen, nrec ); 
 				++cnt;
 				if ( parseParam->hasLimit && cnt >= actlimit ) {
 					break;
@@ -2746,7 +2913,7 @@ void JagTable::groupByFinalCalculation( char *gbvbuf, bool nowherecnt, jagint fi
 // multiple threads calling
 // input buffers are natural data
 void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-									const JagRequest &req, const char *buffers[], 
+									const JagRequest *req, const char *buffers[], 
 									JagParseParam *parseParam, char *finalbuf, jagint finalsendlen,
 									JagDataAggregate *jda, const Jstr &writeName, std::atomic<jagint> &cnt, 
 									bool nowherecnt, const JagSchemaRecord *nrec, bool oneLine )
@@ -2765,15 +2932,15 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 			root = parseParam->selColVec[i].tree->getRoot();
 			rc = root->checkFuncValid( ntr, maps, attrs, buffers, parseParam->selColVec[i].strResult, typeMode, 
 									   treetype, treelength, init, 1, 1 );
-			//prt(("s7263 strResult=[%s]\n", parseParam->selColVec[i].strResult.c_str() ));
+			//prt(("s7263 strResult=[%s]\n", parseParam->selColVec[i].strResult.s() ));
 			//prt(("s2082 in JagTable::nonAggregateFinalbuf() checkFuncValid rc=%d\n", rc ));
 			if ( rc != 1 ) { return; }
 			offset = parseParam->selColVec[i].offset;
 			treelength = parseParam->selColVec[i].length;
 			treesig = parseParam->selColVec[i].sig;
 			treetype = parseParam->selColVec[i].type;
-			formatOneCol( req.session->timediff, req.session->servobj->servtimediff, finalbuf,
-						  parseParam->selColVec[i].strResult.c_str(), errmsg, "GARBAGE", offset, 
+			formatOneCol( req->session->timediff, req->session->servobj->servtimediff, finalbuf,
+						  parseParam->selColVec[i].strResult.s(), errmsg, "GAR", offset, 
 						  treelength, treesig, treetype );
 		    //prt(("s3981 formatOneCol done\n" ));
 		}
@@ -2786,7 +2953,7 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 		//raydebug( stdout, JAG_LOG_HIGH, "s0391 JAG_GETFILE_OP selColVec.size()=%d\n", parseParam->selColVec.size() );
 		for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 			snprintf(finalbuf+parseParam->selColVec[i].offset, parseParam->selColVec[i].length+1, "%s", 
-					 parseParam->selColVec[i].strResult.c_str());
+					 parseParam->selColVec[i].strResult.s());
 		}
 	}
 	
@@ -2796,9 +2963,9 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 			if ( JAG_INSERTSELECT_OP != parseParam->opcode ) {
 				if ( parseParam->hasColumn || JAG_GETFILE_OP == parseParam->opcode ) { 
 				    // has select coulumn or getfile command, use finalbuf
-					sendMessageLength( req, finalbuf, finalsendlen, "X1" );
+					sendMessageLength( *req, finalbuf, finalsendlen, "X1" );
 				} else { // select *, use original buf, buffer[0]
-					sendMessageLength( req, buffers[0], finalsendlen, "X1" );
+					sendMessageLength( *req, buffers[0], finalsendlen, "X1" );
 				}
 				cnt = -111;
 			}
@@ -2809,14 +2976,14 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 			if ( JAG_INSERTSELECT_OP != parseParam->opcode ) {
 				if ( parseParam->hasColumn ) { // has select coulumn, use finalbuf
 					if ( *finalbuf != '\0' ) {
-						if ( jda ) doWriteIt( jda, parseParam, req, writeName, finalbuf, finalsendlen, nrec ); 
+						if ( jda ) doWriteIt( jda, parseParam, writeName, finalbuf, finalsendlen, nrec ); 
 						++cnt;
 					}
 				} else { // select *, use original buf, buffer[0], include /export
 					if ( *buffers[0] != '\0' ) {
 						if ( jda ) {
 							prt(("s2238 s999 doWriteIt ...finalsendlen=%d cnt=%d\n", finalsendlen, int(cnt) ));
-							doWriteIt( jda, parseParam, req, writeName, buffers[0], finalsendlen, nrec ); 
+							doWriteIt( jda, parseParam, writeName, buffers[0], finalsendlen, nrec ); 
 							++cnt;
 						}
 					}
@@ -2830,7 +2997,7 @@ void JagTable::nonAggregateFinalbuf(JagMergeReaderBase *ntr, const JagHashStrInt
 // multiple threads calling
 // input buffers are natural data
 void JagTable::aggregateDataFormat( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-									const JagRequest &req, const char *buffers[], JagParseParam *parseParam, bool init )
+									const JagRequest *req, const char *buffers[], JagParseParam *parseParam, bool init )
 {
 	ExprElementNode *root;
 	int typeMode = 0, treelength = 0;
@@ -2839,7 +3006,7 @@ void JagTable::aggregateDataFormat( JagMergeReaderBase *ntr, const JagHashStrInt
 		root = parseParam->selColVec[i].tree->getRoot();
 		if ( root->checkFuncValid( ntr, maps, attrs, buffers, parseParam->selColVec[i].strResult, typeMode, 
 								   treetype, treelength, init, 1, 1 ) != 1 ) {
-			prt(("ERROR i=%d [%s]\n", i, parseParam->selColVec[i].asName.c_str()));
+			prt(("ERROR i=%d [%s]\n", i, parseParam->selColVec[i].asName.s()));
 			return;
 		}
 	}
@@ -2848,13 +3015,13 @@ void JagTable::aggregateDataFormat( JagMergeReaderBase *ntr, const JagHashStrInt
 // finish all data, merge all aggregation results to form one final result to send
 // main thread calling
 // input buffers are natural data
-void JagTable::aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, jagint len, JagParseParam *parseParam[], 
+void JagTable::aggregateFinalbuf( const JagRequest *req, const Jstr &sendhdr, jagint len, JagParseParam *parseParam[], 
 								  char *finalbuf, jagint finalsendlen, JagDataAggregate *jda, const Jstr &writeName, 
 								  std::atomic<jagint> &cnt, bool nowherecnt, const JagSchemaRecord *nrec )
 {
 	JagSchemaRecord aggrec;
-	//prt(("c2036 aggregateFinalbuf sendhdr=[%s]\n", sendhdr.c_str() ));
-	aggrec.parseRecord( sendhdr.c_str() );
+	//prt(("c2036 aggregateFinalbuf sendhdr=[%s]\n", sendhdr.s() ));
+	aggrec.parseRecord( sendhdr.s() );
 	char *aggbuf = (char*)jagmalloc(finalsendlen+1);
 	memset(aggbuf, 0, finalsendlen+1);
 	JagVector<JagFixString> oneSetData;
@@ -2873,8 +3040,8 @@ void JagTable::aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, ja
 			length = parseParam[m]->selColVec[i].length;
 			sig = parseParam[m]->selColVec[i].sig;
 			type = parseParam[m]->selColVec[i].type;
-			formatOneCol( req.session->timediff, req.session->servobj->servtimediff, finalbuf,
-				parseParam[m]->selColVec[i].strResult.c_str(), errmsg, "GARBAGE", 
+			formatOneCol( req->session->timediff, req->session->servobj->servtimediff, finalbuf,
+				parseParam[m]->selColVec[i].strResult.s(), errmsg, "GAR", 
 				offset, length, sig, type );
 			if ( 0 == m ) selectPartsOpcode.append( root->getBinaryOp() );
 		}
@@ -2887,7 +3054,7 @@ void JagTable::aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, ja
 	if ( nowherecnt ) { // send actural data
 		if ( *aggbuf != '\0' ) {
 			if ( jda ) {
-				doWriteIt( jda, parseParam[0], req, writeName, aggbuf, finalsendlen, nrec );
+				doWriteIt( jda, parseParam[0], writeName, aggbuf, finalsendlen, nrec );
 			}
 			++cnt;
 			//prt(("s2287 cnt incremented to %d\n", (int)cnt ));
@@ -2897,6 +3064,7 @@ void JagTable::aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, ja
 	free( aggbuf );
 }
 
+// drop indexes, removed files of a table
 Jstr JagTable::drop( Jstr &errmsg, bool isTruncate )
 {
 	JagIndex *pindex = NULL;
@@ -2917,8 +3085,8 @@ Jstr JagTable::drop( Jstr &errmsg, bool isTruncate )
 		Jstr tabIndex;
 		Jstr dbtabIndex;
 		while ( _indexlist.size() > 0 ) {
-			pindex = _servobj->_objectLock->writeLockIndex( JAG_DROPINDEX_OP, _dbname, _tableName, _indexlist[_indexlist.size()-1],
-				_tableschema, _indexschema, _replicateType, 1 );
+			pindex = _objectLock->writeLockIndex( JAG_DROPINDEX_OP, _dbname, _tableName, _indexlist[_indexlist.size()-1],
+											      _tableschema, _indexschema, _replicateType, 1 );
 			if ( pindex ) {
 				pindex->drop();
 				dbtabIndex = dbtab + "." + _indexlist[_indexlist.size()-1];
@@ -2926,14 +3094,14 @@ Jstr JagTable::drop( Jstr &errmsg, bool isTruncate )
 					_indexschema->remove( dbtabIndex );
 				}
 				if ( pindex ) delete pindex; pindex = NULL;
-				_servobj->_objectLock->writeUnlockIndex( JAG_DROPINDEX_OP, _dbname, _tableName, _indexlist[_indexlist.size()-1],
-					_replicateType, 1 );
+				_objectLock->writeUnlockIndex( JAG_DROPINDEX_OP, _dbname, _tableName, _indexlist[_indexlist.size()-1],
+												_replicateType, 1 );
 			}
 			_indexlist.removepos( _indexlist.size()-1 );				
 		}
 	}	
 
-	// prt(("s7373 _darrFamily->_tablepath=[%s]\n", _darrFamily->_tablepath.c_str() ));
+	// prt(("s7373 _darrFamily->_tablepath=[%s]\n", _darrFamily->_tablepath.s() ));
 
 	_darrFamily->drop();
 	delete _darrFamily;
@@ -2952,13 +3120,13 @@ Jstr JagTable::drop( Jstr &errmsg, bool isTruncate )
 void JagTable::dropFromIndexList( const Jstr &indexName )
 {
 	for ( int k = 0; k < _indexlist.size(); ++k ) {
-		const char *idxName = strrchr(_indexlist[k].c_str(), '.');
+		const char *idxName = strrchr(_indexlist[k].s(), '.');
 		if ( !idxName ) {
 			continue;
 		}
 		++idxName;
 
-		if ( strcmp(indexName.c_str(), idxName) == 0 ) {
+		if ( strcmp(indexName.s(), idxName) == 0 ) {
 			_indexlist.removepos( k );
 			break;
 		}
@@ -2977,12 +3145,11 @@ int JagTable::_removeIndexRecords( const char *buf )
 
 	int cnt = 0;
 	for ( int i = 0; i < _indexlist.size(); ++i ) {
-		pindex = _servobj->_objectLock->readLockIndex( JAG_DELETE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+		pindex = _objectLock->writeLockIndex( JAG_DELETE_OP, _dbname, _tableName, _indexlist[i], _tableschema, _indexschema, _replicateType, 1 );
 		if ( pindex ) {
 			pindex->removeFromTable( buf );
 			++ cnt;
-			_servobj->_objectLock->readUnlockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i],
-				_replicateType, 1 );
+			_objectLock->writeUnlockIndex( JAG_DELETE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
 		}
 	}
 
@@ -3011,20 +3178,18 @@ int JagTable::renameIndexColumn( const JagParseParam *parseParam, Jstr &errmsg )
 {
 	JagIndex *pindex = NULL;
 	AbaxBuffer bfr;
-	//bool rc;
 	if ( _indexlist.size() > 0 ) {
 		Jstr dbtab  = _dbname + "." + _tableName;
 		Jstr dbtabIndex;
 		for ( int k = 0; k < _indexlist.size(); ++k ) {
-			pindex = _servobj->_objectLock->writeLockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
-				_tableschema, _indexschema, _replicateType, 1 );
+			pindex = _objectLock->writeLockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
+												  _tableschema, _indexschema, _replicateType, 1 );
 			if ( pindex ) {
 				pindex->drop();
 				dbtabIndex = dbtab + "." + _indexlist[k];
-				_indexschema->renameColumn( dbtabIndex, parseParam );
+				_indexschema->addOrRenameColumn( dbtabIndex, parseParam );
 				pindex->refreshSchema();
-				_servobj->_objectLock->writeUnlockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
-					 _replicateType, 1 );
+				_objectLock->writeUnlockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k], _replicateType, 1 );
 			}
 		}
 	}
@@ -3041,14 +3206,14 @@ int JagTable::setIndexColumn( const JagParseParam *parseParam, Jstr &errmsg )
 		Jstr dbtab  = _dbname + "." + _tableName;
 		Jstr dbtabIndex;
 		for ( int k = 0; k < _indexlist.size(); ++k ) {
-			pindex = _servobj->_objectLock->writeLockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
-				_tableschema, _indexschema, _replicateType, 1 );
+			pindex = _objectLock->writeLockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k],
+												   _tableschema, _indexschema, _replicateType, 1 );
 			if ( pindex ) {
 				pindex->drop();
 				dbtabIndex = dbtab + "." + _indexlist[k];
 				_indexschema->setColumn( dbtabIndex, parseParam );
 				pindex->refreshSchema();
-				_servobj->_objectLock->writeUnlockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k], _replicateType, 1 );
+				_objectLock->writeUnlockIndex( JAG_ALTER_OP, _dbname, _tableName, _indexlist[k], _replicateType, 1 );
 			}
 		}
 	}
@@ -3065,7 +3230,7 @@ int JagTable::refreshSchema()
 	AbaxString schemaStr;
 	const JagSchemaRecord *record =  _tableschema->getAttr( dbtable );
 	if ( ! record ) {
-		prt(("s8912 _tableschema->getAttr(%s) error, _tableRecord is not updated\n", dbtable.c_str() ));
+		prt(("s8912 _tableschema->getAttr(%s) error, _tableRecord is not updated\n", dbtable.s() ));
 		return 0;
 	}
 
@@ -3115,7 +3280,7 @@ int JagTable::refreshIndexList()
 	for ( int i = 0; i < vec.size(); ++i ) {	
 		idxname = vec[i];
     	dbindex = _dbname + "." + idxname;
-		// printf("s8380 _indexlist.append(%s)\n", dbindex.c_str() );
+		// printf("s8380 _indexlist.append(%s)\n", dbindex.s() );
 		 _indexlist.append( dbindex );
 	}
 
@@ -3130,43 +3295,18 @@ void JagTable::flushBlockIndexToDisk()
 	// then flush related indexs
 	JagIndex *pindex;
 	for ( int i = 0; i < _indexlist.size(); ++i ) {
-		pindex = _servobj->_objectLock->readLockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+		pindex = _objectLock->writeLockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i], _tableschema, _indexschema, _replicateType, 1 );
 		if ( pindex ) {
 			pindex->flushBlockIndexToDisk();
-			_servobj->_objectLock->readUnlockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+			_objectLock->writeUnlockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
 		}
 	}
 }
-
-/**
-void JagTable::copyAndInsertBufferAndClean( JagIndex *ipindex )
-{
-	// flush table 
-	if ( _darrFamily ) { _darrFamily->copyAndInsertBufferAndClean(); }
-
-	// then flush related indexs
-	JagIndex *pindex;
-	for ( int i = 0; i < _indexlist.size(); ++i ) {
-		if ( ipindex && ipindex->getdbName() == _dbname && ipindex->getTableName() == _tableName 
-		     && ipindex->getIndexName() == _indexlist[i] ) {
-			ipindex->copyAndInsertBufferAndClean();
-		} else {
-			pindex = _servobj->_objectLock->readLockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i],
-				_tableschema, _indexschema, _replicateType, 1 );
-			if ( pindex ) {
-				pindex->copyAndInsertBufferAndClean();
-				_servobj->_objectLock->readUnlockIndex( JAG_INSERT_OP, _dbname, _tableName, _indexlist[i],
-					_tableschema, _indexschema, _replicateType, 1 );
-			}
-		}
-	}
-}
-**/
 
 // static
 // currently, doWriteIt has only one host name, so it can only been write one by one 
 // ( use mutex in jda to protect, with last flag true )
-void JagTable::doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam, const JagRequest &req, 
+void JagTable::doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam, 
 						  const Jstr &host, const char *buf, jagint buflen, const JagSchemaRecord *nrec )
 {
 
@@ -3196,9 +3336,9 @@ void JagTable::formatInsertFromSelect( const JagParseParam *pParam, const JagSch
 			oneData = formOneColumnNaturalData( finalbuf, pParam->selColVec[i].offset, 
 												pParam->selColVec[i].length, pParam->selColVec[i].type );
 			if ( 0 == i ) {
-				insertCmd += Jstr("'") + oneData.c_str() + "'";
+				insertCmd += Jstr("'") + oneData.s() + "'";
 			} else {
-				insertCmd += Jstr(",'") + oneData.c_str() + "'";
+				insertCmd += Jstr(",'") + oneData.s() + "'";
 			}
 		}
 		insertCmd += ");";
@@ -3208,9 +3348,9 @@ void JagTable::formatInsertFromSelect( const JagParseParam *pParam, const JagSch
 			if ( attrs[i].colname != "spare_" ) {
 				oneData = formOneColumnNaturalData( buffers, attrs[i].offset, attrs[i].length, attrs[i].type );
 				if ( 0 == i ) {
-					insertCmd += Jstr("'") + oneData.c_str() + "'";
+					insertCmd += Jstr("'") + oneData.s() + "'";
 				} else {
-					insertCmd += Jstr(",'") + oneData.c_str() + "'";
+					insertCmd += Jstr(",'") + oneData.s() + "'";
 				}
 			}			
 		}
@@ -3219,15 +3359,15 @@ void JagTable::formatInsertFromSelect( const JagParseParam *pParam, const JagSch
 	}
 	
 	// put insert cmd into cli
-	pcli->concurrentDirectInsert( insertCmd.c_str(), insertCmd.size() );
+	pcli->concurrentDirectInsert( insertCmd.s(), insertCmd.size() );
 }
 
 bool JagTable::hasSpareColumn()
 {
 	Jstr colname;
 	for ( int i = 0; i < _numCols; ++i ) {
-		colname = (*(_tableRecord.columnVector))[i].name.c_str();
-		// prt(("s4772 hasSpareColumn i=%d colname=[%s]\n", i, colname.c_str() ));
+		colname = (*(_tableRecord.columnVector))[i].name.s();
+		// prt(("s4772 hasSpareColumn i=%d colname=[%s]\n", i, colname.s() ));
 		if ( colname == "spare_" ) return true;
 	}
 	return false;
@@ -3249,11 +3389,11 @@ void JagTable::setupSchemaMapAttr( int numCols )
 	int j = 0;
 	Jstr dbcolumn, defvalStr;
 	for ( i = 0; i < N; ++i ) {
-		dbcolumn = _dbtable + "." + (*(_tableRecord.columnVector))[i].name.c_str();
+		dbcolumn = _dbtable + "." + (*(_tableRecord.columnVector))[i].name.s();
 		
 		_schAttr[i].dbcol = dbcolumn;
-		_schAttr[i].objcol = _tableName + "." + (*(_tableRecord.columnVector))[i].name.c_str();
-		_schAttr[i].colname = (*(_tableRecord.columnVector))[i].name.c_str();
+		_schAttr[i].objcol = _tableName + "." + (*(_tableRecord.columnVector))[i].name.s();
+		_schAttr[i].colname = (*(_tableRecord.columnVector))[i].name.s();
 		_schAttr[i].isKey = (*(_tableRecord.columnVector))[i].iskey;
 
 		if ( _schAttr[i].isKey ) { 
@@ -3268,13 +3408,15 @@ void JagTable::setupSchemaMapAttr( int numCols )
 		_schAttr[i].begincol = (*(_tableRecord.columnVector))[i].begincol;
 		_schAttr[i].endcol = (*(_tableRecord.columnVector))[i].endcol;
 		_schAttr[i].srid = (*(_tableRecord.columnVector))[i].srid;
-		_schAttr[i].metrics = (*(_tableRecord.columnVector))[i].metrics;
 		// dummy1 dummy2
+		_schAttr[i].metrics = (*(_tableRecord.columnVector))[i].metrics;
+		//_schAttr[i].rollupWhere = (*(_tableRecord.columnVector))[i].rollupWhere;
+		// _schAttr[i].dummy3 = (*(_tableRecord.columnVector))[i].dummy3;
 		_schAttr[i].isUUID = false;
 		_schAttr[i].isFILE = false;
 
 		_tablemap->addKeyValue(dbcolumn, i);
-		//prt(("s4015 _tablemap->addKeyValue(dbcolumn=[%s] ==> i=%d\n", dbcolumn.c_str(), i ));
+		//prt(("s4015 _tablemap->addKeyValue(dbcolumn=[%s] ==> i=%d\n", dbcolumn.s(), i ));
 
 		rc = *((*(_tableRecord.columnVector))[i].spare+1);
 		rc2 = *((*(_tableRecord.columnVector))[i].spare+4);
@@ -3293,17 +3435,18 @@ void JagTable::setupSchemaMapAttr( int numCols )
 			// enum type has many default strings separated by '|', where the first several strings are enum range
 			// and the last one is default value if empty
 			//prt(("s2202292 after getAttrDefVal dbcolumn=[%s] defvalStr=[%s]\n", dbcolumn.s(), defvalStr.s() ));
-			JagStrSplitWithQuote sp( defvalStr.c_str(), '|' );
+			JagStrSplitWithQuote sp( defvalStr.s(), '|' );
 			
 			if ( rc == JAG_C_COL_TYPE_ENUM[0] ) {
 				// _schAttr[i].enumList = new JagVector<Jstr>();
 				for ( int k = 0; k < sp.length(); ++k ) {
-					_schAttr[i].enumList.append( strRemoveQuote( sp[k].c_str() ) );
-					//prt(("s111029 i=%d enumList.append [%s]\n", i, sp[k].c_str() ));
+					_schAttr[i].enumList.append( strRemoveQuote( sp[k].s() ) );
+					//prt(("s111029 i=%d enumList.append [%s]\n", i, sp[k].s() ));
 				}
 			}
+
 			if ( rc2 == JAG_CREATE_DEFINSERTVALUE && sp.length()>0 ) {
-				_schAttr[i].defValue = strRemoveQuote( sp[sp.length()-1].c_str() );
+				_schAttr[i].defValue = strRemoveQuote( sp[sp.length()-1].s() );
 				// last one is default value
 				_defvallist.append( i );
 			}
@@ -3335,12 +3478,12 @@ int  JagTable::removeColFiles(const char *kvbuf )
 			fname = Jstr( kvbuf+_schAttr[i].offset,  _schAttr[i].length );
 			// fpath = jaguarHome() + "/data/" + db + "/" + tab + "/files/" + fname;
 			fpath = _darrFamily->_sfilepath + "/" + hdir + "/" + fname;
-			jagunlink( fpath.c_str() );
+			jagunlink( fpath.s() );
 
 			/***
 			prt(("s6360 i=%d dbcol=[%s] objcol=[%s] colname=[%s] offset=%d length=%d fpath=[%s]\n",
-				i, _schAttr[i].dbcol.c_str(), _schAttr[i].objcol.c_str(), _schAttr[i].colname.c_str(),  
-				_schAttr[i].offset, _schAttr[i].length, fpath.c_str() ));
+				i, _schAttr[i].dbcol.s(), _schAttr[i].objcol.s(), _schAttr[i].colname.s(),  
+				_schAttr[i].offset, _schAttr[i].length, fpath.s() ));
 			***/
 			++ rc;
 		}
@@ -3356,7 +3499,7 @@ bool JagTable::isFileColumn( const Jstr &colname )
 			JagStrSplit sp( _schAttr[i].dbcol, '.' );
 			if (sp.length() < 3 ) continue;
 			if ( colname == sp[2] ) {
-				// prt(("s0293 colname=[%s] is a file type\n", colname.c_str() ));
+				// prt(("s0293 colname=[%s] is a file type\n", colname.s() ));
 				return true;
 			}
 		}
@@ -3368,14 +3511,17 @@ bool JagTable::isFileColumn( const Jstr &colname )
 void JagTable::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, const char *buffers[] )
 {
 	// if getfile, arrange point query to be size of file/modify time of file/md5sum of file/file path ( for actural data )
-	Jstr ddcol, inpath, instr, outstr; int getpos; char fname[JAG_FILE_FIELD_LEN+1]; struct stat sbuf;
+	Jstr ddcol, inpath, instr, outstr; 
+	int getpos; 
+	char fname[JAG_FILE_FIELD_LEN+1]; 
+	struct stat sbuf;
 	// raydebug( stdout, JAG_LOG_HIGH, "s3331 setGetFileAttributes selColVec.size=%d\n", parseParam->selColVec.size() );
 	for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
-		ddcol = _dbtable + "." + parseParam->selColVec[i].getfileCol.c_str();
+		ddcol = _dbtable + "." + parseParam->selColVec[i].getfileCol.s();
 		if ( _tablemap->getValue(ddcol, getpos) ) {
 			memcpy( fname, buffers[0]+_schAttr[getpos].offset, _schAttr[getpos].length );
 			inpath = _darrFamily->_sfilepath + "/" + hdir + "/" + fname;
-			if ( stat(inpath.c_str(), &sbuf) == 0 ) {
+			if ( stat(inpath.s(), &sbuf) == 0 ) {
 				if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_SIZE ) {
 					outstr = longToStr( sbuf.st_size );
 				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_TIME ) {
@@ -3386,7 +3532,7 @@ void JagTable::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam
 				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_MD5SUM ) {
 					if ( lastChar(inpath) != '/' ) {
 						instr = Jstr("md5sum ") + inpath;
-						outstr = Jstr(psystem( instr.c_str() ).c_str(), 32);
+						outstr = Jstr(psystem( instr.s() ).s(), 32);
 					} else {
 						outstr = "";
 					}
@@ -3407,7 +3553,7 @@ void JagTable::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam
 }
 
 void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
-										 JagVector<JagDBPair> &retpair, Jstr &errmsg )
+										 JagVector<JagDBPair> &retpair, Jstr &errmsg ) const
 {
 	prt(("s4928 formatPointsInLineString line.size=%d\n", line.size() ));
 	int getpos;
@@ -3418,20 +3564,20 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
 	Jstr pointy = pass.colname + ":y";
 	Jstr pointz = pass.colname + ":z";
 
-	//prt(("s2935 pointx=[%s] pointz=[%s] pass.getxmin=%d pass.getymin=%d \n", pointx.c_str(), pointz.c_str(), pass.getxmin, pass.getymin ));
+	//prt(("s2935 pointx=[%s] pointz=[%s] pass.getxmin=%d pass.getymin=%d \n", pointx.s(), pointz.s(), pass.getxmin, pass.getymin ));
 
 	for ( int j=0; j < line.size(); ++j ) {
 		JagPoint &jPoint = line.point[j];
 		point = "geo:xmin";
 		getpos = pass.getxmin;
-     	rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.xmin).c_str(), errmsg, point.c_str(), 
+     	rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.xmin).s(), errmsg, point.s(), 
 							_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
 							_schAttr[getpos].type );
 
 		if ( pass.getymin >= 0 ) {
     		point =  "geo:ymin";
     		getpos = pass.getymin;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.ymin).c_str(), errmsg, point.c_str(), 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.ymin).s(), errmsg, point.s(), 
 								_schAttr[getpos].offset, 
        						   _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 	    }
@@ -3439,7 +3585,7 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
    			point = "geo:zmin";
    			getpos = pass.getzmin;
 			if ( getpos >= 0 ) {
-       				rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.zmin).c_str(), errmsg, point.c_str(), 
+       				rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.zmin).s(), errmsg, point.s(), 
 									_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].sig, 
 									_schAttr[getpos].type );
 		   }
@@ -3448,7 +3594,7 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
 		if ( pass.getxmax >= 0 ) {
    			point = "geo:xmax";
    			getpos = pass.getxmax;
-   			rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.xmax).c_str(), errmsg, point.c_str(), 
+   			rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.xmax).s(), errmsg, point.s(), 
 								_schAttr[getpos].offset, 
     						   _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 	    }
@@ -3456,7 +3602,7 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
 		if ( pass.getymax >= 0 ) {
     		point =  "geo:ymax";
     		getpos = pass.getymax;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.ymax).c_str(), errmsg, point.c_str(), 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.ymax).s(), errmsg, point.s(), 
 								_schAttr[getpos].offset, 
        						   _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 	    }
@@ -3464,15 +3610,15 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
    	    if (  pass.getzmax >=0 ) {
     		point = "geo:zmax";
     		getpos = pass.getzmax;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.zmax).c_str(), errmsg, 
-								point.c_str(), _schAttr[getpos].offset, 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, doubleToStr(pass.zmax).s(), errmsg, 
+								point.s(), _schAttr[getpos].offset, 
        						   _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
    	    }
 
 		if ( pass.getid >= 0 ) {
     		point = "geo:id";
     		getpos = pass.getid;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, pass.lsuuid.c_str(), errmsg, point.c_str(), _schAttr[getpos].offset, 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, pass.lsuuid.s(), errmsg, point.s(), _schAttr[getpos].offset, 
        						   _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 	    }
 
@@ -3481,19 +3627,19 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
 			sprintf(ibuf, "%d", pass.col+1 );
 			//prt(("s5033 getcol=%d ibuf=[%s]\n", pass.getcol, ibuf ));
     		getpos = pass.getcol;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.c_str(), _schAttr[getpos].offset, 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.s(), _schAttr[getpos].offset, 
        						   _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 	    }
 
 		if ( pass.getm >= 0 ) {
     		point = "geo:m"; sprintf(ibuf, "%d", pass.m+1 ); getpos = pass.getm;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.c_str(), _schAttr[getpos].offset, 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.s(), _schAttr[getpos].offset, 
        							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 		}
 
 		if ( pass.getn >= 0 ) {
     		point = "geo:n"; sprintf(ibuf, "%d", pass.n+1 ); getpos = pass.getn;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.c_str(), _schAttr[getpos].offset, 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.s(), _schAttr[getpos].offset, 
         									_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 		}
 
@@ -3502,30 +3648,30 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
 			sprintf(ibuf, "%09d", j+1 );
 			//prt(("s5034 geti=%d ibuf=[%s]\n", pass.geti, ibuf ));
     		getpos = pass.geti;
-       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.c_str(), _schAttr[getpos].offset, 
+       		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, ibuf, errmsg, point.s(), _schAttr[getpos].offset, 
        							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 		}
         
        	if ( pass.getx >= 0 ) {
     		getpos = pass.getx;
 			#if 1
-			prt(("s4005 getx=%d pointx=[%s] line.point[j].x=[%s]\n", getpos, pointx.c_str(), line.point[j].x ));
+			prt(("s4005 getx=%d pointx=[%s] line.point[j].x=[%s]\n", getpos, pointx.s(), line.point[j].x ));
 			prt(("_schAttr[getpos].offset=%d _schAttr[getpos].length=%d type=[%s]\n", 
-					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.c_str() ));
+					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.s() ));
 			#endif
        		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, line.point[j].x, errmsg, 
-       	 						pointx.c_str(), _schAttr[getpos].offset, 
+       	 						pointx.s(), _schAttr[getpos].offset, 
        							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
        	}
       	if ( pass.gety >= 0 ) {
     		getpos = pass.gety;
 			#if 1
-			prt(("s4005 gety=%d pointy=[%s] line.point[j].y=[%s]\n", getpos, pointy.c_str(), line.point[j].y ));
+			prt(("s4005 gety=%d pointy=[%s] line.point[j].y=[%s]\n", getpos, pointy.s(), line.point[j].y ));
 			prt(("_schAttr[getpos].offset=%d _schAttr[getpos].length=%d type=[%s]\n", 
-					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.c_str() ));
+					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.s() ));
 			#endif
        		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, line.point[j].y, errmsg, 
-       		 					pointy.c_str(), _schAttr[getpos].offset, 
+       		 					pointy.s(), _schAttr[getpos].offset, 
        							_schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
        	}
         
@@ -3533,13 +3679,13 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
        	if ( pass.is3D && pass.getz >= 0 ) {
     		getpos = pass.getz;
 			#if 1
-			prt(("s4005 getz=%d pointz=[%s] line.point[j].z=[%s]\n", getpos, pointz.c_str(), line.point[j].z ));
+			prt(("s4005 getz=%d pointz=[%s] line.point[j].z=[%s]\n", getpos, pointz.s(), line.point[j].z ));
 			prt(("_schAttr[getpos].offset=%d _schAttr[getpos].length=%d type=[%s]\n", 
-					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.c_str() ));
+					_schAttr[getpos].offset, _schAttr[getpos].length, _schAttr[getpos].type.s() ));
 			#endif
        		rc = formatOneCol( pass.tzdiff, pass.srvtmdiff, tablekvbuf, 
 								line.point[j].z, errmsg, 
-       							pointz.c_str(), _schAttr[getpos].offset, _schAttr[getpos].length, 
+       							pointz.s(), _schAttr[getpos].offset, _schAttr[getpos].length, 
 								_schAttr[getpos].sig, _schAttr[getpos].type );
        	}
 
@@ -3574,7 +3720,7 @@ void JagTable::formatPointsInLineString( int nmetrics, JagLineString &line, char
 void JagTable::getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D,
 								int &getx, int &gety, int &getz, int &getxmin, int &getymin, int &getzmin,
 								int &getxmax, int &getymax, int &getzmax,
-								int &getid, int &getcol, int &getm, int &getn, int &geti )
+								int &getid, int &getcol, int &getm, int &getn, int &geti ) const
 {
 	int getpos;
 	Jstr dbcolumn;
@@ -3631,7 +3777,7 @@ void JagTable::getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D
 }
 
 
-void JagTable::appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub )
+void JagTable::appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub ) const
 {
     OtherAttribute other;
     other.issubcol = isSub;
@@ -3641,11 +3787,13 @@ void JagTable::appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool is
 }
 
 void JagTable::formatMetricCols( int tzdiff, int srvtmdiff, const Jstr &dbtab, const Jstr &colname, 
-								 int nmetrics, const JagVector<Jstr> &metrics, char *tablekvbuf )
+								 int nmetrics, const JagVector<Jstr> &metrics, char *tablekvbuf ) const
 {
 	int len = metrics.size();
-	prt(("s2008 formatMetricCols len=%d\n", len ));
+	prt(("s2008 formatMetricCols len=%d nmetrics=%d\n", len, nmetrics ));
 	if ( len < 1 ) return;
+
+	//metrics.print(); 
 
 	Jstr col, dbcolumn;
 	int getpos;
@@ -3653,59 +3801,820 @@ void JagTable::formatMetricCols( int tzdiff, int srvtmdiff, const Jstr &dbtab, c
 	Jstr errmsg;
 	for ( int i = 0; i < len; ++i ) {
 		col = colname + ":m" + intToStr(i+1);
-		dbcolumn = dbtab + "." + col;
+		dbcolumn = dbtab + "." + col;  // test.tab1.col:m1  test.tab1.col:m2 test.tab1.col:m3 
 		rc = _tablemap->getValue(dbcolumn, getpos);
 		if ( ! rc ) continue;
 
-		prt(("s3874 i=%d col=[%s] metric=[%s] getpos=%d len=%d\n", i, col.c_str(), metrics[i].s(), getpos, _schAttr[getpos].length ));
+		prt(("s3874 i=%d col=[%s] metric=[%s] getpos=%d len=%d\n", i, col.s(), metrics[i].s(), getpos, _schAttr[getpos].length ));
 		prt(("s3874 offset=%d length=%d\n", _schAttr[getpos].offset, _schAttr[getpos].length ));
 		formatOneCol( tzdiff, srvtmdiff, tablekvbuf, metrics[i].s(), errmsg,
-		              col.c_str(), _schAttr[getpos].offset,
+		              col.s(), _schAttr[getpos].offset,
 		              _schAttr[getpos].length, _schAttr[getpos].sig, _schAttr[getpos].type );
 	}
 }
 
-
-/***
-JagDBMap* JagTable::getInsertBufferMap()
+bool JagTable::hasRollupColumn() const
 {
-	if ( ! _darrFamily ) {
-		return NULL;
-	}
-
-	return _darrFamily->getInsertBufferMap();
+	bool rc = _tableRecord.hasRollupColumn();
+	return rc;
 }
 
-void JagTable::resetInsertBufferMap()
+bool JagTable::hasTimeSeries()  const
 {
-	if ( ! _darrFamily ) {
+	Jstr sysTser;
+	bool rc = _tableRecord.hasTimeSeries( sysTser );
+	return rc;
+}
+
+// tser to --> "1s,2d,3m"
+bool JagTable::hasTimeSeries( Jstr &tser )  const
+{
+	Jstr sysTser;
+	bool rc  = _tableRecord.hasTimeSeries( sysTser );
+	if (! rc ) return false;
+
+	// sysTser: "ns_r:nd_r:nm_r" 
+	// convert tser to --> "1s,2d,3m"
+	tser = JagSchemaRecord::translateTimeSeriesToStrs( sysTser );
+	return true;
+
+}
+
+Jstr JagTable::timeSeriesRentention() const
+{
+	return _tableRecord.timeSeriesRentention();
+}
+
+// Child table (timeseries tables) method, not of parent table
+// inside inspair the timestamp key might still be original data. It needs to be bucketized
+// return 1:  OK   0: error
+int JagTable
+::rollupPair( const JagRequest &req, JagDBPair &inspair, const JagVector<OtherAttribute> &rollupVec )
+{
+	prt(("s90233 rollupPair inspair:\n"));
+	prt(("s90233 rollupPair inspair print done.\n"));
+
+	int 		setindexnum = _indexlist.size(); 
+	int 		cnt = 0;
+	JagIndex 	*lpindex[_indexlist.size()];
+	AbaxBuffer 	bfr;
+	Jstr 		dbcolumn;
+	const 		JagHashStrInt *maps[1];
+	const 		JagSchemaAttribute *attrs[1];	
+
+	maps[0] = _tablemap;
+	attrs[0] = _schAttr;
+	
+	setindexnum = 0;
+	for ( int i = 0; i < _indexlist.size(); ++i ) {
+		lpindex[i] = _objectLock->writeLockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], 
+										   	    _tableschema, _indexschema, _replicateType, 1 );
+		++setindexnum; 
+	}
+
+	// parse tree		
+	int keylen[1];
+	int numKeys[1];	
+	keylen[0] = KEYLEN;
+	numKeys[0] = _numKeys;
+	cnt = 0;
+
+	// now in child table
+	// buketsize inspair.timestamp key to buckets (rollup windows)
+	JagFixString getkey ( inspair.key.s(), KEYLEN, KEYLEN );
+	// convert timestamp fields in getkey to brackets
+	prt(("s307167 _tableName=[%s]\n", _tableName.s() ));  // "ts5@1d"
+	JagStrSplit sp( _tableName, '@');
+	if ( sp.size() < 2 ) return 0;
+	Jstr twindow = sp[1];  // "1M"  "15m" etc
+	//bool cvtrc = convertTimeToWindow( req.session->timediff, getkey, twindow );
+	//convertTimeToWindow( req.session->timediff, getkey, twindow );
+	convertTimeToWindow( req.session->timediff, twindow, (char*)getkey.s(), "" );
+	//prt(("s22028 convertTimeToWindow cvtrc=%d\n", cvtrc ));
+
+	char 	*tableoldbuf = (char*)jagmalloc(KEYVALLEN+1);
+	char 	*tablenewbuf = (char*)jagmalloc(KEYVALLEN+1);
+
+	JagDBPair getDBpair( getkey );
+	inspair.key = getkey;
+
+	findPairRollupOrInsert( inspair, getDBpair, tableoldbuf, tablenewbuf, setindexnum, lpindex );
+	++cnt;
+
+	// now look at all keys in getkey (non-datetime keys), change 2^n to JAG_STAR (*) and do findPairRollupOrInsert
+	int totCols = _tableRecord.columnVector->size();
+	prt(("s53318 totCols=%d\n", totCols ));
+	int nonDateTimeCols = 0;
+	Jstr colType;
+	for ( int i = 0; i < totCols; i ++ ) {
+		if ( ! (*(_tableRecord.columnVector))[i].iskey ) break;
+		colType = (*(_tableRecord.columnVector))[i].type;
+		if ( colType == JAG_C_COL_TYPE_DATETIMESEC ) {
+			continue;
+		}
+		++ nonDateTimeCols;
+	}
+
+	// N = nonDateTimeCols, choose K
+	prt(("s202021 nonDateTimeCols=%d\n", nonDateTimeCols ));
+	for ( int K = 1; K <= nonDateTimeCols; ++K ) {
+		starCombinations( nonDateTimeCols, K, inspair, getDBpair, tableoldbuf, tablenewbuf, setindexnum, lpindex );
+	}
+
+	free( tableoldbuf );
+	free( tablenewbuf );
+
+	for ( int i = 0; i < _indexlist.size(); ++i ) {
+		if ( ! lpindex[i] ) { continue; }
+		_objectLock->writeUnlockIndex( JAG_UPDATE_OP, _dbname, _tableName, _indexlist[i], _replicateType, 1 );
+	}
+	
+	prt(("s50284 updated=%lld records\n", cnt ));
+	return cnt;
+}
+
+// child rollup table
+// object method
+// inspair: pair from user input
+// getDBpair: data in current DB
+// setDBpair: rolledup pair ( inspair merges with getDBpair)
+void JagTable::doRollUp( const JagDBPair &inspair, const char *dbBuf, char *newbuf )
+{
+	// char rolltype = *((*(record->columnVector))[i].spare+8);
+	// JAG_ROLLUP_AVG JAG_ROLLUP_SUM JAG_ROLLUP_MIN JAG_ROLLUP_MAX JAG_ROLLUP_COUNT
+	// choose( n, r ) = n!/ ( r! (n-r)! )  n = numKeys, r = 1, 2, 3, 4, ... n
+	// roll up  ( table has counter column default '1'
+	prt(("s511087 doRollUp\n"));
+
+	prt(("s50874 inspair:\n"));
+	//inspair.print();
+	//inspair.printkv();
+
+	Jstr  colType, errmsg;
+	int   offset, length, sig;
+	bool  rc, iskey;
+	double inv ;
+
+	prt(("s333397 KEYLEN=%d VALLEN=%d\n", KEYLEN, VALLEN ));
+	prt(("s300198 inspair.key.size()=%d  inspair.value.size()=%d\n", inspair.key.size(), inspair.value.size() ));
+	assert( inspair.key.size() == KEYLEN );
+	assert( inspair.value.size() == VALLEN );
+
+	memcpy( newbuf, dbBuf, KEYLEN+VALLEN );
+
+	// get counter column size-2
+	if ( _counterOffset < 0 ) {
+		prt(("s441034 counter not found, return\n" )); 
 		return;
 	}
 
-	return _darrFamily->resetInsertBufferMap();
-}
+	prt(("s408409 counterOffset=%d counterLength=%d\n", _counterOffset, _counterLength ));
 
-void JagTable::cleanupInsertBuffer()
-{
-	if ( ! _darrFamily ) {
-		return;
+	char *inBuf = inspair.newBuffer(); // k + v
+	//prt(("s33088 inBuf=[%s]\n", inBuf ));
+	double dbCounter = rayatof( dbBuf + _counterOffset, _counterLength );
+	prt(("s303381 db counter=%.f\n", dbCounter ));
+	bool hasValidCol = false;
+	char  cbuf[64];
+
+	Jstr rootname;
+	Jstr name;
+	int totCols = _tableRecord.columnVector->size();
+	for ( int i = 0; i < totCols; i ++ ) {
+		iskey = (*(_tableRecord.columnVector))[i].iskey;
+		if ( iskey ) continue;  // keys are not rolled up
+
+		colType = (*(_tableRecord.columnVector))[i].type;
+		if ( !isInteger( colType ) && ! isFloat( colType ) ) {
+			continue;
+		} 
+		offset = (*(_tableRecord.columnVector))[i].offset;
+		length = (*(_tableRecord.columnVector))[i].length;
+		sig = (*(_tableRecord.columnVector))[i].sig;
+		inv = rayatof( inBuf + offset, length );
+		// dbv = rayatof( dbBuf + offset, length );
+
+		//rollType = *((*(_tableRecord.columnVector))[i].spare+8);
+
+		rootname = (*(_tableRecord.columnVector))[i].name.s();
+		if ( rootname.containsStr("::") || rootname == "counter" || rootname == "spare_" ) {
+			prt(("s53215 skip column %s in rollup\n", rootname.s() ));
+			continue;
+		}
+		// dbv is for original value of "v1 roll int"
+
+		name = rootname + "::sum";
+		rc = rollupType( name, colType, inv, dbCounter, dbBuf, newbuf, errmsg );
+		if ( rc ) { hasValidCol = true; }
+
+		name = rootname + "::min";
+		rc = rollupType( name, colType, inv, dbCounter, dbBuf, newbuf, errmsg );
+		if ( rc ) { hasValidCol = true; }
+
+		name = rootname + "::max";
+		rc = rollupType( name, colType, inv, dbCounter, dbBuf, newbuf, errmsg );
+		if ( rc ) { hasValidCol = true; }
+
+		name = rootname + "::var";
+		rc = rollupType( name, colType, inv, dbCounter, dbBuf, newbuf, errmsg );
+		if ( rc ) { hasValidCol = true; }
+
+		name = rootname + "::avg";
+		rc = rollupType( name, colType, inv, dbCounter, dbBuf, newbuf, errmsg );
+		if ( rc ) { hasValidCol = true; }
+
+		// fill "v1 rollup" as last updated value
+		if ( isInteger( colType ) ) {
+			sprintf( cbuf, "%lld", (long long)(round(inv)) );
+		} else { 
+			sprintf( cbuf, "%.10f", inv );
+		} 
+		formatOneCol( 0, 0, newbuf, cbuf, errmsg, "dummy", offset, length, sig, colType );
+
 	}
 
-	return _darrFamily->cleanupInsertBuffer();
+	free( inBuf );
+
+	if ( hasValidCol ) {
+		dbCounter = dbCounter + 1.0; // increment of counter value --> bigint
+		sprintf( cbuf, "%lld", (long long)(round(dbCounter)) );
+		rc = formatOneCol( 0, 0, newbuf, cbuf, errmsg, "dummy", _counterOffset, _counterLength, 0, JAG_C_COL_TYPE_DBIGINT );
+		if ( 1 == rc ) { // OK
+			// JagDBPair resPair( dbBuf, KEYLEN, dbBuf+KEYLEN, VALLEN );
+			JagDBPair resPair;
+			resPair.point( newbuf, KEYLEN, newbuf+KEYLEN, VALLEN );
+			// prt(("s333098 resPair:\n"));
+			// resPair.printkv();
+			rc = _darrFamily->set( resPair );
+			if ( rc ) {
+				prt(("s443010 _darrFamily->set OK\n" )); 
+			} else {
+				prt(("s444014 _darrFamily->set error\n" )); 
+			}
+		} else {
+			prt(("s402339 formatOneCol error\n"));
+		}
+	} else {
+		prt(("s444034 rollup not done\n" )); 
+	}
 }
 
-
-void JagTable::deleteInsertBuffer()
+// name is colname "p1::max" "p1::min" etc
+// return true if OK; false for error
+bool JagTable
+::rollupType( const Jstr &name, const Jstr &colType, double inv, 
+              double dbCounter, const char *dbBuf, char *newbuf, Jstr &errmsg )
 {
-	if ( ! _darrFamily ) {
-		return;
+	double finv;
+	int rc, offset, length, sig, getpos;
+
+	Jstr dbcolName = _dbtable + "." + name;
+	rc = _tablemap->getValue( dbcolName, getpos);
+	if ( ! rc ) {
+		prt(("s4021 error getpos dbcolName=[%s]\n", dbcolName.s() )); 
+		return false;
+	}
+	prt(("s40225 getpos dbcolName=[%s] getpos=[%d]\n", dbcolName.s(), getpos )); 
+
+	offset = (*(_tableRecord.columnVector))[getpos].offset;
+	length = (*(_tableRecord.columnVector))[getpos].length;
+	double dbv = rayatof( dbBuf + offset, length );
+	prt(("s22209 offset=%d length=%d dbv=%.3f\n", offset, length, dbv ));
+
+	char  cbuf[64];
+
+	if ( name.containsStr("::sum") ) {
+		finv = inv + dbv;
+	} else if ( name.containsStr("::avg") ) {
+		finv = dbv + (inv - dbv)/( dbCounter + 1.0);
+	} else if ( name.containsStr("::min") ) {
+		finv = ( inv < dbv ) ? inv : dbv;
+	} else if ( name.containsStr("::max")  ) {
+		finv = ( inv > dbv ) ? inv : dbv;
+	} else if ( name.containsStr("::var")  ) {
+		// get current avg of name::avg
+		const char *pc = strchr( name.s(), ':');
+		Jstr avgname(name.s(), pc-name.s() );
+		avgname += "::avg";
+		Jstr dbcolName = _dbtable + "." + avgname;
+		int avgpos;
+		rc = _tablemap->getValue( dbcolName, avgpos);
+		if ( ! rc ) {
+			prt(("s4021 error getpos dbcolName=[%s]\n", dbcolName.s() )); 
+			return false;
+		}
+
+		int avgoffset = (*(_tableRecord.columnVector))[avgpos].offset;
+		int avglength = (*(_tableRecord.columnVector))[avgpos].length;
+		double avgVal = rayatof( dbBuf + avgoffset, avglength );
+		double avgNew = avgVal + ( double(inv) - avgVal)/dbCounter;
+		finv = dbv + (inv - avgVal ) * ( inv - avgNew );
+		prt(("s43220 ::var dbv=%.3f inv=%.3f avgOff=%d avgL=%d avgV=%.5f avgN=%.4f finv=%.4f Cnt=%.4f\n", 
+			  dbv, inv, avgoffset, avglength, avgVal, avgNew, finv, dbCounter ));
+	} else {
+		prt(("s2033938 rollType is not JAG_ROLLUP_SUM JAG_ROLLUP_AVG JAG_ROLLUP_MIN JAG_ROLLUP_MAX continue\n"));
+		return false;
 	}
 
-	return _darrFamily->deleteInsertBuffer();
+	if ( length >= 63 ) return false;
+	sig = (*(_tableRecord.columnVector))[getpos].sig;
+
+	if ( isInteger( colType ) ) {
+		sprintf( cbuf, "%lld", (long long)(round(finv)) );
+	} else if ( isFloat( colType ) ) {
+		sprintf( cbuf, "%.10f", finv );
+	} else {
+		prt(("s223388 %s is not valid col type for rollup\n", colType.s() ));
+		return false;
+	}
+
+
+	prt(("s102931 formatOneCol cbuf=[%s] ...\n", cbuf ));
+	rc = formatOneCol( 0, 0, newbuf, cbuf, errmsg, "dummy", offset, length, sig, colType );
+	if ( 1 == rc ) {
+		// we have one valid field
+		return true;
+	} else {
+		prt(("s444038 formatOneCol error=[%s]\n", errmsg.s() ));
+		return false;
+	}
 }
 
-void JagTable::setInsertBufferMap( JagDBMap *bfr )
+// Input/Output: getkey: fix string of keys only
+// Input: twindow:  "1h" "7d"  "1w"  "1y" etc
+// tzdiff is client time zone diff
+// datetime cols are in key buffer
+bool JagTable::convertTimeToWindow( int tzdiff, const Jstr &twindow, char *kbuf, const Jstr &givenColName )
 {
-	return _darrFamily->setInsertBufferMap( bfr );
+	bool 	iskey;
+	Jstr 	colType;
+	jagint  tval;
+	//char 	*kbuf = (char*)getkey.s();
+	int  	offset, len;
+	jagint 	startTime;
+	Jstr 	errmsg, name;
+	char  	inbuf[32];
+	bool 	rc;
+	int 	srvtmdiff  = _servobj->servtimediff;
+
+	for ( int i = 0; i < (*_tableRecord.columnVector).size(); ++i ) {
+		iskey = (*(_tableRecord.columnVector))[i].iskey;
+		if ( ! iskey ) break;  // keys are not rolled up
+		colType = (*_tableRecord.columnVector)[i].type;
+		if ( ! isDateAndTime( colType ) ) { continue; }
+
+		name = (*_tableRecord.columnVector)[i].name.s();
+		prt(("s41122 col=%d name=[%s] givenColName=[%s]\n", i, name.s(), givenColName.s() ));
+		if ( givenColName.size() > 0 ) {
+			if ( name != givenColName ) {
+				// convert given column 
+				prt(("s333402 skip this col\n"));
+				continue; // skip non-matching column
+			}
+		} else {
+			// convert first any datetime column
+		}
+
+		offset = (*_tableRecord.columnVector)[i].offset;
+		len = (*_tableRecord.columnVector)[i].length;
+		tval = rayatol( kbuf+offset, len ); 
+		prt(("s353400 process this col tval=%lld len=%d\n", tval, len));
+
+		if ( colType == JAG_C_COL_TYPE_TIMESTAMPSEC  || colType == JAG_C_COL_TYPE_DATETIMESEC ) {
+			prt(("s454227 from timestampsec to seconds\n"));
+			startTime = segmentTime( tzdiff, tval, twindow ); // seconds
+		} else if ( colType == JAG_C_COL_TYPE_TIMESTAMPMILL || colType == JAG_C_COL_TYPE_DATETIMESEC ) {
+			tval = tval / 1000; // to seconds
+			startTime = segmentTime( tzdiff, tval, twindow ); // seconds
+			startTime *= 1000;
+		} else if ( colType == JAG_C_COL_TYPE_DATETIME || colType == JAG_C_COL_TYPE_TIMESTAMP ) {
+			tval = tval / 1000000; // to seconds
+			prt(("s454227 from microseconds to seconds\n"));
+			startTime = segmentTime( tzdiff, tval, twindow ); // seconds
+			startTime *= 1000000;
+		} else if ( colType == JAG_C_COL_TYPE_TIMESTAMPNANO || colType == JAG_C_COL_TYPE_DATETIMENANO ) {
+			tval = tval / 1000000000; // to seconds
+			prt(("s454227 from nanoseconds to seconds\n"));
+			startTime = segmentTime( tzdiff, tval, twindow ); // seconds
+			startTime *= 1000000000;
+		}
+		prt(("s353402 process this col cvted tval=%lld\n", tval));
+
+		//startTime = segmentTime( tzdiff, tval, twindow ); // seconds
+		// child rollup tables have datetimesec only
+
+		// write startTime back to getkey
+		sprintf(inbuf, "%lld", startTime );
+		rc = formatOneCol( tzdiff, srvtmdiff, kbuf, inbuf, errmsg, name, offset, len, 0, colType );
+		if ( 1 != rc ) {
+			prt(("s0391838 error formatOneCol name=[%s] colType=[%s] rc=%d\n", name.s(), colType.s(), rc ));
+			return false;
+		} else {
+			prt(("s333301 formatOneCol name=[%s] colType=[%s] offset=%d len=%d tval=%lld startTime=%lld\n", 
+					name.s(), colType.s(), offset, len, tval, startTime, startTime ));
+		}
+		prt(("s033204 inbuf=[%s]\n", inbuf ));
+
+		//break;  // only first datetime column is windowed
+		// convert all datetime key cols to a window
+		// check JagDBServer.cc describeTable() filldesc() in convert datetime to datetimesec
+		break;  // only first datetime column is windowed
+	}
+
+	return true;
 }
-***/
+
+// Get start seconds for twindow
+// tval: seconds since epoch
+// colType:  should be DATETIMESEC
+// twindow:  "1h"  "1d"  "3w" etc
+// return -1 error; seg in seconds since epoch
+jagint JagTable::segmentTime( int tzdiff, jagint tval, const Jstr &twindow )
+{
+	jagint  cycle = twindow.toInt();
+	char unit = twindow.lastChar();  // 'h' 'd' 'w' 'm' etc
+	// const char *pstr[] = { "s", "m", "h", "d", "w", "M", "q", "y", "D" };
+	// Refer to JagSchemaRecord.cc
+
+	tval += tzdiff*60; // PST time midnight is +8AM UTC time  (tzdiff=-8hourr)
+
+	jagint seg = -1;
+	prt(("s30087 segmentTime twindow=[%s]  cycle=%d unit=[%c]\n", twindow.s(), cycle, unit ));
+	if ( 's' == unit ) {
+		prt(("s220330 second  tval=%lld cycle=%d\n", tval, cycle ));
+		seg =  JagTime::getStartTimeSecOfSecond( tval, cycle ); // 1--15: start from 0-hour of the day
+	} else if ( 'm' == unit ) {
+		seg =  JagTime::getStartTimeSecOfMinute( tval, cycle ); // 1--15: start from 0-hour of the day
+	} else if ( 'h' == unit ) {
+		seg =  JagTime::getStartTimeSecOfHour( tval, cycle ); // 1--15: start from 0-hour of the day
+	} else if ( 'd' == unit ) {
+		seg =  JagTime::getStartTimeSecOfDay( tval, cycle ); // 1--15: start from 0-hour of the day
+	} else if ( 'w' == unit ) {
+		seg =  JagTime::getStartTimeSecOfWeek( tval ); // 1 week only; start from Sunday
+	} else if ( 'M' == unit ) {
+		seg =  JagTime::getStartTimeSecOfMonth( tval, cycle ); // cycle: 1, 2, 3, 4, 6; start from first of month
+	} else if ( 'q' == unit ) {
+		seg =  JagTime::getStartTimeSecOfQuarter( tval, cycle ); // cycle 1 or 2; start from first day of quarter
+	} else if ( 'y' == unit ) {
+		seg =  JagTime::getStartTimeSecOfYear( tval, cycle );  // any year; start from new year's day
+	} else if ( 'D' == unit ) {
+		seg =  JagTime::getStartTimeSecOfDecade( tval, cycle );  // any decade; start from new year's day
+	} else {
+	}
+	
+	return seg;
+}
+
+// child rollup table
+// input: getDBpair has only key, inspair has key and value
+// return 1: rolledup   0: inserted
+// lpindex wrotelocked
+// output: tableoldbuf-->buffer in existing db file
+// output: tablenewbuf-->buffer in updated db file
+int JagTable::findPairRollupOrInsert( JagDBPair &inspair, JagDBPair &getDBpair, 
+									  char *tableoldbuf, char *tablenewbuf, int setindexnum, JagIndex *lpindex[] )
+{
+	int cnt;
+	bool didRollUp;
+	if (  ! _darrFamily->get( getDBpair ) ) {
+		// should to an insertPair first
+		prt(("s401113 fam get is false, insertPair ...\n" ));
+
+		insertPair( inspair, 0, false );
+		cnt = 0;
+		didRollUp = false;
+	} else {
+		// if got here, the parent insert would have been rejected already
+		prt(("s401110 doRollUp getDBpair: ...\n" ));
+		memset( tableoldbuf, 0, KEYVALLEN+1 );
+		memset( tablenewbuf, 0, KEYVALLEN+1 );
+		// copy getDBpair to tableoldbuf
+		getDBpair.toBuffer( tableoldbuf );
+
+		doRollUp( inspair, tableoldbuf, tablenewbuf );
+
+		cnt = 1;
+		didRollUp = true;
+	}
+
+	if ( didRollUp && _indexlist.size() > 0 && setindexnum ) {
+		dbNaturalFormatExchange( tableoldbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
+		dbNaturalFormatExchange( tablenewbuf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
+		for ( int i = 0; i < setindexnum; ++i ) {
+			if ( lpindex[i] ) {
+				lpindex[i]->updateFromTable( tableoldbuf, tablenewbuf );
+			}
+		}
+	}
+
+	return cnt;  // 0: insert   1: rollup
+}
+
+// K pointers start from left end positions
+void JagTable::initStarPositions( JagVector<int> &pointer, int K )
+{
+	prt(("s42208 initStarPositions pointer.size=%d K=%d\n", pointer.size(), K ));
+	bool iskey;
+	int totCols = _tableRecord.columnVector->size();
+	Jstr colType;
+	for ( int i = 0; i < totCols; i ++ ) {
+		iskey = (*(_tableRecord.columnVector))[i].iskey;
+		if ( ! iskey ) break;
+		colType = (*(_tableRecord.columnVector))[i].type;
+		if ( isDateAndTime( colType ) ) { continue; }
+
+		pointer.append(i);
+		if ( pointer.size() == K ) {
+			prt(("s50023 got last pointer K=%d\n", K ));
+			break;
+		}
+	}
+}
+
+
+// child rollup table
+void JagTable::starCombinations( int N, int K, JagDBPair &inspair, JagDBPair &getDBpair, 
+						 char *tableoldbuf, char *tablenewbuf, int setindexnum, JagIndex *lpindex[] )
+{
+	if ( N < K ) return;
+	prt(("s41263 starCombinations N=%d K=%d\n", N, K ));
+
+	bool rc;
+	JagVector<int> pointer(K);
+	//for ( int i =0; i < K; ++i ) { pointer.append(-1); } // init to K elements, with 0 values
+	initStarPositions( pointer, K );
+	//prt(("s333307 initStarPositions pointer:\n"));
+	//pointer.printInt();
+
+	while ( true ) {
+		// init positions are OK, start from init position and work on then
+		fillStarsAndRollup( pointer, inspair, getDBpair, tableoldbuf, tablenewbuf, setindexnum, lpindex );
+
+		rc = movePointerPositions( pointer ); // find any available poiner positions and use them
+		if ( ! rc ) break;
+	}
+}
+
+// child rollup table
+// pointer[k] is k-th key column (skipping datetime cols)
+void JagTable::fillStarsAndRollup( const JagVector<int> &pointer, JagDBPair &inspair, JagDBPair &getDBpair, 
+								   char *tableoldbuf, char *tablenewbuf, int setindexnum, JagIndex *lpindex[] )
+{
+	prt(("s33071 fillStarsAndRollup pointer:\n"));
+	//pointer.printInt();
+
+	// modify new getDBpair, if found, do rollup. otherwise modify inspair, do insert
+	JagDBPair starGetDBPair( getDBpair.key );
+	prt(("s422021 starGetDBPair:\n"));
+	//starGetDBPair.printkv();
+
+	JagDBPair starInsPair( inspair.key, inspair.value );
+	prt(("s422023 starInsPair:\n"));
+	//starInsPair.printkv();
+
+	fillStars( pointer, starGetDBPair );
+	prt(("s422024 starGetDBPair after fill:\n"));
+	//starGetDBPair.print();
+
+	fillStars( pointer, starInsPair );
+	prt(("s422025 starInsPair after fill:\n"));
+	//starInsPair.print();
+
+	findPairRollupOrInsert( starInsPair, starGetDBPair, tableoldbuf, tablenewbuf, setindexnum, lpindex );
+}
+
+// Find first good set of pointer positons and uses them
+// return false: no more available good positions
+bool JagTable::movePointerPositions( JagVector<int> &pointer )
+{
+	bool rc;
+	int k = pointer.size()-1; // start from right-most pointer
+	if ( k < 0 ) return false;
+
+	while ( true ) {
+		rc = findNextPositions( pointer, k );
+		if ( rc ) {
+			// consume all free positions on the right
+			prt(("found positions OK for pointer k=%d return true\n", k ));
+			return true;
+		} else {
+			// pointer k reached the end
+			k = k -1;  // look at the pointer on the left
+			if ( k < 0 ) {
+				return false;
+			}
+		}
+	}
+}
+
+// Find all free positions for pointer k AND POINTERS TO THE RIGHT of k
+// Assign these positions to pointer array
+// currentPointer: [0, pointer.size-1]
+bool JagTable::findNextPositions( JagVector<int> &pointer, int k  )
+{
+	prt(("s34127 findNextPositions k=%d  pointer:\n", k ));
+	//pointer.printInt();
+
+	int N = pointer.size();
+
+	int startPosition;
+	if ( pointer[k] == -1 ) {
+		startPosition = pointer[k-1]+1;
+	} else {
+		startPosition = pointer[k]+1;
+	}
+
+	prt(("s31283 pointer[%d] startPosition=%d\n", k, startPosition ));
+
+	int nextPosition = findNextFreePosition( startPosition );
+	if ( nextPosition < 0 ) {
+		prt(("s32064 findStarPositions k=%d nextPosition=%d return false\n", k, nextPosition ));
+		pointer[k] = -1;
+		return false;
+	}
+	prt(("s32065 findStarPositions k=%d nextPosition=%d\n", k, nextPosition ));
+	pointer[k] = nextPosition;
+
+	// If N = 5, k = 3, then there are N-(k+1) = 1 pointer on the right of pointer k
+	// find next position for these right-hand side pointers. If any cannot find free position,
+	// return false;
+	for ( int i = k+1; i < N; ++i ) {
+		nextPosition = findNextFreePosition( nextPosition+1 );
+		if ( nextPosition < 0 ) {
+			prt(("s41023 pointer=%d cannot find free position from %d return false\n", i, startPosition+1 ));
+			pointer[i] = -1;
+			return false;
+		}
+		pointer[i] = nextPosition;
+		prt(("s52301 pointer[%d] got new position=%d\n", i, nextPosition ));
+	}
+
+	// all right pointers all can find free positions
+	return true;
+}
+
+// Find next available non-datetime key position
+// return -1: not found     >=0 found next available position
+int JagTable::findNextFreePosition( int startPosition )
+{
+	int pos = -1;
+	int totCols = _tableRecord.columnVector->size();
+	prt(("s43883 findNextFreePosition startPosition=%d totCols=%d\n", startPosition, totCols ));
+	bool found = false;
+	//for ( int i = startPosition+1; i < totCols; ++i ) {
+	for ( int i = startPosition; i < totCols; ++i ) {
+		if ( ! (*(_tableRecord.columnVector))[i].iskey ) break;
+		if ( isDateAndTime( (*(_tableRecord.columnVector))[i].type ) ) { continue; }
+		found = true;
+		pos = i;
+		break;
+	}
+
+	return pos;
+}
+
+// input: pointer[k] --> position in key column
+void JagTable::fillStars( const JagVector<int> &pointer, JagDBPair &starDBPair )
+{
+	char *buf = (char*)starDBPair.key.s();
+	int  i, offset, len;
+	for ( int k = 0; k < pointer.size(); ++k ) {
+		i = pointer[k];
+		offset = (*(_tableRecord.columnVector))[i].offset;
+		len = (*(_tableRecord.columnVector))[i].length;
+		memset( buf+offset, 0, len );
+		*(buf+offset) = JAG_STARC;
+	}
+}
+
+// Remove old records of this timeseries table (parent or child)
+// returns: number of records removed. secs is current seconds since epoch
+jagint JagTable::cleanupOldRecords( time_t tsec )
+{
+	prt(("s22201 cleanupOldRecords ...\n"));
+	Jstr colType;
+	if ( _tableRecord.isFirstColumnDateTime( colType ) ) {
+		time_t ttime = JagTime::getTypeTime( tsec, colType );
+		prt(("s44828 cleanupOldRecords tsec=%lld ttime=%lld\n", tsec, ttime ));
+		if ( ttime == 0) {
+			prt(("s19824 JagTime::getTypeTime( tsec=%lld colType=[%s]\n", tsec, colType.s() ));
+			return 0;
+		}
+
+		jagint cnt = cleanupOldRecordsByOrderOrScan( 0, ttime, true );
+		prt(("s23348 cleanupOldRecordsByOrderOrScan cnt=%lld\n", cnt ));
+		return cnt;
+	} else {
+		int colidx = _tableRecord.getFirstDateTimeKeyCol();
+		if ( colidx < 0 ) {
+			prt(("s42238 getFirstDateTimeKeyCol colidx=%d < 0 return 0\n", colidx ));
+			return 0;
+		} 
+
+		colType = (*_tableRecord.columnVector)[colidx].type;
+		time_t ttime = JagTime::getTypeTime( tsec, colType );
+		if ( ttime == 0) {
+			prt(("s19825 JagTime::getTypeTime( tsec=%lld colType=[%s]\n", tsec, colType.s() ));
+			return 0;
+		}
+
+		jagint cnt = cleanupOldRecordsByOrderOrScan( colidx, ttime, false );
+		return cnt;
+	}
+}
+
+
+// ttime is seconds, microseconds, or nanoseconds
+// return number of reords deleted
+jagint JagTable::cleanupOldRecordsByOrderOrScan( int idx, time_t ttime, bool byOrder )
+{
+	jagint cnt = 0;
+	JagMinMax minmax;	
+	minmax.setbuflen( KEYLEN );
+
+ 	minmax.offset = (*(_tableRecord.columnVector))[idx].offset;
+    minmax.length = (*(_tableRecord.columnVector))[idx].length;
+
+	JagMergeReader *ntr = NULL;
+	_darrFamily->setFamilyRead( ntr, minmax.minbuf, minmax.maxbuf );
+	if ( ! ntr ) {
+		prt(("s52389 setFamilyRead ntr NULL\n"));
+		return 0;
+	}
+
+	// debug
+	/***
+	Jstr colType = (*(_tableRecord.columnVector))[idx].type;
+	Jstr pastTime;
+	if ( colType == JAG_C_COL_TYPE_DATETIMESEC || colType == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+		pastTime = JagTime::getLocalTime( ttime ); 
+		prt(("s342020 DATETIMESEC/TIMESTAMPSEC  local pastTime=[%s]\n", pastTime.s() ));
+	} else if ( colType == JAG_C_COL_TYPE_DATETIME || colType == JAG_C_COL_TYPE_TIMESTAMP ) {
+		pastTime = JagTime::getLocalTime( ttime/1000000 ); 
+		prt(("s342021 DATETIME/TIMESTAMP  local pastTime=[%s]\n", pastTime.s() ));
+	}
+	***/
+
+	char *buf = (char*)jagmalloc(KEYVALLEN+1);
+	bool rc;
+	time_t dbtime;
+
+	while ( true ) {
+		rc = ntr->getNext(buf);
+		if ( !rc ) {
+			prt(("s11103 getNext rc=%d break\n", rc ));
+			break;
+		}
+
+		dbtime = rayatol( buf+minmax.offset, minmax.length );
+
+		// debug
+		/***
+		if ( colType == JAG_C_COL_TYPE_DATETIMESEC || colType == JAG_C_COL_TYPE_TIMESTAMPSEC ) {
+			pastTime = JagTime::getLocalTime( dbtime ); 
+			prt(("s342020 DATETIMESEC/TIMESTAMPSEC  db localtime=[%s]\n", pastTime.s() ));
+		} else if ( colType == JAG_C_COL_TYPE_DATETIME || colType == JAG_C_COL_TYPE_TIMESTAMP ) {
+			pastTime = JagTime::getLocalTime( dbtime/1000000 ); 
+			prt(("s342021 DATETIME/TIMESTAMP  db localtime=[%s]\n", pastTime.s() ));
+		}
+		***/
+
+		if ( byOrder ) {
+			if ( dbtime >= ttime ) {
+				prt(("s207173 dbtime == ttime=%lld break cnt=%d\n", ttime, cnt ));
+				break;
+			}
+		} else {
+			if ( dbtime >= ttime ) {
+				prt(("s207173 dbtime >= ttime=%lld skip cnt=%d\n", ttime, cnt ));
+				continue;
+			}
+		}
+		
+		dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // natural format -> db format
+		JagDBPair pair( buf, KEYLEN );
+		rc = _darrFamily->remove( pair );
+		if ( rc ) {
+			++cnt;
+			prt(("s30723 _darrFamily->remove OK dbtime=%lld < ttime=%lld\n", dbtime, ttime ));
+			dbNaturalFormatExchange( buf, _numKeys, _schAttr, 0,0, " " ); // db format -> natural format
+			_removeIndexRecords( buf );
+			removeColFiles(buf );
+		} else {
+			prt(("s42738 error  _darrFamily->remove\n"));
+		}
+	}
+
+	delete ntr;
+	free( buf );
+	return cnt;
+}
+
+void JagTable::refreshTableRecord()
+{
+	const JagSchemaRecord* rec= _tableschema->getAttr( _dbtable );
+	_tableRecord = *rec;
+	prt(("s22281 JagTable::refreshTableRecord done\n"));
+}
+
+

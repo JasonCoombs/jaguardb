@@ -48,15 +48,16 @@ class AbaxCStr
 		double tof() const;
 		int   toInt() const;
 		long  toLong() const;
+		char  firstChar() const;
+		char  lastChar() const;
+		AbaxCStr lastCharStr() const;
 
-		//AbaxCStr operator +( const AbaxCStr & cpstr) const;
 		AbaxCStr& operator +=( const AbaxCStr & cpstr);
 		AbaxCStr& operator +=( const char *cpstr);
 		AbaxCStr& operator +=( int ch);
 		AbaxCStr& append( const char *cpstr, unsigned long len);
 		AbaxCStr& operator =( const AbaxCStr& cpstr) ;
 		AbaxCStr operator+( const AbaxCStr& cpstr) const ;
-		//AbaxCStr operator+( const char *cpstr) ;
 
 		bool operator ==( const char *str) const;
 		bool operator ==( const AbaxCStr &str) const;
@@ -102,8 +103,10 @@ class AbaxCStr
 		AbaxCStr& 	trim0() { return trimEndZeros(); }
 		AbaxCStr 	firstToken( char sep );
 		const char *secondTokenStart( char sep );
-		AbaxCStr 	substr( char startc, char endc );
-		bool        containsChar( char c );
+		AbaxCStr 	substrc( char startc, char endc ) const;
+		bool        containsChar( char c ) const;
+		bool        containsStr( const char *substr ) const;
+		bool        containsStrCase( const char *substr, AbaxCStr& ret ) const;
 		bool        isNumeric() const;  // 2 203 or 234.5
 		void   	    dump();
 		char    	dtype[4]; // data type of content
@@ -114,11 +117,10 @@ class AbaxCStr
 		char 	*buf_;
 		size_t 	length_;
 		int  	nseg_;
-		static const   int ASTRSIZ=32;
+		static const   int ASTRSIZ=16;
 
 		void allocMoreMemory( int len2 ); // len2 second string's length
 		void initmem( int size ); 
-		void replaceself( char *databuf, int datalen );
 
 };
 

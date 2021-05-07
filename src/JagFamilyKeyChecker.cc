@@ -41,7 +41,7 @@ JagFamilyKeyChecker::~JagFamilyKeyChecker()
 
 // key can be any length
 // buf:  [kkk\0\0][vv]  
-void JagFamilyKeyChecker::getUniqueKey( const char *buf, char *ukey )
+void JagFamilyKeyChecker::getUniqueKey( const char *buf, char *ukey ) const
 {
 	// for short keys (<= JAG_KEYCHECKER_KLEN), use original key
 	if ( !_useHash ) {

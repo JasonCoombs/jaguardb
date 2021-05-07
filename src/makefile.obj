@@ -7,7 +7,7 @@ OBJS=JagRecord.o  JagClassInit.o murmur.o JagColumn.o \
 	 JagSchemaRecord.o JagTime.o JagSession.o \
 	 JagIndexString.o JagFixString.o \
 	 JagTextFileBuffReader.o JagUUID.o \
-	 JagBlockLock.o \
+	 JagBlockLock.o JagDBPair.o \
 	 JagUtil.o JagDataAggregate.o \
 	 JaguarAPI.o JagHashLock.o JagSystem.o \
 	 JagDiskArrayBase.o  \

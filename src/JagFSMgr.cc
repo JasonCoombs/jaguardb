@@ -60,7 +60,7 @@ bool JagFSMgr::exist( const AbaxString &fpath )
 
 jagint JagFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen )
 {
-	// prt(("s2839 getStripeSize fpath=[%s] kvlen=%d stripeSize=%lld\n", fpath.c_str(), kvlen, stripeSize ));
+	// prt(("s42839 getStripeSize fpath=[%s] kvlen=%d stripeSize=%lld\n", fpath.c_str(), kvlen, stripeSize ));
 	JagCompFile *compf = getCompf( fpath );
 	if ( compf ) {
 		if ( compf->size() > 0 ) {

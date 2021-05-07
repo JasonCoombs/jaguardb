@@ -33,7 +33,7 @@ class JagDiskKeyChecker  : public JagFamilyKeyChecker
         virtual bool addKeyValueNoLock( const char *kv );
         virtual bool getValue( const char *key, char *val );
         virtual bool removeKey( const char *key );
-        virtual bool exist( const char *key );
+        virtual bool exist( const char *key ) const;
 		virtual void removeAllKey( );
         virtual jagint size() const  { return _keyCheckArr->elements(); }
         virtual jagint arrayLength() const  { return 0; }

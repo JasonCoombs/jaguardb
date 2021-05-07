@@ -35,8 +35,7 @@ JagTableOrIndexAttrs::JagTableOrIndexAttrs()
 
 JagTableOrIndexAttrs::~JagTableOrIndexAttrs() 
 {
-	//printf("s2839 JagTableOrIndexAttrs::~JagTableOrIndexAttrs schAttr=%0x numschAttr=%d\n", schAttr, numschAttr );
-	//fflush( stdout );
+	//prt(("s28039 JagTableOrIndexAttrs::~JagTableOrIndexAttrs schAttr=%0x numschAttr=%d\n", schAttr, numschAttr ));
 	if ( schAttr ) {
 		//prt(("s0334 schAttr=%0x deelte [] it ...\n", schAttr ));
 		delete [] schAttr;

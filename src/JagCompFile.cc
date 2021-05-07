@@ -60,7 +60,7 @@ void  JagCompFile::_open()
 	DIR             *dp;
 	struct dirent   *dirp;
 	if ( NULL == (dp=opendir( _pathDir.c_str())) ) {
-		prt(("s92110 error opendir [%s]\n", _pathDir.c_str() ));
+		prt(("s921710 error opendir [%s]\n", _pathDir.c_str() ));
 		return;
 	}
 

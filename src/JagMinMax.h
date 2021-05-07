@@ -38,7 +38,7 @@ class JagMinMax
 	~JagMinMax() ;
 	JagMinMax& operator=( const JagMinMax& o );
 	JagMinMax( const JagMinMax& o );
-	int setbuflen ( const int klen ) ;
+	int  setbuflen ( const int klen ) ;
 	void printc();
 	void printd();
 };

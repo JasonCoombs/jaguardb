@@ -29,7 +29,6 @@
 #include <JagIndexSchema.h>
 #include <JagDBPair.h>
 #include <JagUtil.h>
-#include <JagSchemaRecord.h>
 #include <JagDBServer.h>
 #include <JagColumn.h>
 #include <JagVector.h>
@@ -50,103 +49,106 @@ struct JagPolyPass
 	int tzdiff, srvtmdiff;
 	int getxmin, getymin, getzmin, getxmax, getymax, getzmax;
 	int getid, getcol, getm, getn, geti, getx, gety, getz; 
+	int  col, m, n, i;
 	bool is3D;
 	Jstr dbtab, colname, lsuuid;
-	int  col, m, n, i;
 };
 
 class JagTable
 {
 
   public:
- 
   	JagTable( int replicateType, const JagDBServer *servobj, const Jstr &dbname, const Jstr &tableName, 
 				const JagSchemaRecord &record, bool buildInitIndex=true );
   	~JagTable();
-	inline int getNumIndexes() { return _indexlist.size(); }
-	inline int getnumCols() { return _numCols; }
-	inline int getnumKeys() { return _numKeys; }	
-	inline Jstr getdbName() { return _dbname; }
-	inline Jstr getTableName() { return _tableName; }
-	inline JagHashStrInt *getTableMap() { return _tablemap; }
-	inline JagSchemaAttribute *getSchemaAttributes() { return _schAttr; }
+	const JagVector<Jstr> &getIndexes() const { return _indexlist; }
+	int getNumIndexes() const { return _indexlist.size(); }
+	int getnumCols() const { return _numCols; }
+	int getnumKeys() const { return _numKeys; }	
+	Jstr getdbName() const { return _dbname; }
+	Jstr getTableName() const { return _tableName; }
+	JagHashStrInt *getTableMap() { return _tablemap; }
+	JagSchemaAttribute *getSchemaAttributes() { return _schAttr; }
 	const 	JagSchemaRecord *getRecord() { return &_tableRecord; }
 	bool 	getPair( JagDBPair &pair );
 	void 	getlimitStart( jagint &startlen, jagint limitstart, jagint& soffset, jagint &foffset ); 
-	int 	insert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
-	int 	finsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
-	int 	cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
-	int 	dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg, int &insertCode, bool direct );
-	int 	parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &pairVec, Jstr &errmsg );
-	int 	insertPair( JagDBPair &pair, int &insertCode, bool direct, int mode ); 
+
+	int 	insert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );
+	int 	finsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );
+	int 	cinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );
+	int 	dinsert( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );
+
+	int 	parsePair( int tzdiff, JagParseParam *parseParam, JagVector<JagDBPair> &pairVec, Jstr &errmsg ) const;
+	static int 	parseSimplePair( int tzdiff, int srvtmdiff, int numCols, int numKeys,
+								jagint KEYLEN, jagint VALLEN, jagint KVLEN,
+                                const JagHashStrInt *tablemap,
+                                const JagSchemaRecord &tableRecord,
+                                const JagSchemaAttribute *schAttr,
+                                const  JagVector<int> &defvallist,
+                                const Jstr &dbName, const Jstr &tableName,
+                                JagVector<OtherAttribute> &otherVec,
+                                JagDBPair &retpair, Jstr &errmsg );
+
+	int 	insertPair( JagDBPair &pair, int mode, bool doIndexLock ); 
 	Jstr 	drop( Jstr &errmsg, bool isTruncate=false );
 	int 	renameIndexColumn ( const JagParseParam *parseParam, Jstr &errmsg );
 	int 	setIndexColumn ( const JagParseParam *parseParam, Jstr &errmsg );
 	void 	dropFromIndexList( const Jstr &indexName );
 	void 	buildInitIndexlist();
 	void 	setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, const char *buffers[] );
+	int 	rollupPair( const JagRequest &req, JagDBPair &inpair, const JagVector<OtherAttribute> &rollupVec );
+	void 	doRollUp( const JagDBPair &inspair, const char *dbBuf, char *newbuf );
+	bool 	convertTimeToWindow( int timediff, const Jstr &twindow, char *kbuf, const Jstr &colName );
+	jagint  segmentTime( int tzdiff, jagint tval, const Jstr &twindow ); // seconds
 
-	//jagint update( const JagRequest &req, const JagParseParam *parseParam, Jstr &errmsg, int &insertCode );
-	jagint update( const JagRequest &req, const JagParseParam *parseParam, Jstr &errmsg );
+	jagint update( const JagRequest &req, const JagParseParam *parseParam, bool upsert, Jstr &errmsg );
 	jagint remove( const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );	
 	jagint getCount( const char *cmd, const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );
 	jagint getElements( const char *cmd, const JagRequest &req, JagParseParam *parseParam, Jstr &errmsg );
 	jagint select( JagDataAggregate *&jda, const char *cmd, const JagRequest &req, JagParseParam *parseParam, 
-					Jstr &errmsg, bool nowherecnt=true, bool isInsertSelect=false );
+				   Jstr &errmsg, bool nowherecnt=true, bool isInsertSelect=false );
 	
 	static void *parallelSelectStatic( void * ptr );
 	static int buildDiskArrayForGroupBy( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-										 const JagRequest &req, const char *buffers[], 
+										 const JagRequest *req, const char *buffers[], 
 										JagParseParam *parseParam, JagMemDiskSortArray *gmdarr, char *gbvbuf );
 	static void groupByFinalCalculation( char *gbvbuf, bool nowherecnt, jagint finalsendlen, std::atomic<jagint> &cnt, jagint actlimit, 
-										const JagRequest &req, const Jstr &writeName, JagParseParam *parseParam, 
+										const Jstr &writeName, JagParseParam *parseParam, 
 										JagDataAggregate *jda, JagMemDiskSortArray *gmdarr, const JagSchemaRecord *nrec );
 	static void nonAggregateFinalbuf( JagMergeReaderBase *ntr, const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-										const JagRequest &req, const char *buffers[], JagParseParam *parseParam, char *finalbuf, jagint finalsendlen,
-										JagDataAggregate *jda, const Jstr &writeName, std::atomic<jagint> &cnt, bool nowherecnt, 
+										const JagRequest *req, const char *buffers[], JagParseParam *parseParam, char *finalbuf, 
+										jagint finalsendlen, JagDataAggregate *jda, const Jstr &writeName, 
+										std::atomic<jagint> &cnt, bool nowherecnt, 
 										const JagSchemaRecord *nrec, bool oneLine );
 	static void aggregateDataFormat( JagMergeReaderBase *ntr,  const JagHashStrInt *maps[], const JagSchemaAttribute *attrs[], 
-									 const JagRequest &req, const char *buffers[], JagParseParam *parseParam, bool init );
-	static void aggregateFinalbuf( const JagRequest &req, const Jstr &sendhdr, jagint len, JagParseParam *parseParam[], 
+									 const JagRequest *req, const char *buffers[], JagParseParam *parseParam, bool init );
+	static void aggregateFinalbuf( const JagRequest *req, const Jstr &sendhdr, jagint len, JagParseParam *parseParam[], 
 				char *finalbuf, jagint finalsendlen, JagDataAggregate *jda, const Jstr &writeName, 
 				std::atomic<jagint> &cnt, bool nowherecnt, const JagSchemaRecord *nrec );
-	static void doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam, const JagRequest &req,
+	static void doWriteIt( JagDataAggregate *jda, const JagParseParam *parseParam, 
 				const Jstr &host, const char *buf, jagint buflen, const JagSchemaRecord *nrec=NULL );
 	static void formatInsertFromSelect( const JagParseParam *parseParam, const JagSchemaAttribute *attrs, 
 				const char *finalbuf, const char *buffers, jagint finalsendlen, jagint numCols,
 				JaguarCPPClient *pcli, const Jstr &iscmd );
 
-	int formatIndexCmd( JagDBPair &pair, int mode );
+	int formatIndexCmd( JagDBPair &pair, int mode, bool doIndexLock );
 	int formatCreateIndex( JagIndex *pindex );
 	static void *parallelCreateIndexStatic( void * ptr );
 
-	/**** hit invalid fastbin entry bug
-	static void fillCmdParse( int objType, void *objPtr, int i, jagint gbvsendlen, JagParseParam *pparam[], 
-							 JagMemDiskSortArray *lgmdarr, const JagRequest &req, JagDataAggregate *jda, 
-							 const Jstr &dbobj, std::atomic<jagint> *pcnt, jagint nm, 
-							 bool nowherecnt, JagSchemaRecord *prec, jagint memlim, 
-							 JagMinMax minmaxbuf[], 
-							 jagint bsec, jagint KEYVALLEN, const JagDBServer *servobj, jagint numthrds,
-							 const JagDiskArrayFamily *darrFamily,
-							 bool lcpu,
-							 ParallelCmdPass psp[]  );
-	 *******/
 	void   	flushBlockIndexToDisk();
 	Jstr 	getIndexNameList();
 	int 	refreshSchema();
 	void 	setupSchemaMapAttr( int numCols );
 	bool 	hasSpareColumn();
-	void 	appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true);
+	void 	appendOther( JagVector<OtherAttribute> &otherVec,  int n, bool isSub=true) const;
 	void 	formatMetricCols( int tzdiff, int srvtmdiff, const Jstr &dbtab, const Jstr &colname, 
-						   int nmetrics, const JagVector<Jstr> &metrics, char *tablekvbuf );
-
-	/***
-	JagDBMap*  	getInsertBufferMap();
-	void       	resetInsertBufferMap();
-	void 		cleanupInsertBuffer();
-	void 		deleteInsertBuffer();
-	void       	setInsertBufferMap( JagDBMap *bfr );
-	***/
+						      int nmetrics, const JagVector<Jstr> &metrics, char *tablekvbuf ) const;
+	bool 	hasTimeSeries( Jstr &tser ) const ;
+	bool 	hasTimeSeries() const ;
+	Jstr    timeSeriesRentention() const;
+	bool 	hasRollupColumn() const ;
+	jagint  cleanupOldRecords( time_t secs );
+	void    refreshTableRecord();
 
 	static const jagint keySchemaLen = JAG_SCHEMA_KEYLEN;
     static const jagint valSchemaLen = JAG_SCHEMA_VALLEN;
@@ -171,9 +173,12 @@ class JagTable
   protected:
 	pthread_mutex_t              _parseParamParentMutex;
 	const JagCfg  				*_cfg;
+	JagServerObjectLock 		*_objectLock;
 	Jstr  						_dbname;
 	Jstr 						_tableName;
 	int  						_objectType;
+    int _counterOffset;
+    int _counterLength;
 
 	void 	init( bool buildInitIndex );
 	void 	destroy();
@@ -182,11 +187,29 @@ class JagTable
 	int  	removeColFiles(const char *kvbuf );
 	bool 	isFileColumn( const Jstr &colname );
 	void 	formatPointsInLineString( int nmerics, JagLineString &line, char *tablekvbuf, const JagPolyPass &pass, 
-								   JagVector<JagDBPair> &retpair, Jstr &errmg );
+								      JagVector<JagDBPair> &retpair, Jstr &errmg ) const;
+
 	void 	getColumnIndex( const Jstr &dbtab, const Jstr &colname, bool is3D,
                          int &getx, int &gety, int &getz, int &getxmin, int &getymin, int &getzmin,
                          int &getxmax, int &getymax, int &getzmax,
-                         int &getid, int &getcol, int &getm, int &getn, int &geti );
+                         int &getid, int &getcol, int &getm, int &getn, int &geti ) const;
+
+	int     findPairRollupOrInsert( JagDBPair &inspair, JagDBPair &getDBPair,
+                                    char *tableoldbuf, char *tablenewbuf, int setindexnum, JagIndex *lpindex[] );
+
+	void 	initStarPositions( JagVector<int> &pointer, int K );
+	void 	fillStarsAndRollup( const JagVector<int> &pointer, JagDBPair &inspair, JagDBPair &getDBpair,
+	                            char *tableoldbuf, char *tablenewbuf, int setindexnum, JagIndex *lpindex[] );
+	void 	starCombinations( int N, int K, JagDBPair &inspair, JagDBPair &getDBpair,
+	                  		  char *tableoldbuf, char *tablenewbuf, int setindexnum, JagIndex *lpindex[] );
+
+	bool 	movePointerPositions( JagVector<int> &pointer );
+	bool 	findNextPositions( JagVector<int> &pointer, int k );
+	int 	findNextFreePosition( int startPosition );
+	void 	fillStars( const JagVector<int> &pointer, JagDBPair &starDBPair );
+	jagint 	cleanupOldRecordsByOrderOrScan( int colidx, time_t ttime, bool byOrder );
+	bool    rollupType( const Jstr &name, const Jstr &colType, double inv, double dbCounter, 
+					    const char *dbBuf, char *newbuf, Jstr &errmsg );
 
 
 };

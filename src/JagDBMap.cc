@@ -55,18 +55,6 @@ void JagDBMap::init()
 // otherwise returns true
 bool JagDBMap::insert( const JagDBPair &newpair )
 {
-	/***
-	std::pair<std::map<JagFixString,JagFixValuePair>::iterator,bool> ret;
-	JagFixValuePair vpair ( newpair.value, newpair.upsertFlag );
-	JFixPair pair( newpair.key, vpair );
-    ret = _map->insert ( pair );
-    if (ret.second == false) {
-		return false;
-	}
-
-	return true;
-	***/
-	//_map->emplace(std::make_pair( newpair.key, newpair.value));
 	_map->emplace( newpair.key, newpair.value);
 	return true;
 

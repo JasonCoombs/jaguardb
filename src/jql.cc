@@ -51,7 +51,6 @@ class PassParam {
 PassParam g_param;
 int  _debug = 0;
 
-// void 	sig_int(int sig);
 int  	parseArgs( int argc, char *argv[], 
 				Jstr &username, Jstr &passwd, Jstr &host, Jstr &port,
 				Jstr& dbname, Jstr &sqlcmd, int &echo, Jstr &exclusive, 
@@ -66,10 +65,15 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 					 const Jstr &quiet, int echo, int saveNewline, const Jstr &username );
 
 void printit( FILE *outf, const char *fmt, ... );
+void handleQueryExpect( JaguarCPPClient& jcli );
+void handleReplyExpect( JaguarCPPClient& jcli, int numError, int numOK );
 
+int expectType; // 1: rows  2: message
 int expectCorrectRows;
 int expectErrorRows;
 bool lastCmdIsExpect;
+Jstr lastMsg;
+Jstr expectMessage;
 
 
 //  jcli -u test -p test -h 128.22.22.3:2345 -d mydb
@@ -175,8 +179,6 @@ int main(int argc, char *argv[])
 		usage( argv[0] );
         exit(1);
     }
-
-	// jcli.recoverAllLogs();
 
 	g_param.username = username;
 	g_param.passwd = passwd;
@@ -528,9 +530,7 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 			printit( jcli._outf, "%s\n", outs.c_str() );
 			continue;
 		} else if ( strncasecmp( pcmd, "shell", 5 ) == 0 ) {
-			++pcmd; ++pcmd;
-			++pcmd; ++pcmd;
-			++pcmd;
+			pcmd += 5;  // skip shell word
 			while ( isspace(*pcmd) ) ++pcmd;
 			if ( *pcmd == '\r' || *pcmd == '\n' || *pcmd == ';' || *pcmd == '\0' ) continue;
 			Jstr outs = psystem(pcmd);
@@ -558,6 +558,8 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 		} else if ( strncasecmp( pcmd, "expect", 6 ) == 0 ) {
 			// expect correct rows 12;
 			// expect error   rows 1;
+			// expect last message "OK  done"
+			// expect last message "E2220 error"
 			// .... sql command ...;
 			JagStrSplit sp( pcmd, ' ', true );
 			if ( sp.length() < 4 ) {
@@ -579,6 +581,25 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 						}
 					}
 					lastCmdIsExpect = true;
+					expectType = 1;
+				} else if ( sp[2].caseEqual("message") ) {
+					const char *p = strcasestr( pcmd, "message" );
+					p += strlen("message");
+					while ( *p != '\0' && *p != '"' ) ++p;
+					if ( *p == '\0' ) {
+						printit( jcli._outf, "Error: expect syntax. Missing start \"\n"); 
+						continue;
+					}
+					++p; // past "
+					const char *pstart = p;
+					while ( *p != '\0' && *p != '"' ) ++p;
+					if ( *p == '\0' ) {
+						printit( jcli._outf, "Error: expect syntax. Missing end \"\n"); 
+						continue;
+					}
+					expectMessage = Jstr(pstart, p-pstart);
+					lastCmdIsExpect = true;
+					expectType = 2;
 				}
 			}
 			continue;
@@ -591,13 +612,7 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 				printit( jcli._outf, "%s\n", jcli.error() );
 			}
 
-			if ( lastCmdIsExpect && expectErrorRows == 1 ) {
-				printit( jcli._outf, "TESTRESULT: good (expect error=1, query error=1)\n" );
-			}
-
-			lastCmdIsExpect = false;
-			expectCorrectRows = -1;
-			expectErrorRows = -1;
+			handleQueryExpect( jcli );
 			continue;
         }
 		
@@ -612,33 +627,16 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 			}
 
 			jcli.printAll();
+			if ( lastCmdIsExpect ) {
+				lastMsg = jcli.getMessage();
+			}
         } 
 
 		while ( jcli.printAll() ) { ++numOK; }
+
 		jcli.flush();
+		handleReplyExpect( jcli, numError, numOK );
 
-		if ( lastCmdIsExpect ) {
-			if ( expectErrorRows >= 0 ) {
-				if ( expectErrorRows == numError ) {
-					printit( jcli._outf, "TESTRESULT: good (expect error=%d  reply error=%d)\n", expectErrorRows, numError );
-				} else {
-					printit( jcli._outf, "TESTRESULT: bad  (expect error=%d  reply error=%d)\n", expectErrorRows, numError );
-				}
-			} else if ( expectCorrectRows >= 0 ) {
-				if ( expectCorrectRows == numOK ) {
-					printit( jcli._outf, "TESTRESULT: good (expect correct=%d  reply correct=%d)\n", expectCorrectRows, numOK );
-				} else {
-					printit( jcli._outf, "TESTRESULT: bad  (expect correct=%d  reply correct=%d)\n", expectCorrectRows, numOK );
-				}
-			}
-		}
-
-
-		lastCmdIsExpect = false;
-		expectCorrectRows = -1;
-		expectErrorRows = -1;
-
-		// if ( jcli.hasError() ) { printf("%s\n", jcli.error() ); }
 		if ( strncasecmp( pcmd, "load", 4 ) == 0 ) {
 			printit( jcli._outf, "%s\n", jcli.status() );
 		}
@@ -674,3 +672,64 @@ void printit( FILE *outf, const char *format, ...)
 	va_end( args);
 }
 
+void handleQueryExpect( JaguarCPPClient& jcli )
+{
+	if ( ! lastCmdIsExpect ) return;
+
+	if ( expectType==1 ) {
+		if ( expectErrorRows == 1 ) {
+			printit( jcli._outf, "TESTRESULT=GOOD (expected_error=1, query_error=1)\n" );
+		} else {
+			printit( jcli._outf, "TESTRESULT=BAD (expected_error=%d, query_error=1)\n", expectErrorRows );
+		}
+	} else if ( expectType==2 ) {
+		if ( expectMessage == jcli.error() ) {
+			printit( jcli._outf, "TESTRESULT=GOOD (expected_message=[%s])\n", expectMessage.s() );
+		} else {
+			printit( jcli._outf, "TESTRESULT=BAD (expected_message=[%s])\n", expectMessage.s() );
+		}
+	} else {
+	}
+	printit( jcli._outf, "MESSAGE=[%s]\n", jcli.error() );
+
+	lastCmdIsExpect = false;
+	expectCorrectRows = -1;
+	expectErrorRows = -1;
+	lastMsg = "";
+}
+
+void handleReplyExpect( JaguarCPPClient& jcli, int numError, int numOK )
+{
+	if ( ! lastCmdIsExpect ) return;
+
+	if ( expectType==1 ) {
+		if ( expectErrorRows >= 0 ) {
+			if ( expectErrorRows == numError ) {
+				printit( jcli._outf, "TESTRESULT=GOOD (expected_error=%d  reply_error=%d)\n", expectErrorRows, numError );
+			} else {
+				printit( jcli._outf, "TESTRESULT=BAD  (expected_error=%d  reply_error=%d)\n", expectErrorRows, numError );
+				printit( jcli._outf, "MESSAGE=[%s] [%s]\n", jcli.error(), jcli.status() );
+			}
+		} else if ( expectCorrectRows >= 0 ) {
+			if ( expectCorrectRows == numOK ) {
+				printit( jcli._outf, "TESTRESULT=GOOD (expected_correct=%d  reply_correct=%d)\n", expectCorrectRows, numOK );
+			} else {
+				printit( jcli._outf, "TESTRESULT=BAD  (expected_correct=%d  reply_correct=%d)\n", expectCorrectRows, numOK );
+			}
+		}
+	} else if ( expectType==2 ) {
+		if ( expectMessage == jcli.error() ) {
+			printit( jcli._outf, "TESTRESULT=GOOD (expected_message=[%s])\n", expectMessage.s() );
+		} else {
+			printit( jcli._outf, "TESTRESULT=BAD (expected_message=[%s])\n", expectMessage.s() );
+			printit( jcli._outf, "MESSAGE=[%s] [%s]\n", jcli.error(), jcli.status() );
+		}
+	} else {
+	}
+
+	lastCmdIsExpect = false;
+	expectCorrectRows = -1;
+	expectErrorRows = -1;
+	lastMsg = "";
+
+}

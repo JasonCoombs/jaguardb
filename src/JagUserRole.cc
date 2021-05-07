@@ -19,12 +19,10 @@
 #include <JagGlobalDef.h>
 
 #include <JagUserRole.h>
-#include <JagDBServer.h>
 #include <JagParseParam.h>
 
 // ctor
-JagUserRole::JagUserRole( JagDBServer *servobj, int replicateType )
-	:JagFixKV( servobj, "system", "UserRole", replicateType )
+JagUserRole::JagUserRole( int replicateType ):JagFixKV( "system", "UserRole", replicateType )
 {
 }
 
@@ -154,7 +152,7 @@ bool JagUserRole::dropRole( const AbaxString &userid, const AbaxString &db, cons
 
 // true: OK   false: error
 /// n is 0 for single table ops; n=0 n=1 for two table/index join
-bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
+bool JagUserRole::checkUserCommandPermission( const JagSchemaRecord *srec, const JagRequest &req, 
 	const JagParseParam &parseParam, int n, Jstr &rowFilter, Jstr &errmsg )
 {
 	bool rc = true;
@@ -252,7 +250,7 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
     				rc = isAuthed( op, req.session->uid, db, tab, col, oneFilter );
     				// prt(("s4504 isAuthed rc=%d oneFilter=[%s]\n", rc, oneFilter.c_str() ));
     				if ( !rc ) { 
-    					errmsg = getError("E3202", "select", db, tab, col, req.session->uid );
+    					errmsg = getError("E13202", "select", db, tab, col, req.session->uid );
     					return false;
     				}
 
@@ -324,7 +322,7 @@ bool JagUserRole::checkUserCommandPermission( const JagDBServer *servobj, const 
 			rc = isAuthed( op, req.session->uid, db, tab, col, oneFilter );
 			//prt(("s4548 isAuthed rc=%d\n", rc ));
 			if ( !rc ) {
-				errmsg = getError("E3209", "where", db, tab, col, req.session->uid );
+				errmsg = getError("E13239", "where", db, tab, col, req.session->uid );
 				return false;
 			}
 			if ( oneFilter.size() > 0 ) { rowFilter += oneFilter + "|"; }

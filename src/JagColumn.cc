@@ -17,7 +17,6 @@
  * along with JaguarDB (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
  */
 #include <JagColumn.h>
-//#include <JagSchemaRecord.h>
 
 JagColumn::JagColumn()
 {
@@ -28,12 +27,13 @@ JagColumn::JagColumn()
 	offset = 0;
 	length = 0;
 	sig = 0;
+	func = 0;
 	spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 	memset(spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN );
 	iskey = 0;
 	issubcol = 0;
 
-	srid = begincol = endcol = metrics = 0; dummy2 = dummy3 = dummy4 = dummy5 = 0;
+	srid = begincol = endcol = metrics = 0; dummy3 = dummy4 = dummy5 = 0;
 	dummy6 = dummy7 = dummy8 = dummy9 = dummy10 = 0;
 	//record = NULL;
 }
@@ -83,12 +83,19 @@ void JagColumn::copyData( const JagColumn& other )
 		issubcol = 0;
 	}
 
+	if ( spare[7] == JAG_ROLL_UP ) {
+		isrollup = true;
+	} else {
+		isrollup = false;
+	}
+
 	srid = other.srid;
 	begincol = other.begincol;
 	endcol = other.endcol;
 	metrics = other.metrics;
 	//dummy1 = other.dummy1; replaced by metrics
-	dummy2 = other.dummy2;
+	// dummy2 = other.dummy2;
+	rollupWhere = other.rollupWhere;
 	dummy3 = other.dummy3;
 	dummy4 = other.dummy4;
 	dummy5 = other.dummy5;
@@ -99,3 +106,4 @@ void JagColumn::copyData( const JagColumn& other )
 	dummy10 = other.dummy10;
 	//record = other.record;
 }
+

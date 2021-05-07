@@ -30,25 +30,24 @@ class JagUserRole : public JagFixKV
 {
   public:
 
-    JagUserRole( JagDBServer *servobj=NULL, int replicateType=0 );
+    JagUserRole( int replicateType=0 );
 	virtual ~JagUserRole();
-	// virtual void init();
 	Jstr  getListRoles();
 	bool 	addRole( const AbaxString &userid, const AbaxString& db, const AbaxString& tab, const AbaxString& col, 
-				const AbaxString& role, const AbaxString &rowfilter );
+					 const AbaxString& role, const AbaxString &rowfilter );
 	bool 	dropRole( const AbaxString &userid, const AbaxString& db, const AbaxString& tab, const AbaxString& col, const AbaxString& op ); 
-	bool 	checkUserCommandPermission( const JagDBServer *servobj, const JagSchemaRecord *srec, const JagRequest &req, 
-					const JagParseParam &parseParam, int i, Jstr &rowFilter, Jstr& errmsg );
+	bool 	checkUserCommandPermission( const JagSchemaRecord *srec, const JagRequest &req, 
+										const JagParseParam &parseParam, int i, Jstr &rowFilter, Jstr& errmsg );
 	bool    isAuthed( const Jstr &op, const Jstr &userid, const Jstr &db, const Jstr &tab,
-                 const Jstr &col, Jstr &rowFilter );
+                 	  const Jstr &col, Jstr &rowFilter );
 
 	Jstr showRole( const AbaxString &userid );
 
 	protected:
 	  void getDbTabCol( const JagParseParam &parseParam, int i, const JagStrSplit &sp2,
-	  			Jstr &db, Jstr &tab, Jstr &col );
+	  					Jstr &db, Jstr &tab, Jstr &col );
 	  Jstr getError( const Jstr &code, const Jstr &action, 
-	  		const Jstr &db, const Jstr &tab, const Jstr &col, const Jstr &uid );
+	  				 const Jstr &db, const Jstr &tab, const Jstr &col, const Jstr &uid );
 
 
 

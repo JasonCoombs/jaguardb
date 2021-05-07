@@ -33,33 +33,43 @@ class JagTime
 		static Jstr makeRandTimeString();
 		static Jstr YYYYMMDDHHMM();
 		static Jstr YYYYMMDD();
+		static jagint nowMilliSeconds();
+
 
 		static Jstr makeNowTimeStringSeconds();
 		static Jstr makeNowTimeStringMilliSeconds();
 		static Jstr makeNowTimeStringMicroSeconds();
-		static jagint nowMilliSeconds();
-		static Jstr nowYear();
-
-		//static Jstr rawToServerString( const JagParseAttribute &jpa, time_t rawSeconds, const Jstr &ttype );
 		static void setTimeInfo( const JagParseAttribute &jpa , const char *str, struct tm &timeinfo, int isTime );
 
 		static JagFixString getValueFromTimeOrDate( const JagParseAttribute &jpa, const JagFixString &str,
  													 const JagFixString &str2, int op, const Jstr &ddif );
 
-		static void convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, bool isnano=false );
+		static void convertDateTimeToLocalStr( const Jstr& instr, Jstr& outstr, int isnano=0 );
 		static void convertTimeToStr( const Jstr& instr, Jstr& outstr, int tmtype=2 );
 		static void convertDateToStr( const Jstr& instr, Jstr& outstr );
 		static int convertDateTimeFormat( const JagParseAttribute &jpa, char *outbuf, const char *inbuf, 
-										  const int offset, const int length, bool isnano=false );
+										  int offset, int length, int isnano=0 );
 
-		static int convertTimeFormat( char *outbuf, const char *inbuf, const int offset, const int length, bool isnano = false );
-		static int convertDateFormat( char *outbuf, const char *inbuf, const int offset, const int length );
-		static jaguint getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, bool isnano=false );
-		static jagint getTimeFromStr( const char *str, bool isnano=false );
+		static int convertTimeFormat( char *outbuf, const char *inbuf, int offset, int length, int isnano = 0 );
+		static int convertDateFormat( char *outbuf, const char *inbuf, int offset, int length );
+		static jaguint getDateTimeFromStr( const JagParseAttribute &jpa, const char *str, int isnano=0 );
+		static jagint getTimeFromStr( const char *str, int isnano=0 );
 		static bool getDateFromStr( const char *instr, char *outstr );
 
+		static jagint getStartTimeSecOfSecond( time_t tsec, int cycle );
+		static jagint getStartTimeSecOfMinute( time_t tsec, int cycle );
+		static jagint getStartTimeSecOfHour( time_t tsec, int cycle );
+		static jagint getStartTimeSecOfDay( time_t tsec, int cycle );
+		static jagint getStartTimeSecOfWeek( time_t tsec );
+		static jagint getStartTimeSecOfMonth( time_t tsec, int cycle );
+		static jagint getStartTimeSecOfQuarter( time_t tsec, int cycle );
+		static jagint getStartTimeSecOfYear( time_t tsec, int cycle );
+		static jagint getStartTimeSecOfDecade( time_t tsec, int cycle );
+		static int fillTimeBuffer ( time_t tsec, const Jstr &colType, char *buf ); 
+		static time_t getTypeTime( time_t tsec, const Jstr &colType ); 
+		static Jstr getLocalTime( time_t  tsec );
 
-
+		static void print( struct tm &t );
 
 
 };

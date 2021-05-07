@@ -35,9 +35,7 @@ class ObjectNameAttribute
 	Jstr tableName;	
 	Jstr indexName; 
 	Jstr colName;
-	
 	void init() { dbName = tableName = indexName = colName = ""; }
-
 	ObjectNameAttribute()
 	{
 		// init();
@@ -47,6 +45,7 @@ class ObjectNameAttribute
 	{
 		copyData( other );
 	}
+
 	ObjectNameAttribute& operator=( const ObjectNameAttribute& other )
 	{
 		if ( this == &other ) return *this;
@@ -65,8 +64,8 @@ class ObjectNameAttribute
 	void toLower()
 	{
 		dbName = makeLowerString( dbName );
-		tableName = makeLowerString( tableName );
-		indexName = makeLowerString( indexName );
+		//tableName = makeLowerString( tableName );
+		//indexName = makeLowerString( indexName );
 		colName = makeLowerString( colName );
 	}
 };
@@ -96,8 +95,10 @@ class OtherAttribute
 	Jstr valueData;
 	bool issubcol;
 	Jstr  type;
+
 	JagPoint 		point;
 	JagLineString 	linestr;
+
 	bool			is3D;
 };
 
@@ -115,9 +116,10 @@ class CreateAttribute
 	int          srid;
 	int    begincol;
 	int    endcol;
-	int 	     metrics;
+	int    metrics;
 	//int    dummy1; becomes metrics
-	int    dummy2;
+	// int    dummy2;
+	Jstr   rollupWhere;
 	int    dummy3;
 	int    dummy4;
 	int    dummy5;
@@ -133,7 +135,8 @@ class CreateAttribute
 		spare[JAG_SCHEMA_SPARE_LEN] = '\0';
 		memset(spare, JAG_S_COL_SPARE_DEFAULT, JAG_SCHEMA_SPARE_LEN ); 
 		offset = length = sig = srid= 0; 
-		begincol = endcol = dummy2 = dummy3 = dummy4 = dummy5 = dummy6 = dummy7 = 0;
+		begincol = endcol = dummy3 = dummy4 = dummy5 = dummy6 = dummy7 = 0;
+		rollupWhere = "";
 		dummy8 = dummy9 = dummy10 = 0;
 		defValues = "";
 		type = "";
@@ -168,7 +171,8 @@ class CreateAttribute
 		metrics = other.metrics;
 		endcol = other.endcol;
 		//dummy1 = other.dummy1;
-		dummy2 = other.dummy2;
+		//dummy2 = other.dummy2;
+		rollupWhere = other.rollupWhere;
 		dummy3 = other.dummy3;
 		dummy6 = other.dummy6;
 		dummy7 = other.dummy7;
@@ -216,6 +220,11 @@ class UpdSetAttribute
 		UpdSetAttribute *otherAttr = (UpdSetAttribute*)&other;
 		otherAttr->tree = NULL; // tree transfer
 		return *this;
+	}
+
+	void print() 
+	{
+		prints(( "colName=[%s] colList=[%s] ", colName.s(), colList.s() ));
 	}
 };
 
@@ -321,7 +330,6 @@ class OnlyTreeAttribute
 class JagParseParam
 {
   public:
-	// methods
   	JagParseParam( const JagParser *jps = NULL );
 	void init( const JagParseAttribute *ijpa=NULL, bool needClean=true );
   	~JagParseParam();
@@ -350,22 +358,23 @@ class JagParseParam
 					bool hasNX, bool hasNY );
 
 	short checkCmdMode();
-	void fillDoubleSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, int isSub = true );
-	void fillBigintSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, int isSub = true );
-	void fillIntSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, int isSub = true );
-	void fillSmallIntSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, int isSub = true );
-	void fillStringSubData( CreateAttribute &cattr, int &offset, int isKey, int len, int isMute, int isSub = true );
-	void fillRangeSubData( int colLen, CreateAttribute &cattr, int &offset, int isKey, int isSub = true );
+
+	void fillDoubleSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, bool isSub, bool isRollup );
+	void fillIntSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, int isSub, bool isRollup );
+	void fillSmallIntSubData( CreateAttribute &cattr, int &offset, int isKey, int isMute, int isSub, bool isRollup );
+	void fillStringSubData( CreateAttribute &cattr, int &offset, int isKey, int len, int isMute, int isSub, bool isRollup );
+	void fillRangeSubData( int colLen, CreateAttribute &cattr, int &offset, int isKey, int isSub, bool isRollup );
+
 	void clearRowHash();
 	void initColHash();
 	bool isSelectConst() const;
 	bool isJoin() const;
 	static bool isJoin( int code );
 	void addMetrics( const CreateAttribute &cattr, int offset, int isKey );
+	bool isWindowValid( const Jstr &window );
+	bool getWindowPeriod( const Jstr &window, Jstr &period, Jstr &colName );
+
 	
-	// data memebers
-	bool parseOK;
-	int  parseError;
 	bool impComplete;
 	bool hasExist;
 	bool hasForce;
@@ -435,9 +444,12 @@ class JagParseParam
 	bool    _selectStar;
 	short   cmd;
 	Jstr    value;
-
+	Jstr    timeSeries;
+	Jstr    retain;
+	Jstr    window;
 
 	JagVector<ObjectNameAttribute> objectVec;
+	JagVector<SelColAttribute> selColVec;
 
 	JagVector<GroupOrderVecAttribute> orderVec;
 
@@ -449,15 +461,12 @@ class JagParseParam
 
 	JagVector<UpdSetAttribute> updSetVec;
 
-	JagVector<SelColAttribute> selColVec;
 
 	JagVector<Jstr> selAllColVec;
 
 	JagVector<OnlyTreeAttribute> joinOnVec;
 
 	JagVector<OnlyTreeAttribute> whereVec;
-
-	JagVector<jagint> offsetVec;
 
 	JagHashStrInt *insColMap;
 	void initInsColMap();

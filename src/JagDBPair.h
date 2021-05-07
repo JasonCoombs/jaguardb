@@ -21,104 +21,101 @@
 
 #include <math.h>
 #include "JagHashMap.h"
+#include "JagSchemaRecord.h"
 
 class JagDBPair
 {
-    friend abaxstream& operator<< ( abaxstream &os, const JagDBPair & pair );
 
     public:
         JagFixString  key;
         JagFixString  value;
-		//bool           upsertFlag;
 		static  JagDBPair  NULLVALUE;
+		const JagSchemaRecord  *_tabRec;
 		
-		JagDBPair( ) { /*upsertFlag = 0;*/ } 
-        JagDBPair( const JagFixString &k ) : key(k) { /*upsertFlag = 0;*/ }
-        JagDBPair( const JagFixString &k, const JagFixString &v ) : key(k), value(v) { /*upsertFlag = 0;*/ } 
-		void point( const JagFixString &k, const JagFixString &v ) {
+		JagDBPair() { _tabRec=NULL; } 
+        JagDBPair( const JagFixString &k ) : key(k) { _tabRec=NULL; }
+        JagDBPair( const JagFixString &k, const JagFixString &v ) : key(k), value(v) { _tabRec=NULL; } 
+		void point( const JagFixString &k, const JagFixString &v ) 
+		{
 			key.point(k.addr(), k.size() );
 			value.point( v.addr(), v.size() );
+			_tabRec=NULL;
 		}
 
-		void point( const JagFixString &k ) {
+		void point( const JagFixString &k ) 
+		{
 			key.point(k.addr(), k.size() );
+			_tabRec=NULL;
 		}
 
-
-		void point( const char *k, jagint klen ) {
+		void point( const char *k, jagint klen ) 
+		{
 			key.point( k, klen);
+			_tabRec=NULL;
 		}
 
         JagDBPair( const JagFixString &k, const JagFixString &v, bool ref ) 
 		{
-			//upsertFlag = 0;
 			key.point(k.addr(), k.size() );
 			value.point( v.addr(), v.size() );
+			_tabRec=NULL;
 		}
 
         JagDBPair( const JagFixString &k, bool point ) 
 		{
-			//upsertFlag = 0;
 			key.point(k.addr(), k.size() );
+			_tabRec=NULL;
 		}
 
         JagDBPair( const char *kstr, jagint klen, const char *vstr, jagint vlen ) 
 		{
-			//upsertFlag = 0;
-			//key = JagFixString(kstr, klen);
-			//value = JagFixString(vstr, vlen);
-
 			key = JagFixString(kstr, klen, klen);
 			value = JagFixString(vstr, vlen, vlen);
+			_tabRec=NULL;
 		}
 
         JagDBPair( const char *kvstr, jagint klen, jagint vlen ) 
 		{
-			//upsertFlag = 0;
-			//key = JagFixString(kvstr, klen);
-			//value = JagFixString(kvstr+klen, vlen);
 			key = JagFixString(kvstr, klen, klen );
 			value = JagFixString(kvstr+klen, vlen, vlen );
+			_tabRec=NULL;
 		}
 
 		void point( const char *k, jagint klen,  const char *v, jagint vlen ) {
 			key.point( k, klen);
 			value.point( v, vlen );
+			_tabRec=NULL;
 		}
 
         JagDBPair( const char *kstr, jagint klen, const char *vstr, jagint vlen, bool point ) 
 		{
-			//upsertFlag = 0;
 			key.point(kstr, klen);
 			value.point(vstr, vlen);
+			_tabRec=NULL;
 		}
 
         JagDBPair( const char *kstr, jagint klen ) 
 		{
-			//key = JagFixString(kstr, klen);
 			key = JagFixString(kstr, klen, klen );
+			_tabRec=NULL;
 		}
 
         JagDBPair( const char *kstr, jagint klen, bool point ) 
 		{
 			key.point(kstr, klen);
+			_tabRec=NULL;
 		}
 
-        int compareKeys( const JagDBPair &d2 ) const {
-			if ( key.addr() == NULL || key.addr()[0] == '\0' ) {
-				if ( d2.key.size()<1 || d2.key.addr() == NULL || d2.key.addr()[0] == '\0' ) {
-					return 0;
-				} else {
-					return -1;
-				}
-			} else {
-				if ( d2.key.addr() == NULL || d2.key.addr()[0] == '\0' ) {
-					return 1;
-				} else {
-					return ( memcmp(key.addr(), d2.key.addr(), key.size() ) );
-				}
-			}
+		void setTabRec( const JagSchemaRecord *tabrec )
+		{
+			_tabRec = tabrec;
 		}
+
+		// Return  0: if this and d2 is equal
+		//         -1: if this is < d2
+		//         +1: if this is > d2
+        int compareKeys( const JagDBPair &d2 ) const;
+		int compareByRec( const char *first, const char *second ) const;
 
 		// operators
         inline int operator< ( const JagDBPair &d2 ) const {
@@ -149,7 +146,6 @@ class JagDBPair
         {
             key = d3.key;
             value = d3.value;
-			//upsertFlag = d3.upsertFlag;
             return *this;
         }
 
@@ -161,27 +157,15 @@ class JagDBPair
 			return key.hashCode();
 		}
 
-		inline void print() {
-			// printf("s0293 JagDBPair key=%s/%d  value=%s/%d\n", key.c_str(), key.size(), value.c_str(), value.size() ); 
-			int i;
-			printf("K: ");
-			for (i=0; i<key.size(); ++i ) {
-				printf("%d:%c ", i, key.c_str()[i] );
-			}
-			printf(" V: ");
-			for (i=0; i<value.size(); ++i ) {
-				printf("%d:%c ", i, value.c_str()[i] );
-			}
-			printf("\n");
+		inline jagint size() { 
+			return (key.size() + value.size()); 
 		}
 
-		inline jagint size() { return (key.size() + value.size()); }
-		void toBuffer(char *buffer) const {
-			memcpy(buffer, key.c_str(), key.size() );
-			memcpy(buffer + key.size(), value.c_str(), value.size() );
-		}
-
+		void print() const;
+		void printkv() const;
+		void toBuffer(char *buffer) const;
+		// caller must free it
+		char *newBuffer() const;
 };
-
 
 #endif
