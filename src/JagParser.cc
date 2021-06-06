@@ -1780,7 +1780,9 @@ int JagParser::setGetfileColumn()
 		if ( (p=(char*)strcasestrskipquote(r, " sizegb")) || (p=(char*)strcasestrskipquote(r, " sizemb") ) || 
 		     (p = (char*)strcasestrskipquote(r, " size")) || (p = (char*)strcasestrskipquote(r, " time")) ||
 			 (p = (char*)strcasestrskipquote(r, " md5")) || ( p = (char*)strcasestrskipquote(r, " fpath") ) ||
-			 (p = (char*)strcasestrskipquote(r, " type") )
+			 (p = (char*)strcasestrskipquote(r, " type")) ||
+			 (p = (char*)strcasestrskipquote(r, " hostfpath")) ||
+			 (p = (char*)strcasestrskipquote(r, " host") )
 			) {
 			if ( 2 == getAttributeOrData ) {
 				return -5482;
@@ -1828,6 +1830,16 @@ int JagParser::setGetfileColumn()
 			}  else if ( strncasecmp( p, " type", 5 ) == 0 ) {
 				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_TYPE;
 				_ptrParam->selColVec[i].asName = "type";
+				_ptrParam->selColVec[i].givenAsName = 1;
+				q = p+5;
+			}  else if ( strncasecmp( p, " hostfpath", 10 ) == 0 ) {
+				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_HOSTFPATH;
+				_ptrParam->selColVec[i].asName = "hostfpath";
+				_ptrParam->selColVec[i].givenAsName = 1;
+				q = p+10;
+			}  else if ( strncasecmp( p, " host", 5 ) == 0 ) {
+				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_HOST;
+				_ptrParam->selColVec[i].asName = "host";
 				_ptrParam->selColVec[i].givenAsName = 1;
 				q = p+5;
 			} else if ( strncasecmp( p, " md5", 4 ) == 0 ) {

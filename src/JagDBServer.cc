@@ -2250,12 +2250,17 @@ void JagDBServer::helpTopic( const JagRequest &req, const char *cmd )
 		str += "    (The above command displays size (in gigabytes) of file column)\n";
 		str += "getfile FILECOL1 fpath from TABLE where ...;\n";
 		str += "    (The above command displays the fullpath name of a file column)\n";
+		str += "getfile FILECOL1 host from TABLE where ...;\n";
+		str += "    (The above command displays the host where the file is stored)\n";
+		str += "getfile FILECOL1 hostfpath from TABLE where ...;\n";
+		str += "    (The above command displays the host and full path of the file)\n";
 		str += "\n";
 		str += "Example:\n";
 		str += "getfile img1 into myimg1.jpg, img2 into myimg2.jog from media where uid='100';\n"; 
 		str += "    (assume img1 and img2 are two file type columns in table media)\n";
 		str += "getfile img time, img size, img md5 from TABLE where ...;\n";
 		str += "getfile img fpath from TABLE where ...;\n";
+		str += "getfile img hostfpath from TABLE where ...;\n";
 		str += "getfile img fpath from INDEX where ...;\n";
 	} else if ( 0 == strncasecmp( cmd, "select", 3 ) ) {
 		str += "(SELECT CLAUSE) from TABLE [WHERE CLAUSE] [GROUP BY CLAUSE] [ORDER BY] [LIMIT CLAUSE] [exportsql] [TIMEOUT N];\n";

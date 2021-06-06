@@ -3513,6 +3513,10 @@ void JagTable::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam
 					}
 				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_FPATH ) {
 					outstr = inpath;
+				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_HOST ) {
+					outstr = _servobj->_localInternalIP;
+				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_HOSTFPATH ) {
+					outstr = _servobj->_localInternalIP + ":" + inpath;
 				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_TYPE ) {
 					JagStrSplit sp(fname, '.');
 					if ( sp.length() >= 2 ) {
