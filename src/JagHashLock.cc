@@ -41,19 +41,18 @@ void JagHashLock::init()
 bool JagHashLock::regionOverlaps( const AbaxString &kstr, bool isRead )
 {
 
-    // -1 lock look at number of readers and writers
     if ( kstr == "-1" ) {
         if ( ! isRead ) {
             if ( _readers > 0 ||  _writers > 0 ) {
                 return true;
             } else {
-                return false;  // empty  no readers, no writers
+                return false;  
             }
         } else {
             if ( _writers > 0 ) {
-                return true;   // has writers
+                return true;  
             } else {
-                return false;  // no writers
+                return false;
             }
         }
     }
@@ -65,7 +64,7 @@ bool JagHashLock::regionOverlaps( const AbaxString &kstr, bool isRead )
 		}
 
     	if ( _map->keyExist( kstr ) ) {
-    		return true; // kstr lock(0 or 1) exists
+    		return true; 
     	}
     
     	return false;
@@ -81,10 +80,9 @@ bool JagHashLock::regionOverlaps( const AbaxString &kstr, bool isRead )
 
 		if ( _map->getValue( kstr, cn ) ) {
 			if ( cn.data2 < 1 ) {
-				return false;  // kstr had only read lock, compatible
+				return false;  
 			} else {
-				//printf("s4806 read lock  kstr=%lld exists and writers=%d\n", cn.data2 );
-				return true;   // kstr had write lock, not compatible
+				return true;
 			}
 		}
 
@@ -94,7 +92,6 @@ bool JagHashLock::regionOverlaps( const AbaxString &kstr, bool isRead )
 	return false;
 }
 
-// v2: data1 is readers; data2 is writers
 void JagHashLock::writeLock( const AbaxString & kstr )
 {
 	JAG_BLURT

@@ -25,12 +25,6 @@
 
 #define HASH_LIMIT 0.5
 
-
-/*
- *  Hash function returns a hash number for a given key.
- *  htabptr: Pointer to a hash table
- *  key: The key to create a hash number for
- */
 static int hashcode(const jag_hash_t *htabptr, const char *key) {
   int i=0;
   int hashvalue;
@@ -150,25 +144,20 @@ char * jag_hash_lookup(const jag_hash_t *htabptr, const char *key )
  */
 int jag_hash_insert(jag_hash_t *htabptr, const char *key, const char *value ) 
 {
-  //int tmp;
   HashNodeT *node;
   int h;
 
-  /* check to see if the entry exists */
   if ( NULL != jag_hash_lookup(htabptr, key) ) {
       return 0; 
   }
 
-  /* expand the table if needed */
   while (htabptr->entries>=HASH_LIMIT*htabptr->size)
     rebuild_table(htabptr);
 
-  /* insert the new entry */
   h=hashcode(htabptr, key);
   node=(struct HashNodeT *) malloc(sizeof(HashNodeT));
   node->key= strdup(key);
   node->value= strdup(value); 
-  //node->valueReadOnly=false;
   node->next=htabptr->bucket[h];
   htabptr->bucket[h]=node;
   htabptr->entries++;
@@ -178,25 +167,20 @@ int jag_hash_insert(jag_hash_t *htabptr, const char *key, const char *value )
 
 int jag_hash_insert_str_voidptr(jag_hash_t *htabptr, const char *key, void *value ) 
 {
-  //int tmp;
   HashNodeT *node;
   int h;
 
-  /* check to see if the entry exists */
   if ( NULL != jag_hash_lookup(htabptr, key) ) {
       return 0; 
   }
 
-  /* expand the table if needed */
   while (htabptr->entries>=HASH_LIMIT*htabptr->size)
     rebuild_table(htabptr);
 
-  /* insert the new entry */
   h=hashcode(htabptr, key);
   node=(struct HashNodeT *) malloc(sizeof(HashNodeT));
   node->key= strdup(key);
   node->value= (char*)value; 
-  //node->valueReadOnly=true;
   node->next=htabptr->bucket[h];
   htabptr->bucket[h]=node;
   htabptr->entries++;
@@ -246,7 +230,6 @@ int jag_hash_delete(jag_hash_t *htabptr, const char *key, bool freeval )
   }
 
   if ( node->key ) free( node->key );
-  //if ( freeval && node->value && ! node->valueReadOnly ) free( node->value );
   if ( freeval && node->value ) free( node->value );
   if ( node ) free(node);
   node = NULL;
@@ -254,12 +237,6 @@ int jag_hash_delete(jag_hash_t *htabptr, const char *key, bool freeval )
   return 1; 
 }
 
-
-
-/*
- * Delete the entire table, and all remaining entries.
- * 
- */
 void jag_hash_destroy(jag_hash_t *htabptr, bool freeval ) 
 {
   if ( htabptr->doneInit == false ) {
@@ -275,7 +252,6 @@ void jag_hash_destroy(jag_hash_t *htabptr, bool freeval )
       last = node;   
       node = node->next;
 	  if ( last->key ) free(last->key);
-      //if ( freeval && last->value && ! last->valueReadOnly ) free(last->value);
       if ( freeval && last->value ) free(last->value);
       if ( last ) free(last);
 	  last = NULL;
@@ -284,7 +260,6 @@ void jag_hash_destroy(jag_hash_t *htabptr, bool freeval )
 
   /* free the entire array of buckets */
   if (htabptr->bucket != NULL && htabptr->size > 0) {
-    // check size > 0 ? above
     free(htabptr->bucket);
     htabptr->bucket = NULL;
     memset(htabptr, 0, sizeof(jag_hash_t));

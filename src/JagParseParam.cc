@@ -25,7 +25,7 @@
 
 JagParseParam::JagParseParam( const JagParser *jps ) 
 { 
-	_jagParser = jps; // const
+	_jagParser = jps; 
 	initCtor( ); 
 }
 
@@ -60,21 +60,17 @@ void JagParseParam::initCtor()
 
 JagParseParam::~JagParseParam()
 {
-	//prt(("s3088 JagParseParam::~JagParseParam() \n" ));
 	destroy();
 }
 
 void JagParseParam::init( const JagParseAttribute *ijpa, bool needClean )
 {
-	// clean old tree, vector and hashmap
-	//prt(("s8408 JagParseParam::init needClean=%d ijpa=%0x\n", needClean, ijpa ));
 	if ( needClean ) {
 		clean();
 	}
 
 	initCtor();
 
-	// strings
 	uid = passwd = dbName = batchFileName = "";
 	selectTablistClause = selectColumnClause = selectWhereClause = selectGroupClause = selectHavingClause = "";
 	selectOrderClause = selectLimitClause = selectTimeoutClause = selectPivotClause = selectExportClause = "";
@@ -91,11 +87,8 @@ void JagParseParam::init( const JagParseAttribute *ijpa, bool needClean )
 	if ( ijpa ) jpa = *ijpa;
 }
 
-// clean all trees and reset all vectors
 void JagParseParam::clean()
 {	
-	// clean objectVec, orderVec, groupVec, otherVec, createAttrVec, updSetVec, selColVec, joinOnVec, whereVec, havingVec, offsetVec and map
-	prt(("s0283838 JagParseParam::clean() ...\n"));
 	objectVec.clean(); 
 	orderVec.clean(); 
 	groupVec.clean(); 
@@ -106,10 +99,8 @@ void JagParseParam::clean()
 	selAllColVec.clean(); 
 	joinOnVec.clean(); 
 	whereVec.clean(); 
-	//offsetVec.clean(); 
 	jpa.clean();
 
-	// havingVec.clean(); 
 	_selectStar = false;
 	cmd = 0;
 	value = "";
@@ -138,12 +129,6 @@ void JagParseParam::clean()
 		delete _lineFile;
 		_lineFile = NULL;
 	}
-
-	/***
-	prt(("s0283838 JagParseParam::destroy() ...\n"));
-	destroy();
-	prt(("s0283838 JagParseParam::destroy() done\n"));
-	**/
 }
 
 void JagParseParam::destroy()
@@ -174,8 +159,6 @@ void JagParseParam::destroy()
 }
 
 
-// method to set select where tree
-// return value <= 0 error; 1 OK
 int JagParseParam::setSelectWhere( )
 {
 	if ( this->selectWhereClause.length() < 1 ) return -2500;
@@ -187,17 +170,13 @@ int JagParseParam::setSelectWhere( )
 
 	int last = this->whereVec.length()-1;
 	this->whereVec[last].tree->init( this->jpa, this );
-	this->setupCheckMap(); // uses objectVec
-	prt(("s083772 JagParseParam::setSelectWhere() last=%d parse ... pwhere=[%s]\n", last, pwhere ));
+	this->setupCheckMap(); 
 	this->whereVec[last].tree->parse( _jagParser, pwhere, 1, *treeCheckMap, joinColMap, 
 								       this->whereVec[last].colList );
 	this->hasWhere = 1;
 	return 1;
 }
 
-// method to set select where tree
-// return value <= 0 error; 1 OK
-// extraWhere: "where1|where2|where3|"
 int JagParseParam::resetSelectWhere( const Jstr &extraWhere )
 {
 	JagHashMap<AbaxString, AbaxInt> hash;
@@ -215,7 +194,6 @@ int JagParseParam::resetSelectWhere( const Jstr &extraWhere )
 		}
 	}
 
-	//prt(("s4035 resetSelectWhere selectWhereClause=[%s] extraWhere=[%s]\n", selectWhereClause.c_str(), extraWhere.c_str() ));
 	if ( selectWhereClause.size() > 0 && newWhere.size() > 0 ) {
 		selectWhereClause = Jstr("(") + selectWhereClause + ") and (" + newWhere + ")";
 	} else if ( newWhere.size() > 0 ) {
@@ -225,13 +203,6 @@ int JagParseParam::resetSelectWhere( const Jstr &extraWhere )
 	return 1;
 }
 
-// method to setup hashmap of treeCheckMap
-// return 0: already set, ignore; return 1: set treeCheckMap
-// treeCheckMap: key=db.tab.idx  value: index number in objectVec
-// treeCheckMap: key=db.idx      value: index number in objectVec
-// treeCheckMap: key=idx      value: index number in objectVec
-// treeCheckMap: key=db.tab      value: index number in objectVec
-// treeCheckMap: key=tab      value: index number in objectVec
 int JagParseParam::setupCheckMap()
 {
 	initTreeCheckMap();
@@ -242,27 +213,20 @@ int JagParseParam::setupCheckMap()
 	for ( int i = 0; i < objectVec.length(); ++i ) {
 		pair.value = i;
 		if ( JAG_INSERTSELECT_OP == opcode ) pair.value = 0;
-		// put "<db.tab<db.tab,cnt>>", "<tab<db.tab,cnt>>" or 
-		// "<db.tab.idx<db.tab.idx,cnt>>", "<db.idx<db.tab.idx,cnt>>", "<idx<db.tab.idx,cnt>>" into treeCheckMap
 		if ( objectVec[i].indexName.length() > 0 ) {
 			fname = objectVec[i].dbName + "." + objectVec[i].tableName + "." + objectVec[i].indexName;
 			pair.key = fname;
-			// "<db.tab.idx<db.tab.idx,cnt>>"
 			pname = fname;
 			treeCheckMap->addKeyValue( pname, pair );
-			// "<db.idx<db.tab.idx,cnt>>"
 			pname = objectVec[i].dbName + "." + objectVec[i].indexName;
 			treeCheckMap->addKeyValue( pname, pair );
-			// "<idx<db.tab.idx,cnt>>"
 			pname = objectVec[i].indexName;
 			treeCheckMap->addKeyValue( pname, pair );
 		} else {
 			fname = objectVec[i].dbName + "." + objectVec[i].tableName;
 			pair.key = fname;
-			// "<db.tab<db.tab,cnt>>"
 			pname = fname;
 			treeCheckMap->addKeyValue( pname, pair );
-			// "<tab<db.tab,cnt>>"
 			pname = objectVec[i].tableName;
 			treeCheckMap->addKeyValue( pname, pair );
 		}
@@ -274,7 +238,6 @@ int JagParseParam::setupCheckMap()
 	return 1;
 }
 
-//////////////////////////// OtherAttribute ///////////////////
 OtherAttribute::OtherAttribute()
 {
 	init();
@@ -326,7 +289,6 @@ void OtherAttribute::print()
 	prt(("  linestr.size=[%d]\n", linestr.size() ));
 }
 
-//////////////////////////// OnlyTreeAttribute //////////////
 void OnlyTreeAttribute::init( const JagParseAttribute &jpa, JagParseParam *pram ) 
 {
  	destroy();
@@ -343,7 +305,6 @@ void OnlyTreeAttribute::destroy()
 	}
 }
 
-// rebuild select sql from internal saved statements
 Jstr JagParseParam::formSelectSQL()
 {
 	Jstr q;
@@ -370,7 +331,6 @@ Jstr JagParseParam::formSelectSQL()
 		q += Jstr(" timeout ") +  selectTimeoutClause + " ";
 	}
 
-	// prt(("s3028 selectExportClause=[%s]\n", selectExportClause.c_str() ));
 	if ( hasExport ) {
 		q +=  selectExportClause;
 	}
@@ -526,43 +486,8 @@ void JagParseParam::print()
 		}
 	}	
 
-	/***
-	if ( this->havingVec.size() > 0 ) {
-		prt(("-----------------select having vector------------------\n"));
-		for ( int i = 0; i < this->havingVec.size(); ++i ) {
-			ExprElementNode *root = this->havingVec[i].tree->getRoot();
-			if ( root ) root->print(0);
-			prt(("\n"));
-		}
-	}
-	***/
-
-	/***
-	if ( this->offsetVec.size() > 0 ) {
-		prt(("-----------------offset vector------------------\n"));
-		for ( int i = 0; i < this->offsetVec.size(); ++i ) {
-			prt(("offset=[%d]\n", this->offsetVec[i]));
-		}
-	}
-	***/
-
-	/***
-	if ( this->insColMap.size() > 0 ) {
-		prt(("-----------------insert column map------------------\n"));
-		// this->insColMap.printKeyStringValueInteger();
-		prt(("\n"));
-	}
-
-	if ( this->joinColMap.size() > 0 ) {
-		prt(("-----------------join column map------------------\n"));
-		// this->joinColMap.printKeyStringValueInteger();
-		prt(("\n"));
-	}
-	***/
-
 	if ( treeCheckMap && treeCheckMap->size() > 0 ) {
 		prt(("-----------------tree check map------------------\n"));
-		// this->treeCheckMap.printKeyStringOnly();
 		prt(("\n"));
 	}
 
@@ -573,16 +498,11 @@ void JagParseParam::addMetrics( const CreateAttribute &pointcattr, int offset, i
 	if ( pointcattr.metrics < 1 ) return;
 	for ( int i=0; i < pointcattr.metrics; ++i ) {
 		CreateAttribute cattr;
-		cattr.objName.colName = pointcattr.objName.colName + ":m" + intToStr(i+1);  // col:m1, col:m2, ...
-		//fillStringSubData( cattr, offset, int isKey, int len, int isMute, int isSub )
+		cattr.objName.colName = pointcattr.objName.colName + ":m" + intToStr(i+1);
 		fillStringSubData( cattr, offset, isKey, JAG_METRIC_LEN, 0, true, false );
 	}
 }
 
-
-
-// add double :
-// add x y columns
 int JagParseParam::addPointColumns( const CreateAttribute &pointcattr )
 {
 	int iskey = false;
@@ -602,8 +522,6 @@ int JagParseParam::addPointColumns( const CreateAttribute &pointcattr )
 	return 2 + pointcattr.metrics;
 }
 
-
-// add x y z columns
 int JagParseParam::addPoint3DColumns( const CreateAttribute &pointcattr )
 {
 	int iskey = false;
@@ -627,8 +545,6 @@ int JagParseParam::addPoint3DColumns( const CreateAttribute &pointcattr )
 	return 3 + pointcattr.metrics;
 }
 
-
-// add x y r columns
 int JagParseParam::addCircleColumns( const CreateAttribute &pointcattr )
 {
 	int iskey = false;
@@ -652,7 +568,6 @@ int JagParseParam::addCircleColumns( const CreateAttribute &pointcattr )
 	return 3;
 }
 
-// add x y a nx columns
 int JagParseParam::addSquareColumns( const CreateAttribute &pointcattr )
 {
 	int iskey = false;
@@ -678,7 +593,6 @@ int JagParseParam::addSquareColumns( const CreateAttribute &pointcattr )
 	return 3;
 }
 
-// add x y width height columns
 int JagParseParam::addColumns( const CreateAttribute &pointcattr,
 					bool hasX, bool hasY, bool hasZ, 
 					bool hasWidth, bool hasDepth, bool hasHeight,
@@ -736,8 +650,6 @@ int JagParseParam::addColumns( const CreateAttribute &pointcattr,
 	return 4;
 }
 
-
-// add x y z width depth height columns
 int JagParseParam::addBoxColumns( const CreateAttribute &pointcattr )
 {
 	int iskey = false;
@@ -777,7 +689,6 @@ int JagParseParam::addBoxColumns( const CreateAttribute &pointcattr )
 	return 6;
 }
 
-// add x y z r height columns
 int JagParseParam::addCylinderColumns( const CreateAttribute &pointcattr )
 {
 	int iskey = false;
@@ -791,19 +702,15 @@ int JagParseParam::addCylinderColumns( const CreateAttribute &pointcattr )
 	cattr.objName.colName = pointcattr.objName.colName + ":x";
 	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
-	// y col
 	cattr.objName.colName = pointcattr.objName.colName + ":y";
 	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
-	// z col
 	cattr.objName.colName = pointcattr.objName.colName + ":z";
 	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
-	// r col
 	cattr.objName.colName = pointcattr.objName.colName + ":a";
 	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
-	// height col
 	cattr.objName.colName = pointcattr.objName.colName + ":c";
 	fillDoubleSubData( cattr, offset, iskey, 0, true, false );
 
@@ -817,12 +724,6 @@ int JagParseParam::addCylinderColumns( const CreateAttribute &pointcattr )
 	return 5;
 }
 
-// optype is 'R' 'W' 'C' 'D'
-// return 1: simple cmds, with optype=='D' : show/desc etc
-// return 2: schema/userid changed cmd, with optype=='C' : create/drop/truncate/alter/import etc.
-// return 3, 4: write related cmd, with optype=='W' : 3 for insert/cinsert and 4 for update/delete
-// return 5, 6: read related cmd, with optype=='R' : 5 for select/count and 6 for join/starjoin/indexjoin
-// return 0: others invalid
 short JagParseParam::checkCmdMode()
 {
 	if ( optype == 'D' ) return 1;
@@ -852,7 +753,6 @@ void JagParseParam::fillDoubleSubData( CreateAttribute &cattr, int &offset, int 
 		this->keyLength += cattr.length;
 	} else {
 		*(cattr.spare) = JAG_C_COL_VALUE;
-		//this->valueLength += 1+cattr.length;
 		this->valueLength += cattr.length;
 	}
 	*(cattr.spare+2) = JAG_ASC;
@@ -872,7 +772,6 @@ void JagParseParam::fillDoubleSubData( CreateAttribute &cattr, int &offset, int 
 	offset += JAG_GEOM_TOTLEN;
 }
 
-// modifies cattr,  this->createAttrVec this->keyLength this->valueLength
 void JagParseParam::fillIntSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub, bool isRollup )
 {
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
@@ -905,7 +804,6 @@ void JagParseParam::fillIntSubData( CreateAttribute &cattr, int &offset, int isk
 	offset += JAG_DINT_FIELD_LEN;
 }
 
-// modifies cattr,  this->createAttrVec this->keyLength this->valueLength
 void JagParseParam::fillSmallIntSubData( CreateAttribute &cattr, int &offset, int iskey, int isMute, int isSub, bool isRollup )
 {
 	cattr.spare[JAG_SCHEMA_SPARE_LEN] = '\0';
@@ -916,11 +814,9 @@ void JagParseParam::fillSmallIntSubData( CreateAttribute &cattr, int &offset, in
 	cattr.sig = 0;
 	if ( iskey ) {
 		*(cattr.spare) = JAG_C_COL_KEY;
-		//this->keyLength += 1+cattr.length;
 		this->keyLength += cattr.length;
 	} else {
 		*(cattr.spare) = JAG_C_COL_VALUE;
-		//this->valueLength += 1+cattr.length;
 		this->valueLength += cattr.length;
 	}
 
@@ -982,7 +878,6 @@ void JagParseParam::fillRangeSubData( int colLen, CreateAttribute &cattr, int &o
 
 	Jstr ctype = JagParser::getFieldType( cattr.srid ); 
 	cattr.type = ctype;
-	//prt(("s3387 fillRangeSubData srid=%d ctype=[%s]\n", cattr.srid, ctype.c_str() ));
 
 	cattr.offset = offset;
 	cattr.length = colLen;		
@@ -1016,7 +911,6 @@ void JagParseParam::fillRangeSubData( int colLen, CreateAttribute &cattr, int &o
 	offset += colLen;
 }
 
-// add x1 y1 z1 x2 y2 z2  columns
 int JagParseParam::addLineColumns( const CreateAttribute &pointcattr, bool is3D )
 {
 	int iskey = false;
@@ -1054,7 +948,6 @@ int JagParseParam::addLineColumns( const CreateAttribute &pointcattr, bool is3D 
 	return 4;
 }
 
-// add  x y columns
 int JagParseParam::addLineStringColumns( const CreateAttribute &pointcattr, bool is3D )
 {
 	int iskey = false;
@@ -1081,7 +974,6 @@ int JagParseParam::addLineStringColumns( const CreateAttribute &pointcattr, bool
 	return 4;
 }
 
-// add  x y columns
 int JagParseParam::addPolygonColumns( const CreateAttribute &pointcattr, bool is3D )
 {
 	int iskey = false;
@@ -1108,8 +1000,6 @@ int JagParseParam::addPolygonColumns( const CreateAttribute &pointcattr, bool is
 	return 4;
 }
 
-
-// add x1 y1 z1 x2 y2 z2  columns
 int JagParseParam::addTriangleColumns( const CreateAttribute &pointcattr, bool is3D )
 {
 	int iskey = false;
@@ -1157,8 +1047,6 @@ int JagParseParam::addTriangleColumns( const CreateAttribute &pointcattr, bool i
 	return 4;
 }
 
-
-// add  begin end columns
 int JagParseParam::addRangeColumns( int colLen, const CreateAttribute &pointcattr )
 {
 	int iskey = false;
@@ -1169,7 +1057,6 @@ int JagParseParam::addRangeColumns( int colLen, const CreateAttribute &pointcatt
 	CreateAttribute cattr;
 	int offset = pointcattr.offset;
 	cattr.srid = pointcattr.srid;
-	//prt(("s3832 addRangeColumns srid=%d\n", cattr.srid ));
 
 	cattr.objName.colName = pointcattr.objName.colName + ":begin";
 	fillRangeSubData( colLen, cattr, offset, iskey, true, false );
@@ -1199,22 +1086,18 @@ void JagParseParam::initColHash()
 
 bool JagParseParam::isSelectConst() const
 {
-	//prt(("s1773 _allColumns.size()=%d _selectStar=%d objectVec.size()=%d\n", _allColumns.size(), _selectStar, objectVec.size() ));
 	if ( _allColumns.size() < 1 && ! _selectStar && objectVec.size() < 1 ) {
-		//prt(("s2838 true\n" ));
 		return true;
 	} else {
 		return false;
 	}
 }
 
-// obj method
 bool JagParseParam::isJoin() const
 {
 	return isJoin( opcode );
 }
 
-// static method
 bool JagParseParam::isJoin( int code ) 
 {
     if (JAG_INNERJOIN_OP == code ||
@@ -1249,14 +1132,10 @@ void JagParseParam::initJoinColMap()
 	}
 }
 
-// window: "window(5m, col)"
 bool JagParseParam::isWindowValid( const Jstr &window )
 {
-	prt(("p12232 window=[%s]\n", window.s() ));
 	Jstr params = window.substrc('(', ')');
-	prt(("p12238 params=[%s]\n", params.s() ));
 	if ( params.size() < 1 ) return false;
-
 	
 	if ( ! params.containsChar(',') ) return false;
 	params.replace(',', ' ' );
@@ -1269,11 +1148,9 @@ bool JagParseParam::isWindowValid( const Jstr &window )
 	if ( lastc == 's' || lastc == 'm' || lastc == 'h' || lastc == 'd'
 	     || lastc == 'w' || lastc == 'M' || lastc == 'q' || lastc == 'y' || lastc == 'D' ) {
 	} else {
-		prt(("p21109 wrong period\n"));
 		return false;
 	}
 
-	prt(("p2330 col=[%s]\n", col.s() ));
 	return isValidCol( col.s() );
 }
 

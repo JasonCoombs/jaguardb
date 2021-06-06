@@ -30,19 +30,10 @@
 #include <JagUtil.h>
 #include <JagDiskArrayFamily.h>
 
-/***************************************************************************
-**
-** Client object to manage one  file
-**
-***************************************************************************/
-
 // fpath is full path of a file, without stripe number
 // all JDFS methods process localfile only
-// ctor
-//JDFS::JDFS( JagDBServer *servobj, JagDiskArrayFamily *fam, const Jstr &fpath, int klen, int vlen, jagint stripeSize )
 JDFS::JDFS( JagDBServer *servobj, JagDiskArrayFamily *fam, const Jstr &fpath, int klen, int vlen )
 {
-	prt(("s19384 JDFS ctor fpath=[%s] klen=%d vlen=%d\n", fpath.c_str(), klen, vlen ));
 	_klen = klen;
 	_vlen = vlen;
 	_kvlen = klen + vlen;
@@ -54,11 +45,9 @@ JDFS::JDFS( JagDBServer *servobj, JagDiskArrayFamily *fam, const Jstr &fpath, in
 	} else {
 		_jdfsMgr = new JagFSMgr();
 	}
-	//_stripeSize = _jdfsMgr->getStripeSize( _fpath, _kvlen, stripeSize ); // # of kvlens, ie., arrlen
 	_stripeSize = _jdfsMgr->getStripeSize( _fpath, _kvlen ); // # of kvlens, ie., arrlen
 }
 
-// dtor
 JDFS::~JDFS()
 {
 	close();
@@ -73,13 +62,6 @@ JagCompFile *JDFS::getCompf( )
 {
 	return _jdfsMgr->openf( _family, _fpath, _klen, _vlen );
 }
-
-/**
-jagint JDFS::getFileSize() const
-{
-	return _jdfsMgr->getFileSize( _fpath, _kvlen );
-}
-**/
 
 int JDFS::exist() const
 {
@@ -115,8 +97,6 @@ int JDFS::fallocate( jagint offset, jagint len )
 	int rc = 0;
 	JagCompFile *fd = _jdfsMgr->openf( _family, _fpath, _klen, _vlen, true );
 	if ( NULL == fd ) rc = -1;
-	//return jagftruncate( fd, offset+len );
-	//prt(("s28829 JDFS::fallocate _fpath=[%s] rc=%d\n", _fpath.c_str(), rc ));
 	return rc;
 }
 
@@ -133,7 +113,6 @@ jagint JDFS::pread( char *buf, size_t len, size_t offset ) const
 	if ( offset < 0 ) offset = 0;
 	JagCompFile *compf = _jdfsMgr->openf( _family, _fpath, _klen, _vlen );
 	if ( ! compf ) {
-		prt(("s20993 JDFS::pread compf=NULL, return -1\n" ));
 		return -1;
 	}
 	offset = _jdfsMgr->pread( compf, buf, len, offset );
@@ -146,7 +125,6 @@ jagint JDFS::pwrite( const char *buf, size_t len, size_t offset )
 	if ( offset < 0 ) offset = 0;
 	JagCompFile *compf = _jdfsMgr->openf( _family, _fpath, _klen, _vlen );
 	if ( ! compf ) {
-		prt(("s332939 JDFS::pwrite compf is NULL\n" ));
 		return -1;
 	}
 	offset = _jdfsMgr->pwrite( compf, buf, len, offset );
@@ -157,7 +135,6 @@ jagint JDFS::pwrite( const char *buf, size_t len, size_t offset )
 ssize_t jdfpread( const JDFS *jdfs, char *buf, jagint len, jagint startpos )
 {
 	ssize_t s;
-	prt(("s5524 jdfpread(len=%d startpos=%d)\n", len, startpos ));
 
 	#ifdef CHECK_LATENCY
 		JagClock clock;

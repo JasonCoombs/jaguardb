@@ -55,52 +55,35 @@ JagReadWriteMutex::JagReadWriteMutex( pthread_rwlock_t *lock, int type )
 {
 	_lock = lock;
 	_type = type;
-	//prt(("s6376 JagReadWriteMutex _lock=%0x type=%d getlock...\n", _lock, type ));
 
 	if ( type != READ_LOCK && type != WRITE_LOCK ) {
-		printf("c2738 Error JagReadWriteMutex ctor invalid mutex. set it to WRITE lock.\n");
 		_type = WRITE_LOCK;
 	}
 
 	if ( _type == READ_LOCK ) {
     	JAG_BLURT 
-		//if ( _lock ) _lock->readLock();
 		if ( _lock )  pthread_rwlock_rdlock( _lock );
-
-
-		// printf("ctor of JagReadWriteMutex %0x  read called\n", _lock );
     	JAG_OVER
 	} else {
     	JAG_BLURT 
-		//if ( _lock ) _lock->writeLock();
 		if ( _lock ) pthread_rwlock_wrlock( _lock );
     	JAG_OVER
-		// printf("ctor of JagReadWriteMutex %0x  write called\n", _lock );
 	}
-
-	// prt(("s6377 JagReadWriteMutex lock=%0x type=%d gotlock\n", _lock, type ));
 }
 
 JagReadWriteMutex::~JagReadWriteMutex( )
 {
 	if ( _type == READ_LOCK ) {
-		//if ( _lock ) _lock->readUnlock();
 		if ( _lock ) pthread_rwlock_unlock( _lock );
-		// printf("dtor of JagReadWriteMutex %0x  read called\n", _lock );
 	} else if (  _type == WRITE_LOCK ) {
-		//if ( _lock ) _lock->writeUnlock();
 		if ( _lock ) pthread_rwlock_unlock( _lock );
-		// printf("dtor of JagReadWriteMutex %0x  write called\n", _lock );
 	} 
-
-	// prt(("s6378 JagReadWriteMutex lock=%0x unlocked\n", _lock ));
 }
 
 void JagReadWriteMutex::readLock()
 {
 	_type = READ_LOCK;
 	JAG_BLURT
-	//if ( _lock ) _lock->readLock();
 	if ( _lock ) pthread_rwlock_rdlock( _lock );
 	JAG_OVER
 }
@@ -108,7 +91,6 @@ void JagReadWriteMutex::readLock()
 void JagReadWriteMutex::readUnlock()
 {
 	_type = 0;
-	//if ( _lock ) _lock->readUnlock();
 	if ( _lock ) pthread_rwlock_unlock( _lock );
 }
 
@@ -117,7 +99,6 @@ void JagReadWriteMutex::writeLock()
 {
 	_type = WRITE_LOCK;
 	JAG_BLURT
-	//if ( _lock ) _lock->writeLock();
 	if ( _lock ) pthread_rwlock_wrlock( _lock );
 	JAG_OVER
 }
@@ -125,7 +106,6 @@ void JagReadWriteMutex::writeLock()
 void JagReadWriteMutex::writeUnlock()
 {
 	_type = 0; 
-	//if ( _lock ) _lock->writeUnlock();
 	if ( _lock ) pthread_rwlock_unlock( _lock );
 }
 
@@ -133,12 +113,7 @@ void JagReadWriteMutex::unlock()
 {
 	if ( ! _lock ) return;
 
-	/**
-	if ( WRITE_LOCK == _type ) _lock->writeUnlock();
-	else _lock->readUnlock();
-	**/
 	pthread_rwlock_unlock( _lock );
-
 	_type = 0; 
 }
 
@@ -151,106 +126,6 @@ void JagReadWriteMutex::upgradeToWriteLock()
 	JAG_OVER
 }
 **/
-
-
-// class JagReadWriteLock 
-
-#if 0
-JagReadWriteLock::JagReadWriteLock()
-      : _numReaders(0), _numWriters(0), _numWritersWaiting(0),
-      class_mutex(PTHREAD_MUTEX_INITIALIZER),
-      _readerCond(PTHREAD_COND_INITIALIZER),
-      _writeCond(PTHREAD_COND_INITIALIZER)
-{
-}
-
-JagReadWriteLock::~JagReadWriteLock()
-{
-        pthread_mutex_destroy(&class_mutex);
-        pthread_cond_destroy(&_readerCond);
-        pthread_cond_destroy(&_writeCond);
-}
-
-void JagReadWriteLock::readLock()
-{
-	JAG_BLURT
-        pthread_mutex_lock(&class_mutex);
-		// if there are writers, wait for them to give a read signal
-        while(_numWriters>0) {
-            pthread_cond_wait(&_readerCond, &class_mutex);
-        }
-        _numReaders++;        
-        pthread_mutex_unlock(&class_mutex);
-	JAG_OVER
-}
-
-void JagReadWriteLock::readUnlock()
-{
-        pthread_mutex_lock(&class_mutex);
-        _numReaders--;
-
-		// if i am last reader and there are writers waiting, give a write signal
-        if(_numReaders==0 && _numWritersWaiting>0)
-            pthread_cond_signal(&_writeCond);
-
-        pthread_mutex_unlock(&class_mutex);
-}
-
-void JagReadWriteLock::writeLock()
-{
-	JAG_BLURT
-        pthread_mutex_lock(&class_mutex);
-        _numWritersWaiting++;
-
-		// if there are any readers or writers, wait for write signal
-        while(_numReaders>0 || _numWriters>0) {
-            pthread_cond_wait(&_writeCond, &class_mutex);
-        }
-
-        _numWritersWaiting--; 
-		_numWriters++;
-        pthread_mutex_unlock(&class_mutex);
-	JAG_OVER
-}
-
-
-void JagReadWriteLock::writeUnlock()
-{
-        pthread_mutex_lock(&class_mutex);
-        _numWriters--;
-
-		// if there are writers waiting, give a write signal
-        if( _numWritersWaiting > 0)
-            pthread_cond_signal(&_writeCond);
-
-		// broadcast a read signal
-        pthread_cond_broadcast(&_readerCond);
-        pthread_mutex_unlock(&class_mutex);
-}
-
-// upgrade readlock to write lock
-void JagReadWriteLock::upgradeToWriteLock()
-{
-	JAG_BLURT
-        pthread_mutex_lock(&class_mutex);
-		// i am done with reading
-        _numReaders--;
-
-		// i am waiting to write
-        _numWritersWaiting++;
-
-		// if there are any readers or writers, wait for write signal
-        while(_numReaders>0 || _numWriters>0) {
-            pthread_cond_wait(&_writeCond, &class_mutex);
-        }
-
-        _numWritersWaiting--; 
-		_numWriters++;
-        pthread_mutex_unlock(&class_mutex);
-	JAG_OVER
-}
-#endif
-
 
 pthread_rwlock_t *newJagReadWriteLock()
 {

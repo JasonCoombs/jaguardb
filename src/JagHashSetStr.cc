@@ -20,14 +20,12 @@
 #include <JagHashSetStr.h>
 #include <JagUtil.h>
 
-// ctor
 JagHashSetStr::JagHashSetStr()
 {
 	jag_hash_set_init( &_hash, 10 );
 	_len = 0;
 }
 
-// dtor
 JagHashSetStr::~JagHashSetStr()
 {
 	jag_hash_set_destroy( &_hash );
@@ -66,7 +64,6 @@ void JagHashSetStr::reset()
 	_len = 0;
 }
 
-// copy ctor 
 JagHashSetStr::JagHashSetStr( const JagHashSetStr &o )
 {
 	jag_hash_set_init( &_hash, 10 );
@@ -82,7 +79,6 @@ JagHashSetStr::JagHashSetStr( const JagHashSetStr &o )
 	}
 }
 
-// assignment =
 JagHashSetStr& JagHashSetStr:: operator= ( const JagHashSetStr &o )
 {
 	if ( this == &o ) return *this;

@@ -22,33 +22,22 @@
 #include <JagUtil.h>
 #include <JDFS.h>
 
-// inline JagBuffWriter<Pair>::JagBuffWriter( int fd, int kvlen, jagint headoffset )
 JagBuffWriter::JagBuffWriter( JDFS *jdfs, int kvlen, jagint headoffset, jagint bufferSize )
 {
 	_jdfs = jdfs;
 	KVLEN = kvlen;
 
 	if ( bufferSize == -1 ) {
-		//bufferSize = 128;
 		bufferSize = 32;
 	}
 	SUPERBLOCK = bufferSize*1024*1024/KVLEN/JagCfg::_BLOCK*JagCfg::_BLOCK;
 	SUPERBLOCKLEN = SUPERBLOCK * KVLEN;
-	/***
-	if ( SUPERBLOCKLEN > 128*1024*1024 ) {
-		SUPERBLOCK = (128*1024*1024)/KVLEN;
-		SUPERBLOCKLEN = SUPERBLOCK * KVLEN;
-	}
-	***/
 
-	//raydebug( stdout, JAG_LOG_HIGH, "s2829 bufwtr SUPERBLOCKLEN=%l ...\n", SUPERBLOCKLEN );
 	_superbuf = (char*) jagmalloc( SUPERBLOCKLEN );
-	//raydebug( stdout, JAG_LOG_HIGH, "s2829 bufwtr SUPERBLOCKLEN=%l done\n", SUPERBLOCKLEN );
 	_lastBlock = -1;
 	_relpos = -1;
 	_headoffset = headoffset;
 
-	// lseek( fd, 0, SEEK_SET );
 	memset( _superbuf, 0, SUPERBLOCKLEN );
 }
 
@@ -58,7 +47,6 @@ JagBuffWriter::~JagBuffWriter()
 		free( _superbuf );
 		_superbuf = NULL;
 		jagmalloc_trim( 0 );
-		//raydebug( stdout, JAG_LOG_HIGH, "s2829 bufwtr SUPERBLOCKLEN=%l dtor\n", SUPERBLOCKLEN );
 	}
 }
 
@@ -75,10 +63,8 @@ void JagBuffWriter::writeit( jagint pos, const char *keyvalbuf, jagint KVLEN )
 	if ( newBlock == _lastBlock ) {
 		memcpy( _superbuf+_relpos*KVLEN, keyvalbuf, KVLEN );
 		return;
-	} else { // moved to new block, flush old block
-		// prt(("s3005 raypwrite rcc\n" ));
+	} else { 
 		raypwrite( _jdfs, _superbuf, SUPERBLOCKLEN, _lastBlock * SUPERBLOCKLEN + _headoffset );
-		// prt(("s3006 raypwrite rcc\n" ));
 		memset( _superbuf, 0, SUPERBLOCKLEN );
 		memcpy( _superbuf+_relpos*KVLEN, keyvalbuf, KVLEN );
 		_lastBlock = newBlock;
@@ -91,9 +77,7 @@ void JagBuffWriter::flushBuffer()
 	if ( _lastBlock == -1 ) {
 		return;
 	}
-	// prt(("s3007 raypwrite rcc\n" ));
 	raypwrite( _jdfs, _superbuf, (_relpos+1)*KVLEN, _lastBlock*SUPERBLOCKLEN + _headoffset );
-	// prt(("s3008 raypwrite rcc\n" ));
 	_lastBlock = -1;
 	_relpos = -1;
 	return;

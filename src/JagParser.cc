@@ -29,73 +29,43 @@
 
 JagParser::JagParser( void *obj, bool isCli )
 {
-    // prt(("s0293848 JagParser ctor obj=%0x isCli=%d\n", obj, isCli ));
     _obj = obj;
 	_isCli = isCli;
 }
 
-
-// return 0: for error, 1: OK
 bool JagParser::parseCommand( const JagParseAttribute &jpa, const Jstr &cmd, JagParseParam *parseParam, Jstr &errmsg ) 
 {
-	prt(("\n**************** parseCommand cmd=[%s] *****************\n", cmd.s() ));
 	int cmdcheck;
 	Jstr em;
-	// char *pcmd = strdup(cmd.c_str());
 	char *pcmd = jagmalloc( cmd.size()+1 );
 	memcpy( pcmd, cmd.c_str(), cmd.size() );
 	pcmd [cmd.size()] = '\0';
 
 	char *origpcmd = pcmd;
 
-	prt(("s10823 parseSQL(%s) ...\n", pcmd ));
 	try {
 		cmdcheck = parseSQL( jpa, parseParam, pcmd, cmd.size() );
 	} catch ( int a ) {
 		em = Jstr("Parser exception ") + intToStr( a ) ;
         cmdcheck = 0;
-		//parseParam->parseError = a;
 	} catch ( ... ) {
 		em = Jstr("Parser unknown exception");
 		cmdcheck = 0;
-		//parseParam->parseError = -1000;
 	}
-
-	//prt(("u8820 cmd=[%s] cmdcheck=%d err=[%s] parseSQL done\n", cmd.c_str(), cmdcheck, errmsg.c_str() ));
-	//parseParam->print();
-	// free( pcmd );
-	//origpcmd [cmd.size()] = '\0';
-	free( origpcmd );
 
 	if ( cmdcheck <= 0 ) {
 		errmsg = Jstr("E12328 Error [") + cmd + "] " + em + " " + intToStr(cmdcheck) 
 		          + ": " + jagerr(cmdcheck);
-		//parseParam->parseError = cmdcheck;
-		//parseParam->parseOK = 0;
+		free( origpcmd );
 		return false;
 	}
 
-	//parseParam->parseOK = 1;
-	//parseParam->parseError = 0;
-	prt(("s333028 end of parseCommand [%s] \n", cmd.s() ));
-	// parseParam->print();
+	free( origpcmd );
 	return true;
 }
 
-
-// private method
-// _ptrParam is input/output parameter
-// optype: 
-// 'R' read related, select etc.; 
-// 'W' write related, insert/update/delete etc.;
-// 'C' schema/userid change related, create/drop/truncate/alter/import etc;
-// 'D' other command related, desc/show/load/help/hello; 
-// return: <=0 error; 1: OK
 int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam, char *pcmd, int len )
 {
-	//prt(("s3018 enter parseSQL() cmd=[%s]\n", cmd ));
-	// modifies cmd, so be careful after call this method
-	// first init all
 	int rc = 0;
 	init( jpa, parseParam );
 	_cfg = (JagCfg *)jpa.cfg;
@@ -103,7 +73,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 	_ptrParam->origpos = pcmd;
 	_ptrParam->dbName = jpa.dfdbname;
 
-	// remove last whitespace and ; from sql command
 	char *p = pcmd + len - 1;
 	while ( isspace(*p) && p >= pcmd ) { *p = '\0'; ++p; } 
 	len = strlen(pcmd);
@@ -111,27 +80,21 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		pcmd[len-1] = '\0';
 	}
 
-	// begin new parse
 	_gettok = jag_strtok_r(pcmd, " \t\r\n", &_saveptr);
 	if ( !_gettok ) {
-		// empty pcmd
 		rc = -11010;
 	} else if ( strncasecmp(_gettok, "insertsyncdconly|", 17) == 0 ) {
 		_ptrParam->insertDCSyncHost = _gettok;
-		// prt(("s8830 _gettok=[%s]\n", _gettok ));
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 	}
 
 	if ( !_gettok ) {
-		// empty cmd
 		rc = -11010;
 	} else if ( strcasecmp(_gettok, "select") == 0 ) {
 		_ptrParam->opcode = JAG_SELECT_OP;
 		_ptrParam->optype = 'R';
 		rc = getAllClauses( 0 );
-		// prt(("s2138 getAllClauses rc=%d\n", rc ));
 		if ( rc > 0 ) rc = setAllClauses( 0 );
-		// prt(("s2048 setAllClauses rc=%d\n", rc ));
 	} else if ( strcasecmp(_gettok, "getfile") == 0 ) {
 		_ptrParam->opcode = JAG_GETFILE_OP;
 		_ptrParam->optype = 'R';
@@ -152,7 +115,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				if ( rc > 0 ) rc = setAllClauses( 3 );
 				if ( _ptrParam->objectVec.size() > 2 ) rc = -15;
 			} else if ( rc < 0 ) {
-				// prt(("s0339 setInsertVector rc=%d error\n", rc ));
+				prt(("s0339 setInsertVector rc=%d error\n", rc ));
 			}
 		} else rc = -20;
 	} else if ( strcasecmp(_gettok, "finsert") == 0 ) {
@@ -400,15 +363,12 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				_ptrParam->opcode = JAG_DROPINDEX_OP;
 				_ptrParam->optype = 'C';
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-				//prt(("s2022 _gettok=[%s]\n", _gettok ));
 				if ( _gettok ) {
 					if ( strcasecmp(_gettok, "if") == 0 ) {
 						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-						//prt(("s2024 _gettok=[%s]\n", _gettok ));
 						if ( _gettok && strncasecmp(_gettok, "exists", 5) == 0 ) {
 							_ptrParam->hasExist = 1;
 							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-							//prt(("s2025 _gettok=[%s]\n", _gettok ));
 							p = _gettok;
 						} else rc = -271;
 					} else {
@@ -416,12 +376,11 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 					}
 
 					_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-					//prt(("s2028 _gettok=[%s] shoule be 'on'\n", _gettok ));
 					if ( _gettok && strcasecmp(_gettok, "on") == 0 ) {
-							_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+							_ptrParam->tabidxpos = _saveptr; 
 							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 							if ( _gettok ) {
-								_ptrParam->endtabidxpos = _saveptr; // command position after table/index name
+								_ptrParam->endtabidxpos = _saveptr; 
 								rc = setTableIndexList( 0 );
 								if ( rc > 0 ) {
 									_gettok = p;
@@ -493,7 +452,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						}
 					}
 				} else if ( _gettok && strcasecmp(_gettok, "add") == 0 ) {
-					//_ptrParam->cmd = JAG_SCHEMA_ADD_COLUMN;
 					_gettok = (char*)tabname.c_str();
 					rc = setTableIndexList( 0 );
 					if ( rc > 0 ) {
@@ -509,7 +467,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 							if ( ! _gettok ) return -10412;
 							_ptrParam->value = _gettok;
 							_ptrParam->value.remove("()");
-							prt(("p11220 _ptrParam->value=[%s]\n", _ptrParam->value.s() ));
 							_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 							if ( !_gettok ) rc = 1; // ended properly
 							else rc = -10413;
@@ -549,7 +506,7 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 						_ptrParam->cmd = JAG_SCHEMA_CHANGE_RETENTION;
 
 						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
-						if ( !_gettok ) rc = 1; // ended properly
+						if ( !_gettok ) rc = 1; 
 						else rc = -10433;
 					}
 				} else if ( _gettok && strcasecmp(_gettok, "set") == 0 ) {
@@ -688,10 +645,10 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 			_ptrParam->batchFileName = expandEnvPath(_gettok);
 			_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 			if ( _gettok && strcasecmp(_gettok, "into") == 0 ) {
-				_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+				_ptrParam->tabidxpos = _saveptr;
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 				if ( _gettok ) {
-					_ptrParam->endtabidxpos = _saveptr; // command position after table/index name
+					_ptrParam->endtabidxpos = _saveptr; 
 					rc = setTableIndexList( 0 );
 					if ( rc > 0 ) {
 						if ( !_saveptr || *_saveptr == '\0' ) {
@@ -710,10 +667,10 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		if ( *_gettok == '_' ) _ptrParam->opcode = JAG_EXEC_DESC_OP;
 		else _ptrParam->opcode = JAG_DESCRIBE_OP;
 		_ptrParam->optype = 'D';
-		_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+		_ptrParam->tabidxpos = _saveptr; 
 		_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 		if ( _gettok ) {
-			_ptrParam->endtabidxpos = _saveptr; // command position after table/index name
+			_ptrParam->endtabidxpos = _saveptr; 
 			rc = setTableIndexList( 0 );
 			if ( rc > 0 ) {
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
@@ -745,7 +702,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 					else _ptrParam->opcode = JAG_SHOWTABLE_OP;
 					_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 					if ( !_gettok ) rc = 1;
-					//else rc = -670;
 					else if ( strcasecmp( _gettok, "like" ) == 0 ) {
 						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 						if ( _gettok ) {
@@ -843,12 +799,12 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 				} else if ( 0==strcasecmp( _gettok, "create" ) ) {
 					_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 					if ( _gettok && 0==strncasecmp( _gettok, "table", 5 ) ) {
-						_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+						_ptrParam->tabidxpos = _saveptr; 
 						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 						if ( _gettok ) {
 							_ptrParam->opcode = JAG_SHOW_CREATE_TABLE_OP;
 							_ptrParam->optype = 'D';
-							_ptrParam->endtabidxpos = _saveptr; // command position after table/index name
+							_ptrParam->endtabidxpos = _saveptr; 
 							rc = setTableIndexList( 0 );
 							if ( rc > 0 ) {
 								_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
@@ -857,12 +813,12 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 							}
 						} else rc = -795;
 					} else if (  _gettok && 0==strncasecmp( _gettok, "chain", 5 ) ) {
-						_ptrParam->tabidxpos = _saveptr; // command position before table/index name
+						_ptrParam->tabidxpos = _saveptr; 
 						_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 						if ( _gettok ) {
 							_ptrParam->opcode = JAG_SHOW_CREATE_CHAIN_OP;
 							_ptrParam->optype = 'D';
-							_ptrParam->endtabidxpos = _saveptr; // command position after table/index name
+							_ptrParam->endtabidxpos = _saveptr; 
 							rc = setTableIndexList( 0 );
 							if ( rc > 0 ) {
 								_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
@@ -913,12 +869,10 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 		if ( !_gettok ) { rc = -900; }
 		else {
 			_ptrParam->grantPerm = Jstr( _saveptr, _gettok-_saveptr-1);
-			// prt(("s2139 grantPerm=[%s]\n", _ptrParam->grantPerm.c_str() ));
 			if ( ! isValidGrantPerm( _ptrParam->grantPerm ) ) {
 				rc = -902;
 			} else {
 				_saveptr = _gettok + 2;
-				// prt(("s3002 _saveptr=[%s]\n", _saveptr ));
 				_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 				if ( ! _gettok ) { rc = -904;
 				} else {
@@ -945,7 +899,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 										else {
 											if ( 0 == strcasecmp( _gettok, "where" ) ) {
 												while ( isblank(*_saveptr) || '\n' == *_saveptr ) ++_saveptr;
-												// prt(("s5593 _saveptr=[%s]\n", _saveptr ));
 												if ( NULL==_saveptr|| '\0' == *_saveptr ) {
 													rc = -913;
 												} else {
@@ -967,8 +920,6 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 									} else {
 										_gettok = jag_strtok_r(NULL, " \t\r\n", &_saveptr);
 										if ( _gettok ) {
-											// more token, it is error
-											prt(("s5630 _gettok=[%s] _saveptr=[%s]\n", _gettok, _saveptr ));
 											rc = -918;
 										} else {
 											// no more token, it is OK
@@ -985,32 +936,21 @@ int JagParser::parseSQL( const JagParseAttribute &jpa, JagParseParam *parseParam
 	} else if ( strncmp(_gettok, "_mon_", 5 ) == 0 ) {
 		rc = 1;
 	} else {
-		// prt(("c4821 rc=%d  cmd=[%s]\n", rc, cmd ));
 		rc = 0;
 	}
 
-	// prt(("c4823 parseSQL  rc=%d  cmd=[%s] cmd maybe truncated\n", rc, cmd ));
 	return rc;
 }
 
-// private methods
-// init data members
 int JagParser::init( const JagParseAttribute &jpa, JagParseParam *parseParam )
 {
 	_ptrParam = parseParam;
-	//prt(("s7904 JagParser::init _ptrParam->init() ...\n" ));
 	_ptrParam->init( &jpa );
 	_gettok = _saveptr = NULL;
 }
-//*************************************methods for multiple commands************************************************//
-// method to set table or index lists
-// setType 0: single table from _gettok; 
-// setType 1: single index from _gettok with table given; 
-// else multiple tables or indexs from selectTablistClause
-// return value <= 0 error; 1 OK
+
 int JagParser::setTableIndexList( short setType )
 {
-	prt(("s0283 enter JagParser::setTableIndexList() _gettok=[%s] setType=%d ...\n", _gettok, setType ));
 	const char *p, *q;
 	ObjectNameAttribute oname;
 	if ( 0 == setType ) {
@@ -1019,21 +959,15 @@ int JagParser::setTableIndexList( short setType )
 			oname.dbName = _ptrParam->jpa.dfdbname;
 			oname.tableName = _split[0];
 			if ( oname.tableName.containsChar('"') ) { oname.tableName.remove('"'); }
-			//prt(("s3003 oname.tableName=[%s]\n", oname.tableName.c_str() ));
 			oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-			// rebuild query with dbname 
 			_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos);
 			_ptrParam->dbNameCmd +=	" " + oname.dbName + "." + oname.tableName + " " 
 				+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
-			//prt(("s0233 rebuild hasExist=%d dbNameCmd=[%s]\n", _ptrParam->hasExist, _ptrParam->dbNameCmd.c_str() ));
-			//prt(("s0233 orgCmd=[%s] tabidxpos=[%s] origpos=[%s]\n", _ptrParam->origCmd.c_str(), _ptrParam->tabidxpos, _ptrParam->origpos ));
 		} else if ( _split.length() == 2 ) {
 			oname.dbName = _split[0];
 			oname.tableName = _split[1];
 			if ( oname.tableName.containsChar('"') ) { oname.tableName.remove('"'); }
-			//prt(("s308004 oname.tableName=[%s]\n", oname.tableName.c_str() ));
-			oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-			// rebuild query with dbname 
+			oname.colName = _ptrParam->jpa.dfdbname; 
 			if ( 1 || oname.dbName == oname.colName ) {				
 				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + " " 
@@ -1048,23 +982,16 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				if ( oname.tableName.containsChar('"') ) { oname.tableName.remove('"'); }
-				//prt(("s3005 oname.tableName=[%s]\n", oname.tableName.c_str() ));
 				oname.indexName = _split[2];
-				// rebuild query with dbname 
 				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + "." + oname.indexName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			} else return -2010;
 		}
 
-		// table name cannot be "TableSchema" or "IndexSchema"
 		if ( oname.tableName == "TableSchema" || oname.tableName ==  "IndexSchema" ) return -2020;
-		//oname.toLower();
 		_ptrParam->objectVec.append(oname);
 	} else if ( 1 == setType ) {
-		// create index
-		prt(("s303038 create index 1 == setType  _ptrParam->objectVec.length()=%d\n",  _ptrParam->objectVec.length() ));
-		prt(("s2029 _gettok=[%s]\n", _gettok ));
 		_split.init( _gettok, '.' );
 		if ( _split.length() == 1 && _ptrParam->objectVec.length() == 1 ) {
 			oname.dbName = _ptrParam->objectVec[0].dbName;
@@ -1079,16 +1006,12 @@ int JagParser::setTableIndexList( short setType )
 			oname.tableName = _ptrParam->objectVec[0].tableName;
 			oname.indexName = _split[2];
 		} else {
-			prt(("s20208 return error -2040\n"));
 			return -2040;
 		}
 
 		if ( oname.indexName == "TableSchema" || oname.indexName ==  "IndexSchema" ) return -2050;
-		//oname.toLower();
 		_ptrParam->objectVec.append(oname);
 	} else {
-		// check if select from multiple tables/indexs or if cmd is join related
-		// if ( _ptrParam->selectTablistClause.length() < 1 ) return -2060;
 		bool selectConst;
 		if ( _ptrParam->isSelectConst() ) {
 			selectConst = true;
@@ -1106,20 +1029,16 @@ int JagParser::setTableIndexList( short setType )
 			if ( _split.length() == 1 ) {
 				oname.dbName = _ptrParam->jpa.dfdbname;
 				oname.tableName = _split[0];
-				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				//oname.toLower();
+				oname.colName = _ptrParam->jpa.dfdbname; 
 				_ptrParam->objectVec.append(oname);
-				// rebuild query with dbname 
 				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 			} else if ( _split.length() == 2 ) {
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
-				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				//oname.toLower();
+				oname.colName = _ptrParam->jpa.dfdbname; 
 				_ptrParam->objectVec.append(oname);
-				// rebuild query with dbname 
 				if ( 1 || oname.dbName == oname.colName ) {				
 					_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 						+ " " + oname.dbName + "." + oname.tableName + " " 
@@ -1133,13 +1052,10 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.indexName = _split[2];
-				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
-				// rebuild query with dbname 
 				_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 					+ " " + oname.dbName + "." + oname.tableName + "." + oname.indexName + " " 
 					+ (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
-			// } else return -2080;
 			} else {
 				if ( ! selectConst ) return -2080;
 			}
@@ -1152,7 +1068,6 @@ int JagParser::setTableIndexList( short setType )
 				}
 			}
 		} else if ( pmultab && !pjoin && !pon ) {
-			// multiple tables or indexs select -> regard as inner join
 			Jstr oneobj, ttlist;
 			_splitwq.init( _ptrParam->selectTablistClause.c_str(), ',' );
 			for ( int i = 0; i < _splitwq.length(); ++i ) {
@@ -1163,15 +1078,13 @@ int JagParser::setTableIndexList( short setType )
 				if ( _split.length() == 1 ) {
 					oname.dbName = _ptrParam->jpa.dfdbname;
 					oname.tableName = _split[0];
-					oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-					//oname.toLower();
+					oname.colName = _ptrParam->jpa.dfdbname; 
 					_ptrParam->objectVec.append(oname);
 					ttlist += oname.dbName + "." + oname.tableName;
 				} else if ( _split.length() == 2 ) {
 					oname.dbName = _split[0];
 					oname.tableName = _split[1];
-					oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-					//oname.toLower();
+					oname.colName = _ptrParam->jpa.dfdbname;
 					_ptrParam->objectVec.append(oname);
 					if ( 1 || oname.dbName == oname.colName ) {
 						ttlist += oname.dbName + "." + oname.tableName;
@@ -1182,38 +1095,30 @@ int JagParser::setTableIndexList( short setType )
 					oname.dbName = _split[0];
 					oname.tableName = _split[1];
 					oname.indexName = _split[2];
-					//oname.toLower();
 					_ptrParam->objectVec.append(oname);
 					ttlist += oname.dbName + "." + oname.tableName + "." + oname.indexName;
 				} else return -2100;
 			}
 			_ptrParam->opcode = JAG_INNERJOIN_OP;
-			// rebuild query with dbname 
 			_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 				+ " " + ttlist + " " + (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
-			// prt(("s5109  JAG_INNERJOIN_OP dbNameCmd=[%s]\n", _ptrParam->dbNameCmd.c_str() ));
 		} else if ( !pmultab && pjoin && pon ) {
-			// multiple tables or indexs join
-			// currently, we only support two tables/indexs join, no loop join for now
-			// set first table/index
 			Jstr ttlist;
 			q = p = _ptrParam->selectTablistClause.c_str();
 			while ( isValidNameChar(*q) || *q == ':' || *q == '.' ) ++q;
 			Jstr str = Jstr( p, q-p ), str1, str2;
-			//prt(("s2828 str=[%s] p=[%s] q=[%s]\n", str.c_str(), p, q ));
 			_split.init( str.c_str(), '.' );
 			oname.init();
 			if ( _split.length() == 1 ) {
 				oname.dbName = _ptrParam->jpa.dfdbname;
 				oname.tableName = _split[0];
-				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				//oname.toLower();
+				oname.colName = _ptrParam->jpa.dfdbname; 
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName;
 			} else if ( _split.length() == 2 ) {
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
-				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
+				oname.colName = _ptrParam->jpa.dfdbname;
 				_ptrParam->objectVec.append(oname);
 				if ( 1 || oname.dbName == oname.colName ) {
 					ttlist += oname.dbName + "." + oname.tableName;
@@ -1224,19 +1129,16 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.indexName = _split[2];
-				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName + "." + oname.indexName;
 			} else {
 				return -2120;
 			}
 			
-			// get to know what type of join ( innerjoin, leftjoin, rightjoin, fulljoin )
 			p = q;
 			while ( isspace(*p) ) ++p;
 			str = Jstr( p, pjoin+5-p );
 			_split.init( str.c_str(), ' ', true );
-			// split should be [LEFT/RIGHT/FULL] [INNER/OUTER] JOIN
 			if ( _split.length() == 1 && makeUpperString(_split[0]) == "JOIN" ) {
 				_ptrParam->opcode = JAG_INNERJOIN_OP;
 				ttlist += " join ";
@@ -1284,20 +1186,17 @@ int JagParser::setTableIndexList( short setType )
 			str = Jstr( p, q-p );
 			_split.init( str.c_str(), '.' );
 			oname.init();
-			//prt(("s4129 str=[%s]\n", str.c_str() ));
 			p = q; 
 			if ( _split.length() == 1 ) {
 				oname.dbName = _ptrParam->jpa.dfdbname;
 				oname.tableName = _split[0];
-				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				//oname.toLower();
+				oname.colName = _ptrParam->jpa.dfdbname; 
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName;
 			} else if ( _split.length() == 2 ) {
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
-				oname.colName = _ptrParam->jpa.dfdbname; // save dfdbname for possible use
-				//oname.toLower();
+				oname.colName = _ptrParam->jpa.dfdbname;
 				_ptrParam->objectVec.append(oname);
 				if ( 1 || oname.dbName == oname.colName ) {
 					ttlist += oname.dbName + "." + oname.tableName;
@@ -1308,18 +1207,14 @@ int JagParser::setTableIndexList( short setType )
 				oname.dbName = _split[0];
 				oname.tableName = _split[1];
 				oname.indexName = _split[2];
-				//oname.toLower();
 				_ptrParam->objectVec.append(oname);
 				ttlist += oname.dbName + "." + oname.tableName + "." + oname.indexName;
 			} else return -2170;
 
-			// rebuild query with dbname 
 			while ( isspace(*p) ) ++p;
 			_ptrParam->dbNameCmd = Jstr(_ptrParam->origCmd.c_str(), _ptrParam->tabidxpos-_ptrParam->origpos) 
 				+ " " + ttlist + " " + p + " " + (_ptrParam->origCmd.c_str()+(_ptrParam->endtabidxpos-_ptrParam->origpos));
 
-			// prt(("s5120 dbNameCmd=[%s] ttlist=[%s] p=[%s] q=[%s] \n", _ptrParam->dbNameCmd.c_str(), ttlist.c_str(), p, q ));
-			// set ON tree
 			p = q;
 			while ( isspace(*p) ) ++p;
 			if ( p != pon+1 ) return -2180;
@@ -1338,27 +1233,15 @@ int JagParser::setTableIndexList( short setType )
 	return 1;
 }
 
-// method to get all clauses
-// setType 0: get all clauses for select related ( select columns, tablelists, on, where, group by, order by, limit ... etc )
-// setType 1: get only where clause ( if other clauses exists, failure )
-// setType 2: get all clauses for load related ( column terminated by, line terminated by ... etc )
-// setType 3: get all clauses for insertselect related ( select columns, tablelists, where, limit ... etc )
-// setType 4: get all clauses for getfile related ( getfile columns, where ) 
-// use _saveptr, not change _saveptr
-// return value <= 0 error; 1 OK
 int JagParser::getAllClauses( short setType )
 {	
-	prt(("s6320 getAllClauses setType=%d _saveptr=[%s]\n", setType, _saveptr ));
-
 	if ( !_saveptr ) return -2200;
 	while ( isspace(*_saveptr) ) ++_saveptr;
 	if ( 2 != setType && *_saveptr == '\0' ) return -2205;
 	--_saveptr;
 	if ( _saveptr && *_saveptr == '\0' ) *_saveptr = ' ';
 	if ( 0 == setType ) {
-		// select cmd clauses
 		char *pcol, *plist, *pwhere, *pgroup, *phaving, *porder, *plimit, *ptimeout, *pexport;
-		// get all column start position
 		pcol = _saveptr;
 		while ( isspace(*pcol) ) ++pcol; // new
 		plist = (char*)strcasestrskipquote( _saveptr, " from " );
@@ -1371,15 +1254,12 @@ int JagParser::getAllClauses( short setType )
 		// ppivot = (char*)strcasestrskipquote( _saveptr, " pivot " );
 		pexport = (char*)strcasestrskipquote( _saveptr, " export" );
 		
-		// plist clause must exists, otherwise syntax error; other clauses can exist or not
 		if ( plist ) {
 			*plist = '\0'; 
 			plist += 5;
-			_ptrParam->tabidxpos = plist; // command position before table/index name
+			_ptrParam->tabidxpos = plist; 
 			while ( isspace(*plist) ) ++plist;
-			//prt(("s7330 plist=[%s]\n", plist ));
 		} else {
-			// return -2210;
 		}
 
 		if ( pwhere ) {
@@ -1389,7 +1269,6 @@ int JagParser::getAllClauses( short setType )
 		}
 		if ( pgroup ) {
 			*pgroup = '\0';
-			// jump "BY"
 			pgroup += 6;
 			while ( isspace(*pgroup) ) ++pgroup;
 			if ( strncasecmp( pgroup, "by ", 3 ) != 0 ) return -2220;
@@ -1403,7 +1282,6 @@ int JagParser::getAllClauses( short setType )
 		}
 		if ( porder ) {
 			*porder = '\0';
-			// jump "BY"
 			porder += 6;
 			while ( isspace(*porder) ) ++porder;
 			if ( strncasecmp( porder, "by ", 3 ) != 0 ) return -2230;
@@ -1435,8 +1313,6 @@ int JagParser::getAllClauses( short setType )
 		// store clauses into parseParam
 		if ( pcol ) _ptrParam->selectColumnClause = pcol;
 		if ( plist ) _ptrParam->selectTablistClause = plist;
-		// get end pos of plist
-		// char *ppp = plist; while ( *ppp != '\0' ) ++ppp;
 		char *ppp = plist; if ( ppp) { while ( *ppp != '\0' ) ++ppp; }
 		_ptrParam->endtabidxpos = ppp; // command position after table/index name
 		if ( pwhere ) { _ptrParam->selectWhereClause = pwhere; }
@@ -1449,11 +1325,9 @@ int JagParser::getAllClauses( short setType )
 		if ( pexport ) _ptrParam->selectExportClause = pexport;
 		
 		// trim space at the beginning and end of string
-		prt(("s44130 pcol=[%s]\n", pcol ));
 		if ( pcol && strchr(pcol, ' ') ) {
 			_ptrParam->selectColumnClause = trimChar( _ptrParam->selectColumnClause, ' ' );
 		}
-		prt(("s44130 pcol=[%s]\n", _ptrParam->selectColumnClause.s() ));
 
 		if ( plist ) {
 			_ptrParam->selectTablistClause = trimChar( _ptrParam->selectTablistClause, ' ' );
@@ -1464,11 +1338,9 @@ int JagParser::getAllClauses( short setType )
 			if ( _ptrParam->selectTablistClause.containsChar('\'') ) {
 				_ptrParam->selectTablistClause.remove('\'');
 			}
-			//prt(("s3103 selectTablistClause=[%s]\n", _ptrParam->selectTablistClause.c_str() ));
 		}
 
 		if ( pwhere ) _ptrParam->selectWhereClause = trimChar( _ptrParam->selectWhereClause, ' ' );
-		prt(("s333448 ptrParam->selectWhereClause=[%s]\n", _ptrParam->selectWhereClause.s() ));
 		if ( pgroup ) _ptrParam->selectGroupClause = trimChar( _ptrParam->selectGroupClause, ' ' );
 		if ( phaving ) _ptrParam->selectHavingClause = trimChar( _ptrParam->selectHavingClause, ' ' );
 		if ( porder ) _ptrParam->selectOrderClause = trimChar( _ptrParam->selectOrderClause, ' ' );
@@ -1478,9 +1350,7 @@ int JagParser::getAllClauses( short setType )
 		if ( pexport ) _ptrParam->selectExportClause = trimChar( _ptrParam->selectExportClause, ' ' );
 		
 	} else if ( 1 == setType ) {	
-		// select cmd clauses
 		char *pwhere, *pgroup, *phaving, *porder, *plimit, *ptimeout, *pexport;
-		// get all column start position
 		pwhere = (char*)strcasestrskipquote( _saveptr, " where " );
 		pgroup = (char*)strcasestrskipquote( _saveptr, " group " );
 		phaving = (char*)strcasestrskipquote( _saveptr, " having " );
@@ -1490,7 +1360,6 @@ int JagParser::getAllClauses( short setType )
 		// ppivot = (char*)strcasestrskipquote( _saveptr, " pivot " );
 		pexport = (char*)strcasestrskipquote( _saveptr, " export" );
 		
-		// only pwhere clause can exist, otherwise syntax error
 		if ( pwhere ) {
 			if ( pwhere != _saveptr ) return -2240;
 			pwhere += 6;
@@ -1505,25 +1374,19 @@ int JagParser::getAllClauses( short setType )
 		// if ( ppivot ) return -2310;
 		if ( pexport ) return -2320;
 		
-		// store where clause into parseParam
 		if ( pwhere ) _ptrParam->selectWhereClause = pwhere;
-		// trim space at the beginning and end of string
 		if ( pwhere ) _ptrParam->selectWhereClause = trimChar( _ptrParam->selectWhereClause, ' ' );
 		
 	} else if ( 2 == setType ) {
-		// load cmd clauses
 		char *pcol, *pline, *pquote;
 		pcol = (char*)strcasestrskipquote( _saveptr, " columns " );
 		pline = (char*)strcasestrskipquote( _saveptr, " lines " );
 		pquote = (char*)strcasestrskipquote( _saveptr, " quote " );
 		
-		// all load clauses can exist or not
 		if ( pcol ) {
 			*pcol = '\0';
-			// jump "TERMINATED BY"
 			pcol += 8;
 			while ( isspace(*pcol) ) ++pcol;		
-			// if ( strncasecmp( pcol, "terminated ", 11 ) != 0 ) return -2330;
 			if ( 0 == strncasecmp( pcol, "terminated ", 11 ) ) { 
 				pcol += 10;
 			}
@@ -1534,10 +1397,8 @@ int JagParser::getAllClauses( short setType )
 		}
 		if ( pline ) {
 			*pline = '\0';
-			// jump "TERMINATED BY"
 			pline += 6;
 			while ( isspace(*pline) ) ++pline;		
-			//if ( strncasecmp( pline, "terminated ", 11 ) != 0 ) return -2350;
 			if ( 0 == strncasecmp( pline, "terminated ", 11 ) ) { 
 				pline += 10;
 			}
@@ -1548,10 +1409,8 @@ int JagParser::getAllClauses( short setType )
 		}
 		if ( pquote ) {
 			*pquote = '\0';
-			// jump "TERMINATED BY"
 			pquote += 6;
 			while ( isspace(*pquote) ) ++pquote;		
-			// if ( strncasecmp( pquote, "terminated ", 11 ) != 0 ) return -2370;
 			if ( 0 == strncasecmp( pquote, "terminated ", 11 ) ) { 
 				pquote += 10;
 			}
@@ -1574,7 +1433,6 @@ int JagParser::getAllClauses( short setType )
 	} else if ( 3 == setType ) {
 		// insert_select cmd clauses
 		char *pcol, *plist, *pwhere, *pgroup, *phaving, *porder, *plimit, *ptimeout, *pexport;
-		// get all column start position
 		pcol = _saveptr;
 		plist = (char*)strcasestrskipquote( _saveptr, " from " );
 		pwhere = (char*)strcasestrskipquote( _saveptr, " where " );
@@ -1591,7 +1449,7 @@ int JagParser::getAllClauses( short setType )
 		if ( plist ) {
 			*plist = '\0'; 
 			plist += 5;
-			_ptrParam->tabidxpos = plist; // command position before table/index name
+			_ptrParam->tabidxpos = plist; 
 			while ( isspace(*plist) ) ++plist;
 		} else return -2310;
 		if ( pwhere ) {
@@ -1679,20 +1537,11 @@ int JagParser::getAllClauses( short setType )
 	return 1;
 }
 
-// method to set all clauses
-// setType 0: set all clauses for select related ( select columns, tablelists, on, where, group by, order by, limit ... etc )
-// setType 1: get only where clause ( if other clauses exists, failure )
-// setType 2: set all clauses for load related ( column terminated by, line terminated by ... etc )
-// setType 3: set all clauses for insertselect related ( select columns, tablelists, where, limit ... etc )
-// setType 4: set all clauses for getfile related ( select columns, tablelists, where )
-// return value <= 0 error; 1 OK
 int JagParser::setAllClauses( short setType )
 {
-	// prt(("s6612 setAllClauses() setType=%d\n", setType ));
 	int rc;
 	if ( 0 == setType ) {
 		// read related, such as select
-		// if ( _ptrParam->selectTablistClause.length() < 1 ) return -2400;
 		if ( ! _ptrParam->isSelectConst() ) {
 			if ( _ptrParam->selectTablistClause.length() < 1 ) return -2400;
 		}
@@ -1701,8 +1550,6 @@ int JagParser::setAllClauses( short setType )
 		if ( _ptrParam->selectColumnClause.length() < 1 ) return -2410;
 		rc = setSelectColumn(); if ( rc < 0 ) return rc;
 		if ( _ptrParam->selectWhereClause.length() > 0 ) {
-			// prt(("s8873 print...\n" ));
-			//_ptrParam->print();
 			rc =  _ptrParam->setSelectWhere();
 			if ( rc < 0 ) return rc;
 		}
@@ -1791,11 +1638,8 @@ int JagParser::setAllClauses( short setType )
 	return 1;
 }
 
-// method to set select columns and functions
-// return value <= 0 error; 1 OK
 int JagParser::setSelectColumn()
 {
-	//prt(("s48712 setSelectColumn _ptrParam->dbName=[%s]\n",  _ptrParam->dbName.c_str() ));
 	if ( _ptrParam->selectColumnClause.length() < 1 ) return -22440;
 
 	const char *scc = _ptrParam->selectColumnClause.c_str();
@@ -1807,20 +1651,15 @@ int JagParser::setSelectColumn()
 		if ( ! pbra ) return -12347;
 		++pbra;
 		_ptrParam->window = Jstr( pwindow, pbra-pwindow);
-		prt(("s333098 _ptrParam->window=[%s]\n", _ptrParam->window.s() ));
 		if ( ! _ptrParam->isWindowValid(  _ptrParam->window ) ) {
-			prt(("s44401 ! isWindowValid[%s]\n", _ptrParam->window.s() ));
 			return -12350;
 		}
 
-		prt(("s55319 window=[%s] pbra=[%s]\n", _ptrParam->window.s(), pbra ));
 		while ( isspace(*pbra) ) ++pbra;
-		prt(("s200611 pbra=[%s]\n", pbra ));
 		if ( *pbra == ',' ) ++pbra;
 		Jstr rest(pbra);
 		_ptrParam->selectColumnClause = s1 + " " + rest;
 		scc = _ptrParam->selectColumnClause.c_str();
-		prt(("s4420 new scc=[%s]\n", scc ));
 	}
 
 
@@ -1848,9 +1687,7 @@ int JagParser::setSelectColumn()
 
 	for ( int i = 0; i < _splitwq.length(); ++i ) {
 		r = (char*)_splitwq[i].c_str();
-		prt(("s5012 r=[%s]\n", r ));
 		if ( 0==strncasecmp(r, "window(", 7) ) {
-			prt(("s3389449 got window( skip  windows=[%s]\n", r ));
 			_ptrParam->window = r;
 			continue;
 		}
@@ -1884,10 +1721,8 @@ int JagParser::setSelectColumn()
 			}
 		}
 		
-		prt(("s5013 p=[%s] r=[%s]\n", p, r ));
 		if ( p - r != 0 ) { // has separate as name
 			_ptrParam->selColVec[i].name = r;
-			// remove unnecessary spaces at the end of select tree
 			q = p;
 			--p; while ( isspace(*p) ) --p; ++p; *p = '\0';
 			p = q;
@@ -1903,13 +1738,10 @@ int JagParser::setSelectColumn()
 				_ptrParam->selColVec[i].givenAsName = 1;
 			}
 			while ( isspace(*q) ) ++q;
-			prt(("s22013 asName=[%s]\n", _ptrParam->selColVec[i].asName.s() ));
 			if ( *q != '\0' ) return -2480;	
 		} else { // as name as whole
 			_ptrParam->selColVec[i].asName = r;
-			// _ptrParam->selColVec[i].name = _ptrParam->selColVec[i].asName;
 			_ptrParam->selColVec[i].name = r;
-			prt(("s33337 r=[%s]\n", r ));
 		}
 
 		if ( 0==strncasecmp(_ptrParam->selColVec[i].name.c_str(), "all(", 4) ) {
@@ -1917,29 +1749,20 @@ int JagParser::setSelectColumn()
 	                    + "." + trimChar(_ptrParam->selColVec[i].name.substr( '(', ')' ), ' ');
 			_ptrParam->selAllColVec.append( nm );
 		} else {
-			//++ colcnt;
 		}
 		
 		_ptrParam->selColVec[i].origFuncStr = r;
 		_ptrParam->setupCheckMap();
 		_ptrParam->initJoinColMap();
-		//prt(("s5514 i=%d r=[%s] tree->parse() ...\n", i, r ));
 		_ptrParam->selColVec[i].tree->parse( this, r, 0, *_ptrParam->treeCheckMap, _ptrParam->joinColMap, 
 											 _ptrParam->selColVec[i].colList ); 
 	}
 	
-	/***
-	if ( colcnt > 0 ) {
-		_ptrParam->hasColumn = 1;
-	}
-	***/
 	_ptrParam->hasColumn = 1;
 
 	return 1;
 }
 
-// method to set columns for getfile
-// return value <= 0 error; 1 OK
 int JagParser::setGetfileColumn()
 {
 	if ( _ptrParam->selectColumnClause.length() < 1 ) return -2481;
@@ -1947,7 +1770,6 @@ int JagParser::setGetfileColumn()
 	char *p, *q, *r;
 	int getAttributeOrData = 0;
 	_splitwq.init(_ptrParam->selectColumnClause.c_str(), ',');
-	prt(("s33307 selectColumnClause=[%s]\n", _ptrParam->selectColumnClause.c_str() ));
 
 	for ( int i = 0; i < _splitwq.length(); ++i ) {
 		SelColAttribute selColTemp(_ptrParam);
@@ -1955,9 +1777,11 @@ int JagParser::setGetfileColumn()
 		_ptrParam->selColVec.append(selColTemp);
 		_ptrParam->selColVec[i].tree->init( _ptrParam->jpa, _ptrParam );
 		r = (char*)_splitwq[i].c_str();
-		prt(("s5012 r=[%s]\n", r ));
-		if ( (p = (char*)strcasestrskipquote(r, " size")) || (p = (char*)strcasestrskipquote(r, " time")) ||
-			(p = (char*)strcasestrskipquote(r, " md5")) ) {
+		if ( (p=(char*)strcasestrskipquote(r, " sizegb")) || (p=(char*)strcasestrskipquote(r, " sizemb") ) || 
+		     (p = (char*)strcasestrskipquote(r, " size")) || (p = (char*)strcasestrskipquote(r, " time")) ||
+			 (p = (char*)strcasestrskipquote(r, " md5")) || ( p = (char*)strcasestrskipquote(r, " fpath") ) ||
+			 (p = (char*)strcasestrskipquote(r, " type") )
+			) {
 			if ( 2 == getAttributeOrData ) {
 				return -5482;
 			} else {
@@ -1978,11 +1802,20 @@ int JagParser::setGetfileColumn()
 		while ( isspace(*r) ) ++r;
 		while ( isspace(*q) && q-r > 0 ) --q; ++q;
 		_ptrParam->selColVec[i].getfileCol = Jstr(r, q-r);
-		prt(("s30028 getfileCol=[%s]\n", _ptrParam->selColVec[i].getfileCol.s() ));
 		if ( strchr(_ptrParam->selColVec[i].getfileCol.c_str(), '.') ) return -2483;
 		// store attributes or outpath
 		if ( 1 == getAttributeOrData ) {
-			if ( strncasecmp( p, " size", 5 ) == 0 ) {
+			if ( strncasecmp( p, " sizegb", 7 ) == 0 ) {
+				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_SIZEGB;
+				_ptrParam->selColVec[i].asName = "sizegb";
+				_ptrParam->selColVec[i].givenAsName = 1;
+				q = p+7;
+			} else if ( strncasecmp( p, " sizemb", 7 ) == 0 ) {
+				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_SIZEMB;
+				_ptrParam->selColVec[i].asName = "sizemb";
+				_ptrParam->selColVec[i].givenAsName = 1;
+				q = p+7;
+			} else if ( strncasecmp( p, " size", 5 ) == 0 ) {
 				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_SIZE;
 				_ptrParam->selColVec[i].asName = "size";
 				_ptrParam->selColVec[i].givenAsName = 1;
@@ -1992,12 +1825,21 @@ int JagParser::setGetfileColumn()
 				_ptrParam->selColVec[i].asName = "time";
 				_ptrParam->selColVec[i].givenAsName = 1;
 				q = p+5;
+			}  else if ( strncasecmp( p, " type", 5 ) == 0 ) {
+				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_TYPE;
+				_ptrParam->selColVec[i].asName = "type";
+				_ptrParam->selColVec[i].givenAsName = 1;
+				q = p+5;
 			} else if ( strncasecmp( p, " md5", 4 ) == 0 ) {
 				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_MD5SUM;
 				_ptrParam->selColVec[i].asName = "md5";
 				_ptrParam->selColVec[i].givenAsName = 1;
-				// q = p+7;
 				q = p+4;
+			} else if ( strncasecmp( p, " fpath", 6 ) == 0 ) {
+				_ptrParam->selColVec[i].getfileType = JAG_GETFILE_FPATH;
+				_ptrParam->selColVec[i].asName = "fpath";
+				_ptrParam->selColVec[i].givenAsName = 1;
+				q = p+6;
 			} else return -25484;
 		} else {
 			// store outpath
@@ -2025,8 +1867,6 @@ int JagParser::setGetfileColumn()
 	return 1;
 }
 
-// method to set select group by vector
-// return value <= 0 error; 1 OK
 int JagParser::setSelectGroupBy()
 {
 	if ( _ptrParam->selectGroupClause.length() < 1 ) return -2510;	
@@ -2069,8 +1909,6 @@ int JagParser::setSelectHaving()
 }
 ***/
 
-// method to set select order by vector
-// return value <= 0 error; 1 OK
 int JagParser::setSelectOrderBy()
 {
 	if ( _ptrParam->selectOrderClause.length() < 1 ) return -2530;
@@ -2099,12 +1937,9 @@ int JagParser::setSelectOrderBy()
 	}
 	
 	_ptrParam->hasOrder = 1;
-	// prt(("c3293 _ptrParam->hasOrder = 1\n"));
 	return 1;
 }
 
-// method to set select limit and limitstart
-// return value <= 0 error; 1 OK
 int JagParser::setSelectLimit()
 {
 	if ( _ptrParam->selectLimitClause.length() < 1 ) return -2560;
@@ -2126,8 +1961,6 @@ int JagParser::setSelectLimit()
 	return 1;
 }
 
-// method to set select timeout
-// return value <= 0 error; 1 OK
 int JagParser::setSelectTimeout()
 {
 	if ( _ptrParam->selectTimeoutClause.length() < 1 ) return -2600;
@@ -2256,13 +2089,8 @@ int JagParser::setLoadQuote()
 	return 1;
 }
 
-//*************************************methods for insert command************************************************//
-// method to set INSERT, _saveptr begin with [insert into ...] position
-// return value <= 0 error; 1 OK
-// return 1: set insert only; return 2: set insert select
 int JagParser::setInsertVector()
 {
-	//prt(("s1093 setInsertVector _saveptr=[%s]\n", _saveptr ));
 	int rc;
 	char *p, *q;
 	short c1 = 0, c2 = 0, endSignal = 0, paraCount = 0;
@@ -2307,16 +2135,13 @@ int JagParser::setInsertVector()
 	}
 
 	// get to next field
-	//prt(("s5601 q=[%s] c1=%d\n", q, c1 ));
 	if ( !c1 ) {
 		while ( isspace(*q) ) ++q;
 		if ( *q == '(' ) { c1 = 1; ++q; }
 	}
-	//prt(("s5602 q=[%s] c1=%d\n", q, c1 ));
 	
 	char *cq;
 	if ( c1 ) {
-		//prt(("c1029 c1=%d is true\n", c1 ));
 		c1 = 0;
 		while ( 1 ) {
 			while ( isspace(*q) ) ++q;
@@ -2325,8 +2150,6 @@ int JagParser::setInsertVector()
 			else if ( *q == ')' ) break;
 			while ( isspace(*q) ) ++q;
 
-			//prt(("s3391 q=[%s]\n", q ));
-			
 			p = q;
 			if ( *q == '\'' || *q == '"' ) {
 				++p;
@@ -2344,29 +2167,17 @@ int JagParser::setInsertVector()
 				p = cq+1;
 			}
 			
-			//prt(("s3341 p=[%s] q=[%s]\n", p, q ));
-
-			// if ( strchr(p, '.') ) return -2790;
-			//other.objName.colName = makeLowerString(p);
 			other.objName.colName = p;
-			//prt(("s3763 other.objName.colName=[%s]\n", p ));
 			_ptrParam->otherVec.append(other);
-			//prt(("s7032 otherVec.append() other.colNm=[%s] other.valueD=[%s]\n", p, other.valueData.c_str() ));
 			_ptrParam->initInsColMap();
 			c2 = _ptrParam->insColMap->addKeyValue( p, c1 );
-			//prt(("s2208 insColMap.addKeyValue(p=%s c1=%d) c2=%d\n", p, c1, c2 ));
 			++c1;
 			if ( c2 == 0 ) return -12800;
 			if ( endSignal ) break;
-
-			//prt(("s3935 print:\n" ));
-			//_ptrParam->insColMap.print();
-			//_ptrParam->otherVec.print();
 		}
 		++q; // pass the )
 	} // end if having first ()
 	
-	//prt(("s3013 q=[%s]\n", q ));
 	while ( isspace(*q) ) ++q;
 	if ( *q == '\0' ) return -12810;
 	int check1 = 0, check2 = 0, check3 = 0;
@@ -2384,24 +2195,19 @@ int JagParser::setInsertVector()
 		}
 	}
 		
-	//prt(("s3013 q=[%s]\n", q ));
 	q += 6;
-	//prt(("s3014 q=[%s]\n", q ));
 	while ( isspace(*q) ) ++q;
 	if ( *q != '(' ) return -2830;
 	paraCount = 1;
 	++q;  // values (q
-	//prt(("s3015 q=[%s]\n", q ));
 	if ( *q == '\0' ) return -2831;
 	
 	endSignal = 0;
 	c2 = 0;
 	bool hquote;
 	int dim;
-	//prt(("s2523 p=[%s] q=[%s]\n", p, q ));
 	while ( 1 ) {
 		while ( isspace(*q) ) ++q;
-		//if ( *q == '\0' ) return -2840;
 		if ( *q == '\0' ) break;
 
 		if ( *q == ',' ) ++q;
@@ -2409,21 +2215,17 @@ int JagParser::setInsertVector()
 		if ( *q == ')' ) {
 			--paraCount;
 			if ( paraCount <= 0 ) {
-				//prt(("s5302 paraCount=%d break loop\n", paraCount ));
 				break;
 			}
 		}
 
-		//prt(("s2524 p=[%s] q=[%s]\n", p, q ));
 		while ( isspace(*q) ) ++q;
 		p = q;
-		//prt(("s8201 p=[%s] q=[%s]\n", p, q ));
 		if ( *q == '\'' || *q == '"' ) {
 			++p;
 			if ( (q = (char*)jumptoEndQuote(q)) && *q == '\0' ) { return -2850; }
 			hquote = 1;
 		} else {
-			//prt(("s4201 p=[%s] q=[%s]\n", p, q ));
 			while ( *q != '\0' ) {
 				if ( *q == '(' ) { 
 					++paraCount; 
@@ -2445,20 +2247,15 @@ int JagParser::setInsertVector()
 			}
 
 			hquote = 0;
-			//prt(("s4232 p=[%s] q=[%s]\n", p, q ));
 		}
 
-		//prt(("s5232 p=[%s] q=[%s]\n", p, q ));
 		*q = '\0';
 		++q;
-		//prt(("s5234 p=[%s] q=[%s] hquote=%d\n", p, q, hquote ));
 		_saveptr = q; 
-		//prt(("s5238 p=[%s] q=[%s]]\n", p, q ));
 
 		// load_file(pathfile) command in values column
 		// insert into t1 values ( 'ssss', load_file(/path/file.jpg), 'fff' );
 		if ( 0 == hquote ) {
-			//prt(("s6277 p=[%s]\n", p ));
 			if ( strncasecmp( p, "load_file(", 10 ) == 0 ) {
 				stripEndSpace(p, ')' );
 				JagStrSplit sp(p, '(');
@@ -2673,10 +2470,8 @@ int JagParser::setInsertVector()
 				while ( *p != '(' ) ++p;
 				++p;  // (p
 				if ( *p == 0 ) return -2553;
-				//prt(("s0283 got box p=[%s] ...\n", p  ));
 				replaceChar(p, ',', ' ', ')' );
 				JagStrSplitWithQuote sp( p, ' ', true, true );
-				//prt(("s2331 sp.len=%d\n", sp.length() ));
 				if (  sp.length() < 6 ) { return -3375; }
 				for ( int k=0; k < sp.length(); ++k ) {
 					if ( sp[k].length() >= JAG_POINT_LEN ) { return -3380; }
@@ -2747,9 +2542,7 @@ int JagParser::setInsertVector()
 				} else {
 					// one line, one metrics
 					JagPoint p1( sp[0].c_str(), sp[1].c_str() );
-					//if ( ! getMetrics( sp, dim, p1.metrics ) ) return -3891;
 
-					//int start = dim +  p1.metrics.size();
 					int start = dim;
 					JagPoint p2( sp[start+0].c_str(), sp[start+1].c_str() );
 					if ( ! getMetrics( sp, p1.metrics ) ) return -2891;
@@ -2757,13 +2550,10 @@ int JagParser::setInsertVector()
 					other.linestr.point.append(p2);
 				}
 				q = _saveptr;
-				//prt(("s5510 appended p1.x=[%s] p1.y=[%s]\n", sp[0].c_str(), sp[1].c_str() ));
-				//prt(("s5510 appended p2.x=[%s] p2.y=[%s]\n", sp[2].c_str(), sp[3].c_str() ));
 			} else if ( strncasecmp( p, "line3d(", 7 )==0 ) {
 				// line3d(x1 y1 z1 x2 y2 z2)
 				while ( *p != '(' ) ++p; ++p;  // (p
 				if ( *p == 0 ) return -2654;
-				//prt(("s4034 line3d p=[%s]\n", p ));
 				replaceChar(p, ',', ' ', ')' );
 				JagStrSplitWithQuote sp( p, ' ', true, true );
 				if (  sp.length() < 6 ) { return -3577; }
@@ -3112,9 +2902,6 @@ int JagParser::setInsertVector()
 	return 1;
 }
 
-//*************************************methods for update command************************************************//
-// method to set UPDATE, _saveptr begin with [update db.tab set ...] position
-// return value <= 0 error 1 OK
 int JagParser::setUpdateVector()
 {
 	char *p, *q;
@@ -3177,15 +2964,8 @@ int JagParser::setUpdateVector()
 	return 1;
 }
 
-//*************************************methods for create command************************************************//
-// method to set CREATETABLE/CREATEINDEX
-// setType: 0 for create table; 1 for create index
-// return value <= 0 error; 1 OK
 int JagParser::setCreateVector( short setType )
 {
-	prt(("s13803 setCreateVector _saveptr=[%s] this=%0x _prtParam=%0x\n", _saveptr, this, _ptrParam ));
-	prt(("s13281 dbNameCmd=[%s]\n", _ptrParam->dbNameCmd.c_str() ));
-	// _saveptr=[timeseries(2d,3d) t1 ( key: a int )] t
 	if ( ! endWithSQLRightBra( _saveptr ) ) {
 		prt(("s44112 setCreateVector endWithSQLRightBra false error\n"));
 		return -10327;
@@ -3196,22 +2976,18 @@ int JagParser::setCreateVector( short setType )
 
 	char *q;
 	if ( strncasecmp( _saveptr, "timeseries(", 11 ) == 0 ) {
-		// timeseries(5m:100,1h:100,1d:30)
-		// timeseries(10s:100,15m:100,1d:30|100d)
 		char *LB = (char*)strchr( _saveptr, '(');
 		LB ++;
 		char *RB = (char*)strchr( _saveptr, ')');
 		if ( NULL == RB ) return -13820;
 		if ( RB == LB + 1 ) return -13821;
 		Jstr retainTimeser(LB, RB-LB);
-		prt(("s22224 retaintimeser=[%s]\n", retainTimeser.s() ));
 		Jstr timeser;
 		if ( retainTimeser.containsChar('|') ) {
 			JagStrSplit sp( retainTimeser, '|' );
 			if ( sp.size() != 2 ) {
 				return -12823;
 			} else {
-				// timeseries(1d,3m|retain)
 				timeser = sp[0];
 				_ptrParam->retain = sp[1];
 				char lastChar = _ptrParam->retain.lastChar();
@@ -3220,29 +2996,18 @@ int JagParser::setCreateVector( short setType )
 				}
 			}
 		} else {
-			// timeseries(1d,3m)
 			timeser = retainTimeser;
 			_ptrParam->retain = "0";
 		}
 
 		if ( _ptrParam->retain.containsChar(':') || _ptrParam->retain.containsChar(',') ) {
-			// make sure ...|retain retain is not timeseries format
 			return  -12824;
 		}
 
 		_ptrParam->timeSeries = JagSchemaRecord::translateTimeSeries( timeser );
 		timeser =  _ptrParam->timeSeries;
 
-		prt(("s22229 translated timeser=[%s]\n", timeser.s() ));
-		prt(("s22229 translated retain=[%s]\n", _ptrParam->retain.s() ));
-
-		/**
-		int ords[JAG_NUM_TS]; 
-		int retains[JAG_NUM_TS];
-		**/
-
 		Jstr normalizedSeries;
-		//int rc = JagSchemaRecord::normalizeTimeSeries( timeser, normalizedSeries, ords, retains );
 		int rc = JagSchemaRecord::normalizeTimeSeries( timeser, normalizedSeries );
 		if ( 0 == rc ) {
 			// OK 
@@ -3317,9 +3082,7 @@ int JagParser::setCreateVector( short setType )
 		char keymode = 0;
 		int  polyDim = 0;
 
-		//prt(("s5051 _saveptr=[%s]\n", _saveptr ));
 		bool hasPoly = hasPolyGeoType( _saveptr, polyDim );
-		//prt(("s4091 hasPolyGeoType hasPoly=%d\n", hasPoly ));
 
 		// get keymode
 		char *p = _saveptr;
@@ -3495,26 +3258,17 @@ int JagParser::setCreateVector( short setType )
 
 		} // while(1) loop
 
-		//prt(("s2528 after loop  _ptrParam->keyLength=%d\n",  _ptrParam->keyLength ));
-
-		//prt(("s2837 hasPoly=%d valCols=%d doneAddBBox=%d\n", hasPoly, valCols, doneAddBBox ));
 		if ( hasPoly && valCols < 1 && ! doneAddBBox ) {
-			//prt(("E5081 error no value column is provied\n" ));
 			return -15315;
 		}
 
-		// if timeseries, timeStampCols must be >= 1
 		if ( _ptrParam->timeSeries.size() > 0 && timeStampCols < 1 ) {
 			return -13052;
 		}
 
-		// check duplicate column name
-		//prt(("s2038  _ptrParam->createAttrVec.length=%d\n",  _ptrParam->createAttrVec.length() ));
 		for ( int i = 0; i < _ptrParam->createAttrVec.length(); ++i ) {
 			for ( int j = i+1; j < _ptrParam->createAttrVec.length(); ++j ) {
 				if (  _ptrParam->createAttrVec[i].objName.colName == _ptrParam->createAttrVec[j].objName.colName ) {
-					//prt(("s2039 i=%d  objName.colName=[%s] equal to below:\n", i, _ptrParam->createAttrVec[i].objName.colName.c_str() ));
-					//prt(("s2049 j=%d  objName.colName=[%s]\n",  j, _ptrParam->createAttrVec[j].objName.colName.c_str() ));
 					return -13050;
 				}
 			}
@@ -3530,14 +3284,12 @@ int JagParser::setCreateVector( short setType )
 			cattr.type = JAG_C_COL_TYPE_STR;
 			cattr.offset = _ptrParam->keyLength+_ptrParam->valueLength;
 			cattr.length = _cfg->getLongValue("SPARE_COLUMN_PERCENT", 30)*cattr.offset/100; // percent, can be 30, 50, 200, 500, etc.
-			// prt(("s3320 spare_ offset=%d kLen=%d vLen=%d\n", cattr.offset, _ptrParam->keyLength,_ptrParam->valueLength ));
 			cattr.sig = 0;
 			_ptrParam->valueLength += cattr.length;
 			_ptrParam->createAttrVec.append( cattr );
 		}
 
 	} else if ( 1 == setType ) {
-		// 1==setType: create index createindex
 		prt(("s38143 createindex ...\n" ));
 		int numCols = 0;
 		_ptrParam->fieldSep = JAG_RAND;
@@ -3602,7 +3354,6 @@ int JagParser::setCreateVector( short setType )
 }
 
 
-// method to set one column attribute during create table. input _gettok should be at possible column name position
 int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 {
 	//prt(("\ns10282 setOneCreateColumnAttribute _gettok=[%s]  _saveptr=[%s]\n", _gettok, _saveptr ));
@@ -3915,8 +3666,6 @@ int JagParser::setOneCreateColumnAttribute( CreateAttribute &cattr )
 }
 
 
-// method to get column type
-// return type as an int, 0 for error
 Jstr JagParser::fillDataType( const char* gettok )
 {
 	Jstr rc;
@@ -4057,8 +3806,6 @@ Jstr JagParser::fillDataType( const char* gettok )
 	return rc;
 }
 
-// method to get column length
-// return length as an int
 int JagParser::getColumnLength( const Jstr &colType )
 {
 	int onelen;
@@ -4152,9 +3899,6 @@ bool JagParser::isValidGrantPerm( Jstr &perm )
 	return true;
 }
 
-// Obj: "db"
-// Obj: "db.tab"
-// Obj: "db.tab.col123"
 bool JagParser::isValidGrantObj( Jstr &obj )
 {
 	bool rc;
@@ -4182,7 +3926,6 @@ const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const Jstr &
 {
 	if ( ! pparam ) return NULL;
 	if (  pparam->objectVec.size() < 1 ) {
-		//prt(("s0293 tmp9999 pparam->objectVec.size() < 1\n" ));
 	 	return NULL;
 	}
 
@@ -4190,16 +3933,8 @@ const JagColumn* JagParser::getColumn( const JagParseParam *pparam, const Jstr &
 	Jstr objcol = pparam->objectVec[0].colName;
 	if ( db != objcol && objcol.size()>0 ) db = objcol;
 	if ( db.size() < 1 ) {
-		prt(("s0294 tmp9999 db.size() < 1\n" ));
 	 	return NULL;
 	}
-
-	// select * from tab;  param.objectVec[i=0].dbname=[test] tableName=[t1] indexName=[] colName=[test]
-	// select * from test.tab i=0 dbname=[test] tableName=[t1] indexName=[] colName=[test]
-	// select * from t1idx1; i=0 dbname=[test] tableName=[t1idx1] indexName=[] colName=[test]
-	// select * from test.t1idx1;  i=0 dbname=[test] tableName=[t1idx1] indexName=[] colName=[test]
-	// select * from t1.t1idx1; i=0 dbname=[t1] tableName=[t1idx1] indexName=[] colName=[test]
-	// select * from test.t1.t1idx1; i=0 dbname=[test] tableName=[t1] indexName=[t1idx1] colName=[]
 
 	Jstr objname = pparam->objectVec[0].tableName;
 	if ( pparam->objectVec[0].indexName.size() > 0 ) {
@@ -4275,9 +4010,6 @@ int JagParser::vectorShapeCoordinates( const Jstr &rcs )
 	return 0;
 }
 
-
-
-// complex types: point, point3d, ciurcle, sphere, square, cube, ...
 bool JagParser::isGeoType( const Jstr &rcs ) 
 {
 	if ( rcs.size() < 1 ) return false;
@@ -4561,16 +4293,11 @@ void JagParser::addCreateAttrAndColumn(bool isValue, CreateAttribute &cattr, int
 
 }
 
-
-// modifies _ptrParam
-//
 void JagParser::addExtraOtherCols( const JagColumn *pcol, OtherAttribute &other, int &numCols )
 {
 	if ( pcol->type.size() < 1 ) return;
 
 	Jstr on;
-
-	//prt(("s9283 pcol->type=[%s]\n", pcol->type.c_str() ));
 
 	if ( pcol->type == JAG_C_COL_TYPE_POINT || pcol->type == JAG_C_COL_TYPE_POINT3D  ) {
 		on = other.objName.colName;
@@ -4910,9 +4637,6 @@ void JagParser::setToRealType( const Jstr &rcs, CreateAttribute &cattr )
 	}
 }
 
-// gettok: "line(2020)"  
-// gettok: "int default '1'"  
-// gettok: "enum('a','b', 'c', 'd') default 'b'"
 int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int &collen, int &sig, int &metrics )
 {
 	prt(("s5503 getTypeNameArg gettok=[%s]\n", gettok ));
@@ -5026,9 +4750,6 @@ int JagParser::getTypeNameArg( const char *gettok, Jstr &tname, Jstr &targ, int 
 	return 0;
 }
 
-
-// createSQL: "create table t ( ....)"  -- assumes ( exists
-// createSQL has linestring, polygon, etc non-fixed number of points
 bool JagParser::hasPolyGeoType( const char *createSQL, int &dim )
 {
 	dim = 0;
@@ -5079,8 +4800,6 @@ bool JagParser::hasPolyGeoType( const char *createSQL, int &dim )
 
 void JagParser::addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool lead, int &offset )
 {
-	// add bbox, id, col, row key columns
-	// int offset = _ptrParam->keyLength;
 	int isMute;
 	if ( lead ) {
 		isMute = 0;  // bbx columns will be real-keys
@@ -5135,7 +4854,6 @@ void JagParser::addBBoxGeomKeyColumns( CreateAttribute &cattr, int polyDim, bool
 }
 
 
-// str: "intersect( ls1, linestring(1 2 , 3 4 )) && intersect(ls2, linestring(11 22, 33 44))"
 Jstr JagParser::getColumns( const char *str )
 {
 	//prt(("s2728 JagParser::getColumns str=[%s]\n", str ));
@@ -5204,9 +4922,6 @@ Jstr JagParser::getColumns( const char *str )
 	}
 }
 
-// add linestring data to other
-// p: "( x1 y1, x2 y2, ...)
-// return 0: OK,  < 0 error
 int JagParser::checkLineStringData( const char *p )
 {
 	if ( *p == 0 ) return -3427;
@@ -5224,9 +4939,6 @@ int JagParser::checkLineStringData( const char *p )
 	return 0;
 }
 
-// get linestring data min max 
-// p: "( x1 y1, x2 y2, ...)
-// return 0: OK,  < 0 error
 int JagParser::getLineStringMinMax( char sep, const char *p, double &xmin, double &ymin, double &xmax, double &ymax )
 {
 	//prt(("s2921 getLineStringMinMax p=[%s]\n", p ));
@@ -5256,10 +4968,6 @@ int JagParser::getLineStringMinMax( char sep, const char *p, double &xmin, doubl
 	return 0;
 }
 
-
-// add linestring data to other
-// p: "( x1 y1, x2 y2, ...)
-// return 0: OK,  < 0 error
 int JagParser::addLineStringData( JagLineString &linestr, const char *p )
 {
 	if ( *p == 0 ) return -4410;
@@ -5305,9 +5013,6 @@ int JagParser::checkLineString3DData( const char *p )
 	return 0;
 }
 
-// get linestring3d min max
-// p: "( x1 y1 z1, x2 y2 z2, ...)
-// return 0: OK,  < 0 error
 int JagParser::getLineString3DMinMax( char sep, const char *p, double &xmin, double &ymin, double &zmin, double &xmax, double &ymax, double &zmax )
 {
 	//prt(("s2838 linestring( p=[%s]\n", p ));
@@ -5341,9 +5046,6 @@ int JagParser::getLineString3DMinMax( char sep, const char *p, double &xmin, dou
 	return 0;
 }
 
-// add linestring3d data to other
-// p: "( x1 y1 z1, x2 y2 z2, ...)
-// return 0: OK,  < 0 error
 int JagParser::addLineString3DData( JagLineString &linestr, const char *p )
 {
 	prt(("s2838 linestring( p=[%s]\n", p ));
@@ -5373,7 +5075,6 @@ int JagParser::addLineString3DData( JagLineString &linestr, const char *p )
 }
 
 
-// return 0: OK,  < 0 error
 int JagParser::checkPolygonData( const char *p, bool mustClose )
 {
 	//prt(("s3438 polygon( p=[%s]\n", p ));
@@ -5437,9 +5138,6 @@ int JagParser::checkPolygonData( const char *p, bool mustClose )
 	return 0;
 }
 
-
-// return 0: OK,  < 0 error
-// p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
 int JagParser::checkMultiPolygonData( const char *p, bool mustClose, bool is3D )
 {
 	//prt(("s3588 multipolygon( p=[%s]\n", p ));
@@ -5489,10 +5187,6 @@ int JagParser::checkMultiPolygonData( const char *p, bool mustClose, bool is3D )
 	return 0;
 }
 
-
-// return 1: OK,  < 0 error , 0: no data ignore
-// p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
-// pgvec: " x:y:z x:y:z ...| ... ! ... | ... | ..."
 int JagParser::addMultiPolygonData( Jstr &pgvec, const char *p, 
 								    bool eachFirstOnly, bool mustClose, bool is3D )
 {
@@ -5552,9 +5246,6 @@ int JagParser::addMultiPolygonData( Jstr &pgvec, const char *p,
 	return 1;
 }
 
-
-// return 1: OK,  < 0 error , 0: no data ignore
-// p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
 int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p, 
 								    bool eachFirstOnly, bool mustClose, bool is3D )
 {
@@ -5608,8 +5299,6 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const char *p,
 	return 1;
 }
 
-// return 1: OK,  < 0 error  0: no data
-// // firstOnly: takes first ring of each polygon
 int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSplit &sp, bool firstOnly, bool is3D )
 {
 	prt(("s5608 addMultiPolygonData firstOnly=%d is3D=%d sp.print():\n", firstOnly, is3D ));
@@ -5668,11 +5357,6 @@ int JagParser::addMultiPolygonData( JagVector<JagPolygon> &pgvec, const JagStrSp
 	return 1;
 }
 
-
-
-// get polygon min max
-// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
-// return 0: OK,  < 0 error
 int JagParser::getPolygonMinMax( const char *p,  double &xmin, double &ymin, double &xmax, double &ymax )
 {
 	double xv, yv;
@@ -5725,11 +5409,6 @@ int JagParser::getPolygonMinMax( const char *p,  double &xmin, double &ymin, dou
 	return 0;
 }
 
-// add polygon data to other
-// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
-// return 0: no data, ignore,  < 0 error
-// return 1: OK
-// pgon returns "x:y x:y ...|x:y x:y ..."
 int JagParser::addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose )
 {
 	//prt(("s3538 addPolygonData( p=[%s]\n", p ));
@@ -5810,10 +5489,6 @@ int JagParser::addPolygonData( Jstr &pgon, const char *p, bool firstOnly, bool m
 	return 1;
 }
 
-// add polygon data to other
-// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
-// return 0: no data, ignore,  < 0 error
-// return 1: OK
 int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose )
 {
 	//prt(("s3538 addPolygonData( p=[%s]\n", p ));
@@ -5886,7 +5561,6 @@ int JagParser::addPolygonData( JagPolygon &pgon, const char *p, bool firstOnly, 
 	return 1;
 }
 
-// return 0: OK,  < 0 error
 int JagParser::checkPolygon3DData( const char *p, bool mustClose )
 {
 	if ( *p == 0 ) return -4519;
@@ -5955,10 +5629,6 @@ int JagParser::checkPolygon3DData( const char *p, bool mustClose )
 	return 0;
 }
 
-
-// get polygon3d min max 
-// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
-// return 0: OK,  < 0 error
 int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, double &zmin,
 							   double &xmax, double &ymax, double &zmax )
 {
@@ -6017,10 +5687,6 @@ int JagParser::getPolygon3DMinMax( const char *p , double &xmin, double &ymin, d
 	return 0;
 }
 
-// add polygon data to other
-// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
-// return 0: no data ignore,  < 0 error  1: OK
-// pgon: "x:y:z x:y:z ...| x:y:z x:y:z ... | x:y:z x:y:z ..."
 int JagParser::addPolygon3DData( Jstr &pgon, const char *p, bool firstOnly, bool mustClose )
 {
 	if ( *p == 0 ) { return 0; }
@@ -6097,9 +5763,6 @@ int JagParser::addPolygon3DData( Jstr &pgon, const char *p, bool firstOnly, bool
 	return 1;
 }
 
-// add polygon data to other
-// p: "( ( x1 y1, x2 y2, ...), (x1 y1, x2 y2, x3 y3, ...), (..) )
-// return 0: no data ignore,  < 0 error  1: OK
 int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly, bool mustClose )
 {
 	if ( *p == 0 ) {
@@ -6178,7 +5841,6 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const char *p, bool firstOnly
 	return 1;
 }
 
-// p: "( ks sk) (k k ss ) ) "
 void JagParser::removeEndUnevenBracket( char *str )
 {
 	if ( NULL == str || *str == 0 ) return;
@@ -6207,8 +5869,6 @@ void JagParser::removeEndUnevenBracket( char *str )
 	}
 }
 
-// p: "(( ks sk) (k k ss )) urjfjfj; ) "
-// output: "(( ks sk) (k k ss ))"
 void JagParser::removeEndUnevenBracketAll( char *str )
 {
 	if ( NULL == str || *str == 0 ) return;
@@ -6238,8 +5898,6 @@ void JagParser::removeEndUnevenBracketAll( char *str )
 	}
 }
 
-// from OJAG or CJAG type
-// 1: OK  < 0 error  0: no data
 int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
 	const char *str;
@@ -6270,8 +5928,6 @@ int JagParser::addPolygonData( JagPolygon &pgon, const JagStrSplit &sp, bool fir
 	return 1;
 }
 
-// from OJAG or CJAG type
-// 1: OK  < 0 error
 int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool firstOnly )
 {
 	const char *str;
@@ -6302,7 +5958,6 @@ int JagParser::addPolygon3DData( JagPolygon &pgon, const JagStrSplit &sp, bool f
 }
 
 
-// from OJAG type
 void JagParser::addLineStringData( JagLineString &linestr, const JagStrSplit &sp )
 {
 	const char *str;
@@ -6351,8 +6006,6 @@ void JagParser::addLineString3DData( JagLineString3D &linestr, const JagStrSplit
 	}
 }
 
-// return 0: OK,  < 0 error
-// p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
 int JagParser::getMultiPolygonMinMax( const char *p, double &xmin, double &ymin, double &xmax, double &ymax )
 {
 	//prt(("s1538 multipolygon( p=[%s]\n", p ));
@@ -6397,8 +6050,6 @@ int JagParser::getMultiPolygonMinMax( const char *p, double &xmin, double &ymin,
 	return 0;
 }
 
-// return 0: OK,  < 0 error
-// p:  "(  ( (), (), ( ) ),  ( (), (), ( ) ), ( (), (), ( ) )  )
 int JagParser::getMultiPolygon3DMinMax( const char *p, double &xmin, double &ymin, double &zmin,
 									    double &xmax, double &ymax, double &zmax )
 {
@@ -6444,8 +6095,6 @@ int JagParser::getMultiPolygon3DMinMax( const char *p, double &xmin, double &ymi
 	return 0;
 }
 
-// return 0 OK; < 0 error
-// json: "{ ......... }'"
 int JagParser::convertJsonToOther( OtherAttribute &other, const char *json, int jsonlen )
 {
 	//prt(("s3911 convertJsonToOther json=[%s]\n", json ));
@@ -6550,8 +6199,6 @@ int JagParser::convertJsonToPoint( const rapidjson::Document &dom, OtherAttribut
 	return 0;
 }
 
-// coordinates: "[ [x, y], [x, y], ... ]"
-// other.valueData: "( x y, x y, ... )"
 int JagParser::convertJsonToLineString( const rapidjson::Document &dom, OtherAttribute &other )
 {
 	bool is3D = false;
@@ -6620,8 +6267,6 @@ int JagParser::convertJsonToLineString( const rapidjson::Document &dom, OtherAtt
 }
 
 
-// coordinates: "[  [ [x, y], [x, y], ... ],  [ [x, y], [x, y], ... ]     ]"
-// other.valueData: "( ( x y, x y, ... ), ( ...) )"
 int JagParser::convertJsonToPolygon( const rapidjson::Document &dom, OtherAttribute &other )
 {
 	bool is3D = false;
@@ -6705,9 +6350,6 @@ int JagParser::convertJsonToPolygon( const rapidjson::Document &dom, OtherAttrib
 	return 0;
 }
 
-
-// coordinates: "[ [  [ [x, y], [x, y], ... ],  [ [x, y], [x, y], ... ] ], [    ], [ ]  ]"
-// other.valueData: "( ( ( x y, x y, ... ), ( ...) ), (   ), ( )  )"
 int JagParser::convertJsonToMultiPolygon( const rapidjson::Document &dom, OtherAttribute &other )
 {
 	bool is3D = false;
@@ -6904,7 +6546,6 @@ Jstr JagParser::getFieldTypeString( int srid )
 	return ctype;
 }
 
-// metrics are required to be: 'a' 'b' 'c'  or "a"  "b"  "c"
 bool JagParser::getMetrics( const JagStrSplitWithQuote &sp, JagVector<Jstr> &metrics )
 {
 	prt(("s422398 getMetrics \n"));
@@ -6929,10 +6570,6 @@ bool JagParser::getMetrics( const JagStrSplitWithQuote &sp, JagVector<Jstr> &met
 	return true;
 }
 
-
-// return n>0: OK ,  <=0 error
-// instr: "point3d(...)"  "polygon((...),(...))"
-// outstr: "CJAG=0=0=type=subtype  bbox data1 data2 data3 ..."
 int JagParser::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr )
 {
 	int cnt = 0;
@@ -7280,97 +6917,4 @@ int JagParser::convertConstantObjToJAG( const JagFixString &instr, Jstr &outstr 
 
 	return cnt;
 }
-
-#if 0
-// input ptok:  "rollup( avg where (a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
-// input:  "rollup (avg where (a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
-// input:  "rollup (avg | (a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
-// input:  "rollup(avg |(a < 1 or b < 100) and ( a>-100 or b < 10) ) int"
-// input:  "rollup(avg ) int"
-// returns: pointer right after the most-right ')' of rollup statememt
-// returns: NULL if errors happened
-const char * JagParser::parseRollup( const char *ptok, CreateAttribute &cattr )
-{
-	prt(("s122080 ******************** parseRollup ptok=[%s]\n", ptok ));
-	*(cattr.spare+7) = JAG_ROLL_UP;
-	prt(("s122081 ptok=[%s]\n", ptok ));
-	ptok += 6; 
-	prt(("s122081 ptok=[%s]\n", ptok ));
-	while ( isspace( *ptok ) ) ++ptok;
-	if ( *ptok == NBT ) { prt(("s102\n")); return NULL; }
-	if ( *ptok != '(' ) { prt(("s103\n")); return NULL; }
-	// ptok points to '(';
-	++ptok;
-	prt(("s123081 ptok=[%s]\n", ptok ));
-	while ( isspace( *ptok ) ) ++ptok;
-	if ( *ptok == NBT ) { prt(("s104\n")); return NULL; }
-	// ptok points to 'avg where ...';
-	prt(("s123083 ptok=[%s]\n", ptok ));
-	Jstr rtype = firstToken( ptok, '|');
-	if ( rtype.containsChar(')') ) { rtype.remove(')'); }
-	prt(("s3330341 rtype=[%s]\n", rtype.s() ));
-	rtype.toUpper();
-	prt(("s3330381 rtype=[%s]\n", rtype.s() ));
-	if ( rtype == "AVG" ) {
-		*(cattr.spare+8) = JAG_ROLLUP_AVG;
-	} else if ( rtype == "SUM"  ) {
-		*(cattr.spare+8) = JAG_ROLLUP_SUM;
-	} else if ( rtype == "MIN" ) {
-		*(cattr.spare+8) = JAG_ROLLUP_MIN;
-	} else if ( rtype == "MAX" ) {
-		*(cattr.spare+8) = JAG_ROLLUP_MAX;
-	} else if ( rtype == "COUNT" ) {
-		*(cattr.spare+8) = JAG_ROLLUP_COUNT;
-	} else {
-		prt(("s105\n"));
-		return NULL;
-	}
-
-	ptok += rtype.size(); // right after avg
-	prt(("s123583 ptok=[%s]\n", ptok ));
-	while ( isspace( *ptok ) ) ++ptok;
-	if ( *ptok == NBT ) return NULL;
-	prt(("s124083 ptok=[%s]\n", ptok ));
-	// ptok now at ')' or '|...' or 'where ..."
-	if ( *ptok == ')' ) {
-		ptok ++;
-		return ptok;
-	}
-
-	if ( *ptok == '|' ) {
-		ptok ++; // " a < 100 or (b > 10) ) int"
-	} else if ( 0==strncasecmp( ptok, "where", 5) ) {
-		ptok += 5;
-	} else {
-		prt(("s222210 | or where not found\n"));
-		return NULL;
-	}
-
-	while ( isspace( *ptok ) ) ++ptok;
-	if ( *ptok == NBT ) { prt(("s107\n")); return NULL; }
-	// ptok: "a < 100 or (b > 10) ) int"
-
-	// goto the first right unbalanced ')'
-	int matchedBrackets = 0;
-	const char  *p = ptok;
-	while ( *p != NBT ) {
-		if ( *p == '(' ) {
-			++ matchedBrackets;
-		} else if ( *p == ')' ) {
-			-- matchedBrackets;
-			if ( matchedBrackets == -1 ) {
-				// first extra ')' on right
-				cattr.rollupWhere = Jstr( ptok, p-ptok ).trimSpaces();
-				prt(("s223309 cattr.rollupWhere=[%s]\n", cattr.rollupWhere.s() ));
-				return p+1;
-			}
-		}
-
-		++p;
-	}
-
-	prt(("s222038 not found extra ')' after where\n"));
-	return NULL;
-}
-#endif
 

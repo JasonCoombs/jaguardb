@@ -22,7 +22,6 @@
 #include <JagBuffBackReader.h>
 #include <JagUtil.h>
 
-///////////////// implementation /////////////////////////////////
 
 JagMergeBackReader::JagMergeBackReader( const JagDBMap *dbmap, const JagVector<OnefileRange> &fRange, 
 										int veclen, int keylen, int vallen, const char *minbuf, const char *maxbuf )
@@ -136,48 +135,18 @@ void JagMergeBackReader::initHeap()
 	if ( _pqueue ) { delete _pqueue; }
     _pqueue = new JagPriorityQueue<int,JagDBPair>(256, JAG_MAXQUEUE );
 
-	// memory buffer
-    prt(("s300848 initHeap this=%0x _dbmap=%0x\n", this, this->_dbmap ));
     if ( this->_dbmap && this->_dbmap->size() > 0 ) {
 
         if ( beginPair >= endPair ) {
-            prt(("s300848 initHeap _dbmap=%0x _dbmap->size()=%d\n", this->_dbmap, this->_dbmap->size() ));
             _pqueue->push( -1, beginPair );
-            // -1 mean memory
             currentPos = beginPos;
             if ( currentPos == endPos ) {
                 memReadDone = true;
             }
-            //-- currentPos;
-            //prt(("s830188 initHeap push -1 [%s]\n", beginPair.key.c_str() ));
         } else {
             memReadDone = true;
         }
     }
-
-
-	// N files
-	// _goNext[i] == 1 files should be read next
-	// _goNext[i] == -1 files already EOF 
-	// _goNext[i] == 0 files not already EOF not to be read next
-	/***
-	int rc;
-	jagint pos;
-	for ( int i = 0; i < _readerPtrlen; ++i ) {
-		if ( _goNext[i] == 1 ) {
-			//rc = _buffBackReaderPtr[i]->getNext( _buf+i*KEYVALLEN, pos );
-			rc = _buffBackReaderPtr[i]->getNext( _buf, pos );
-			if ( rc ) {
-				JagDBPair pair(_buf, KEYLEN, VALLEN );
-				_pqueue->push( i, pair );
-				_goNext[i] = 0;
-			} else {
-				_goNext[i] = -1;  // end of file for this filenum
-				++_endcnt;
-			}
-		}
-	}
-	****/
 
     int rc;
     jagint pos;
@@ -186,9 +155,7 @@ void JagMergeBackReader::initHeap()
     }
 
     for ( int i = 0; i < _readerPtrlen; ++i ) {
-        //rc = _buffReaderPtr[i]->getNext( _buf+i*KEYVALLEN, pos );
         rc = _buffBackReaderPtr[i]->getNext( _buf, pos );
-        prt(("s293016 _buffReaderPtr(%d) getNext rc=%d\n", i, rc ));
         if ( rc ) {
             JagDBPair pair(_buf, KEYLEN, VALLEN );
             if ( pair >= endPair ) {
@@ -276,7 +243,6 @@ void JagMergeBackReader::moveToRestartPos()
         _pqueue->clear();
         _pqueue->push( -1, restartPair );
     } else {
-        prt(("%0x in moveToRestartPos(), currentPos is at end. no push currentPos.pair\n", this ));
     }
 
 	for ( int i = 0; i < _readerPtrlen; ++i ) {
@@ -286,32 +252,17 @@ void JagMergeBackReader::moveToRestartPos()
 
 void JagMergeBackReader::findBeginPos( const char *minbuf, const char *maxbuf )
 {
-	//prt(("s300323 findBeginEndPos minbuf=[%s] maxbuf=[%s]\n", minbuf, maxbuf ));
-	//beginPair = JagDBPair( minbuf, KEYLEN ); // can be empty
-	//endPair = JagDBPair( maxbuf, KEYLEN );  // can be 255.....
-
-	// max, right end
-	beginPair = JagDBPair( maxbuf, KEYLEN ); // can be 255
-
-	// min, left end
-	endPair = JagDBPair( minbuf, KEYLEN );  // can be empty
-
-	//beginPos = _dbmap->getSuccOrEqual( beginPair ); //  can be end()
-	beginPos = _dbmap->getReversePredOrEqual( beginPair ); //  can be rend() // smaller or equal pair
+	beginPair = JagDBPair( maxbuf, KEYLEN ); 
+	endPair = JagDBPair( minbuf, KEYLEN ); 
+	beginPos = _dbmap->getReversePredOrEqual( beginPair );
 	if (  isAtREnd( endPos ) ) {
 		memReadDone = true;
 		return;
 	}
 
 	_dbmap->reverseIterToPair( beginPos, beginPair );
-	//prt(("s402934 beginPair=[%s]\n", beginPair.key.c_str() ));
 
-	//endPos = _dbmap->getPredOrEqual( endPair );   // can be end()
-	endPos = _dbmap->getReverseSuccOrEqual( endPair );   // can be rend()  10 20 30 40  find 25-->30
-                                                         // 10 20 30  find: 1000 --> rend()
-	//_dbmap->iterToPair( endPos, endPair );
-	//prt(("s402935 endPair=[%s]\n", endPair.key.c_str() ));
-
+	endPos = _dbmap->getReverseSuccOrEqual( endPair );   
 	if ( isAtREnd( endPos ) ) {
 		memReadDone = true;
 	}
@@ -342,14 +293,6 @@ bool JagMergeBackReader::isAtREnd( JagFixMapReverseIterator iter )
 	if ( _dbmap->isAtREnd(iter) ) return true;
 	return false;
 }
-
-/***
-void JagMergeBackReader::setToEnd( JagFixMapReverseIterator &iter )
-{
-	if ( NULL == _dbmap ) return;
-	_dbmap->setToEnd( iter );
-}
-***/
 
 void JagMergeBackReader::print( const char *hdr, JagFixMapReverseIterator iter )
 {

@@ -42,13 +42,11 @@ class JagFamilyKeyChecker
 		Jstr getPath() { return _pathName; }
 
     protected:
-		// void  destroy();
 		void  getUniqueKey( const char *key, char *ukey ) const;
 		int   _KLEN;
 		int   _VLEN;
 		int	  _UKLEN;
 		bool  _useHash;
-		//JagReadWriteLock    *_lock;
 		Jstr     _pathName;
 
 };

@@ -79,17 +79,6 @@ JagFixString::JagFixString( const char *str, unsigned int slen, unsigned int cap
 	memset( dtype, 0, 4 );
 }
 
-/***
-// JagFixString::JagFixString( unsigned int len ) 
-{ 
-		_readOnly = false;
-		_buf = (char*)jagmalloc(len+1);
-		memset( _buf, 0, len+1);
-		_length = len;
-		printf("s3939 JagFixString(int) called\n"); fflush( stdout );
-}
-******/
-
 JagFixString::JagFixString( const JagFixString &str ) 
 { 
 	_readOnly = false;
@@ -110,7 +99,6 @@ JagFixString::JagFixString( const Jstr &str )
 	memcpy( _buf, str.c_str(), len );
 	_buf[len] = '\0';
 	_length = len;
-	// printf("s3929 JagFixString(int) called\n"); fflush( stdout );
 	memcpy( dtype, str.dtype, 3 );
 }
 
@@ -241,15 +229,6 @@ void JagFixString::point(const char *str, unsigned int len )
 	_readOnly = true;
 }
 
-/**
-JagFixString::JagFixString( const char *str, unsigned int len, bool ref ) 
-{
-		_readOnly = true;
-		point( str, len );
-}
-**/
-
-// caller make sure length(data) <= _length
 void JagFixString::strcpy( const char *data )
 {
 	::strcpy(_buf, data );
@@ -264,17 +243,12 @@ JagFixString::~JagFixString()
 	if ( _buf )
 	{
 		free ( _buf );
-	    // _num -= _length;
 	}
 	_buf = NULL;
 }
 
-// inline jagint hashCode64() const 
 jagint JagFixString::hashCode() const 
 {
-	//prt(("s220220 fixstring.dump:\n"));
-	//dump();
-
     unsigned int hash[4];                
     unsigned int seed = 42;             
 	char *p;
@@ -285,18 +259,13 @@ jagint JagFixString::hashCode() const
 	for ( int i =0; i < _length; ++i ) {
 		if ( _buf[i] != '\0' ) {
 			*p ++ = _buf[i];
-			//prt(("s333387 len=%d added [%c]\n", len, _buf[i] ));
 			++len;
 		}
 	}
-	//prt(("s6231 _length=%d  buf=[%s] newbuf=[%s] len=%d\n", _length, _buf, newbuf, len ));
 
-    // MurmurHash3_x64_128( str, len, seed, hash);
     MurmurHash3_x64_128( (void*)newbuf, len, seed, hash);
-
     uint64_t res2 = ((uint64_t*)hash)[0]; 
     jagint res = res2 % LLONG_MAX;
-	// printf("s9226 JagFixString::hashCode() buf=[%s] newbuf=[%s] hashcode=%lld _length=[%lld]\n", _buf, newbuf, res, _length );
 	free( newbuf );
     return res;
 }

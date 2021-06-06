@@ -21,52 +21,14 @@
 #include <JagFixKV.h>
 #include <JagNode.h>
 
-// ctor
 JagNode::JagNode() : JagFixKV( "system", "NodeStat", 0 )
 {
 }
 
-// dtor
 JagNode::~JagNode()
 {
 	this->destroy();
 }
-
-#if 0
-// PASS: password; PERM: role:  READ/WRITE  READ: read-only    WRITE: read and write
-// PERM:  ADMIN or USER
-bool JagNode::addNode( const AbaxString &nodeid, const AbaxString& usedGB, const AbaxString& freeGB )
-{
-	JagReadWriteMutex mutex( _lock, JagReadWriteMutex::WRITE_LOCK );
-	char buf[32];
-	sprintf( buf, "%lld", time(NULL) );
-
-	//JagRecord  record;
-	record.addNameValue( JAG_USED, usedGB.c_str() );
-	record.addNameValue( JAG_FREE, freeGB.c_str() );
-	record.addNameValue( JAG_REG,  buf );
-	record.addNameValue( JAG_STAT, "NEW" );
-
-    // char kv[ KVLEN + 1];
-    char *kv = (char*) jagmalloc ( KVLEN+1 );
-    memset(kv, 0, KVLEN + 1 );
-    JagDBPair pair, retpair;
-    pair.point( kv, KLEN, kv+KLEN, VLEN );
-    strcpy( kv, nodeid.c_str() );
-    strcpy( kv+KLEN, record.getSource() );
-	int insertCode;
-    int rc = _darr->insert( pair, insertCode, false, true, retpair );
-    // printf("s4822 addNode _darr->insert rc=%d\n", rc );
-	if ( kv ) free ( kv );
-
-	return 1;
-}
-
-bool JagNode::dropNode( const AbaxString &nodeid )
-{
-	return this->dropKey( nodeid ); 
-}
-#endif
 
 Jstr JagNode::getListNodes()
 {

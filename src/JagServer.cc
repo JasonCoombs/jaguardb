@@ -74,7 +74,7 @@ int setupSignalHandler( JagDBServer *serv )
 
     pthread_t thread;
     sigfillset(&set);
-    s = pthread_sigmask(SIG_BLOCK, &set, NULL);  // all signals passthrough
+    s = pthread_sigmask(SIG_BLOCK, &set, NULL);  
     JagSigPass *sigpass = new JagSigPass;
     sigpass->servobj = serv;
     sigpass->sigset = set;
@@ -85,7 +85,7 @@ int setupSignalHandler( JagDBServer *serv )
         exit(1);
     }
 
-    sigemptyset(&set);  // no signals can passthrough to all new threads
+    sigemptyset(&set);  
     s = pthread_sigmask(SIG_BLOCK, &set, NULL);
     if ( s != 0 ) {
         raydebug( stdout, JAG_LOG_LOW, "Error setting up signal mask, exit\n" );
@@ -103,7 +103,7 @@ void* signalHandler( void *arg )
     int s, sig;
     JagDBServer *servobj = p->servobj;
 
-    sigfillset(&set); // all signal pass through
+    sigfillset(&set); 
     s = pthread_sigmask(SIG_BLOCK, &set, NULL);
     while ( true ) {
         s = sigwait( &set,  &sig);
@@ -139,21 +139,17 @@ BOOL CtrlHandler( DWORD fdwCtrlType )
 {
   switch( fdwCtrlType )
   {
-    // Handle the CTRL-C signal.
     case CTRL_C_EVENT:
       Beep( 750, 300 );
 	  raydebug( stdout, JAG_LOG_LOW, "Processing Ctrl-C event ignore...\n" );
-	  // g_servobj->processSignal( JAG_CTRL_CLOSE );
       return( TRUE );
 
-    // CTRL-CLOSE: confirm that the user wants to exit.
     case CTRL_CLOSE_EVENT:
       Beep( 600, 200 );
 	  raydebug( stdout, JAG_LOG_LOW, "Processing Ctrl-CLOSE event JAG_CTRL_CLOSE...\n" );
 	  g_servobj->processSignal( JAG_CTRL_CLOSE );
       return( TRUE );
 
-    // Pass other signals to the next handler.
     case CTRL_BREAK_EVENT:
       Beep( 900, 200 );
 	  raydebug( stdout, JAG_LOG_LOW, "Processing Ctrl-Break event ignore ...\n" );

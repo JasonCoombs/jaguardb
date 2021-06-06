@@ -20,18 +20,14 @@
 #include <JagHashStrInt.h>
 #include <JagUtil.h>
 
-// ctor
 JagHashStrInt::JagHashStrInt()
 {
-	//prt(("s8540 JagHashStrInt simple ctor this=%x\n", this ));
 	jag_hash_init( &_hash, 10 );
 	_len = 0;
 }
 
-// dtor
 JagHashStrInt::~JagHashStrInt()
 {
-	//prt(("s8540 JagHashStrInt dtor this=%x\n", this ));
 	jag_hash_destroy( &_hash );
 }
 
@@ -86,10 +82,8 @@ void JagHashStrInt::reset()
 }
 
 
-// copy ctor 
 JagHashStrInt::JagHashStrInt( const JagHashStrInt &o )
 {
-	//prt(("s8540 JagHashStrInt copy ctor this=%x o=%0x\n", this, &o ));
 	jag_hash_init( &_hash, 10 );
 	_len = 0;
 
@@ -104,11 +98,9 @@ JagHashStrInt::JagHashStrInt( const JagHashStrInt &o )
 	}
 }
 
-// assignment =
 JagHashStrInt& JagHashStrInt:: operator= ( const JagHashStrInt &o )
 {
 	if ( this == &o ) return *this;
-	//prt(("s8820 JagHashStrInt this=%0x assignment by o=%0x\n", this, &o ));
 
 	reset();
 

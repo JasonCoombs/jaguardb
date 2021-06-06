@@ -20,13 +20,11 @@
 #include <JagDef.h>
 #include <JagWalMap.h>
 
-// ctor
 JagWalMap::JagWalMap()
 {
 	_map = new JagHashStrPtr( JAG_OUTLINE_STORE );
 }
 
-// dtor
 JagWalMap::~JagWalMap()
 {
 	delete _map;

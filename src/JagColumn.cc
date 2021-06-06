@@ -20,9 +20,6 @@
 
 JagColumn::JagColumn()
 {
-	// name = Jstr("");
-	// printf("c1920 JagColumn::JagColumn() ...\n");
-
 	type = JAG_C_COL_TYPE_STR;
 	offset = 0;
 	length = 0;
@@ -35,13 +32,10 @@ JagColumn::JagColumn()
 
 	srid = begincol = endcol = metrics = 0; dummy3 = dummy4 = dummy5 = 0;
 	dummy6 = dummy7 = dummy8 = dummy9 = dummy10 = 0;
-	//record = NULL;
 }
 
 JagColumn::~JagColumn()
 {
-	//printf("c7432 JagColumn dtor called\n");
-	//fflush ( stdout );
 }
 
 void JagColumn::destroy( AbaxDestroyAction action )
@@ -93,8 +87,6 @@ void JagColumn::copyData( const JagColumn& other )
 	begincol = other.begincol;
 	endcol = other.endcol;
 	metrics = other.metrics;
-	//dummy1 = other.dummy1; replaced by metrics
-	// dummy2 = other.dummy2;
 	rollupWhere = other.rollupWhere;
 	dummy3 = other.dummy3;
 	dummy4 = other.dummy4;
@@ -104,6 +96,5 @@ void JagColumn::copyData( const JagColumn& other )
 	dummy8 = other.dummy8;
 	dummy9 = other.dummy9;
 	dummy10 = other.dummy10;
-	//record = other.record;
 }
 

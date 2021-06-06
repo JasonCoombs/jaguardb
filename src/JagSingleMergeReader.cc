@@ -33,11 +33,9 @@ JagSingleMergeReader::JagSingleMergeReader( const JagVector<OnefileRangeFD> &fRa
 	_goNext =(int*)calloc(_veclen, sizeof(int));
 	_buf = (char*)jagmalloc(KEYVALLEN*_veclen+1);
 
-	//raydebug( stdout, JAG_LOG_HIGH, "s1829 JagSingleBuffReader[%d] ...\n", veclen );
 	_vec = new JagSingleBuffReaderPtr[veclen];
 	
 	for ( int i = 0; i < veclen; ++i ) {
-		//_vec[i] = new JagSingleBuffReader( fRange[i].compf, fRange[i].readlen, KEYLEN, VALLEN, fRange[i].startpos, 0, fRange[i].memmax );
 		_vec[i] = new JagSingleBuffReader( fRange[i].fd, fRange[i].readlen, KEYLEN, VALLEN, fRange[i].startpos, 0, fRange[i].memmax );
 		_goNext[i] = 1;
 	}
@@ -61,11 +59,6 @@ JagSingleMergeReader::~JagSingleMergeReader()
 	}
 }
 
-// return 0 for no more data
-//        N: n records
-//        buf:  [kvlen][kvlen]\0\0\0\0\0
-//        buf is buffer of _veclen*kvlen bytes
-// int JagSingleMergeReader::getNext( char *retbuf )
 int JagSingleMergeReader::getNext( JagVector<JagFixString> &vec )
 {
 
@@ -76,7 +69,7 @@ int JagSingleMergeReader::getNext( JagVector<JagFixString> &vec )
 			rc = _vec[i]->getNext( _buf+i*KEYVALLEN );
 			if ( rc > 0 ) {
 				_goNext[i] = 0;
-				if ( minpos < 0 ) minpos = i; // first ith position which has next value
+				if ( minpos < 0 ) minpos = i;
 			} else {
 				_goNext[i] = -1;
 				++_endcnt;
@@ -90,7 +83,6 @@ int JagSingleMergeReader::getNext( JagVector<JagFixString> &vec )
 		return 0;
 	}
 	
-	// find min data
 	for ( int i = 0; i < _veclen; ++i ) {
 		if ( _goNext[i] != -1 ) {
 			rc = memcmp( _buf+i*KEYVALLEN, _buf+minpos*KEYVALLEN, KEYLEN );
@@ -100,12 +92,11 @@ int JagSingleMergeReader::getNext( JagVector<JagFixString> &vec )
 		}
 	}
 
-	// append min data
 	for ( int i = 0; i < _veclen; ++i ) {
 		if ( _goNext[i] != -1 ) {
 			rc = memcmp( _buf+i*KEYVALLEN, _buf+minpos*KEYVALLEN, KEYLEN );
 			if ( 0 == rc ) {
-				vec.append( JagFixString( _buf+i*KEYVALLEN, KEYVALLEN ) ); // append another min data
+				vec.append( JagFixString( _buf+i*KEYVALLEN, KEYVALLEN ) ); 
 				++cnt;
 				_goNext[i] = 1;
 			}
@@ -196,7 +187,6 @@ bool JagSingleMergeReader::getNext( char *buf, jagint &pos )
         return false;
     }
 
-    // get initial maxbuf as first avail buf
     for ( int i = beginpos; i < _veclen; ++i ) {
         if ( _goNext[i] != -1 ) {
             memcpy(buf, _buf+i*KEYVALLEN, KEYVALLEN);
@@ -205,7 +195,6 @@ bool JagSingleMergeReader::getNext( char *buf, jagint &pos )
         }
     }
 
-    // find the min buf ( while oldest file first )
     for ( int i = beginpos; i < _veclen; ++i ) {
         if ( _goNext[i] != -1 ) {
             rc = memcmp(buf, _buf+i*KEYVALLEN, KEYLEN);
@@ -215,7 +204,6 @@ bool JagSingleMergeReader::getNext( char *buf, jagint &pos )
         }
     }
 
-    // check and set all other equal buf to getNext
     for ( int i = beginpos; i < _veclen; ++i ) {
         if ( _goNext[i] != -1 ) {
             rc = memcmp(buf, _buf+i*KEYVALLEN, KEYLEN);

@@ -27,7 +27,6 @@ JagMergeReaderBase::JagMergeReaderBase( const JagDBMap *dbmap, int veclen, int k
 										const char *minbuf, const char *maxbuf )
     :_dbmap( dbmap )
 {
-	prt(("s400822 JagMergeReaderBase ctor this=%0x dbmap=%0x\n", this, dbmap ));
 	_setRestartPos = 0;
 	_endcnt = 0;
 	_readerPtrlen = veclen;
@@ -40,19 +39,11 @@ JagMergeReaderBase::JagMergeReaderBase( const JagDBMap *dbmap, int veclen, int k
 		_goNext =(int*)calloc( _readerPtrlen, sizeof(int));
 	}
 
-	//_buf = (char*)jagmalloc(KEYVALLEN*_veclen+1);
 	_buf = (char*)jagmalloc(KEYVALLEN+1);
 	_cacheBuf = NULL;
 
-	// get min and max positon of insertBufferMap
-	//beginPair = JagDBPair( minbuf, KEYLEN );
-	//endPair = JagDBPair( maxbuf, KEYLEN );
-	// _dbmap = dbmap;
-	prt(("s27901 JagMergeReaderBase ctor  _dbmap=%0x\n", _dbmap ));
 	memReadDone = false;
-	//findBeginPos( minbuf, maxbuf );
 	_pqueue = NULL;
-	prt(("s27903 JagMergeReaderBase ctor this=%0x  _dbmap=%0x\n", this, _dbmap ));
 }
 
 JagMergeReaderBase::~JagMergeReaderBase()
@@ -63,16 +54,13 @@ JagMergeReaderBase::~JagMergeReaderBase()
 	
 	if ( _buf ) {
 		free ( _buf );
-		//_buf = NULL;
 	}
 
 	if ( _cacheBuf ) {
 		free( _cacheBuf );
-		//_cacheBuf = NULL;
 	}
 
 	if ( _pqueue ) {
-		prt(("s300822 delete _pqueue=%0x\n", _pqueue ));
 		delete _pqueue;
 	}
 	

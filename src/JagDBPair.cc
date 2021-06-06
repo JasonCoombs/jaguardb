@@ -19,10 +19,6 @@
 #include "JagGlobalDef.h"
 #include "JagDBPair.h"
 
-
-// Return  0: if this and d2 is equal
-//         -1: if this is < d2
-//         +1: if this is > d2
 int JagDBPair::compareKeys( const JagDBPair &d2 ) const {
 	if ( key.addr() == NULL || key.addr()[0] == '\0' ) {
 		if ( d2.key.size()<1 || d2.key.addr() == NULL || d2.key.addr()[0] == '\0' ) {
@@ -34,19 +30,10 @@ int JagDBPair::compareKeys( const JagDBPair &d2 ) const {
 		if ( d2.key.addr() == NULL || d2.key.addr()[0] == '\0' ) {
 			return 1;
 		} else {
-			//return ( memcmp(key.addr(), d2.key.addr(), key.size() ) );
-			// this.key is not empty, d2.key is not empty
 			if ( key.addr()[0] == '*' && d2.key.addr()[0] == '*' ) {
 				return 0;
-				/***
-			} else if ( key.addr()[0] == '*' ) {
-				return 1;
-			} else if ( d2.key.addr()[0] == '*' ) {
-				return -1;
-				***/
 			} else {
 				return ( memcmp(key.addr(), d2.key.addr(), key.size() ) );
-				//return compareByRec( key.addr(), d2.key.addr(), key.size() );
 			}
 		}
 	}
@@ -81,14 +68,11 @@ void JagDBPair::toBuffer(char *buffer) const {
 	memcpy(buffer + key.size(), value.c_str(), value.size() );
 }
 
-// caller must free it
 char *JagDBPair::newBuffer() const {
-	//prt(("s333300 newBuffer key.size=%d value.size=%d\n", key.size(),  value.size() ));
 	char *buffer = jagmalloc( key.size() + value.size() +1 );
 	buffer [ key.size() + value.size() ] = '\0';
 	memcpy(buffer, key.c_str(), key.size() );
 	memcpy(buffer + key.size(), value.c_str(), value.size() );
-	//print(); // 
 	return buffer;
 }
 

@@ -27,9 +27,6 @@
 #include <JagDiskArrayFamily.h>
 #include <JagCompFile.h>
 
-// ctor and dtors
-// ctor
-// User by server only
 JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj,  JagDiskArrayFamily *fam, const Jstr &filePathName, 
 									const JagSchemaRecord *record, int index ) 
 								: _schemaRecord(record)
@@ -38,7 +35,7 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj,  JagDiskArrayFam
 	_family = fam;
 	_pathname = filePathName;
 	_fulls = 0;
-	_index = index; // i-th file in family
+	_index = index; 
 	_partials = 0;
 	_reads = _writes = _dupwrites = _upserts = 0;
 	_insdircnt = _insmrgcnt = 0;
@@ -51,7 +48,6 @@ JagDiskArrayBase::JagDiskArrayBase( const JagDBServer *servobj,  JagDiskArrayFam
 	_jdfs = nullptr;
 }
 
-// client use only
 JagDiskArrayBase::JagDiskArrayBase( const Jstr &filePathName, const JagSchemaRecord *record ) 
     :  _schemaRecord(record)
 {	
@@ -70,7 +66,6 @@ JagDiskArrayBase::JagDiskArrayBase( const Jstr &filePathName, const JagSchemaRec
 	_numservs = 1;
 }
 
-// dtor
 JagDiskArrayBase::~JagDiskArrayBase()
 {
 	destroy();
@@ -85,8 +80,6 @@ void JagDiskArrayBase::destroy()
 	
 }
 
-// simple get attributes methods
-// get DBPair for KV both or key only
 void JagDiskArrayBase::_getPair( char buffer[], int keylength, int vallength, JagDBPair &pair, bool keyonly ) const 
 {
 	if (buffer[0] != '\0') {
@@ -103,12 +96,11 @@ void JagDiskArrayBase::_getPair( char buffer[], int keylength, int vallength, Ja
 
 jagint JagDiskArrayBase::size() const 
 { 
-	return _jdfs->getCompf()->size(); // bytes
+	return _jdfs->getCompf()->size(); 
 }
 
 bool JagDiskArrayBase::getFirstLast( const JagDBPair &pair, jagint &first, jagint &last )
 {
-	//prt(("s331115 JagDiskArrayBase::getFirstLast pair=[%s]\n", pair.key.c_str() ));
 	if ( *pair.key.c_str() == NBT ) {
 		first = 0;
 		last = first + JagCfg::_BLOCK - 1;
@@ -134,11 +126,9 @@ bool JagDiskArrayBase::getFirstLast( const JagDBPair &pair, jagint &first, jagin
 }
 
 
-// equal element or predecessor of pair
 bool JagDiskArrayBase::findPred( const JagDBPair &pair, jagint *index, jagint first, jagint last, 
 								 JagDBPair &retpair, char *diskbuf )
 {
-	//prt(("s412112 findPred() pair=[%s]  _path=[%s] kvlen=%d first=%d\n", pair.key.c_str(),  _pathname.c_str(), _KVLEN, first ));
 	bool found = 0;
 	*index = -1;
 
@@ -158,10 +148,8 @@ bool JagDiskArrayBase::findPred( const JagDBPair &pair, jagint *index, jagint fi
    	memset( kvbuf, 0, _KVLEN+1 );
    	if ( *index != -1 ) {
 		raypread(_jdfs, kvbuf, _KVLEN, (first+*index)*_KVLEN );
-		//prt(("s222339 index not -1\n"));
 	} else {
 		raypread(_jdfs, kvbuf, _KVLEN, first*_KVLEN );
-		//prt(("s222339 index == -1\n"));
 	}
 
 	retpair = JagDBPair( kvbuf, _KLEN, kvbuf+_KLEN, _VLEN );
@@ -169,7 +157,6 @@ bool JagDiskArrayBase::findPred( const JagDBPair &pair, jagint *index, jagint fi
 	free( kvbuf );
 	free( ldiskbuf );
 
-	//prt(("s233338 pred pair=[%s] index=%d found=%d\n", retpair.key.c_str(), *index, found ));
    	return found;
 }
 
@@ -198,44 +185,43 @@ Jstr JagDiskArrayBase::jdbPathName( const Jstr &jdbhome, const Jstr &db, const J
 
 void JagDiskArrayBase::logInfo( jagint t1, jagint t2, jagint cnt, const JagDiskArrayBase *jda )
 {
-	if ( t1 > 1000 ) { // in sec
+	if ( t1 > 1000 ) { 
 		t1 /= 1000;
 		raydebug(stdout, JAG_LOG_HIGH, "s6028 flib %s %d wt=%l s flsh=%l ms %l/%l/%l/%l/%l/%l\n",
 			jda->_dbobj.c_str(), cnt, t1, t2, jda->_writes, jda->_upserts, jda->_dupwrites, 
 			jda->_reads, jda->_insmrgcnt, jda->_insdircnt );
-	} else if ( t1 > 60000 ) { // in min
+	} else if ( t1 > 60000 ) {
 		t1 /= 60000;
 		raydebug(stdout, JAG_LOG_HIGH, "s6028 flib %s %d wt=%l m flsh=%l ms %l/%l/%l/%l/%l/%l\n",
 			jda->_dbobj.c_str(), cnt, t1, t2, jda->_writes, jda->_upserts, jda->_dupwrites, 
 			jda->_reads, jda->_insmrgcnt, jda->_insdircnt );
-	} else if ( t1 > 3600000 ) { // in hour
+	} else if ( t1 > 3600000 ) { 
 		t1 /= 3600000;
 		raydebug(stdout, JAG_LOG_HIGH, "s6028 flib %s %d wt=%l h flsh=%l ms %l/%l/%l/%l/%l/%l\n",
 			jda->_dbobj.c_str(), cnt, t1, t2, jda->_writes, jda->_upserts, jda->_dupwrites, 
 			jda->_reads, jda->_insmrgcnt, jda->_insdircnt );
-	} else if ( t1 > 86400000 ) { // in day
+	} else if ( t1 > 86400000 ) { 
 		t1 /= 86400000;
 		raydebug(stdout, JAG_LOG_HIGH, "s6028 flib %s %d wt=%l d flsh=%l ms %l/%l/%l/%l/%l/%l\n",
 			jda->_dbobj.c_str(), cnt, t1, t2, jda->_writes, jda->_upserts, jda->_dupwrites, 
 			jda->_reads, jda->_insmrgcnt, jda->_insdircnt );
-	} else if ( t1 > 2592000000 ) { // in month
+	} else if ( t1 > 2592000000 ) { 
 		t1 /= 2592000000;
 		raydebug(stdout, JAG_LOG_HIGH, "s6028 flib %s %d wt=%l M flsh=%l ms %l/%l/%l/%l/%l/%l\n",
 			jda->_dbobj.c_str(), cnt, t1, t2, jda->_writes, jda->_upserts, jda->_dupwrites, 
 			jda->_reads, jda->_insmrgcnt, jda->_insdircnt );
-	} else if ( t1 > 31104000000 ) { // in year
+	} else if ( t1 > 31104000000 ) { 
 		t1 /= 31104000000;
 		raydebug(stdout, JAG_LOG_HIGH, "s6028 flib %s %d wt=%l Y flsh=%l ms %l/%l/%l/%l/%l/%l\n",
 			jda->_dbobj.c_str(), cnt, t1, t2, jda->_writes, jda->_upserts, jda->_dupwrites, 
 			jda->_reads, jda->_insmrgcnt, jda->_insdircnt );
-	} else { // in millisec
+	} else { 
 		raydebug(stdout, JAG_LOG_HIGH, "s6028 flib %s %d wt=%l ms flsh=%l ms %l/%l/%l/%l/%l/%l\n",
 			jda->_dbobj.c_str(), cnt, t1, t2, jda->_writes, jda->_upserts, jda->_dupwrites, 
 			jda->_reads, jda->_insmrgcnt, jda->_insdircnt );
 	}
 }
 
-// returns # of elements in new file
 jagint JagDiskArrayBase::mergeBufferToFile( const JagDBMap *pairmap, const JagVector<JagMergeSeg> &vec )
 {
 	jagint bytes = _compf->mergeBufferToFile( pairmap, vec );
@@ -243,16 +229,13 @@ jagint JagDiskArrayBase::mergeBufferToFile( const JagDBMap *pairmap, const JagVe
 }
 
 
-// returns # of elements flushed
 jagint JagDiskArrayBase::flushBufferToNewFile( const JagDBMap *pairmap )
 {
 	jagint cnt = _compf->flushBufferToNewSimpFile( pairmap );
-	prt(("s1007374 added cnt=%d\n", cnt ));
 	return cnt;
 }
 
 
-// check conditon
 bool JagDiskArrayBase::checkSetPairCondition( const JagDBServer *servobj, const JagRequest &req, const JagDBPair &pair, char *buffers[], 
 												bool uniqueAndHasValueCol, 
 												ExprElementNode *root, const JagParseParam *parseParam, int numKeys, 
@@ -277,8 +260,8 @@ bool JagDiskArrayBase::checkSetPairCondition( const JagDBServer *servobj, const 
 	memcpy(buffers[0]+KLEN, pair.value.c_str(), VLEN);
 	memcpy(tbuf, pair.key.c_str(), KLEN);
 	memcpy(tbuf+KLEN, pair.value.c_str(), VLEN);
-	dbNaturalFormatExchange( buffers[0], numKeys, schAttr ); // db format -> natural format
-	dbNaturalFormatExchange( tbuf, numKeys, schAttr ); // db format -> natural format
+	dbNaturalFormatExchange( buffers[0], numKeys, schAttr ); 
+	dbNaturalFormatExchange( tbuf, numKeys, schAttr ); 
 
 	if ( !uniqueAndHasValueCol || 
 		root->checkFuncValid( NULL, NULL, attrs, (const char **)buffers, strres, typeMode, treetype, treelength, needInit, 0, 0 ) == 1 ) {
@@ -300,8 +283,8 @@ bool JagDiskArrayBase::checkSetPairCondition( const JagDBServer *servobj, const 
 				return false;
 			}
 		}
-		dbNaturalFormatExchange( buffers[0], numKeys, schAttr ); // natural format -> db format
-		dbNaturalFormatExchange( tbuf, numKeys, schAttr ); // natural format -> db format
+		dbNaturalFormatExchange( buffers[0], numKeys, schAttr ); 
+		dbNaturalFormatExchange( tbuf, numKeys, schAttr ); 
 		retpair = JagDBPair( tbuf, KLEN, tbuf+KLEN, VLEN );
 	} else {
 		free( tbuf );

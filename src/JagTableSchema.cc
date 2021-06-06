@@ -24,9 +24,7 @@
 JagTableSchema::JagTableSchema( JagDBServer *serv, int replicateType )
 :JagSchema()
 {
-	prt(("s3330 JagTableSchema init()...\n"));
     this->init( serv, "TABLE", replicateType );
-	prt(("s3330 JagTableSchema init() done...\n"));
 }
 
 JagTableSchema::~JagTableSchema()

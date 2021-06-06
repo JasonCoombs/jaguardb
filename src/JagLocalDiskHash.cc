@@ -30,7 +30,6 @@
 #include <JagUtil.h>
 #include <JagSortLinePoints.h>
 		
-// ctor
 JagLocalDiskHash::JagLocalDiskHash( const Jstr &filepath, int keylength, int vallength, int arrlength )
 {
 	KEYLEN = keylength;
@@ -39,34 +38,15 @@ JagLocalDiskHash::JagLocalDiskHash( const Jstr &filepath, int keylength, int val
 	_NullKeyValBuf = (char*)jagmalloc(KVLEN+1);
 	_schemaRecord = NULL;
 	init( filepath, arrlength );
-
-	// setConcurrent( true );
 }
-
-/**
-// ctor with schema record
-JagLocalDiskHash::JagLocalDiskHash( const Jstr &filepath, JagSchemaRecord *record, int arrlength )
-{
-	KEYLEN = record->keyLength;
-	VALLEN = record->valueLength;
-	KVLEN = KEYLEN+VALLEN;
-	_NullKeyValBuf = (char*)jagmalloc(KVLEN+1);
-	_schemaRecord = record;
-	init( filepath, arrlength );
-}
-***/
-
 
 void JagLocalDiskHash::drop( )
 {
 	jagunlink(_filePath.c_str());
 }
 
-// ctor
 void JagLocalDiskHash::init( const Jstr &filePathPrefix, int length )
 {
-	// _lock = NULL; 
-
 	memset(_NullKeyValBuf, 0, KVLEN+1);
 	JagDBPair t_JagDBPair = JagDBPair::NULLVALUE;
 	
@@ -89,39 +69,16 @@ void JagLocalDiskHash::init( const Jstr &filePathPrefix, int length )
 
 void  JagLocalDiskHash::setConcurrent( bool flag )
 {
-	/***
-	if ( flag ) {
-		if ( ! _lock ) {
-			_lock = new RayReadWriteLock();
-			printf("JagLocalDiskHash _lock=%0x _filePath=[%s]\n", _lock, _filePath.c_str() );
-		}
-	} else {
-		if ( _lock ) {
-			delete  _lock;
-			_lock = NULL;
-			printf("JagLocalDiskHash _lock=%0x _filePath=[%s]\n", _lock, _filePath.c_str() );
-		}
-	}
-	***/
 }
 
-// dtor
 void JagLocalDiskHash::destroy( )
 {
 	if ( _fdHash > 0 ) {
 		jagclose(_fdHash);
 		_fdHash = -1;
 	}
-
-	/**
-	if ( _lock ) {
-		delete _lock;
-		_lock = NULL;
-	}
-	**/
 }
 
-// dtor
 JagLocalDiskHash::~JagLocalDiskHash( )
 {
 	destroy();
@@ -133,10 +90,6 @@ void JagLocalDiskHash::reAllocDistribute()
 	jagint i;
 	size_t bytesHash2;
 
-	// AbaxLock lckhash(fdHash, 0, _arrlen*KVLEN);
-	// lckhash.readLock();
-	// RayReadWriteMutex mutex( _lock, RayReadWriteMutex::WRITE_LOCK );
-
 	char *kvbuf = (char*)jagmalloc(KVLEN+1);
 	memset( kvbuf, 0, KVLEN+1 );
 
@@ -144,28 +97,14 @@ void JagLocalDiskHash::reAllocDistribute()
 	bytesHash2 = _newarrlen*KVLEN;
 
 	_fdHash2 = jagopen((char *)_newhashname.c_str(), O_CREAT|O_RDWR, S_IRWXU );
-	// AbaxLock lckhash2(fdHash2, 0, _arrlen*KVLEN);
-	// lckhash2.writeLock();
-
 	jagftruncate(_fdHash2, bytesHash2 );
 
-	// pick from old and insert into new
 	JagSingleBuffReader navig( _fdHash, _arrlen, KEYLEN, VALLEN );
 	int rc2;
 	while ( navig.getNext( kvbuf, KVLEN, i ) ) {
 		JagDBPair pair( kvbuf, KEYLEN, kvbuf+KEYLEN, VALLEN );
 		rc2= _insertHash( pair, 0 );
-	    //printf("s2266 i=%d kvbuf=[%s] rc2=%d\n", i, kvbuf, rc2 );
-		/**
-		if ( 0 == rc2 ) {
-			printnew();
-			print();
-		}
-		**/
 	}
-
-	// lckhash.unLock();
-	// lckhash2.unLock();
 
 	jagclose(_fdHash);
 	jagclose(_fdHash2);
@@ -187,11 +126,6 @@ void JagLocalDiskHash::reAllocShrink()
 	jagint i;
 	size_t bytesHash2; 
 	
-	// AbaxLock lckhash(fdHash, 0, _arrlen*KVLEN);
-	// lckhash.readLock();
-
-	// RayReadWriteMutex mutex( _lock, RayReadWriteMutex::WRITE_LOCK );
-
 	char *kvbuf = (char*)jagmalloc(KVLEN+1);
 	memset( kvbuf, 0, KVLEN+1 );
 
@@ -204,12 +138,8 @@ void JagLocalDiskHash::reAllocShrink()
 	JagSingleBuffReader navig( _fdHash, _arrlen, KEYLEN, VALLEN );
 	while ( navig.getNext( kvbuf, KVLEN, i ) ) {
 		JagDBPair pair( kvbuf, KEYLEN, kvbuf+KEYLEN, VALLEN );
-		// insertHash( pair, _fdHash2, _newarrlen);
 		_insertHash( pair, 0 );
 	}
-
-	// lckhash.unLock();
-	// lckhash2.unLock();
 
 	jagclose(_fdHash);
 	jagclose(_fdHash2);
@@ -225,67 +155,38 @@ void JagLocalDiskHash::reAllocShrink()
 
 }
 
-
-/**
-*   Remove a JagDBPair from the array
-*   If it does not exists, return; else set it to NULL,
-**/
 bool JagLocalDiskHash::remove( const JagDBPair &jagDBPair )
 {
-	// RayReadWriteMutex mutex( _lock, RayReadWriteMutex::WRITE_LOCK );
-
 	jagint  hloc;
 	bool rc = _exist( 1, jagDBPair, &hloc );
 	if ( ! rc ) {
 		return false;
 	}
-	// printf("s3349 in remove hloc=%d\n", hloc );
-
-	/*** bug: causes find cluster fail
-	char *kvbuf = (char*)jagmalloc(KVLEN+1);
-	memset( kvbuf, 0, KVLEN+1 );
-	raysafepwrite( _fdHash, kvbuf, KVLEN, hloc*KVLEN );
-	free( kvbuf );
-	***/
 
 	-- _elements;
-	// printf("s3549 before rehashCluster hloc=%d ...\n", hloc );
-	//print();
 	rehashCluster( hloc );
-	//printf("s3549 after rehashCluster hloc=%d ...\n", hloc );
-	//print();
 
 	if ( _arrlen >= 64 ) {
     	jagint loadfactor  = 100 * (jagint)_elements / _arrlen;
     	if (  loadfactor < 15 ) {
-			//printf("s6644 loadfactor=%d _elements=%d _arrlen=%d reAllocShrink\n", loadfactor, _elements, _arrlen );
-			//print();
     		reAllocShrink();
-			// print();
     	}
 	} 
 
 	return true;
 }
 
-
-// current: 1 use _fdHash and _arrlen    0: use _fdHash2 and _newarrlen
 bool JagLocalDiskHash::_exist( int current,  const JagDBPair &search, jagint *hloc )
 {
-	//prt(("s222320 _exist search=[%s]\n", search.key.s() ));
 	int fdHash;
 	jagint arrlen;
 	if ( current ) {
-		// printf("s7734 use _fdHash ...\n");
 		fdHash = _fdHash;
 		arrlen = _arrlen;
 	} else {
-		// printf("s7735 use _fdHash2=%lld (_fdHash=%lld) ...\n", _fdHash2, _fdHash );
 		fdHash = _fdHash2;
 		arrlen = _newarrlen;
 	}
-
-	//prt(("s222213 _exist search=[%s] arrlen=%d fdHash=%d\n", search.key.s(), arrlen, fdHash ));
 
 	char *kvbuf = (char*)jagmalloc(KVLEN+1);
 	memset( kvbuf, 0, KVLEN+1 );
@@ -296,19 +197,13 @@ bool JagLocalDiskHash::_exist( int current,  const JagDBPair &search, jagint *hl
 	}
 
     jagint hc = hashKey( search, arrlen );
-	// printf("s8132 exist() hashKey of (%s) is hc=%d\n", search.key.c_str(), hc );
-	// raysafepread( _fdHash, (char *)kvbuf, KVLEN,  hc*KVLEN );
-	//prt(("s223389 hashKey of searrch is hc=%d\n", hc ));
 	ssize_t n = raysafepread( fdHash, (char *)kvbuf, KVLEN,  hc*KVLEN );
 	if ( n <= 0 ) {  
-		//prt(("s20229398 in _exist return 0 n=%d hc=%d arrlen=%d\n", n, hc, arrlen ));
 		free( kvbuf ); 
 		return 0; 
 	}
 
-    //  hash to NULL, not found.
     if ( '\0' == *kvbuf ) {
-		//prt(("s2903 kvbuf=[%s] hc=%lld arrlen=%lld firstbyte NULL return 0\n", kvbuf, hc, arrlen ));
 		free( kvbuf );
     	return 0;
     }
@@ -316,10 +211,8 @@ bool JagLocalDiskHash::_exist( int current,  const JagDBPair &search, jagint *hl
 	JagDBPair t_JagDBPair(kvbuf, KEYLEN );
     if ( search != t_JagDBPair  ) {
        	hc = findProbedLocation( fdHash, arrlen, search, hc );
-		//prt(("s220394 got probledLocation hc=%d\n", hc ));
        	if ( hc < 0 ) {
 			free( kvbuf );
-			//prt(("s2303 findprobedlocation hc=%d return 0\n", hc ));
        		return 0;
        	}
     }
@@ -337,14 +230,12 @@ bool JagLocalDiskHash::get( JagDBPair &jagDBPair )
 
 	rc = _exist( 1, jagDBPair, &hloc );
 	if ( ! rc ) {
-		//prt(("s009228 _exist jagDBPair=[%s]\n", jagDBPair.key.s() ));
 		return false;
 	}
 
 	char *kvbuf = (char*)jagmalloc(KVLEN+1);
 	memset( kvbuf, 0, KVLEN+1 );
 	ssize_t n = raysafepread( _fdHash, kvbuf, KVLEN, hloc*KVLEN );
-	//prt(("s273836 JagLocalDiskHash::get _fdHash=%d  pair=[%s][%s] KVLEN=%d hloc=%d  hloc*KVLEN=%d n=%d\n", _fdHash, jagDBPair.key.s(), jagDBPair.value.s(), KVLEN, hloc,  hloc*KVLEN, n ));
 	if ( n <= 0 ) {
 		free( kvbuf );
 		return 0;
@@ -355,13 +246,11 @@ bool JagLocalDiskHash::get( JagDBPair &jagDBPair )
 	return true;
 }
 
-// if jagDBPair does not exist, return false; else update the new pair
 bool JagLocalDiskHash::set( const JagDBPair &jagDBPair )
 {
 	jagint hloc;
 	bool rc;
 
-	// RayReadWriteMutex mutex( _lock, RayReadWriteMutex::WRITE_LOCK );
 	if ( jagDBPair.value.size() < 1 ) { return false; }
 
 	rc = _exist( 1, jagDBPair, &hloc );
@@ -376,12 +265,10 @@ bool JagLocalDiskHash::set( const JagDBPair &jagDBPair )
 	return true;
 }
 
-// if jagDBPair does not exist, insert ; else update the new pair
 bool JagLocalDiskHash::setforce( const JagDBPair &jagDBPair )
 {
 	if ( jagDBPair.value.size() < 1 ) { return false; }
 
-	// RayReadWriteMutex mutex( _lock, RayReadWriteMutex::WRITE_LOCK );
 	jagint hloc;
 	bool rc;
 	rc = _exist( 1, jagDBPair, &hloc );
@@ -400,20 +287,16 @@ bool JagLocalDiskHash::setforce( const JagDBPair &jagDBPair )
 	return true;
 }
 
-// bool JagLocalDiskHash::insertHash( const JagDBPair &jagDBPair, const int fd_Hash, jagint arrlen )
-// current 1: use _fdHash _arrlen  0: use _fdhash2 _newarrlen
 bool JagLocalDiskHash::_insertHash( const JagDBPair &jagDBPair, int current )
 {
 	const char *p = jagDBPair.key.c_str();
 	if ( *p == '\0' ) {
-		// prt(("s3337 return 0\n"));
 		return 0;
 	}
 
 	jagint hloc;
 	bool rc = _exist( current, jagDBPair, &hloc );
 	if ( rc ) {
-		//prt(("s3437 current=%d key=[%s] exists return false\n", current, jagDBPair.key.addr()  ));
 		return false;
 	}
 
@@ -427,33 +310,19 @@ bool JagLocalDiskHash::_insertHash( const JagDBPair &jagDBPair, int current )
 	char *kvbuf = (char*)jagmalloc(KVLEN+1);
 	memset( kvbuf, 0, KVLEN+1 );
 	jagint hc = hashKey( jagDBPair, arrlen );
-	//printf("s81228 insertHash() hashKey of (%s) is hc=%d\n", jagDBPair.key.c_str(), hc );
-	//fflush(stdout);
 	ssize_t n = raysafepread( fdHash, (char *)kvbuf, KVLEN, hc*KVLEN );
 	if ( n <= 0 ) { 
 		free( kvbuf ); 
 		return 0; 
 	}
 
-	// if ( 0 != strcmp( kvbuf, _NullKeyValBuf) ) {
 	if ( '\0' != *kvbuf ) {
-		//prt(("s42207 collission at hc=%d probe new locatkon ...\n", hc ));
 		hc = probeLocation( hc, fdHash, arrlen );
-		//prt(("s42208 collission got new location hc=%d\n", hc ));
 	}
 	free( kvbuf );
-	/***
-	printf("s81229 probeLocation hc=%d\n", hc );
-	fflush(stdout);
-	if ( hc < 0 ) {
-		abort();
-	}
-	***/
 
 	char *newkvbuf = makeKeyValueBuffer( jagDBPair );
 	raysafepwrite(fdHash, (char*)newkvbuf, KVLEN, hc*KVLEN );
-	//prt(("s28383 raysafepwrite fdHash=%d hc=%d newkvbuf=[%s][%s] sz=%d current=%d\n", fdHash, hc, newkvbuf, newkvbuf+KEYLEN, sz, current  ));
-	//prt(("s28383 raysafepwrite KVLEN=%d hc*KVLEN=positon=%d\n", KVLEN, hc*KVLEN ));
 	free( newkvbuf );
 
 	if ( ! current ) {
@@ -462,7 +331,6 @@ bool JagLocalDiskHash::_insertHash( const JagDBPair &jagDBPair, int current )
 
 	++ _elements;
 
-	// if ( ( 10*_GEO*_elements ) >=  8*_arrlen ) {
 	if ( ( 10*_GEO*_elements ) >=  7*_arrlen ) {
 		reAllocDistribute();
 	}
@@ -503,8 +371,6 @@ jagint JagLocalDiskHash::probeLocation( jagint hc, const int fd_Hash, jagint arr
    	return -2;
 }
     
-// retrieve the previously assigned probed location
-// Input: fdHash
 jagint JagLocalDiskHash::findProbedLocation( int fdHash, jagint arrlen, const JagDBPair &search, jagint hc ) 
 {
 	char *kvbuf = (char*)jagmalloc(KVLEN+1);
@@ -512,15 +378,13 @@ jagint JagLocalDiskHash::findProbedLocation( int fdHash, jagint arrlen, const Ja
 	ssize_t n;
 
    	while ( 1 ) {
-   		// hc = nextHC( hc, _arrlen );
    		hc = nextHC( hc, arrlen );
 		n = raysafepread( fdHash, (char *)kvbuf, KVLEN, hc*KVLEN ); 		
 		if ( n <= 0 ) { free( kvbuf ); return -1; }
 
    		if ( *kvbuf == '\0' ) {
 			free( kvbuf );
-			// prt(("s3949 no probed slot found  return -1\n"));
-   			return -1; // no probed slot found
+   			return -1;
    		}
     
    		if ( 0 == strncmp( kvbuf, search.key.addr(), KEYLEN ) ) { 
@@ -533,11 +397,6 @@ jagint JagLocalDiskHash::findProbedLocation( int fdHash, jagint arrlen, const Ja
    	return -1;
 }
     
-    
-// _hashcol[pos] must not be equal to ABAX_HASHARRNULL
-// find [start, end] of island that contains hc  
-// start and end [0, _hashcol*DEPTH-1].  start can be greater than end
-// [3, 9]   [12, 3]
 void JagLocalDiskHash::findCluster( jagint hc, jagint *start, jagint *end )
 {
    	jagint i;
@@ -547,7 +406,6 @@ void JagLocalDiskHash::findCluster( jagint hc, jagint *start, jagint *end )
 	memset( kvbuf, 0, KVLEN+1 );
 	ssize_t n;
    
-  	// find start
    	while ( 1 ) {
    		i = prevHC( i, _arrlen );
 		n = raysafepread( _fdHash, (char *)kvbuf, KVLEN, i*KVLEN );
@@ -558,7 +416,6 @@ void JagLocalDiskHash::findCluster( jagint hc, jagint *start, jagint *end )
     	}
     }
     
-    // find end
     i = hc;
     while ( 1 ) {
     	i = nextHC( i, _arrlen );
@@ -594,12 +451,10 @@ jagint JagLocalDiskHash::nextHC( jagint hc, jagint arrlen )
 			return ( birthhc <= nullbox ) ? true : false;
 		} else {
 			if ( 0 <= birthhc  && birthhc <= end ) {
-				// birthhc += HASHCOLDEPTH;
 				birthhc += _arrlen;
 			}
 
 			if ( 0 <= nullbox  && nullbox <= end ) {
-				// nullbox += HASHCOLDEPTH;
 				nullbox += _arrlen;
 			}
 
@@ -607,7 +462,6 @@ jagint JagLocalDiskHash::nextHC( jagint hc, jagint arrlen )
 		}
 }
 
-// consolidate cluster
 void JagLocalDiskHash::rehashCluster( jagint hc )
 {
 		jagint start, end;
@@ -620,7 +474,6 @@ void JagLocalDiskHash::rehashCluster( jagint hc )
 		bool b;
 		ssize_t n;
 
-		// set data at hc to NULLVALUE
 		raysafepwrite( _fdHash, (char *)_NullKeyValBuf, KVLEN, hc*KVLEN );
 
 		char *kvbuf = (char*)jagmalloc(KVLEN+1);
@@ -633,19 +486,16 @@ void JagLocalDiskHash::rehashCluster( jagint hc )
 			JagDBPair t_JagDBPair(kvbuf, KEYLEN );
 			birthhc = hashKey( t_JagDBPair, _arrlen );
 			if ( birthhc == hc ) {
-				continue;  // birth hc
+				continue; 
 			}
 
 			b = aboveq( start, end, birthhc, nullbox );
 			if ( b ) {
-				// nullbox <-- hc data
 				raysafepwrite( _fdHash, (char *)kvbuf, KVLEN, nullbox*KVLEN );
 
 				raysafepwrite( _fdHash, (char *)_NullKeyValBuf, KVLEN, hc*KVLEN );
-				// printf("s7723 nullify hc=%d\n", hc );
 				nullbox = hc;
 			} else {
-				// printf("s7763 aboveq false start=%d end=%d birthhc=%d nullbox=%d\n", start, end, birthhc, nullbox);
 			}
 		}
 
@@ -674,7 +524,6 @@ jagint JagLocalDiskHash::countCells()
 	_elements = 0;
    	char *kvbuf = (char*)jagmalloc( KVLEN+1 );
 	memset( kvbuf, 0,  KVLEN + 1 );
-	// jagint rlimit = getBuffReaderWriterMemorySize( _arrlen*KVLEN/1024/1024 );
 	JagSingleBuffReader navig( _fdHash, _arrlen, KEYLEN, VALLEN );
 	while ( navig.getNext( kvbuf ) ) {
 		++_elements;
@@ -740,7 +589,6 @@ Jstr JagLocalDiskHash::getListKeys()
 	int num = 0;
     while ( ntr.getNext( buf ) ) {
         JagFixString key ( buf, KEYLEN );
-        //res += Jstr( key.c_str() ) + "\n";
 		keys[num++] = key;
     }
     free( buf );
@@ -757,9 +605,6 @@ jagint JagLocalDiskHash::removeMatchKey( const char *kstr, int klen )
     JagDBPair pair(fixs);
     Jstr keys =  getListKeys();
 
-    // key1\n
-    // key2\n
-    // key3\n
     JagStrSplit sp(keys, '\n', true );
     if ( sp.length() < 1 ) return 0;
     jagint cnt = 0;

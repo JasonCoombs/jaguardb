@@ -21,10 +21,8 @@
 #include <JagSession.h>
 #include <JagUtil.h>
 
-// ctor
 JagSession::JagSession()
 {
-	//dtimeout = timeout;
 	sock = active = done = timediff = connectionTime = 0;
 	origserv = 0;
 	exclusiveLogin = 0;
@@ -40,17 +38,14 @@ JagSession::JagSession()
 	dcto = 0;
 }
 
-// dtor
 JagSession::~JagSession() 
 {
-	// if has timer, join thread
 	sessionBroken = 1;
 	if ( hasTimer ) {
 		pthread_join( threadTimer, NULL );
 	}
 }
 
-// create separate thread for timer
 void JagSession::createTimer()
 {
 	if ( samePID ) return;
@@ -58,7 +53,6 @@ void JagSession::createTimer()
 	jagpthread_create( &threadTimer, NULL, sessionTimer, (void*)this );
 }
 
-// separate thread to set timer and send HB
 void *JagSession::sessionTimer( void *ptr )
 {
 	JagSession *sess = (JagSession*)ptr;
@@ -67,7 +61,6 @@ void *JagSession::sessionTimer( void *ptr )
 		if ( sess->active ) {
 			sendMessageLength2( sess, "Y", 1, "HB" );
 		}
-		// heartbeat from server to client in session
 	}
 	return NULL;
 }

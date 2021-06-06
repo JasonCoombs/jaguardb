@@ -44,16 +44,6 @@ bool sortByTick(const std::string &lhs, const std::string &rhs)
     return d1 < d2;
 }
 
-
-// valid time series periods:  \d+>C   (example  15s, 15m, 1d, 10d, 3w, 1m, 1q, 1y, 1D
-// C==> s: second, m: minute, h: hour, d: day, w: week, M: month, q: quarter, y: year, D: decade
-
-// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|COLUMN2|}"
-// spare+7 isrollup column
-// spare+8 rollup type
-// dummy1: metrics
-// dummy2: rollup where condition
-
 JagSchemaRecord::JagSchemaRecord( bool newVec )
 {
 	init( newVec );
@@ -61,7 +51,6 @@ JagSchemaRecord::JagSchemaRecord( bool newVec )
 
 void JagSchemaRecord::init( bool newVec )
 {
-	//prt(("s5050 JagSchemaRecord::init() this=%0x\n", this ));
 	type[0] = 'N';
 	type[1] = 'A';
 	keyLength = 16;
@@ -75,10 +64,8 @@ void JagSchemaRecord::init( bool newVec )
 	numKeys = 0;
 	numValues = 0;
 	hasMute = false;
-	// dbobj = ".";
 	lastKeyColumn = -1;
 	tableProperty = "0!0!0!0";
-	//polyDim = 0;
 	_hasRollupColumn = false;
 }
 
@@ -95,7 +82,6 @@ void JagSchemaRecord::destroy(  AbaxDestroyAction act)
 	}
 }
 
-// copy ctor
 JagSchemaRecord::JagSchemaRecord( const JagSchemaRecord& other )
 {
 	copyData( other );
@@ -146,28 +132,15 @@ void JagSchemaRecord::copyData( const JagSchemaRecord& other )
 	numValues = other.numValues;
 	valueLength = other.valueLength;
 	ovalueLength = other.ovalueLength;
-	// dbobj = other.dbobj;
 	lastKeyColumn = other.lastKeyColumn;
 	tableProperty = other.tableProperty;
-	//polyDim = other.polyDim;
-	//prt(("s8753 lastKeyColumn=%d\n", lastKeyColumn ));
 }
 
 
-// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|COLUMN2|}"
 bool JagSchemaRecord::print()
 {
 	if ( ! columnVector ) return false;
 	printf("%c%c|%d|%d|%s|{", type[0], type[1], keyLength, valueLength, tableProperty.c_str() );
-	// printf("%s:%c%c|%d|%d|%d|{", dbobj.c_str(), type[0], type[1], keyLength, valueLength, ovalueLength );
-	/** 
-	 AbaxString name;
-	 char           type;
-	 unsigned int   offset;
-	 unsigned int   length;
-	 unsigned int   sig;
-	 char           spare[16];
-	**/
 	int len = columnVector->size();
 	for ( int i = 0; i < len; ++i ) {
 		printf("!%s!%s!%d!%d!%d(func=%d)!",
@@ -199,7 +172,6 @@ bool JagSchemaRecord::print()
 		printf("%d!", (*columnVector)[i].dummy10 );
 
 		printf("|");
-		// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|COLUMN2|}"
 	}
 
 	printf("}\n");
@@ -245,7 +217,6 @@ bool JagSchemaRecord::setColumn( const AbaxString &colName, const AbaxString &at
 }
 
 
-// add new column using spare space
 bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const Jstr &type, 
 											   jagint length, jagint sig )
 {
@@ -271,7 +242,6 @@ bool JagSchemaRecord::addValueColumnFromSpare( const AbaxString &colName, const 
 	aiskey = (*columnVector)[len-1].iskey;
 	afunc = (*columnVector)[len-1].func;
 	
-	// change last column from spare_ to colName, and add another spare_ with remain
 	(*columnVector)[len-1].name = colName;
 	(*columnVector)[len-1].type = type;
 	(*columnVector)[len-1].length = length;
@@ -306,7 +276,6 @@ Jstr JagSchemaRecord::getString() const
 	buf2[1] = '\0';
 
 	memset( mem, 0, 4096 );
-	// sprintf(mem, "%c%c|%d|%d|%d|{", type[0], type[1], keyLength, valueLength, ovalueLength );
 	sprintf(mem, "%c%c|%d|%d|%s|{", type[0], type[1], keyLength, valueLength, tableProperty.c_str() );
 	res += Jstr( mem );
 
@@ -329,7 +298,6 @@ Jstr JagSchemaRecord::getString() const
 		sprintf( buf, "%d!", (*columnVector)[i].srid ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].begincol ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].endcol ); strcat( mem, buf );
-		//sprintf( buf, "%d!", (*columnVector)[i].dummy1 ); strcat( mem, buf );
 		sprintf( buf, "%d!", (*columnVector)[i].metrics ); strcat( mem, buf );
 		// sprintf( buf, "%d!", (*columnVector)[i].dummy2 ); strcat( mem, buf );
 		sprintf( buf, "%s!", (*columnVector)[i].rollupWhere.s() ); strcat( mem, buf );
@@ -383,15 +351,6 @@ Jstr JagSchemaRecord::formatTailRecord() const
 	return "}";
 }
 
-// parse schema record
-// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!rollupwhere!dummy3!...!dummy10!|...|}"
-//                                                                                       4:start-col!8:end-col
-//  tableProperty: "polyDim(0/2/3)!timeseries!retention!"
-//  tableProperty: "1!timeseries!retention!...!"
-// timeseries: 0 if no timeseries
-// timeseries: nm_r:nh:nd_r:nw:nM:ny   n: 1-infinity   next/prev is integer, example: 15m:1h:1d:1w:1M:1y
-//    _r: r is retaining periods
-// tabl@1m tab1@1h ... will be created automatically
 int JagSchemaRecord::parseRecord( const char *str ) 
 {
 	if ( ! columnVector ) {
@@ -412,16 +371,12 @@ int JagSchemaRecord::parseRecord( const char *str )
 	if ( *q == '\0' ) return -10;
 
 	if ( *q == ':' ) {
-		// a.b(q)NN|
-		// dbobj = Jstr(p, q-p);
 		++q;
 		type[0] = *q; type[1] = *(q+1);
 		while ( *q != '|' ) ++q;
 		if ( *q == '\0' ) return -20;
-		// q points to first |
 	}  else {
 		type[0] = *(q-2); type[1] = *(q-1);
-		// q points to first |
 	}
 	
 	// get keylen
@@ -436,19 +391,10 @@ int JagSchemaRecord::parseRecord( const char *str )
 	if ( *q != '|' ) return -30;
 	valueLength = rayatoi(p, q-p);
 	
-	/***
-	// get ovallen
-	++q; p = q;
-	while ( isdigit(*q) ) ++q;
-	if ( *q != '|' || *(q+1) != '{' ) return -40;
-	ovalueLength = rayatoi(p, q-p);
-	q += 2; p = q;
-	***/
 	++q; p = q;
 	while ( *q != '|' && *q != '{' ) ++q;
 	if ( *q == '\0' ) return -42;
-	tableProperty = Jstr(p, q-p);  // polydim!timeseries!...!...!...!   any number of fields by !
-	//prt(("s5034 tableProperty=[%s] this=%0x\n", tableProperty.c_str(), this ));
+	tableProperty = Jstr(p, q-p);  
 	if ( *q == '|' && *(q+1) == '{' ) {
 		q += 2;
 	} else if ( *q == '{' ) {
@@ -457,11 +403,8 @@ int JagSchemaRecord::parseRecord( const char *str )
 		return -43;
 	}
 	
-	// begin parse each column
 	while ( 1 ) {
-		// begin with '!' before name part
 		if ( *q != '!' ) {
-			//prt(("s2039 q=[%s] return 0\n", q ));
 			return -50;
 		}
 		p = ++q;
@@ -493,8 +436,6 @@ int JagSchemaRecord::parseRecord( const char *str )
 			//prt(("s556014 name=[%s]\n", onecolrec.name.s() ));
 		}
 
-		// get func(col) and assign onecolrec.func and change  onecolrec.type
-		//onecolrec.func = getFuncType( onecolrec.name, newDataType );
 		if ( strcasestr(onecolrec.name.s(), "avg(" ) ) {
 			onecolrec.func = JAG_FUNC_AVG;
 		} else if ( strcasestr(onecolrec.name.s(), "sum(" ) ) {
@@ -516,9 +457,6 @@ int JagSchemaRecord::parseRecord( const char *str )
 			onecolrec.func = 0;
 		}
 
-		//prt(("s51130 onecolrec.name=[%s] func=%d\n", onecolrec.name.c_str(), onecolrec.func ));
-		// get type
-		// prt(("s1282 q=[%s]\n", q ));
 		++q; p = q; 
 		while ( *q != '!' && *q != '\0' ) ++q;
 		if ( *q != '!' ) {
@@ -527,8 +465,6 @@ int JagSchemaRecord::parseRecord( const char *str )
 		}
 		onecolrec.type = Jstr(p, q-p);
 
-		// prt(("s2031 onecolrec.type=[%s]\n", onecolrec.type.c_str() ));
-		// get offset
 		++q; p = q;
 		while ( isdigit(*q) ) ++q;
 		if ( *q != '!' ) return -110;
@@ -569,9 +505,6 @@ int JagSchemaRecord::parseRecord( const char *str )
 			++ numValues;
 		}
 
-		// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!0!....0!|...|}"
-		// q is at !
-		// prt(("s4128 q=[%s]\n", q ));
 		if ( *(q+1) != '|' ) {
 			// there are more fields, composite-fields
 			// get sig
@@ -597,15 +530,10 @@ int JagSchemaRecord::parseRecord( const char *str )
 			++q; p = q;
 			while ( isdigit(*q) ) ++q;
 			if ( *q != '!' ) return -180;
-			//onecolrec.dummy1 = rayatoi(p, q-p);	
 			onecolrec.metrics = rayatoi(p, q-p);	
-			//prt(("s0182 onecolrec.metrics=%d\n", onecolrec.metrics ));
 
 			// get composite-col dummy2
 			++q; p = q;
-			//while ( isdigit(*q) ) ++q;
-			//if ( *q != '!' ) return -190;
-			//onecolrec.dummy2 = rayatoi(p, q-p);	
 			while ( *q != '!' && *q != NBT ) ++q;
 			if ( *q != '!' ) return -190;
 			onecolrec.rollupWhere = Jstr(p, q-p);	
@@ -664,10 +592,7 @@ int JagSchemaRecord::parseRecord( const char *str )
 
 		}
 
-		// columnVector->append( AbaxPair<AbaxString,JagColumn>(dum, onecolrec));
-		// onecolrec.record = this;
 		columnVector->append( onecolrec );
-		// prt(("s2203 columnVector->append size=%d\n", columnVector->size() ));
 		rc = 1;
 		++q;
 		if ( *q != '|' ) {
@@ -736,7 +661,6 @@ int JagSchemaRecord::getKeyMode() const
 	return mode;
 }
 
-// return index-position of colname in _nameMap in columnVec
 int JagSchemaRecord::getPosition( const AbaxString& colName ) const
 {
 	int  n = -1;
@@ -746,42 +670,32 @@ int JagSchemaRecord::getPosition( const AbaxString& colName ) const
 	return n;
 }
 
-// tableProperty:  polyDim!...!...
 bool JagSchemaRecord::hasPoly(int &dim ) const
 {
-	//prt(("s4045 this=%0x hasPoly keyLength=%d valueLength=%d polyDim=%d\n", this, keyLength, valueLength, polyDim ));
-	//prt(("s3027 tableProperty=[%s]\n", tableProperty.c_str() ));
 	dim = 0;
 	JagStrSplit sp(tableProperty, '!' );
-	// prt(("s3027 tableProperty=[%s] sp.length=%d\n", tableProperty.c_str(), sp.length() ));
 	if ( sp.length() < 1 ) return false;
 	dim = jagatoi( sp[0].c_str() );  // first field is polydim
 	if ( dim < 1 ) return false;
 	return true;
 }
 
-// Does this table has time series
 bool JagSchemaRecord::hasTimeSeries( Jstr &series )  const
 {
 	return hasTimeSeries( tableProperty, series );
 }
 
-// Does this table has time series
 bool JagSchemaRecord::hasTimeSeries( const Jstr &tabProperty, Jstr &series ) 
 {
-	prt(("s44403 JagSchemaRecord::hasTimeSeries tabProperty=[%s]\n", tabProperty.s() ));
 	JagStrSplit sp(tabProperty, '!' );
 	if ( sp.length() < 2 ) return false;
 	series = sp[1];  // second field is timeseries
-	prt(("s33470 series=[%s]\n", series.s() ));
 	if ( series.size() < 1 || series == "0" ) return false;
 	return true;
 }
 
-// series is normalized "1d_20d:1M_30M"
 bool JagSchemaRecord::setTimeSeries( const Jstr &normSeries ) 
 {
-	// tableProperty is data member
 	JagStrSplit sp( tableProperty, '!' );
 	if ( sp.length() < 2 ) return false;
 	Jstr newTabProperty;
@@ -804,10 +718,8 @@ bool JagSchemaRecord::setTimeSeries( const Jstr &normSeries )
 	return true;
 }
 
-// retention is "30M"
 bool JagSchemaRecord::setRetention( const Jstr &retention ) 
 {
-	// tableProperty is data member
 	JagStrSplit sp( tableProperty, '!' );
 	if ( sp.length() < 2 ) return false;
 	Jstr newTabProperty;
@@ -855,11 +767,6 @@ Jstr JagSchemaRecord::timeSeriesRentention() const
 	return retain;
 }
 
-
-// Translate user input timeseries string:  "ns:r, nm:r, nd, ny:r"
-// Translate user input timeseries string:  "1d:3d, 4m:30, nd, ny:r"
-// Translate user input timeseries string:  "1day:3day, 4minute:30, nd, nyear:r"
-// to "ns_r:nm_r:nd:ny_r"
 Jstr JagSchemaRecord::translateTimeSeries( const Jstr &inputTimeSeries )
 {
 	Jstr out;
@@ -928,8 +835,6 @@ Jstr JagSchemaRecord::translateTimeSeries( const Jstr &inputTimeSeries )
 	return out2;
 }
 
-// Translate system timeseries string:  "ns_r:nm_r:nd_r:ny_r"
-// to user input timeseries string:  "ns:r,nm:r,nd,ny:r"
 Jstr JagSchemaRecord::translateTimeSeriesBack( const Jstr &sysTimeSeries )
 {
 	Jstr out;
@@ -962,8 +867,6 @@ Jstr JagSchemaRecord::translateTimeSeriesBack( const Jstr &sysTimeSeries )
 	return out;
 }
 
-// Translate system timeseries string:  "ns_r:nm_r:nd_r:ny_r"
-// to user input timeseries string:  "ns,nm,nd,ny"
 Jstr JagSchemaRecord::translateTimeSeriesToStrs( const Jstr &sysTimeSeries )
 {
 	Jstr out;
@@ -984,13 +887,6 @@ Jstr JagSchemaRecord::translateTimeSeriesToStrs( const Jstr &sysTimeSeries )
 	return out;
 }
 
-// Expect series="ns_r:nm_r:nh_r:nd_r:nw-r:nM:nq:ny:nD"
-// s: second, m: minute, h: hour, d: day, w: week, M: month, q: quarter, y: year, D: decade
-// nM: months, e.g. 2M
-// nD: decades, e.g. 2D
-// nd_r  r is number of periods data to retain, e.g. 1d_90 (90 days to retain), 3d_20 (60 days retain)
-//       if no _r, then retain all data
-// returns 0: for OK; < 0 for error
 int JagSchemaRecord::normalizeTimeSeries( const Jstr &series, Jstr &normalizedSeries ) 
 {
 	prt(("s222012 normalizeTimeSeries input series=[%s]\n", series.s() ));
@@ -1051,7 +947,6 @@ int JagSchemaRecord::normalizeTimeSeries( const Jstr &series, Jstr &normalizedSe
 
 		tickret = sp[i].s();
 
-		//nums = bucket.toInt(); // 3M --> 3
 		jbucket = bucket.c_str();
 		nums = jbucket.toInt(); // 3M --> 3
 		period[0] = jbucket.lastChar();  // 3M --> M
@@ -1250,12 +1145,8 @@ int JagSchemaRecord::normalizeTimeSeries( const Jstr &series, Jstr &normalizedSe
 	return 0;
 }
 
-
-// format is "NN|keylen|vallen|tableProperty|{!name!type!offset!length!sig!spare(16bytes)!srid!4!8!metrics!dummy2!...!dummy10!|...}"
 void JagSchemaRecord::getJoinSchema( long skeylen, long svallen, const JagParseParam &parseParam, const jagint lengths[], Jstr &hstr )
 {
-		//const const JagSchemaRecord &rec = *this;
-
         char hbuf[JAG_SCHEMA_SPARE_LEN+1];
         jagint offset = 0;
         memset(hbuf, ' ', JAG_SCHEMA_SPARE_LEN );
@@ -1285,12 +1176,10 @@ void JagSchemaRecord::getJoinSchema( long skeylen, long svallen, const JagParseP
         hstr += "}";
 }
 
-// Input: retention 5M  3d  4q  6y 20m 120s etc
-// returns seconds, -1 if error
 time_t JagSchemaRecord::getRetentionSeconds( const Jstr &retention )
 {
-	jagint nums = retention.toInt();   // 120   3  5
-	char period = retention.lastChar(); // M  m s  q  y
+	jagint nums = retention.toInt();   
+	char period = retention.lastChar();
 	time_t  secs;
 
 	if ( period == 's' ) {
@@ -1318,7 +1207,6 @@ time_t JagSchemaRecord::getRetentionSeconds( const Jstr &retention )
 	return secs;
 }
 
-// returns idx of first datetime key col in table
 int  JagSchemaRecord::getFirstDateTimeKeyCol() const
 {
 	int idx = -1;
@@ -1339,7 +1227,6 @@ int  JagSchemaRecord::getFirstDateTimeKeyCol() const
 
 bool JagSchemaRecord::validRetention( char u )
 {
-	// const char *pstr[] = { "s", "m", "h", "d", "w", "M", "q", "y", "D" }; 
     if ( u != 's' && u != 'm' && u != 'h' && u != 'd'
        && u != 'w' && u != 'M' && u != 'q' && u != 'y' && u != 'D' ) {
        return false;
@@ -1348,8 +1235,6 @@ bool JagSchemaRecord::validRetention( char u )
 	return true;
 }
 
-// Input:  "3m_2M" --> output:  no change "3m_2M"
-// Input:  "3m" --> output:  hange "3m_0m"
 Jstr JagSchemaRecord::makeTickPair( const Jstr &tok )
 {
 	if ( tok.containsChar('_') ) {

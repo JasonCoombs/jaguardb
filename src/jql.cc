@@ -71,7 +71,7 @@ void handleReplyExpect( JaguarCPPClient& jcli, int numError, int numOK );
 int expectType; // 1: rows  2: message
 int expectCorrectRows;
 int expectErrorRows;
-bool lastCmdIsExpect;
+bool lastCmdIsExpect = false;
 Jstr lastMsg;
 Jstr expectMessage;
 
@@ -127,7 +127,6 @@ int main(int argc, char *argv[])
 		if ( p ) { passwd = getenv("PASSWORD"); }
 	}
 	if ( passwd.length() < 1 ) {
-		//printit("Password: ");
         printit( jcli._outf, "Password: ");
 		getPassword( passwd );
 	}
@@ -195,9 +194,6 @@ int main(int argc, char *argv[])
 
 	if ( sqlcmd.length() > 0 ) {
     	rc = queryAndReply( jcli, sqlcmd.c_str() );
-		// jcli.close( );
-		// printf("c4481 sqlcmd=[%s]\n", sqlcmd.c_str() );
-		// fflush( stdout );
 		if ( ! rc ) {
 			printit( jcli._outf, "Command [%s] failed. %s\n", sqlcmd.c_str(), jcli.error() );
 		}
@@ -207,7 +203,6 @@ int main(int argc, char *argv[])
 	if ( mcmd.length() > 1 ) {
 		JagStrSplit sp( mcmd, ';', true );
 		for ( int i = 0; i < sp.length(); ++i ) {
-			// prt(("%s ...\n", sp[i].c_str() ));
     		queryAndReply( jcli, sp[i].c_str() );
 		}
 		return 1;
@@ -337,8 +332,6 @@ int queryAndReply( JaguarCPPClient &jcli, const char *query, bool ishello )
 			printit( jcli._outf, "%s\n", jcli.error() );
 		}
 	}
-    // jcli.freeResult();
-	// prt(("c3848 done queryAndReply [%s]\n", query ));
 
 	return 1;
 }
@@ -361,32 +354,6 @@ void usage( const char *prog )
 	printf("    [-n]             ( Keep newline character in command. Default: no )\n");
 	printf("\n");
 }
-
-/***
-void printResult( const JaguarCPPClient &jcli, const JagClock &clock, jagint cnt )
-{	
-	const char *tstr;
-	jagint rc = clock.elapsed(); // millisecs
-	if ( rc < 2   ) {
-		rc = clock.elapsedusec();
-		tstr = "microseconds";
-	} else if ( rc <= 10000 ) {
-		tstr = "milliseconds";
-	} else {
-		rc = rc / 1000;
-		tstr = "seconds";
-	}
-
-	if (  cnt >= 0 ) {
-		if ( 1 == cnt ) printf("Done in %lld %s (%lld row) \n", rc, tstr, cnt );
-		else  printf("Done in %lld %s (%lld rows) \n", rc, tstr, cnt );
-	} else {
-		printf("Done in %lld %s \n", rc, tstr );
-	}
-
-    fflush( stdout );
-}
-***/
 
 void printResult( const JaguarCPPClient &jcli, const JagClock &clock, jagint cnt )
 {	
@@ -612,7 +579,9 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 				printit( jcli._outf, "%s\n", jcli.error() );
 			}
 
-			handleQueryExpect( jcli );
+			if ( lastCmdIsExpect  ) {
+				handleQueryExpect( jcli );
+			}
 			continue;
         }
 		
@@ -621,7 +590,8 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
         while ( jcli.reply() ) {
 			jcli.printRow();
 			if ( ! jcli.hasError() ) {
-				++numOK; ++cnt;
+				++numOK; 
+				++cnt;
 			} else {
 				++numError;
 			}
@@ -632,10 +602,15 @@ int executeCommands( JagClock &clock, const Jstr &sqlFile, JaguarCPPClient &jcli
 			}
         } 
 
-		while ( jcli.printAll() ) { ++numOK; }
+		while ( jcli.printAll() ) { 
+			++numOK; 
+			++cnt;
+		}
 
 		jcli.flush();
-		handleReplyExpect( jcli, numError, numOK );
+		if ( lastCmdIsExpect ) {
+			handleReplyExpect( jcli, numError, numOK );
+		}
 
 		if ( strncasecmp( pcmd, "load", 4 ) == 0 ) {
 			printit( jcli._outf, "%s\n", jcli.status() );
@@ -718,7 +693,8 @@ void handleReplyExpect( JaguarCPPClient& jcli, int numError, int numOK )
 			}
 		}
 	} else if ( expectType==2 ) {
-		if ( expectMessage == jcli.error() ) {
+		const char *err = jcli.error();
+		if ( expectMessage == err ) {
 			printit( jcli._outf, "TESTRESULT=GOOD (expected_message=[%s])\n", expectMessage.s() );
 		} else {
 			printit( jcli._outf, "TESTRESULT=BAD (expected_message=[%s])\n", expectMessage.s() );

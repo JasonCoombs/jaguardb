@@ -117,7 +117,6 @@ void JagIndex::init( bool buildInitIndex )
 
 	_darrFamily = new JagDiskArrayFamily( _servobj, fpath, &_indexRecord, 0, buildInitIndex );
 
-	//_marr = new JagArray<JagDBPair>();  // no hash
 	KEYLEN = _indexRecord.keyLength;
 	VALLEN = _indexRecord.valueLength;
 	KEYVALLEN = KEYLEN + VALLEN;
@@ -127,7 +126,6 @@ void JagIndex::init( bool buildInitIndex )
 	_schAttr = new JagSchemaAttribute[_numCols];
 	_schAttr[0].record = _tableRecord;
 	_indtotabOffset = (int*)calloc(_numCols, sizeof(int));
-	//_indexmap = new JagHashStrInt();
 	_indexmap = newObject<JagHashStrInt>();
 	
 	dbtable = _dbname + "." + _indexName;
@@ -161,8 +159,6 @@ void JagIndex::init( bool buildInitIndex )
 	if ( _numKeys == 0 ) {
 		_numKeys = _numCols;
 	}
-
-	//prt(("s7265 index _numKeys=%d\n", _numKeys ));
 
 	if ( 0 == _replicateType ) {
 		_tableschema = _servobj->_tableschema;
@@ -211,17 +207,10 @@ void JagIndex::refreshSchema()
 
 }
 
-// copy bidirection 
-// if indexbuf is empty and tablebuf not empty, copy indexbuf <-- tablebuf
-// if indexbuf is not empty and tablebuf is empty, copy indexbuf --> tablebuf
 bool JagIndex::bufchange( char *indexbuf, char *tablebuf ) 
 {
 	if ( *indexbuf == '\0' && *tablebuf != '\0' ) {
 		for ( int i = 0; i < _numCols; ++i ) {
-			/***
-			prt(("s6780 JagIndex::bufchange tablebuf has data, i=%d colname=[%s] indtotabOffset=%d len=%d\n",
-				  i, _schAttr[i].colname.c_str(), _indtotabOffset[i], _schAttr[i].length ));
-			  ***/
 			memcpy(indexbuf+_schAttr[i].offset, tablebuf+_indtotabOffset[i], _schAttr[i].length);		
 		}
 	} else if ( *indexbuf != '\0' && *tablebuf == '\0' ) {
@@ -235,27 +224,15 @@ bool JagIndex::bufchange( char *indexbuf, char *tablebuf )
 	return 1;
 }
 
-// Method to insert, update, or delete from index based on table process
-// type = 0: insert into ...; 
-// type = 1: upsert into ...; 
-// type = 2; remove from ...;
 int JagIndex::formatIndexCmdFromTable( const char *tablebuf, int type )
 {
 	char *indexbuf = (char*)jagmalloc(KEYVALLEN+1);
 	memset(indexbuf, 0, KEYVALLEN+1);
-	// table buf and index buf convertion
 	int rc = bufchange( indexbuf, (char*)tablebuf );
 	if ( !rc || *indexbuf == '\0' ) {
 		if ( indexbuf ) free( indexbuf );
-		//prt(("s5603 JagIndex::formatIndexCmdFromTable return 0\n" ));
 		return 0;
 	}
-
-	/***
-	prt(("s7618 JagIndex::formatIndexCmdFromTable:\n" ));
-	prt(("s7618 indexbuf:\n" ));
-	dumpmem( indexbuf, KEYVALLEN ); 
-	***/
 
 	dbNaturalFormatExchange( indexbuf, _numKeys, _schAttr,0,0, " " ); // natural format -> db format
 
@@ -273,8 +250,6 @@ int JagIndex::formatIndexCmdFromTable( const char *tablebuf, int type )
 	return rc;
 }
 
-// direct: if true, push to buffer
-// int JagIndex::insertPair( JagDBPair &pair, int &insertCode, bool direct )
 int JagIndex::insertPair( JagDBPair &pair )
 {
 	JagDBPair retpair;
@@ -328,7 +303,6 @@ jagint JagIndex::getCount( const char *cmd, const JagRequest& req, JagParseParam
 jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagRequest& req, JagParseParam *parseParam, 
 						Jstr &errmsg, bool nowherecnt, bool isInsertSelect )
 {	
-	// set up timeout for select starting timestamp
 	struct timeval now;
 	gettimeofday( &now, NULL ); 
 	jagint bsec = now.tv_sec;
@@ -377,7 +351,6 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			return -1;			
 		}
 		nrec.parseRecord( newhdr.c_str() );
-		//////////////////nrec.dbobj = fullname;
 	}
 
 	if ( parseParam->hasWhere ) {
@@ -401,7 +374,6 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 	memset(gbvbuf, 0, gbvsendlen+1);
 	JagMemDiskSortArray *gmdarr = NULL;
 	if ( gbvsendlen > 0 ) {
-		//gmdarr = new JagMemDiskSortArray();
 		gmdarr = newObject<JagMemDiskSortArray>();
 		gmdarr->init( atoi((_cfg->getValue("GROUPBY_SORT_SIZE_MB", "1024")).c_str()), gbvheader.c_str(), "GroupByValue" );
 		gmdarr->beginWrite();
@@ -526,25 +498,11 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 		}
 		
 		JagParseParam *pparam[numthrds];
-		//JaguarThreadPool *selectPool = new JaguarThreadPool(numthrds);
 
 		JagParseAttribute jpa( _servobj, req.session->timediff, _servobj->servtimediff, req.session->dbname, _servobj->_cfg );
 		if ( parseParam->hasGroup ) {
 			// group by, no insert into ... select ... syntax allowed
 			JagMemDiskSortArray *lgmdarr[numthrds];
-			/**
-			JagParseParam tempParam;
-			JagParser parser((void*)NULL);
-			tempParam._jagParser = &parser;
-			parser.parseCommand( jpa, cmd, &tempParam, errmsg );
-			for ( jagint i = 0; i < numthrds; ++i ) {
-				lgmdarr[i] = newObject<JagMemDiskSortArray>();
-				pparam[i] = new JagParseParam( tempParam);
-				lgmdarr[i]->init( 40, gbvheader.c_str(), "GroupByValue" );
-				lgmdarr[i]->beginWrite();
-			}
-			**/
-			// JagParser parser((void*)NULL);
 			JagParser parser((void*)_servobj);
 			for ( jagint i = 0; i < numthrds; ++i ) {
 				pparam[i] = new JagParseParam( &parser );
@@ -559,9 +517,6 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			jagint memlim = availableMemory( callCounts, lastBytes )/8/numthrds/1024/1024;
 			if ( memlim <= 0 ) memlim = 1;
 			
-			// mutex lock select pool
-			// jaguar_mutex_lock ( &_servobj->g_selectmutex );
-			// _servobj->_selectPool->wait();
 			ParallelCmdPass psp[numthrds];
 			for ( jagint i = 0; i < numthrds; ++i ) {
 				#if 1
@@ -597,18 +552,10 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			    #endif
 
 				if ( JAG_INSERTSELECT_OP == parseParam->opcode && ! parseParam->hasTimeout ) pparam[i]->timeout = -1;
-				// jagpthread_create( &thrd[i], NULL, JagTable::parallelSelectStatic, (void*)&psp[i] );
-				// thpool_add_work( _servobj->_selectPool, JagTable::parallelSelectStatic, (void*)&psp[i] );
-				// _servobj->_selectPool->addWork( JagTable::parallelSelectStatic, (void*)&psp[i] );
-				//selectPool->addWork( JagTable::parallelSelectStatic, (void*)&psp[i] );
 				JagTable::parallelSelectStatic( (void*)&psp[i] );
 			}
-			// _servobj->_selectPool->wait();
-			//selectPool->wait();
-			// jaguar_mutex_unlock ( &_servobj->g_selectmutex );
 			
 			for ( jagint i = 0; i < numthrds; ++i ) {
-				// pthread_join(thrd[i], NULL);
 				if ( psp[i].timeoutFlag ) timeoutFlag = 1;
 				lgmdarr[i]->endWrite();
 				lgmdarr[i]->beginRead();
@@ -637,16 +584,6 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 				}
 			}
 			
-			/***
-			JagParseParam tempParam;
-			JagParser parser((void*)NULL);
-			tempParam._jagParser = &parser;
-			parser.parseCommand( jpa, cmd, &tempParam, errmsg );
-			for ( jagint i = 0; i < numthrds; ++i ) {
-				pparam[i] = new JagParseParam( tempParam );
-			}
-			**/
-			// JagParser parser((void*)NULL);
 			JagParser parser((void*)_servobj);
 			for ( jagint i = 0; i < numthrds; ++i ) {
 				pparam[i] = new JagParseParam( &parser );
@@ -657,10 +594,6 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			jagint memlim = availableMemory( callCounts, lastBytes )/8/numthrds/1024/1024;
 			if ( memlim <= 0 ) memlim = 1;
 			
-			// mutex lock select pool
-			// jaguar_mutex_lock ( &_servobj->g_selectmutex );
-			// thpool_wait( _servobj->_selectPool );			
-			// _servobj->_selectPool->wait();
 			ParallelCmdPass psp[numthrds];
 			for ( jagint i = 0; i < numthrds; ++i ) {
 				psp[i].cli = pcli;
@@ -698,19 +631,10 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 
 
 				if ( JAG_INSERTSELECT_OP == parseParam->opcode && ! parseParam->hasTimeout ) pparam[i]->timeout = -1;
-				// jagpthread_create( &thrd[i], NULL, JagTable::parallelSelectStatic, (void*)&psp[i] );
-				// thpool_add_work( _servobj->_selectPool, JagTable::parallelSelectStatic, (void*)&psp[i] );
-				// _servobj->_selectPool->addWork( JagTable::parallelSelectStatic, (void*)&psp[i] );
-				//selectPool->addWork( JagTable::parallelSelectStatic, (void*)&psp[i] );
 				JagTable::parallelSelectStatic( (void*)&psp[i] );
 			}
-			// thpool_wait( _servobj->_selectPool );
-			// _servobj->_selectPool->wait();
-			//selectPool->wait();
-			// jaguar_mutex_unlock ( &_servobj->g_selectmutex );
 
 			for ( jagint i = 0; i < numthrds; ++i ) {
-				// pthread_join(thrd[i], NULL);
 				if ( psp[i].timeoutFlag ) timeoutFlag = 1;
 			}
 
@@ -724,7 +648,6 @@ jagint JagIndex::select( JagDataAggregate *&jda, const char *cmd, const JagReque
 			}			
 		}	
 
-		// delete selectPool;
 		if ( jda ) {
 			jda->flushwrite();
 		}
@@ -763,7 +686,6 @@ void JagIndex::flushBlockIndexToDisk()
 
 void JagIndex::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam, char *buffers[] )
 {
-	// if getfile, arrange point query to be size of file/modify time of file/md5sum of file/file path ( for actural data )
 	Jstr ddcol, inpath, instr, outstr; int getpos; char fname[JAG_FILE_FIELD_LEN+1]; struct stat sbuf;
 	for ( int i = 0; i < parseParam->selColVec.size(); ++i ) {
 		ddcol = _dbobj + "." + parseParam->selColVec[i].getfileCol.c_str();
@@ -773,6 +695,10 @@ void JagIndex::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam
 			if ( stat(inpath.c_str(), &sbuf) == 0 ) {
 				if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_SIZE ) {
 					outstr = longToStr( sbuf.st_size );
+				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_SIZEGB ) {
+					outstr = longToStr( sbuf.st_size/ONE_GIGA_BYTES);
+				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_SIZEMB ) {
+					outstr = longToStr( sbuf.st_size/ONE_MEGA_BYTES);
 				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_TIME ) {
 					char octime[JAG_CTIME_LEN]; memset(octime, 0, JAG_CTIME_LEN);
  					jag_ctime_r(&sbuf.st_mtime, octime);
@@ -785,8 +711,16 @@ void JagIndex::setGetFileAttributes( const Jstr &hdir, JagParseParam *parseParam
 					} else {
 						outstr = "";
 					}
+				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_FPATH ) {
+					outstr = inpath;
+				} else if ( parseParam->selColVec[i].getfileType == JAG_GETFILE_TYPE ) {
+					JagStrSplit sp(fname, '.');
+					if ( sp.length() >= 2 ) {
+						outstr = sp[sp.length()-1];
+					} else {
+						outstr = "?"; 
+					}
 				} else {
-					// outstr = inpath;
 					outstr = fname;
 				}
 				parseParam->selColVec[i].strResult = outstr;

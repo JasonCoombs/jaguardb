@@ -21,7 +21,6 @@
 #include <JagExprStack.h>
 #include <JagParseExpr.h>
 
-// ctor
 JagExprStack::JagExprStack( int initSize )
 {
 	_arr = new ExprElementNode*[initSize];
@@ -38,7 +37,6 @@ void JagExprStack::destroy( )
 	ExprElementNode *p;
 	while ( ! empty() ) {
 		p = top();
-		//prt(("s1093 stack obj p=%0x binaryop=%d\n", p, p->getBinaryOp() ));
 		delete p;
 		pop();
 	}
@@ -50,7 +48,6 @@ void JagExprStack::destroy( )
 }
 
 
-// dtor
 JagExprStack::~JagExprStack( )
 {
 	destroy();
@@ -58,7 +55,6 @@ JagExprStack::~JagExprStack( )
 
 void JagExprStack::clean()
 {
-	//prt(("s8282 stack cleaned this=%0x\n", this ));
 	destroy();
 }
 
@@ -72,7 +68,6 @@ void JagExprStack::reAlloc()
 	for ( i = 0; i <= _last; ++i) {
 		newarr[i] = _arr[i];
 	}
-	//if ( _arr ) free( _arr );
 	if ( _arr ) delete [] _arr;
 	_arr = newarr;
 	newarr = NULL;
@@ -85,13 +80,11 @@ void JagExprStack::reAllocShrink()
 	ExprElementNode **newarr;
 
 	jagint newarrlen  = _arrlen/_GEO; 
-	//prt(("s1838 reAllocShrink newarrlen=%d _last=%d\n", newarrlen, _last ));
 	newarr = new ExprElementNode*[newarrlen];
 	for ( i = 0; i <= _last; ++i) {
 		newarr[i] = _arr[i];
 	}
 
-	//if ( _arr ) free( _arr );
 	if ( _arr ) delete [] _arr;
 	_arr = newarr;
 	newarr = NULL;
@@ -122,11 +115,9 @@ void JagExprStack::push( ExprElementNode *newnode )
 	if ( ! newnode->_isElement ) { ++ numOperators; }
 }
 
-// back: add end (enqueue end)
 ExprElementNode* JagExprStack::top() const
 {
 	if ( _last < 0 ) {
-		//prt(("s5004 stack empty, error top()\n"));
 		throw 2920;
 	} 
 	return _arr[ _last ];
@@ -136,24 +127,6 @@ ExprElementNode* JagExprStack::top() const
 void JagExprStack::pop()
 {
 	if ( _last < 0 ) { return; } 
-
-	/***
-	if ( _arrlen >= 64 ) {
-    	jagint loadfactor  = (100 * _last) / _arrlen;
-    	if (  loadfactor < 20 ) {
-    		reAllocShrink();
-    	}
-	} 
-	***/
-	//prt(("s9283 popped %0x isElement=%d\n", _arr[_last], _arr[_last]->_isElement ));
-
-	/***
-	if ( _arr[_last]->_isElement ) {
-		prt(("s9283 ****** popped %0x iselement\n", _arr[_last] ));
-	} else {
-		prt(("s9283 ****** popped %0x isbinopnode\n", _arr[_last] ));
-	} 
-	***/
 
 	if ( ! _arr[_last]->_isElement ) { 
 		-- numOperators; 

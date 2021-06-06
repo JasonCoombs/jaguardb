@@ -24,7 +24,7 @@ JagLineFile::JagLineFile( int bufline )
 {
 	_bufMax = bufline;
 	_buf = new Jstr[bufline];
-	_bufLen = 0;  // number of lines in buffer
+	_bufLen = 0;  
 	_fileLen = 0;
 	_fp = NULL;
 	_hasStartedRead = false;
@@ -54,11 +54,9 @@ bool JagLineFile::print() const
 void JagLineFile::append( const Jstr &line )
 {
 	if ( _hash.keyExist( line ) ) return;
-	//prt(("s3890 JagLineFile::append(%s)\n", line.c_str() ));
 	if ( _bufLen < _bufMax ) {
 		_buf[ _bufLen ] = line;
 		++ _bufLen;
-		//prt(("s3710 JagLineFile::append() _bufLen=%d\n", _bufLen ));
 		_hash.addKeyValue( line, "1");
 		return;
 	}
@@ -95,12 +93,9 @@ void JagLineFile::startRead()
 
 bool JagLineFile::getLine( Jstr &line )
 {
-	//prt(("s3820 getLine _bufLen=%d _i=%d\n", _bufLen, _i ));
 	if ( _i <= _bufLen-1 ) {
 		line = _buf[_i];
 		++ _i;
-		//prt(("s3823 getLine _bufLen=%d _i=%d\n", _bufLen, _i ));
-		//jaguar_mutex_unlock ( &_mutex );
 		return true;
 	}
 
@@ -117,13 +112,11 @@ bool JagLineFile::getLine( Jstr &line )
 	stripStrEnd( cmdline, sz );
 	line = cmdline;
 	free( cmdline );
-	//prt(("s5581 line=[%s]\n", line.c_str() ));
 	return true;
 }
 
 bool JagLineFile::hasData()
 {
-	//prt(("s3388 JagLineFile::hasData() _i=%d _bufLen-1=%d\n", _i, _bufLen-1 ));
 	if ( _i <= _bufLen-1 ) {
 		return true;
 	}

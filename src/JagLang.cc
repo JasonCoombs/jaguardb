@@ -20,11 +20,9 @@
 
 #include <JagLang.h>
 #include <utfcpp/utf8.h>
-// #include <iconv.h>
 #include <JagUtil.h>
 
 /************
-
 GB 2312 对任意一个图形字符都采用两个字节表示，并对所收汉字进行了“分区”处理，每区含有 94 个汉字／符号，
 分别对应第一字节和第二字节。这种表示方式也称为区位码。
 01-09 区为特殊符号。
@@ -57,10 +55,7 @@ GB 18030 编码是一二四字节变长编码。
 单字节，其值从 0 到 0x7F，与 ASCII 编码兼容。
 双字节，第一个字节的值从 0x81 到 0xFE，第二个字节的值从 0x40 到 0xFE（不包括0x7F），与 GBK 标准兼容。
 四字节，第一个字节的值从 0x81 到 0xFE，第二个字节的值从 0x30 到 0x39，第三个字节从0x81 到 0xFE，第四个字节从 0x30 到 0x39。
-
-
 ************/
-
 
 JagLang::JagLang()
 {
@@ -73,12 +68,8 @@ JagLang::~JagLang()
 }
 
 
-// -1: error
-// 0:  nonparsed
-// len: number of tokens obtained
 jagint JagLang::parse( const char *instr, const char *encode )
 {
-	// prt(("s3319 JagLang::parse( instr=[%s] encode=[%s]\n", instr, encode ));
 	jagint n = 0;
 	if ( 0 == strcasecmp( encode, "UTF8" ) ||
 		 0 == strcasecmp( encode, "UTF-8" ) ) {
@@ -98,33 +89,6 @@ jagint JagLang::parse( const char *instr, const char *encode )
 	}
 
 	return -1;
-
-	/******
-	iconv_t cd;
-    int rc;
-	cd = iconv_open( "UTF8", encode );
-	if ( cd == (iconv_t) -1) {
-		return -1;
-	}
-
-	size_t inlen = strlen(instr);
-	char *pin = (char*)instr;
-	char *pout = (char*)malloc( 4 * inlen + 1 );
-	size_t outlen;
-	memset( pout, 0,  4 * inlen + 1 );
-	rc = iconv(cd, (char**)&pin, (size_t *)&inlen, &pout, (size_t *)&outlen);
-	iconv_close( cd );
-	if ( rc <= 0 ) {
-		free( pout );
-		return -1;
-	}
-
-	// pout is "UTF888888 string now"
-	n = JagLang::_parseUTF8( pout );
-	free( pout );
-	return n;
-	******/
-
 }
 
 jagint JagLang::length()
@@ -144,16 +108,16 @@ Jstr JagLang::at(int i)
 
 jagint JagLang::_parseUTF8( const char *instr )
 {
-    char* str = (char*)instr;    // utf-8 string
-    char* str_i = (char*)str;                  // string iterator
-    char* end = str+ strlen(instr)+1;      // end iterator
+    char* str = (char*)instr;    
+    char* str_i = (char*)str; 
+    char* end = str+ strlen(instr)+1; 
     unsigned char symbol[5] = {0,0,0,0,0};
 	uint32_t code;
 	jagint n = 0;
     do {
-        code = utf8::next(str_i, end); // get 32 bit code of a utf-8 symbol
+        code = utf8::next(str_i, end);
         if (code == 0) continue;
-        utf8::append(code, symbol); // initialize array `symbol`
+        utf8::append(code, symbol); 
 		_vec->append( (char*)symbol );
 		++n;
     } while ( str_i < end );	
@@ -161,7 +125,6 @@ jagint JagLang::_parseUTF8( const char *instr )
 	return n;
 }
 
-// DO not support len <= 0 now
 void JagLang::rangeFixString( int buflen, int start, int len, JagFixString &res )
 {
 	if ( start  < 0 ) start = 0;
@@ -197,11 +160,9 @@ jagint JagLang::_parseGB2312( const char *instr )
 
 	while ( *p != '\0' ) {
 		if ( ! (*p & 0x80 ) ) {
-			// ascii
 			b1[0] = *p;
 			b1[1] = '\0';
 			_vec->append( (char*)b1 );
-			// prt(("s7123 append b1=[%s]\n", b1 ));
 			++n;
 		} else {
 			b2[0] = b2[1] = b2[2] = '\0';
@@ -209,7 +170,6 @@ jagint JagLang::_parseGB2312( const char *instr )
 			++p; if ( *p == '\0' ) { break; }
 			b2[1] = *p;
 			_vec->append( (char*)b2 );
-			// prt(("s7124 append b2=[%s]\n", b2 ));
 			++n;
 		}
 
@@ -229,23 +189,18 @@ jagint JagLang::_parseGB18030( const char *instr )
 
 	while ( *p != '\0' ) {
 		if ( ! (*p & 0x80 ) ) {
-			// ascii
 			b1[0] = *p;
 			b1[1] = '\0';
 			_vec->append( (char*)b1 );
-			// prt(("s4123 append b1=[%s]\n", b1 ));
 			++n;
 		} else {
-			// 1-st byte
 			b2[0] = *p; b2[1] = b2[2] = '\0'; 
 
-			// 2-nd byte
 			++p; if ( *p == '\0' ) break;
 			b2[1] = *p; 
 
 			if ( b2[1] >= 0x40 ) {
 				_vec->append( (char*)b2 );
-				// prt(("s4124 append b2=[%s]\n", b2 ));
 				++n;
 			} else {
 				b4[0] = b2[0]; b4[1] = b2[1]; 
@@ -255,7 +210,6 @@ jagint JagLang::_parseGB18030( const char *instr )
 				++p; if ( *p == '\0' ) break;
 				b4[3] = *p; 
 				_vec->append( (char*)b4 );
-				// prt(("s4128 append b4=[%s]\n", b4 ));
 				++n;
 			}
 		}

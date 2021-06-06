@@ -51,8 +51,6 @@ Jstr JagDecryptStr( const Jstr &privkey, const Jstr &src64 )
 
 	int rc = ecc_import( (unsigned char*)pkey.c_str(), pkey.size(), &ecckey );
 	if ( rc != CRYPT_OK ) {
-		// debug
-		// printf("e1239 import key error [%s]\n", error_to_string( rc ) );
 		return "";
 	}
 
@@ -60,22 +58,13 @@ Jstr JagDecryptStr( const Jstr &privkey, const Jstr &src64 )
 	memset( plainmsg, 0, outlen);
 	rc = ecc_decrypt_key( (unsigned char*)src.c_str(), src.size(), plainmsg, &outlen, &ecckey );
 	if ( rc != CRYPT_OK ) {
-		// debug
-		// printf("e1229 dcrypt error [%s]\n", error_to_string( rc ));
-		// printf("src=[%s] size=%d\n", src.c_str(), src.size() );
 		return "";
 	}
 
-	//Jstr astr( (const char*)plainmsg, outlen );
 	Jstr astr( (const char*)plainmsg, outlen, outlen );
 	return astr;
 }
 
-
-
-
-// ptr: OK
-// NULL: bad
 ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
 {
 	int wprng;
@@ -98,7 +87,7 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
           return NULL;
     }
 
-	rc = ecc_make_key( &prng, wprng, 48, pecckey );  // 32, 48, 65
+	rc = ecc_make_key( &prng, wprng, 48, pecckey ); 
 	if ( rc != CRYPT_OK ) {
 		return NULL;
 	}
@@ -109,7 +98,6 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
 		return NULL;
 	}
 
-	//Jstr newp( (const char*)pub, outlen );
 	Jstr newp( (const char*)pub, outlen, outlen );
 	pubkey = abaxEncodeBase64 ( newp );
 
@@ -119,7 +107,6 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
 		return NULL;
 	}
 
-	//Jstr newv( (const char*)priv, outlen );
 	Jstr newv( (const char*)priv, outlen, outlen );
 	privkey = abaxEncodeBase64 ( newv );
 
@@ -128,16 +115,13 @@ ecc_key *JagMakeEccKey( ecc_key *pecckey, Jstr &pubkey, Jstr &privkey )
 
 Jstr JagEncryptStr( const Jstr &pubkey, const Jstr &src )
 {
-	// import pbkey to ecckey
 	ecc_key  		ecckey;
-	//unsigned long 	outlen;
     Jstr 	pkey = abaxDecodeBase64( pubkey );
 
 	ltc_mp = tfm_desc;
 
 	int rc = ecc_import( (unsigned char*)pkey.c_str(), pkey.size(), &ecckey );
 	if ( rc != CRYPT_OK ) {
-		printf("e0134  rc != CRYPT_OK pkey.size()=%d pkey.c_str=[%s]\n", pkey.size(), pkey.c_str()  );
 		return "";
 	}
 
@@ -173,7 +157,6 @@ Jstr JagEncryptZFC( ecc_key *pecckey, const Jstr &src )
           return "";
     }
 
-	// Jstr enc( (const char*)ciphermsg, outlen );
 	Jstr enc( (const char*)ciphermsg, outlen, outlen );
 	return ( abaxEncodeBase64 ( enc ) );
 }

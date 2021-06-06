@@ -20,7 +20,6 @@
 #include <JagHashIntInt.h>
 #include <JagUtil.h>
 
-// ctor
 JagHashIntInt::JagHashIntInt( bool useLock )
 {
 	jag_hash_init( &_hash, 10 );
@@ -30,15 +29,8 @@ JagHashIntInt::JagHashIntInt( bool useLock )
 	if ( _useLock ) {
 		 pthread_rwlock_init((pthread_rwlock_t*)&_lock, NULL);
 	}
-
-	// pthread_rwlock_rdlock( & servobj->_aclrwlock );
-	// pthread_rwlock_unlock( &servobj->_aclrwlock );
-	// pthread_rwlock_wrlock(&_aclrwlock);
-	// pthread_rwlock_unlock(&_aclrwlock);
-
 }
 
-// dtor
 JagHashIntInt::~JagHashIntInt()
 {
 	jag_hash_destroy( &_hash );
@@ -104,10 +96,8 @@ void JagHashIntInt::reset()
 }
 
 
-// copy ctor 
 JagHashIntInt::JagHashIntInt( const JagHashIntInt &o )
 {
-	//if ( _useLock ) { pthread_rwlock_wrlock( &_lock ); }
 	jag_hash_init( &_hash, 10 );
 	_len = 0;
 
@@ -120,10 +110,8 @@ JagHashIntInt::JagHashIntInt( const JagHashIntInt &o )
 			++ _len;
 		}
 	}
-	//if ( _useLock ) { pthread_rwlock_unlock( &_lock ); }
 }
 
-// assignment =
 JagHashIntInt& JagHashIntInt:: operator= ( const JagHashIntInt &o )
 {
 	if ( _useLock ) { pthread_rwlock_wrlock( &_lock ); }

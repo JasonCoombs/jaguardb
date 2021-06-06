@@ -37,7 +37,6 @@ JagStrSplitWithQuote::JagStrSplitWithQuote(const char* str, char sep, bool skipB
 	init( str, sep, skipBracket, ignoreregion );
 }
 
-// skip ( ) and ' "
 void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket, bool ignoreregion )
 {
 	destroy();
@@ -50,7 +49,6 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket, boo
 	int len;
 	if ( ignoreregion ) {
 		len = strchrnumskip(str, sep);
-		prt(("s8283 strchrnumskip str=[%s] sep=[%c] len=%d\n", str, sep, len ));
 	} else {
 		len = strchrnum(str, sep);
 	}
@@ -70,7 +68,7 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket, boo
 		if ( *trackpos == '\0' ) { 
 			pp = trackpos - 1;
 			while ( isspace(*pp) && pp != str ) --pp;
-			++pp;  // "dddd kkkk(pp)   "
+			++pp;  
 			pos[tokens]->saveend = pp;
 			++tokens; 
 			break;
@@ -94,7 +92,6 @@ void JagStrSplitWithQuote::init(const char* str, char sep, bool skipBracket, boo
 			}
 			if ( *trackpos == ')' ) ++trackpos;
 		} else if ( *trackpos == sep ) {
-		    // "dddd (sep) fdfdd(sep)"
 			pp = trackpos - 1;
 			while ( isspace(*pp) && pp != str ) --pp;
 			++pp;
@@ -273,7 +270,6 @@ int JagStrSplitWithQuote::count(const char* str, char sep, bool skipBracket )
 		}
 	}
 
-	//length_ = tokens;
 	length_ = 0;
 	for ( int i = 0; i < len; ++i ) {
 		delete pos[i];

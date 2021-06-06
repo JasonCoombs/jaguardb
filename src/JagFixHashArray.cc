@@ -21,7 +21,6 @@
 #include <JagFixHashArray.h>
 
 #define NBT  '\0'
-// ctor
 JagFixHashArray::JagFixHashArray( int inklen, int invlen )
 {
 	klen = inklen;
@@ -34,7 +33,6 @@ JagFixHashArray::JagFixHashArray( int inklen, int invlen )
 	_elements = 0;
 }
 
-// dtor
 void JagFixHashArray::destroy( )
 {
 	if ( _arr ) {
@@ -43,7 +41,6 @@ void JagFixHashArray::destroy( )
 	_arr = NULL;
 }
 
-// dtor
 JagFixHashArray::~JagFixHashArray( )
 {
 	destroy();
@@ -62,24 +59,14 @@ void JagFixHashArray::removeAll()
 
 void JagFixHashArray::reAllocDistribute()
 {
-	// read lock: read can gointo, write cannot get into
-	// printf("realloc ...\n");
 	reAlloc();
-
-	// printf("c3097 redistribute ...\n");
 	reDistribute();
-	// printf("redistribute done \n");
-
-	// print();
-	// release read lock
 }
 
 void JagFixHashArray::reAllocDistributeShrink()
 {
-	// read lock: read can gointo, write cannot get into
 	reAllocShrink();
 	reDistributeShrink();
-	// release read lock
 }
 
 void JagFixHashArray::reAlloc()
@@ -110,13 +97,10 @@ void JagFixHashArray::reDistribute()
 
 	for ( jagint i = _arrlen-1; i>=0; --i) {
 		if ( _arr[i*kvlen] == NBT ) { continue; } 
-		// pos = hashLocation( _arr[i], _newarr, _newarrlen );
 		pos = hashLocation( _arr+i*kvlen, _newarr, _newarrlen );
-		// _newarr[pos] = _arr[i];  // not null
 		memcpy( _newarr+pos*kvlen, _arr+i*kvlen, kvlen );
 	}
 
-	// write lock
 	if ( _arr ) {
 		free(_arr);
 	}
@@ -130,18 +114,13 @@ void JagFixHashArray::reDistributeShrink()
 
 	for ( jagint i = _arrlen-1; i>=0; --i) {
 		if ( _arr[i*kvlen] == NBT ) { continue; } 
-		// pos = hashLocation( _arr[i], _newarr, _newarrlen );
 		pos = hashLocation( _arr+i*kvlen, _newarr, _newarrlen );
-		// _newarr[pos] = _arr[i];
 		memcpy( _newarr+pos*kvlen, _arr+i*kvlen, kvlen );
 	}
 
-	// write lock
 	if ( _arr ) free(_arr);
 	_arrlen = _newarrlen;
 	_arr = _newarr;
-
-	// release write lock
 }
 
 bool JagFixHashArray::insert( const char *newpair )
@@ -164,11 +143,9 @@ bool JagFixHashArray::insert( const char *newpair )
 	}
 
 	index = hashLocation( newpair, _arr, _arrlen ); 
-	// _arr[index] = newpair;  
 	memcpy( _arr+index*kvlen, newpair, kvlen );
 	++_elements;
 
-	// *retindex = index;
 	return true;
 }
 
@@ -178,8 +155,6 @@ bool JagFixHashArray::remove( const char *pair )
 	bool rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
-	// _arr[index*kvlen] = NBT;
-	// -- _elements;
 	rehashCluster( index );
 	-- _elements;
 
@@ -198,12 +173,10 @@ bool JagFixHashArray::exist( const char *search, jagint *index )
     jagint idx = hashKey( search, _arrlen );
 	*index = idx;
     
-   	//  hash to NULL, not found.
     if ( _arr[idx*kvlen] == NBT ) {
    		return 0;
     }
        
-    // if ( search != _arr[idx] )  {
     if ( 0 != memcmp( search, _arr+idx*kvlen, klen ) ) {
    		idx = findProbedLocation( search, idx );
    		if ( idx < 0 ) {
@@ -223,8 +196,7 @@ bool JagFixHashArray::get(  char *pair )
 	rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
-	// pair.value = _arr[index].value;
-	memcpy( pair+klen, _arr+index*kvlen+klen, vlen ); // copy value part
+	memcpy( pair+klen, _arr+index*kvlen+klen, vlen ); 
 	return true;
 }
 
@@ -236,8 +208,7 @@ bool JagFixHashArray::get( const char *key, char *val )
 	rc = exist( key, &index );
 	if ( ! rc ) return false;
 
-	// pair.value = _arr[index].value;
-	memcpy( val, _arr+index*kvlen+klen, vlen ); // copy value part
+	memcpy( val, _arr+index*kvlen+klen, vlen ); 
 	return true;
 }
 
@@ -249,8 +220,7 @@ bool JagFixHashArray::set( const char *pair )
 	rc = exist( pair, &index );
 	if ( ! rc ) return false;
 
-	// _arr[index].value = pair.value;
-	memcpy( _arr+index*kvlen+klen,  pair+klen, vlen ); // set value part
+	memcpy( _arr+index*kvlen+klen,  pair+klen, vlen ); 
 	return true;
 }
 
@@ -273,17 +243,15 @@ jagint JagFixHashArray::probeLocation( jagint hc, const char *arr, jagint arrlen
    	return -1;
 }
     
-// retrieve the previously assigned probed location
 jagint JagFixHashArray::findProbedLocation( const char *search, jagint idx ) 
 {
    	while ( 1 ) {
    		idx = nextHC( idx, _arrlen );
   
    		if ( _arr[idx*kvlen] == NBT ) {
-   			return -1; // no probed slot found
+   			return -1; 
    		}
     
-   		// if ( search == _arr[idx] ) {
    		if ( 0==memcmp( search, _arr+idx*kvlen, klen) ) {
    			return idx;
    		}
@@ -291,14 +259,10 @@ jagint JagFixHashArray::findProbedLocation( const char *search, jagint idx )
    	return -1;
 }
     
-    
-// find [start, end] of island that contains hc  
-// [3, 9]   [12, 3]
 inline void JagFixHashArray::findCluster( jagint hc, jagint *start, jagint *end )
 {
 	jagint i;
 	i = hc;
-  	// find start
    	while (1 ) {
    		i = prevHC( i, _arrlen );
  		if ( _arr[i*kvlen] == NBT ) {
@@ -307,7 +271,6 @@ inline void JagFixHashArray::findCluster( jagint hc, jagint *start, jagint *end 
     	}
     }
     
-    // find end
     i = hc;
     while (1 ) {
     	i = nextHC( i, _arrlen );
@@ -371,18 +334,13 @@ void JagFixHashArray::rehashCluster( jagint hc )
 			break;
 		}
 
-		// birthhc = hashKey( _arr[hc], _arrlen );
 		birthhc = hashKey( _arr+hc*kvlen, _arrlen );
 		if ( birthhc == hc ) {
-			continue;  // birth hc
+			continue;  
 		}
 
 		b = aboveq( start, end, birthhc, nullbox );
 		if ( b ) {
-			/***
-			_arr[nullbox] = _arr[hc];
-			_arr[hc] = Pair::NULLVALUE;
-			***/
 			memcpy( _arr+nullbox*kvlen, _arr+hc*kvlen, kvlen );
 			_arr[hc*kvlen] = NBT;
 			nullbox = hc;

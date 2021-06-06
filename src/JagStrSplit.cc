@@ -52,7 +52,6 @@ void JagStrSplit::init(const char *str, char sep, bool ignoreregion )
 	destroy();
 	char *p;
 
-	// pdata_ = NULL;
 	pdata_ = str;
 
 	list_ = NULL;
@@ -65,18 +64,11 @@ void JagStrSplit::init(const char *str, char sep, bool ignoreregion )
 	int len;
 	int tokens=1;
 
-	// find number of tokens separated by sep
-	// aaa=ccc&b=xxx
-	// "aaa=" tokens=2
-	// "=" tokens=2
-	// "aaa=bb=" tokens=3
-	// p = (char*) str.c_str();
 	p = (char*) str;
 	if ( ignoreregion ) { while ( *p == sep_ ) { ++p; } }
 
 	while ( *p != '\0' ) {
 		if ( *p == sep_ ) {
-			// several consecutive seps are counted as one
 			if ( ignoreregion ) {
 				while( *p == sep_ ) ++p;
 				if ( *p == '\0' ) break;
@@ -86,12 +78,9 @@ void JagStrSplit::init(const char *str, char sep, bool ignoreregion )
 		++p;
 	}
 
-	// printf("c8383 tokens=%d\n", tokens );
-
 	list_ = new Jstr[tokens];
 	length_ = tokens;
 
-	// start = ps = (char*) str.c_str();
 	start = ps = (char*) str;
 	if ( ignoreregion ) {
 		while ( *ps == sep_ ) { ++start; ++ps; }
@@ -101,10 +90,8 @@ void JagStrSplit::init(const char *str, char sep, bool ignoreregion )
 	int i = 0;
 	while(  i <= tokens -1 )
 	{
-		// move start to begining of non-blank char
 		for( end=start; *end != sep_ && *end != '\0'; end++ ) { ; }
 		
-		// end either points to sep_ or NULL 
 		len= end-start;
 		if ( len == 0 ) {
 			list_[i] = "";
@@ -150,7 +137,6 @@ const Jstr& JagStrSplit::operator[](int i ) const
 	}
 	else
 	{
-		// return list_[ length_ -1];
 		return _NULL; 
 	}
 }
@@ -165,7 +151,6 @@ Jstr& JagStrSplit::operator[](int i )
 	}
 	else
 	{
-		// return list_[ length_ -1];
 		return _NULL; 
 	}
 }

@@ -22,8 +22,6 @@
 #include <JagDBServer.h>
 #include <JagTableSchema.h>
 
-
-// ctor
 JagCfg::JagCfg( int type )
 {
 	_map = NULL;
@@ -51,13 +49,11 @@ int JagCfg::init( int type )
 		_map = new JagHashMap<AbaxString, AbaxString>();
 	} 
 
-	// into HashMap
 	Jstr  home = jaguarHome();
 	if ( type == JAG_SERVER ) {
 		strcpy(fn, "server.conf" );
 	} else {
 		strcpy(fn, "client.conf" );
-		// _map->addKeyValue( name, value );
 		return 0; // client does not need conf file
 	}
 	sprintf(line, "%s/conf/%s", home.c_str(), fn );
@@ -65,8 +61,6 @@ int JagCfg::init( int type )
 	strcpy( fpath, line );
     FILE * fp = jagfopen( fpath, "r" );
     if ( ! fp ) {
-		// printf("E2002 error open config file [%s]\n", fpath );
-		// fflush( stdout );
 		return 0;
     }
 
@@ -78,9 +72,6 @@ int JagCfg::init( int type )
         if ( pline[0] == '#' ) {
             continue;
         }
-
-		//printf("s7113 line=[%s]\n", line );
-		//fflush( stdout );
 
 		if ( strlen(line) < 3 ) continue;
 		p = line;
@@ -101,11 +92,7 @@ int JagCfg::init( int type )
 			value = pline;
 		}
 
-		// printf("s4839 abaxcfg read name=[%s] value=[%s]\n", name.c_str(), value.c_str() );
-
 		rc = _map->addKeyValue( name, value );
-		// printf("s3819 this=%0x  _map=%0x add name=[%s]  value=[%s]  rc=%d\n", this, _map, name.c_str(), value.c_str(), rc );
-		// fflush(stdout);
     }
 
     jagfclose( fp );
@@ -127,7 +114,6 @@ int JagCfg::refresh()
 	return 1;
 }
 
-// if not found, return defValue
 Jstr  JagCfg::getValue( const AbaxString &name, const Jstr &defValue ) const
 {
 	AbaxString  value;

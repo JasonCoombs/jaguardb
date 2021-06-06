@@ -20,18 +20,14 @@
 #include <JagHashStrStr.h>
 #include <JagUtil.h>
 
-// ctor
 JagHashStrStr::JagHashStrStr()
 {
-	//prt(("s8540 JagHashStrStr simple ctor this=%x\n", this ));
 	jag_hash_init( &_hash, 10 );
 	_len = 0;
 }
 
-// dtor
 JagHashStrStr::~JagHashStrStr()
 {
-	//prt(("s8540 JagHashStrStr dtor this=%x\n", this ));
 	jag_hash_destroy( &_hash );
 }
 
@@ -41,7 +37,6 @@ bool JagHashStrStr::addKeyValue( const Jstr & key, const Jstr &val )
 	int rc = jag_hash_insert( &_hash, key.c_str(), val.c_str() );
 	if ( rc ) {
 		++ _len;
-		//prt(("s3039 JagHashStrStr::addKeyValue this=%0x key=[%s] val=%d\n", this, key.c_str(), val ));
 		return true;
 	} 
 	return false;
@@ -53,7 +48,6 @@ void JagHashStrStr::removeKey( const Jstr & key )
 	int rc = jag_hash_delete( &_hash, key.c_str() );
 	if ( rc ) {
 		-- _len;
-		//prt(("s2039 JagHashStrStr::removeKey this=%0x key=[%s]\n", this, key.c_str() ));
 	}
 }
 
@@ -102,10 +96,8 @@ void JagHashStrStr::reset()
 }
 
 
-// copy ctor 
 JagHashStrStr::JagHashStrStr( const JagHashStrStr &o )
 {
-	//prt(("s8540 JagHashStrStr copy ctor this=%x o=%0x\n", this, &o ));
 	jag_hash_init( &_hash, 10 );
 	_len = 0;
 
@@ -120,11 +112,9 @@ JagHashStrStr::JagHashStrStr( const JagHashStrStr &o )
 	}
 }
 
-// assignment =
 JagHashStrStr& JagHashStrStr:: operator= ( const JagHashStrStr &o )
 {
 	if ( this == &o ) return *this;
-	//prt(("s8820 JagHashStrStr this=%0x assignment by o=%0x\n", this, &o ));
 
 	reset();
 
@@ -141,7 +131,6 @@ JagHashStrStr& JagHashStrStr:: operator= ( const JagHashStrStr &o )
 	return *this;
 }
 
-// return "a=1|c=3|f=34" if sep is |
 Jstr JagHashStrStr::getKVStrings( const char *sep)
 {
 	Jstr res;
@@ -162,7 +151,6 @@ Jstr JagHashStrStr::getKVStrings( const char *sep)
 	return res;
 }
 
-// return "a|c|f" if sep is |
 Jstr JagHashStrStr::getKeyStrings( const char *sep)
 {
 	Jstr res;

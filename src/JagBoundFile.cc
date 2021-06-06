@@ -21,14 +21,12 @@
 #include <JagBoundFile.h>
 #include <JagUtil.h>
 
-// openMode "a" or "r"
 JagBoundFile::JagBoundFile( const char *filepath, int bound )
 {
 	_fpath = filepath;
 	_bound = bound;
 }
 
-// 0: error  1: OK
 int JagBoundFile::openAppend()
 {
 	_numLines = _getNumLines();
@@ -38,7 +36,6 @@ int JagBoundFile::openAppend()
 	return 1;
 }
 
-// 0: error  1: OK
 int JagBoundFile::openRead()
 {
 	_numLines = _getNumLines();
@@ -134,14 +131,11 @@ int JagBoundFile::_trimFile()
 
 	jagfclose( _fp );
 
-	// read in data
 	JagVector<Jstr> vec;
 	readLines( _bound, vec );
 
-	// remove old file
 	jagunlink( _fpath.c_str() );
 
-	// write data back
 	openAppend( );
 	for ( int i = 0; i < vec.length(); ++i ) {
 		appendLine( vec[i].c_str() );

@@ -35,7 +35,6 @@ JDFSMgr::JDFSMgr()
 
 JDFSMgr::~JDFSMgr()
 {
-	// for each item, close the FD in _map
 	if ( _map ) delete _map;
 	_map = NULL;
 }
@@ -43,28 +42,21 @@ JDFSMgr::~JDFSMgr()
 bool JDFSMgr::exist( const AbaxString &fpath )
 {
 	if ( 0 == jagaccess( fpath.c_str(), R_OK|W_OK ) ) {
-		// printf("s3840 JDFSMgr::exist [%s] true \n", fpath.c_str() );
 		return true;
 	} else {
-		// printf("s3840 JDFSMgr::exist [%s] false \n", fpath.c_str() );
 		return false;
 	}
 }
 
-//jagint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen, size_t stripeSize )
 jagint JDFSMgr::getStripeSize( const AbaxString &fpath, size_t kvlen )
 {
-	// prt(("s28139 getStripeSize fpath=[%s] kvlen=%d stripeSize=%lld\n", fpath.c_str(), kvlen, stripeSize ));
-	
 	struct stat sbuf;
 	if ( 0 == stat(fpath.c_str(), &sbuf) ) {
 		if ( sbuf.st_size > 0 ) {
-			// prt(("s1883 return sbuf.st_size/kvlen=%d\n", sbuf.st_size/kvlen ));
 			return sbuf.st_size/kvlen;
 		}
 	}
 
-	//prt(("s33392870 -1 abort\n"));
 	return -1;
 }
 
@@ -78,27 +70,21 @@ jagint JDFSMgr::getFileSize( const AbaxString &fpath, size_t kvlen )
 // check if file is open. if no, open and insert to hashmap
 int JDFSMgr::open( const AbaxString &fpath, bool force )
 {
-	// printf("s3492 JDFSMgr::open [%s]  force=%d\n", fpath.c_str(), force );
 	AbaxInt ai;
 	int fd = -1;
 	if ( _map->getValue( fpath, ai ) ) {
-		// printf("ss44 ai.value()=%d\n", ai.value() );
 		return ai.value();
 	}
 
 	if ( force ) {
 		fd = jagopen( fpath.c_str(), O_CREAT|O_RDWR|JAG_NOATIME, S_IRWXU);
-		// printf("s3838 force fd=%d\n", fd );
 	}
 	else if ( exist( fpath ) ) {
 		fd = jagopen( fpath.c_str(), O_RDWR|JAG_NOATIME, S_IRWXU);
-		// printf("s3858 fd=%d\n", fd );
 	} else {
-		// printf("s9393 -1-1-\n");
 	}
 
 	if ( fd < 0 ) {
-		// printf("s2394 standard open cannot work\n");
 		return -1;
 	}
 
@@ -163,13 +149,11 @@ int JDFSMgr::rmdir( const AbaxString &fpath )
 
 jagint JDFSMgr::pread( int fd, void *buf, size_t count, jagint offset)
 {
-	// return ::pread( fd, buf, count, offset );
 	return raysafepread( fd, (char*)buf, count, offset );
 }
 
 jagint JDFSMgr::pwrite(int fd, const void *buf, size_t count, jagint offset)
 {
-	// return ::pwrite( fd, buf, count, offset );
 	return raysafepwrite( fd, (const char*)buf, count, offset );
 }
 

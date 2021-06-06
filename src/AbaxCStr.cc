@@ -66,12 +66,6 @@ AbaxCStr::AbaxCStr(const char* str, size_t capacity )
 	    return;
 	}
 
-	/**
-	initmem(len);
-	length_ = len;
-	memcpy(buf_, str, len );
-	buf_[length_] = '\0';
-	**/
 	initmem(capacity);
     memset( buf_, 0, capacity+1);
     unsigned int slen = strlen(str);
@@ -105,16 +99,8 @@ AbaxCStr::AbaxCStr(const char* str, size_t slen, size_t capacity )
 }
 
 
-// copy constructor
 AbaxCStr::AbaxCStr(const AbaxCStr& str)
 {
-	/**
-	if ( str._readOnly ) {
-		printf(("s2222827 error AbaxCStr::AbaxCStr called on readOnly string\n"));
-		exit(44);
-	}
-	**/
-
 	_readOnly = false;
 	initmem( str.length_ );
 
@@ -131,7 +117,6 @@ AbaxCStr::AbaxCStr(const char* str, const char *readOnly )
 	length_ = strlen(str);
 }
 
-// destructor
 AbaxCStr::~AbaxCStr()
 {
 	if ( ! _readOnly ) {
@@ -139,25 +124,15 @@ AbaxCStr::~AbaxCStr()
 	}
 }
 
-// assignment operator
-// const AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s) 
 AbaxCStr& AbaxCStr::operator=( const AbaxCStr& s) 
 {
-	/***
-	if ( s._readOnly ) {
-		printf(("s223827 error AbaxCStr::= called on readOnly string\n"));
-		abort();
-		exit(48);
-	}
-	***/
-
 	if ( this == &s ) {
 		return *this;
 	}
 
 	if ( length_ < s.length_ ) {
 		length_ = 0;
-		allocMoreMemory( s.length_ ); // realloc
+		allocMoreMemory( s.length_ ); 
 	}
 
 	length_ = s.length_;
@@ -184,11 +159,9 @@ AbaxCStr& AbaxCStr::operator+= ( const AbaxCStr &str )
 	memcpy(buf_+length_, str.buf_, str.length_);
 	length_ += str.length_;
 	buf_[length_] = '\0';
-	//prt(("s333338 AbaxCStr::operator+= Jstr buf_=[%s]\n", buf_ ));
 	return *this;
 }
 
-// plus operator
 AbaxCStr& AbaxCStr::operator+=( const char *s)
 {
 	if ( _readOnly ) {
@@ -205,14 +178,10 @@ AbaxCStr& AbaxCStr::operator+=( const char *s)
 	memcpy(buf_+length_, s, len2 );
 	length_ += len2;
 	buf_[length_] = '\0';
-	//prt(("s333334 AbaxCStr::operator+= char *  buf_=[%s]\n", buf_ ));
 	return *this;
 	return *this;
 }
 
-// plus operator
-// inline AbaxCStr& AbaxCStr::operator+=( int ch )
-// inline void AbaxCStr::operator+=( int ch )
 AbaxCStr&  AbaxCStr::operator+=( int ch )
 {
 	if ( _readOnly ) {
@@ -220,7 +189,7 @@ AbaxCStr&  AbaxCStr::operator+=( int ch )
 		exit(50);
 	}
 
-	allocMoreMemory(1);  // one extra byte will cause buffer grow?
+	allocMoreMemory(1);  
 	buf_[length_] = ch;
 	length_ += 1;
 	buf_[length_] = '\0';
@@ -246,17 +215,23 @@ AbaxCStr& AbaxCStr::append( const char *s, unsigned long len2)
 }
 
 
-// equality operator
 bool AbaxCStr::operator==( const char *s) const
 {
+	if ( NULL == s && buf_[0] != '\0' ) {
+		return false;
+	}
+
+	if ( NULL == s && buf_[0] == '\0' ) {
+		return true;
+	}
+
 	if ( 0 == strcmp(buf_, s) ) {
-		return 1;
+		return true;
 	} else {
-		return 0;
+		return false;
 	}
 }
 
-// equality operator
 bool AbaxCStr::operator==( const AbaxCStr &s) const
 {
 	if ( 0 == strcmp(buf_, s.data() ) ) {
@@ -272,7 +247,6 @@ int AbaxCStr::compare( const AbaxCStr &s ) const
 }
 
 
-// equality operator
 bool AbaxCStr::operator<( const AbaxCStr &s ) const
 {
 	int rc = strcmp(buf_, s.data() );
@@ -296,7 +270,6 @@ bool AbaxCStr::operator>=( const AbaxCStr &s ) const
 	if ( rc >= 0  ) { return 1; } else { return 0; }
 }
 
-// inequality operator
 bool AbaxCStr::operator!=( const char *s) const
 {
 	if ( 0 == strcmp(buf_, s) ) {
@@ -306,7 +279,6 @@ bool AbaxCStr::operator!=( const char *s) const
 	}
 }
 
-// inequality operator
 bool AbaxCStr::operator!=( const AbaxCStr &s) const
 {
 	if ( 0 == strcmp(buf_, s.data() ) ) {
@@ -316,7 +288,6 @@ bool AbaxCStr::operator!=( const AbaxCStr &s) const
 	}
 }
 
-// conversion operator to int
 int AbaxCStr::toInt() const
 {
 	return atoi(buf_);
@@ -327,8 +298,6 @@ long  AbaxCStr::toLong() const
 
 }
 
-// end 2: begin and end
-// end 1: end blanks only
 AbaxCStr& AbaxCStr::trimSpaces( int end )
 {
 	if ( _readOnly ) {
@@ -338,7 +307,6 @@ AbaxCStr& AbaxCStr::trimSpaces( int end )
 
 	if ( length_ < 1 ) return *this;
 
-	// remove trailing blanks first
 	char c;
 	int i;
 	for( i=length_-1; i>=0; i--) {
@@ -355,7 +323,6 @@ AbaxCStr& AbaxCStr::trimSpaces( int end )
 		return *this;
 	}
 
-	// leave beginning blanks then
 	char *pstart=0;
 	int  nbeg=0;
 	for( char *p=buf_; *p != '\0'; p++) {
@@ -385,7 +352,6 @@ AbaxCStr& AbaxCStr::trimnull()
 		exit(53);
 	}
 
-	// trim end nulls
 	for ( int i = length_-1; i>=0; --i ) {
 		if ( buf_[i] == '\0' ) { --length_; }
 	}
@@ -400,7 +366,6 @@ AbaxCStr& AbaxCStr::trimChar( char C )
 
 	if ( length_ < 1 ) return *this;
 
-	// remove trailing blanks first
 	int i = length_-1;
 	if ( C == buf_[i] ) {
 		buf_[i]='\0';
@@ -431,7 +396,6 @@ AbaxCStr & AbaxCStr::trimEndChar( char chr )
 	}
 
 	if ( length_ < 1 ) return *this;
-	// remove trailing blanks 
 	char c;
 	int i;
 	for( i=length_-1; i>=0; i--) {
@@ -480,7 +444,6 @@ void AbaxCStr::remove( const char *chset )
 	AbaxCStr *newStr = new AbaxCStr();
 	int nlen = 0;
 	char c;
-	//for (char *p=buf_; *p != '\0'; p++) {
 	for ( int i=0; i < length_; ++i ) {
 		c = buf_[i];
 		if ( strchr( chset, c ) ) {
@@ -533,7 +496,6 @@ void AbaxCStr::removeString( const char *oldstr )
 	replace( oldstr, "" ); 
 }
 
-// replace whole oldstr in AbaxCStr by newstr
 void AbaxCStr::replace( const char *oldstr, const char *newstr)
 {
 	if ( _readOnly ) {
@@ -542,7 +504,6 @@ void AbaxCStr::replace( const char *oldstr, const char *newstr)
 	}
 
 	AbaxCStr *pnew = new AbaxCStr();
-	//int  n;
 	int  olen = strlen(oldstr);
 
 	char *p = buf_;
@@ -563,38 +524,23 @@ void AbaxCStr::replace( const char *oldstr, const char *newstr)
 
 void AbaxCStr::initmem( int size )
 {
-	// size=7  nseg = 1
-	// size=31  nseg = 1
-	// size=32  nseg = 2
-	// size=38  nseg = 2
-	// size=63  nseg = 2
-	// size=64  nseg = 3
-	// size=65  nseg = 3
 	nseg_ = int(size/ASTRSIZ) + 1;
-	//buf_= new char[nseg_ * ASTRSIZ];
 	buf_= (char*)malloc(nseg_ * ASTRSIZ);
 	memset( (void*)buf_, 0, nseg_ * ASTRSIZ );
 	length_=0;
 }
 
-// private
 void AbaxCStr::allocMoreMemory( int len2 )
 {
 	int newLen = length_ + len2;
-	//         = 8   +  1
-	//         = 8   +  24
-	//         = 8   +  28
 	int newSegs = int( newLen/ASTRSIZ ) + 1;
 	if ( newSegs > nseg_ ) {
 		buf_ = (char*)realloc( buf_, newSegs * ASTRSIZ );
-		//memset(buf_+length_, 0, len2 );
 		buf_[length_] = '\0';
 		nseg_ = newSegs;
-		//printf("s222093 buf_ realloc %d bytes\n", newSegs * ASTRSIZ );
 	}
 }
 
-// how many times c occur in the string
 int AbaxCStr::countChars( char c) const
 {
 	int n=0;
@@ -609,7 +555,6 @@ AbaxCStr AbaxCStr::substr(int start, int len ) const
 	return AbaxCStr(buf_+start, len );
 }
 
-// 0 1 2 3 4 5
 AbaxCStr AbaxCStr::substr(int start ) const
 {
 	return AbaxCStr(buf_+start, length_ - start );
@@ -624,7 +569,6 @@ AbaxCStr & AbaxCStr::pad0()
 
 	if ( length_ == 1 )
 	{
-		// make copy of buf_
 		int len = length_;
 		char *pc = (char*)malloc(len + 1);
 		memcpy(pc, buf_, len);
@@ -663,16 +607,6 @@ int AbaxCStr::operator[] (int i) const
 	}
 }
 
-// non-member
-/**
-AbaxCStr operator+(const AbaxCStr &s1, const AbaxCStr &s2 ) 
-{
-	AbaxCStr res = s1;
-	res += s2;
-	return res;
-}
-**/
-
 AbaxCStr AbaxCStr::operator+(const AbaxCStr &s2 ) const
 {
 	if ( _readOnly ) {
@@ -689,36 +623,19 @@ AbaxCStr AbaxCStr::operator+(const AbaxCStr &s2 ) const
 	return res;
 }
 
-/**
-AbaxCStr AbaxCStr::operator+(const char *s2 ) 
-{
-	int s2len = strlen( s2 );
-	char *buf = malloc( length_ + s2len + 1 );
-	memcpy(buf, buf_, length_ );
-	memcpy(buf+length_, s2, s2len );
-	buf[length_ + s2len] = '\0';
-	AbaxCStr res(buf, length_ + s2len );
-	free( buf );
-	return res;
-}
-**/
-
 AbaxCStr operator+(const char *s1, const AbaxCStr &s2 )
 {
-	//prt(("s333747 AbaxCStr operator+ char* and Jstr called s1=[%s] s2=[%s]\n", s1, s2.s() ));
 	AbaxCStr res = s1;
 	res += s2;
 	return res;
 }
 
 
-// public
 int AbaxCStr::caseEqual(const char *str) const
 {
 	int ilen = strlen(str);
 	if ( ilen != length_ ) return 0;
 
-	//int  t=0;
 	for ( int i=0; i<length_; i++) {
 		if ( toupper(buf_[i]) != toupper( str[i] ) ) {
 			return 0;
@@ -760,7 +677,6 @@ void AbaxCStr::print() const
 
 AbaxCStr&  AbaxCStr::trimEndZeros()
 {
-	//printf("s2083  AbaxCStr::trimEndZeros ... %s\n", buf_ );
 	if ( _readOnly ) {
 		printf(("s145833 error AbaxCStr::trimEndZeros called on readOnly string\n"));
 		exit(63);
@@ -770,7 +686,6 @@ AbaxCStr&  AbaxCStr::trimEndZeros()
 	if ( ! strchr( buf_, '.') ) return *this;
 	if ( ! buf_ ) return *this;
 
-	//char *buf= new char[nseg_ * ASTRSIZ];
 	char *buf= (char*)malloc(nseg_ * ASTRSIZ);
 	memset( (void*)buf, 0, nseg_ * ASTRSIZ );
 
@@ -792,7 +707,6 @@ AbaxCStr&  AbaxCStr::trimEndZeros()
 		}
 	}
 
-	//printf("a8080 len=%d buf=[%s]\n", len, buf );
     if ( len < 1 ) {
 		buf[0] = '0'; buf[1] = '\0'; len=1;
 		free( buf_ );
@@ -839,8 +753,6 @@ const char * AbaxCStr::secondTokenStart( char sep )
 	return p;
 }
 
-// buf_ "anan(kddddd)llsk"
-// startc='('  endc=')'
 AbaxCStr AbaxCStr::substrc( char startc, char endc ) const
 {
 	const char *p = buf_;
@@ -851,18 +763,16 @@ AbaxCStr AbaxCStr::substrc( char startc, char endc ) const
 
 	const char *q = p;
 	while ( *q != endc && *q != '\0' ) ++q;
-	if ( *q == '\0' ) return p;  // no endc found
+	if ( *q == '\0' ) return p;  
 	return AbaxCStr(p, q-p);
 }
 
-// if first byte is zero. i.e. C-string size is 0
 bool  AbaxCStr::isNull() const
 {
 	if ( buf_[0] == '\0' ) return true;
 	return false;
 }
 
-// if first byte is not zero. i.e. C-string size is >0
 bool  AbaxCStr::isNotNull() const
 {
 	if ( buf_[0] != '\0' ) return true;
@@ -952,6 +862,4 @@ AbaxCStr  AbaxCStr::lastCharStr() const
 	buf[1] = '\0';
 	return AbaxCStr( buf );
 }
-
-
 

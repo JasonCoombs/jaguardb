@@ -53,7 +53,7 @@ void JagDiskArrayServer::init( jagint length, bool buildBlockIndex )
 	_KLEN = _schemaRecord->keyLength;
 	_VLEN = _schemaRecord->valueLength;
 	_KVLEN = _KLEN+_VLEN;
-	_keyMode = _schemaRecord->getKeyMode(); // get keyMode
+	_keyMode = _schemaRecord->getKeyMode(); 
 	_maxindex = 0;
 	_minindex = -1;
 	_GEO = 4;
@@ -78,12 +78,12 @@ void JagDiskArrayServer::init( jagint length, bool buildBlockIndex )
 	_objname = split[exist-1];
 	_dbobj = _dbname + "." + _objname;
 	JagStrSplit split2(_objname, '.');
-	if ( split2.length() > 2 ) { // must be tab.idx.1 format, use idx
+	if ( split2.length() > 2 ) { 
 		_pdbobj = _dbname + "." + split2[1];
-	} else if ( split2.length() == 2 ) { // may be tab.idx or tab.1 format; if tab.idx, use idx, otherwise, use tab
-		if ( isdigit(*(split2[1].c_str())) ) { // is tab.1 format, use tab
+	} else if ( split2.length() == 2 ) { 
+		if ( isdigit(*(split2[1].c_str())) ) { 
 			_pdbobj = _dbname + "." + split2[0];
-		} else { // otherwise, tab.idx format, use idx
+		} else { 
 			_pdbobj = _dbname + "." + split2[1];
 		}
 	} else {
@@ -117,12 +117,8 @@ void JagDiskArrayServer::init( jagint length, bool buildBlockIndex )
 	_maxKey[_KLEN] = 0;
 }
 
-// build and find first last from the blockIndex
-// buildindex from disk array file data
-// force: force to build index from disk array
 void JagDiskArrayServer::buildInitIndex( bool force )
 {
-	// prt(("s2283 JagDiskArrayServer::buildInitIndex ...\n"));
 	if ( ! force ) {
 		int rc = buildInitIndexFromIdxFile();
 		if ( rc ) {
@@ -131,7 +127,6 @@ void JagDiskArrayServer::buildInitIndex( bool force )
 		}
 	}
 
-	// dbg(("s7777 begin buildindex\n"));
 	if ( !force && _doneIndex ){
 		dbg(("s3820 in buildInitIndex return here\n"));
 		return;
@@ -141,13 +136,9 @@ void JagDiskArrayServer::buildInitIndex( bool force )
 
 }
 
-// buildindex from idx file flushed from blockindex 
-// 1: OK
-// 0: error
 int JagDiskArrayServer::buildInitIndexFromIdxFile()
 {
 	if ( _doneIndex ){
-		dbg(("s3822 in buildInitIndexFromIdxFile return here\n"));
 		return 1;
 	}
 
@@ -155,13 +146,11 @@ int JagDiskArrayServer::buildInitIndexFromIdxFile()
 	return 1;
 }
 
-// old way
-// check pair exist
 bool JagDiskArrayServer::exist( const JagDBPair &pair, jagint *index, JagDBPair &retpair )
 {
 	jagint first, last;
 	++_reads;
-	bool rc = getFirstLast( pair, first, last ); // first/last is global in this comp file
+	bool rc = getFirstLast( pair, first, last ); 
 	if ( rc ) {
 		rc = findPred( pair, index, first, last, retpair, NULL );
 	} else {
@@ -172,21 +161,17 @@ bool JagDiskArrayServer::exist( const JagDBPair &pair, jagint *index, JagDBPair 
 	return true;
 }
 
-// return true for yes; false for not exist
 bool JagDiskArrayServer::exist( const JagDBPair &pair, JagDBPair &retpair )
 {
 	JagCompFile *compf = _jdfs->getCompf();
 	if ( ! compf ) return false;
 	int rc = compf->exist( pair, retpair );
 	if ( rc < 0 ) {
-		prt(("s2037 compf->exist rc=%d\n", rc ));
 		return false;
 	}
 	return true;
 }
 
-// get a pair
-// return true for OK; false for error
 bool JagDiskArrayServer::get( JagDBPair &pair, jagint &index )
 {
 	JAG_OVER;
@@ -196,24 +181,18 @@ bool JagDiskArrayServer::get( JagDBPair &pair, jagint &index )
 	return rc;
 }
 
-// set a pair
-// return true for OK; false for error
 bool JagDiskArrayServer::set( const JagDBPair &pair, jagint &index )
 {
-	//prt(("s432276 JagDiskArrayServer::set() pair=[%s][%s] ...\n", pair.key.c_str(), pair.value.s() ));
 	JagCompFile *compf = _jdfs->getCompf();
 	if ( ! compf ) {
-		//prt(("s211028 compf NULL, return false\n"));
 		return false; 
 	}
 
 	int rc = compf->updatePair( pair );
     if ( rc < 0 ) {
-        prt(("s20937 compf->updatePair rc=%d pair=[%s][%s] return false\n", rc, pair.key.c_str(), pair.value.s() ));
         return false;
     }
 
-	//prt(("s432278 updatePair=[%s][%s] true\n", pair.key.c_str(), pair.value.s() ));
     return true;
 	
 }
@@ -224,7 +203,6 @@ bool JagDiskArrayServer::remove( const JagDBPair &pair )
 	if ( ! compf ) return false;
 	int rc = compf->removePair( pair );
 	if ( rc < 0 ) {
-		prt(("s2037 compf->removePair rc=%d\n", rc ));
 		return false;
 	}
 	return true;
@@ -242,7 +220,7 @@ void JagDiskArrayServer::print( jagint start, jagint end, jagint limit )
 	
 	char  *keybuf = (char*)jagmalloc( _KLEN+1 );
 	char  *keyvalbuf = (char*)jagmalloc( _KVLEN+1 );
-	prt(("s9999 start=%d, end=%d\n", start, end));
+	prt(("s9028 start=%d, end=%d\n", start, end));
 	prt(("************ print() dbobj=%s _arrlen=%lld _KVLEN=%d  _KLEN=%d\n", 
 		_dbobj.c_str(), (jagint)_arrlen, _KVLEN, _KLEN ));
 
@@ -282,7 +260,6 @@ bool JagDiskArrayServer::checkFileOrder( const JagRequest &req )
 		} else {
 			rc = memcmp( keyvalbuf, keybuf, _KLEN );
 			if ( rc <= 0 ) {
-				//free( keybuf );
 				free( keyvalbuf );
 				return 0;
 			} else {
@@ -297,7 +274,6 @@ bool JagDiskArrayServer::checkFileOrder( const JagRequest &req )
 }
 
 
-// read bottom level of blockindex and write it to a disk file
 void JagDiskArrayServer::flushBlockIndexToDisk()
 {
 	_compf->flushBlockIndexToDisk();
@@ -311,9 +287,6 @@ void JagDiskArrayServer::removeBlockIndexIndDisk()
 float JagDiskArrayServer::computeMergeCost( const JagDBMap *pairmap, jagint seqReadSpeed, 
 											jagint seqWriteSpeed, JagVector<JagMergeSeg> &vec )
 {
-	// look at each simplfile, get its pred from pairmap
-	// get cost( number of records) of each simple for read and write, compute data size in bytes to be read and wite
-	// compute time to read and write
 	JagCompFile *compf = _jdfs->getCompf();
 	if ( ! compf ) {
 		return 0;

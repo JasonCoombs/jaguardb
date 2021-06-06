@@ -41,32 +41,29 @@ void JagBlockLock::init()
 
 bool JagBlockLock::regionOverlaps( jagint pos, bool isRead )
 {
-	// -1 lock look at number of readers and writers
    	if ( -1 == pos ) {
 		if ( ! isRead ) {
        		if ( _readers > 0 ||  _writers > 0 ) {
        			return true;
        		} else {
-    			return false;  // empty  no readers, no writers
+    			return false;  
     		}
 		} else {
 			if ( _writers > 0 ) {
-				return true;   // has writers
+				return true;  
 			} else {
-    			return false;  // no writers
+    			return false; 
 			}
 		}
    	}
 
 	if ( ! isRead ) {
     	if ( _map->keyExist( -1 ) ) {
-			// printf("s4804 write lock saw -1\n" );
-    		return true;  // -1 exists
+    		return true; 
     	}
     
     	if ( _map->keyExist( pos ) ) {
-			// printf("s4805 write lock keyExist() %lld\n", pos );
-    		return true; // pos lock(0 or 1) exists
+    		return true; 
     	}
     
     	return false;
@@ -74,19 +71,17 @@ bool JagBlockLock::regionOverlaps( jagint pos, bool isRead )
 		AbaxLong2 cn;
 		if ( _map->getValue( -1, cn ) ) {
 			if ( cn.data2 < 1 ) {
-				return false;  // -1 had no writers, compatible
+				return false; 
 			} else {
-				//printf("s4806 read lock  saw -1 and -1.writers=%d\n", cn.data2 );
-				return true;  // -1 had writers lock, not compatible
+				return true; 
 			}
 		}
 
 		if ( _map->getValue( pos, cn ) ) {
 			if ( cn.data2 < 1 ) {
-				return false;  // pos had only read lock, compatible
+				return false;  
 			} else {
-				//printf("s4806 read lock  pos=%lld exists and writers=%d\n", cn.data2 );
-				return true;   // pos had write lock, not compatible
+				return true; 
 			}
 		}
 
@@ -96,7 +91,6 @@ bool JagBlockLock::regionOverlaps( jagint pos, bool isRead )
 	return false;
 }
 
-// v2: data1 is readers; data2 is writers
 void JagBlockLock::writeLock( jagint pos )
 {
 	JAG_BLURT
@@ -166,4 +160,3 @@ void JagBlockLock::readUnlock( jagint pos )
     jaguar_cond_broadcast(&_condvar);
     jaguar_mutex_unlock(&_mutex);
 }
-

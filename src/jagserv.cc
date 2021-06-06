@@ -28,8 +28,6 @@ int main(int argc, char**argv)
 		exit(51);
 	}
 
-	//daemonInit();
-
 	JagServer *serv = new JagServer();
 	if ( serv ) {
 		serv->main( argc, argv );

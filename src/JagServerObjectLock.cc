@@ -39,7 +39,6 @@ JagServerObjectLock::~JagServerObjectLock()
 	if ( _hashLock ) delete _hashLock;	
 }
 
-// method to init all data memebers except hashlock
 void JagServerObjectLock::initObjects()
 {
 	_databases = new JagHashMap<AbaxString, AbaxBuffer>();
@@ -53,14 +52,12 @@ void JagServerObjectLock::initObjects()
 	_nextindexs = new JagHashMap<AbaxString, AbaxBuffer>();
 	_idxtableNames = new JagHashMap<AbaxString, AbaxString>();
 
-	// during init, need to add "system" and "test" default databases into dbmap
 	AbaxBuffer bfr; Jstr dbName = "system", dbName2 = "test";
 	_databases->addKeyValue( dbName, bfr );  _databases->addKeyValue( dbName2, bfr );
 	_prevdatabases->addKeyValue( dbName, bfr ); _prevdatabases->addKeyValue( dbName2, bfr );
 	_nextdatabases->addKeyValue( dbName, bfr ); _nextdatabases->addKeyValue( dbName2, bfr );
 }
 
-// method to set init databases into hashmap, dblist is dbnames separate '|'
 void JagServerObjectLock::setInitDatabases( const Jstr &dblist, int replicateType )
 {
 	AbaxBuffer bfr;
@@ -79,12 +76,10 @@ void JagServerObjectLock::setInitDatabases( const Jstr &dblist, int replicateTyp
 	}
 }
 
-// method to cleanup all data members except hashlock
 void JagServerObjectLock::cleanupObjects()
 {
 	const AbaxPair<AbaxString, AbaxBuffer> *arr; jagint len, i;
 	
-	// clean up _tables, _prevtables, _nexttables, _indexs, _previndexs, _nextindexs
 	arr = _tables->array(); len = _tables->arrayLength();
 	for ( i = 0; i < len; ++i ) {
 		if ( arr[i].key.size() > 0 ) {
@@ -145,15 +140,12 @@ void JagServerObjectLock::cleanupObjects()
 	if ( _nextdatabases ) delete _nextdatabases;
 }
 
-// method to rebuild all objects except hashlock
 void JagServerObjectLock::rebuildObjects()
 {
 	cleanupObjects();
 	initObjects();
 }
 
-// method to get num of objects in hashmap
-// objType 0: database; 1: tables; 2: indexs;
 jagint JagServerObjectLock::getnumObjects( int objType, int replicateType )
 {
 	if ( 0 == objType ) {
@@ -184,9 +176,6 @@ jagint JagServerObjectLock::getnumObjects( int objType, int replicateType )
 	return 0;
 }
 
-// methods to lock/unlock schema for read only( seldom use )
-// always return 1
-// replicateType -1: lock all; otherwise 0-2, lock one part ( data, pdata, ndata )
 int JagServerObjectLock::readLockSchema( int replicateType )
 {
 	Jstr repstr;
@@ -220,8 +209,6 @@ int JagServerObjectLock::readUnlockSchema( int replicateType )
 	return 1;
 }
 
-// methods to lock/unlock schema for write only( seldom use )
-// always return 1
 int JagServerObjectLock::writeLockSchema( int replicateType )
 {
 	Jstr repstr;
@@ -236,7 +223,6 @@ int JagServerObjectLock::writeLockSchema( int replicateType )
 		repstr = intToStr( replicateType );
  		JAG_BLURT _hashLock->writeLock( repstr ); JAG_OVER;
 	}
-	prt(("s33209 writeLockSchema ..."));
 	return 1;
 }
 int JagServerObjectLock::writeUnlockSchema( int replicateType )
@@ -256,10 +242,6 @@ int JagServerObjectLock::writeUnlockSchema( int replicateType )
 	return 1;
 }
 
-// methods to lock/unlock schema and database for read only( use db etc. )
-// return 0 error: 
-// 	database does not exist
-// return 1: success
 int JagServerObjectLock::readLockDatabase( jagint opcode, const Jstr &dbName, int replicateType )
 {
 	Jstr repstr = intToStr( replicateType );
@@ -273,11 +255,10 @@ int JagServerObjectLock::readLockDatabase( jagint opcode, const Jstr &dbName, in
 		dbmap = _nextdatabases;
 	}
 	
-	if ( !dbmap->keyExist( dbName ) ) return 0; // first check before lock
+	if ( !dbmap->keyExist( dbName ) ) return 0; 
 	JAG_BLURT _hashLock->readLock( repstr ); JAG_OVER;
 	JAG_BLURT _hashLock->readLock( lockdb ); JAG_OVER;
 	if ( !dbmap->keyExist( dbName ) ) {
-		// second check after lock, if not exist, unlock and return 0
 		_hashLock->readUnlock( lockdb );
 		_hashLock->readUnlock( repstr );
 		return 0;
@@ -293,13 +274,8 @@ int JagServerObjectLock::readUnlockDatabase( jagint opcode, const Jstr &dbName, 
 	return 1;
 }
 
-// methods to lock/unlock schema and database for write only( createdb/dropdb etc. )
-// return 0 error: 
-// 	database already exists( createdb ) or database does not exist( other cmds dropdb etc. )
-// return 1 success
 int JagServerObjectLock::writeLockDatabase( jagint opcode, const Jstr &dbName, int replicateType )
 {
-	prt(("s136368 writeLockDatabase =%s ...\n", dbName.s() ));
 	AbaxBuffer bfr;
 	Jstr repstr = intToStr( replicateType );
 	AbaxString lockdb = dbName + "." + repstr;
@@ -313,25 +289,18 @@ int JagServerObjectLock::writeLockDatabase( jagint opcode, const Jstr &dbName, i
 	}
 	
 	if ( JAG_CREATEDB_OP == opcode ) {
-		// for createdb, if already exists, return 0	
 		if ( dbmap->keyExist( dbName ) ) {
 			return 0;
 		}
 	} else {
-		// for dropdb and other cmds, if not exists, return 0
 		if ( !dbmap->keyExist( dbName ) ) {
-			//prt(("s2920 !dbmap->keyExist( dbName ) return 0\n" ));
 			return 0;
 		}
 	}
 
-	// prt(("s239039  inside writeLockDatabase lockdb=%s ...\n",  lockdb.c_str() ));
 	JAG_BLURT _hashLock->readLock( repstr ); JAG_OVER;
 	JAG_BLURT _hashLock->writeLock( lockdb ); JAG_OVER;
-	// prt(("s2539039  inside writeLockDatabase lockdb=%s done\n",  lockdb.c_str() ));
 	if ( JAG_CREATEDB_OP == opcode ) {
-		// for createdb, second check after lock, if already exists, unlock and return 0
-		// otherwise, add database to list
 		if ( dbmap->keyExist( dbName ) ) {
 			_hashLock->writeUnlock( lockdb );
 			_hashLock->readUnlock( repstr );
@@ -344,14 +313,11 @@ int JagServerObjectLock::writeLockDatabase( jagint opcode, const Jstr &dbName, i
 			}
 		}
 	} else {
-		// for dropdb and other cmds, second check after lock, if not exists, unlock and return 0
 		if ( !dbmap->keyExist( dbName ) ) {
 			_hashLock->writeUnlock( lockdb );
 			_hashLock->readUnlock( repstr );
-			//prt(("s2930 error\n" ));
 			return 0;
 		} else {
-			// dropdb clean dblist during unlock
 		}
 	}
 	return 1;
@@ -370,7 +336,6 @@ int JagServerObjectLock::writeUnlockDatabase( jagint opcode, const Jstr &dbName,
 	}
 	
 	if ( JAG_DROPDB_OP == opcode ) {
-		// prt(("s2409039  inside writeUNLockDatabase unlockdb=%s\n",  lockdb.c_str() ));
 		if ( !dbmap->removeKey( dbName ) ) {
 			_hashLock->writeUnlock( lockdb );
 			_hashLock->readUnlock( repstr );
@@ -386,12 +351,6 @@ int JagServerObjectLock::writeUnlockDatabase( jagint opcode, const Jstr &dbName,
 	return 1;	
 }
 
-// methods to lock/unlock schema, database and table( ptab ) for read only( insert/update/delete/select from table etc. )
-// return 0/NULL error: 
-// 	database or table does not exist
-// return 1/ptab success
-// pay attention, if opcode is INSERT/UPDATE/DELETE, writeLock IUD to make sure at each time, only one of insert/update/delete
-// command can be done
 JagTable *JagServerObjectLock::readLockTable( jagint opcode, const Jstr &dbName, 
 							   const Jstr &tableName, int replicateType, bool lockSelfLevelOnly )
 {
@@ -412,18 +371,14 @@ JagTable *JagServerObjectLock::readLockTable( jagint opcode, const Jstr &dbName,
 		tabmap = _nexttables;
 	}
 
-	// prt(("s293039 lockd[%s] dbtab=[%s] locktab=[%s] replicateType=[%d]\n", lockdb.c_str(), dbtab.c_str(), locktab.c_str(), replicateType ));
 	
 	if ( !dbmap->keyExist( dbName ) ) {
-		// prt(("s2238 NULL dbName=[%s] replicateType=%d\n", dbName.c_str(), replicateType ));
-		return NULL; // first check before lock
+		return NULL; 
 	}
 
 	if ( !tabmap->keyExist( dbtab ) ) {
-		// prt(("s2239 %s NULL\n", dbtab.c_str() ));
-		return NULL; // first check before lock
+		return NULL; 
 	}
-	// prt(("s2249 %s not NULL\n", dbtab.c_str() ));
 
 	if ( !lockSelfLevelOnly ) {
 		JAG_BLURT _hashLock->readLock( repstr ); JAG_OVER;
@@ -437,28 +392,20 @@ JagTable *JagServerObjectLock::readLockTable( jagint opcode, const Jstr &dbName,
 			_hashLock->readUnlock( lockdb );
 			_hashLock->readUnlock( repstr );
 		}
-		// prt(("s2009 %s NULL\n", locktab.c_str() ));
 		return NULL;
 	}
 
-	// return ptab
 	AbaxBuffer bfr;
 	if ( !tabmap->getValue( dbtab, bfr ) ) {
-		// not get ptab, unlock and return NULL
-		// if ( isIUD ) {
-			// _hashLock->writeUnlock( locktabIUD );
-		// }
 		_hashLock->readUnlock( locktab );
 		if ( !lockSelfLevelOnly ) {
 			_hashLock->readUnlock( lockdb );
 			_hashLock->readUnlock( repstr );
 		}
-		// prt(("s2309 NULL %s\n", dbtab.c_str() ));
 		return NULL;
 	}
 
 	JagTable *ptab = (JagTable*) bfr.addr();
-	//prt(("s2239 readLockTable ptab=%0x replicateType=%d\n", ptab, replicateType  ));
 	return ptab;
 }
 
@@ -469,13 +416,6 @@ int JagServerObjectLock::readUnlockTable( jagint opcode, const Jstr &dbName,
 	AbaxString lockdb = dbName + "." + repstr;
 	AbaxString dbtab = dbName + "." + tableName;
 	AbaxString locktab = dbtab + "." + repstr;
-	// AbaxString locktabIUD = locktab + "__IUD";
-	// bool isIUD = 0;
-	// if ( JAG_INSERT_OP == opcode || JAG_CINSERT_OP == opcode || JAG_DINSERT_OP == opcode || 
-		//  JAG_UPDATE_OP == opcode || JAG_DELETE_OP == opcode ) isIUD = 1;
-	// if ( isIUD ) {
-		// _hashLock->writeUnlock( locktabIUD );
-	// }
 	_hashLock->readUnlock( locktab );
 	if ( !lockSelfLevelOnly ) {
 		_hashLock->readUnlock( lockdb );
@@ -484,27 +424,14 @@ int JagServerObjectLock::readUnlockTable( jagint opcode, const Jstr &dbName,
 	return 1;	
 }
 
-// methods to lock/unlock schema, database and table( ptab ) for write only( create/drop/truncate/alter table etc. )
-// if lockSelfLevelOnly is 1, only lock/unlock table( ptab ) lock; otherwise, lock all from schema
-// if drop table, remove ptab from list; else if truncate table, recreate ptab
-// ptab should be delete outside of this class, since its already returned in writeLock if available
-// return 0/NULL error: 
-// 	database does not exist or ( table already exists( create table ) or table does not exist( other cmds drop table etc.) )
-// return 1/ptab success
 JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName, const Jstr &tableName, 
 										       const JagTableSchema *tschema, int replicateType, bool lockSelfLevelOnly )
 {
-	prt(("s3051 writeLockTable replicateType=%d\n", replicateType ));
 	Jstr repstr = intToStr( replicateType );
 	AbaxString lockdb = dbName + "." + repstr;
 	AbaxString dbtab = dbName + "." + tableName;
 	AbaxString locktab = dbtab + "." + repstr;
 	JagHashMap<AbaxString, AbaxBuffer> *dbmap = NULL, *tabmap = NULL;
-
-	/***
-	prt(("s1090 writeLockTable dbName=[%s] tableName=[%s] replicateType=%d\n", 
-			dbName.c_str(), tableName.c_str(), replicateType ));
-	***/
 
 	if ( 0 == replicateType ) {
 		dbmap = _databases;
@@ -519,25 +446,6 @@ JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName
 		return NULL;
 	}
 
-	/***
-	if (  !dbmap->keyExist( dbName ) ) {
-		// prt(("s3812 dbmap->keyExist(%s) not TRUE, return NULL\n", dbName.c_str() ));
-		return NULL;
-	}
-	if ( JAG_CREATETABLE_OP == opcode || JAG_CREATECHAIN_OP == opcode || JAG_CREATEMEMTABLE_OP == opcode ) {
-		// for create table/memtable, if already exists, return NULL	
-		if ( tabmap->keyExist( dbtab ) ) {
-			// prt(("s3813 tabmap->keyExist(%s) TRUE, return NULL\n", dbtab.c_str() ));
-			return NULL;
-		}
-	} else {
-		// for drop table / truncate table and other cmds, if not exists, return NULL
-		if (  !tabmap->keyExist( dbtab ) ) {
-			return NULL;
-		}
-	}
-	***/
-
 	if ( !lockSelfLevelOnly ) {
 		JAG_BLURT _hashLock->readLock( repstr ); JAG_OVER;
 		JAG_BLURT _hashLock->readLock( lockdb ); JAG_OVER;
@@ -545,8 +453,6 @@ JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName
 
 	JAG_BLURT _hashLock->writeLock( locktab ); JAG_OVER;	
 	if ( JAG_CREATETABLE_OP == opcode || JAG_CREATECHAIN_OP == opcode || JAG_CREATEMEMTABLE_OP == opcode ) {
-		// for create table/memtable, second check after lock, if already exists, unlock and return NULL
-		// otherwise, create new ptab and add to list
 		if ( !dbmap->keyExist( dbName ) || (dbmap->keyExist( dbName ) && tabmap->keyExist( dbtab )) ) {
 			_hashLock->writeUnlock( locktab );
 			if ( !lockSelfLevelOnly ) {
@@ -557,7 +463,6 @@ JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName
 		} else {
 			const JagSchemaRecord *record = tschema->getAttr( dbtab.c_str() );
 			if ( ! record ) {
-				// prt(("s3371 tschema->getAttr(%s) NULL\n", dbtab.c_str() ));
 				_hashLock->writeUnlock( locktab );
 				if ( !lockSelfLevelOnly ) {
 					_hashLock->readUnlock( lockdb );
@@ -565,11 +470,8 @@ JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName
 				}
 				return NULL;
 			}
-			// prt(("s3372 tschema->getAttr(%s) not NULL\n", dbtab.c_str() ));
 			JagTable *ptab = new JagTable( replicateType, _servobj, dbName.c_str(), tableName.c_str(), *record );
-			//prt(("s3801 createtable ptab=%0x record=%0x replicateType=%d\n", ptab, record, replicateType ));
 			AbaxBuffer bfr = (void*) ptab;
-			// prt(("s6373 addKeyValue(%s)\n", dbtab.c_str() ));
 			if ( !tabmap->addKeyValue( dbtab, bfr ) ) {
 				delete ptab;
 				_hashLock->writeUnlock( locktab );
@@ -579,13 +481,9 @@ JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName
 				}
 				return NULL;
 			}
-			//prt(("s202938 got new ptab _servobj=[%0x]\n", _servobj ));
-			prt(("s211024 writeLockTable locktab=[%s]\n", locktab.s() ));
 			return ptab;
 		}
 	} else {
-		// for dropdb and other cmds, second check after lock, if not exists, unlock and return NULL
-		// else, return ptab
 		if ( !dbmap->keyExist( dbName ) || !tabmap->keyExist( dbtab ) ) {
 			_hashLock->writeUnlock( locktab );
 			if ( !lockSelfLevelOnly ) {
@@ -597,7 +495,6 @@ JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName
 
 		AbaxBuffer bfr;
 		if ( ! tabmap->getValue( dbtab, bfr ) ) {
-			// not get ptab, unlock and return NULL
 			_hashLock->writeUnlock( locktab );
 			if ( !lockSelfLevelOnly ) {
 				_hashLock->readUnlock( lockdb );
@@ -606,7 +503,6 @@ JagTable *JagServerObjectLock::writeLockTable( jagint opcode, const Jstr &dbName
 			return NULL;
 		}		
 		JagTable *ptab = (JagTable*) bfr.addr();
-		prt(("s211025 writeLockTable locktab=[%s]\n", locktab.s() ));
 		return ptab;
 	}
 }
@@ -655,16 +551,13 @@ int JagServerObjectLock::writeUnlockTable( jagint opcode, const Jstr &dbName, co
 			_hashLock->readUnlock( repstr );
 		}
 
-		prt(("s211035 writeUnlockTable locktab=[%s]\n", locktab.s() ));
 		return 1;
 	}
 }
 
-// Simply get a table object without locking
 JagTable *JagServerObjectLock::getTable( jagint opcode, const Jstr &dbName, const Jstr &tableName, 
 										 const JagTableSchema *tschema, int replicateType )
 {
-	//prt(("s33051 getTable replicateType=%d\n", replicateType ));
 	Jstr repstr = intToStr( replicateType );
 	AbaxString dbtab = dbName + "." + tableName;
 	JagHashMap<AbaxString, AbaxBuffer> *dbmap = NULL, *tabmap = NULL;
@@ -679,22 +572,18 @@ JagTable *JagServerObjectLock::getTable( jagint opcode, const Jstr &dbName, cons
 		dbmap = _nextdatabases;
 		tabmap = _nexttables;
 	} else {
-		prt(("s44408 NULL\n"));
 		return NULL;
 	}
 	
 	if ( ! dbmap->keyExist( dbName ) ) {
-		prt(("s44404 NULL\n"));
 		return NULL;
 	}
 
 	AbaxBuffer bfr;
 	if ( ! tabmap->getValue( dbtab, bfr ) ) {
-		prt(("s44304 %s not found in tabmap, try to create one\n", dbtab.s()));
 		if ( JAG_CREATETABLE_OP == opcode ) {
 			const JagSchemaRecord *record = tschema->getAttr( dbtab.c_str() );
 			if ( ! record ) {
-				prt(("s33330 no record for [%s] NULL\n", dbtab.c_str() ));
 				return NULL;
 			}
 
@@ -704,7 +593,6 @@ JagTable *JagServerObjectLock::getTable( jagint opcode, const Jstr &dbName, cons
 				delete ptab;
 				return NULL;
 			}
-			prt(("s39840 new JagTable and return %0x\n", ptab ));
 			return ptab;
 		}
 		return NULL;
@@ -714,7 +602,6 @@ JagTable *JagServerObjectLock::getTable( jagint opcode, const Jstr &dbName, cons
 	return ptab;
 }
 
-// method to recreate ptab again ( used by truncate table )
 JagTable *JagServerObjectLock::
 writeTruncateTable( jagint opcode, const Jstr &dbName, const Jstr &tableName, 
 				    const JagTableSchema *tschema, int replicateType, bool lockSelfLevelOnly )
@@ -756,7 +643,6 @@ writeTruncateTable( jagint opcode, const Jstr &dbName, const Jstr &tableName,
 			}
 			return NULL;
 		} else {
-			// if success, not unlock
 			return ptab;
 		}
 	} else {
@@ -769,11 +655,6 @@ writeTruncateTable( jagint opcode, const Jstr &dbName, const Jstr &tableName,
 	}
 }
 
-// methods to lock/unlock schema, database, table( ptab ) and index( pindex ) for read only( insert/update/delete/select from index etc. )
-// for index read commands, if tableName is not given( length < 1 ), need to use _idxtableNames hashmap to get table name of the index
-// return 0/NULL error:
-// 	tableName is not exist in _idxtableNames or any of database, table or index does not exist
-// return 1/pindex success
 JagIndex *JagServerObjectLock::readLockIndex( jagint opcode, const Jstr &dbName, Jstr &tableName, const Jstr &indexName,
 											  int replicateType, bool lockSelfLevelOnly )
 {
@@ -803,7 +684,7 @@ JagIndex *JagServerObjectLock::readLockIndex( jagint opcode, const Jstr &dbName,
 		idxmap = _nextindexs;
 	}
 	if ( !dbmap->keyExist( dbName ) || !tabmap->keyExist( dbtab ) || 
-		!_idxtableNames->keyExist( dbidxrep ) || !idxmap->keyExist( dbidx ) ) return NULL; // first check before lock
+		!_idxtableNames->keyExist( dbidxrep ) || !idxmap->keyExist( dbidx ) ) return NULL; 
 	if ( !lockSelfLevelOnly ) {
 		JAG_BLURT _hashLock->readLock( repstr ); JAG_OVER;
 		JAG_BLURT _hashLock->readLock( lockdb ); JAG_OVER;
@@ -812,7 +693,6 @@ JagIndex *JagServerObjectLock::readLockIndex( jagint opcode, const Jstr &dbName,
 	JAG_BLURT _hashLock->readLock( lockidx ); JAG_OVER;
 	if ( !dbmap->keyExist( dbName ) || !tabmap->keyExist( dbtab ) ||
 		!_idxtableNames->keyExist( dbidxrep ) || !idxmap->keyExist( dbidx ) ) {
-		// second check after lock, if not exist, unlock and return NULL
 		_hashLock->readUnlock( lockidx );
 		if ( !lockSelfLevelOnly ) {
 			_hashLock->readUnlock( locktab );
@@ -821,10 +701,8 @@ JagIndex *JagServerObjectLock::readLockIndex( jagint opcode, const Jstr &dbName,
 		}
 		return NULL;
 	}
-	// else, return pindex
 	AbaxBuffer bfr;
 	if ( !idxmap->getValue( dbidx, bfr ) ) {
-		// not get pindex, unlock and return NULL
 		_hashLock->readUnlock( lockidx );
 		if ( !lockSelfLevelOnly ) {
 			_hashLock->readUnlock( locktab );
@@ -854,15 +732,6 @@ int JagServerObjectLock::readUnlockIndex( jagint opcode, const Jstr &dbName, con
 	return 1;	
 }	
 
-// methods to lock/unlock schema, database, table( ptab ) and index( pindex ) for write only( create/drop index etc. )
-// if lockSelfLevelOnly is 1, only lock/unlock table( ptab ) lock; otherwise, lock all from schema
-// for create index, store tableName of index to _idxtableNames for future reference
-// for drop index, remove pindex from list and remove also from idxtableNames
-// pindex should be delete outside of this class, since its already returned in writeLock if available
-// return 0/NULL error:
-// 	database or table does not exist, or index already exists ( create index etc. ) or index does not exist ( drop index etc. )
-// return 1/pindex success
-// also, tableName should exists
 JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName, const Jstr &tableName, 
 												const Jstr &indexName, const JagTableSchema *tschema, 
 												const JagIndexSchema *ischema, int replicateType, bool lockSelfLevelOnly )
@@ -874,13 +743,6 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 	AbaxString locktab = dbtab + "." + repstr;
 	AbaxString lockidx = dbtab + "." + indexName + "." + repstr;
 	JagHashMap<AbaxString, AbaxBuffer> *dbmap = NULL, *tabmap = NULL, *idxmap = NULL;
-
-	//prt(("s333338 writeLockIndex lockidx=[%s] ...\n", lockidx.s() )); 
-
-	/***
-	prt(("s1092 writeLockIndex dbName=[%s] tableName=[%s] indexName=[%s] replicateType=%d\n", 
-			dbName.c_str(), tableName.c_str(), indexName.c_str(), replicateType ));
-			***/
 
 	if ( 0 == replicateType ) {
 		dbmap = _databases;
@@ -897,18 +759,13 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 	}
 
 	if ( JAG_CREATEINDEX_OP == opcode ) {
-		// for create index, if already exists, return NULL	
 		if ( !dbmap->keyExist( dbName ) || !tabmap->keyExist( dbtab ) || _idxtableNames->keyExist( dbidxrep ) ||
 			( dbmap->keyExist( dbName ) && tabmap->keyExist( dbtab ) && idxmap->keyExist( dbidx ) ) ) {
-			// prt(("s4532 NULL\n" ));
-			prt(("s333338 2 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 			return NULL;
 		}
 	} else {
-		// for drop index and other cmds, if not exists, return NULL
 		if ( !dbmap->keyExist( dbName ) || !tabmap->keyExist( dbtab ) || 
 			!_idxtableNames->keyExist( dbidxrep ) || !idxmap->keyExist( dbidx ) ) {
-			prt(("s333338 3 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 			return NULL;
 		}
 	}
@@ -921,8 +778,6 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 
 	JAG_BLURT _hashLock->writeLock( lockidx ); JAG_OVER;
 	if ( JAG_CREATEINDEX_OP == opcode ) {
-		// for create index, second check after lock, if already exists, unlock and return NULL
-		// otherwise, create new pindex and add to list
 		if ( !dbmap->keyExist( dbName ) || !tabmap->keyExist( dbtab ) || _idxtableNames->keyExist( dbidxrep ) ||
 			( dbmap->keyExist( dbName ) && tabmap->keyExist( dbtab ) && idxmap->keyExist( dbidx ) ) ) {
 			_hashLock->writeUnlock( lockidx );
@@ -931,15 +786,12 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 				_hashLock->readUnlock( lockdb );
 				_hashLock->readUnlock( repstr );
 			}
-			// prt(("s4532 NULL\n" ));
-			prt(("s333338 4 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 			return NULL;
 		} else {
 			Jstr path;
 			const JagSchemaRecord *trecord, *irecord;
-			irecord = ischema->getOneIndexAttr( dbName, indexName, path );// path is returned
+			irecord = ischema->getOneIndexAttr( dbName, indexName, path );
 			trecord = tschema->getAttr( path );
-			// prt(("s4540 tschema=%0x path=[%s] getAttr got trecord=%0x\n", tschema, path.c_str(), trecord ));
 			if ( ! irecord || ! trecord ) {
 				_hashLock->writeUnlock( lockidx );
 				if ( !lockSelfLevelOnly ) {
@@ -947,11 +799,6 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 					_hashLock->readUnlock( lockdb );
 					_hashLock->readUnlock( repstr );
 				}
-				/***
-				prt(("s3601 trecord=%0x irecord=%x dbName=[%s] indexName=[%s] path=[%s] NULL\n",
-						trecord, irecord, dbName.c_str(), indexName.c_str(), path.c_str() ));
-					***/
-				prt(("s333338 5 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 				return NULL;
 			}
 
@@ -966,12 +813,9 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 					_hashLock->readUnlock( lockdb );
 					_hashLock->readUnlock( repstr );
 				}
-				// prt(("s4511 !idxmap->addKeyValue dbidx=[%s] NULL\n", dbidx.c_str() ));
-				prt(("s333338 6 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 				return NULL;
 			}
 			
-			// final, make sure tableName is inserted to _idxtableNames
 			if ( !_idxtableNames->addKeyValue( dbidxrep, tableName ) ) {
 				delete pindex;
 				_hashLock->writeUnlock( lockidx );
@@ -980,17 +824,11 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 					_hashLock->readUnlock( lockdb );
 					_hashLock->readUnlock( repstr );
 				}
-				// prt(("s5611 addKeyValue dbidxrep=[%s] tableName=[%s] NULL\n", dbidxrep.c_str(), tableName.c_str() ));
-				prt(("s333338 7 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 				return NULL;
 			}
-			//prt(("s333338 8 writeLockIndex lockidx=[%s] done\n", lockidx.s() )); 
-			prt(("s333337 createindex writeLockIndex lockidx=[%s] done return pindex\n", lockidx.s() )); 
 			return pindex;
 		}
 	} else {
-		// for drop index and other cmds, second check after lock, if not exists, unlock and return NULL
-		// else, return pindex
 		if ( !dbmap->keyExist( dbName ) || !tabmap->keyExist( dbtab ) || 
 			!_idxtableNames->keyExist( dbidxrep ) || !idxmap->keyExist( dbidx ) ) {
 			_hashLock->writeUnlock( lockidx );
@@ -999,25 +837,21 @@ JagIndex *JagServerObjectLock::writeLockIndex( jagint opcode, const Jstr &dbName
 				_hashLock->readUnlock( lockdb );
 				_hashLock->readUnlock( repstr );
 			}
-			prt(("s333338 11 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 			return NULL;
 		}
 
 		AbaxBuffer bfr;
 		if ( !idxmap->getValue( dbidx, bfr ) ) {
-			// not get pindex, unlock and return NULL
 			_hashLock->writeUnlock( lockidx );
 			if ( !lockSelfLevelOnly ) {
 				_hashLock->writeUnlock( locktab );
 				_hashLock->readUnlock( lockdb );
 				_hashLock->readUnlock( repstr );
 			}
-			prt(("s333338 13 writeLockIndex lockidx=[%s] done NULL\n", lockidx.s() )); 
 			return NULL;
 		}
 
 		JagIndex *pindex = (JagIndex*) bfr.addr();
-		prt(("s333338 writeLockIndex lockidx=[%s] done return pindex\n", lockidx.s() )); 
 		return pindex;
 	}
 }
@@ -1081,7 +915,6 @@ int JagServerObjectLock::writeUnlockIndex( jagint opcode, const Jstr &dbName, co
 			}
 			return 0;
 		} else {
-			// final, make sure tableName is removed from _idxtableNames
 			if ( !_idxtableNames->removeKey( dbidxrep ) ) {
 				_hashLock->writeUnlock( lockidx );
 				if ( !lockSelfLevelOnly ) {
@@ -1097,7 +930,6 @@ int JagServerObjectLock::writeUnlockIndex( jagint opcode, const Jstr &dbName, co
 				_hashLock->readUnlock( lockdb );
 				_hashLock->readUnlock( repstr );
 			}
-			prt(("s34713 JAG_DROPINDEX_OP writeUnlockIndex lockidx=[%s] done return 1\n", lockidx.s() ));
 			return 1;
 		}
 	} else {
@@ -1107,14 +939,10 @@ int JagServerObjectLock::writeUnlockIndex( jagint opcode, const Jstr &dbName, co
 			_hashLock->readUnlock( lockdb );
 			_hashLock->readUnlock( repstr );
 		}
-		prt(("s34714 writeUnlockIndex lockidx=[%s] done return 1\n", lockidx.s() ));
 		return 1;
 	}	
 }
 
-// method to get all table names, db.table|db.table, split with '|'
-// when calling this method, it should be already locked outside
-// no need to lock in this method
 Jstr JagServerObjectLock::getAllTableNames( int replicateType )
 {
 	JagHashMap<AbaxString, AbaxBuffer> *tabmap = NULL;
