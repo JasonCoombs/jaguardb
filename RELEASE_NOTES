@@ -1,4 +1,13 @@
 
+JaguarDB 3.2.0 04/15/2021
+------------------------------------------------------------------
+. Added time series data support
+. Create time window tick tables and ingest time series data
+. Automatic aggregation and rollup of tick table data
+. Indexes for tick tables
+. Query data in time windows
+. Fixed bugs in video file upload
+
 JaguarDB 3.1.1 12/30/2020
 ------------------------------------------------------------------
 . Uses memory buffer for caching inserted data
